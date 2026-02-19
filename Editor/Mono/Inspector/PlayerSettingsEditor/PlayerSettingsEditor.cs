@@ -70,7 +70,6 @@ namespace UnityEditor
             public static readonly GUIContent statusBarTitle = EditorGUIUtility.TrTextContent("Status Bar");
             public static readonly GUIContent standalonePlayerOptionsTitle = EditorGUIUtility.TrTextContent("Standalone Player Options");
             public static readonly GUIContent debuggingCrashReportingTitle = EditorGUIUtility.TrTextContent("Debugging and crash reporting");
-            public static readonly GUIContent debuggingTitle = EditorGUIUtility.TrTextContent("Debugging");
             public static readonly GUIContent crashReportingTitle = EditorGUIUtility.TrTextContent("Crash Reporting");
             public static readonly GUIContent otherSettingsTitle = EditorGUIUtility.TrTextContent("Other Settings");
             public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
@@ -111,7 +110,6 @@ namespace UnityEditor
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
-            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation (Deprecated)", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately. This has no effect on iOS 16 and later versions as autorotation is always animated. This option is deprecated and will be removed in a future release.");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
@@ -140,8 +138,6 @@ namespace UnityEditor
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
-            public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*", "This is non-functional. The option is deprecated and will be removed in a future release.");
-            public static readonly GUIContent actionOnDotNetUnhandledExceptionDeprecation = EditorGUIUtility.TrTextContent("On .Net UnhandledException* is non-functional. This option is deprecated and will be removed in a future release.");
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
             public static readonly GUIContent activeColorSpace = EditorGUIUtility.TrTextContent("Color Space*");
@@ -151,7 +147,7 @@ namespace UnityEditor
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*", "When enabled, additional binding state validation is applied.");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer*", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
-            public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink (Mac Player only)*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
+            public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth*", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
@@ -367,7 +363,6 @@ namespace UnityEditor
         SerializedProperty m_AllowedAutoRotateToPortraitUpsideDown;
         SerializedProperty m_AllowedAutoRotateToLandscapeRight;
         SerializedProperty m_AllowedAutoRotateToLandscapeLeft;
-        SerializedProperty m_UseOSAutoRotation;
         SerializedProperty m_Use32BitDisplayBuffer;
         SerializedProperty m_PreserveFramebufferAlpha;
         SerializedProperty m_DisableDepthAndStencilBuffers;
@@ -392,8 +387,6 @@ namespace UnityEditor
         SerializedProperty m_SeriousThermalStateIOSFPS;
         SerializedProperty m_CriticalThermalStateIOSFPS;
 
-        SerializedProperty m_EnableInternalProfiler;
-        SerializedProperty m_ActionOnDotNetUnhandledException;
         SerializedProperty m_LogObjCUncaughtExceptions;
         SerializedProperty m_EnableCrashReportAPI;
 
@@ -515,7 +508,7 @@ namespace UnityEditor
         string[] serializedAdditionalCompilerArguments;
         bool serializedSuppressCommonWarnings = true;
         bool serializedAllowUnsafeCode = false;
-        string serializedScriptingDefines;
+        string[] m_SerializedScriptingDefinesArray;
         bool serializedUseDeterministicCompilation;
 
         List<string> scriptingDefinesList;
@@ -655,8 +648,6 @@ namespace UnityEditor
             m_LocationUsageDescription      = FindPropertyAssert("locationUsageDescription");
             m_MicrophoneUsageDescription    = FindPropertyAssert("microphoneUsageDescription");
 
-            m_EnableInternalProfiler        = FindPropertyAssert("enableInternalProfiler");
-            m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
             m_LogObjCUncaughtExceptions     = FindPropertyAssert("logObjCUncaughtExceptions");
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
 
@@ -686,7 +677,6 @@ namespace UnityEditor
             m_AllowedAutoRotateToPortraitUpsideDown = FindPropertyAssert("allowedAutorotateToPortraitUpsideDown");
             m_AllowedAutoRotateToLandscapeRight     = FindPropertyAssert("allowedAutorotateToLandscapeRight");
             m_AllowedAutoRotateToLandscapeLeft      = FindPropertyAssert("allowedAutorotateToLandscapeLeft");
-            m_UseOSAutoRotation                     = FindPropertyAssert("useOSAutorotation");
             m_Use32BitDisplayBuffer                 = FindPropertyAssert("use32BitDisplayBuffer");
             m_PreserveFramebufferAlpha              = FindPropertyAssert("preserveFramebufferAlpha");
             m_DisableDepthAndStencilBuffers         = FindPropertyAssert("disableDepthAndStencilBuffers");
@@ -781,7 +771,8 @@ namespace UnityEditor
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
             serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
-            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+            var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+            m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
             InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
@@ -1340,9 +1331,6 @@ namespace UnityEditor
 
                         if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
                         {
-                            if (namedBuildTarget == NamedBuildTarget.iOS)
-                                EditorGUILayout.PropertyField(m_UseOSAutoRotation, SettingsContent.useOSAutoRotation);
-
                             if (settingsExtension != null)
                                 settingsExtension.AutoRotationSectionGUI();
 
@@ -2076,24 +2064,16 @@ namespace UnityEditor
         public void DebugAndCrashReportingGUI(BuildPlatform platform,
             ISettingEditorExtension settingsExtension, int sectionIndex = 3)
         {
-            if (platform.namedBuildTarget != NamedBuildTarget.iOS && platform.namedBuildTarget != NamedBuildTarget.tvOS)
+            if (platform.namedBuildTarget != NamedBuildTarget.iOS
+                && platform.namedBuildTarget != NamedBuildTarget.tvOS
+                && platform.namedBuildTarget != NamedBuildTarget.VisionOS)
                 return;
 
             if (BeginSettingsBox(sectionIndex, SettingsContent.debuggingCrashReportingTitle))
             {
-                // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-                {
-                    // Debugging
-                    GUILayout.Label(SettingsContent.debuggingTitle, EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(m_EnableInternalProfiler, SettingsContent.enableInternalProfiler);
-                    EditorGUILayout.Space();
-                }
-
                 {
                     // Crash reporting
                     GUILayout.Label(SettingsContent.crashReportingTitle, EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(m_ActionOnDotNetUnhandledException, SettingsContent.actionOnDotNetUnhandledException);
-                    EditorGUILayout.HelpBox(SettingsContent.actionOnDotNetUnhandledExceptionDeprecation.text, MessageType.Info, true);
                     EditorGUILayout.PropertyField(m_LogObjCUncaughtExceptions, SettingsContent.logObjCUncaughtExceptions);
 
                     GUIContent crashReportApiContent = SettingsContent.enableCrashReportAPI;
@@ -2357,7 +2337,8 @@ namespace UnityEditor
                 int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
 
-                if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
+                // VisionOS uses completely separate mechanism
+                if (platform.namedBuildTarget != NamedBuildTarget.VisionOS)
                     EditorGUILayout.PropertyField(m_MetalUseMetalDisplayLink, SettingsContent.metalUseMetalDisplayLink);
             }
 
@@ -3652,7 +3633,7 @@ namespace UnityEditor
             {
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
+                    if (m_SerializedScriptingDefinesArray == null || scriptingDefineSymbolsList == null)
                     {
                         InitReorderableScriptingDefineSymbolsList(platform.namedBuildTarget);
                     }
@@ -3664,7 +3645,8 @@ namespace UnityEditor
                     else
                     {
                         // If platform changes, update define symbols
-                        serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                        var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                        m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
                         UpdateScriptingDefineSymbolsLists();
                     }
 
@@ -3674,10 +3656,7 @@ namespace UnityEditor
 
                         var GUIState = GUI.enabled;
 
-
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        GUI.enabled = serializedScriptingDefines.Count() > 0;
-#pragma warning restore UA2001
+                        GUI.enabled = m_SerializedScriptingDefinesArray.Length > 0;
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
@@ -3702,7 +3681,8 @@ namespace UnityEditor
                             SetScriptingDefineSymbolsForGroup(platform.namedBuildTarget, scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
-                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                            var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                            m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
                             UpdateScriptingDefineSymbolsLists();
 
                             if (platform.IsActive())
@@ -3857,7 +3837,23 @@ namespace UnityEditor
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
-            hasScriptingDefinesBeenModified = true;
+            if (m_SerializedScriptingDefinesArray == null ||
+                scriptingDefinesList.Count != m_SerializedScriptingDefinesArray.Length)
+            {
+                hasScriptingDefinesBeenModified = true;
+                return;
+            }
+
+            for (int i = 0; i < m_SerializedScriptingDefinesArray.Length; i++)
+            {
+                if (scriptingDefinesList[i] != m_SerializedScriptingDefinesArray[i])
+                {
+                    hasScriptingDefinesBeenModified = true;
+                    return;
+                }
+            }
+
+            hasScriptingDefinesBeenModified = false;
         }
 
         void AddAdditionalCompilerArgumentCallback(ReorderableList list)
@@ -3874,7 +3870,23 @@ namespace UnityEditor
 
         void SetAdditionalCompilerArgumentListDirty(ReorderableList list = null)
         {
-            hasAdditionalCompilerArgumentsBeenModified = true;
+            if (serializedAdditionalCompilerArguments == null ||
+                additionalCompilerArgumentsList.Count != serializedAdditionalCompilerArguments.Length)
+            {
+                hasAdditionalCompilerArgumentsBeenModified = true;
+                return;
+            }
+
+            for (int i = 0; i < additionalCompilerArgumentsList.Count; i++)
+            {
+                if (additionalCompilerArgumentsList[i] != serializedAdditionalCompilerArguments[i])
+                {
+                    hasAdditionalCompilerArgumentsBeenModified = true;
+                    return;
+                }
+            }
+
+            hasAdditionalCompilerArgumentsBeenModified = false;
         }
 
         private void OtherSectionOptimizationGUI(BuildPlatform platform)
@@ -4316,9 +4328,13 @@ namespace UnityEditor
 
         void InitReorderableScriptingDefineSymbolsList(NamedBuildTarget namedBuildTarget)
         {
-            // Get Scripting Define Symbols data
-            string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
-            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            if (m_SerializedScriptingDefinesArray == null)
+            {
+                // Get Scripting Define Symbols data
+                string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+                m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(defines);
+            }
+            scriptingDefinesList = new List<string>(m_SerializedScriptingDefinesArray);
 
             // Initialize Reorderable List
             scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
@@ -4331,7 +4347,7 @@ namespace UnityEditor
 
         void UpdateScriptingDefineSymbolsLists()
         {
-            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            scriptingDefinesList = new List<string>(m_SerializedScriptingDefinesArray);
             scriptingDefineSymbolsList.list = scriptingDefinesList;
             scriptingDefineSymbolsList.DoLayoutList();
             hasScriptingDefinesBeenModified = false;
@@ -4340,9 +4356,7 @@ namespace UnityEditor
         void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
             var additionalCompilerArgumentsArray = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            additionalCompilerArgumentsList = additionalCompilerArgumentsArray.ToList();
-#pragma warning restore UA2001
+            additionalCompilerArgumentsList = new List<string>(additionalCompilerArgumentsArray);
 
             additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
             additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);

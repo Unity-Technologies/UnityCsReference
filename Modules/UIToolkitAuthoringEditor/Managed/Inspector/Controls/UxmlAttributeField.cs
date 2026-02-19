@@ -29,11 +29,14 @@ internal class UxmlAttributeField : VisualElement
         {
             UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
             {
+                new (nameof(label), "label"),
                 new (nameof(bindingPath), "binding-path"),
             }, true);
         }
 
 #pragma warning disable 649
+        [SerializeField] string label;
+        [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
         [SerializeField] string bindingPath;
         [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
 #pragma warning restore 649
@@ -45,6 +48,10 @@ internal class UxmlAttributeField : VisualElement
             base.Deserialize(obj);
 
             var e = (UxmlAttributeField)obj;
+
+            if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
+                e.label = label;
+
             if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
                 e.bindingPath = bindingPath;
         }
@@ -52,6 +59,25 @@ internal class UxmlAttributeField : VisualElement
 
     PropertyField m_PropertyField;
     UxmlAttributeFieldDecorator m_Decorator;
+
+    /// <summary>
+    /// The decorator element that wraps the property field.
+    /// </summary>
+    public UxmlAttributeFieldDecorator decorator => m_Decorator;
+
+    /// <summary>
+    /// Returns the serialized property bound to this UXML attribute field.
+    /// </summary>
+    internal SerializedProperty boundProperty => m_PropertyField.serializedProperty;
+
+    /// <summary>
+    /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
+    /// </summary>
+    public string label
+    {
+        get => m_PropertyField.label;
+        set => m_PropertyField.label = value;
+    }
 
     /// <summary>
     /// The binding path of the UXML attribute field.
@@ -95,8 +121,6 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
     public const string affordanceElementUssClassName = ussClassName + "__affordance-element";
     public static readonly string s_InlineFieldUssClassName = "property-field__inline-value";
     public static readonly string s_BoundFieldUssClassName = "property-field__bound";
-    static readonly string k_UxmlSerializedDataFieldName = "serializedData.";
-    static readonly string k_ArrayDataSuffixName = ".Array.data";
 
     class ContentContainer : VisualElement
     {
@@ -318,7 +342,8 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
         {
             if (boundAttributeDescription != null)
             {
-                propertyField.label = StyleSheetUtility.ConvertDashToHuman(boundAttributeDescription.name);
+                if (string.IsNullOrEmpty(propertyField.label))
+                    propertyField.label = StyleSheetUtility.ConvertDashToHuman(boundAttributeDescription.name);
             }
             else
             {
@@ -338,6 +363,16 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
     {
         Refresh();
     }
+
+    /// <summary>
+    /// Custom update delegate for field affordance data.
+    /// </summary>
+    public delegate void CustomFieldAffordanceDataUpdate(UxmlAttributeFieldDecorator decorator, in FieldAffordanceData data,  VisualElement element,  Binding binding,  bool isInline);
+
+    /// <summary>
+    /// Allows custom update logic for the field affordance data.
+    /// </summary>
+    public CustomFieldAffordanceDataUpdate customFieldAffordanceDataUpdate;
 
     internal void Refresh()
     {
@@ -359,6 +394,7 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
         {
             binding = context.element.GetBinding(GetBindingPath());
             FieldAffordanceController.UpdateFieldAffordanceData(m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
+            customFieldAffordanceDataUpdate?.Invoke(this, m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
         }
 
         var isOverridden = isInline || binding != null;
@@ -373,39 +409,7 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
     {
         if (boundProperty == null)
             return string.Empty;
-
-        var bindingPath = boundProperty.name;
-        if (boundProperty.propertyPath.Contains(k_ArrayDataSuffixName, StringComparison.Ordinal))
-        {
-            bindingPath = TrimSerializedDataSuffix(boundProperty.propertyPath);
-        }
-
-        return bindingPath;
-    }
-
-    internal static string TrimSerializedDataSuffix(string path)
-    {
-        if (path == null)
-            return string.Empty;
-
-        ReadOnlySpan<char> span = path.AsSpan();
-        int sIndex = span.IndexOf(k_UxmlSerializedDataFieldName, StringComparison.OrdinalIgnoreCase);
-
-        if (sIndex >= 0)
-            span = span.Slice(sIndex + k_UxmlSerializedDataFieldName.Length);
-
-        string trimmed = span.ToString();
-
-        int arrayDataIndex = trimmed.IndexOf(k_ArrayDataSuffixName, StringComparison.Ordinal);
-        if (arrayDataIndex >= 0)
-        {
-            var sb = new StringBuilder(trimmed.Length - k_ArrayDataSuffixName.Length);
-            sb.Append(trimmed, 0, arrayDataIndex);
-            sb.Append(trimmed, arrayDataIndex + k_ArrayDataSuffixName.Length, trimmed.Length - (arrayDataIndex + k_ArrayDataSuffixName.Length));
-            return sb.ToString();
-        }
-
-        return trimmed;
+        return boundProperty.GetBindingPath();
     }
 
     void OnAttachedToPanel(AttachToPanelEvent evt)

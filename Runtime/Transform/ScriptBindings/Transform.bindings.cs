@@ -463,8 +463,7 @@ namespace UnityEngine
         public extern void RotateAroundLocal(Vector3 axis, float angle);
 
         // Get a transform child by index
-        [NativeThrows]
-        [FreeFunction("GetChild", HasExplicitThis = true)]
+        [FreeFunction("GetChild", HasExplicitThis = true, ThrowsException = true)]
         public extern Transform GetChild(int index);
 
         //*undocumented* DEPRECATED

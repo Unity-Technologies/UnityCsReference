@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
         public static extern int TakeFillSnapshot(IntPtr handle, FillRule fillRule);
         public static extern void ClearSnapshots(IntPtr handle);
 
-        [ThreadSafe] public static extern MeshWriteDataInterface ExecuteSnapshotFromJob(IntPtr painterHandle, int i);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface ExecuteSnapshotFromJob(IntPtr painterHandle, int i);
     }
 
     /// <summary>

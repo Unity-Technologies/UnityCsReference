@@ -9,7 +9,6 @@ using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements;
 
-[RequiredByNativeCode]
 [NativeHeader("Modules/UIElements/Core/Layout/Native/LayoutModel.h")]
 [StructLayout(LayoutKind.Sequential)]
 struct LayoutData : IStyleDataGroup<LayoutData>

@@ -20,8 +20,7 @@ internal readonly record struct SetStyleSheetPropertyCommand<T>
     readonly Action<StyleProperty, StyleSheet, T> ValueSetter;
     readonly T Value;
 
-    public SetStyleSheetPropertyCommand(
-        StyleSheet styleSheet,
+    public SetStyleSheetPropertyCommand(StyleSheet styleSheet,
         StyleRule rule,
         StylePropertyId stylePropertyId,
         Action<StyleProperty, StyleSheet, T> valueSetter,

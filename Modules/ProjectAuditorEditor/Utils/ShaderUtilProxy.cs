@@ -40,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             s_MethodHasInstancing = s_TypeShaderUtil.GetMethod("HasInstancing", BindingFlags.Static | BindingFlags.NonPublic);
             s_MethodHasSurfaceShaders = s_TypeShaderUtil.GetMethod("HasSurfaceShaders", BindingFlags.Static | BindingFlags.NonPublic);
 
-            var platformMask = (int)s_MethodGetAvailableShaderCompilerPlatforms.Invoke(null, []);
+            var platformMask = (int)s_MethodGetAvailableShaderCompilerPlatforms.Invoke(null, Array.Empty<object>());
             var names = new List<string>();
             for (var i = 0; i < 32; ++i)
             {

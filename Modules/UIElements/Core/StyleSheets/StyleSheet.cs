@@ -100,14 +100,14 @@ namespace UnityEngine.UIElements
         internal Object[] assets = Array.Empty<Object>();
 
         [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal struct ImportStruct
         {
             public StyleSheet styleSheet;
             public string[] mediaQueries;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal ImportStruct[] imports = Array.Empty<ImportStruct>();
 
@@ -263,7 +263,7 @@ namespace UnityEngine.UIElements
             return rule;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool RemoveRule(StyleRule rule)
         {
             if (rule.styleSheet != this)
@@ -274,7 +274,7 @@ namespace UnityEngine.UIElements
                 return false;
 
             RemoveRule(index);
-            return false;
+            return true;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -295,6 +295,48 @@ namespace UnityEngine.UIElements
         {
             m_Rules = newRules;
             SetupReferences();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal StyleSheet GetStyleSheetImportAtIndex(int index)
+        {
+            if (index < 0 || index >= imports.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return imports[index].styleSheet;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetStyleSheetImportAtIndex(int index, StyleSheet styleSheet)
+        {
+            if (index < 0 || index >= imports.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            imports[index].styleSheet = styleSheet;
+            RequestRebuild();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void AddImportAtIndex(int index, ImportStruct import)
+        {
+            if (index == -1)
+                index = imports.Length;
+
+            InsertValueInArray(ref imports, index, import);
+            RequestRebuild();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void RemoveImport(int index)
+        {
+            if (index < 0 || index >= imports.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            var import = imports[index];
+            Unity.Collections.CollectionExtensions.RemoveFromArray(ref imports, index);
+
+            import.styleSheet = null;
+            RequestRebuild();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

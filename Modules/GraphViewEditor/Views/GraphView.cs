@@ -1047,7 +1047,7 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         protected internal virtual bool canCopySelection =>
-            selection.Any(s => s is Node || s is Group || s is Placemat || s is StickyNote);
+            selection.Exists(s => s is Node || s is Group || s is Placemat || s is StickyNote);
 
         public static void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
         {
@@ -1099,7 +1099,7 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         protected internal virtual bool canCutSelection =>
-            selection.Any(s => s is Node || s is Group || s is Placemat || s is StickyNote);
+            selection.Exists(s => s is Node || s is Group || s is Placemat || s is StickyNote);
 
         protected internal void CutSelectionCallback()
         {
@@ -1139,9 +1139,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             get
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return selection.Cast<GraphElement>().Any(e => e != null && (e.capabilities & Capabilities.Deletable) != 0);
-#pragma warning restore UA2001
+                return selection.Exists(e => e != null && ((e as GraphElement).capabilities & Capabilities.Deletable) != 0);
             }
         }
 
@@ -1444,7 +1442,7 @@ namespace UnityEditor.Experimental.GraphView
             Vector3 frameScaling = Vector3.one;
 
             if (frameType == FrameType.Selection &&
-                (selection.Count == 0 || !selection.Any(e => e.IsSelectable() && !(e is Edge))))
+                (selection.Count == 0 || !selection.Exists(e => e.IsSelectable() && !(e is Edge))))
                 frameType = FrameType.All;
 
             if (frameType == FrameType.Selection)

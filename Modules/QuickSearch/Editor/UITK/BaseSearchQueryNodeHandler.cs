@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -199,7 +200,9 @@ namespace UnityEditor.Search
                 else
                 {
                     var queryProviders = q.GetProviderIds();
-                    if (queryProviders.GetCount() == 0)
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    if (!queryProviders.Any())
+#pragma warning restore UA2002
                     {
                         yield return q;
                     }
@@ -224,14 +227,16 @@ namespace UnityEditor.Search
             }
         }
 
-        protected static int GetSortedInsertionIndex<T>(List<T> collection, T entry, IComparer<T> comparer)
+        protected static int GetSortedInsertionIndex<T>(IEnumerable<T> collection, T entry, IComparer<T> comparer)
         {
-            for (var i = 0; i < collection.Count; ++i)
+            int i = 0;
+            foreach(var item in collection)
             {
-                if (comparer.Compare(collection[i], entry) > 0)
+                if (comparer.Compare(item, entry) > 0)
                     return i;
+                i++;
             }
-            return collection.Count;
+            return i;
         }
 
         static List<string> GetUnallowedFilterIds(IEnumerable<SearchProvider> searchProviders)

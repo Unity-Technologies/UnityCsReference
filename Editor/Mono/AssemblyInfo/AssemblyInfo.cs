@@ -126,6 +126,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.ContentLoadModule")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
@@ -251,6 +252,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderCompilation.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderUtil.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 

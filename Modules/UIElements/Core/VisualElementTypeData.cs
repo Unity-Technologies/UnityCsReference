@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -15,9 +17,20 @@ namespace UnityEngine.UIElements
         {
             public Type type { get; }
 
+            private readonly DefaultEventInterests m_DefaultEventInterests;
+            internal DefaultEventInterests defaultEventInterests => m_DefaultEventInterests;
+
+            internal bool hasContainsPoint { get; }
+
             public TypeData(Type type)
             {
                 this.type = type;
+
+                EventInterestReflectionUtils.GetDefaultEventInterests(type, out m_DefaultEventInterests);
+
+                hasContainsPoint =
+                    type.GetMethod(nameof(ContainsPoint), BindingFlags.Instance | BindingFlags.Public)
+                        ?.DeclaringType != typeof(VisualElement);
             }
 
             private string m_FullTypeName = string.Empty;
@@ -57,6 +70,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private readonly TypeData m_TypeData;
+        private TypeData typeData => m_TypeData;
+
+        private class TypeReferenceComparer : IEqualityComparer<Type>
+        {
+            public bool Equals(Type x, Type y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(Type obj)
+            {
+                return RuntimeHelpers.GetHashCode(obj);
+            }
+        }
+        private static readonly Dictionary<Type, TypeData> s_TypeData = new(new TypeReferenceComparer());
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TypeData GetOrCreateTypeData(Type t)
         {
@@ -67,27 +97,6 @@ namespace UnityEngine.UIElements
             }
 
             return data;
-        }
-
-        private static readonly Dictionary<Type, TypeData> s_TypeData = new Dictionary<Type, TypeData>();
-        private TypeData m_TypeData;
-
-        private TypeData typeData
-        {
-            get
-            {
-                if (m_TypeData == null)
-                {
-                    var type = GetType();
-                    if (!s_TypeData.TryGetValue(type, out m_TypeData))
-                    {
-                        m_TypeData = new TypeData(type);
-                        s_TypeData.Add(type, m_TypeData);
-                    }
-                }
-
-                return m_TypeData;
-            }
         }
     }
 }

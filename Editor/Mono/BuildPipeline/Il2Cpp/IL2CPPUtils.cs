@@ -490,14 +490,14 @@ namespace UnityEditorInternal
             return Paths.Combine(il2CppFolder, "BCLExtensions");
         }
 
-        internal static IEnumerable<string> GetBCLExtensionLibraries()
+        internal static string[] GetBCLExtensionLibraries()
         {
             var bclExtensionsFolder = GetBCLExtensionsFolder();
-            return new string[]
-            {
+            return
+            [
                 Path.Combine(bclExtensionsFolder, "System.Runtime.WindowsRuntime.dll"),
                 Path.Combine(bclExtensionsFolder, "System.Runtime.WindowsRuntime.UI.Xaml.dll"),
-            };
+            ];
         }
 
         internal static string GetExePath(string toolName)

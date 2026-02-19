@@ -63,6 +63,8 @@ namespace UnityEngine.Bindings
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetEmpty() => CollectionChanged(0);
 
+        public CollectionMarshallingType OutMarshallingType => CollectionMarshallingType.SizeWithBlankElements;
+
         #region Error and Asserts
 
         // These error cases are written the way that they are to prevent allocations during Mono Jitting
@@ -127,6 +129,7 @@ namespace UnityEngine.Bindings
         public void SetEmpty() => array = UnsafeUtility.As<TMarshalledElementType[]>(Array.Empty<TManagedElementType>());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TManagedElementType[] GetArray() => UnsafeUtility.As<TManagedElementType[]>(array);
+        public CollectionMarshallingType OutMarshallingType => CollectionMarshallingType.SizeWithBlankElements;
     }
 
     [VisibleToOtherModules]
@@ -169,9 +172,15 @@ namespace UnityEngine.Bindings
                 list.Capacity = newSize;
 
             if (list.Count != newSize)
+            {
                 NoAllocHelpers.ResetListSize(list, newSize);
-            else // We assume that a marshaller could have modified the contents in place - so always invalid the enumerators
+            }
+            else if (RuntimeHelpers.IsReferenceOrContainsReferences<TManagedElementType>()) 
+            {
+                // We assume that a marshaller could have modified the contents in place - so always invalidate the enumerators
+                // Unless we're a non-blittable type - this preserves existing behavior from the non GC-safe marshallers
                 NoAllocHelpers.InvalidateListEnumerators(list);
+            }
 
             array = UnsafeUtility.As<TMarshalledElementType[]>(NoAllocHelpers.ExtractArrayFromList(list));
         }
@@ -188,6 +197,7 @@ namespace UnityEngine.Bindings
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<TManagedElementType> GetList() => list;
+        public CollectionMarshallingType OutMarshallingType => CollectionMarshallingType.EmptyWithCapacity;
     }
 
     internal static class CollectionMarshallingAccessorsAsserts

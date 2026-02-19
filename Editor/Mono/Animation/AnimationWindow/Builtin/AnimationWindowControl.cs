@@ -231,7 +231,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                     curves.Add(curve);
             }
 
-            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves, time, state.clipFrameRate);
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves, time, state.frameRate);
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();
@@ -251,7 +251,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                     curves.Add(curve);
             }
 
-            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves, time, state.clipFrameRate);
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves, time, state.frameRate);
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();

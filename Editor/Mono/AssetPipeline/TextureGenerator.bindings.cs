@@ -257,8 +257,7 @@ namespace UnityEditor.AssetImporters
             return GenerateTextureImpl(settings, colorBuffer.GetUnsafeReadOnlyPtr(), colorBuffer.Length * UnsafeUtility.SizeOf<Color>(), 16);
         }
 
-        [NativeThrows]
-        [NativeMethod("GenerateTextureScripting")]
+        [NativeMethod("GenerateTextureScripting", ThrowsException = true)]
         extern static unsafe TextureGenerationOutput GenerateTextureImpl(TextureGenerationSettings settings, void* colorBuffer, int colorBufferLength, int bytesPerPixel);
     }
 }

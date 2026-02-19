@@ -62,7 +62,7 @@ namespace UnityEngine.Networking
 
         public extern AssetBundle assetBundle { get; }
 
-        public extern bool autoLoadAssetBundle { get; [NativeThrows] set; }
+        public extern bool autoLoadAssetBundle { get; [NativeMethod(ThrowsException = true)] set; }
 
         public extern bool isDownloadComplete { get; }
 

@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -176,11 +175,7 @@ namespace UnityEditor.UIElements.StyleSheets
             return m_Errors.GetEnumerator();
         }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public bool hasErrors { get { return m_Errors.Any(e => !e.isWarning); } }
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public bool hasWarning { get { return m_Errors.Any(e => e.isWarning); } }
-#pragma warning restore UA2001
+        public bool hasErrors { get { return m_Errors.Exists(e => !e.isWarning); } }
+        public bool hasWarning { get { return m_Errors.Exists(e => e.isWarning); } }
     }
 }

@@ -21,6 +21,11 @@ namespace UnityEditor.Build.Profile
         public string GetDisplayName();
 
         /// <summary>
+        /// Returns the display order for the settings provider.
+        /// </summary>
+        public int GetDisplayOrder() => 0;
+
+        /// <summary>
         /// Foldout tooltip text. If empty, no tooltip is displayed.
         /// </summary>
         public string GetTooltip();
@@ -41,6 +46,14 @@ namespace UnityEditor.Build.Profile
         /// foldout should be shown for the profile editor.
         /// </summary>
         public bool HasSettings(BuildProfile profile);
+
+        /// <summary>
+        /// Returns true if the setting is marked as required
+        /// by the provider. A required setting will appear in
+        /// every build profile it is valid for as  defined by
+        /// CanAddSettings.
+        /// </summary>
+        public bool GetIsRequired() => false;
 
         /// <summary>
         /// Invoked when a new settings section is added to the profile through the UI.

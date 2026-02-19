@@ -45,9 +45,7 @@ namespace UnityEditor.SceneTemplate
 
         public bool addToDefaults;
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        internal bool hasCloneableDependencies => dependencies.Any(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
-#pragma warning restore UA2001
+        internal bool hasCloneableDependencies => Array.Exists(dependencies, dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
 
         void OnEnable()
         {

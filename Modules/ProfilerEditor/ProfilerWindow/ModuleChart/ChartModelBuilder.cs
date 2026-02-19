@@ -17,6 +17,8 @@ namespace Unity.Profiling.Editor
         public const float k_ChartMinClamp = 110.0f;
         public const float k_ChartMaxClamp = 70000.0f;
 
+        public static readonly string k_LocalizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
+
         const string k_ProfilerChartSettingsPreferenceKeyFormat = "ProfilerChart.{0}.ChartSettings";
         static readonly ProfilerMarker k_UpdateData = new($"{nameof(ChartModelBuilder)}.UpdateData");
 
@@ -36,7 +38,7 @@ namespace Unity.Profiling.Editor
 
         string ChartSettingsPreferenceKey => string.Format(k_ProfilerChartSettingsPreferenceKeyFormat, m_ModelKey);
 
-        public ChartModelBuilder(IProfilerPersistentSettingsService settingsService, ProfilerModuleChartType chartType, int seriesCount, string name, string localizedName, string iconName)
+        public ChartModelBuilder(IProfilerPersistentSettingsService settingsService, ProfilerModuleChartType chartType, int seriesCount, string name, string localizedName, string tooltip, string iconName)
         {
             Debug.Assert(seriesCount <= k_MaximumSeriesCount);
 
@@ -50,10 +52,19 @@ namespace Unity.Profiling.Editor
             m_DataScale = (isStackedTimeAreaChartType) ? 0.001f : 1f;
             m_MaximumScaleInterpolationValue = (isStackedTimeAreaChartType) ? -1f : 0f;
 
-            var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
+            string chartTooltip;
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                chartTooltip = tooltip;
+            }
+            else
+            {
+                chartTooltip = string.Format(k_LocalizedTooltipFormat, localizedName);
+            }
+
             m_Model = new ChartModel
             {
-                Tooltip = string.Format(localizedTooltipFormat, localizedName),
+                Tooltip = chartTooltip,
                 Header = localizedName,
                 HeaderIconName = iconName
             };
@@ -186,7 +197,7 @@ namespace Unity.Profiling.Editor
                 var length = chart.yValues.Length;
                 if (m_Model.overlays[i] == null || m_Model.overlays[i].yValues.Length != length)
                 {
-                    m_Model.overlays[i] = new ChartSeriesViewData(chart.name, chart.category, length, chart.color);
+                    m_Model.overlays[i] = new ChartSeriesViewData(chart.name, chart.description, chart.category, length, chart.color);
                 }
                 ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, string.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Model.overlays[i].yValues, out float maxValue);
                 m_Model.overlays[i].yScale = m_DataScale;
@@ -245,7 +256,7 @@ namespace Unity.Profiling.Editor
             {
                 var counter = counters[i];
                 var category = counter.CategoryName;
-                m_Series[i] = new ChartSeriesViewData(counter.Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
+                m_Series[i] = new ChartSeriesViewData(counter.Name, counter.Description, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
             }
 
             // Allocate dataAvailable array for chart.

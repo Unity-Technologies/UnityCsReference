@@ -92,6 +92,15 @@ namespace UnityEditor
         /// </remarks>
         /// <seealso cref="BuildPlayerOptions.extraScriptingDefines"/>
         public string[] extraScriptingDefines { get; set; }
+
+        /// <summary>
+        /// Optional name for the build.
+        /// </summary>
+        /// <remarks>
+        /// This name is stored in the BuildReport and BuildManifest for identification purposes.
+        /// If not specified, the leaf folder name of <see cref="outputPath"/> is used as the default.
+        /// </remarks>
+        public string name { get; set; }
     }
 }
 

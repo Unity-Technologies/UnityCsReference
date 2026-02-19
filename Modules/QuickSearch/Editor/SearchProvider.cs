@@ -195,7 +195,7 @@ namespace UnityEditor.Search
         /// Returns a default table configuration for the current provider if any.
         /// TODO: Make public when 22.2 Search API lands
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules]
         internal Func<SearchContext, SearchTable> tableConfig
         {
             get => m_Serialized_tableConfig?.handler;

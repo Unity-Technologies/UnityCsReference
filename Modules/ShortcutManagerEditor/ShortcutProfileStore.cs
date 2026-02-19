@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEditor.Utils;
 using UnityEditorInternal;
 
@@ -17,7 +16,7 @@ namespace UnityEditor.ShortcutManagement
         void SaveShortcutProfileJson(string id, string json);
         string LoadShortcutProfileJson(string id);
         void DeleteShortcutProfile(string id);
-        IEnumerable<string> GetAllProfileIds();
+        IReadOnlyList<string> GetAllProfileIds();
     }
 
     class ShortcutProfileStore : IShortcutProfileStore
@@ -64,9 +63,7 @@ namespace UnityEditor.ShortcutManagement
 
         public string[] LoadAllShortcutProfilesJsonFromDisk()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            string[] profilePaths = GetAllShortcutProfilePaths().ToArray();
-#pragma warning restore UA2001
+            string[] profilePaths = GetAllShortcutProfilePaths();
             string[] filesJson = new string[profilePaths.Length];
             for (int i = 0; i < profilePaths.Length; ++i)
             {
@@ -76,12 +73,10 @@ namespace UnityEditor.ShortcutManagement
             return filesJson;
         }
 
-        public IEnumerable<string> GetAllProfileIds()
+        public IReadOnlyList<string> GetAllProfileIds()
         {
             var profilePaths = GetAllShortcutProfilePaths();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var profileIds = new List<string>(profilePaths.Count());
-#pragma warning restore UA2001
+            var profileIds = new List<string>(profilePaths.Length);
             foreach (var profilePath in profilePaths)
             {
                 profileIds.Add(Path.GetFileNameWithoutExtension(profilePath));
@@ -104,7 +99,7 @@ namespace UnityEditor.ShortcutManagement
             return Paths.Combine(GetShortcutFolderPath(), id + ".shortcut");
         }
 
-        static IEnumerable<string> GetAllShortcutProfilePaths()
+        static string[] GetAllShortcutProfilePaths()
         {
             var shortcutsFolderPath = GetShortcutFolderPath();
             if (ModeService.currentId == ModeService.k_DefaultModeId)
@@ -112,9 +107,7 @@ namespace UnityEditor.ShortcutManagement
                 var legacyShortcutFolder = Paths.Combine(InternalEditorUtility.unityPreferencesFolder, "shortcuts");
                 if (System.IO.Directory.Exists(legacyShortcutFolder))
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var legacyShortcutFiles = System.IO.Directory.GetFiles(legacyShortcutFolder, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly).ToArray();
-#pragma warning restore UA2001
+                    var legacyShortcutFiles = System.IO.Directory.GetFiles(legacyShortcutFolder, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly);
                     if (legacyShortcutFiles.Length > 0 && !System.IO.Directory.Exists(shortcutsFolderPath))
                         System.IO.Directory.CreateDirectory(shortcutsFolderPath);
                     foreach (var shortcutPath in legacyShortcutFiles)

@@ -27,11 +27,11 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/MathScripting.h")]
     public partial struct Matrix4x4
     {
-        [ThreadSafe] extern private readonly Quaternion    GetRotation();
-        [ThreadSafe] extern private readonly Vector3       GetLossyScale();
-        [ThreadSafe] extern private readonly bool          IsIdentity();
-        [ThreadSafe] extern private readonly float         GetDeterminant();
-        [ThreadSafe] extern private readonly FrustumPlanes DecomposeProjection();
+        [NativeMethod(IsThreadSafe = true)] extern private readonly Quaternion    GetRotation();
+        [NativeMethod(IsThreadSafe = true)] extern private readonly Vector3       GetLossyScale();
+        [NativeMethod(IsThreadSafe = true)] extern private readonly bool          IsIdentity();
+        [NativeMethod(IsThreadSafe = true)] extern private readonly float         GetDeterminant();
+        [NativeMethod(IsThreadSafe = true)] extern private readonly FrustumPlanes DecomposeProjection();
 
         public readonly Quaternion rotation               { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => GetRotation(); }
         public readonly Vector3 lossyScale                { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => GetLossyScale(); }
@@ -39,7 +39,7 @@ namespace UnityEngine
         public readonly float determinant                 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => GetDeterminant(); }
         public readonly FrustumPlanes decomposeProjection { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => DecomposeProjection(); }
 
-        [ThreadSafe] extern public readonly bool ValidTRS();
+        [NativeMethod(IsThreadSafe = true)] extern public readonly bool ValidTRS();
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Determinant(Matrix4x4 m) => m.determinant;

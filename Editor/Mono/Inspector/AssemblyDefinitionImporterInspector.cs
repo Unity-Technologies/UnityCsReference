@@ -288,9 +288,7 @@ namespace UnityEditor
 
                 m_ReferencesList.DoLayoutList();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).references != null && ((AssemblyDefinitionState)data).references.Any(x => x.asset == null)))
-#pragma warning restore UA2001
+                if (Array.Exists(extraDataTargets, data => ((AssemblyDefinitionState)data).references != null && ((AssemblyDefinitionState)data).references.Exists(x => x.asset == null)))
                 {
                     EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                 }
@@ -302,9 +300,7 @@ namespace UnityEditor
                     UpdatePrecompiledReferenceListEntry();
                     m_PrecompiledReferencesList.DoLayoutList();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).precompiledReferences.Any(x => string.IsNullOrEmpty(x.path) && !string.IsNullOrEmpty(x.name))))
-#pragma warning restore UA2001
+                    if (Array.Exists(extraDataTargets, data => ((AssemblyDefinitionState)data).precompiledReferences.Exists(x => string.IsNullOrEmpty(x.path) && !string.IsNullOrEmpty(x.name))))
                     {
                         EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                     }

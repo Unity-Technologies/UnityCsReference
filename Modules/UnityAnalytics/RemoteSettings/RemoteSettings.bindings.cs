@@ -173,7 +173,7 @@ namespace UnityEngine
         }
 
         internal static extern IntPtr Internal_Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] RemoteConfigSettings rcs, string configKey);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
         [RequiredByNativeCode]

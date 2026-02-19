@@ -22,6 +22,7 @@ using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -120,6 +121,203 @@ namespace UnityEditor
                 ProjectWindowUtil.ShowCreatedAsset(o);
             }
         }
+        internal class DoCreateFolderWithSelection : DoCreateFolder
+        {
+            public static DoCreateFolderWithSelection Instance = null;
+
+            [SerializeField]
+            List<EntityId> m_SerializedSelection;
+            [SerializeField]
+            List<string> m_SerializedPaths;
+            public override void OnEnable()
+            {
+                Instance = this;
+
+                // this should only be after a domain reload so we shouldnt need to worry about cleaning up any existing state
+                if (m_SerializedSelection != null)
+                {
+                    m_SelectionSet = HashSetPool<EntityId>.Get();
+                    foreach (var id in m_SerializedSelection)
+                        m_SelectionSet.Add(id);
+                }
+                if (m_SerializedPaths != null)
+                {
+                    m_Paths = HashSetPool<string>.Get();
+                    foreach (var path in m_SerializedPaths)
+                        m_Paths.Add(path);
+                }
+
+                base.OnEnable();
+            }
+            public void OnDisable()
+            {
+                m_SerializedSelection = m_SelectionSet != null ? new List<EntityId>(m_SelectionSet) : null;
+                m_SerializedPaths = m_Paths != null ? new List<string>(m_Paths) : null;
+            }
+
+            HashSet<EntityId> m_SelectionSet;
+            HashSet<string> m_Paths;
+            public void SetItemsToMove(ReadOnlySpan<EntityId> selection)
+            {
+                m_SelectionSet = HashSetPool<EntityId>.Get();
+                m_Paths = HashSetPool<string>.Get();
+                foreach (var id in selection)
+                {
+                    var path = AssetDatabase.GetAssetPath(id);
+                    if (string.IsNullOrEmpty(path))
+                        continue;
+
+                    m_SelectionSet.Add(id);
+                    m_Paths.Add(path);
+                }
+            }
+
+            public string GetCreationPath()
+            {
+                string selected = null;
+                var commonLength = 0;
+                var isFirst = true;
+
+                foreach (var path in m_Paths)
+                {
+                    if (string.IsNullOrEmpty(path))
+                        continue;
+
+                    var pathParent = Path.GetDirectoryName(path).ConvertSeparatorsToUnity();
+
+                    if (isFirst)
+                    {
+                        selected = pathParent;
+                        commonLength = pathParent.Length;
+                        isFirst = false;
+                        continue;
+                    }
+
+                    commonLength = GetCommonPathLength(selected, pathParent, commonLength);
+                }
+
+                // Empty String will be consumed as "current directory" which is a safe default, this is the same directory a standard folder would be created in if created at this point in time.
+                if (isFirst || string.IsNullOrEmpty(selected) || commonLength == 0
+                    || (selected.StartsWith("Packages") && commonLength <= "Packages".Length))
+                    return string.Empty;
+
+                if (commonLength > selected.Length)
+                    commonLength = selected.Length;
+
+                return selected.Substring(0, commonLength) + '/';
+            }
+
+            /// <summary>
+            /// Returns the length of the common path "segments" (the directory names separated by '/') between path1 and path2, up to currentLimit.
+            /// Given a path1 and path2 of "Assets/MyFolder/MySubfolder/mat.asset" and "Assets/MyFolder/MySubfolder/MyDeeperFolder/tex.png",
+            /// this function will evaluate each path "segment"-by-"segment" and return the length up to the end of the last common segment to give the common parent path of the two paths.
+            /// currentLimit is used to progressively reduce the length when comparing a set of paths.
+            /// </summary>
+            /// <param name="path1">First path to compare</param>
+            /// <param name="path2">Second path to compare</param>
+            /// <param name="currentLimit">The maximum length to consider in paths</param>
+            /// <returns></returns>
+            private static int GetCommonPathLength(string path1, string path2, int currentLimit)
+            {
+                var path1Index = 0;
+                var path2Index = 0;
+                var lastCommonSegmentEndIndex = 0;
+
+                var path1EffectiveLength = Math.Min(path1.Length, currentLimit);
+                var path2Length = path2.Length;
+
+                while (path1Index < path1EffectiveLength && path2Index < path2Length)
+                {
+                    var path1SegmentEndIndex = path1.IndexOf('/', path1Index, path1EffectiveLength - path1Index);
+                    if (path1SegmentEndIndex < 0)
+                        path1SegmentEndIndex = path1EffectiveLength;
+
+                    var path2SegmentEndIndex = path2.IndexOf('/', path2Index, path2Length - path2Index);
+                    if (path2SegmentEndIndex < 0)
+                        path2SegmentEndIndex = path2Length;
+
+                    var path1SegmentLength = path1SegmentEndIndex - path1Index;
+                    var path2SegmentLength = path2SegmentEndIndex - path2Index;
+
+                    if (path1SegmentLength != path2SegmentLength)
+                        break;
+
+                    if (string.Compare(path1, path1Index, path2, path2Index, path1SegmentLength, StringComparison.OrdinalIgnoreCase) != 0)
+                        break;
+
+                    lastCommonSegmentEndIndex = path1SegmentEndIndex;
+
+                    path1Index = (path1SegmentEndIndex < path1EffectiveLength && path1[path1SegmentEndIndex] == '/')
+                        ? path1SegmentEndIndex + 1
+                        : path1SegmentEndIndex;
+
+                    path2Index = (path2SegmentEndIndex < path2Length && path2[path2SegmentEndIndex] == '/')
+                        ? path2SegmentEndIndex + 1
+                        : path2SegmentEndIndex;
+                }
+
+                return lastCommonSegmentEndIndex;
+            }
+
+            public static bool IsItemBeingMoved(EntityId id) => Instance?.m_SelectionSet != null && Instance.m_SelectionSet.Contains(id);
+
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
+            {
+                var guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName).ConvertSeparatorsToUnity(), Path.GetFileName(pathName));
+                var newFolderPath = AssetDatabase.GUIDToAssetPath(guid);
+                using (var _ = new AssetDatabase.AssetEditingScope())
+                {
+                    foreach (var toMovePath in m_Paths)
+                    {
+                        var hasSelectedAncestor = false;
+                        var parent = Path.GetDirectoryName(toMovePath).ConvertSeparatorsToUnity();
+
+                        while (!string.IsNullOrEmpty(parent))
+                        {
+                            // If any ancestor folder is also in the selection, skip this item to preserve structure
+                            if (m_Paths.Contains(parent))
+                            {
+                                hasSelectedAncestor = true;
+                                break;
+                            }
+
+                            parent = Path.GetDirectoryName(parent).ConvertSeparatorsToUnity();
+                        }
+                        if (hasSelectedAncestor)
+                            continue;
+
+                        var err = AssetDatabase.MoveAsset(toMovePath, Path.Combine(newFolderPath, Path.GetFileName(toMovePath).ConvertSeparatorsToUnity()));
+                        if (!string.IsNullOrEmpty(err))
+                        {
+                            Debug.LogError($"Could not move asset '{toMovePath}' to new folder: {err}");
+                        }
+                    }
+                }
+
+                Object o = AssetDatabase.LoadAssetAtPath(newFolderPath, typeof(Object));
+                ProjectWindowUtil.ShowCreatedAsset(o);
+            }
+
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
+            {
+                // repaint all project browsers to get rid of the fade effect on non-active windows
+                foreach (var pb in ProjectBrowser.GetAllProjectBrowsers())
+                    pb.Repaint();
+
+                base.Cancelled(entityId, pathName, resourceFile);
+            }
+
+            public override void CleanUp()
+            {
+                if (Instance == this) Instance = null;
+
+                if (m_SelectionSet != null)
+                    HashSetPool<EntityId>.Release(m_SelectionSet);
+                if (m_Paths != null)
+                    HashSetPool<string>.Release(m_Paths);
+                base.CleanUp();
+            }
+        }
 
         internal class DoCreateScene : AssetCreationEndAction
         {
@@ -148,13 +346,15 @@ namespace UnityEditor
                 string guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName), fileName);
                 string basePath = UseCustomPath ? ResourcesTemplatePath :
                     Path.Combine(EditorApplication.applicationContentsPath, ResourcesTemplatePath);
-
-                foreach (var template in templates ?? Array.Empty<string>())
+                using (var _ = new AssetDatabase.AssetEditingScope())
                 {
-                    var templateNameWithoutTxt = template.Replace(".txt", string.Empty);
-                    var templateExtension = Path.GetExtension(templateNameWithoutTxt);
+                    foreach (var template in templates ?? Array.Empty<string>())
+                    {
+                        var templateNameWithoutTxt = template.Replace(".txt", string.Empty);
+                        var templateExtension = Path.GetExtension(templateNameWithoutTxt);
 
-                    ProjectWindowUtil.CreateScriptAssetFromTemplate(Path.Combine(pathName, fileName + templateExtension), Path.Combine(basePath, template));
+                        ProjectWindowUtil.CreateScriptAssetFromTemplate(Path.Combine(pathName, fileName + templateExtension), Path.Combine(basePath, template));
+                    }
                 }
 
                 Object o = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), typeof(Object));
@@ -234,7 +434,7 @@ namespace UnityEditor
                     if (System.Int32.TryParse(resourceFile, out var outputEntityIdRaw))
                     {
                         Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.From((int)outputEntityIdRaw)) as AudioMixerGroupController;
+                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)outputEntityIdRaw)) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
                     }
@@ -381,6 +581,16 @@ namespace UnityEditor
         public static void CreateFolder()
         {
             StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
+        }
+
+        // Create a folder with the current selection
+        [RequiredByNativeCode]
+        internal static void CreateFolderWithSelection()
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateFolderWithSelection>();
+            action.SetItemsToMove(Selection.GetEntityIdsUnsafe());
+
+            StartNameEditingIfProjectWindowExists(EntityId.None, action, $"{action.GetCreationPath()}New Folder with Selection", EditorGUIUtility.IconContent(EditorResources.folderIconName).image as Texture2D, null);
         }
 
         internal static void CreateFolderWithTemplates(string defaultName, params string[] templates)

@@ -153,11 +153,10 @@ namespace UnityEditor.Overlays
         bool m_Active;
         internal bool active => m_Active;
         bool m_WasFloating;
-        bool m_WasCollapsed;
         OverlayContainer m_StartContainer;
         Vector2 m_InitialLayoutPosition;
-        Vector2 m_StartLeftCornerPosition;
         Vector2 m_StartMousePosition;
+        Vector2 m_MouseOffsetFromCorner;
         readonly Overlay m_Overlay;
         int m_InitialIndex;
         OverlayContainerSection m_InitialSection;
@@ -210,16 +209,14 @@ namespace UnityEditor.Overlays
             m_Active = true;
 
             m_WasFloating = m_Overlay.floating;
-            m_WasCollapsed = m_Overlay.collapsed;
             m_StartContainer = m_Overlay.container;
             m_DockOperation = new DockingOperation(canvas, m_Overlay);
 
             m_StartMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
             var dragger = m_Overlay.rootVisualElement.Q(Overlay.k_DraggerName);
 
-            m_StartLeftCornerPosition = dragger is not null ? dragger.worldBound.position : m_Overlay.rootVisualElement.worldBound.position;
-
             m_InitialLayoutPosition = floatingContainer.WorldToLocal(m_Overlay.rootVisualElement.worldBound.position);
+            m_MouseOffsetFromCorner = m_StartMousePosition - m_Overlay.rootVisualElement.worldBound.position;
 
             //if docked, convert to floating
             if (!m_Overlay.floating)
@@ -274,15 +271,13 @@ namespace UnityEditor.Overlays
 
             bool delayPositionUpdate = UpdateLayout(e.mousePosition);
 
-            var diff = (constrainedMousePosition - (!m_WasCollapsed && m_Overlay.collapsed ? m_StartLeftCornerPosition : m_StartMousePosition));
-            var targetPosition = m_InitialLayoutPosition + diff;
-            var targetRect = new Rect(targetPosition, m_Overlay.rootVisualElement.layout.size);
+            var targetPosition = floatingContainer.WorldToLocal(constrainedMousePosition - OverlayUtilities.ClampPositionToRect(m_MouseOffsetFromCorner, target.rect));
 
             if (delayPositionUpdate)
-                m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate, targetRect);
+                m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent, Vector2>(DelayedPositionUpdate, targetPosition);
             else
 #pragma warning disable CS0618 // Type or member is obsolete
-                m_Overlay.rootVisualElement.transform.position = OverlayUtilities.ClampRectToRect(targetRect, floatingContainer.rect).position;
+                m_Overlay.rootVisualElement.transform.position = ClampRectToCanvas(targetPosition);
 #pragma warning restore CS0618 // Type or member is obsolete
 
             m_DockOperation.UpdateHover(dropZone);
@@ -290,12 +285,17 @@ namespace UnityEditor.Overlays
             e.StopPropagation();
         }
 
-        void DelayedPositionUpdate(GeometryChangedEvent evt, Rect targetRect)
+        Vector2 ClampRectToCanvas(Vector2 targetPos)
+        {
+            return OverlayUtilities.EnsureOverlayWithinCanvas(targetPos, m_Overlay, canvas);
+        }
+
+        void DelayedPositionUpdate(GeometryChangedEvent evt, Vector2 targetPosition)
         {
 #pragma warning disable CS0618 // Type or member is obsolete
-            m_Overlay.rootVisualElement.transform.position = OverlayUtilities.ClampRectToRect(targetRect, floatingContainer.rect).position;
+            m_Overlay.rootVisualElement.transform.position = ClampRectToCanvas(targetPosition);
 #pragma warning restore CS0618 // Type or member is obsolete
-            m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate);
+            m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent, Vector2>(DelayedPositionUpdate);
         }
 
         void OnMouseUp(MouseUpEvent e)
@@ -378,7 +378,7 @@ namespace UnityEditor.Overlays
             target.ReleaseMouse();
 
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate); //Ensure we kill any delayed position update that was still in process
+            m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent, Vector2>(DelayedPositionUpdate); //Ensure we kill any delayed position update that was still in process
 
             m_Overlay.tempTargetContainer = null;
             m_DockOperation.Dispose();

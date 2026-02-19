@@ -13,17 +13,15 @@ namespace Unity.GraphToolkit.Editor
     /// Use this attribute to associate a custom <see cref="Graph"/> class with a unique file extension and <see cref="GraphOptions"/>.
     /// The <c>extension</c> parameter defines the file extension for the graph assets. This extension must be unique across the project
     /// because Unity uses it to select the correct importer. You can also configure additional options using <see cref="GraphOptions"/>.
-    /// <br/>
-    /// <br/>
     /// This attribute is required for any class that inherits from <see cref="Graph"/> and serves as the entry point for enabling
     /// editor support for the graph tool.
     /// </remarks>
-    /// <example>
-    /// <para>
+    /// <remarks>
     /// This example keeps the default behavior and adds support for subgraphs by enabling <see cref="GraphOptions.SupportsSubgraphs"/>.
-    /// </para>
+    /// </remarks>
+    /// <example>
     /// <code>
-    /// [Graph(".mygraph", GraphOptions.SupportsSubgraphs)]
+    /// [Graph("mygraph", GraphOptions.SupportsSubgraphs)]
     /// public class MyGraph : Graph { }
     /// </code>
     /// </example>
@@ -61,12 +59,12 @@ namespace Unity.GraphToolkit.Editor
         /// Use this constructor to define the asset extension and configure the graph. This allows for proper asset recognition and import handling by Unity.
         /// The values in <see cref="GraphOptions"/> support bitwise combination. Combine multiple flags to configure the graph with custom behavior.
         /// </remarks>
-        /// <example>
-        /// <para>
+        /// <remarks>
         /// This example keeps the default behavior and adds support for subgraphs by enabling <see cref="GraphOptions.SupportsSubgraphs"/>.
-        /// </para>
+        /// </remarks>
+        /// <example>
         /// <code>
-        /// [Graph(".mygraph", GraphOptions.SupportsSubgraphs)]
+        /// [Graph("mygraph", GraphOptions.SupportsSubgraphs)]
         /// public class MyGraph : Graph { }
         /// </code>
         /// </example>

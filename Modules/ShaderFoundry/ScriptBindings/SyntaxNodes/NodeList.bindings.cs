@@ -15,7 +15,7 @@ namespace UnityEditor.ShaderFoundry
         NodeHandle m_Head;
         NodeHandle m_Tail;
 
-        [ThreadSafe] internal extern void Add(SyntaxTree syntaxTree, NodeHandle handle);
+        [NativeMethod(IsThreadSafe = true)] internal extern void Add(SyntaxTree syntaxTree, NodeHandle handle);
 
         // Only adds the given handle if it is valid
         internal void TryAdd(SyntaxTree syntaxTree, NodeHandle handle)
@@ -40,10 +40,10 @@ namespace UnityEditor.ShaderFoundry
         UIntPtr ast_End;
         UIntPtr node_End;
 
-        [ThreadSafe] internal extern static NodeListEnumerable Construct(SyntaxTree syntaxTree, NodeList list);
-        [ThreadSafe] extern void MoveNext();
-        [ThreadSafe] extern bool Empty();
-        [ThreadSafe] extern NodeHandle Current();
+        [NativeMethod(IsThreadSafe = true)] internal extern static NodeListEnumerable Construct(SyntaxTree syntaxTree, NodeList list);
+        [NativeMethod(IsThreadSafe = true)] extern void MoveNext();
+        [NativeMethod(IsThreadSafe = true)] extern bool Empty();
+        [NativeMethod(IsThreadSafe = true)] extern NodeHandle Current();
 
         public IEnumerator<NodeHandle> GetEnumerator()
         {

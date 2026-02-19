@@ -243,7 +243,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                foreach (var selectedIndex in listView.selectedIndices)
+                foreach (var selectedIndex in listView.selectedIndicesList)
                 {
                     if (selectedIndex >= m_MaterialPropertiesSource.Count)
                         indicesToRemove.Add(m_MaterialPropertiesSource.Count - 1);

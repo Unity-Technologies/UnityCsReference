@@ -256,10 +256,10 @@ namespace UnityEngine.TextCore.Text
     internal static class TextGenerationInfo
     {
         public static int CurrentGenerationIteration { get; private set; }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr Create(bool isPermanent);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void Destroy(IntPtr ptr);
 
         public static void OnRepaintEnd()
@@ -270,10 +270,10 @@ namespace UnityEngine.TextCore.Text
 
         private static extern void DestroyAllTempAllocations();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern TextRenderingIndices GetTextRenderingIndices(IntPtr ptr, int glyphIndex);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int GetGlyphCount(IntPtr ptr);
 
         // Used for testing purposes

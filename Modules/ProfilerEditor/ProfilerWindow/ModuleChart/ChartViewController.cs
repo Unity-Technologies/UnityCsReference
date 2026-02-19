@@ -252,8 +252,9 @@ namespace Unity.Profiling.Editor
             var seriesIndex = m_LegendItems[index];
 
             var name = m_Model.series[seriesIndex].name;
-            item.tooltip = name;
             item.Q<Label>(k_UxmlIdentifier_LegendItem_Label).text = name;
+            var description = m_Model.series[seriesIndex].description;
+            item.tooltip = string.IsNullOrEmpty(description) ? name : description;
 
             var counterToggle = item.Q<VisualElement>(k_UxmlIdentifier_LegendItem_Toggle);
             counterToggle.userData = seriesIndex;

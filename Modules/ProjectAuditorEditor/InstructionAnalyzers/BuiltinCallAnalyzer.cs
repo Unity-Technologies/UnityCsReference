@@ -55,6 +55,23 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
 #pragma warning restore UA2001
         }
 
+        internal override ReportItemBuilder OnAnalyzeMethodBody(MethodAnalysisContext context)
+        {
+            var methodDefinition = context.MethodDefinition;
+            if (!MonoBehaviourAnalysis.IsMonoBehaviourEvent(methodDefinition))
+                return null;
+
+            var declaringType = methodDefinition.DeclaringType;
+            if (!MonoBehaviourAnalysis.IsMonoBehaviour(declaringType))
+                return null;
+
+            var description = SearchForApi(methodDefinition, out var descriptor);
+            if (string.IsNullOrEmpty(description))
+                return null;
+
+            return context.CreateIssue(IssueCategory.Code, descriptor.Id).WithDescription(description);
+        }
+
         public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
         {
             var callee = (MethodReference)context.Instruction.Operand;
@@ -75,54 +92,67 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             }
             else
             {
-                if (methodName.StartsWith("get_", StringComparison.Ordinal))
-                    methodName = methodName.Substring("get_".Length);
-
-                List<Descriptor> descriptors;
-                if (!m_Descriptors.TryGetValue(methodName, out descriptors))
+                description = SearchForApi(callee, out descriptor);
+                if (string.IsNullOrEmpty(description))
                     return null;
-
-                descriptor = descriptors.Find(d => CodeAnalysis.MonoCecilHelper.IsOrInheritedFrom(declaringType, d.Type));
-
-                if (descriptor == null)
-                    return null;
-
-                if (!string.IsNullOrEmpty(descriptor.ReturnType))
-                {
-                    bool not = descriptor.ReturnType[0] == '!';
-                    bool valid = Enum.TryParse(typeof(MetadataType), not ? descriptor.ReturnType.Substring(1) : descriptor.ReturnType, true, out var returnTypeEnum);
-                    if (valid)
-                    {
-                        if (not)
-                        {
-                            if (callee.MethodReturnType.ReturnType.MetadataType == (MetadataType)returnTypeEnum)
-                                return null;
-                        }
-                        else
-                        {
-                            if (callee.MethodReturnType.ReturnType.MetadataType != (MetadataType)returnTypeEnum)
-                                return null;
-                        }
-                    }
-                }
-
-                var genericInstanceMethod = callee as GenericInstanceMethod;
-                if (genericInstanceMethod != null && genericInstanceMethod.HasGenericArguments)
-                {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var genericTypeNames = genericInstanceMethod.GenericArguments.Select(a => a.FullName).ToArray();
-#pragma warning restore UA2001
-                    description = $"'{descriptor.Title}<{string.Join(", ", genericTypeNames)}>' usage";
-                }
-                else
-                {
-                    // by default use descriptor issue description
-                    description = $"'{descriptor.Title}' usage";
-                }
             }
 
             return context.CreateIssue(IssueCategory.Code, descriptor.Id)
                 .WithDescription(description);
+        }
+
+        string SearchForApi(MethodReference callee, out Descriptor descriptor)
+        {
+            descriptor = default;
+
+            string methodName = callee.Name;
+            if (methodName.StartsWith("get_", StringComparison.Ordinal))
+                methodName = methodName.Substring("get_".Length);
+
+            List<Descriptor> descriptors;
+            if (!m_Descriptors.TryGetValue(methodName, out descriptors))
+                return null;
+
+            descriptor = descriptors.Find(d => MonoCecilHelper.IsOrInheritedFrom(callee.DeclaringType, d.Type));
+
+            if (descriptor == null)
+                return null;
+
+            if (!string.IsNullOrEmpty(descriptor.ReturnType))
+            {
+                bool not = descriptor.ReturnType[0] == '!';
+                bool valid = Enum.TryParse(typeof(MetadataType), not ? descriptor.ReturnType.Substring(1) : descriptor.ReturnType, true, out var returnTypeEnum);
+                if (valid)
+                {
+                    if (not)
+                    {
+                        if (callee.MethodReturnType.ReturnType.MetadataType == (MetadataType)returnTypeEnum)
+                            return null;
+                    }
+                    else
+                    {
+                        if (callee.MethodReturnType.ReturnType.MetadataType != (MetadataType)returnTypeEnum)
+                            return null;
+                    }
+                }
+            }
+
+            string description = string.Empty;
+            var genericInstanceMethod = callee as GenericInstanceMethod;
+            if (genericInstanceMethod != null && genericInstanceMethod.HasGenericArguments)
+            {
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var genericTypeNames = genericInstanceMethod.GenericArguments.Select(a => a.FullName).ToArray();
+#pragma warning restore UA2001
+                description = $"'{descriptor.Title}<{string.Join(", ", genericTypeNames)}>' usage";
+            }
+            else
+            {
+                // by default use descriptor issue description
+                description = $"'{descriptor.Title}' usage";
+            }
+
+            return description;
         }
     }
 }

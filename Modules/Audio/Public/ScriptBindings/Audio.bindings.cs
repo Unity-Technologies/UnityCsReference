@@ -325,7 +325,7 @@ namespace UnityEngine
     public sealed partial class AudioSettings
     {
         extern static private AudioSpeakerMode GetSpeakerMode();
-        [NativeThrows, NativeMethod(Name = "AudioSettings::SetConfiguration", IsFreeFunction = true)]
+        [NativeMethod(Name = "AudioSettings::SetConfiguration", IsFreeFunction = true, ThrowsException = true)]
         extern static private bool SetConfiguration(AudioConfiguration config);
 
         [NativeMethod(Name = "AudioSettings::SetEnhancedConfiguration", IsFreeFunction = true)]
@@ -728,10 +728,10 @@ namespace UnityEngine
     [StaticAccessor("AudioListenerBindings", StaticAccessorType.DoubleColon)]
     public sealed class AudioListener : AudioBehaviour
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void GetOutputDataHelper([Out] float[] samples, int channel);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void GetSpectrumDataHelper([Out] float[] samples, int channel, FFTWindow window);
 
         // Controls the game sound volume (0.0 to 1.0)
@@ -790,12 +790,12 @@ namespace UnityEngine
 
         extern private void Stop(bool stopOneShots);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetCustomCurveHelper([NotNull] AudioSource source, AudioSourceCurveType type, AnimationCurve curve);
         extern static private AnimationCurve GetCustomCurveHelper([NotNull] AudioSource source, AudioSourceCurveType type);
 
         extern static private void GetOutputDataHelper([NotNull] AudioSource source, [Out] float[] samples, int channel);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void GetSpectrumDataHelper([NotNull] AudioSource source, [Out] float[] samples, int channel, FFTWindow window);
 
         // The volume of the audio source (0.0 to 1.0)
@@ -1242,8 +1242,7 @@ namespace UnityEngine
     {
         extern private AnimationCurve GetCustomLowpassLevelCurveCopy();
 
-        [NativeThrows]
-        [NativeMethod(Name = "AudioLowPassFilterBindings::SetCustomLowpassLevelCurveHelper", IsFreeFunction = true)]
+        [NativeMethod(Name = "AudioLowPassFilterBindings::SetCustomLowpassLevelCurveHelper", IsFreeFunction = true, ThrowsException = true)]
         extern static private void SetCustomLowpassLevelCurveHelper([NotNull] AudioLowPassFilter source, AnimationCurve curve);
 
         public AnimationCurve customCutoffCurve

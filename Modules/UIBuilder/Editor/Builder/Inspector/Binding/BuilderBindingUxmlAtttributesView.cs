@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -23,7 +24,7 @@ namespace Unity.UI.Builder
         internal new struct TestAccess
         {
             public ToggleButtonGroup buttonStrip;
-            public BuilderObjectField dataSourceField;
+            public AnyObjectField dataSourceField;
             public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
             public BuilderDataSourcePathCompleter dataSourcePathCompleter;

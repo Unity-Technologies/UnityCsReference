@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -12,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public const string k_Id = "samples";
 
-        private IEnumerable<Sample> m_Samples;
+        private IReadOnlyList<Sample> m_Samples;
         private IPackageVersion m_Version;
 
         private readonly IResourceLoader m_ResourceLoader;
@@ -53,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Version = version;
             m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(m_Version) : Array.Empty<Sample>();
 
-            UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.AnyMatches(sample => string.IsNullOrEmpty(sample.displayName)));
+            UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.Exists(sample => string.IsNullOrEmpty(sample.displayName)));
             if (packageChanged)
                 RefreshSampleList();
         }

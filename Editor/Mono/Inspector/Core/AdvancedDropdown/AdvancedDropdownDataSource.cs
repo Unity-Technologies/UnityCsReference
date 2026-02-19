@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor")]
@@ -140,14 +139,12 @@ namespace UnityEditor.IMGUI.Controls
 
         void BuildSearchableElements(AdvancedDropdownItem item)
         {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!item.children.Any())
-#pragma warning restore UA2002
+            if (!item.hasChildren)
             {
                 m_SearchableElements.Add(item);
                 return;
             }
-            foreach (var child in item.children)
+            foreach (var child in item.childList)
             {
                 BuildSearchableElements(child);
             }

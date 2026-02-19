@@ -12,7 +12,7 @@ namespace UnityEngine.Bindings
     [StaticAccessor("Marshalling::BindingsAllocator", StaticAccessorType.DoubleColon)]
     internal static unsafe class BindingsAllocator
     {
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [NativeName("BindingsAllocator::Malloc")]
         static extern void* Malloc_Internal(int size);
 
@@ -23,17 +23,17 @@ namespace UnityEngine.Bindings
             return null;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void Free(void* ptr);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void* AllocateCoreString(string ptr);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void FreeCoreString(void* ptr);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int SizeOfCoreString();
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCoreStringBuffer(void* buffer, string str);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetStringForCoreString(void* str);
 
         public static ManagedSpanWrapper AllocateCoreStringArray(string[] str)
@@ -49,10 +49,10 @@ namespace UnityEngine.Bindings
             return new ManagedSpanWrapper(buffer, str.Length);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void FreeCoreStringArray(void* buffer, int numberOfStrings);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void FreeNativeOwnedMemory(void* ptr);
 
         public static void* AllocateZeroedBuffer(int size)

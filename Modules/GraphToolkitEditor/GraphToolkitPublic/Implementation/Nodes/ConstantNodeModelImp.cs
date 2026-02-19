@@ -21,5 +21,15 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
             return Value.TryGetValue(out value);
         }
+
+        public bool TrySetValue<T>(T value)
+        {
+            CheckModificationLock();
+
+            if (Value == null)
+                return false;
+
+            return Value.TrySetValue(value);
+        }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -379,6 +380,24 @@ namespace UnityEngine
         {
             if (unloading != null)
                 unloading();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_EnterPlayModeLifecycleScope()
+        {
+            if (!LifecycleController.Instance.IsScopePresent<CodeInitializedScope>())
+                LifecycleController.Instance.EnterScope<CodeInitializedScope>();
+
+            LifecycleController.Instance.EnterScope<PlayModeScope>();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_ExitPlayModeLifecycleScope()
+        {
+            if (!LifecycleController.Instance.IsScopePresent<PlayModeScope>())
+                return;
+
+            LifecycleController.Instance.ExitScope<PlayModeScope>();
         }
 
         [RequiredByNativeCode]

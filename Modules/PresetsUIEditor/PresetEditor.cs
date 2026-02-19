@@ -471,13 +471,9 @@ namespace UnityEditor.Presets
             for (var index = 0; index < targets.Length && state != PropertyState.Both; index++)
             {
                 Preset preset = (Preset)targets[index];
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (checkChildren && preset.excludedProperties.Any(p => p.StartsWith(propertyPath + ".", StringComparison.Ordinal)))
-#pragma warning restore UA2001
+                if (checkChildren && Array.Exists(preset.excludedProperties, p => p.StartsWith(propertyPath + ".", StringComparison.Ordinal)))
                     return PropertyState.Both;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (preset.excludedProperties.Any(p => p == propertyPath || propertyPath.StartsWith(p + ".", StringComparison.Ordinal)))
-#pragma warning restore UA2001
+                if (Array.Exists(preset.excludedProperties, p => p == propertyPath || propertyPath.StartsWith(p + ".", StringComparison.Ordinal)))
                 {
                     state |= PropertyState.Excluded;
                 }
@@ -678,9 +674,9 @@ namespace UnityEditor.Presets
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var removed = excluded.Except(childrenAndSelf);
 #pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (removed.Count() != count)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 {
                     // we found something to remove for exclusion, lets stop here.
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

@@ -56,9 +56,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshHeaderVisibility()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EnableInClassList("empty", !packageItems.Any(item => item.visualState.visible));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         public PackageItem AddPackageItem(IPackage package, VisualState state)

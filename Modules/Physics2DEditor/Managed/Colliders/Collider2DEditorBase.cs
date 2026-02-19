@@ -6,6 +6,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.AnimatedValues;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -247,8 +248,8 @@ namespace UnityEditor
 
         bool ShouldShowDensity()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (targets.Select(x => (x as Collider2D).attachedRigidbody).Distinct().Count() > 1)
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (targets.Select(x => (x as Collider2D).attachedRigidbody).DistinctCountGreaterThan(1))
 #pragma warning restore UA2001
                 return false;
 
@@ -383,8 +384,6 @@ namespace UnityEditor
         {
             if (targetObject is Collider2D)
                 return ((Collider2D)targetObject).bounds;
-            else if (targetObject is Collider)
-                return ((Collider)targetObject).bounds;
             else
                 return base.GetWorldBoundsOfTarget(targetObject);
         }

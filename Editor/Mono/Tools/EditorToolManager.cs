@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor.Actions;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -378,21 +379,13 @@ namespace UnityEditor.EditorTools
 
         void SelectedObjectWasDestroyed(EntityId id)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool componentToolActive = m_ComponentTools.Any(
-#pragma warning restore UA2001
+            bool componentToolActive = m_ComponentTools.Exists(
                 x => x?.GetEditor<EditorTool>() == m_ActiveTool)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                && m_ActiveTool.m_Targets.Any(x => x == null || x.GetEntityId() == id);
-#pragma warning restore UA2001
+                && Array.Exists(m_ActiveTool.m_Targets, x => x == null || x.GetEntityId() == id);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool componentContextActive = m_ComponentContexts.Any(
-#pragma warning restore UA2001
+            bool componentContextActive = m_ComponentContexts.Exists(
                 x => x?.GetEditor<EditorToolContext>() == m_ActiveToolContext)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                && m_ActiveToolContext.targets.Any(x => x == null || x.GetEntityId() == id);
-#pragma warning restore UA2001
+                && m_ActiveToolContext.targetList.Exists(x => x == null || x.GetEntityId() == id);
 
             if (componentToolActive || componentContextActive)
             {
@@ -836,9 +829,7 @@ namespace UnityEditor.EditorTools
                 {
                     // Because this function collects all variants when appending to the list, we can safely assume that
                     // if a variant group exists in the tools list the tool is also already appended.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (tools.Any(x => x.variantGroup == meta.variantGroup
-#pragma warning restore UA2001
+                    if (tools.Exists(x => x.variantGroup == meta.variantGroup
                                     && x.componentTool == entry.componentTool))
                         return;
 
@@ -878,9 +869,7 @@ namespace UnityEditor.EditorTools
                      tool.typeAssociation.targetContext == context.GetType())
                     && tool.editorType != null // The editor type can be null on domain reload after renaming an EditorTool (UUM-113403)
                     && !tool.lockedInspector
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
-#pragma warning restore UA2001
+                    && !tools.Exists(entry => entry.tools.Exists(x => x == tool.editor)))
                     AddToolEntry(tool.editorType, tool.typeAssociation.group == null ? ToolEntry.Scope.Component : ToolEntry.Scope.Grouped);
         }
 

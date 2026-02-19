@@ -33,9 +33,9 @@ namespace UnityEditor.Build.Profile
         const string k_HeroPathPrefix = "BuildProfile/Hero/";
         const string k_HeroPathSuffix = ".Hero";
         // The asset database supports file name length to max. 250 symbols
-        // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
+        // Leave 5 symbols for the GenerateUniqueAssetPath() that adds " (1)"(2,3...) in case
         // an asset with such name already exists.
-        public const int k_MaxAssetFileNameLength = 247;
+        public const int k_MaxAssetFileNameLength = 245;
         // For UI cases where the extension `.asset` is not taken into consideration
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
@@ -62,7 +62,7 @@ namespace UnityEditor.Build.Profile
         internal static void OnModuleInstallationCompleted(string moduleId, string editorVersion, string timestamp, string message)
         {
             Debug.Log($"[BuildProfile] Module installation completed: {moduleId} (version: {editorVersion}) - {message}");
-            
+
             // Check if this message is for the current editor version
             // Hub broadcasts to all open editors, but only the matching version should respond
             if (!string.Equals(Application.unityVersion, editorVersion, StringComparison.Ordinal))
@@ -70,7 +70,7 @@ namespace UnityEditor.Build.Profile
                 Debug.Log($"[BuildProfile] Ignoring module installation for different editor version. Current: {Application.unityVersion}, Message: {editorVersion}");
                 return;
             }
-            
+
             // Map Hub's moduleId to Unity's platform GUID
             var platformGuid = TryGetPlatformGuidFromModuleId(moduleId);
             if (platformGuid == null)
@@ -80,10 +80,10 @@ namespace UnityEditor.Build.Profile
             }
 
             Debug.Log($"[BuildProfile] Mapped moduleId '{moduleId}' to platform: {BuildTargetDiscovery.BuildPlatformDisplayName(platformGuid.Value)}");
-            
+
             // Mark this platform as pending editor restart
             MarkPlatformPendingRestart(platformGuid.Value);
-            
+
             // Notify subscribers to refresh platform requirements UI
             EditorApplication.delayCall += () =>
             {
@@ -120,14 +120,14 @@ namespace UnityEditor.Build.Profile
             foreach (var platformGuid in allPlatforms)
             {
                 var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid);
-                
+
                 // Case-insensitive comparison since Hub sends lowercase
                 if (string.Equals(downloadLinkName, hubModuleId, StringComparison.OrdinalIgnoreCase))
                 {
                     return platformGuid;
                 }
             }
-            
+
             return null;
         }
 
@@ -264,7 +264,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static Texture2D GetWarningIcon()
         {
-            return EditorGUIUtility.LoadIcon("d_console.warnicon.sml");
+            return EditorGUIUtility.LoadIcon("console.warnicon.sml");
         }
 
         /// <summary>
@@ -390,7 +390,7 @@ namespace UnityEditor.Build.Profile
         {
             if (!IsStandalonePlatform(buildTarget))
                 return false;
-            
+
             var activeProfile = BuildProfile.GetActiveBuildProfile();
             var settings = GetBuildProfileOrGlobalPlayerSettings(activeProfile);
             var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
@@ -917,7 +917,7 @@ namespace UnityEditor.Build.Profile
 
         internal static void RemoveQualityLevelFromAllProfiles(string qualityLevelName)
         {
-            var profiles = GetAllBuildProfiles();
+            var profiles = BuildProfile.GetAllBuildProfiles();
             foreach (var profile in profiles)
             {
                 if (profile.qualitySettings == null)
@@ -929,7 +929,7 @@ namespace UnityEditor.Build.Profile
 
         internal static void RenameQualityLevelInAllProfiles(string oldName, string newName)
         {
-            var profiles = GetAllBuildProfiles();
+            var profiles = BuildProfile.GetAllBuildProfiles();
             foreach (var profile in profiles)
             {
                 if (profile.qualitySettings == null)
@@ -937,54 +937,6 @@ namespace UnityEditor.Build.Profile
 
                 profile.qualitySettings.RenameQualityLevel(oldName, newName);
             }
-        }
-
-        /// <summary>
-        /// Get all custom build profiles in the project.
-        /// </summary>
-        public static List<BuildProfile> GetAllBuildProfiles()
-        {
-            var alreadyLoadedBuildProfiles = Resources.FindObjectsOfTypeAll<BuildProfile>();
-
-            const string buildProfileAssetSearchString = $"t:{nameof(BuildProfile)}";
-            var assetsGuids = AssetDatabase.FindAssets(buildProfileAssetSearchString);
-            var result = new List<BuildProfile>(assetsGuids.Length);
-
-            // Suppress missing type warning thrown by serialization. This could happen
-            // when the build profile window is opened, then entering play mode and the
-            // module for that profile is not installed.
-            BuildProfileModuleUtil.SuppressMissingTypeWarning();
-
-            foreach (var guid in assetsGuids)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                BuildProfile profile = AssetDatabase.LoadAssetAtPath<BuildProfile>(path);
-                if (profile == null)
-                {
-                    Debug.LogWarning($"[BuildProfile] Failed to load asset at path: {path}");
-                    continue;
-                }
-
-                result.Add(profile);
-            }
-
-            foreach (var buildProfile in alreadyLoadedBuildProfiles)
-            {
-                // Asset database will not give us any build profiles that get created in memory
-                // and we need to include them in this list as we use it to detect that build profiles
-                // have been destroyed and destroy their resources like PlayerSettings afterwards.
-                // Skipping the in-memory build profiles will result in us deleting their associated
-                // player settings object while it's being used and will lead to a crash (UUM-77423)
-                if (buildProfile &&
-                    !BuildProfileContext.IsClassicPlatformProfile(buildProfile) &&
-                    !BuildProfileContext.IsSharedProfile(buildProfile.platformGuid) &&
-                    !EditorUtility.IsPersistent(buildProfile))
-                {
-                    result.Add(buildProfile);
-                }
-            }
-
-            return result;
         }
 
         public static PlayerSettings GetGlobalPlayerSettings()
@@ -1219,7 +1171,7 @@ namespace UnityEditor.Build.Profile
             target.text = string.Format(k_ModuleInstalled, displayName) + "\n" + k_RestartNeeded;
 
             target.buttonText = k_RestartEditor;
-            target.onButtonClicked += EditorApplication.RestartEditorAndRecompileScripts; 
+            target.onButtonClicked += EditorApplication.RestartEditorAndRecompileScripts;
         }
 
         private static void UpdateHelpBoxForPlatformContactSales(HelpBox helpbox, string text, string url)
@@ -1243,7 +1195,7 @@ namespace UnityEditor.Build.Profile
                 EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
 
                 RequestScriptCompilation(BuildProfileContext.activeProfile);
-            }; 
+            };
         }
 
         /// <summary>

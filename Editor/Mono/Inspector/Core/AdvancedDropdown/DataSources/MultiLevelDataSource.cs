@@ -78,7 +78,7 @@ namespace UnityEditor.IMGUI.Controls
                         groupPathId += "/" + paths[k];
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var group = parent.children.SingleOrDefault(c => ((MultiLevelItem)c).stringId == groupPathId);
+                    var group = parent.childList.SingleOrDefault(c => ((MultiLevelItem)c).stringId == groupPathId);
 #pragma warning restore UA2001
                     if (group == null)
                     {

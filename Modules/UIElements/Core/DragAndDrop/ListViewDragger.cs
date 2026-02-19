@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
                 else
                 {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!targetView.selectedIndices.Contains(recycledItem.index))
+                    if (!targetView.selectedIndicesList.Contains(recycledItem.index))
 #pragma warning restore UA2001
                     {
                         targetView.SetSelection(recycledItem.index);

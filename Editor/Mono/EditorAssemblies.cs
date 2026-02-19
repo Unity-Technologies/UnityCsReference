@@ -15,6 +15,7 @@ using Unity.Profiling;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -96,6 +97,28 @@ namespace UnityEditor
             m_subClasses.Clear();
 
             m_topologicallySortedAssemblies = AssemblyHelper.TopologicalSort(loadedAssemblies);
+
+            ValidateSourceGenerators(assemblies);
+        }
+
+        /// <summary>
+        /// Ensure that, where applicable, source generators that are required to be referenced
+        /// have in fact been referenced.
+        /// </summary>
+        private static void ValidateSourceGenerators(Assembly[] assemblies)
+        {
+            foreach (var assembly in assemblies)
+            {
+                var lifecycleMethods = TypeCache.GetMethodsWithAttribute<LifecycleAttributeBase>(assembly.GetName().Name);
+
+                if (lifecycleMethods.Count > 0 && !LifecycleController.Instance.HasInitializationMethod(assembly))
+                {
+                    var firstLifecycleMethod = lifecycleMethods[0];
+                    var firstLifecycleMethodName = $"{firstLifecycleMethod.DeclaringType.ToString()}.{firstLifecycleMethod.Name}";
+
+                    Debug.LogError($"Assembly '{assembly.GetName().Name}' contains lifecycle methods (e.g. '{firstLifecycleMethodName}') but does not reference 'Unity.Analyzers.Common.dll'. To fix this, add a reference to 'Unity.Analyzers.Common.dll' when compiling this assembly.");
+                }
+            }
         }
 
         static ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadAttribute", "Type");

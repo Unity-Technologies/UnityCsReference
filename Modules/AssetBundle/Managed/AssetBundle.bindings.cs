@@ -246,8 +246,7 @@ namespace UnityEngine
             return LoadAsset_Internal(name, type);
         }
 
-        [NativeThrows]
-        [NativeMethod("LoadAsset_Internal")]
+        [NativeMethod("LoadAsset_Internal", ThrowsException = true)]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         private extern Object LoadAsset_Internal(string name, Type type);
 
@@ -390,16 +389,13 @@ namespace UnityEngine
             return GetAllAssetNames();
         }
 
-        [NativeThrows]
-        [NativeMethod("LoadAssetAsync_Internal")]
+        [NativeMethod("LoadAssetAsync_Internal", ThrowsException = true)]
         private extern AssetBundleRequest LoadAssetAsync_Internal(string name, Type type);
 
-        [NativeThrows]
-        [NativeMethod("Unload")]
+        [NativeMethod("Unload", ThrowsException = true)]
         public extern void Unload(bool unloadAllLoadedObjects);
 
-        [NativeThrows]
-        [NativeMethod("UnloadAsync")]
+        [NativeMethod("UnloadAsync", ThrowsException = true)]
         public extern AssetBundleUnloadOperation UnloadAsync(bool unloadAllLoadedObjects);
 
         [NativeMethod("GetAllAssetNames")]
@@ -408,12 +404,10 @@ namespace UnityEngine
         [NativeMethod("GetAllScenePaths")]
         public extern string[] GetAllScenePaths();
 
-        [NativeThrows]
-        [NativeMethod("LoadAssetWithSubAssets_Internal")]
+        [NativeMethod("LoadAssetWithSubAssets_Internal", ThrowsException = true)]
         internal extern Object[] LoadAssetWithSubAssets_Internal(string name, Type type);
 
-        [NativeThrows]
-        [NativeMethod("LoadAssetWithSubAssetsAsync_Internal")]
+        [NativeMethod("LoadAssetWithSubAssetsAsync_Internal", ThrowsException = true)]
         private extern AssetBundleRequest LoadAssetWithSubAssetsAsync_Internal(string name, Type type);
 
         public static AssetBundleRecompressOperation RecompressAssetBundleAsync(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC = 0, ThreadPriority priority = ThreadPriority.Low)
@@ -421,8 +415,7 @@ namespace UnityEngine
             return RecompressAssetBundleAsync_Internal(inputPath, outputPath, method, expectedCRC, priority);
         }
 
-        [NativeThrows]
-        [FreeFunction("RecompressAssetBundleAsync_Internal")]
+        [FreeFunction("RecompressAssetBundleAsync_Internal", ThrowsException = true)]
         internal static extern AssetBundleRecompressOperation RecompressAssetBundleAsync_Internal(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC, ThreadPriority priority);
 
         public static uint memoryBudgetKB

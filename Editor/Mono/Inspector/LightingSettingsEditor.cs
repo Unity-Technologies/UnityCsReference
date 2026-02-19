@@ -106,7 +106,6 @@ namespace UnityEditor
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
         SerializedProperty m_EnableWorkerProcessBaking;
-        const string m_UseHardwareRayTracingConfigKey = "useHardwareRayTracing";
         SerializedProperty m_TrainingDataDestination;
         SerializedProperty m_ForceWhiteAlbedo;
         SerializedProperty m_ForceUpdates;
@@ -245,8 +244,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
             public static readonly GUIContent enableWorkerProcessBaking = EditorGUIUtility.TrTextContent("Enable worker process baking", "Leaving this unchecked will force bakes that would otherwise be run in a worker process to be run in-process and blocking.");
-            public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Use hardware ray tracing if the GPU device supports it.");
-            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Hardware ray tracing is not supported by the GPU device."); public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
+            public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
             public static readonly GUIContent ambientOcclusionContribution = EditorGUIUtility.TrTextContent("Indirect Contribution", "Adjusts the contrast of ambient occlusion applied to indirect lighting. The larger the value, the more contrast is applied to the ambient occlusion for indirect lighting.");
@@ -769,19 +767,9 @@ namespace UnityEditor
 
                 EditorGUILayout.PropertyField(m_EnableWorkerProcessBaking, Styles.enableWorkerProcessBaking);
 
-                bool useHardwareRayTracing = SystemInfo.supportsRayTracing;
-                if (SystemInfo.supportsRayTracing)
-                {
-                    string configUseHardwareRayTracing = EditorUserSettings.GetConfigValue(m_UseHardwareRayTracingConfigKey);
-                    if (configUseHardwareRayTracing != null)
-                        useHardwareRayTracing = bool.Parse(configUseHardwareRayTracing);
-                }
-                using (new EditorGUI.DisabledScope(!SystemInfo.supportsRayTracing))
-                    useHardwareRayTracing = EditorGUILayout.Toggle(SystemInfo.supportsRayTracing ? Styles.GPUUseHardwareRayTracing : Styles.GPUUseHardwareRayTracingNotSupported, useHardwareRayTracing);
-                if (EditorGUI.EndChangeCheck())
-                    EditorUserSettings.SetConfigValue(m_UseHardwareRayTracingConfigKey, useHardwareRayTracing.ToString());
+                EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 
-                if (!Lightmapping.UnifiedBaker)
+                if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
                 {
                     EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 

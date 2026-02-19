@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using JetBrains.Annotations;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -41,7 +42,9 @@ static class LayoutNative
 
     internal static event Action<LayoutLogData> onLayoutLog;
 
-    [RequiredByNativeCode]
+    [RequiredByNativeCode(Optional = true)]
+    [RequiredMember]
+    [UsedImplicitly]
     private static void LayoutLog_Internal(IntPtr nodePtr, LayoutLogEventType type, string message)
     {
         LayoutLogData data = new LayoutLogData();

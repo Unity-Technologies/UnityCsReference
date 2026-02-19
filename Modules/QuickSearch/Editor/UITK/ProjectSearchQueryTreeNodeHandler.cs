@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -204,7 +205,7 @@ namespace UnityEditor.Search
         void HandleProjectQueriesAdded(ISearchEvent evt)
         {
             var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() <= 0)
+            if (queries.Length <= 0)
                 return;
             var notifyQueryChanged = false;
             foreach (var query in queries)
@@ -222,7 +223,7 @@ namespace UnityEditor.Search
         void HandleProjectQueriesChanged(ISearchEvent evt)
         {
             var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() <= 0)
+            if (queries.Length <= 0)
                 return;
             var notifyQueryChanged = false;
             foreach (var query in queries)
@@ -239,7 +240,7 @@ namespace UnityEditor.Search
         void HandleProjectQueriesMoved(ISearchEvent evt)
         {
             var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
-            if (queryPaths.GetCount() <= 0)
+            if (queryPaths.Length <= 0)
                 return;
             var queries = new List<SearchQueryAsset>();
             foreach (var queryPath in queryPaths)
@@ -276,7 +277,7 @@ namespace UnityEditor.Search
         void HandleProjectQueriesRemoved(ISearchEvent evt)
         {
             var queryIds = SearchQueryPanelTreeUtils.ParseQueryIds(evt);
-            if (queryIds.GetCount() <= 0)
+            if (queryIds.Length <= 0)
                 return;
 
             var notifyQueryChanged = false;
@@ -293,7 +294,7 @@ namespace UnityEditor.Search
         void HandlePostProcessProjectQueriesRemoved(ISearchEvent evt)
         {
             var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
-            if (queryPaths.GetCount() <= 0)
+            if (queryPaths.Length <= 0)
                 return;
 
             var notifyQueryChanged = false;
@@ -442,7 +443,7 @@ namespace UnityEditor.Search
                     RemoveProjectEntry(parent);
             }
 
-            if (m_RootItem != null && m_RootItem.Value.children.GetCount() == 0)
+            if (m_RootItem != null && !m_RootItem.Value.hasChildren)
                 m_RootItem = null;
         }
 

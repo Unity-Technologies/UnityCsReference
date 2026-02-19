@@ -11,34 +11,34 @@ namespace UnityEditor
     [NativeHeader("Runtime/Scripting/TypeCache.h")]
     public static partial class TypeCache
     {
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesWithAttribute(Type attrType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern MethodInfo[] Internal_GetMethodsWithAttribute(Type attrType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern FieldInfo[] Internal_GetFieldsWithAttribute(Type attrType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesDerivedFromInterface(Type interfaceType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesDerivedFromType(Type parentType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesWithAttributeFromAssembly(Type attrType, string assemblyName);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern MethodInfo[] Internal_GetMethodsWithAttributeFromAssembly(Type attrType, string assemblyName);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern FieldInfo[] Internal_GetFieldsWithAttributeFromAssembly(Type attrType, string assemblyName);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesDerivedFromInterfaceFromAssembly(Type interfaceType, string assemblyName);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Type[] Internal_GetTypesDerivedFromTypeFromAssembly(Type parentType, string assemblyName);
 
         internal static extern ulong GetCurrentAge();

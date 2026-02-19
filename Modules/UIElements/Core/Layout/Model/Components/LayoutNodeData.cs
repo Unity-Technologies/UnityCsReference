@@ -29,7 +29,6 @@ unsafe struct LayoutNodeData
         DependsOnParentSize = 1 << 6,
 
         UsesMeasure = 1 << 7,
-
         UsesBaseline = 1 << 8,
 
         // Internal State

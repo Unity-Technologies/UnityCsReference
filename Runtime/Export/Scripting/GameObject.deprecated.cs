@@ -3,128 +3,77 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 
 namespace UnityEngine
 {
     public partial class GameObject
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("GameObject.SampleAnimation(AnimationClip, float) has been deprecated. Use AnimationClip.SampleAnimation(GameObject, float) instead (UnityUpgradable).", true)]
-        public void SampleAnimation(UnityEngine.Object clip, float time)
-        {
-            throw new NotSupportedException("GameObject.SampleAnimation is deprecated");
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("GameObject.AddComponent with string argument has been deprecated. Use GameObject.AddComponent<T>() instead. (UnityUpgradable).", true)]
-        public Component AddComponent(string className)
-        {
-            throw new NotSupportedException("AddComponent(string) is deprecated");
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Property rigidbody has been deprecated. Use GetComponent<Rigidbody>() instead. (UnityUpgradable)", true)]
         public Component rigidbody
         {
             get { throw new NotSupportedException("rigidbody property has been deprecated"); }
         }
-
+        
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property rigidbody2D has been deprecated. Use GetComponent<Rigidbody2D>() instead. (UnityUpgradable)", true)]
-        public Component rigidbody2D
+        [Obsolete("GameObject.active is obsolete. Use GameObject.SetActive(), GameObject.activeSelf or GameObject.activeInHierarchy.", true)]
+        public extern bool active
         {
-            get { throw new NotSupportedException("rigidbody2D property has been deprecated"); }
+            [NativeMethod(Name = "IsActive")]
+            get;
+            [NativeMethod(Name = "SetSelfActive")]
+            set;
         }
-
+        
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property camera has been deprecated. Use GetComponent<Camera>() instead. (UnityUpgradable)", true)]
-        public Component camera
+        [Obsolete("gameObject.SetActiveRecursively() is obsolete. Use GameObject.SetActive(), which is now inherited by children.", false)]
+        [NativeMethod(Name = "SetActiveRecursivelyDeprecated")]
+        public extern void SetActiveRecursively(bool state);
+        
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.", false)]
+        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
         {
-            get { throw new NotSupportedException("camera property has been deprecated"); }
-        }
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property light has been deprecated. Use GetComponent<Light>() instead. (UnityUpgradable)", true)]
-        public Component light
-        {
-            get { throw new NotSupportedException("light property has been deprecated"); }
-        }
+            if (instanceIDs.Length == 0)
+                return;
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property animation has been deprecated. Use GetComponent<Animation>() instead. (UnityUpgradable)", true)]
-        public Component animation
+            SetGameObjectsActive((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, active);
+        }    
+        
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.", false)]
+        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active)
         {
-            get { throw new NotSupportedException("animation property has been deprecated"); }
-        }
+            if (instanceIDs.Length == 0)
+                return;
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property constantForce has been deprecated. Use GetComponent<ConstantForce>() instead. (UnityUpgradable)", true)]
-        public Component constantForce
-        {
-            get { throw new NotSupportedException("constantForce property has been deprecated"); }
+            fixed (int* instanceIDsPtr = instanceIDs)
+            {
+                SetGameObjectsActive((IntPtr)instanceIDsPtr, instanceIDs.Length, active);
+            }
         }
+        
+        [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.", false)]
+        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
+        {
+            if (!newInstanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(newInstanceIDs));
+            if (!newTransformInstanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(newTransformInstanceIDs));
+            if (count == 0)
+                return;
+            if ((count != newInstanceIDs.Length) || (count != newTransformInstanceIDs.Length))
+                throw new ArgumentException("Size mismatch! Both arrays must already be the size of count.");
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property renderer has been deprecated. Use GetComponent<Renderer>() instead. (UnityUpgradable)", true)]
-        public Component renderer
-        {
-            get { throw new NotSupportedException("renderer property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property audio has been deprecated. Use GetComponent<AudioSource>() instead. (UnityUpgradable)", true)]
-        public Component audio
-        {
-            get { throw new NotSupportedException("audio property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property networkView has been deprecated. Use GetComponent<NetworkView>() instead. (UnityUpgradable)", true)]
-        public Component networkView
-        {
-            get { throw new NotSupportedException("networkView property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property collider has been deprecated. Use GetComponent<Collider>() instead. (UnityUpgradable)", true)]
-        public Component collider
-        {
-            get { throw new NotSupportedException("collider property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property collider2D has been deprecated. Use GetComponent<Collider2D>() instead. (UnityUpgradable)", true)]
-        public Component collider2D
-        {
-            get { throw new NotSupportedException("collider2D property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property hingeJoint has been deprecated. Use GetComponent<HingeJoint>() instead. (UnityUpgradable)", true)]
-        public Component hingeJoint
-        {
-            get { throw new NotSupportedException("hingeJoint property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property particleSystem has been deprecated. Use GetComponent<ParticleSystem>() instead. (UnityUpgradable)", true)]
-        public Component particleSystem
-        {
-            get { throw new NotSupportedException("particleSystem property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("gameObject.PlayAnimation is not supported anymore. Use animation.Play()", true)]
-        public void PlayAnimation(UnityEngine.Object animation)
-        {
-            throw new NotSupportedException("gameObject.PlayAnimation is not supported anymore. Use animation.Play();");
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("gameObject.StopAnimation is not supported anymore. Use animation.Stop()", true)]
-        public void StopAnimation()
-        {
-            throw new NotSupportedException("gameObject.StopAnimation(); is not supported anymore. Use animation.Stop();");
-        }
+            InstantiateGameObjects(sourceInstanceID, (IntPtr)newInstanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformInstanceIDs.GetUnsafeReadOnlyPtr(), newInstanceIDs.Length, destinationScene);
+        }   
+        
+        [Obsolete("Obsolete. Please use GameObject.GetScene(EntityId entityId) instead.", false)]
+        public static Scene GetScene(int instanceID) => GetSceneInternal((EntityId)instanceID);        
     }
 }

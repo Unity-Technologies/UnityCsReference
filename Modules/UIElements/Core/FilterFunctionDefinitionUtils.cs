@@ -147,9 +147,11 @@ namespace UnityEngine.UIElements
 
             filter.passes[0].computeRequiredReadMarginsCallback = ComputeHorizontalBlurMargins;
             filter.passes[0].computeRequiredWriteMarginsCallback = ComputeHorizontalBlurMargins;
+            filter.passes[0].applySettingsCallback = ApplyBlurSettings;
 
             filter.passes[1].computeRequiredReadMarginsCallback = ComputeVerticalBlurMargins;
             filter.passes[1].computeRequiredWriteMarginsCallback = ComputeVerticalBlurMargins;
+            filter.passes[1].applySettingsCallback = ApplyBlurSettings;
 
             return filter;
         }
@@ -227,6 +229,14 @@ namespace UnityEngine.UIElements
             float sigma = Math.Max(1.0f, func.parameters[0].floatValue);
             int kernelSize = Mathf.CeilToInt(sigma * 3.0f + 1.0f); // This is the kernel-size as defined in shader
             return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
+        }
+
+        static void ApplyBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        {
+            float sigma = Math.Max(0.0f, context.filterFunction.parameters[0].floatValue);
+            // Scale the sigma by DPI to maintain consistent blur radius across different DPI settings
+            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            mpb.SetFloat("_Sigma", scaledSigma);
         }
 
         static void ApplySettings(MaterialPropertyBlock mpb, FilterPassContext context)

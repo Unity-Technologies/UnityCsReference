@@ -179,7 +179,7 @@ namespace UnityEngine.Experimental.AI
         static extern void AddQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
         static extern void RemoveQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern bool HasNodePool(IntPtr navMeshQuery);
 
         public unsafe PathQueryStatus BeginFindPath(NavMeshLocation start, NavMeshLocation end,
@@ -250,16 +250,16 @@ namespace UnityEngine.Experimental.AI
             return GetPathResult(m_NavMeshQuery, path.GetUnsafePtr(), path.Length);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe PathQueryStatus BeginFindPath(IntPtr navMeshQuery, NavMeshLocation start, NavMeshLocation end, int areaMask, void* costs);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern PathQueryStatus UpdateFindPath(IntPtr navMeshQuery, int iterations, out int iterationsPerformed);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern PathQueryStatus EndFindPath(IntPtr navMeshQuery, out int pathSize);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe int GetPathResult(IntPtr navMeshQuery, void* path, int maxPath);
 
         // If BeginFindPath/UpdateFindPath/EndFindPath existing NativeArray become invalid...
@@ -268,7 +268,7 @@ namespace UnityEngine.Experimental.AI
         //void DidScheduleJob(JobHandle handle);
 
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern bool IsValidPolygon(IntPtr navMeshQuery, PolygonId polygon);
 
         public bool IsValid(PolygonId polygon)
@@ -282,7 +282,7 @@ namespace UnityEngine.Experimental.AI
             return IsValid(location.polygon);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern int GetAgentTypeIdForPolygon(IntPtr navMeshQuery, PolygonId polygon);
         public int GetAgentTypeIdForPolygon(PolygonId polygon)
         {
@@ -290,10 +290,10 @@ namespace UnityEngine.Experimental.AI
             return GetAgentTypeIdForPolygon(m_NavMeshQuery, polygon);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern bool IsPositionInPolygon(IntPtr navMeshQuery, Vector3 position, PolygonId polygon);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern PathQueryStatus GetClosestPointOnPoly(IntPtr navMeshQuery, PolygonId polygon, Vector3 position, out Vector3 nearest);
 
         public NavMeshLocation CreateLocation(Vector3 position, PolygonId polygon)
@@ -304,7 +304,7 @@ namespace UnityEngine.Experimental.AI
             return (status & PathQueryStatus.Success) != 0 ? new NavMeshLocation(nearest, polygon) : new NavMeshLocation();
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern NavMeshLocation MapLocation(IntPtr navMeshQuery, Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas);
         public NavMeshLocation MapLocation(Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas)
         {
@@ -312,7 +312,7 @@ namespace UnityEngine.Experimental.AI
             return MapLocation(m_NavMeshQuery, position, extents, agentTypeID, areaMask);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
         public unsafe void MoveLocations(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, NativeSlice<int> areaMasks)
         {
@@ -323,7 +323,7 @@ namespace UnityEngine.Experimental.AI
             MoveLocations(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), areaMasks.GetUnsafeReadOnlyPtr(), locations.Length);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
         public unsafe void MoveLocationsInSameAreas(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, int areaMask = NavMesh.AllAreas)
         {
@@ -334,7 +334,7 @@ namespace UnityEngine.Experimental.AI
             MoveLocationsInSameAreas(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), locations.Length, areaMask);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern NavMeshLocation MoveLocation(IntPtr navMeshQuery, NavMeshLocation location, Vector3 target, int areaMask);
         public NavMeshLocation MoveLocation(NavMeshLocation location, Vector3 target, int areaMask = NavMesh.AllAreas)
         {
@@ -342,7 +342,7 @@ namespace UnityEngine.Experimental.AI
             return MoveLocation(m_NavMeshQuery, location, target, areaMask);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern bool GetPortalPoints(IntPtr navMeshQuery, PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right);
         public bool GetPortalPoints(PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right)
         {
@@ -350,7 +350,7 @@ namespace UnityEngine.Experimental.AI
             return GetPortalPoints(m_NavMeshQuery, polygon, neighbourPolygon, out left, out right);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Matrix4x4 PolygonLocalToWorldMatrix(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonLocalToWorldMatrix(PolygonId polygon)
         {
@@ -358,7 +358,7 @@ namespace UnityEngine.Experimental.AI
             return PolygonLocalToWorldMatrix(m_NavMeshQuery, polygon);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern Matrix4x4 PolygonWorldToLocalMatrix(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonWorldToLocalMatrix(PolygonId polygon)
         {
@@ -366,7 +366,7 @@ namespace UnityEngine.Experimental.AI
             return PolygonWorldToLocalMatrix(m_NavMeshQuery, polygon);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern NavMeshPolyTypes GetPolygonType(IntPtr navMeshQuery, PolygonId polygon);
         public NavMeshPolyTypes GetPolygonType(PolygonId polygon)
         {
@@ -378,7 +378,7 @@ namespace UnityEngine.Experimental.AI
         //    out NavMeshLocation outputLocation, NativeArray<PolygonId> visitedBuffer, out int actualVisited);
 
         // Trace a ray between two points on the NavMesh.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe PathQueryStatus Raycast(IntPtr navMeshQuery, NavMeshLocation start, Vector3 targetPosition,
             int areaMask, void* costs, out NavMeshHit hit, void* path, out int pathCount, int maxPath);
 
@@ -421,7 +421,7 @@ namespace UnityEngine.Experimental.AI
             return status;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe PathQueryStatus GetEdgesAndNeighbors(IntPtr navMeshQuery, PolygonId node, int maxVerts, int maxNei,
             void* verts, void* neighbors, void* edgeIndices,
             out int vertCount, out int neighborsCount);

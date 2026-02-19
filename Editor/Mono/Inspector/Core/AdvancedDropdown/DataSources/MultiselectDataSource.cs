@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -67,7 +66,7 @@ namespace UnityEditor.IMGUI.Controls
             foreach (var selectionOption in m_SelectedOptions)
             {
                 var name = m_OptionNames[selectionOption];
-                foreach (var child in rootItem.children)
+                foreach (var child in rootItem.childList)
                 {
                     if (child.name == name)
                         selectedIDs.Add(child.id);

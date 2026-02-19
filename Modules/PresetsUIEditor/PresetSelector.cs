@@ -370,9 +370,7 @@ namespace UnityEditor.Presets
 #pragma warning restore UA2001
                     {
                         var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(pe.tracker.activeEditors);
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        return editor != null && editor.targets.Any(o => o == oldPreset);
-#pragma warning restore UA2001
+                        return editor != null && Array.Exists(editor.targets, o => o == oldPreset);
                     });
                     foreach (var pe in propertyEditors)
                         pe.tracker.ForceRebuild();

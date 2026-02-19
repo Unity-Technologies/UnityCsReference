@@ -101,7 +101,7 @@ namespace UnityEditor
                 RegisterCompleteObjectUndoMultiple(objectsToUndo[0], objectsToUndo, name, 0);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] objectsToUndo, string name, int namePriority);
 
@@ -113,7 +113,7 @@ namespace UnityEditor
         [FreeFunction("SetTransformParentUndo")]
         public static extern void SetTransformParent([NotNull] Transform transform, Transform newParent, bool worldPositionStays, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern void MoveGameObjectToScene([NotNull] GameObject go, Scene scene, string name);
 
@@ -149,11 +149,11 @@ namespace UnityEditor
             DestroyObjectUndoable(objectToUndo, "Destroy Object");
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         internal static extern void DestroyObjectUndoable([NotNull] Object objectToUndo, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern Component AddComponent([NotNull] GameObject gameObject, Type type);
 
@@ -187,7 +187,7 @@ namespace UnityEditor
             RecordObjectsInternal(objectsToUndo, objectsToUndo.Length, name);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void RecordObjectsInternal([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] objectToUndo, int size, string name);
 

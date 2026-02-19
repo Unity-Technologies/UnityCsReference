@@ -250,7 +250,7 @@ namespace UnityEditor
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
@@ -286,7 +286,7 @@ namespace UnityEditor
             Internal_InvokeOnCurveWasModified(clip, binding, curve != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
 
         extern internal static DiscreteBindingResult IsDiscreteIntBinding(EditorCurveBinding binding);
@@ -301,27 +301,27 @@ namespace UnityEditor
             }
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void UpdateTangentsFromModeSurrounding([NotNull] AnimationCurve curve, int index);
 
         extern internal static void UpdateTangentsFromMode([NotNull] AnimationCurve curve);
 
-        [NativeThrows, ThreadSafe]
+        [NativeMethod(ThrowsException = true, IsThreadSafe = true)]
         extern public static TangentMode GetKeyLeftTangentMode([NotNull] AnimationCurve curve, int index);
 
-        [NativeThrows, ThreadSafe]
+        [NativeMethod(ThrowsException = true, IsThreadSafe = true)]
         extern public static TangentMode GetKeyRightTangentMode([NotNull] AnimationCurve curve, int index);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static bool GetKeyBroken([NotNull] AnimationCurve curve, int index);
 
-        [NativeThrows, ThreadSafe]
+        [NativeMethod(ThrowsException = true, IsThreadSafe = true)]
         extern public static void SetKeyLeftTangentMode([NotNull] AnimationCurve curve, int index, TangentMode tangentMode);
 
-        [NativeThrows, ThreadSafe]
+        [NativeMethod(ThrowsException = true, IsThreadSafe = true)]
         extern public static void SetKeyRightTangentMode([NotNull] AnimationCurve curve, int index, TangentMode tangentMode);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void SetKeyBroken([NotNull] AnimationCurve curve, int index, bool broken);
 
         internal static TangentMode GetKeyLeftTangentMode(Keyframe key)
@@ -362,7 +362,7 @@ namespace UnityEditor
         extern private static void Internal_SetKeyRightTangentMode(ref Keyframe key, TangentMode tangentMode);
         extern private static void Internal_SetKeyBroken(ref Keyframe key, bool broken);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static int AddInbetweenKey(AnimationCurve curve, float time);
 
         [Obsolete("GetAllCurves is deprecated. Use GetCurveBindings and GetObjectReferenceCurveBindings instead.")]
@@ -500,7 +500,7 @@ namespace UnityEditor
         public static void SetAnimationType(AnimationClip clip, ModelImporterAnimationType type) {}
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static GenericBinding[] EditorCurveBindingsToGenericBindings(EditorCurveBinding[] editorCurveBindings);
 
         extern internal static EditorCurveBinding[] BindingsArrayPtrToBindingsArray(/* core::vector<MonoEditorCurveBinding>* */ IntPtr bindingsPtr);

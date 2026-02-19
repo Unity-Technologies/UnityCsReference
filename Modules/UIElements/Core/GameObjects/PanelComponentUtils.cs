@@ -18,27 +18,10 @@ namespace UnityEngine.UIElements
             return isWorldSpace && (parentUI == null || panelComponent.position == Position.Absolute);
         }
 
-        public static VisualElement GetRootVisualElement(IPanelComponent panelComponent)
-        {
-            if (panelComponent is UIDocument doc)
-                return doc.rootVisualElement;
-            else if (panelComponent is PanelRenderer renderer)
-                return renderer.rootVisualElement;
-            return null;
-        }
-
         public static RuntimePanel GetContainerPanel(IPanelComponent panelComponent)
         {
-            VisualElement rootVE = GetRootVisualElement(panelComponent);
+            VisualElement rootVE = panelComponent?.GetRootVisualElement();
             return (RuntimePanel)rootVE?.elementPanel;
-        }
-
-        public static void SetComponentEnabled(IPanelComponent panelComponent, bool enabled)
-        {
-            if (panelComponent is UIDocument document)
-                document.enabled = enabled;
-            else if (panelComponent is PanelRenderer panelRenderer)
-                panelRenderer.enabled = enabled;
         }
 
         public static void ComputeParentTransform(Vector2 pivotOffset, float pixelsPerUnit, out Matrix4x4 matrix)

@@ -14,7 +14,7 @@ namespace UnityEngine
         public static extern float updateThreshold { get; set; }
         public static extern int   materialUpdateTimeSlice { get; set; }
         public static extern void  SetEmissive(Renderer renderer, Color color);
-        [NativeThrows] public static extern void  SetEnvironmentData([NotNull] float[] input);
+        [NativeMethod(ThrowsException = true)] public static extern void  SetEnvironmentData([NotNull] float[] input);
         public static extern bool  synchronousMode { get; set; }
         public static extern bool  isConverged { get; }
 

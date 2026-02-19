@@ -15,8 +15,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal int m_Value;
 
-        [ThreadSafe] internal static extern EnumLiteralInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal static extern EnumLiteralInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         EnumLiteralInternal IInternalType<EnumLiteralInternal>.ConstructInvalid() => Invalid();

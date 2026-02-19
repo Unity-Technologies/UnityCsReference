@@ -18,7 +18,7 @@ namespace UnityEditor
         EntityId id { get; }
         bool isValid { get; }
         bool isReadOnly { get; }
-        float frameRate { get; }
+        float frameRate { get; set; }
         float length { get; }
         bool isLooping { get; }
 

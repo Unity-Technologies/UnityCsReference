@@ -277,9 +277,7 @@ namespace UnityEditor
                 if (scene.path.Length == 0 && !EditorSceneManager.SaveScene(scene, "", false))
                     continue;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (list.Any(s => s.path == scene.path))
-#pragma warning restore UA2001
+                if (list.Exists(s => s.path == scene.path))
                     continue;
 
                 GUID newGUID;

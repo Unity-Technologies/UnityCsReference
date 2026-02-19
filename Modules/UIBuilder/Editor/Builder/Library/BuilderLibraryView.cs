@@ -121,7 +121,7 @@ namespace Unity.UI.Builder
                 {
                     filteredItems.Add(item);
                 }
-                else if (item.children != null && item.children.GetCount() > 0)
+                else if (item.children != null && item.hasChildren)
                 {
                     // Recursively filter children
                     var filteredChildren = FilterTreeViewItems(item.children, searchText);

@@ -169,16 +169,14 @@ namespace UnityEditor.Search
                 return true;
 
             // Skip files with ~ in their file path and built-in transient files
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (BuiltInTransientFilePatterns.Any(pattern => ShouldIgnorePattern(pattern, path)))
-#pragma warning restore UA2001
+            if (Array.Exists(BuiltInTransientFilePatterns, pattern => ShouldIgnorePattern(pattern, path)))
                 return true;
 
             if (checkRoots)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!GetRoots().Any(r => path.StartsWith(r, StringComparison.OrdinalIgnoreCase)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                     return true;
             }
 
@@ -193,14 +191,10 @@ namespace UnityEditor.Search
             {
                 var dir = Path.GetDirectoryName(path).Replace("\\", "/");
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (settings.includes?.Length > 0 && !settings.includes.Any(pattern => PatternChecks(pattern, ext, dir, path)))
-#pragma warning restore UA2001
+                if (settings.includes?.Length > 0 && !Array.Exists(settings.includes, pattern => PatternChecks(pattern, ext, dir, path)))
                     return true;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (settings.excludes?.Length > 0 && settings.excludes.Any(pattern => PatternChecks(pattern, ext, dir, path)))
-#pragma warning restore UA2001
+                if (settings.excludes?.Length > 0 && Array.Exists(settings.excludes, pattern => PatternChecks(pattern, ext, dir, path)))
                     return true;
             }
 

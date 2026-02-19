@@ -855,9 +855,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // Right click toggle
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.solo))
-#pragma warning restore UA2001
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Exists(g => g.solo))
             {
                 RecordSelectedGroupUndoState(selection, "Change solo state");
                 foreach (var g in allGroups)
@@ -884,14 +882,10 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.mute))
-#pragma warning restore UA2001
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Exists(g => g.mute))
             {
                 RecordSelectedGroupUndoState(selection, "Change mute state");
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (allGroups.Any(g => g.solo))
-#pragma warning restore UA2001
+                if (allGroups.Exists(g => g.solo))
                     return false;
                 foreach (var g in allGroups)
                     g.mute = false;
@@ -922,9 +916,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.bypassEffects))
-#pragma warning restore UA2001
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Exists(g => g.bypassEffects))
             {
                 RecordSelectedGroupUndoState(selection, "Change bypass state");
                 foreach (var g in allGroups)
@@ -1562,9 +1554,7 @@ namespace UnityEditor
                 effectMap = effectMap,
                 allGroups = allGroups,
                 shownGroups = sortedGroups,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                anySoloActive = allGroups.Any(g => g.solo),
-#pragma warning restore UA2001
+                anySoloActive = allGroups.Exists(g => g.solo),
                 visibleRect = new Rect(m_State.m_ScrollPos.x, m_State.m_ScrollPos.y, rect.width, rect.height)
             };
 

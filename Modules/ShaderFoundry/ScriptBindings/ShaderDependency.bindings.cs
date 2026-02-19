@@ -14,10 +14,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ShaderNameStringHandle;       // string
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static ShaderDependencyInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetDependencyName(ShaderContainer container);
-        [ThreadSafe] internal extern string GetShaderName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern static ShaderDependencyInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetDependencyName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetShaderName(ShaderContainer container);
 
         // IInternalType
         ShaderDependencyInternal IInternalType<ShaderDependencyInternal>.ConstructInvalid() => Invalid();

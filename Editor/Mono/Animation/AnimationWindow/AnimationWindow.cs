@@ -9,6 +9,8 @@ using UnityEditor.Callbacks;
 using UnityObject = UnityEngine.Object;
 using UnityEditorInternal;
 
+using AnimationWindowLayout = UnityEditor.Animations.AnimationWindow.Widgets.Layout;
+
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Animation", useTypeNameAsIconName = true)]
@@ -37,14 +39,14 @@ namespace UnityEditor
 
         AnimEditor m_AnimEditor;
 
+        AnimationWindowLayout m_Layout;
+
         [SerializeField]
         EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
         [SerializeField] private EntityId m_LastSelectedObjectID;
 
         GUIStyle m_LockButtonStyle;
-        GUIContent m_DefaultTitleContent;
-        GUIContent m_RecordTitleContent;
 
         internal AnimEditor animEditor => m_AnimEditor;
 
@@ -62,19 +64,12 @@ namespace UnityEditor
 
         internal IAnimationWindowClip clip
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.activeClip;
-                }
-                return null;
-            }
+            get => state?.activeClip;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.activeClip = value;
+                    state.activeClip = value;
                 }
             }
         }
@@ -82,142 +77,81 @@ namespace UnityEditor
         public AnimationClip animationClip
         {
             get => clip is UnityEditor.AnimationWindowBuiltin.AnimationWindowClip builtinClip ? builtinClip.animationClip : null;
-            set => clip = new UnityEditor.AnimationWindowBuiltin.AnimationWindowClip(value, m_AnimEditor.state.activeRootGameObject);
+            set => clip = new UnityEditor.AnimationWindowBuiltin.AnimationWindowClip(value, state.activeRootGameObject);
         }
 
         internal IAnimationWindowSelectionItem selection
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                    return m_AnimEditor.selection;
-                return null;
-            }
+            get => state?.selection;
             set
             {
-                if (m_AnimEditor == null)
-                    return;
-                m_AnimEditor.selection = value;
+                if (state != null)
+                {
+                    state.selection = value;
+                }
             }
         }
 
         public bool previewing
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.previewing;
-                }
-                return false;
-            }
+            get => state?.previewing ?? false;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.previewing = value;
+                    state.previewing = value;
                 }
             }
         }
 
-        public bool canPreview
-        {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.canPreview;
-                }
-
-                return false;
-            }
-        }
+        public bool canPreview => state?.canPreview ?? false;
 
         public bool recording
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.recording;
-                }
-                return false;
-            }
+            get => state?.recording ?? false;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.recording = value;
+                    state.recording = value;
                 }
             }
         }
 
-        public bool canRecord
-        {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.canRecord;
-                }
-
-                return false;
-            }
-        }
+        public bool canRecord => state?.canRecord ?? false;
 
         public bool playing
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.playing;
-                }
-                return false;
-            }
+            get => state?.playing ?? false;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.playing = value;
+                    state.playing = value;
                 }
             }
         }
 
         public float time
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.currentTime;
-                }
-                return 0.0f;
-            }
+            get => state?.currentTime ?? 0.0f;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.currentTime = value;
+                    state.currentTime = value;
                 }
             }
         }
 
         public int frame
         {
-            get
-            {
-                if (m_AnimEditor != null)
-                {
-                    return m_AnimEditor.state.currentFrame;
-                }
-                return 0;
-            }
+            get => state?.currentFrame ?? 0;
             set
             {
-                if (m_AnimEditor != null)
+                if (state != null)
                 {
-                    m_AnimEditor.state.currentFrame = value;
+                    state.currentFrame = value;
                 }
             }
         }
@@ -227,18 +161,12 @@ namespace UnityEditor
 
         internal void RefreshCurve(EditorCurveBinding binding)
         {
-            if (m_AnimEditor != null)
-            {
-                m_AnimEditor.state.RefreshCurve(binding);
-            }
+            state?.RefreshCurve(binding);
         }
 
         internal void RefreshClip()
         {
-            if (m_AnimEditor != null)
-            {
-                m_AnimEditor.state.RefreshClip();
-            }
+            state?.RefreshClip();
         }
 
         void OnEnable()
@@ -246,14 +174,11 @@ namespace UnityEditor
             if (m_AnimEditor == null)
             {
                 m_AnimEditor = CreateInstance<AnimEditor>();
+                m_AnimEditor.SetOwnerWindow(this);
                 m_AnimEditor.hideFlags = HideFlags.HideAndDontSave;
             }
 
             s_AnimationWindows.Add(this);
-            titleContent = GetLocalizedTitleContent();
-
-            m_DefaultTitleContent = titleContent;
-            m_RecordTitleContent = EditorGUIUtility.TextContentWithIcon(titleContent.text, "Animation.Record");
 
             OnSelectionChangeInternal(false);
 
@@ -277,19 +202,20 @@ namespace UnityEditor
 
         void Update()
         {
+            state?.Update();
+
             if (m_AnimEditor != null)
                 m_AnimEditor.Update();
 
             hasUnsavedChanges = selection?.hasUnsavedChanges ?? false;
+
+            m_Layout?.Update();
         }
 
-        void OnGUI()
+        void CreateGUI()
         {
-            if (m_AnimEditor == null)
-                return;
-
-            titleContent = m_AnimEditor.state.recording ? m_RecordTitleContent : m_DefaultTitleContent;
-            m_AnimEditor.OnAnimEditorGUI(this, position);
+            m_Layout = new AnimationWindowLayout(m_AnimEditor);
+            rootVisualElement.Add(m_Layout);
         }
 
         internal void OnSelectionChange() =>
@@ -300,13 +226,13 @@ namespace UnityEditor
 
         void OnSelectionChangeInternal(bool fromCallback)
         {
-            if (m_AnimEditor == null)
+            if (state == null)
                 return;
 
             UnityObject activeObject = Selection.activeObject;
 
             bool restoringLockedSelection = false;
-            if (m_LockTracker.isLocked && m_AnimEditor.stateDisabled)
+            if (m_LockTracker.isLocked && state.disabled)
             {
                 activeObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
                 restoringLockedSelection = true;
@@ -326,17 +252,26 @@ namespace UnityEditor
                     {
                         if (selection == newSelection)
                             OnSelectionUpdated();
-                        else if (fromCallback && DisplayUnsavedChangesDialogIfNecessary())
-                            selection = newSelection;
+                        else if (fromCallback)
+                        {
+                            // Handle unsaved changes.
+                            if (DisplayUnsavedChangesDialogIfNecessary())
+                                selection = newSelection;
+                            // Fallback to last selected object if changes were canceled
+                            else
+                            {
+                                selection = newSelection;
+                                var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
+                                if (lastSelectedObject != null)
+                                {
+                                    activeObject = lastSelectedObject;
+                                    Selection.activeObject = activeObject;
+                                }
+                            }
+                        }
                         else
                         {
                             selection = newSelection;
-                            var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
-                            if (lastSelectedObject != null)
-                            {
-                                activeObject = lastSelectedObject;
-                                Selection.activeObject = activeObject;
-                            }
                         }
 
                         m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;
@@ -351,24 +286,33 @@ namespace UnityEditor
                     var fallbackSelection = GetFallbackSelection(activeObject);
                     if (selection == fallbackSelection)
                         OnSelectionUpdated();
-                    else if (fromCallback && DisplayUnsavedChangesDialogIfNecessary())
-                        selection = fallbackSelection;
+                    else if (fromCallback)
+                    {
+                        // Handle unsaved changes.
+                        if (DisplayUnsavedChangesDialogIfNecessary())
+                            selection = fallbackSelection;
+                        // Fallback to last selected object if changes were canceled
+                        else
+                        {
+                            selection = fallbackSelection;
+                            var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
+                            if (lastSelectedObject != null)
+                            {
+                                activeObject = lastSelectedObject;
+                                Selection.activeObject = activeObject;
+                            }
+                        }
+                    }
                     else
                     {
                         selection = fallbackSelection;
-                        var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
-                        if (lastSelectedObject != null)
-                        {
-                            activeObject = lastSelectedObject;
-                            Selection.activeObject = activeObject;
-                        }
                     }
 
                     m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;
                 }
             }
 
-            if (restoringLockedSelection && !m_AnimEditor.stateDisabled)
+            if (restoringLockedSelection && !state.disabled)
             {
                 m_LockTracker.isLocked = true;
             }
@@ -376,8 +320,7 @@ namespace UnityEditor
 
         internal void OnSelectionUpdated()
         {
-            if (m_AnimEditor != null)
-                m_AnimEditor.OnSelectionUpdated();
+            state?.OnSelectionUpdated();
         }
 
         void OnFocus()
@@ -422,7 +365,7 @@ namespace UnityEditor
                 }
             }
 
-            if (m_AnimEditor.stateDisabled)
+            if (state.disabled)
                 return new FallbackSelectionItem();
 
             return selection;
@@ -433,7 +376,7 @@ namespace UnityEditor
             var newSelection = UnityEditor.AnimationWindowBuiltin.AnimationClipSelectionItem.Create(this, animationClip, sourceObject);
 
             newSelection.controller = controlInterface != null ? controlInterface : newSelection.controller;
-            m_AnimEditor.selection = newSelection;
+            state.selection = newSelection;
             m_LastSelectedObjectID = animationClip != null ? animationClip.GetEntityId() : EntityId.None;
 
             state.linkedWithSequencer = true;
@@ -451,7 +394,7 @@ namespace UnityEditor
                 state.linkedWithSequencer = false;
 
                 // Selected object could have been changed when unlocking the animation window
-                m_AnimEditor.selection = new FallbackSelectionItem();
+                state.selection = new FallbackSelectionItem();
                 OnSelectionChangeInternal(false);
             }
         }
@@ -463,7 +406,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            m_LockTracker.ShowButton(r, m_LockButtonStyle, m_AnimEditor.stateDisabled);
+            m_LockTracker.ShowButton(r, m_LockButtonStyle, state.disabled);
 
             // Selected object could have been changed when unlocking the animation window
             if (EditorGUI.EndChangeCheck())
@@ -502,7 +445,7 @@ namespace UnityEditor
 
         public void AddItemsToMenu(GenericMenu menu)
         {
-            m_LockTracker.AddItemsToMenu(menu, m_AnimEditor.stateDisabled);
+            m_LockTracker.AddItemsToMenu(menu, state.disabled);
         }
 
         public override void SaveChanges()

@@ -251,7 +251,7 @@ namespace UnityEngine.Animations
             GetAnimatorClipInfoInternal(ref m_Handle, layerIndex, false, clips);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void GetAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex, bool isCurrent, [Out,NotNull] List<AnimatorClipInfo> clips);
 
         // Gets the number of AnimatorClipInfo currently played by the current state
@@ -424,130 +424,130 @@ namespace UnityEngine.Animations
             return ResolveHashInternal(ref m_Handle, hash);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, RuntimeAnimatorController controller, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static RuntimeAnimatorController GetAnimatorControllerInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetLayerCountInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static string GetLayerNameInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetLayerIndexInternal(ref PlayableHandle handle, string layerName);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetLayerWeightInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetLayerWeightInternal(ref PlayableHandle handle,  int layerIndex, float weight);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorStateInfo GetCurrentAnimatorStateInfoInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorStateInfo GetNextAnimatorStateInfoInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorTransitionInfo GetAnimatorTransitionInfoInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorClipInfo[] GetCurrentAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetAnimatorClipInfoCountInternal(ref PlayableHandle handle, int layerIndex, bool current);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorClipInfo[] GetNextAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static string ResolveHashInternal(ref PlayableHandle handle, int hash);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool IsInTransitionInternal(ref PlayableHandle handle, int layerIndex);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimatorControllerParameter GetParameterInternal(ref PlayableHandle handle, int index);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetParameterCountInternal(ref PlayableHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private static int StringToHash(string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void CrossFadeInFixedTimeInternal(ref PlayableHandle handle, int stateNameHash, float transitionDuration, int layer, float fixedTime);
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void CrossFadeInternal(ref PlayableHandle handle, int stateNameHash, float transitionDuration, int layer, float normalizedTime);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void PlayInFixedTimeInternal(ref PlayableHandle handle, int stateNameHash, int layer, float fixedTime);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void PlayInternal(ref PlayableHandle handle, int stateNameHash, int layer, float normalizedTime);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void ResetControllerStateInternal(ref PlayableHandle handle, bool resetParameters);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool HasStateInternal(ref PlayableHandle handle, int layerIndex, int stateID);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetFloatString(ref PlayableHandle handle, string name, float value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetFloatID(ref PlayableHandle handle, int id, float value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetFloatString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetFloatID(ref PlayableHandle handle, int id);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetBoolString(ref PlayableHandle handle, string name, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetBoolID(ref PlayableHandle handle, int id, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetBoolString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetBoolID(ref PlayableHandle handle, int id);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetIntegerString(ref PlayableHandle handle, string name, int value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetIntegerID(ref PlayableHandle handle, int id, int value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetIntegerString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetIntegerID(ref PlayableHandle handle, int id);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetTriggerString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetTriggerID(ref PlayableHandle handle, int id);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void ResetTriggerString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void ResetTriggerID(ref PlayableHandle handle, int id);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool IsParameterControlledByCurveString(ref PlayableHandle handle, string name);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool IsParameterControlledByCurveID(ref PlayableHandle handle, int id);
     }
 }

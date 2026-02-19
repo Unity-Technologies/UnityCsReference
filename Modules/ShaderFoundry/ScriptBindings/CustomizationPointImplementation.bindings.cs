@@ -17,8 +17,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_OutputLinkOverridesListHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static CustomizationPointImplementationInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static CustomizationPointImplementationInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         CustomizationPointImplementationInternal IInternalType<CustomizationPointImplementationInternal>.ConstructInvalid() => Invalid();

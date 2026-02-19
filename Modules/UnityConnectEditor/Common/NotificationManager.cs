@@ -62,7 +62,7 @@ namespace UnityEditor.Connect
         /// </summary>
         /// <param name="topics"></param>
         /// <returns></returns>
-        public IEnumerable<Notification> GetNotificationsForTopics(params Notification.Topic[] topics)
+        public IReadOnlyList<Notification> GetNotificationsForTopics(params Notification.Topic[] topics)
         {
             var notifications = new List<Notification>();
             foreach (var notificationBuilder in m_NotificationBuilders)

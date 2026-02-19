@@ -29,7 +29,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             playerTagsView.PlayerTagsList.itemsSource = playerTagsViewModel.Tags;
             playerTagsView.PlayerTagsList.bindItem += (element, i) => { ((Label)element).text = playerTagsViewModel.Tags[i]; };
-            playerTagsView.PlayerTagsList.makeItem = () => new Label();
+            playerTagsView.PlayerTagsList.makeItem = () =>
+            {
+                var label = new Label();
+                label.AddToClassList("player-tag");
+                return label;
+            };
         }
     }
 }

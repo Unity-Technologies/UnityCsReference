@@ -10,7 +10,7 @@ namespace UnityEditorInternal
 {
     [System.Obsolete("Transition is obsolete. Use UnityEditor.Animations.AnimatorTransition instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorTransition", true)]
     [NativeClass(null)]
-    public partial class Transition : Object
+    public partial class Transition : UnityEngine.Object
     {
         /*
         -----------------------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ namespace UnityEditorInternal
 
     [System.Obsolete("StateMachine is obsolete. Use UnityEditor.Animations.AnimatorStateMachine instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorStateMachine", true)]
     [NativeClass(null)]
-    public partial class StateMachine : Object
+    public partial class StateMachine : UnityEngine.Object
     {
         /*
         -----------------------------------------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ namespace UnityEditorInternal
 
     [System.Obsolete("State is obsolete. Use UnityEditor.Animations.AnimatorState instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorState", true)]
     [NativeClass(null)]
-    public partial class State : Object
+    public partial class State : UnityEngine.Object
     {
         /*
         -----------------------------------------------------------------------------------------------------------------

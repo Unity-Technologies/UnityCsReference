@@ -139,7 +139,7 @@ namespace UnityEditor.Experimental.GraphView
             List<ISelectable> selection = graphView.selection;
 
             // If a stacknode child already exists in the selection, adding more to the selection via drag-select is not supported.
-            bool hasStackChild = selection.Any(ge => (ge is GraphElement) && ((GraphElement)ge).IsStackable());
+            bool hasStackChild = selection.Exists(ge => (ge is GraphElement) && ((GraphElement)ge).IsStackable());
             if (!hasStackChild)
             {
                 // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.

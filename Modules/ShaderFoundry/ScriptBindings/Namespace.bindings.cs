@@ -13,8 +13,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ContainingNamespaceHandle;
 
-        [ThreadSafe] internal extern static NamespaceInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static NamespaceInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         NamespaceInternal IInternalType<NamespaceInternal>.ConstructInvalid() => Invalid();

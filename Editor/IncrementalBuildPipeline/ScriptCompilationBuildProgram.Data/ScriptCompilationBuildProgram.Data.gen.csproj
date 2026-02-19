@@ -2,6 +2,7 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
+    <IntermediateOutputPath>../../../artifacts/ScriptCompilationBuildProgram.Data.dll/Debug</IntermediateOutputPath>
     <AssemblyName>ScriptCompilationBuildProgram.Data</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -10,6 +11,7 @@
     <LangVersion>12.0</LangVersion>
     <NoWarn>1701</NoWarn>
     <Nullable>disable</Nullable>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>ScriptCompilationBuildProgram.Data</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>

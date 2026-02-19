@@ -338,7 +338,7 @@ namespace UnityEngine.Animations
             {
                 Debug.LogWarning("Please Use GetEntityId directly to get the value of an ObjectReference PropertyStreamHandle.");
                 Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                return (int)GetEntityId(stream).GetRawData();
+                return (int)EntityId.ToULong(GetEntityId(stream));
             }
             if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
                 throw new InvalidOperationException("GetValue type doesn't match PropertyStreamHandle bound type.");
@@ -352,7 +352,7 @@ namespace UnityEngine.Animations
             {
                 Debug.LogWarning("Please Use SetEntityId directly to set the value of an ObjectReference PropertyStreamHandle.");
                 Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                SetEntityId(stream, EntityId.From(value));
+                SetEntityId(stream, EntityId.FromULong((ulong)value));
                 return;
             }
 
@@ -541,7 +541,7 @@ namespace UnityEngine.Animations
         [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
         public void SetLocalScale(AnimationStream stream, Vector3 scale) {}
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private extern bool HasValidTransform(ref AnimationStream stream);
 
         [NativeMethod(Name = "TransformSceneHandleBindings::GetPositionInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
@@ -662,10 +662,10 @@ namespace UnityEngine.Animations
         [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
         public void SetBool(AnimationStream stream, bool value) {}
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private extern bool HasValidTransform(ref AnimationStream stream);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private extern bool IsBound(ref AnimationStream stream);
 
         [NativeMethod(Name = "Resolve", IsThreadSafe = true)]

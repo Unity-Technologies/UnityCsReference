@@ -85,26 +85,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
             switch (state.OverallStatus.State)
             {
                 case ExecutionState.Running:
-                case ExecutionState.Active:
-                    if (stage == ExecutionStage.Run && state.CurrentStageState == ExecutionState.Active)
+                    if (state.IsExecutingLaunchingStages())
+                    {
+                        AddToClassList(ussClassProcessing);
+                        iconImage = Icons.GetImage(Icons.ImageName.Loading);
+                        labelText = LaunchingScenarioWindow.GetLabelForStage(stage);
+
+                        var stageProgress = Mathf.Ceil(state.OverallStatus.Progress * 100);
+                        progressPercent = Mathf.Ceil(((int)stage - 1 + state.OverallStatus.Progress) * 100 / 3);
+                        tooltipText = $"Scenario Progress\n{labelText}:\t{stageProgress}%\nOverall:\t{progressPercent}%";
+                    }
+                    else
                     {
                         AddToClassList(ussClassRunning);
                         labelText = "Running";
                         iconImage = Icons.GetImage(Icons.ImageName.CompletedTask);
                         progressPercent = 100f;
-                    }
-                    else
-                    {
-                        AddToClassList(ussClassProcessing);
-                        iconImage = Icons.GetImage(Icons.ImageName.Loading);
-
-                        // If in the run stage but state is not active, means we're starting.
-                        // Otherwise set the label to the stage we're running in.
-                        labelText = stage == ExecutionStage.Run ? "Start" : stage.ToString();
-
-                        var stageProgress = Mathf.Ceil(state.OverallStatus.Progress * 100);
-                        progressPercent = Mathf.Ceil(((int)stage - 1 + state.OverallStatus.Progress) * 100 / 3);
-                        tooltipText = $"Scenario Progress\n{labelText}:\t{stageProgress}%\nOverall:\t{progressPercent}%";
                     }
                     break;
                 case ExecutionState.Failed:

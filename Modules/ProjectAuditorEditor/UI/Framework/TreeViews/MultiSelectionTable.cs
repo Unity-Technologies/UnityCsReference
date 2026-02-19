@@ -26,12 +26,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             GroupName
         }
 
-        // stephenm TODO - Sorting doesn't work in this window (or in the Thread Selection Window in Profile Analyzer that
-        // this is based on). So maybe rip this all out?
         public enum SortOption
         {
             ItemName,
-            GroupName
+            State
         }
 
         const float kRowHeights = 20f;
@@ -41,14 +39,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(100);
         readonly TreeViewSelection m_Selection;
 
-        // stephenm TODO - Sorting doesn't work in this window (or in the Thread Selection Window in Profile Analyzer that
-        // this is based on). So maybe rip this all out?
         // Sort options per column
         readonly SortOption[] m_SortOptions =
         {
             SortOption.ItemName,
-            SortOption.ItemName,
-            SortOption.GroupName
+            SortOption.State,
+            SortOption.ItemName
         };
 
         GUIStyle m_ActiveLineStyle;
@@ -226,7 +222,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         void SortIfNeeded(IList<TreeViewItem> rows)
         {
-            if (rows.Count <= 1) return;
+            if (rows.Count <= 1)
+                return;
 
             if (multiColumnHeader.sortedColumnIndex == -1)
                 return; // No column to sort for (just use the order the data are in)
@@ -251,10 +248,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             var sortedColumns = multiColumnHeader.state.sortedColumns;
 
-            if (sortedColumns.Length == 0) return;
+            if (sortedColumns.Length == 0)
+                return;
+            if (!rootItem.hasChildren)
+                return;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var myTypes = rootItem.children.Cast<SelectionWindowTreeViewItem>();
+            // All items appear under "All" in these tables. Sort their children.
+            var topChild = rootItem.children[0];
+
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var myTypes = topChild.children.Cast<SelectionWindowTreeViewItem>();
 #pragma warning restore UA2001
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (var i = 1; i < sortedColumns.Length; i++)
@@ -264,18 +267,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 switch (sortOption)
                 {
-                    case SortOption.GroupName:
-                        orderedQuery = orderedQuery.ThenBy(l => GetItemGroupName(l), ascending);
-                        break;
                     case SortOption.ItemName:
                         orderedQuery = orderedQuery.ThenBy(l => l.displayName, ascending);
+                        break;
+                    case SortOption.State:
+                        orderedQuery = orderedQuery.ThenBy(l => TreeItemSelected(l.TreeItemIdentifier), ascending);
                         break;
                 }
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            rootItem.children = orderedQuery.Cast<TreeViewItem>().ToList();
-#pragma warning restore UA2001
+            topChild.children = new List<TreeViewItem>(orderedQuery);
         }
 
         IOrderedEnumerable<SelectionWindowTreeViewItem> InitialOrder(
@@ -285,10 +286,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             var ascending = multiColumnHeader.IsSortedAscending(history[0]);
             switch (sortOption)
             {
-                case SortOption.GroupName:
-                    return myTypes.Order(l => GetItemGroupName(l), ascending);
                 case SortOption.ItemName:
                     return myTypes.Order(l => l.displayName, ascending);
+                case SortOption.State:
+                    return myTypes.Order(l => TreeItemSelected(l.TreeItemIdentifier), ascending);
                 default:
                     Assert.IsTrue(false, "Unhandled enum");
                     break;
@@ -558,7 +559,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     headerContent = header.content,
                     headerTextAlignment = TextAlignment.Left,
                     sortedAscending = true,
-                    sortingArrowAlignment = TextAlignment.Left,
+                    sortingArrowAlignment = TextAlignment.Center,
                     width = header.width,
                     minWidth = header.minWidth,
                     autoResize = header.autoResize,

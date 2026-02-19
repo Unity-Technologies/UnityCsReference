@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using static UnityEngine.UIElements.UIR.Allocator2D;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
@@ -49,15 +50,20 @@ namespace UnityEditor
         }
         static Constants ms_Constants;
 
+        [NativeHeader("Editor/Mono/PackageUtility.bindings.h")]
+        [FreeFunction("Marshalling::GetImportPackageItems")]
+        private static extern ImportPackageItem[] GetImportPackageItems(IntPtr nativeItems);
+
         // Invoked from menu
         [UsedByNativeCode]
-        public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath, int productId, string packageName, string packageVersion, int uploadId)
+        public unsafe static void ShowImportPackage(string packagePath, IntPtr nativeItems, string packageIconPath, int productId, string packageName, string packageVersion, int uploadId, string packageExtractedPath)
         {
+            var items = GetImportPackageItems(nativeItems);
             if (!ValidateInput(items))
                 return;
 
             var origin = new AssetOrigin(productId, packageName, packageVersion, uploadId);
-            PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath, origin);
+            PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath, origin, packageExtractedPath);
         }
 
         public PackageImport()
@@ -455,8 +461,9 @@ namespace UnityEditor
         public bool IsProjectSettingStep => m_IsProjectSettingStep;
 
         private AssetOrigin m_AssetOrigin;
+        private string m_PackageExtractedPath;
 
-        public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath, AssetOrigin origin)
+        public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath, AssetOrigin origin, string packageExtractedPath)
         {
             ClearImportData();
 
@@ -464,6 +471,7 @@ namespace UnityEditor
             m_PackageIconPath = packageIconPath;
             m_PackageName = System.IO.Path.GetFileNameWithoutExtension(packagePath);
             m_AssetOrigin = origin;
+            m_PackageExtractedPath = packageExtractedPath;
 
             m_InitialImportItems = items;
             foreach (var item in items)
@@ -546,7 +554,7 @@ namespace UnityEditor
         private void FinishImport()
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            PackageUtility.ImportPackageAssetsWithOrigin(m_AssetOrigin, m_AssetContentItems.Concat(m_ProjectSettingItems).ToArray());
+            PackageUtility.ImportPackageAssetsWithOrigin(m_AssetOrigin, m_AssetContentItems.Concat(m_ProjectSettingItems).ToArray(), m_PackageExtractedPath, true);
 #pragma warning restore UA2001
             CloseImportWindow();
         }

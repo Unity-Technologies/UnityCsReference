@@ -125,7 +125,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Try to set the value of this constant to a <typeparamref name="T"/>.
+        /// Sets the value of this constant to a <typeparamref name="T"/>.
         /// </summary>
         /// <param name="value"> The value that is set.</param>
         /// <typeparam name="T"> The type of value given.</typeparam>
@@ -135,15 +135,17 @@ namespace Unity.GraphToolkit.Editor
             var defaultValue = ObjectValue;
             var constantType = Type;
 
-            if (value == null && (!constantType.IsClass || !typeof(T).IsAssignableFrom(constantType))) //for classes null is a valid value, provided the type matches
-            {
+            if (typeof(T) != constantType)
                 return false;
-            }
 
-            if (!constantType.IsAssignableFrom(typeof(T)))
-            {
+            // Disallow non-serializable types as the data would then be lost.
+            if (!typeof(T).IsSerializable && !typeof(UnityEngine.Object).IsAssignableFrom(typeof(T)))
                 return false;
-            }
+
+            // Allow null value for classes. Nullable isn't supported.
+            if (value == null && !constantType.IsClass)
+                return false;
+
             ObjectValue = value;
 
             return true;

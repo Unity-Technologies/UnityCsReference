@@ -15,11 +15,16 @@ using Unity.PlayMode.Editor;
 using UnityEngine.Multiplayer.Internal;
 using System.Text;
 using UnityEditor.PackageManager;
+using UnityEngine.Assertions;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackReceiver
     {
+        const string k_ValidationDialogTitle = "Play Mode Scenario - Validation Failed";
+        const string k_ValidationDialogScenarioMessage = "The scenario cannot be started because validation failed with the following message:";
+        const string k_ValidationDialogInstanceMessage = "The scenario instance cannot be started because validation failed with the following message:";
+        const string k_ValidationDialogOKLabel = "OK";
         const int k_CurrentSerializedVersion = 1;
         const string k_MainEditorName = "Main Editor";
         internal const string k_SettingsPropertyName = nameof(m_Settings);
@@ -248,9 +253,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal void OnScenarioStatusRefreshed(ScenarioStatusData status)
         {
-            if (status.OverallStatus.State is ExecutionState.Running or ExecutionState.Active)
+            if (status.IsExecuting())
             {
-                SetState(PlayModeScenarioState.Running);
+                SetState(status.CurrentStage is ExecutionStage.Cleanup ? PlayModeScenarioState.Stopping : PlayModeScenarioState.Running);
                 if (m_EditorPlayModeGuard != null)
                 {
                     m_EditorPlayModeGuard.SetResolutionStrategy(EditorPlayModeGuard.ResolutionStrategy.LogError);
@@ -350,75 +355,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
 
-            StartScenarioAsync().Forget();
+            StartScenarioAsync();
         }
 
-        private async Task StartScenarioAsync()
+        private void StartScenarioAsync()
         {
             m_CancellationTokenSource = new CancellationTokenSource();
-
-            // Check instance(s) setup before starting the scenario
-            await RunPreStartChecksAsync(m_CancellationTokenSource.Token);
 
             ScenarioRunner.StartScenario();
 
             LaunchingScenarioWindow.OnScenarioStarted(this);
-        }
-
-        /// <summary>
-        /// Performs validation checks on the scenario instance(s) before starting scenario
-        /// If validation fails, displays an error dialog, sends an analytics event,
-        /// and throws a InvalidOperationException
-        /// </summary>
-        private async Task RunPreStartChecksAsync(CancellationToken cancellationToken)
-        {
-            var validationResult = await m_Scenario.ValidateForRunningAsync(cancellationToken);
-
-            if (!validationResult.IsValid)
-            {
-                var instances = GetInstancesFromDescriptions(GetAllInstances());
-                //  Sanity check
-                if (instances == null || instances.Count == 0)
-                {
-                    return;
-                }
-
-                var instancesData = Instance.GetAnalyticsDataArray(instances);
-                var errorData = Instance.GetValidationErrorData(validationResult);
-
-                // if the validation fails before StartScenario(), send simplified Instances data and validation result as Errors
-                AnalyticsOnPlayFromScenarioEvent.SendValidationErrorData(
-                    instancesData,
-                    new[] { errorData }
-                );
-
-                EditorUtility.DisplayDialog(
-                    $"Play Mode Scenario - Scenario Setup Error ",
-                    $"{validationResult.Message}. Please check the console for more details.",
-                    "OK"
-                );
-                throw new InvalidOperationException($"Scenario validation failed. {validationResult.Message}");
-            }
-        }
-
-        private static List<Instance> GetInstancesFromDescriptions(IEnumerable<IInstanceItem> instanceItems)
-        {
-            var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
-            if (currentConfig == null || currentConfig.Scenario == null)
-                return new List<Instance>();
-
-            var result = new List<Instance>();
-
-            // Get the instances from the list of instance descriptions
-            foreach (var instanceItem in instanceItems)
-            {
-                var instance = currentConfig.Scenario.GetInstanceById(instanceItem.GetId());
-                if (instance != null)
-                {
-                    result.Add(instance);
-                }
-            }
-            return result;
         }
 
         internal override void ExecuteStop()
@@ -596,6 +542,43 @@ namespace Unity.Multiplayer.PlayMode.Editor
             const HideFlags k_HideFlags = HideFlags.DontSaveInEditor;
 
             obj.hideFlags |= k_HideFlags;
+        }
+
+        internal static void NotifyValidationFailure(Scenario scenario)
+        {
+            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
+                GetValidationMessage(k_ValidationDialogScenarioMessage, scenario.GetNodes(ExecutionStage.Validate)),
+                k_ValidationDialogOKLabel);
+        }
+
+        internal static void NotifyValidationFailure(Instance instance)
+        {
+            ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
+                GetValidationMessage(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate)),
+                k_ValidationDialogOKLabel);
+        }
+
+        static string GetValidationMessage(string prefix, IEnumerable<Node> nodes)
+        {
+            var message = $"{prefix}\n";
+            var failedNodesCount = 0;
+            foreach (var node in nodes)
+            {
+                if (node.State is ExecutionState.Failed)
+                {
+                    failedNodesCount++;
+
+                    if (string.IsNullOrEmpty(node.ErrorInfo.Message))
+                    {
+                        message += $"\n- {node.Name} ({node.GetType().Name}) failed without an error message.";
+                        continue;
+                    }
+
+                    message += $"\n- {node.ErrorInfo.Message}";
+                }
+            }
+            Assert.IsTrue(failedNodesCount > 0, "Trying to notify a scenario validation failure but no failed nodes were found");
+            return message;
         }
     }
 }

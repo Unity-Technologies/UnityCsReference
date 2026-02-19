@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -15,5 +16,29 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Shaders/ShaderInclude.h")]
     public sealed partial class ShaderInclude : TextAsset
     {
+        public ShaderApiReflection.ShaderIncludeReflection Reflection => GetReflection();
+
+        private ShaderApiReflection.ShaderIncludeReflection GetReflection()
+        {
+            string assetPath = AssetDatabase.GetAssetPath(this);
+
+            // Because the reflection object isn't exposed in the hierarchy, we have to manually search
+            // all objects at this path.
+            foreach (Object assetObject in AssetDatabase.LoadAllAssetsAtPath(assetPath))
+            {
+                if (assetObject is ShaderApiReflection.ShaderIncludeReflection reflectionObject)
+                    return reflectionObject;
+            }
+            return null;
+        }
+    }
+
+    [CustomEditor(typeof(ShaderInclude))]
+    internal sealed class ShaderIncludeEditor : Editor
+    {
+        public override VisualElement CreateInspectorGUI()
+        {
+            return ShaderApiReflection.ShaderIncludeEditorExtensions.CreateInspectorGUI(target);
+        }
     }
 }

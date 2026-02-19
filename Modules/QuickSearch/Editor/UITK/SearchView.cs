@@ -29,7 +29,6 @@ namespace UnityEditor.Search
         protected GroupedSearchList m_FilteredItems;
         private SearchSelection m_SearchItemSelection;
         private readonly List<int> m_Selection = new List<int>();
-        private int m_DelayedCurrentSelection = k_ResetSelectionIndex;
         private bool m_SyncSearch;
         private SearchPreviewManager m_PreviewManager;
         private int m_TextureCacheSize;
@@ -574,12 +573,20 @@ namespace UnityEditor.Search
 
         private void TrackSelection(int currentSelection)
         {
-            if (!SearchSettings.trackSelection)
+            if (!SearchSettings.trackSelection && !IsPicker())
                 return;
 
-            m_DelayedCurrentSelection = currentSelection;
-            EditorApplication.delayCall -= DelayTrackSelection;
-            EditorApplication.delayCall += DelayTrackSelection;
+            if (m_FilteredItems.Count == 0)
+                return;
+
+            if (!IsItemValid(currentSelection))
+                return;
+
+            var selectedItem = m_FilteredItems[currentSelection];
+            if (trackingCallback == null)
+                selectedItem?.provider?.trackSelection?.Invoke(selectedItem, context);
+            else
+                trackingCallback(selectedItem);
         }
 
         public void SetItems(IEnumerable<SearchItem> newItems)
@@ -614,23 +621,6 @@ namespace UnityEditor.Search
             ArrayPool<int>.Shared.Return(tempSelection);
         }
 
-        internal void DelayTrackSelection()
-        {
-            if (m_FilteredItems.Count == 0)
-                return;
-
-            if (!IsItemValid(m_DelayedCurrentSelection))
-                return;
-
-            var selectedItem = m_FilteredItems[m_DelayedCurrentSelection];
-            if (trackingCallback == null)
-                selectedItem?.provider?.trackSelection?.Invoke(selectedItem, context);
-            else
-                trackingCallback(selectedItem);
-
-            m_DelayedCurrentSelection = k_ResetSelectionIndex;
-        }
-
         public void ShowItemContextualMenu(SearchItem item, Rect contextualActionPosition)
         {
             if (IsPicker())
@@ -651,9 +641,9 @@ namespace UnityEditor.Search
         {
             var shortcutIndex = 0;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var useSelection = searchView.context?.selection?.Any(e => string.Equals(e.id, item.id, StringComparison.OrdinalIgnoreCase)) ?? false;
-            #pragma warning restore UA2001
+#pragma warning restore UA2006
             var currentSelection = useSelection ? searchView.context.selection : new SearchSelection(new[] { item });
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var action in item.provider.actions.Where(a => a.enabled?.Invoke(currentSelection) ?? true))
@@ -739,8 +729,6 @@ namespace UnityEditor.Search
                     action = GetDefaultAction(selection, items);
 
                 SendSearchEvent(item, action);
-                if (endSearch)
-                    EditorApplication.delayCall -= DelayTrackSelection;
 
                 if (action?.handler != null && items.Length == 1)
                     action.handler(item);

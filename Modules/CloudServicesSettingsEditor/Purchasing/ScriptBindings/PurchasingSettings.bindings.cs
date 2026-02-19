@@ -14,8 +14,8 @@ namespace UnityEditor.Purchasing
     {
         public static extern bool enabled
         {
-            [ThreadSafe] get;
-            [ThreadSafe] set;
+            [NativeMethod(IsThreadSafe = true)] get;
+            [NativeMethod(IsThreadSafe = true)] set;
         }
 
         internal static extern bool enabledForPlatform { get; }

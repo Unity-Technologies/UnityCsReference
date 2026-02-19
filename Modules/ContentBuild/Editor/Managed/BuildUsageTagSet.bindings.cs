@@ -67,9 +67,9 @@ namespace UnityEditor.Build.Content
         [NativeMethod(IsThreadSafe = true)]
         internal extern void DeserializeFromJson(string data);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal extern byte[] SerializeToBinary();
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal extern void DeserializeFromBinary([Out] byte[] data);
 
         [NativeMethod(IsThreadSafe = true)]

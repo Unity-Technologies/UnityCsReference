@@ -12,32 +12,32 @@ namespace UnityEditor.SceneManagement
     [NativeHeader("Editor/Src/SceneManager/StageUtility.bindings.h")]
     public static partial class StageUtility
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsGameObjectRenderedInSameStageAsSceneInternal(GameObject gameObject, SceneHandle sceneHandle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsGameObjectRenderedByCameraInternal(GameObject gameObject, Camera camera);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsTheMainStageRenderedByCameraInternal(Camera camera);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void SetSceneToRenderInSameStageAsOtherSceneInternal(SceneHandle sceneHandle, SceneHandle otherSceneHandle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void SetSceneToRenderInMainStageInternal(SceneHandle sceneHandle);
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsGameObjectInTheMainStageInternal(GameObject gameObject);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsGameObjectInSameStageAsSceneInternal(GameObject gameObject, SceneHandle sceneHandle);
 

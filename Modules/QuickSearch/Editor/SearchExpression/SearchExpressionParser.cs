@@ -203,9 +203,7 @@ namespace UnityEditor.Search
                     paramStartIndex = i;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Quotes.Any(c => c == paramsBlock[i]))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Quotes, c => c == paramsBlock[i]))
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -214,17 +212,13 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Openers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Openers, c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     openersStack.Push(paramsBlock[i]);
                     continue;
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Closers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Closers, c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     if (CharMatchOpener(openersStack.Peek(), paramsBlock[i]))
                     {
@@ -327,9 +321,7 @@ namespace UnityEditor.Search
                     continue;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Quotes.Any(c => c == text[i]))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Quotes, c => c == text[i]))
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -340,9 +332,7 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Openers.Any(c => c == text[i]))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Openers, c => c == text[i]))
                 {
                     if (IsEscaped(text, i))
                     {
@@ -356,9 +346,7 @@ namespace UnityEditor.Search
                     continue;
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (k_Closers.Any(c => c == text[i]))
-#pragma warning restore UA2001
+                if (Array.Exists(k_Closers, c => c == text[i]))
                 {
                     if (IsEscaped(text, i))
                     {

@@ -127,7 +127,7 @@ namespace UnityEditor
     public partial class AssetDatabase
     {
         private const string kPreventExecutionDuringImportHowToFixMsg = "Please make sure this function is not called from ScriptedImporters or PostProcessors, as it is a source of non-determinism.";
-        internal const string kPreventExecutionDuringCodeReloadHowToFixMsg = "Please make sure this function is not called from code that runs during code reload (e.g. [AfterCodeLoaded])";
+        internal const string kPreventExecutionDuringCodeReloadHowToFixMsg = "Please make sure this function is not called from code that runs during code reload (e.g. [OnCodeLoaded])";
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static bool CanGetAssetMetaInfo(string path);
@@ -215,12 +215,12 @@ namespace UnityEditor
         [System.Obsolete(@"Please use IsNativeAsset(EntityId) with the EntityId type instead.", false)]
         public static bool IsNativeAsset(int instanceID) => IsNativeAsset((EntityId)instanceID);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static int GetScriptableObjectsWithMissingScriptCount(string assetPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static int RemoveScriptableObjectsWithMissingScript(string assetPath);
 
@@ -298,7 +298,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         extern public static string MoveAsset(string oldPath, string newPath);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -328,7 +328,7 @@ namespace UnityEditor
             return DeleteAssetsCommon(paths, outFailedPaths, true);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -354,7 +354,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool CopyAsset(string path, string newPath);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -363,7 +363,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool WriteImportSettingsIfDirty(string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetSubFolders([NotNull] string path);
 
@@ -371,26 +371,26 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsValidFolder(string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be created during gathering of import dependencies")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void CreateAsset([NotNull] Object asset, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern static internal void CreateAssetFromObjects(Object[] assets, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void AddObjectToAsset([NotNull] Object objectToAdd, string path);
         static public void AddObjectToAsset(Object objectToAdd, Object assetObject) { AddObjectToAsset_Obj(objectToAdd, assetObject); }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.AddObjectToAsset() was called as part of running an import in a worker process.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static void AddObjectToAsset_Obj([NotNull] Object newAsset, [NotNull] Object sameAssetFile);
@@ -401,7 +401,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern static internal void AddEntityIdToAssetWithRandomFileId(EntityId entityIdToAdd, Object assetObject, bool hide);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void SetMainObject([NotNull] Object mainObject, string assetPath);
 
@@ -439,7 +439,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetAssetPathFromTextMetaFilePath(string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
@@ -451,7 +451,7 @@ namespace UnityEditor
             return (T)LoadAssetAtPath(assetPath, typeof(T));
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
@@ -749,11 +749,11 @@ namespace UnityEditor
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAssetPathsFromAssetBundleAndAssetName(string assetBundleName, string assetName);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetImplicitAssetBundleName(string assetPath);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetImplicitAssetBundleVariantName(string assetPath);
 
@@ -787,7 +787,7 @@ namespace UnityEditor
         }
 
         [uei.ExcludeFromDocs] public static void ExportPackage(string[] assetPathNames, string fileName) { ExportPackage(assetPathNames, fileName, ExportPackageOptions.Default); }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void ExportPackage(string[] assetPathNames, string fileName, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags);
 
@@ -912,12 +912,12 @@ namespace UnityEditor
             return (T)GetBuiltinExtraResource(typeof(T), path);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object GetBuiltinExtraResource(Type type, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] CollectAllChildren(string guid, string[] collection);
 
@@ -940,15 +940,15 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void CloseCachedFiles();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetSourceAssetImportDependenciesAsGUIDs(string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetImportedAssetImportDependenciesAsGUIDs(string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetGuidOfPathLocationImportDependencies(string path);
 
@@ -1110,7 +1110,7 @@ namespace UnityEditor
             get;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetArtifactInfos_Internal(GUID guid);

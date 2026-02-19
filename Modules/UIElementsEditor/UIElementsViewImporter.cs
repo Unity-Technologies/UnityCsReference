@@ -1389,17 +1389,17 @@ namespace UnityEditor.UIElements
                         return true;
                     }
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (parsed.StyleRules.Count() != 1)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                     {
                         LogWarning(
                             vta,
                             ImportErrorType.Semantic,
                             ImportErrorCode.InvalidCssInStyleAttribute,
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             "Expected one style rule, found " + parsed.StyleRules.Count(),
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                             xattr);
                         return true;
                     }

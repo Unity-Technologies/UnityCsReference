@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.SearchService;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
 
@@ -344,6 +345,7 @@ namespace UnityEditor.Search
         /// </summary>
         public string filterId { get; private set; }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool useExplicitProvidersAsNormalProviders
         {
             get => m_UseExplicitProvidersAsNormalProviders;
@@ -522,9 +524,7 @@ namespace UnityEditor.Search
         public bool IsEnabled(string providerId)
         {
             CheckDisposed();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Providers.Any(p => p.id == providerId);
-#pragma warning restore UA2001
+            return m_Providers.Exists(p => p.id == providerId);
         }
 
         /// <summary>

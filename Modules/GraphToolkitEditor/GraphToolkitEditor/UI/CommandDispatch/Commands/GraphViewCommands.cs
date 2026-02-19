@@ -137,9 +137,7 @@ namespace Unity.GraphToolkit.Editor
             if (placematModelsToBringInFrontOf != null && placematModelsToBringInFrontOf.Count > 0)
             {
                 var graphModel = placematModelsToBringInFrontOf[0].Item1.GraphModel;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                for (var i = placematModelsToBringInFrontOf.Count() - 1; i >= 0; --i)
-#pragma warning restore UA2001
+                for (var i = placematModelsToBringInFrontOf.Count - 1; i >= 0; --i)
                 {
                     var placematPair = placematModelsToBringInFrontOf[i];
                     graphModel.BringPlacematAfter(placematPair.Item1, placematPair.Item2);

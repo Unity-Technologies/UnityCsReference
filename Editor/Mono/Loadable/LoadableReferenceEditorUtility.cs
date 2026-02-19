@@ -14,6 +14,7 @@ namespace UnityEditor
     /// </summary>
     /// <seealso cref="LoadableReference"/>
     [NativeHeader("Editor/Src/Utility/LoadableReferenceEditorUtility.bindings.h")]
+    [VisibleToOtherModules]
     /*UCBP-PUBLIC*/ internal static class LoadableReferenceEditorUtility
     {
         /// <summary>
@@ -120,16 +121,13 @@ namespace UnityEditor
             return loadableRef;
         }
 
-        [NativeThrows]
-        [FreeFunction("LoadableReferenceUtility::LoadableReferenceToObject")]
+        [FreeFunction("LoadableReferenceUtility::LoadableReferenceToObject", ThrowsException = true)]
         private static extern Object LoadableReferenceToObjectInternal(LoadableReference loadableRef);
 
-        [NativeThrows]
-        [FreeFunction("LoadableReferenceUtility::ObjectToLoadableReference")]
+        [FreeFunction("LoadableReferenceUtility::ObjectToLoadableReference", ThrowsException = true)]
         private static extern LoadableReference ObjectToLoadableReferenceInternal(Object obj);
 
-        [NativeThrows]
-        [FreeFunction("LoadableReferenceUtility::EntityIDToLoadableReference")]
+        [FreeFunction("LoadableReferenceUtility::EntityIDToLoadableReference", ThrowsException = true)]
         private static extern LoadableReference EntityIDToLoadableReferenceInternal(EntityId instanceID);
     }
 }

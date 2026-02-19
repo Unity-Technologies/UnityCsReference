@@ -263,7 +263,7 @@ namespace UnityEngine
         }
 
         // Translate tokens from infix into RPN (https://en.wikipedia.org/wiki/Shunting-yard_algorithm)
-        static string[] InfixToRPN(string[] tokens)
+        static string[] InfixToRPN(List<string> tokens)
         {
             var operatorStack = new Stack<string>();
             var outputQueue = new Queue<string>();
@@ -338,10 +338,10 @@ namespace UnityEngine
         }
 
         // Splits expression to meaningful tokens
-        static string[] ExpressionToTokens(string expression, out bool hasVariables)
+        static List<string> ExpressionToTokens(string expression, out bool hasVariables)
         {
             hasVariables = false;
-            using var _ = ListPool<string>.Get(out var result);
+            var result = new List<string>();
             var sb = new StringBuilder();
 
             foreach (var currentChar in expression)
@@ -371,7 +371,7 @@ namespace UnityEngine
                 result.Add(sb.ToString());
 
             hasVariables = result.Exists(res => IsVariable(res) || IsDelayedFunction(res));
-            return result.ToArray();
+            return result;
         }
 
         static bool IsCommand(string token)
@@ -446,15 +446,15 @@ namespace UnityEngine
         }
 
         // Turn unary minus into an operator. For example: - ( 1 - 2 ) * - 3 becomes: _ ( 1 - 2 ) * _ 3
-        static string[] FixUnaryOperators(string[] tokens)
+        static List<string> FixUnaryOperators(List<string> tokens)
         {
-            if (tokens.Length == 0)
+            if (tokens.Count == 0)
                 return tokens;
 
             if (tokens[0] == "-")
                 tokens[0] = "_";
 
-            for (int i = 1; i < tokens.Length - 1; i++)
+            for (int i = 1; i < tokens.Count - 1; i++)
             {
                 string token = tokens[i];
                 string previousToken = tokens[i - 1];

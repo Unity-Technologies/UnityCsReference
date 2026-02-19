@@ -79,7 +79,7 @@ namespace UnityEditor.VFX
             SetVisualEffectAssetDesc(asset, internalDesc);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern void SetVisualEffectAssetDesc([NotNull] VisualEffectAsset asset, VisualEffectAssetDescInternal desc);
 
         public static void SetValueSheet(VisualEffectAsset asset, VFXExpressionValueContainerDesc[] values)
@@ -88,7 +88,7 @@ namespace UnityEditor.VFX
             SetValueSheet(asset, valueSheet);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern void SetValueSheet([NotNull] VisualEffectAsset asset, VFXExpressionValuesSheetInternal valueSheet);
 
         public static VisualEffectAsset CreateVisualEffectAsset(AssetImporters.AssetImportContext context, VisualEffectAssetDesc desc)
@@ -97,7 +97,7 @@ namespace UnityEditor.VFX
             return CreateVisualEffectAsset(context, internalDesc);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern VisualEffectAsset CreateVisualEffectAsset(AssetImporters.AssetImportContext context, VisualEffectAssetDescInternal runtimeData);
 
         public static extern VFXCompilationMode GetCompilationMode([NotNull] VisualEffectAsset asset);

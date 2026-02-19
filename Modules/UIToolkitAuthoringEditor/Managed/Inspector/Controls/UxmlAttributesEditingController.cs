@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -24,6 +23,11 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     bool m_HasPendingSync;
 
     /// <summary>
+    /// Responsible for syncing live properties to the serialized data.
+    /// </summary>
+    public LiveAttributePropertyController liveAttributePropertyController { get; } = new LiveAttributePropertyController();
+
+    /// <summary>
     /// The authoring context this controller is operating on.
     /// </summary>
     public UxmlAttributesEditingContext context
@@ -35,6 +39,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 m_Context.contextChanged -= OnContextChanged;
 
             m_Context = value;
+            liveAttributePropertyController.context = m_Context;
 
             if (m_Context != null)
                 m_Context.contextChanged += OnContextChanged;
@@ -77,11 +82,12 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 // Deserialize the element to ensure it has the latest data
                 DeserializeElement();
             }
-            // We need to sync the serialized data from the element
-            context.uxmlSerializedDataDescription.SyncSerializedData(context.element, context.uxmlSerializedData);
 
             // Ensure the serialized object is up to date
             context.rootSerializedObject.UpdateIfRequiredOrScript();
+
+            // We need to sync the serialized data from the element
+            liveAttributePropertyController.SyncLiveProperties();
 
             if (context.element?.panel is Panel targetPanel)
             {
@@ -94,6 +100,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     {
         if (m_HasPendingSync)
             EditorApplication.delayCall -= Sync;
+        liveAttributePropertyController.RemoveLiveProperties();
     }
 
     // Called when a property has changed
@@ -121,7 +128,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         // If the context is read only, we need to sync the serialized data from the element
         if (context.isReadOnly)
         {
-            context.uxmlSerializedDataDescription.SyncSerializedData(context.element, context.uxmlSerializedData);
+            liveAttributePropertyController.SyncLiveProperties();
         }
     }
 

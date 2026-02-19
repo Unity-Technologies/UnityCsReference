@@ -247,12 +247,6 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    [VisibleToOtherModules]
-    sealed class ThreadSafeAttribute : Attribute, IBindingsAttribute
-    {
-    }
-
     [VisibleToOtherModules]
     enum StaticAccessorType
     {
@@ -291,11 +285,6 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
-    [VisibleToOtherModules]
-    class NativeThrowsAttribute : Attribute, IBindingsAttribute
-    {
-    }
 
     /// <summary>
     /// Ignore a field for marshaling - the field will not be marshaled to native code
@@ -387,7 +376,7 @@ namespace UnityEngine.Bindings
     internal enum GCHandleOptions
     {
         Strong  = 0,
-        Weak    = 1,   
+        Weak    = 1,
         Pinned  = 2,
     }
 
@@ -457,5 +446,26 @@ namespace UnityEngine.Bindings
         public BindingsGeneratorIgnoreAttribute()
         {
         }
+    }
+
+    [Obsolete("ThreadSafeAttribute has been removed. Use [NativeMethod/FreeFunction/NativeProperty(IsThreadSafe = true)] instead.", true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [VisibleToOtherModules]
+    class ThreadSafeAttribute : Attribute
+    {
+    }
+
+    [Obsolete("ThreadAndSerializationSafeAttribute has been removed. Use [NativeMethod/FreeFunction/NativeProperty(IsThreadSafe = true)] instead.", true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [VisibleToOtherModules]
+    class ThreadAndSerializationSafeAttribute : Attribute
+    {
+    }
+
+    [Obsolete("NativeThrowsAttribute has been removed. Use [NativeMethod/FreeFunction/NativeProperty(ThrowsException = true)] instead.", true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
+    [VisibleToOtherModules]
+    internal class NativeThrowsAttribute : Attribute
+    {
     }
 }

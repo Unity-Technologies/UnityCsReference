@@ -23,7 +23,7 @@ struct LayoutState
     public static LayoutState Default => new LayoutState()
     {
         measureFunctionCallback = LayoutDelegates.s_InvokeMeasureFunction,
-        baselineFunctionCallback = LayoutDelegates.s_InvokeBaselineFunction
+        baselineFunctionCallback = LayoutDelegates.s_InvokeBaselineFunction,
     };
 }
 

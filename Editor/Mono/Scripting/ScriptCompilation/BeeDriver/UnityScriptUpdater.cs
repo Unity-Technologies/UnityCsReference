@@ -74,9 +74,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             //Some (UnityUpgradable) errors can be paired with a genuine user error on the same line/column. When this happens it is a known problem
             //that we are unable to upgrade the UnityUpgradable error. So we'll only return Certainly if there is not an other compilermessage pointing to the
             //same file,line,column. otherwise, we return maybe, so that a failure to do the update won't print a console message saying there is a bug.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (upgradableMessages.Any(IsOnlyMessageForThisFileLineAndColumn))
-#pragma warning restore UA2001
+            if (Array.Exists(upgradableMessages, IsOnlyMessageForThisFileLineAndColumn))
                 return CanUpdateAny.Certainly;
             if (upgradableMessages.Length > 0)
                 return CanUpdateAny.Maybe;

@@ -445,7 +445,7 @@ namespace UnityEditor
         }
     }
 
-    //This needs to match ManagedStackFrameToMono in native
+    //This needs to match ManagedStackFrameDetails in native
     [StructLayout(LayoutKind.Sequential)]
     struct StackFrame
     {

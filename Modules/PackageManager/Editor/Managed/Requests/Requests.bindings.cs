@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.Requests
 
         private static extern Error GetOperationError(long operationId);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void ReleaseCompletedOperation(long operationId);
     }
 

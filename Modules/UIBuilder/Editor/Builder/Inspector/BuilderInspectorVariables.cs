@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -221,14 +221,14 @@ namespace Unity.UI.Builder
 
             var name = $"{baseName}-{suffix}";
 
-            if (!m_VariablesItemsSource.Any(prop => prop.name.Equals(name)))
+            if (!m_VariablesItemsSource.Exists(prop => prop.name.Equals(name)))
                 return name;
 
             do
             {
                 name = $"{baseName}-{suffix}";
                 suffix++;
-            } while (m_VariablesItemsSource.Any(prop => prop.name.Equals(name)));
+            } while (m_VariablesItemsSource.Exists(prop => prop.name.Equals(name)));
 
             return name;
         }
@@ -343,7 +343,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                foreach (var selectedIndex in listView.selectedIndices)
+                foreach (var selectedIndex in listView.selectedIndicesList)
                 {
                     if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
                         continue;
@@ -548,7 +548,7 @@ namespace Unity.UI.Builder
             var menu = evt.menu;
             var index = m_VariablesItemsSource.IndexOf(currentRow.userData as StyleProperty);
             var isRootSelector = currentVisualElement.GetStyleComplexSelector().Equals(m_Inspector.styleSheet.FindSelector(":root"));
-            var multipleSelected = m_VariablesListView.selectedIndices.GetCount() > 1;
+            var multipleSelected = m_VariablesListView.selectedIndicesList.Count > 1;
 
             menu.AppendAction("Extract to Global variable", _ =>
             {
@@ -603,8 +603,8 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var selectedIndices = m_VariablesListView.selectedIndices;
-            if (selectedIndices.GetCount() == 0)
+            var selectedIndices = m_VariablesListView.selectedIndicesList;
+            if (selectedIndices.Count == 0)
                 return;
 
             foreach (var selectedIndex in selectedIndices)
@@ -625,8 +625,8 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var selectedIndices = m_VariablesListView.selectedIndices;
-            if (selectedIndices.GetCount() == 0)
+            var selectedIndices = m_VariablesListView.selectedIndicesList;
+            if (selectedIndices.Count == 0)
                 return;
 
             // Find root selector

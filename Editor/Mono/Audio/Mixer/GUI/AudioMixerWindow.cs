@@ -123,18 +123,10 @@ namespace UnityEditor
             {
                 if (s_Instance != null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    bool anyMixers = importedAssets.Any(val => val.EndsWith(".mixer"));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    anyMixers |= deletedAssets.Any(val => val.EndsWith(".mixer"));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    anyMixers |= movedAssets.Any(val => val.EndsWith(".mixer"));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    anyMixers |= movedFromPath.Any(val => val.EndsWith(".mixer"));
-#pragma warning restore UA2001
+                    bool anyMixers = Array.Exists(importedAssets, val => val.EndsWith(".mixer"));
+                    anyMixers |= Array.Exists(deletedAssets, val => val.EndsWith(".mixer"));
+                    anyMixers |= Array.Exists(movedAssets, val => val.EndsWith(".mixer"));
+                    anyMixers |= Array.Exists(movedFromPath, val => val.EndsWith(".mixer"));
 
                     if (anyMixers)
                         s_Instance.UpdateAfterAssetChange();

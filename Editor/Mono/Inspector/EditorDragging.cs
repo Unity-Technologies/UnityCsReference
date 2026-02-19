@@ -103,9 +103,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.DragPerform)
             {
                 // Determine if any object references are component, which would mean we are reordering components in the inspector
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var anyComponent = DragAndDrop.entityIds != null && DragAndDrop.entityIds.Any(id => InternalEditorUtility.GetObjectFromEntityId(id) is Component);
-#pragma warning restore UA2001
+                var anyComponent = DragAndDrop.entityIds != null && Array.Exists(DragAndDrop.entityIds, id => InternalEditorUtility.GetObjectFromEntityId(id) is Component);
 
                 // None of the object references are component, cancel further processing to avoid adding component twice
                 if (!anyComponent)
@@ -298,9 +296,7 @@ namespace UnityEditor
                     foreach (var targetComponent in targetComponents)
                     {
                         var gameObject = targetComponent.gameObject;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(gameObject, s)))
-#pragma warning restore UA2001
+                        if (Array.Exists(scripts, s => !ComponentUtility.WarnCanAddScriptComponent(gameObject, s)))
                         {
                             valid = false;
                             break;
@@ -314,9 +310,7 @@ namespace UnityEditor
 
                         // Add script components
                         var index = 0;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var addedComponents = new Component[targetComponents.Length * scripts.Count()];
-#pragma warning restore UA2001
+                        var addedComponents = new Component[targetComponents.Length * scripts.Length];
                         for (int i = 0; i < targetComponents.Length; i++)
                         {
                             var targetComponent = targetComponents[i];

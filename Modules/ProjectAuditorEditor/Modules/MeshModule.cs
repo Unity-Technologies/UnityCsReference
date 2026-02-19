@@ -15,9 +15,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
     enum MeshProperty
     {
         VertexCount,
-        TriangleCount,
+        PrimitiveCount,
+        PrimitiveType,
+        SubmeshCount,
+        LodCount,
         MeshCompression,
         SizeOnDisk,
+        Readable,
         Num
     }
 
@@ -26,24 +30,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_MeshLayout = new IssueLayout
         {
             Category = IssueCategory.Mesh,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Name", LongName = "Mesh Name", MaxAutoWidth = 500 },
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.VertexCount), Format = PropertyFormat.String, Name = "Vertex Count" },
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.TriangleCount), Format = PropertyFormat.String, Name = "Triangle Count" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.VertexCount), Format = PropertyFormat.Integer, Name = "Vertices", LongName = "Vertex Count" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.PrimitiveCount), Format = PropertyFormat.Integer, Name = "Primitives", LongName = "Primitive Count" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.PrimitiveType), Format = PropertyFormat.String, Name = "Topology", LongName = "Primitive Type" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.SubmeshCount), Format = PropertyFormat.Integer, Name = "Submeshes", LongName = "Submesh Count" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.LodCount), Format = PropertyFormat.Integer, Name = "LODs", LongName = "LOD Count" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.MeshCompression), Format = PropertyFormat.String, Name = "Compression", LongName = "Mesh Compression" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.SizeOnDisk), Format = PropertyFormat.Bytes, Name = "Size", LongName = "Mesh Size" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.Readable), Format = PropertyFormat.Bool, Name = "Readable", LongName = "Readable" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500 }
-            }
+            ]
         };
 
         public override string Name => "Meshes";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
-        {
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts =>
+        [
             k_MeshLayout,
             AssetsModule.k_IssueLayout
-        };
+        ];
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
@@ -92,17 +100,50 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     context.Mesh = mesh;
                     context.Size = size;
 
+                    int primitiveCount = 0;
+                    string topologyString = "None";
+                    for (int i = 0; i < mesh.subMeshCount; i++)
+                    {
+                        var indexCount = mesh.GetSubMesh(i).indexCount;
+                        var topology = mesh.GetTopology(i);
+                        switch (topology)
+                        {
+                            case MeshTopology.Triangles:
+                                primitiveCount += (indexCount / 3);
+                                break;
+                            case MeshTopology.Quads:
+                                primitiveCount += (indexCount / 4);
+                                break;
+                            case MeshTopology.Lines:
+                                primitiveCount += (indexCount / 2);
+                                break;
+                            case MeshTopology.LineStrip:
+                                primitiveCount += System.Math.Max(0, indexCount - 1);
+                                break;
+                            case MeshTopology.Points:
+                            default:
+                                primitiveCount += indexCount;
+                                break;
+                        }
+
+                        if (topologyString == "None")
+                            topologyString = topology.ToString();
+                        else if (topologyString != "Mixed" && topologyString != topology.ToString())
+                            topologyString = "Mixed";
+                    }
+
                     issues.Add(context.CreateInsight(IssueCategory.Mesh, meshName)
                         .WithCustomProperties(
-                            new object[((int)MeshProperty.Num)]
-                            {
+                            [
                                 mesh.vertexCount,
-                                mesh.triangles.Length / 3,
-                                modelImporter != null
-                                ? modelImporter.meshCompression
-                                : ModelImporterMeshCompression.Off,
-                                size
-                            })
+                                primitiveCount,
+                                topologyString,
+                                mesh.subMeshCount,
+                                mesh.lodCount,
+                                modelImporter?.meshCompression ?? ModelImporterMeshCompression.Off,
+                                size,
+                                modelImporter?.isReadable ?? mesh.isReadable
+                            ])
                         .WithLocation(new Location(assetPath)));
 
                     foreach (var analyzer in analyzers)

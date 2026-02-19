@@ -370,8 +370,10 @@ namespace UnityEditor.UIElements.Debugger
                 m_State[0] = true;
             }
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             else if (m_State.Where(s => s.Key > 0).Any(s => !s.Value))
 #pragma warning restore UA2001
+#pragma warning restore UA2006
             {
                 m_State[0] = false;
             }
@@ -388,7 +390,7 @@ namespace UnityEditor.UIElements.Debugger
 #pragma warning restore UA2001
                     m_State[group.TypeId] = true;
                 }
-                else if (m_GroupedEvents[choice.Group].Any(id => !m_State[id]))
+                else if (m_GroupedEvents[choice.Group].Exists(id => !m_State[id]))
                 {
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = m_Choices.First(c => c.TypeId < 0 && c.Group == choice.Group);

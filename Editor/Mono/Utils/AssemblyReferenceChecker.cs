@@ -294,23 +294,23 @@ namespace UnityEditor
 
         public bool HasReferenceToMethod(string methodName, bool ignoreSystemDlls)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !ignoreSystemDlls? _referencedMethods.Any(item => item.Contains(methodName)) : _userReferencedMethods.Any(item => item.Contains(methodName));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         public bool HasDefinedMethod(string methodName)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return _definedMethods.Any(item => item.Contains(methodName));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         public bool HasReferenceToType(string typeName)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return _referencedTypes.Any(item => item.StartsWith(typeName));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         public AssemblyDefinition[] GetAssemblyDefinitions()
@@ -337,9 +337,9 @@ namespace UnityEditor
                 var assemblyDefinitionsAsArray = new[] {assembly};
                 var types = BuildReferencedTypeList(assemblyDefinitionsAsArray);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (types.Any(item => item.StartsWith(klass)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                     return assembly.Name.Name;
             }
 

@@ -16,7 +16,7 @@ namespace UnityEditor.ShaderFoundry
             public bool hasErrors;
         }
         // TODO @ SHADERS: Improve error handling. This currently just propagates back a bool as we don't have any bound error data yet.
-        [ThreadSafe] extern public ScriptingResult Build(ShaderContainer container, Span<FoundryHandle> fieldHandles);
+        [NativeMethod(IsThreadSafe = true)] extern public ScriptingResult Build(ShaderContainer container, Span<FoundryHandle> fieldHandles);
     }
 
     internal class BlockConstructorGenerator

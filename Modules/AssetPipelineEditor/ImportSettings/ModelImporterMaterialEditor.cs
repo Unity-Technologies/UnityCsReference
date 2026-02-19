@@ -430,8 +430,10 @@ namespace UnityEditor
                 IEnumerable<string> namesOfEmbeddedMaterials = modelImporter.sourceMaterials
 #pragma warning restore UA2001
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Where(x => !m_ExternalObjectsCache.Any(y => y.Key.Item1 == x.name && y.Value.property != null && y.Value.property.objectReferenceValue != null))
 #pragma warning restore UA2001
+#pragma warning restore UA2006
                     .Select(x => x.name);
 
                 //Find the names of embedded materials in the AssetDatabase
@@ -647,9 +649,7 @@ namespace UnityEditor
         void DoMaterialRemapList()
         {
             // OnEnabled is not called consistently when the asset gets reimported, we need to rebuild the cache here if it's outdated.
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_ExternalObjects.arraySize != m_ExternalObjectsCache.Count())
-#pragma warning restore UA2001
+            if (m_ExternalObjects.arraySize != m_ExternalObjectsCache.Count)
                 ResetValues();
             // The list of material names is immutable, whereas the map of external objects can change based on user actions.
             // For each material name, map the external object associated with it where one exists.

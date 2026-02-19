@@ -19,14 +19,14 @@ namespace UnityEditor.ShaderFoundry
         // by managed as well.
         private readonly bool m_IsOwnedByManaged = false;
 
-        [ThreadSafe] internal static extern IntPtr Internal_Create();
-        [ThreadSafe] internal static extern void Internal_Destroy(IntPtr ptr);
+        [NativeMethod(IsThreadSafe = true)] internal static extern IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)] internal static extern void Internal_Destroy(IntPtr ptr);
 
-        [ThreadSafe] internal extern BlockShaderContainer GetContainer();
-        [ThreadSafe] internal extern Shader[] GetGeneratedShaders();
-        [ThreadSafe] internal extern BlockShaderSourceArtifact[] GetGeneratedShaderSource();
-        [ThreadSafe] internal extern BlockShaderErrors GetErrors();
-        [ThreadSafe] internal extern BlockShaderContainer[] GetDependencies();
+        [NativeMethod(IsThreadSafe = true)] internal extern BlockShaderContainer GetContainer();
+        [NativeMethod(IsThreadSafe = true)] internal extern Shader[] GetGeneratedShaders();
+        [NativeMethod(IsThreadSafe = true)] internal extern BlockShaderSourceArtifact[] GetGeneratedShaderSource();
+        [NativeMethod(IsThreadSafe = true)] internal extern BlockShaderErrors GetErrors();
+        [NativeMethod(IsThreadSafe = true)] internal extern BlockShaderContainer[] GetDependencies();
 
         // If any errors occurred during import, the container may contain symbols in an invalid state.
         // In this case, we don't expose the container at all.

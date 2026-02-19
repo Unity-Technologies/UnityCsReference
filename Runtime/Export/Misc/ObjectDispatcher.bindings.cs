@@ -425,7 +425,7 @@ namespace UnityEngine
 
         private static extern IntPtr CreateDispatchSystemHandle();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void DestroyDispatchSystemHandle(IntPtr ptr);
 
         private static extern int GetMaxDispatchHistoryFramesCount(IntPtr ptr);

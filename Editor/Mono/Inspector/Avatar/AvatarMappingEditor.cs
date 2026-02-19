@@ -694,9 +694,9 @@ namespace UnityEditor
             IEnumerable<AvatarSetupTool.BoneWrapper> match = m_Bones.Where(f => f.bone == bone.bone);
 #pragma warning restore UA2001
             // when we search in the list we must add 1 because the bone is in this list
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (match.Count() > 1)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             {
                 error = bone.messageName + " is also assigned to ";
                 bool first = true;

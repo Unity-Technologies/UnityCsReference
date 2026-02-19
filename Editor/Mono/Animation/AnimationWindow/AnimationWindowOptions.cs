@@ -4,77 +4,67 @@
 
 using UnityEditor;
 
+using TimeFormat = UnityEditor.Animations.AnimationWindow.TimelineFoundation.TimeFormat;
+
 namespace UnityEditorInternal
 {
-    internal static class AnimationWindowOptions
+    static class AnimationWindowOptions
     {
-        static string kTimeFormat = "AnimationWindow.TimeFormat";
-        static string kFilterBySelection = "AnimationWindow.FilterBySelection";
-        static string kShowReadOnly = "AnimationWindow.ShowReadOnly";
-        static string kShowFrameRate = "AnimationWindow.ShowFrameRate";
+        const string k_TimeFormat = "AnimationWindow.TimelineFoundation.TimeFormat";
+        const string k_FilterBySelection = "AnimationWindow.FilterBySelection";
+        const string k_ShowReadOnly = "AnimationWindow.ShowReadOnly";
+        const string k_ShowFrameRate = "AnimationWindow.ShowFrameRate";
 
-        private static TimeArea.TimeFormat m_TimeFormat;
+        private static TimeFormat m_TimeFormat;
         private static bool m_FilterBySelection;
         private static bool m_ShowReadOnly;
         private static bool m_ShowFrameRate;
 
         static AnimationWindowOptions()
         {
-            m_TimeFormat = (TimeArea.TimeFormat)EditorPrefs.GetInt(kTimeFormat, (int)TimeArea.TimeFormat.TimeFrame);
-            m_FilterBySelection = EditorPrefs.GetBool(kFilterBySelection, false);
-            m_ShowReadOnly = EditorPrefs.GetBool(kShowReadOnly, false);
-            m_ShowFrameRate = EditorPrefs.GetBool(kShowFrameRate, false);
+            m_TimeFormat = (TimeFormat)EditorPrefs.GetInt(k_TimeFormat, (int)TimeFormat.Frames);
+            m_FilterBySelection = EditorPrefs.GetBool(k_FilterBySelection, false);
+            m_ShowReadOnly = EditorPrefs.GetBool(k_ShowReadOnly, false);
+            m_ShowFrameRate = EditorPrefs.GetBool(k_ShowFrameRate, false);
         }
 
-        public static TimeArea.TimeFormat timeFormat
+        public static TimeFormat timeFormat
         {
-            get
-            {
-                return m_TimeFormat;
-            }
+            get => m_TimeFormat;
             set
             {
                 m_TimeFormat = value;
-                EditorPrefs.SetInt(kTimeFormat, (int)value);
+                EditorPrefs.SetInt(k_TimeFormat, (int)value);
             }
         }
 
         public static bool filterBySelection
         {
-            get
-            {
-                return m_FilterBySelection;
-            }
+            get => m_FilterBySelection;
             set
             {
                 m_FilterBySelection = value;
-                EditorPrefs.SetBool(kFilterBySelection, value);
+                EditorPrefs.SetBool(k_FilterBySelection, value);
             }
         }
 
         public static bool showReadOnly
         {
-            get
-            {
-                return m_ShowReadOnly;
-            }
+            get => m_ShowReadOnly;
             set
             {
                 m_ShowReadOnly = value;
-                EditorPrefs.SetBool(kShowReadOnly, value);
+                EditorPrefs.SetBool(k_ShowReadOnly, value);
             }
         }
 
         public static bool showFrameRate
         {
-            get
-            {
-                return m_ShowFrameRate;
-            }
+            get => m_ShowFrameRate;
             set
             {
                 m_ShowFrameRate = value;
-                EditorPrefs.SetBool(kShowFrameRate, value);
+                EditorPrefs.SetBool(k_ShowFrameRate, value);
             }
         }
     }

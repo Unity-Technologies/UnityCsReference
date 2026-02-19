@@ -10,6 +10,15 @@ namespace UnityEngine.UIElements
 {
     partial class VisualElement
     {
+        // The type-specific fully-combined event interests for the 3 admissible virtual method families.
+        internal struct DefaultEventInterests
+        {
+            public int DefaultActionCategories;
+            public int DefaultActionAtTargetCategories;
+            public int HandleEventTrickleDownCategories;
+            public int HandleEventBubbleUpCategories;
+        }
+
         // Virtual methods that only react to specific event categories can use the [EventInterest] attribute to allow
         // UI Toolkit to skip any unrelated events. EventInterests from base classes are automatically carried over.
         // Applies to the "HandleEventTrickleDown" and "HandleEventBubbleUp" methods.
@@ -256,62 +265,36 @@ namespace UnityEngine.UIElements
 
     internal static class EventInterestReflectionUtils
     {
-        // The type-specific fully-combined event interests for the 3 admissible virtual method families.
-        private struct DefaultEventInterests
-        {
-            public int DefaultActionCategories;
-            public int DefaultActionAtTargetCategories;
-            public int HandleEventTrickleDownCategories;
-            public int HandleEventBubbleUpCategories;
-        }
-
-        private static readonly Dictionary<Type, DefaultEventInterests> s_DefaultEventInterests =
-            new Dictionary<Type, DefaultEventInterests>();
-
         // Initialize this VisualElement's default categories according to its fully-resolved Type.
         internal static void GetDefaultEventInterests(Type elementType,
-            out int defaultActionCategories, out int defaultActionAtTargetCategories,
-            out int handleEventTrickleDownCategories, out int handleEventBubbleUpCategories)
+            out VisualElement.DefaultEventInterests categories)
         {
-            if (!s_DefaultEventInterests.TryGetValue(elementType, out var categories))
-            {
-                var ancestorType = elementType.BaseType;
-                if (ancestorType != null)
-                {
-                    GetDefaultEventInterests(ancestorType,
-                        out categories.DefaultActionCategories, out categories.DefaultActionAtTargetCategories,
-                        out categories.HandleEventTrickleDownCategories, out categories.HandleEventBubbleUpCategories);
-                }
+            var ancestorType = elementType.BaseType;
+            categories = ancestorType != null && ancestorType.IsSubclassOf(typeof(VisualElement))
+                ? VisualElement.GetOrCreateTypeData(ancestorType).defaultEventInterests
+                : default;
 
-                categories.DefaultActionCategories |=
-                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionName) |
+            categories.DefaultActionCategories |=
+                ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionName) |
 // Disable deprecation warnings so we can access legacy method ExecuteDefaultActionDisabled
 #pragma warning disable 618
-                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabled));
+                ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabled));
 #pragma warning restore 618
 
-                categories.DefaultActionAtTargetCategories |=
-                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionAtTargetName) |
+            categories.DefaultActionAtTargetCategories |=
+                ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionAtTargetName) |
 // Disable deprecation warnings so we can access legacy method ExecuteDefaultActionDisabledAtTarget
 #pragma warning disable 618
-                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabledAtTarget));
+                ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabledAtTarget));
 #pragma warning restore 618
 
-                categories.HandleEventTrickleDownCategories |=
-                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventTrickleDownName) |
-                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventTrickleDownDisabled));
+            categories.HandleEventTrickleDownCategories |=
+                ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventTrickleDownName) |
+                ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventTrickleDownDisabled));
 
-                categories.HandleEventBubbleUpCategories |=
-                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventBubbleUpName) |
-                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventBubbleUpDisabled));
-
-                s_DefaultEventInterests.Add(elementType, categories);
-            }
-
-            defaultActionCategories = categories.DefaultActionCategories;
-            defaultActionAtTargetCategories = categories.DefaultActionAtTargetCategories;
-            handleEventTrickleDownCategories = categories.HandleEventTrickleDownCategories;
-            handleEventBubbleUpCategories = categories.HandleEventBubbleUpCategories;
+            categories.HandleEventBubbleUpCategories |=
+                ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventBubbleUpName) |
+                ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventBubbleUpDisabled));
         }
 
         // Compute one level of EventInterests, for the given type. Those values can be combined with that of the

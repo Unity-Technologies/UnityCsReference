@@ -66,14 +66,14 @@ namespace UnityEditor.ShaderFoundry
             return new FileRootNode();
         }
 
-        [ThreadSafe] private extern static IntPtr Internal_Create();
-        [ThreadSafe] private static extern void Internal_Destroy(IntPtr ptr);
-        [ThreadSafe] internal extern UInt32 AddString(string text);
-        [ThreadSafe] internal extern string GetString(UInt32 index);
-        [ThreadSafe] internal extern NodeHandle AllocateByNodeType(NodeType nodeType);
-        [ThreadSafe] private unsafe extern void* GetNodeUnsafe(NodeHandle handle);
-        [ThreadSafe] internal extern NodeHandle GetRootHandle();
-        [ThreadSafe] internal extern void SetRootHandle(NodeHandle handle);
+        [NativeMethod(IsThreadSafe = true)] private extern static IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)] private static extern void Internal_Destroy(IntPtr ptr);
+        [NativeMethod(IsThreadSafe = true)] internal extern UInt32 AddString(string text);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetString(UInt32 index);
+        [NativeMethod(IsThreadSafe = true)] internal extern NodeHandle AllocateByNodeType(NodeType nodeType);
+        [NativeMethod(IsThreadSafe = true)] private unsafe extern void* GetNodeUnsafe(NodeHandle handle);
+        [NativeMethod(IsThreadSafe = true)] internal extern NodeHandle GetRootHandle();
+        [NativeMethod(IsThreadSafe = true)] internal extern void SetRootHandle(NodeHandle handle);
 
         unsafe internal IntPtr GetNodeIntPtr(NodeHandle handle)
         {

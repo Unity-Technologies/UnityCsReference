@@ -39,10 +39,26 @@ namespace UnityEditor
         private static RecycledTextEditor activeEditor;
 
         internal static DelayedTextEditor s_DelayedTextEditorInternal;
-        internal static DelayedTextEditor s_DelayedTextEditor => s_DelayedTextEditorInternal ??= new();
+        internal static DelayedTextEditor s_DelayedTextEditor
+        {
+            get
+            {
+                if (s_DelayedTextEditorInternal == null && IMGUITextHandle.IsTextSystemReady())
+                    s_DelayedTextEditorInternal = new DelayedTextEditor();
+                return s_DelayedTextEditorInternal;
+            }
+        }
 
         internal static RecycledTextEditor s_RecycledEditorInternal;
-        internal static RecycledTextEditor s_RecycledEditor => s_RecycledEditorInternal ??= new();
+        internal static RecycledTextEditor s_RecycledEditor
+        {
+            get
+            {
+                if (s_RecycledEditorInternal == null && IMGUITextHandle.IsTextSystemReady())
+                    s_RecycledEditorInternal = new RecycledTextEditor();
+                return s_RecycledEditorInternal;
+            }
+        }
 
         internal static string s_OriginalText = "";
         internal static string s_RecycledCurrentEditingString;
@@ -2149,7 +2165,7 @@ namespace UnityEditor
                     else
                         scrollPosition = s_RecycledEditor.scrollOffset;
                 }
-               
+
             }
 
             return newValue;
@@ -3265,9 +3281,7 @@ namespace UnityEditor
 
                                 ReorderableList.InvalidateExistingListCaches();
                             }
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            else if (listView != null && listView.selectedIndices.Any())
-#pragma warning restore UA2002
+                            else if (listView != null && listView.selectedIndicesList.Count > 0)
                             {
                                 DuplicateListViewItems(listView, parentArrayProperty);
                             }
@@ -3329,9 +3343,7 @@ namespace UnityEditor
                                     list.onChangedCallback(list);
                                 ReorderableList.InvalidateExistingListCaches();
                             }
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            else if (listView != null && listView.selectedIndices.Any())
-#pragma warning restore UA2002
+                            else if (listView != null && listView.selectedIndicesList.Count > 0)
                             {
                                 DeleteListViewItems(listView, parentArrayProperty);
                             }
@@ -3410,7 +3422,7 @@ namespace UnityEditor
 
         internal static void DeleteListViewItems(BaseListView baseListView, SerializedProperty parentArrayProperty)
         {
-            var previousSelectedIndices = new List<int>(baseListView.selectedIndices);
+            var previousSelectedIndices = new List<int>(baseListView.selectedIndicesList);
             previousSelectedIndices.Sort();
             baseListView.ClearSelection();
 
@@ -3429,7 +3441,7 @@ namespace UnityEditor
 
         internal static void DuplicateListViewItems(BaseListView baseListView, SerializedProperty parentArrayProperty)
         {
-            var previousSelectedIndices = new List<int>(baseListView.selectedIndices);
+            var previousSelectedIndices = new List<int>(baseListView.selectedIndicesList);
             previousSelectedIndices.Sort();
             var newSelectedIndices = new List<int>();
             baseListView.ClearSelection();

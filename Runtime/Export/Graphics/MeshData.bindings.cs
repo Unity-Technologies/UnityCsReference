@@ -64,8 +64,8 @@ namespace UnityEngine
             static extern unsafe void ReleaseMeshDatas(IntPtr* datas, int count);
 
             static extern unsafe void CreateNewMeshDatas(IntPtr* datas, int count);
-            [NativeThrows] static extern unsafe void ApplyToMeshesImpl([NotNull] Mesh[] meshes, IntPtr* datas, int count, MeshUpdateFlags flags);
-            [NativeThrows] static extern void ApplyToMeshImpl([NotNull] Mesh mesh, IntPtr data, MeshUpdateFlags flags);
+            [NativeMethod(ThrowsException = true)] static extern unsafe void ApplyToMeshesImpl([NotNull] Mesh[] meshes, IntPtr* datas, int count, MeshUpdateFlags flags);
+            [NativeMethod(ThrowsException = true)] static extern void ApplyToMeshImpl([NotNull] Mesh mesh, IntPtr data, MeshUpdateFlags flags);
         }
     }
 }

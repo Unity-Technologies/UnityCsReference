@@ -166,47 +166,47 @@ namespace UnityEditor
             onAnimationSampleEnd?.Invoke();
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void AddCandidate(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void AddCandidates([NotNull] GameObject gameObject, [NotNull] AnimationClip clip);
 
         extern internal static void StopCandidateRecording();
 
         extern internal static bool IsRecordingCandidates();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void SampleAnimationClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void SampleCandidateClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void SamplePlayableGraph(PlayableGraph graph, int index, float time);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void AddPropertyModification(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void AddEditorCurveBinding([NotNull] GameObject gameObject, EditorCurveBinding binding);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void AddTransformTR([NotNull] GameObject root, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void AddTransformTRS([NotNull] GameObject root, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void InitializePropertyModificationForGameObject([NotNull] GameObject gameObject, [NotNull] AnimationClip clip);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void InitializePropertyModificationForObject([NotNull] Object target, [NotNull] AnimationClip clip);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void RevertPropertyModificationsForGameObject([NotNull] GameObject gameObject);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void RevertPropertyModificationsForObject([NotNull] Object target);
 
         // Returns editor curve bindings for animation clip and animator hierarchy that need to be snapshot for animation mode.
@@ -218,10 +218,10 @@ namespace UnityEditor
         // Return editor curve bindings for animator hierarhcy that need to be snapshot for animation mode.
         extern internal static EditorCurveBinding[] GetAnimatorBindings([NotNull] GameObject root);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void Internal_BeginSampling();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void Internal_EndSampling();
 
         extern private static void Internal_StartAnimationMode(Object driver);
@@ -232,7 +232,7 @@ namespace UnityEditor
 
         extern private static bool Internal_InAnimationModeNoDriver();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void Internal_StartCandidateRecording(Object driver);
 
         extern internal static Object Internal_GetDriver();

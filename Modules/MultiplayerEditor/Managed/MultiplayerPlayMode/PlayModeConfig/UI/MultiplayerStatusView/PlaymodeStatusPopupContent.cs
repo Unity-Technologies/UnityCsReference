@@ -89,7 +89,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             foreach (var (view, instance) in m_ViewToInstance)
             {
-                view.SetStatus(instance.StatusData.OverallStatus.State);
+                view.SetStatus(instance.StatusData);
                 view.RefreshFreeRunUI();
             }
         }
@@ -179,21 +179,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 Add(statusContainer);
             }
 
-            internal void SetStatus(ExecutionState status)
+            internal void SetStatus(InstanceStatusData status)
             {
                 RemoveFromClassList(k_ActiveClass);
                 RemoveFromClassList(k_ErrorClass);
                 RemoveFromClassList(k_LoadingClass);
                 RemoveFromClassList(k_IdleClass);
-                switch (status)
+                switch (status.OverallStatus.State)
                 {
-                    case ExecutionState.Active:
-                        AddToClassList(k_ActiveClass);
-                        m_StatusIndicator.tooltip = "active";
-                        break;
                     case ExecutionState.Running:
-                        AddToClassList(k_LoadingClass);
-                        m_StatusIndicator.tooltip = "loading";
+                        if (status.IsExecutingRunningStage())
+                        {
+                            AddToClassList(k_ActiveClass);
+                            m_StatusIndicator.tooltip = "running";
+                        }
+                        else
+                        {
+                            AddToClassList(k_LoadingClass);
+                            m_StatusIndicator.tooltip = "loading";
+                        }
                         break;
                     case ExecutionState.Failed:
                         AddToClassList(k_ErrorClass);

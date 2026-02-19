@@ -111,7 +111,7 @@ namespace UnityEngine.UIElements
 
             // If the item being added contains children, we want to convert them into HierarchyNode(s). For example,
             // users can drive their TreeView solely with the AddItem and TryRemoveItem APIs
-            if (item.children.GetCount() > 0)
+            if (item.hasChildren)
             {
                 var parentNode = GetHierarchyNodeById(item.id);
 

@@ -64,23 +64,23 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/PackageUtility.bindings.h")]
     internal class PackageUtility
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern ExportPackageItem[] BuildExportPackageItemsList(string[] guids, bool dependencies);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern ExportPackageItem[] BuildExportPackageItemsListWithPackageManagerWarning(string[] guids, bool dependencies, bool warnPackageManagerDependencies);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ExportPackage(string[] guids, string fileName);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ExportPackageAndPackageManagerManifest(string[] guids, string fileName);
         
         [FreeFunction("DelayedImportPackageAssets")]
-        public static extern void ImportPackageAssets(string packageName, ImportPackageItem[] items);
+        public static extern void ImportPackageAssets(string packageName, ImportPackageItem[] items, string packageExtractedPath, bool interactive);
 
         [FreeFunction("DelayedImportPackageAssetsWithOrigin")]
-        public static extern void ImportPackageAssetsWithOrigin(AssetOrigin origin, ImportPackageItem[] items);
+        public static extern void ImportPackageAssetsWithOrigin(AssetOrigin origin, ImportPackageItem[] items, string packageExtractedPath, bool interactive);
 
         [FreeFunction("ImportPackageAssets")]
-        public static extern void ImportPackageAssetsImmediately(string packageName, ImportPackageItem[] items);
+        public static extern void ImportPackageAssetsImmediately(string packageName, ImportPackageItem[] items, string packageExtractedPath, bool interactive);
 
         [FreeFunction("ImportPackageCancelledGUI")]
         public static extern void ImportPackageAssetsCancelledFromGUI(string packageName, ImportPackageItem[] items);

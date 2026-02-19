@@ -205,9 +205,7 @@ namespace UnityEditor.SceneTemplate
                 s_CurrentInMemorySceneState.rootFolder = rootFolder;
                 s_CurrentInMemorySceneState.hasCloneableDependencies = hasAnyCloneableDependencies;
                 s_CurrentInMemorySceneState.dependencyFolderName = Path.GetFileNameWithoutExtension(newSceneOutputPath);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                s_CurrentInMemorySceneState.hasSubScene = sceneTemplate.dependencies.Any(dep => dep.dependency is SceneAsset);
-#pragma warning restore UA2001
+                s_CurrentInMemorySceneState.hasSubScene = Array.Exists(sceneTemplate.dependencies, dep => dep.dependency is SceneAsset);
             }
 
             SceneTemplateAnalytics.SendSceneInstantiationEvent(instantiateEvent);

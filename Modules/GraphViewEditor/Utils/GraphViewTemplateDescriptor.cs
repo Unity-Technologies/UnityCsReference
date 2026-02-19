@@ -104,14 +104,14 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        public Dictionary<string, List<string>> GetCustomData()
+        public Dictionary<string, List<string>> GetCustomData(string keyPrefix)
         {
             var dictionary = new Dictionary<string, List<string>>();
             var count = customDataValues?.Count ?? 0;
             for (var i = 0; i < count; i++)
             {
                 var keyIndex = customDataKeyIndex[i];
-                var key = customDataKeys[keyIndex];
+                var key = keyPrefix + customDataKeys[keyIndex];
                 var value = customDataValues[i];
                 if (!dictionary.TryGetValue(key, out var values))
                 {
@@ -165,10 +165,6 @@ namespace UnityEditor.Experimental.GraphView
         /// Allow to sort templates in its category
         /// </summary>
         public int order = 0;
-        /// <summary>
-        /// Store custom data associated with the template.
-        /// </summary>
-        public DataBag customData = default;
 
         [SerializeField] private string toolKey;
 

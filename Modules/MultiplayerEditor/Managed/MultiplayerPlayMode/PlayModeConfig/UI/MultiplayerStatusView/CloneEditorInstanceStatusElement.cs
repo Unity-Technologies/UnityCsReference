@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor;
 using UnityEditor.Multiplayer.Internal;
 using UnityEngine.UIElements;
 
@@ -136,7 +137,7 @@ internal class CloneEditorInstanceStatusElement : VisualElement
 
         roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
         if (EditorMultiplayerManager.enableMultiplayerRoles)
-            roleLabel.text = settings.RoleMask.ToString();
+            roleLabel.text = ObjectNames.NicifyVariableName(settings.RoleMask.ToString());
 
         statusContainer.Add(statusFocusBtnContainer);
         statusContainer.Add(statusRunDeviceContainer);
@@ -179,34 +180,29 @@ internal class CloneEditorInstanceStatusElement : VisualElement
         m_ConnectedLabel.text = string.Empty;
     }
 
-    private void AssignLogs(ExecutionState state)
+    private void AssignLogs(InstanceStatusData status)
     {
-        switch (state)
+        if (status.IsExecutingRunningStage())
         {
-            case ExecutionState.Active:
-                if (Player != null)
-                {
-                    var logs = MultiplayerPlaymodeLogUtility.PlayerLogs(Player.PlayerIdentifier).LogCounts;
-                    LogInfoText.text = logs.Logs.ToString();
-                    LogWarningText.text = logs.Warnings.ToString();
-                    LogErrorText.text = logs.Errors.ToString();
-                }
-
-                break;
-            default:
-                LogInfoText.text = 0.ToString();
-                LogWarningText.text = 0.ToString();
-                LogErrorText.text = 0.ToString();
-                break;
+            if (Player != null)
+            {
+                var logs = MultiplayerPlaymodeLogUtility.PlayerLogs(Player.PlayerIdentifier).LogCounts;
+                LogInfoText.text = logs.Logs.ToString();
+                LogWarningText.text = logs.Warnings.ToString();
+                LogErrorText.text = logs.Errors.ToString();
+            }
+        }
+        else
+        {
+            LogInfoText.text = 0.ToString();
+            LogWarningText.text = 0.ToString();
+            LogErrorText.text = 0.ToString();
         }
     }
 
     internal void RefreshStatusUI()
     {
         CleanUpStatus();
-
-        var instanceExecutionState = m_Instance.StatusData.OverallStatus.State;
-
-        AssignLogs(instanceExecutionState);
+        AssignLogs(m_Instance.StatusData);
     }
 }

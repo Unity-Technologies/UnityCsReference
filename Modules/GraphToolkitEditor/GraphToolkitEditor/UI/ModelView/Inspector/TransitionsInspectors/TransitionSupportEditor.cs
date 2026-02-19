@@ -469,9 +469,7 @@ namespace Unity.GraphToolkit.Editor
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     transitions.Select(c => c.TransitionModel).ToList(),
 #pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    toTop ? 0 : TransitionSupportModel.Transitions.Count() - 1));
-#pragma warning restore UA2001
+                    toTop ? 0 : TransitionSupportModel.Transitions.Count - 1));
             }
         }
 

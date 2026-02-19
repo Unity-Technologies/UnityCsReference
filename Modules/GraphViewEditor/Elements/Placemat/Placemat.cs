@@ -298,9 +298,9 @@ namespace UnityEditor.Experimental.GraphView
             foreach (var node in nodes)
             {
                 var stackNode = node as StackNode;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (stackNode != null && stackNode.contentContainer.Children().Any(n => n == port.node))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                     return true;
 
                 if (node == port.node)

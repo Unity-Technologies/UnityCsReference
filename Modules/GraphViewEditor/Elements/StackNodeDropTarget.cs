@@ -186,8 +186,8 @@ namespace UnityEditor.Experimental.GraphView
 
         private void HandleDragAndDropEvent(IMouseEvent evt)
         {
-            if ((m_AddAnimations != null && m_AddAnimations.Any(a => a.isRunning)) ||
-                (m_RemoveAnimations != null && m_RemoveAnimations.Any(a => a.isRunning)))
+            if ((m_AddAnimations != null && m_AddAnimations.Exists(a => a.isRunning)) ||
+                (m_RemoveAnimations != null && m_RemoveAnimations.Exists(a => a.isRunning)))
                 return;
 
             // Nothing interesting to do if nothing is dragged.

@@ -15,8 +15,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ValueHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static RenderStateNamedValueInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static RenderStateNamedValueInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         RenderStateNamedValueInternal IInternalType<RenderStateNamedValueInternal>.ConstructInvalid() => Invalid();

@@ -43,7 +43,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new RemoveCustomAction(m_OperationDispatcher, m_Application),
                 new ResetAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager),
                 new UnlockAction(m_PageManager),
-                new UpdateAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager),
                 new GitUpdateAction(m_OperationDispatcher, m_UpmCache, m_Application)
             };
 

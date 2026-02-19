@@ -12,6 +12,22 @@ namespace Unity.ProjectAuditor.Editor.Core
     /// <summary>
     /// A context object passed by CodeModule to a CodeModuleInstructionAnalyzer's Analyze() method.
     /// </summary>
+    internal class MethodAnalysisContext : AnalysisContext
+    {
+        /// <summary>
+        /// A Mono.Cecil Method Definition containing information about the current method being analyzed.
+        /// </summary>
+        public MethodDefinition MethodDefinition;
+
+        /// <summary>
+        /// Custom metadata that an analyzer can setup for each Assembly.
+        /// </summary>
+        internal object AssemblyUserData;
+    }
+
+    /// <summary>
+    /// A context object passed by CodeModule to a CodeModuleInstructionAnalyzer's Analyze() method.
+    /// </summary>
     public class InstructionAnalysisContext : AnalysisContext
     {
         // TODO: these 2 fields used to be public, but we can't leak the Cecil implementation out in the public API, as we might move away from using Cecil in the future.
@@ -78,8 +94,9 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// <summary>
         /// Implement this method to store custom per-method data (requires allocating data first via OnAnalyzeAssembly)
         /// </summary>
-        internal virtual void OnAnalyzeMethodBody(MethodDefinition methodDefinition, object assemblyUserData)
+        internal virtual ReportItemBuilder OnAnalyzeMethodBody(MethodAnalysisContext context)
         {
+            return null;
         }
     }
 }

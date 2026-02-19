@@ -82,7 +82,7 @@ namespace UnityEditor.Profiling
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
         public bool valid
@@ -95,93 +95,93 @@ namespace UnityEditor.Profiling
 
         public extern int frameIndex
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
 
         public extern int threadIndex
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern string threadGroupName
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern string threadName
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern ulong threadId
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern double frameStartTimeMs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern ulong frameStartTimeNs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern float frameTimeMs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern ulong frameTimeNs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern float frameGpuTimeMs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern ulong frameGpuTimeNs
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern float frameFps
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern int sampleCount
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         public extern int maxDepth
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
         // the current runtime (Editor or Player) session id. This is different from the
         internal extern uint runtimeSessionId
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
@@ -239,7 +239,7 @@ namespace UnityEditor.Profiling
             public int size;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern AtomicSafetyHandle GetSafetyHandle();
 
         public NativeArray<T> GetFrameMetaData<T>(Guid id, int tag) where T : struct
@@ -271,10 +271,10 @@ namespace UnityEditor.Profiling
             return GetFrameMetaDataCount(id.ToByteArray(), tag);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern Data GetFrameMetaData(byte[] statsId, int tag, int index);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern int GetFrameMetaDataCount(byte[] statsId, int tag);
 
         public NativeArray<T> GetSessionMetaData<T>(Guid id, int tag) where T : struct
@@ -296,10 +296,10 @@ namespace UnityEditor.Profiling
             return GetSessionMetaDataCount(id.ToByteArray(), tag);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern Data GetSessionMetaData(byte[] statsId, int tag, int index);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern int GetSessionMetaDataCount(byte[] statsId, int tag);
 
         internal T GetProfilingSessionMetaData<T>(ProfilingSessionMetaDataEntry entry) where T : unmanaged

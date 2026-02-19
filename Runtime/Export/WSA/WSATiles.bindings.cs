@@ -195,7 +195,7 @@ namespace UnityEngine.WSA
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetTemplate(TileTemplate templ);
 
         public void Update(string xml)
@@ -203,7 +203,7 @@ namespace UnityEngine.WSA
             Update(m_TileId, xml);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void Update(string tileId, string xml);
 
         public void Update(string medium, string wide, string large, string text)
@@ -211,7 +211,7 @@ namespace UnityEngine.WSA
             UpdateImageAndText(m_TileId, medium, wide, large, text);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void UpdateImageAndText(string tileId, string medium, string wide, string large, string text);
 
         public void PeriodicUpdate(string uri, float interval)
@@ -219,7 +219,7 @@ namespace UnityEngine.WSA
             PeriodicUpdate(m_TileId, uri, interval);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void PeriodicUpdate(string tileId, string uri, float interval);
 
         public void StopPeriodicUpdate()
@@ -227,7 +227,7 @@ namespace UnityEngine.WSA
             StopPeriodicUpdate(m_TileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void StopPeriodicUpdate(string tileId);
 
         public void UpdateBadgeImage(string image)
@@ -235,7 +235,7 @@ namespace UnityEngine.WSA
             UpdateBadgeImage(m_TileId, image);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void UpdateBadgeImage(string tileId, string image);
 
         public void UpdateBadgeNumber(float number)
@@ -243,7 +243,7 @@ namespace UnityEngine.WSA
             UpdateBadgeNumber(m_TileId, number);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void UpdateBadgeNumber(string tileId, float number);
 
         public void RemoveBadge()
@@ -251,7 +251,7 @@ namespace UnityEngine.WSA
             RemoveBadge(m_TileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void RemoveBadge(string tileId);
 
         public void PeriodicBadgeUpdate(string uri, float interval)
@@ -259,7 +259,7 @@ namespace UnityEngine.WSA
             PeriodicBadgeUpdate(m_TileId, uri, interval);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void PeriodicBadgeUpdate(string tileId, string uri, float interval);
 
         public void StopPeriodicBadgeUpdate()
@@ -267,7 +267,7 @@ namespace UnityEngine.WSA
             StopPeriodicBadgeUpdate(m_TileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void StopPeriodicBadgeUpdate(string tileId);
 
         public string id
@@ -286,7 +286,7 @@ namespace UnityEngine.WSA
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern bool HasUserConsent(string tileId);
 
         public bool exists
@@ -297,7 +297,7 @@ namespace UnityEngine.WSA
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool Exists(string tileId);
 
         private static string[] MakeSecondaryTileSargs(SecondaryTileData data)
@@ -341,7 +341,7 @@ namespace UnityEngine.WSA
         }
 
         // On Win 8.0 there is limitation on argument count, so we pass them as arrays
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern string CreateOrUpdateSecondaryTile(string[] sargs, bool[] bargs, ref Color32 backgroundColor, int foregroundText);
 
         public static Tile CreateOrUpdateSecondary(SecondaryTileData data, Vector2 pos)
@@ -362,7 +362,7 @@ namespace UnityEngine.WSA
             return new Tile(tileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern string CreateOrUpdateSecondaryTilePoint(
             string[] sargs,
             bool[] bargs,
@@ -388,7 +388,7 @@ namespace UnityEngine.WSA
             return new Tile(tileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern string CreateOrUpdateSecondaryTileArea(
             string[] sargs,
             bool[] bargs,
@@ -412,7 +412,7 @@ namespace UnityEngine.WSA
             return tiles;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern string[] GetAllSecondaryTiles();
 
         public void Delete()
@@ -420,7 +420,7 @@ namespace UnityEngine.WSA
             DeleteSecondary(m_TileId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteSecondary(string tileId);
 
         public void Delete(Vector2 pos)
@@ -433,7 +433,7 @@ namespace UnityEngine.WSA
             DeleteSecondaryPos(tileId, pos);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void DeleteSecondaryPos(string tileId, Vector2 pos);
 
         public void Delete(Rect area)
@@ -446,7 +446,7 @@ namespace UnityEngine.WSA
             DeleteSecondary(tileId, area);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void DeleteSecondaryArea(string tileId, Rect area);
     }
 

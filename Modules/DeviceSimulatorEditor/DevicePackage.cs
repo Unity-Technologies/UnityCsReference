@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -56,9 +58,7 @@ namespace UnityEditor.DeviceSimulation
 
         private static void OnPackageRegistration(PackageRegistrationEventArgs args)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (args.removed.Any(package => package.name == "com.unity.device-simulator.devices"))
-#pragma warning restore UA2001
+            if (((IReadOnlyCollection<PackageManager.PackageInfo>)args.removed).Exists(package => package.name == "com.unity.device-simulator.devices"))
                 SetStatus(DevicePackageStatus.Unavailable);
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

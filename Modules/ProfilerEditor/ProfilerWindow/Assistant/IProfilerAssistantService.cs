@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Profiling.Editor
 {
@@ -15,6 +16,7 @@ namespace Unity.Profiling.Editor
     /// e.g. Profiler Window assistant or Project Auditor assistant.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal class AskAssistantServiceRoleAttribute : Attribute
     {
         public AskAssistantServiceRoleAttribute(string role)
@@ -27,6 +29,7 @@ namespace Unity.Profiling.Editor
     /// <summary>
     /// Allows packages to implement Ask Assistant services for different contexts.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal interface IAskAssistantService : IDisposable
     {
         /// <summary>

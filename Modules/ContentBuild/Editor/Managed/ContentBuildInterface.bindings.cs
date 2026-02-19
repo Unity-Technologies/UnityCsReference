@@ -332,7 +332,7 @@ namespace UnityEditor.Build.Content
             return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo?.preloadObjects,  parameters.bundleInfo?.bundleName, parameters.bundleInfo?.bundleAssets);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         static extern WriteResult WriteSerializedFile_Internal(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, List<ObjectIdentifier> preloadObjects, string bundleName, List<AssetLoadInfo> bundleAssets);
         ///<summary>Writes Scene objects to a serialized file on disk.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
@@ -356,7 +356,7 @@ namespace UnityEditor.Build.Content
             return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo?.preloadObjects, parameters.sceneBundleInfo?.bundleName, parameters.sceneBundleInfo?.bundleScenes);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         static extern WriteResult WriteSceneSerializedFile_Internal(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, List<ObjectIdentifier> preloadObjects, string bundleName, List<SceneLoadInfo> bundleScenes);
 
         ///<summary>Writes the current settings of internal Unity game manager classes to the 'globalgamemanagers' file on disk.</summary>
@@ -396,6 +396,9 @@ namespace UnityEditor.Build.Content
             return ArchiveAndCompress(resourceFiles, outputBundlePath, compression, false);
         }
 
+        // The ThreadSafe attribute was removed, but an Addressable package test checks that ArchiveAndCompress has a ThreadSafe attribute.
+        private class ThreadSafeAttribute : Attribute {}
+
         ///<summary>Create a Unity archive file, containing the content of one or more resource files.</summary>
         ///<remarks>Generate a Unity Archive file.  This low level API is exposed primarily for use by the **Scriptable Build Pipeline** package.
         ///For example, when building AssetBundles using [[BuildPipeline.BuildAssetBundles]] it is not necessary to call this API because the AssetBundle Archive files are created automatically.
@@ -408,18 +411,19 @@ namespace UnityEditor.Build.Content
         ///This can be useful when rebuilding AssetBundles after a minor upgrade of the Unity Editor, to make sure otherwise identical AssetBundles generate the exact same full-file content.
         ///Note: The CRC and hash values calculated by Unity for AssetBundles ignore the Archive Header. So it is not necessary to strip the Unity Version in the Archive Header when using those for integrity and version tracking.</param>
         ///<returns>The CRC of the archive. Returns 0 if operation failed.</returns>
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
+        [ContentBuildInterface.ThreadSafe] // Unused see above
         public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression, bool stripUnityVersion);
 
         ///<summary>Starts a profile capture to record content build profile events.</summary>
         ///<remarks>Throws an InvalidOperationException if the previous profile capture hasn't stopped.</remarks>
         ///<param name="options">Used to filter captured events.</param>
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void StartProfileCapture(ProfileCaptureOptions options);
 
         ///<summary>Returns an array of ContentBuildProfileEvent structs that contain information for each occuring event. Also stops the profile capture.</summary>
         ///<remarks>Throws an InvalidOperationException if no profile capture has started.</remarks>
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
 
         ///<summary>Returns a unique hash for a given type's serialized layout.</summary>

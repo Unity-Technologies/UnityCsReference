@@ -807,9 +807,7 @@ namespace UnityEditor.Search
                 path = new FileInfo(path).FullName;
             }
             path = CleanPath(path);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return rootDescriptors.Any(desc => path.StartsWith(desc.absPath));
-#pragma warning restore UA2001
+            return Array.Exists(rootDescriptors, desc => path.StartsWith(desc.absPath));
         }
 
         internal static string GetPathUnderProject(string path)
@@ -1344,7 +1342,7 @@ namespace UnityEditor.Search
             {
                 Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                 success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
-                result = (T)(object)EntityId.From(temp);
+                result = (T)(object)EntityId.FromULong((ulong)temp);
             }
             return success;
         }

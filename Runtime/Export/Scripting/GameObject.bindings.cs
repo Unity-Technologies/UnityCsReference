@@ -287,15 +287,6 @@ namespace UnityEngine
 
         public extern int layer { get; set; }
 
-        [Obsolete("GameObject.active is obsolete. Use GameObject.SetActive(), GameObject.activeSelf or GameObject.activeInHierarchy.")]
-        public extern bool active
-        {
-            [NativeMethod(Name = "IsActive")]
-            get;
-            [NativeMethod(Name = "SetSelfActive")]
-            set;
-        }
-
         [NativeMethod(Name = "SetSelfActive")]
         public extern void SetActive(bool value);
 
@@ -310,10 +301,6 @@ namespace UnityEngine
             [NativeMethod(Name = "IsActive")]
             get;
         }
-
-        [Obsolete("gameObject.SetActiveRecursively() is obsolete. Use GameObject.SetActive(), which is now inherited by children.")]
-        [NativeMethod(Name = "SetActiveRecursivelyDeprecated")]
-        public extern void SetActiveRecursively(bool state);
 
         public extern bool isStatic
         {
@@ -433,18 +420,6 @@ namespace UnityEngine
         [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByInstanceID")]
         extern private static void SetGameObjectsActive(IntPtr instanceIds, int instanceCount, bool active);
 
-        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.")]
-        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
-        {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
-
-            if (instanceIDs.Length == 0)
-                return;
-
-            SetGameObjectsActive((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, active);
-        }
-
         public static unsafe void SetGameObjectsActive(NativeArray<EntityId> entityIds, bool active)
         {
             Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
@@ -455,18 +430,6 @@ namespace UnityEngine
                 return;
 
             SetGameObjectsActive((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, active);
-        }
-
-        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.")]
-        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active)
-        {
-            if (instanceIDs.Length == 0)
-                return;
-
-            fixed (int* instanceIDsPtr = instanceIDs)
-            {
-                SetGameObjectsActive((IntPtr)instanceIDsPtr, instanceIDs.Length, active);
-            }
         }
 
         public static unsafe void SetGameObjectsActive(ReadOnlySpan<EntityId> entityIds, bool active)
@@ -484,21 +447,6 @@ namespace UnityEngine
         [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
         extern private static void InstantiateGameObjects(EntityId sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
 
-        [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.")]
-        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
-        {
-            if (!newInstanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(newInstanceIDs));
-            if (!newTransformInstanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(newTransformInstanceIDs));
-            if (count == 0)
-                return;
-            if ((count != newInstanceIDs.Length) || (count != newTransformInstanceIDs.Length))
-                throw new ArgumentException("Size mismatch! Both arrays must already be the size of count.");
-
-            InstantiateGameObjects(sourceInstanceID, (IntPtr)newInstanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformInstanceIDs.GetUnsafeReadOnlyPtr(), newInstanceIDs.Length, destinationScene);
-        }
-
         public static unsafe void InstantiateGameObjects(EntityId sourceEntityId, int count, NativeArray<EntityId> newEntityIds, NativeArray<EntityId> newTransformEntityIds, Scene destinationScene = default)
         {
             Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
@@ -514,9 +462,6 @@ namespace UnityEngine
 
             InstantiateGameObjects(sourceEntityId, (IntPtr)newEntityIds.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformEntityIds.GetUnsafeReadOnlyPtr(), newEntityIds.Length, destinationScene);
         }
-
-        [Obsolete("Obsolete. Please use GameObject.GetScene(EntityId entityId) instead.")]
-        public static Scene GetScene(int instanceID) => GetSceneInternal((EntityId)instanceID);
 
         [FreeFunction(Name = "GameObjectBindings::GetSceneByEntityId")]
         static extern Scene GetSceneInternal(EntityId entityId);

@@ -26,7 +26,7 @@ namespace Unity.GraphToolkit.Editor
         public Type DataType { get; }
 
         /// <summary>
-        /// Attempts to retrieve the value of the constant node as the specified type.
+        /// Retrieves the value of the constant node as the specified type.
         /// </summary>
         /// <typeparam name="T">The type to retrieve the value as.</typeparam>
         /// <param name="value">The output parameter that holds the value if the conversion is successful.</param>
@@ -37,5 +37,17 @@ namespace Unity.GraphToolkit.Editor
         /// and <paramref name="value"/> is set to the default value of <typeparamref name="T"/>.
         /// </remarks>
         public bool TryGetValue<T>(out T value);
+
+        /// <summary>
+        /// Sets the value of the constant node to the specified value of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to set.</typeparam>
+        /// <param name="value">The value to set.</param>
+        /// <returns><c>true</c> if the value was successfully set; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        /// This method provides type-safe access to the constant's stored value. It performs a type check
+        /// and conversion internally. If the value cannot be cast to <see cref="DataType"/>, the method returns <c>false</c>.
+        /// </remarks>
+        public bool TrySetValue<T>(T value);
     }
 }

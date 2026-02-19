@@ -323,6 +323,11 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             {
                 var command = new SetStyleSheetPropertyCommand<T>(styleDiff.currentStyleSheet, styleDiff.currentRule, binding.stylePropertyId, setter, value);
                 command.Execute();
+
+                // Update selector element
+                styleDiff.currentTarget?.UpdateInlineRule(styleDiff.currentStyleSheet, styleDiff.currentRule, styleDiff.currentTarget.variableContext);
+                styleDiff.currentTarget?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+
                 break;
             }
             case StyleDiff.ContextType.None:

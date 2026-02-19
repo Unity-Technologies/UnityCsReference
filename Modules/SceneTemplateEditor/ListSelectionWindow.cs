@@ -102,7 +102,7 @@ namespace UnityEditor.SceneTemplate
             var name = pos == -1 ? path : path.Substring(0, pos);
             var suffix = pos == -1 ? null : path.Substring(pos + 1);
 
-            foreach (var c in root.children)
+            foreach (var c in root.childList)
             {
                 if (suffix == null && string.Equals(c.name, name, StringComparison.Ordinal))
                     return c;

@@ -14,10 +14,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_RenderPipelineAssetClassNameHandle;  // string
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static ShaderCustomEditorInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetCustomEditorClassName(ShaderContainer container);
-        [ThreadSafe] internal extern string GetRenderPipelineAssetClassName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern static ShaderCustomEditorInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetCustomEditorClassName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetRenderPipelineAssetClassName(ShaderContainer container);
 
         // IInternalType
         ShaderCustomEditorInternal IInternalType<ShaderCustomEditorInternal>.ConstructInvalid() => Invalid();

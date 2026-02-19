@@ -101,9 +101,9 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         }
     }
 
-    public class AuthoringContext : IDisposable
+    public class AuthoringContext : IDisposable, INotifyBindablePropertyChanged, IDataSourceViewHashProvider
     {
-        StyleDiff m_StyleDiff = new ();
+        StyleDiff m_StyleDiff;
         StyleDiffAdditionalDataFlags m_StyleDiffFlags = StyleDiffAdditionalDataFlags.All;
         bool m_IsReadonly = true;
 
@@ -113,6 +113,12 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         {
             get => m_IsReadonly;
             set => m_IsReadonly = value;
+        }
+
+        public AuthoringContext()
+        {
+            m_StyleDiff = new StyleDiff();
+            m_StyleDiff.propertyChanged += PropagateProperty;
         }
 
         public void Refresh(VisualElement element)
@@ -127,7 +133,23 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
         public void Dispose()
         {
-            m_StyleDiff?.Dispose();
+            if (m_StyleDiff != null)
+            {
+                m_StyleDiff.Dispose();
+                m_StyleDiff.propertyChanged -= PropagateProperty;
+            }
+        }
+
+        public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+
+        public long GetViewHashCode()
+        {
+            return m_StyleDiff.GetViewHashCode();
+        }
+
+        void PropagateProperty(object sender, BindablePropertyChangedEventArgs e)
+        {
+            propertyChanged?.Invoke(this, e);
         }
     }
 
@@ -234,6 +256,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     ReleaseSelection(Target.Element);
                 dataSource = null;
                 m_Context.Dispose();
+                m_Context = null;
                 UnbindAdvancedTextUI();
                 break;
             }

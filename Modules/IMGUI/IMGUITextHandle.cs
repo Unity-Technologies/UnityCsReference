@@ -93,6 +93,25 @@ namespace UnityEngine
             textHandlesTuple.Clear();
         }
 
+        /// <summary>
+        /// Checks if the text system infrastructure is ready for text generation.
+        /// During early editor initialization, some required delegates may not be set yet.
+        /// </summary>
+        internal static bool IsTextSystemReady()
+        {
+            if (GetEditorTextSettings == null || GetEditorTextGeneratorType == null)
+                return false;
+
+            if (GUIStyle.useAdvancedText == true ||
+                (GUIStyle.useAdvancedText == null && GetEditorTextGeneratorType() == TextGeneratorType.Advanced))
+            {
+                if (TextLib.GetICUAssetEditorDelegate == null)
+                    return false;
+            }
+
+            return true;
+        }
+
         internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, bool update = true)
         {
             if (IsAdvancedTextEnabled())
@@ -198,7 +217,7 @@ namespace UnityEngine
                 ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
                 return GetLineHeightDefault(settings.fontAsset, settings.fontSize) / GUIUtility.pixelsPerPoint;
             }
-            
+
         }
 
         //Width is in saled pixels
@@ -240,9 +259,9 @@ namespace UnityEngine
                     hyperlinks[i].position /= GUIUtility.pixelsPerPoint;
                     hyperlinks[i].size /= GUIUtility.pixelsPerPoint;
                     hyperlinks[i].position += new Vector2(content.x, content.y);
-                    
+
                 }
-                   
+
                 return hyperlinks;
             }
 

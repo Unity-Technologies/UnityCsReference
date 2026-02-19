@@ -8,7 +8,6 @@ using System.IO;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 using UxmlAttributeFlags = UnityEngine.UIElements.UxmlSerializedData.UxmlAttributeFlags;
 
@@ -184,7 +183,7 @@ namespace Unity.UIToolkit.Editor
             EnableInClassList(InspectorLocalStyleBindingClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding);
             EnableInClassList(InspectorLocalStyleUnresolvedBindingClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.UnhandledBinding or FieldAffordanceSourceInfoType.UnresolvedBinding);
             EnableInClassList(InspectorLocalStyleVariableClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable);
-            EnableInClassList(InspectorLocalStyleUnresolvedVariableClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable && fieldAffordanceData.selector.sheet == null);
+            EnableInClassList(InspectorLocalStyleUnresolvedVariableClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable && fieldAffordanceData.variableSheet == null);
             EnableInClassList(InspectorLocalStyleSelectorClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.LocalUSSSelector or FieldAffordanceSourceInfoType.MatchingUSSSelector);
             EnableInClassList(InspectorLocalStyleInheritedClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.Inherited);
             EnableInClassList(InspectorLocalStyleDefaultStatusClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.Default or FieldAffordanceSourceInfoType.Inline);
@@ -236,17 +235,16 @@ namespace Unity.UIToolkit.Editor
                     }
                     return FieldStatusIndicatorUnhandledBindingTooltip;
                 case FieldAffordanceSourceInfoType.USSVariable:
-                    var variableSheetName = GetSheetName();
-                    if (variableSheetName != null)
+                    if (fieldAffordanceData.variableSheet != null)
                         return string.Format(FieldStatusIndicatorVariableTooltip,
                             fieldAffordanceData.inlineValue.ToString(),
-                            variableSheetName);
+                            GetSheetName(fieldAffordanceData.variableSheet));
                     return FieldStatusIndicatorUnresolvedVariableTooltip;
                 case FieldAffordanceSourceInfoType.LocalUSSSelector:
                     return FieldStatusIndicatorLocalTooltip;
                 case FieldAffordanceSourceInfoType.MatchingUSSSelector:
-                    var selectorSheetName = GetSheetName();
-                    var selector = s_StyleSheetExporter.ToUssString(null, fieldAffordanceData.selector.complexSelector);
+                    var selectorSheetName = GetSheetName(fieldAffordanceData.selector.sheet);
+                    var selector = s_StyleSheetExporter.ToUssString(fieldAffordanceData.selector.sheet, fieldAffordanceData.selector.complexSelector);
                     return string.Format(FieldStatusIndicatorFromSelectorTooltip,
                         selector,
                         selectorSheetName);
@@ -290,14 +288,13 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        string GetSheetName()
+        string GetSheetName(StyleSheet styleSheet)
         {
-            if (!fieldAffordanceData.selector.Equals(default))
-            {
-                var fullPath = AssetDatabase.GetAssetPath(fieldAffordanceData.selector.sheet);
-                return Path.GetFileName(fullPath);
-            }
-            return null;
+            if (styleSheet == null)
+                return null;
+
+            var fullPath = AssetDatabase.GetAssetPath(styleSheet);
+            return fullPath == null ? styleSheet.name : Path.GetFileName(fullPath);
         }
 
         static string GetFormattedConvertersString(string convertersToSource, string convertersToUI)

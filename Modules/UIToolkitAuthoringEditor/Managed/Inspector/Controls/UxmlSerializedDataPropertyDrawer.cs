@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -14,8 +16,27 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// View that displays serialized properties of a UXMLSerializedData instance.
 /// </summary>
-class UxmlSerializedDataPropertyView : VisualElement
+[UxmlElement]
+internal partial class UxmlSerializedDataPropertyView : BindableElement
 {
+    [Serializable]
+    public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+    {
+        /// <summary>
+        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
+        /// </summary>
+        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
+        public new static void Register()
+        {
+            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
+        }
+
+        public override object CreateInstance()
+        {
+            return new UxmlSerializedDataPropertyView();
+        }
+    }
+
     public const string ussClassName = "unity-uxml-serialized-data-property-view";
 
     UxmlAttributeFieldDecorator m_FieldDecoratorForListItem;
@@ -47,11 +68,19 @@ class UxmlSerializedDataPropertyView : VisualElement
     void SetContext(UxmlAttributesEditingContext context)
     {
         m_Context = context;
+
         // Propagate the context to any registered UxmlAttributeFieldDecorator
         foreach (var decorator in m_RegisteredDecorators)
         {
             decorator.context = context;
         }
+    }
+
+    /// <summary>
+    /// Constructs a UxmlSerializedDataPropertyView with no bound property.
+    /// </summary>
+    public UxmlSerializedDataPropertyView() : this(null)
+    {
     }
 
     /// <summary>
@@ -69,7 +98,7 @@ class UxmlSerializedDataPropertyView : VisualElement
         // If so then this UxmlSerializedDataPropertyView represents a list item. Therefore, we add a field decorator
         // for the list item itself because list items are created by ListViewSerializedObjectBinding.MakeItem,
         // which only creates instances of PropertyField.
-        var parentProperty = property.GetParentProperty();
+        var parentProperty = property?.GetParentProperty();
 
         if (parentProperty is { isArray: true })
         {
@@ -105,6 +134,20 @@ class UxmlSerializedDataPropertyView : VisualElement
     void OnDetachedFromPanel(DetachFromPanelEvent evt)
     {
         context = null;
+    }
+
+    [EventInterest(typeof(SerializedPropertyBindEvent))]
+    protected override void HandleEventBubbleUp(EventBase evt)
+    {
+        base.HandleEventBubbleUp(evt);
+
+        // Stop propagation of SerializedPropertyBindEvent as binding to UxmlSerializedData is actually not supported.
+        // It is mainly used to bind a UxmlSerializedDataPropertyView to a UxmlSerializedData property so that
+        // children of this view can use binding path relative to the bound UxmlSerializedData.
+        if (evt is SerializedPropertyBindEvent)
+        {
+            evt.StopPropagation();
+        }
     }
 }
 

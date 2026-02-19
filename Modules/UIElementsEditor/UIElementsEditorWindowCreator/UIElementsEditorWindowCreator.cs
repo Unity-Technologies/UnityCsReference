@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Collections;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEditorInternal;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace UnityEditor.UIElements
         internal const string k_JustCreateFilesOption = "Create files only";
         internal const string k_OpenFilesInUIBuilderOption = "Create files and open in UI Builder";
         internal const string k_OpenFilesInExternalEditorOption = "Create files and open in external editor";
+        internal const string k_InvalidPathError = "Path is invalid. It has to be inside the Project's Assets folder.";
 
         VisualElement m_Root;
         VisualElement m_ErrorMessageBox;
@@ -43,7 +45,7 @@ namespace UnityEditor.UIElements
         string m_CSharpName = String.Empty;
         string m_UxmlName = String.Empty;
         string m_UssName = String.Empty;
-        string m_Folder = String.Empty;
+        internal string m_Folder = String.Empty;
         string m_ErrorMessage = String.Empty;
         string m_ActionSelected = String.Empty;
 
@@ -359,6 +361,14 @@ namespace UnityEditor.UIElements
                 if (!Directory.Exists(m_Folder))
                 {
                     Directory.CreateDirectory(m_Folder);
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                }
+
+                if (!AssetDatabase.IsValidFolder(m_Folder))
+                {
+                    m_ErrorMessage = k_InvalidPathError;
+                    ShowErrorMessage();
+                    return;
                 }
 
                 StyleSheet styleSheet = null;
@@ -454,7 +464,7 @@ namespace UnityEditor.UIElements
         {
             if (string.IsNullOrEmpty(m_Folder))
             {
-                m_ErrorMessage = "Path is invalid. It has to be inside the Project's Assets folder.";
+                m_ErrorMessage = k_InvalidPathError;
                 return false;
             }
 
@@ -501,9 +511,7 @@ namespace UnityEditor.UIElements
         bool ClassExists()
         {
             // Types can be different, so use GetLoadedAssemblies instead of TypeCache
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool classExists = CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(m_CSharpName, false) != null);
-#pragma warning restore UA2001
+            bool classExists = CurrentAssemblies.GetLoadedAssemblies().Exists(a => a.GetType(m_CSharpName, false) != null);
             if (classExists)
             {
                 m_ErrorMessage = "Class name " + name + " already exists.";

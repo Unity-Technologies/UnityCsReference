@@ -88,6 +88,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
 
+[assembly: InternalsVisibleTo("UnityEditor.ContentLoadModule")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.TreeViewControl")]
@@ -104,6 +105,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Streaming.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderUtil.Tests.Editor")]
 
 
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
@@ -140,6 +142,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.SceneLoading")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Scripting")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Stripping")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Serialization")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.StandaloneBuilds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UIToolkit")]
@@ -265,6 +268,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightProbes.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.GI.ReflectionProbes.Test")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Internals")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
@@ -276,12 +280,13 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
-[assembly: InternalsVisibleTo("UnityEngine.SchemaManagerManaged")]
 // Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
 
 // Workspace/Serialization/UnityDataModel/WorkspaceProject
 [assembly: InternalsVisibleTo("UDMInternalWorkspaceProject")]
 
-
+// DataModel Tests assemblies
+[assembly: InternalsVisibleTo("TestCodeAssembly")]
+[assembly: InternalsVisibleTo("TestBehaviours")]
 

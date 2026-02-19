@@ -91,14 +91,8 @@ namespace UnityEditor.Search
                 var areaPropositions = QueryAreaBlock.FetchPropositions(context);
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allOtherPropositions = new[] { SearchProposition.CreateSeparator() }.Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
+                return areaPropositions.Concat(allOtherPropositions);
 #pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return areaPropositions.Count() > 0 ?
-#pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    areaPropositions.Concat(allOtherPropositions) :
-#pragma warning restore UA2001
-                    allOtherPropositions;
             }
             else
             {

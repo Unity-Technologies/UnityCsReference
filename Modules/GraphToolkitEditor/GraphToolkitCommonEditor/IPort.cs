@@ -88,7 +88,7 @@ namespace Unity.GraphToolkit.Editor
         void GetConnectedPorts(List<IPort> outConnectedPorts);
 
         /// <summary>
-        /// Tries to retrieve the current value assigned to the port’s UI field.
+        /// Retrieves the current value assigned to the port’s UI field.
         /// </summary>
         /// <typeparam name="T">The expected type of the value.</typeparam>
         /// <param name="value">When successful, contains the value assigned to the port’s field.</param>
@@ -102,5 +102,18 @@ namespace Unity.GraphToolkit.Editor
         /// value for type <typeparamref name="T"/>.
         /// </remarks>
         bool TryGetValue<T>(out T value);
+
+        /// <summary>
+        /// Sets a new value to the port's UI field.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to set that matches the port's data type.</typeparam>
+        /// <param name="value">The value to assign to the port’s UI field.</param>
+        /// <returns><c>true</c> if the value was successfully set; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        /// This method is intended for editor-time edition of an input port’s value, configured through a field
+        /// displayed in the UI. If the port is connected, the field is hidden and no value is available, so the method returns <c>false</c>.
+        /// It also performs a type check and conversion internally. If the value cannot be cast to <see cref="DataType"/>, the method returns <c>false</c>.
+        /// </remarks>
+        bool TrySetValue<T>(T value);
     }
 }

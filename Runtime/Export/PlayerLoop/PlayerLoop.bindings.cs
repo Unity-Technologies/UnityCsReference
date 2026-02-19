@@ -106,6 +106,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct DispatchEventQueueEvents {}
         [RequiredByNativeCode]
+        public struct PhysicsCore2DEarlyUpdate { }
+        [RequiredByNativeCode]
         public struct Physics2DEarlyUpdate {}
         [RequiredByNativeCode]
         public struct PhysicsResetInterpolatedTransformPosition {}
@@ -142,6 +144,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PhysicsFixedUpdate {}
         [RequiredByNativeCode]
+        public struct PhysicsCore2DFixedUpdate { }
+        [RequiredByNativeCode]
         public struct Physics2DFixedUpdate {}
         [RequiredByNativeCode]
         struct PhysicsClothFixedUpdate {}
@@ -158,6 +162,8 @@ namespace UnityEngine.PlayerLoop
     {
         [RequiredByNativeCode]
         public struct PhysicsUpdate {}
+        [RequiredByNativeCode]
+        public struct PhysicsCore2DUpdate { }
         [RequiredByNativeCode]
         public struct Physics2DUpdate {}
         [RequiredByNativeCode]
@@ -197,6 +203,8 @@ namespace UnityEngine.PlayerLoop
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct PreLateUpdate
     {
+        [RequiredByNativeCode]
+        public struct PhysicsCore2DLateUpdate { }
         [RequiredByNativeCode]
         public struct Physics2DLateUpdate {}
         [RequiredByNativeCode]

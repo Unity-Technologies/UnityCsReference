@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 using UnityEditor.Search;
 
 namespace UnityEditor.Experimental.GraphView
@@ -25,14 +27,17 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.label", label, saveKeyword: true);
                 }
+        }
 
-                foreach (var customData in template.customData.GetCustomData())
+        internal static void IndexCustomData<T>(CustomObjectIndexerTarget context, ObjectIndexer indexer, Dictionary<string, List<string>> customDataCollection)
+        {
+            foreach (var customData in customDataCollection)
+            {
+                foreach (var value in customData.Value)
                 {
-                    foreach (var value in customData.Value)
-                    {
-                        indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.{customData.Key}", value, saveKeyword: true);
-                    }
+                    indexer.IndexProperty<string, T>(context.documentIndex, customData.Key, value, saveKeyword: true);
                 }
+            }
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -168,10 +169,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_NoActionFoldout);
         }
 
-        private void OnUpdateChecked(IEnumerable<long> productIds)
+        private void OnUpdateChecked(IReadOnlyCollection<long> productIds)
         {
             var selection = m_PageManager.activePage.GetSelection();
-            if (productIds.AnyMatches(id => selection.Contains(id.ToString())))
+            if (productIds.Exists(id => selection.Contains(id.ToString())))
                 Refresh(selection);
         }
 

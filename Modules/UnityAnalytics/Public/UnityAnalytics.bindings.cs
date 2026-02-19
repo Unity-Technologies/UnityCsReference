@@ -50,7 +50,7 @@ namespace UnityEngine.Analytics
             set;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern bool IsInitialized();
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
@@ -139,19 +139,19 @@ namespace UnityEngine.Analytics
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult RegisterEventsWithLimit(string[] eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, bool notifyServer);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver, string prefix);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult QueueEvent(string eventName, object parameters, int ver, string prefix);
     }

@@ -19,7 +19,7 @@ namespace UnityEditor
             if (EditorWindow.focusedWindow != animationWindow)
                 return;
 
-            if (animEditor.stateDisabled || animEditor.state.animatorIsOptimized)
+            if (animEditor.stateDisabled)
                 return;
 
             exp(animEditor);

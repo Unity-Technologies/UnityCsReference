@@ -538,20 +538,20 @@ namespace UnityEditor.Modules
 
         // Returns an array of windows metadata files (.winmd) that should be referenced when compiling scripts.
         // Only WinRT based platforms need these references.
-        IEnumerable<string> GetWindowsMetadataReferences();
+        string[] GetWindowsMetadataReferences();
 
         // Returns an array of managed assemblies that should be referenced when compiling scripts
         // Currently, only .NET scripting backend uses it to include WinRTLegacy.dll into compilation
-        IEnumerable<string> GetAdditionalAssemblyReferences();
+        string[] GetAdditionalAssemblyReferences();
 
         // Returns an array of defines that should be used when compiling scripts
-        IEnumerable<string> GetAdditionalDefines();
+        string[] GetAdditionalDefines();
 
         // Returns an array of defines that should be used when compiling scripts for the editor
-        IEnumerable<string> GetAdditionalEditorDefines();
+        string[] GetAdditionalEditorDefines();
 
         // Returns an array of C# source files that should be included into the assembly when compiling scripts
-        IEnumerable<string> GetAdditionalSourceFiles();
+        string[] GetAdditionalSourceFiles();
     }
 
     internal interface IEditorAnalyticsExtension

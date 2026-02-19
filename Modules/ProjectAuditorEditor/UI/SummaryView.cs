@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
-using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -60,8 +60,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         Dictionary<string, bool> m_FoldoutStates = new Dictionary<string, bool>();
         Dictionary<string, bool> m_TopTenFoldoutStates = new Dictionary<string, bool>();
 
-        public ProjectAuditorWindow m_ProjectAuditorWindow;
-
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         List<IGrouping<string, ReportItem>> m_TopTenIssues = new List<IGrouping<string, ReportItem>>();
 #pragma warning restore UA2001
@@ -89,9 +87,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public override string Description => "A high level overview of the Project Report.";
         public override bool ShowVerticalScrollView => true;
-
-        static readonly string[] k_DocumentationLabels = new[] { "Unity" };
-        int m_TabButtonControlID = -1;
 
         bool m_SkipRepaintPass;
 
@@ -241,14 +236,14 @@ namespace Unity.ProjectAuditor.Editor.UI
                 if (rect.Contains(Event.current.mousePosition))
                 {
                     foldoutExpanded = !foldoutExpanded;
-                    m_ProjectAuditorWindow?.Repaint();
+                    m_Window?.Repaint();
                 }
             }
 
             return foldoutExpanded;
         }
 
-        public override void DrawContent(bool showDetails = false)
+        public override void DrawContent()
         {
             if (m_Dirty)
             {
@@ -292,10 +287,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 var errorString = LogLevel.Error.ToString();
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_AnyCompilationErrors = m_ViewManager.Report.GetAllIssues()
-#pragma warning restore UA2001
-                    .Any(i => i.Category == IssueCategory.CodeCompilerMessage
+                    .Exists(i => i.Category == IssueCategory.CodeCompilerMessage
                         && i.GetProperty(PropertyType.LogLevel) == errorString);
 
                 m_AnyAdditionalInsights = m_AnyCompilationErrors
@@ -398,7 +391,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (m_RefreshTopTenIssues)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
                             !m_ViewManager.HasPendingCategory(i.Category)
@@ -412,10 +406,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                         .Take(10)
                         .ToList();
 #pragma warning restore UA2001
+#pragma warning restore UA2005
                     int oldSize = m_TopTenFoldoutStates.Count;
 
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Any(group => group.First().DescriptorIdAsString == key)))
+                    foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Exists(group => group.First().DescriptorIdAsString == key)))
 #pragma warning restore UA2001
                         m_TopTenFoldoutStates.Remove(key);
 
@@ -484,9 +479,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     EditorGUILayout.LabelField(Utility.GetSeverityIcon(GetHighestGroupSeverity(issueGroup)), SharedStyles.Label,
                         GUILayout.Width(36));
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     DrawDiagnosticLabel(descriptor, issueGroup.Count());
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 }
 
                 if (Event.current.isMouse && Event.current.type == EventType.MouseDown && descriptor != null)
@@ -495,7 +490,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     if (rect.Contains(Event.current.mousePosition))
                     {
                         m_TopTenFoldoutStates[descriptorIdString] = !isExpanded;
-                        m_ProjectAuditorWindow?.Repaint();
+                        m_Window?.Repaint();
                     }
                 }
             }
@@ -521,58 +516,31 @@ namespace Unity.ProjectAuditor.Editor.UI
                             EditorGUILayout.Space(10); // padding
 
                             // Details text area
-                            using (new EditorGUILayout.HorizontalScope(SharedStyles.TextBoxBackground))
+                            using (new EditorGUILayout.VerticalScope(SharedStyles.TextBoxBackground))
                             {
-                                EditorGUILayout.Space(4); // horizontal padding
+                                DrawDetailsHeader(SharedContents.Details, descriptor.Description, descriptor.DocumentationUrl);
 
                                 using (new EditorGUILayout.VerticalScope(SharedStyles.TabBackground,
-                                    GUILayout.MinWidth(boxMinWidth), GUILayout.MinHeight(boxMinHeight),
-                                    GUILayout.ExpandHeight(false)))
+                                    GUILayout.MinWidth(boxMinWidth), GUILayout.MinHeight(boxMinHeight), GUILayout.ExpandHeight(false)))
                                 {
-                                    EditorGUILayout.LabelField(Contents.Details, SharedStyles.BoldLabel);
                                     EditorGUILayout.LabelField(descriptor.Description, SharedStyles.TextArea);
-
+                                    DrawDetailsExternalDocsLink(descriptor.DocumentationUrl);
                                     EditorGUILayout.Space(4); // vertical padding
-                                }
-
-                                using (new EditorGUILayout.VerticalScope(SharedStyles.TabBackground, GUILayout.Width(30),
-                                    GUILayout.ExpandHeight(false)))
-                                {
-                                    if (DrawTabButton(Utility.GetIcon(Utility.IconType.CopyToClipboard), SharedStyles.TabHoverButton,
-                                        GUILayout.Width(24),
-                                        GUILayout.Height(24)))
-                                    {
-                                        EditorInterop.CopyToClipboard(Formatting.StripRichTextTags(descriptor.Description));
-                                    }
                                 }
                             }
 
                             EditorGUILayout.Space(10); // padding
 
                             // Recommendation text area
-                            using (new EditorGUILayout.HorizontalScope(SharedStyles.TextBoxBackground))
+                            using (new EditorGUILayout.VerticalScope(SharedStyles.TextBoxBackground))
                             {
-                                EditorGUILayout.Space(4); // horizontal padding
+                                DrawDetailsHeader(SharedContents.Recommendation, descriptor.Recommendation, null);
 
                                 using (new EditorGUILayout.VerticalScope(SharedStyles.TabBackground,
-                                    GUILayout.MinWidth(boxMinWidth), GUILayout.MinHeight(boxMinHeight),
-                                    GUILayout.ExpandHeight(false)))
+                                    GUILayout.MinWidth(boxMinWidth), GUILayout.MinHeight(boxMinHeight), GUILayout.ExpandHeight(false)))
                                 {
-                                    EditorGUILayout.LabelField(Contents.Recommendation, SharedStyles.BoldLabel);
                                     EditorGUILayout.LabelField(descriptor.Recommendation, SharedStyles.TextArea);
-
                                     EditorGUILayout.Space(4); // vertical padding
-                                }
-
-                                using (new EditorGUILayout.VerticalScope(SharedStyles.TabBackground, GUILayout.Width(30),
-                                    GUILayout.ExpandHeight(false)))
-                                {
-                                    if (DrawTabButton(Utility.GetIcon(Utility.IconType.CopyToClipboard), SharedStyles.TabHoverButton,
-                                        GUILayout.Width(24),
-                                        GUILayout.Height(24)))
-                                    {
-                                        EditorInterop.CopyToClipboard(Formatting.StripRichTextTags(descriptor.Recommendation));
-                                    }
                                 }
                             }
 
@@ -594,52 +562,28 @@ namespace Unity.ProjectAuditor.Editor.UI
                                     GUIUtility.ExitGUI();
                                 }
 
-                                if (descriptor.Fixer != null)
+                                using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories() || firstIssue.WasFixed))
                                 {
-                                    using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories() || firstIssue.WasFixed))
+                                    if (descriptor.Fixer != null)
                                     {
-                                        var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
-                                        if (GUILayout.Button(firstIssue.WasFixed ? Contents.QuickFixDone : content, EditorStyles.miniButton,
+                                        var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? SharedContents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                                        if (GUILayout.Button(firstIssue.WasFixed ? SharedContents.QuickFixDone : content, EditorStyles.miniButton,
                                             GUILayout.Width(buttonWidth)))
                                         {
                                             descriptor.Fix(firstIssue, m_ViewManager.Report.SessionInfo);
                                             m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke([firstIssue]);
                                         }
                                     }
-                                }
 
-                                var docUrls = new List<string>();
-
-                                // add default (Unity) documentation url, if available
-                                if (!string.IsNullOrEmpty(descriptor.DocumentationUrl))
-                                    docUrls.Add(descriptor.DocumentationUrl);
-
-                                if (docUrls.Count > 1)
-                                {
-                                    EditorGUILayout.Space(2);
-
-                                    if (ButtonWithDropdownList(Contents.Documentation, k_DocumentationLabels,
-                                        (data) =>
+                                    m_ViewManager.AssistantController.DrawAskAssistantButton(descriptor, firstIssue, (GUIContent guiContent, Action onClick) =>
                                         {
-                                            var index = (int)data;
-                                            Application.OpenURL(docUrls[index]);
-                                        }, GUILayout.Width(buttonWidth)))
-                                    {
-                                        GUIUtility.ExitGUI();
-                                    }
+                                            if (GUILayout.Button(guiContent, EditorStyles.miniButton, GUILayout.Width(buttonWidth)))
+                                            {
+                                                onClick();
+                                            }
+                                        });
                                 }
-                                else if (docUrls.Count > 0)
-                                {
-                                    EditorGUILayout.Space(2);
 
-                                    // single button
-                                    if (GUILayout.Button(
-                                        Contents.Documentation, EditorStyles.miniButton,
-                                        GUILayout.Width(buttonWidth)))
-                                    {
-                                        Application.OpenURL(docUrls[0]);
-                                    }
-                                }
                             }
 
                             EditorGUILayout.Space(10); // padding
@@ -736,40 +680,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (count > 1)
                 EditorGUILayout.LabelField($"({count} Items)", SharedStyles.LabelDarkWithDynamicSize);
-        }
-
-        bool DrawTabButton(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
-        {
-            bool res = GUILayout.Button(content, style, options);
-
-            int id = GUIUtility.GetControlID(content, FocusType.Passive);
-            if (Event.current.type == EventType.MouseMove)
-            {
-                if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                {
-                    if (m_TabButtonControlID != id)
-                    {
-                        m_TabButtonControlID = id;
-                        if (m_ProjectAuditorWindow != null)
-                        {
-                            m_ProjectAuditorWindow.Repaint();
-                        }
-                    }
-                }
-                else
-                {
-                    if (m_TabButtonControlID == id)
-                    {
-                        m_TabButtonControlID = 0;
-                        if (m_ProjectAuditorWindow != null)
-                        {
-                            m_ProjectAuditorWindow.Repaint();
-                        }
-                    }
-                }
-            }
-
-            return res;
         }
 
         void DrawSessionInfo()
@@ -894,7 +804,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                 if (m_ViewManager.Report.HasCategory(category))
                                     m_ViewManager.ChangeView(category);
                                 else
-                                    m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
+                                    m_Window.GotoNonAnalyzedCategory(category);
 
                                 GUIUtility.ExitGUI();
                             }
@@ -940,7 +850,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Space(20);
 
                 // Note: Using PA window's Draw2D allows custom geometry drawn here to be clipped (via Draw2D.SetClipRect) to stay inside scroll view handled in PA window
-                ChartUtil.DrawHorizontalStackedBar(m_ProjectAuditorWindow.Draw2D, 14, null, inValues, "{0}", "N0",
+                ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, inValues, "{0}", "N0",
                     true, false, true, time);
 
                 GUILayout.Space(20);
@@ -979,7 +889,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         if (m_ViewManager.Report.HasCategory(category))
                             m_ViewManager.ChangeView(category);
                         else
-                            m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
+                            m_Window.GotoNonAnalyzedCategory(category);
 
                         GUIUtility.ExitGUI();
                     }
@@ -995,14 +905,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent TopTenIssuesContent = new GUIContent("Top Ten Issues");
             public static readonly GUIContent AdditionalInsightChecksContent = new GUIContent("Additional Insights");
             public static readonly GUIContent SessionInformationContent = new GUIContent("Session Information");
-
-            public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
-            public static readonly GUIContent Recommendation =
-                new GUIContent("Recommendation", "Recommendation on how to solve the issue");
             public static readonly GUIContent MoreDetails = new GUIContent("More Details");
-            public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
-            public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
-            public static readonly GUIContent Documentation = new GUIContent("Documentation", "Open documentation");
         }
     }
 }

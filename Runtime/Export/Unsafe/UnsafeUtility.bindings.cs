@@ -16,10 +16,10 @@ namespace Unity.Collections.LowLevel.Unsafe
     [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
     public static partial class UnsafeUtility
     {
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern static int GetFieldOffsetInStruct(FieldInfo field);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern static int GetFieldOffsetInClass(FieldInfo field);
 
         public static int GetFieldOffset(FieldInfo field)
@@ -52,14 +52,14 @@ namespace Unity.Collections.LowLevel.Unsafe
             return PinSystemArrayAndGetAddress(target, out gcHandle);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         unsafe private static extern void* PinSystemArrayAndGetAddress(System.Object target, out ulong gcHandle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         unsafe private static extern void* PinSystemObjectAndGetAddress(System.Object target, out ulong gcHandle);
 
         [Obsolete("Use GCHandle.Free instead.")]
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         unsafe public static extern void ReleaseGCObject(ulong gcHandle);
 
         [Obsolete("The garbage collector cannot track object references stored in unmanaged memory, leading to undefined behavior.")]
@@ -70,32 +70,31 @@ namespace Unity.Collections.LowLevel.Unsafe
             ClassAsRef<object>(dstPtr) = target;
         }
 
-
         public static unsafe bool IsBlittable<T>() where T : struct
         {
             return IsBlittable(typeof(T));
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int CheckForLeaks();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int ForgiveLeaks();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [BurstAuthorizedExternalMethod]
         public static extern NativeLeakDetectionMode GetLeakDetectionMode();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [BurstAuthorizedExternalMethod]
         public static extern void SetLeakDetectionMode(NativeLeakDetectionMode value);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [BurstAuthorizedExternalMethod]
         [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakRecord(IntPtr handle, LeakCategory category, int callstacksToSkip);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [BurstAuthorizedExternalMethod]
         [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
@@ -109,17 +108,19 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         unsafe public static void* MallocTracked(long size, int alignment, MemoryLabel label, int callstacksToSkip)
         {
+            label.CheckArgument();
             return MallocTracked(size, alignment, label.allocator, callstacksToSkip + 1, label.pointer);
         }
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe internal static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip, IntPtr label);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void FreeTracked(void* memory, Allocator allocator);
 
         unsafe public static void FreeTracked(void* memory, MemoryLabel label)
         {
+            label.CheckArgument();
             FreeTracked(memory, label.allocator);
         }
 
@@ -134,10 +135,10 @@ namespace Unity.Collections.LowLevel.Unsafe
             return Malloc(size, alignment, label.allocator, label.pointer);
         }
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe static extern void* Malloc(long size, int alignment, Allocator allocator, IntPtr label);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
         unsafe public static void Free(void* memory, MemoryLabel label)
@@ -149,22 +150,22 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
 
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemCpy(void* destination, void* source, long size);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemCpyReplicate(void* destination, void* source, int size, int count);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemCpyStride(void* destination, int destinationStride, void* source, int sourceStride, int elementSize, int count);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemMove(void* destination, void* source, long size);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemSwap(void* ptr1, void* ptr2, long size);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void MemSet(void* destination, byte value, long size);
 
         unsafe public static void MemClear(void* destination, long size)
@@ -172,26 +173,26 @@ namespace Unity.Collections.LowLevel.Unsafe
             MemSet(destination, 0, size);
         }
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern int MemCmp(void* ptr1, void* ptr2, long size);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int SizeOf(Type type);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsBlittable(Type type);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsUnmanaged(Type type);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsValidNativeContainerElementType(Type type);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetScriptingTypeFlags(Type type);
 
         // @TODO : This is probably not the ideal place to have this?
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void LogError(string msg, string filename, int linenumber);
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -74,14 +75,14 @@ namespace UnityEditor.Search
         /// </summary>
         public ICollection<string> tokens { get; }
 
-        internal ICollection<QueryToggle> toggles { get; }
+        internal IReadOnlyList<QueryToggle> toggles { get; }
 
         internal IQueryHandler<TData, TPayload> graphHandler { get; set; }
 
         public QueryGraph evaluationGraph { get; }
         public QueryGraph queryGraph { get; }
 
-        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, IReadOnlyList<QueryToggle> toggles)
         {
             this.text = text;
             this.evaluationGraph = evaluationGraph;
@@ -91,7 +92,7 @@ namespace UnityEditor.Search
             this.toggles = toggles;
         }
 
-        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<TData, TPayload> graphHandler)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, IReadOnlyList<QueryToggle> toggles, IQueryHandler<TData, TPayload> graphHandler)
             : this(text, evaluationGraph, queryGraph, errors, tokens, toggles)
         {
             if (valid)
@@ -155,9 +156,7 @@ namespace UnityEditor.Search
 
         internal bool HasToggle(string toggle, StringComparison stringComparison)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return toggles.Any(s => s.value.Equals(toggle, stringComparison));
-#pragma warning restore UA2001
+            return toggles.Exists(s => s.value.Equals(toggle, stringComparison));
         }
 
         static IQueryNode GetNodeAtPosition(IQueryNode root, int position)
@@ -191,7 +190,7 @@ namespace UnityEditor.Search
         /// </summary>
         public bool returnPayloadIfEmpty { get; set; } = true;
 
-        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<T, IEnumerable<T>> graphHandler)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, IReadOnlyList<QueryToggle> toggles, IQueryHandler<T, IEnumerable<T>> graphHandler)
             : base(text, evaluationGraph, queryGraph, errors, tokens, toggles, graphHandler)
         {}
 

@@ -286,72 +286,72 @@ namespace UnityEngine
         [NativeHeader("Runtime/Input/InputBindings.h")]
         internal static class InputUnsafeUtility
         {
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetKeyString(string name);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe bool GetKeyString__Unmanaged(byte* name, int nameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetKeyUpString(string name);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe bool GetKeyUpString__Unmanaged(byte* name, int nameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetKeyDownString(string name);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe bool GetKeyDownString__Unmanaged(byte* name, int nameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static float GetAxis(string axisName);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe float GetAxis__Unmanaged(byte* axisName, int axisNameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static float GetAxisRaw(string axisName);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe float GetAxisRaw__Unmanaged(byte* axisName, int axisNameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetButton(string buttonName);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe bool GetButton__Unmanaged(byte* buttonName, int buttonNameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetButtonDown(string buttonName);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
 
             internal extern static unsafe byte GetButtonDown__Unmanaged(byte* buttonName, int buttonNameLen);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             internal extern static bool GetButtonUp(string buttonName);
             // Burst shadow
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
@@ -373,34 +373,34 @@ namespace UnityEngine
         public static bool GetButtonDown(string buttonName) => Internal.InputUnsafeUtility.GetButtonDown(buttonName);
         public static bool GetButtonUp(string buttonName) => Internal.InputUnsafeUtility.GetButtonUp(buttonName);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static bool GetKeyInt(KeyCode key);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static bool GetKeyUpInt(KeyCode key);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static bool GetKeyDownInt(KeyCode key);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static bool GetMouseButton(int button);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static bool GetMouseButtonDown(int button);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static bool GetMouseButtonUp(int button);
         [FreeFunction("ResetInput")]
         public extern static void ResetInputAxes();
         public static bool IsJoystickPreconfigured(string joystickName) => Internal.InputUnsafeUtility.IsJoystickPreconfigured(joystickName);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static string[] GetJoystickNames();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static Touch GetTouch(int index);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static PenData GetPenEvent(int index);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static PenData GetLastPenContactEvent();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static void ResetPenEvents();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static void ClearLastPenContactEvent();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static AccelerationEvent GetAccelerationEvent(int index);
 
         public static bool GetKey(KeyCode key) => GetKeyInt(key);
@@ -422,17 +422,17 @@ namespace UnityEngine
         private extern static void SimulateTouchInternal(Touch touch, long timestamp);
 
         public extern static bool simulateMouseWithTouches { get; set; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static bool anyKey { get; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static bool anyKeyDown { get; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static string inputString { get; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static Vector3 mousePosition { get; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static Vector3 mousePositionDelta { get; }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static Vector2 mouseScrollDelta { get; }
         public extern static IMECompositionMode imeCompositionMode { get; set; }
         public extern static string compositionString { get; }

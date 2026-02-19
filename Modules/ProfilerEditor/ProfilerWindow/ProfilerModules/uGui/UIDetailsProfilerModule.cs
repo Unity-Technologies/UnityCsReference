@@ -29,7 +29,7 @@ namespace UnityEditorInternal.Profiling
 
         internal override ChartModelBuilder CreateChartModelBuilder()
         {
-            m_UIModelBuilder = new UISystemProfilerModelBuilder(SettingsService, k_ChartType, ChartCounters.Length, Identifier, DisplayName, IconPath);
+            m_UIModelBuilder = new UISystemProfilerModelBuilder(SettingsService, k_ChartType, ChartCounters.Length, Identifier, DisplayName, Tooltip, IconPath);
             m_UIModelBuilder.SetArea(area);
             m_UIModelBuilder.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
             return m_UIModelBuilder;

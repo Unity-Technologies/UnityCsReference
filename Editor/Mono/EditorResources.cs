@@ -461,9 +461,7 @@ namespace UnityEditor.Experimental
                 if (styleCatalog == null)
                     return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (importedAssets.Concat(deletedAssets).Any(path => IsEditorStyleSheet(path)))
-#pragma warning restore UA2001
+                if (Array.Exists(importedAssets, path => IsEditorStyleSheet(path)) || Array.Exists(deletedAssets, path => IsEditorStyleSheet(path)))
                     s_RefreshGlobalStyleCatalog = true;
             }
         }

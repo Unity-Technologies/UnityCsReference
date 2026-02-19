@@ -51,9 +51,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
 
             // Finish if any enabled 2D colliders used by the effector exist.
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (effector.GetComponents<Collider2D>().Any(collider => collider.enabled && collider.usedByEffector))
-#pragma warning restore UA2001
+            if (System.Array.Exists(effector.GetComponents<Collider2D>(), collider => collider.enabled && collider.usedByEffector))
                 return;
 
             // Show appropriate feedback.

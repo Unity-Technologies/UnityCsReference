@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Experimental;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -38,7 +40,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             View,
             WhiteCheckMark,
             GreenCheckMark,
-            CopyToClipboard,
             AdditionalAnalysis,
             FoldoutExpanded,
             FoldoutFolded
@@ -73,7 +74,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static readonly string k_DisplayedIgnoredIssuesIconName = "animationvisibilitytoggleon";
         static readonly string k_HiddenIgnoredIssuesIconName = "animationvisibilitytoggleoff";
         static readonly string k_IgnoredIssuesLabel = " Ignored Issues";
-        static readonly string k_CopyToClipboardIconName = "CopyToClipboard";
         static readonly string k_AdditionalAnalysisIconName = "AdditionalAnalysis";
         static readonly string k_FoldoutExpandedIconName = "ClassicFoldoutArrow-Open";
         static readonly string k_FoldoutFoldedIconName = "ClassicFoldoutArrow-Close";
@@ -84,7 +84,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static Texture2D s_MinorIcon;
         static Texture2D s_IgnoredIcon;
 
-        static Texture2D s_CopyToClipboardIcon;
         static Texture2D s_AdditionalAnalysisIcon;
         static Texture2D s_FoldoutExpandedIcon;
         static Texture2D s_FoldoutFoldedIcon;
@@ -96,7 +95,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIContent s_TempContent;
 
         public static readonly GUIContent ClearSelection = new GUIContent("Clear Selection");
-        public static readonly GUIContent CopyToClipboard = new GUIContent("Copy to Clipboard");
+        public static readonly GUIContent CopyRowToClipboard = new GUIContent("Copy Row(s) to Clipboard");
+        public static readonly GUIContent CopyCellToClipboard = new GUIContent("Copy Column Item(s) to Clipboard");
         public static readonly GUIContent OpenIssue = new GUIContent("Open Issue");
         public static readonly GUIContent OpenScriptReference = new GUIContent("Open Script Reference");
 
@@ -268,12 +268,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         s_IgnoredIcon = LoadIcon(k_IgnoredIconName);
                     return EditorGUIUtility.TrIconContent(s_IgnoredIcon, tooltip);
 
-                case IconType.CopyToClipboard:
-                    if (string.IsNullOrEmpty(tooltip))
-                        tooltip = "Copy to Clipboard";
-                    if (s_CopyToClipboardIcon == null)
-                        s_CopyToClipboardIcon = LoadIcon(k_CopyToClipboardIconName);
-                    return EditorGUIUtility.TrIconContent(s_CopyToClipboardIcon, tooltip);
                 case IconType.AdditionalAnalysis:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Not Analyzed";
@@ -531,6 +525,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 s_TempContent = new GUIContent();
             s_TempContent.text = text;
             return s_TempContent;
+        }
+
+        public static bool IsInternalDocsLink(string url)
+        {
+            return url.Contains("docs.unity3d.com", StringComparison.Ordinal);
         }
     }
 }

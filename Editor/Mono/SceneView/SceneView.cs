@@ -3887,7 +3887,9 @@ namespace UnityEditor
                 case EventCommandNames.SelectAll:
                     if (execute)
                     {
+#pragma warning disable CS0618 // Type or member is obsolete
                         var gameObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID);
+#pragma warning restore CS0618 // Type or member is obsolete
                         var objs = new List<Object>(gameObjects.Length);
                         foreach (var go in gameObjects)
                             if (SceneVisibilityManager.instance.IsSelectable(go))
@@ -3906,8 +3908,10 @@ namespace UnityEditor
                     if (execute)
                     {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable CS0618 // Type or member is obsolete
                         Selection.objects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID).Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
 #pragma warning restore UA2001
+#pragma warning restore CS0618 // Type or member is obsolete
                     }
                     Event.current.Use();
                     break;

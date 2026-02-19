@@ -118,9 +118,9 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchItem> FetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var query = (string.IsNullOrEmpty(context.searchQuery) && context.providers.Count() == 1) ? null : queryEngine.ParseQuery(context.searchQuery);
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             if (query != null && !query.valid)
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -140,9 +140,9 @@ namespace UnityEditor.Search.Providers
         private static IEnumerable<string> SplitMenuPath(string menuPath)
         {
             yield return menuPath;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var m in menuPath.Split(new char[] { '/', ' ' }, StringSplitOptions.RemoveEmptyEntries).Reverse())
-#pragma warning restore UA2001
+            var splits = menuPath.Split(new char[] { '/', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            Array.Reverse(splits);
+            foreach (var m in splits)
                 yield return m;
         }
 
@@ -153,14 +153,10 @@ namespace UnityEditor.Search.Providers
                 return menuName;
 
             var shortcutId = menuName;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!shortcutIds.Contains(shortcutId))
-#pragma warning restore UA2001
+            if (Array.IndexOf(shortcutIds, shortcutId) == -1)
             {
                 shortcutId = "Main Menu/" + menuName;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!shortcutIds.Contains(shortcutId))
-#pragma warning restore UA2001
+                if (Array.IndexOf(shortcutIds, shortcutId) == -1)
                     return menuName;
             }
             var shortcutBinding = ShortcutManager.instance.GetShortcutBinding(shortcutId);

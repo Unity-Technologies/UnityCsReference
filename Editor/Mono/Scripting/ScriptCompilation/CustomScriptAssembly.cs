@@ -380,9 +380,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
 
             if (IncludePlatforms != null)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return IncludePlatforms.Any(p => p.BuildTarget == BuildTarget.NoTarget);
-#pragma warning restore UA2001
+                return Array.Exists(IncludePlatforms, p => p.BuildTarget == BuildTarget.NoTarget);
 
             return true;
         }
@@ -393,11 +391,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var isTestAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_INCLUDE_TESTS");
+            var isTestAssembly = DefineConstraints != null && DefineConstraints.Contains("UNITY_INCLUDE_TESTS");
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var isTestFrameworkAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_TESTS_FRAMEWORK");
-#pragma warning restore UA2001
+            var isTestFrameworkAssembly = DefineConstraints != null && Array.Exists(DefineConstraints, x => x == "UNITY_TESTS_FRAMEWORK");
             if (!buildingForEditor && (isTestAssembly || isTestFrameworkAssembly) && !isBuildingWithTestAssemblies)
             {
                 return false;
@@ -454,9 +450,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // build target matches, and if present, subtarget matches
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return IncludePlatforms.Any(p => p.BuildTarget == buildTarget && (!p.HasSubTarget || p.SubTarget == subTarget));
-#pragma warning restore UA2001
+            return Array.Exists(IncludePlatforms, p => p.BuildTarget == buildTarget && (!p.HasSubTarget || p.SubTarget == subTarget));
         }
 
         public static CustomScriptAssembly Create(string name, string directory)

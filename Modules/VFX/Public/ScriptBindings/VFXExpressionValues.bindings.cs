@@ -27,16 +27,16 @@ namespace UnityEngine.VFX
             return expressionValue;
         }
 
-        [NativeThrows, NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<int>")] extern public int GetInt(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<UInt32>")] extern public uint GetUInt(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<float>")] extern public float GetFloat(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Texture*>")] extern public Texture GetTexture(int nameID);
-        [NativeThrows, NativeName("GetValueFromScript<Mesh*>")] extern public Mesh GetMesh(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<int>")] extern public int GetInt(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<UInt32>")] extern public uint GetUInt(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<float>")] extern public float GetFloat(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Texture*>")] extern public Texture GetTexture(int nameID);
+        [NativeMethod(ThrowsException = true), NativeName("GetValueFromScript<Mesh*>")] extern public Mesh GetMesh(int nameID);
 
         public AnimationCurve GetAnimationCurve(int nameID)
         {
@@ -45,7 +45,7 @@ namespace UnityEngine.VFX
             return animationCurve;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal void Internal_GetAnimationCurveFromScript(int nameID, AnimationCurve curve);
         public Gradient GetGradient(int nameID)
         {
@@ -54,7 +54,7 @@ namespace UnityEngine.VFX
             return gradient;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal void Internal_GetGradientFromScript(int nameID, Gradient gradient);
 
         public bool GetBool(string name)

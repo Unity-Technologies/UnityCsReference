@@ -405,7 +405,7 @@ namespace UnityEngine
             MaxBaseMapRes = 8
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor(k_ScriptingInterfaceName, StaticAccessorType.DoubleColon)]
         extern private static int GetBoundaryValue(BoundaryValueType type);
 
@@ -920,8 +920,7 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "GetTreeInstance", HasExplicitThis = true)]
         extern private TreeInstance Internal_GetTreeInstance(int index);
 
-        [NativeThrows]
-        [FreeFunction(k_ScriptingInterfacePrefix + "SetTreeInstance", HasExplicitThis = true)]
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetTreeInstance", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetTreeInstance(int index, TreeInstance instance);
 
         extern public int treeInstanceCount

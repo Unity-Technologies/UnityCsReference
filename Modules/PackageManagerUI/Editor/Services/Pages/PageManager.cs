@@ -167,9 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_OrderedExtensionPageArgs.Any(a => a.name == args.name))
-#pragma warning restore UA2001
+            if (m_OrderedExtensionPageArgs.Exists(a => a.name == args.name))
             {
                 Debug.LogWarning(string.Format(L10n.Tr("An extension page with name {0} already exists. Please use a different name."), args.name));
                 return;

@@ -15,27 +15,27 @@ namespace UnityEditor.Modules
             return Array.Empty<string>();
         }
 
-        public virtual IEnumerable<string> GetWindowsMetadataReferences()
+        public virtual string[] GetWindowsMetadataReferences()
         {
             return Array.Empty<string>();
         }
 
-        public virtual IEnumerable<string> GetAdditionalAssemblyReferences()
+        public virtual string[] GetAdditionalAssemblyReferences()
         {
             return Array.Empty<string>();
         }
 
-        public virtual IEnumerable<string> GetAdditionalDefines()
+        public virtual string[] GetAdditionalDefines()
         {
             return Array.Empty<string>();
         }
 
-        public virtual IEnumerable<string> GetAdditionalEditorDefines()
+        public virtual string[] GetAdditionalEditorDefines()
         {
             return Array.Empty<string>();
         }
 
-        public virtual IEnumerable<string> GetAdditionalSourceFiles()
+        public virtual string[] GetAdditionalSourceFiles()
         {
             return Array.Empty<string>();
         }

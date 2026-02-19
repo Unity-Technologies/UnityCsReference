@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Networking;
 using Button = UnityEngine.UIElements.Button;
+using Unity.Collections;
 
 namespace UnityEditor.Connect
 {
@@ -131,9 +132,7 @@ namespace UnityEditor.Connect
                 if (!enable)
                 {
                     var notifications = NotificationManager.instance.GetNotificationsForTopics(Notification.Topic.AnalyticsService);
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (notifications.Any(notification => notification.rawMessage == k_AnalyticsPermissionMessage))
-#pragma warning restore UA2001
+                    if (notifications.Exists(notification => notification.rawMessage == k_AnalyticsPermissionMessage))
                     {
                         return;
                     }

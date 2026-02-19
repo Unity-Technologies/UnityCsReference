@@ -26,14 +26,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         [SerializeReference] private IInstanceItem m_InstanceItem;
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
-        [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
+        private CancellationTokenSource m_FreeRunCancelTokenSource;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] private bool m_Drifted;
         [SerializeField] private InstanceStatusData m_StatusData;
         [SerializeField] private InstanceController m_InstanceController;
-
-        // TODO: MTT-10016 Migrate towards a single Monitoring Task per instance.
-        private List<Task> m_CurrentMonitoringTasks = new List<Task>();
+        private Task m_FreeRunningTask;
 
         internal event Action<Instance, InstanceStatusData> StatusRefreshed;
 
@@ -42,7 +40,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal InstanceController Controller => m_InstanceController;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
-        internal List<Task> GetCurrentMonitoringTasksForScenario() => m_CurrentMonitoringTasks;
         internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
         internal bool Drifted
         {
@@ -80,11 +77,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
-        {
-            return m_InstanceController.ValidateForRunningAsync(cancellationToken);
-        }
-
         internal static Instance Create(IInstanceItem instanceItem, InstanceController playModeController)
         {
             Assert.IsNotNull(instanceItem, "InstanceItem cannot be null");
@@ -111,11 +103,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             StatusRefreshed?.Invoke(this, StatusData);
         }
 
-        public void OnBeforeSerialize()
-        {
-            // Clear out all listeners before Domain Reload Serialization
-            m_CurrentMonitoringTasks.Clear();
-        }
+        public void OnBeforeSerialize() { }
 
         public void OnAfterDeserialize()
         {
@@ -127,7 +115,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Reset the instance properties for a new run
             m_HasDeployedAndRun = false;
-            m_CurrentMonitoringTasks.Clear();
             m_StatusData = default;
 
             // Reset the Execution graph
@@ -158,22 +145,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             var executionGraph = GetExecutionGraph();
             var isFreeRun = IsFreeRunMode();
-            var durationMs = 0L;
-            var prepareStageDurationMs = 0L;
-            var deployStageDurationMs = 0L;
-            var runStageDurationMs = 0L;
 
-            if (!isFreeRun)
-            {
-                durationMs = ComputeNodeDurations(executionGraph.GetAllNodes());
-                prepareStageDurationMs = ComputeNodeDurations(executionGraph.GetNodes(ExecutionStage.Prepare));
-                runStageDurationMs = ComputeNodeDurations(executionGraph.GetNodes(ExecutionStage.Run));
-                deployStageDurationMs = ComputeNodeDurations(executionGraph.GetNodes(ExecutionStage.Deploy));
-            }
+            var durationMs = Node.ComputeExecutionDuration(executionGraph.GetAllNodes());
+            var prepareStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Prepare));
+            var deployStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Deploy));
+            var runStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Run))
+                + Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Start));
 
             var runningMode = isFreeRun
                 ? RunModeState.ManualControl.ToString()
                 : RunModeState.ScenarioControl.ToString();
+            
+            var hasBeenActive = IsActive() || durationMs > 0;
 
             return new InstanceData
             {
@@ -181,7 +164,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 BuildTarget = GetBuildTargetForAnalytics(),
                 InstanceLaunchingDuration = durationMs,
                 RunningMode = runningMode,
-                IsActive = IsActive(),
+                IsActive = hasBeenActive,
                 InstancePrepareStageDurationMs = prepareStageDurationMs,
                 InstanceDeployStageDurationMs = deployStageDurationMs,
                 InstanceRunStageDurationMs = runStageDurationMs,
@@ -222,100 +205,57 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return string.Empty;
         }
 
-        // calculate the sum of time difference between the earliest start time and the latest end time for a given list of nodes
-        private long ComputeNodeDurations(IEnumerable<Node> nodes)
-        {
-            long duration = 0;
-            foreach (var node in nodes)
-            {
-                if (node.TimeData.StartTime != default)
-                {
-                    var nodeDuration = (long)Math.Round((node.TimeData.EndTime - node.TimeData.StartTime).TotalMilliseconds);
-                    duration += nodeDuration;
-                }
-            }
-            return duration;
-        }
-
-
         internal async Task StartOrResumeAsFreeRunning(bool shouldResume)
         {
+            Assert.IsTrue(m_FreeRunningTask == null || m_FreeRunningTask.IsCompleted, "Instance is already running in Free Run mode.");
+            m_FreeRunningTask = null;
+
             // Create a cancellation source by which to stop the Free run instance
             m_FreeRunCancelTokenSource = new CancellationTokenSource();
 
-            // Check instance setup before it starts running
-            var preStartCheck = await TryRunPreStartChecksAsync(m_FreeRunCancelTokenSource.Token);
-            if (!preStartCheck)
-            {
-                StopAsFreeRunning();
-                return;
-            }
+            m_FreeRunningTask = FreeRun(shouldResume);
+            await m_FreeRunningTask;
+        }
 
+        async Task FreeRun(bool shouldResume)
+        {
             // Refresh this instance if starting for the first time.
             if (!shouldResume)
                 Reset();
 
             RefreshStatusData();
 
-            // Prepare the stages that this Instance, once started, will execute on.
-            var executionStages = new Queue<ExecutionStage>(new ExecutionStage[]
+            var validationSuccess = await RunOrResumeAsync(ExecutionStage.Validate, m_FreeRunCancelTokenSource.Token);
+            if (!validationSuccess)
             {
-                ExecutionStage.Prepare,
-                ExecutionStage.Deploy,
-                ExecutionStage.Run,
-            });
-
-            // Start the execution
-            while (executionStages.Count > 0)
-            {
-                var currentStage = executionStages.Dequeue();
-                var result = await RunOrResumeAsync(currentStage, m_FreeRunCancelTokenSource.Token);
-
-                // If we cancelled, exit out
-                if (m_FreeRunCancelTokenSource == null || m_FreeRunCancelTokenSource.Token.IsCancellationRequested)
-                    return;
-
-                // Else, continue on to the next stage once successful
-                if (result.Success)
-                    continue;
-
-                // Else Stop execution and log errors where needed
-                Debug.LogError($"Instance {Name} encountered an error in Manual Mode, " +
-                               $"please refer to the Editor logs for more information.");
-                break;
+                OrchestratedScenario.NotifyValidationFailure(this);
             }
-        }
+            else
+            {
+                // Prepare the stages that this Instance, once started, will execute on.
+                var executionStages = new Queue<ExecutionStage>(ExecutionGraph.k_ExecutionStages);
+                // Start the execution
+                while (executionStages.Count > 0)
+                {
+                    var currentStage = executionStages.Dequeue();
+                    var success = await RunOrResumeAsync(currentStage, m_FreeRunCancelTokenSource.Token);
 
-        private async Task<bool> TryRunPreStartChecksAsync(CancellationToken cancellationToken)
-        {
-            Scenario.ValidationResult validationResult;
-            try
-            {
-                validationResult = await ValidateForRunningAsync(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                return false;
+                    // If we cancelled, exit out
+                    if (m_FreeRunCancelTokenSource == null || m_FreeRunCancelTokenSource.Token.IsCancellationRequested)
+                        break;
+
+                    // Else, continue on to the next stage once successful
+                    if (success)
+                        continue;
+
+                    // Else Stop execution and log errors where needed
+                    Debug.LogError($"Instance {Name} encountered an error in Manual Mode, " +
+                                   $"please refer to the Editor logs for more information.");
+                    break;
+                }
             }
 
-            if (!validationResult.IsValid)
-            {
-                var instanceData = new[] { GetAnalyticsData() };
-                var errorData = GetValidationErrorData(validationResult);
-
-                AnalyticsOnPlayFromScenarioEvent.SendValidationErrorData(
-                    instanceData,
-                    new[] { errorData }
-                );
-
-                EditorUtility.DisplayDialog(
-                    "Play Mode Scenario - Manual Control Instance Setup Error",
-                    $"{validationResult.Message}. Please check the console for more details.",
-                    "OK"
-                );
-                return false;
-            }
-            return true;
+            await RunOrResumeAsync(ExecutionStage.Cleanup, CancellationToken.None);
         }
 
         internal static ErrorData GetValidationErrorData(Scenario.ValidationResult result)
@@ -328,7 +268,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
         }
 
-        internal void StopAsFreeRunning()
+        internal async Task StopAsFreeRunning()
         {
             // Sanity checks from stopping twice.
             if (m_FreeRunCancelTokenSource == null)
@@ -337,6 +277,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
             m_Drifted = false;
+
+            if (m_FreeRunningTask != null)
+            {
+                await m_FreeRunningTask;
+                m_FreeRunningTask = null;
+            }
         }
 
         internal bool HasStartedAsFreeRunning()
@@ -346,36 +292,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsActive()
         {
-            return m_StatusData.OverallStatus.State is ExecutionState.Running or ExecutionState.Active;
+            return m_StatusData.IsExecuting();
         }
 
-        internal async Task<ExecutionGraph.ExecutionResult> RunOrResumeAsync(ExecutionStage executionStage,
-                                                                             CancellationToken cancellationToken)
+        internal async Task<bool> RunOrResumeAsync(ExecutionStage executionStage, CancellationToken cancellationToken)
         {
             // Run the Executed stage and wait for the result.
-            ExecutionGraph.ExecutionResult stageResult
-                = await m_ExecutionGraph.RunOrResumeAsync(executionStage, cancellationToken, Name);
-
-            // If successful, track tasks needed to monitor this instance.
-            if (stageResult.Success)
-            {
-                // Grab all monitoring tasks produced from the run and track it in this instance.
-                // TODO MTT-10016 Monitor Task migration - Remove this in favor of a single Monitoring Task at Instance Level
-                m_CurrentMonitoringTasks.AddRange(stageResult.MonitoringTasks);
-            }
+            bool stageSuccess = await m_ExecutionGraph.RunOrResumeAsync(executionStage, cancellationToken, Name);
 
             // Await and signal Instance completion after final stage
             if (executionStage == ExecutionStage.Run)
-                AwaitInstanceCompletion().Forget();
+            {
+                m_HasDeployedAndRun = true;
+                m_FreeRunCancelTokenSource = null;
+            }
 
-            return stageResult;
-        }
-
-        private async Task AwaitInstanceCompletion()
-        {
-            m_HasDeployedAndRun = true;
-            await Task.WhenAll(GetCurrentMonitoringTasksForScenario());
-            m_FreeRunCancelTokenSource = null;
+            return stageSuccess;
         }
 
         void RefreshStatusData()

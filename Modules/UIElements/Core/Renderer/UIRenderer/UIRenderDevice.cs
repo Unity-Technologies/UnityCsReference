@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define RD_DIAGNOSTICS
-
 using System;
 using Unity.Collections;
 using UnityEngine.Rendering;
@@ -27,7 +25,6 @@ namespace UnityEngine.UIElements.UIR
     internal class MeshHandle : LinkedPoolItem<MeshHandle>
     {
         internal Alloc allocVerts, allocIndices;
-        internal uint triangleCount; // Can be less than the actual indices if only a portion of the allocation is used
         internal Page allocPage;
         internal uint allocTime; // Frame this mesh was allocated/updated
         internal uint updateAllocID; // If not 0, the alloc here points to a temporary location managed by an update record with the said ID
@@ -38,66 +35,39 @@ namespace UnityEngine.UIElements.UIR
         public static class Testing
         {
             public static CommandListManager GetCommandListManager(UIRenderDevice device) => device.m_CommandListManager;
-        }
-
-        internal struct AllocToUpdate
-        {
-            public uint id; // Never 0
-            public uint allocTime; // Frame this update was registered
-            public MeshHandle meshHandle;
-            public Alloc permAllocVerts, permAllocIndices;
-            public Page permPage;
-            public bool copyBackIndices;
-        }
-
-        struct AllocToFree
-        {
-            public Alloc alloc;
-            public Page page;
-            public bool vertices;
+            public static MeshManager GetMeshManager(UIRenderDevice device) => device.m_MeshManager;
         }
 
         struct DeviceToFree
         {
             public UInt32 handle;
-            public Page page;
             public CommandListManager commandListManager;
+            public MeshManager meshManager;
 
             public void Dispose()
             {
-                while (page != null)
-                {
-                    Page pageToDispose = page;
-                    page = page.next;
-                    pageToDispose.Dispose();
-                }
-
+                meshManager.Dispose();
                 commandListManager.Dispose();
             }
         }
 
         internal const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
         internal const int k_PruneEmptyPageFrameCount = 60; // Empty pages will be pruned if they are empty for x consecutive frames.
+        internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
 
         IntPtr m_DefaultStencilState;
         IntPtr m_VertexDecl;
-        Page m_FirstPage;
-        uint m_NextPageVertexCount;
-        uint m_LargeMeshVertexCount;
-        float m_IndexToVertexCountRatio;
-        List<List<AllocToFree>> m_DeferredFrees;
-        List<List<AllocToUpdate>> m_Updates;
+
         List<MeshHandle> m_MeshesPendingFree;
         CommandListManager m_CommandListManager;
         UInt32[] m_Fences;
         MaterialPropertyBlock m_ConstantProps; // Properties that are constant throughout the evaluation of the commands
         MaterialPropertyBlock m_BatchProps;
         uint m_FrameIndex;
-        uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
+        MeshManager m_MeshManager;
         DrawStatistics m_DrawStats;
         bool m_RenderingInProgress;
 
-        readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
         readonly TextureSlotManager m_TextureSlotManager = new TextureSlotManager();
         HashSet<Material> m_ScreenSpaceAlteredMaterials = new();
@@ -108,21 +78,21 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-        static ProfilerMarker s_MarkerAllocate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Allocate");
+
         static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
         static ProfilerMarker s_MarkerFence = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.WaitOnFence");
         static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.BeforeDraw");
 
-        internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
         internal bool breakBatches { get; set; }
         internal bool isFlat { get; }
         internal bool forceGammaRendering { get; }
 
+        public GpuUpdateMode gpuUpdateMode { get; }
+
         // TODO: It is now an insufficient condition to determine if we use command lists or not
         // (nested render trees do not use command lists)
         internal uint frameIndex => m_FrameIndex;
-
 
         static UIRenderDevice()
         {
@@ -130,7 +100,7 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false, GpuUpdateMode gpuUpdateMode = GpuUpdateMode.Default)
         {
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
@@ -146,19 +116,18 @@ namespace UnityEngine.UIElements.UIR
             this.isFlat = isFlat;
             this.forceGammaRendering = forceGammaRendering;
 
-            m_NextPageVertexCount = Math.Max(initialVertexCapacity/2, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
-            m_LargeMeshVertexCount = m_NextPageVertexCount;
-            m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
-            m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);
-
-            m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
-            m_Updates = new List<List<AllocToUpdate>>((int)k_MaxQueuedFrameCount);
-            m_MeshesPendingFree = new();
-            for (int i = 0; i < k_MaxQueuedFrameCount; i++)
+            if (!Utility.HasMappedBufferRange() || gpuUpdateMode == GpuUpdateMode.StagingBuffer)
             {
-                m_DeferredFrees.Add(new List<AllocToFree>());
-                m_Updates.Add(new List<AllocToUpdate>());
+                this.gpuUpdateMode = GpuUpdateMode.StagingBuffer;
+                m_MeshManager = new MeshManagerStaged(initialVertexCapacity, initialIndexCapacity);
             }
+            else
+            {
+                this.gpuUpdateMode = GpuUpdateMode.MappedSubUpdates;
+                m_MeshManager = new MeshManagerMapped(initialVertexCapacity, initialIndexCapacity);
+            }
+
+            m_MeshesPendingFree = new();
 
             InitVertexDeclaration();
 
@@ -258,9 +227,13 @@ namespace UnityEngine.UIElements.UIR
                 DeviceToFree free = new DeviceToFree
                 {
                     handle = Utility.InsertCPUFence(),
-                    page = m_FirstPage,
+                    meshManager = m_MeshManager,
                     commandListManager = m_CommandListManager
                 };
+
+                m_MeshManager = null;
+                m_CommandListManager = null;
+
                 if (free.handle == 0)
                     free.Dispose();
                 else
@@ -281,258 +254,19 @@ namespace UnityEngine.UIElements.UIR
         public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(!m_RenderingInProgress);
-            MeshHandle meshHandle = m_MeshHandles.Get();
-            meshHandle.triangleCount = indexCount / 3;
-            Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
-            indexOffset = (UInt16)meshHandle.allocVerts.start;
-            return meshHandle;
+            return m_MeshManager.Allocate(vertexCount, indexCount, out vertexData, out indexData, out indexOffset);
         }
 
         public void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
         {
             Debug.Assert(!m_RenderingInProgress);
-            Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
-            if (mesh.allocTime == m_FrameIndex)
-            {
-                // Update right after allocation and the GPU hasn't used the data yet.. update same allocation
-                vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
-                return;
-            }
-
-            uint oldIndexOffset = mesh.allocVerts.start; // Cache this before it gets modified in the call to Update below
-            NativeSlice<UInt16> oldIndexData = new NativeSlice<UInt16>(mesh.allocPage.indices.cpuData, (int)mesh.allocIndices.start, (int)mesh.allocIndices.size);
-            UInt16 indexOffset;
-            NativeSlice<UInt16> indexData;
-            AllocToUpdate allocToUpdate;
-            UpdateAfterGPUUsedData(mesh, vertexCount, mesh.allocIndices.size, out vertexData, out indexData, out indexOffset, out allocToUpdate, false);
-
-            // Carry original indices, but repoint them at the new vertices
-            int indexCount = (int)mesh.allocIndices.size;
-            int indexDifference = (int)indexOffset - (int)oldIndexOffset;
-            for (int i = 0; i < indexCount; i++)
-                indexData[i] = (UInt16)(oldIndexData[i] + indexDifference);
+            m_MeshManager.Update(mesh, vertexCount, out vertexData);
         }
 
         public void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(!m_RenderingInProgress);
-            Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
-            Debug.Assert(mesh.allocIndices.size >= (uint)indexCount);
-            if (mesh.allocTime == m_FrameIndex)
-            {
-                // Update right after allocation and the GPU hasn't used the data yet.. update same allocation
-                vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
-                indexData = mesh.allocPage.indices.cpuData.Slice((int)mesh.allocIndices.start, (int)indexCount);
-                indexOffset = (UInt16)mesh.allocVerts.start;
-
-                // Case 1419340, having a nudge update, followed by a visuals update which causes a winding order change
-                // was not working because the copyBackIndices flag was left to "false".
-                UpdateCopyBackIndices(mesh, true);
-
-                return;
-            }
-
-            AllocToUpdate allocToUpdate;
-            UpdateAfterGPUUsedData(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset, out allocToUpdate, true);
-        }
-
-        void UpdateCopyBackIndices(MeshHandle mesh, bool copyBackIndices)
-        {
-            if (mesh.updateAllocID == 0)
-                return; // Not a alloc update
-
-            int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
-            var updates = ActiveUpdatesForMeshHandle(mesh);
-            var update = updates[activeUpdateIndex];
-            update.copyBackIndices = true;
-            updates[activeUpdateIndex] = update;
-        }
-
-        internal List<AllocToUpdate> ActiveUpdatesForMeshHandle(MeshHandle mesh) // Internal for tests
-        {
-            return m_Updates[(int)mesh.allocTime % m_Updates.Count];
-        }
-
-        bool TryAllocFromPage(Page page, uint vertexCount, uint indexCount, ref Alloc va, ref Alloc ia, bool shortLived)
-        {
-            va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
-            if (va.size != 0)
-            {
-                ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
-                if (ia.size != 0)
-                    return true;
-
-                page.vertices.allocator.Free(va); // There is space for the vertices, but not for the indices
-                va.size = 0;
-            }
-            return false;
-        }
-
-        void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
-        {
-            Debug.Assert(!m_RenderingInProgress);
-
-            s_MarkerAllocate.Begin();
-
-            Page page = null;
-            Alloc va = new Alloc(), ia = new Alloc();
-
-
-            if (vertexCount <= m_LargeMeshVertexCount)
-            {
-                // Search for a page that will accept this allocation
-                if (m_FirstPage != null)
-                {
-                    page = m_FirstPage;
-                    for (;;)
-                    {
-                        if (TryAllocFromPage(page, (uint)vertexCount, (uint)indexCount, ref va, ref ia, shortLived) || (page.next == null))
-                            break;
-                        else page = page.next;
-                    }
-                }
-
-                if (ia.size == 0)
-                {
-                    m_NextPageVertexCount <<= 1; // Double the vertex count
-                    m_NextPageVertexCount = Math.Max(m_NextPageVertexCount, vertexCount * 2);
-                    m_NextPageVertexCount = Math.Min(m_NextPageVertexCount, maxVerticesPerPage);  // Stay below 64k for 16-bit indices
-                    uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
-                    newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
-                    Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
-                    page = new Page(m_NextPageVertexCount, newPageIndexCount, k_MaxQueuedFrameCount);
-                    // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
-                    page.next = m_FirstPage;
-                    m_FirstPage = page;
-                    va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
-                    ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
-                    Debug.Assert(va.size != 0);
-                    Debug.Assert(ia.size != 0);
-
-                }
-            }
-            else
-            {
-                // Search for an empty page that offers the best fit.
-                Page current = m_FirstPage;
-                Page lastPage = m_FirstPage;
-                int bestFitExtraVertices = int.MaxValue;
-                while (current != null)
-                {
-                    int extraVertices = current.vertices.cpuData.Length - (int)vertexCount;
-                    int extraIndices = current.indices.cpuData.Length - (int)indexCount;
-                    if (current.isEmpty && extraVertices >= 0 && extraIndices >= 0 && extraVertices < bestFitExtraVertices)
-                    {
-                        // The page is empty and large enough and wastes less vertices.
-                        page = current;
-                        bestFitExtraVertices = extraVertices;
-                    }
-
-                    lastPage = current;
-                    current = current.next;
-                }
-
-                if (page == null)
-                {
-                    // If we want to do an allocation larger than the maximum the render device support,
-                    // we allocate a small page and let the alloc fails.
-                    // The page itself is not going to be usable and will be feed after 60 frames.
-                    // This is done because because the page is required when creating the native slice
-                    var pageVertexCount = (vertexCount > maxVerticesPerPage) ? 2 : vertexCount;
-                    Debug.Assert(vertexCount <= maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
-
-                    // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
-                    page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount);
-                    if (lastPage != null)
-                        lastPage.next = page;
-                    else m_FirstPage = page;
-                }
-
-                va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
-                ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
-
-            }
-
-
-            Debug.Assert(va.size == vertexCount, "Vertices allocated != Vertices requested");
-            Debug.Assert(ia.size == indexCount, "Indices allocated != Indices requested");
-
-            // If the allocated VB or IB has a different size than expected, both are invalidated.
-            // The user may check one buffer size but not the other.
-            if (va.size != vertexCount || ia.size != indexCount)
-            {
-                if (va.handle != null)
-                    page.vertices.allocator.Free(va);
-                if (ia.handle != null)
-                    page.vertices.allocator.Free(ia);
-
-                ia = new Alloc();
-                va = new Alloc();
-            }
-
-            page.vertices.RegisterUpdate(va.start, va.size);
-            page.indices.RegisterUpdate(ia.start, ia.size);
-
-            vertexData = new NativeSlice<Vertex>(page.vertices.cpuData, (int)va.start, (int)va.size);
-            indexData = new NativeSlice<UInt16>(page.indices.cpuData, (int)ia.start, (int)ia.size);
-
-            meshHandle.allocPage = page;
-            meshHandle.allocVerts = va;
-            meshHandle.allocIndices = ia;
-            meshHandle.allocTime = m_FrameIndex;
-
-            s_MarkerAllocate.End();
-        }
-
-        void UpdateAfterGPUUsedData(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset, out AllocToUpdate allocToUpdate, bool copyBackIndices)
-        {
-            allocToUpdate = new AllocToUpdate()
-            { id = m_NextUpdateID++, allocTime = m_FrameIndex, meshHandle = mesh, copyBackIndices = copyBackIndices };
-            Debug.Assert(m_NextUpdateID > 0); // Wrapped-around 4 billion in one frame?!
-
-            // Replace the update record that is currently active on the mesh (if present)
-            if (mesh.updateAllocID == 0)
-            {
-                allocToUpdate.permAllocVerts = mesh.allocVerts;
-                allocToUpdate.permAllocIndices = mesh.allocIndices;
-                allocToUpdate.permPage = mesh.allocPage;
-            }
-            else
-            {
-                int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
-                var updates = m_Updates[(int)mesh.allocTime % m_Updates.Count];
-                var oldUpdate = updates[activeUpdateIndex];
-                Debug.Assert(oldUpdate.id == mesh.updateAllocID);
-
-                allocToUpdate.copyBackIndices |= oldUpdate.copyBackIndices;
-                allocToUpdate.permAllocVerts = oldUpdate.permAllocVerts;
-                allocToUpdate.permAllocIndices = oldUpdate.permAllocIndices;
-                allocToUpdate.permPage = oldUpdate.permPage;
-                oldUpdate.allocTime = 0xFFFFFFFF; // Effectively disable the old update
-                updates[activeUpdateIndex] = oldUpdate;
-
-                var queueToFree = m_DeferredFrees[(int)(m_FrameIndex % (uint)m_DeferredFrees.Count)];
-                queueToFree.Add(new AllocToFree() { alloc = mesh.allocVerts, page = mesh.allocPage, vertices = true });
-                queueToFree.Add(new AllocToFree() { alloc = mesh.allocIndices, page = mesh.allocPage, vertices = false });
-            }
-
-            // Try to allocate from the same page, if we fail, we revert to the general case
-            if (TryAllocFromPage(mesh.allocPage, (uint)vertexCount, (uint)indexCount, ref mesh.allocVerts, ref mesh.allocIndices, true))
-            {
-                mesh.allocPage.vertices.RegisterUpdate(mesh.allocVerts.start, mesh.allocVerts.size);
-                mesh.allocPage.indices.RegisterUpdate(mesh.allocIndices.start, mesh.allocIndices.size);
-            }
-            else Allocate(mesh, vertexCount, indexCount, out vertexData, out indexData, true);
-
-            mesh.triangleCount = indexCount / 3;
-            mesh.updateAllocID = allocToUpdate.id; // Own the update for the mesh
-            mesh.allocTime = allocToUpdate.allocTime;
-
-            m_Updates[(int)(m_FrameIndex % m_Updates.Count)].Add(allocToUpdate);
-
-            vertexData = new NativeSlice<Vertex>(mesh.allocPage.vertices.cpuData, (int)mesh.allocVerts.start, (int)vertexCount);
-            indexData = new NativeSlice<UInt16>(mesh.allocPage.indices.cpuData, (int)mesh.allocIndices.start, (int)indexCount);
-            indexOffset = (UInt16)mesh.allocVerts.start;
+            m_MeshManager.Update(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset);
         }
 
         public void Free(MeshHandle mesh)
@@ -544,41 +278,7 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            if (mesh.updateAllocID != 0) // Is there an update over this mesh
-            {
-                int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
-                var updates = m_Updates[(int)mesh.allocTime % m_Updates.Count];
-                var oldUpdate = updates[activeUpdateIndex];
-                Debug.Assert(oldUpdate.id == mesh.updateAllocID);
-
-                var queueToFree = m_DeferredFrees[(int)(m_FrameIndex % (uint)m_DeferredFrees.Count)];
-                queueToFree.Add(new AllocToFree() { alloc = oldUpdate.permAllocVerts, page = oldUpdate.permPage, vertices = true });
-                queueToFree.Add(new AllocToFree() { alloc = oldUpdate.permAllocIndices, page = oldUpdate.permPage, vertices = false });
-                queueToFree.Add(new AllocToFree() { alloc = mesh.allocVerts, page = mesh.allocPage, vertices = true });
-                queueToFree.Add(new AllocToFree() { alloc = mesh.allocIndices, page = mesh.allocPage, vertices = false });
-
-                oldUpdate.allocTime = 0xFFFFFFFF; // Effectively disable the old update
-                updates[activeUpdateIndex] = oldUpdate;
-            }
-            else if (mesh.allocTime != m_FrameIndex) // Was it potentially used by the GPU?
-            {
-                int queueIndex = (int)(m_FrameIndex % (uint)m_DeferredFrees.Count);
-                m_DeferredFrees[queueIndex].Add(new AllocToFree() { alloc = mesh.allocVerts, page = mesh.allocPage, vertices = true });
-                m_DeferredFrees[queueIndex].Add(new AllocToFree() { alloc = mesh.allocIndices, page = mesh.allocPage, vertices = false });
-            }
-            else
-            {
-                // Freeing in the same frame the allocation happened, totally redundant. As the GPU didn't use this data, we don't need to defer the free
-                mesh.allocPage.vertices.allocator.Free(mesh.allocVerts);
-                mesh.allocPage.indices.allocator.Free(mesh.allocIndices);
-            }
-
-            mesh.allocVerts = new Alloc();
-            mesh.allocIndices = new Alloc();
-            mesh.allocPage = null;
-            mesh.updateAllocID = 0;
-            m_MeshHandles.Return(mesh);
-
+            m_MeshManager.Free(mesh);
         }
 
         public void OnFrameRenderingBegin()
@@ -590,14 +290,8 @@ namespace UnityEngine.UIElements.UIR
 
             s_MarkerBeforeDraw.Begin();
 
-            // Send changes
-            Page page = m_FirstPage;
-            while (page != null)
-            {
-                page.vertices.SendUpdates();
-                page.indices.SendUpdates();
-                page = page.next;
-            }
+            m_MeshManager.OnFrameRenderingBegin();
+
             s_MarkerBeforeDraw.End();
 
             // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
@@ -795,7 +489,7 @@ namespace UnityEngine.UIElements.UIR
                         case EvaluationFlags.ForceRenderTypeTextured:
                             st.material.DisableKeyword(Shaders.k_ForceRenderTypeSolid);
                             st.material.EnableKeyword(Shaders.k_ForceRenderTypeTextured);
-                            st.material.DisableKeyword(Shaders.k_ForceRenderTypeText); 
+                            st.material.DisableKeyword(Shaders.k_ForceRenderTypeText);
                             st.material.DisableKeyword(Shaders.k_ForceRenderTypeSvgGradient);
                             setsKeyword = true;
                             break;
@@ -1153,7 +847,6 @@ namespace UnityEngine.UIElements.UIR
 
             Utility.ProfileDrawChainEnd();
 
-
             if ((st.flags & EvaluationFlags.IsSerializing) != 0)
                 m_CommandListManager.EndSerialize();
 
@@ -1299,111 +992,14 @@ namespace UnityEngine.UIElements.UIR
             }
 
             m_CommandListManager.AdvanceFrame();
-
-            m_NextUpdateID = 1; // Reset
-            var queueToFree = m_DeferredFrees[(int)(m_FrameIndex % (uint)m_DeferredFrees.Count)];
-            foreach (var alloc in queueToFree)
-            {
-                if (alloc.vertices)
-                    alloc.page.vertices.allocator.Free(alloc.alloc);
-                else alloc.page.indices.allocator.Free(alloc.alloc);
-                // Don't dispose the page for now
-            }
-            queueToFree.Clear(); // Doesn't trim excess, which is exactly what we want
-
-            var queueToUpdate = m_Updates[(int)(m_FrameIndex % (uint)m_DeferredFrees.Count)];
-            foreach (var update in queueToUpdate)
-            {
-                if (update.meshHandle.updateAllocID == update.id && update.meshHandle.allocTime == update.allocTime)
-                {
-                    NativeSlice<Vertex> srcVerts = new NativeSlice<Vertex>(update.meshHandle.allocPage.vertices.cpuData, (int)update.meshHandle.allocVerts.start, (int)update.meshHandle.allocVerts.size);
-                    NativeSlice<Vertex> destVerts = new NativeSlice<Vertex>(update.permPage.vertices.cpuData, (int)update.permAllocVerts.start, (int)update.meshHandle.allocVerts.size);
-                    destVerts.CopyFrom(srcVerts);
-                    update.permPage.vertices.RegisterUpdate(update.permAllocVerts.start, update.meshHandle.allocVerts.size);
-
-                    if (update.copyBackIndices)
-                    {
-                        NativeSlice<UInt16> srcIndices = new NativeSlice<UInt16>(update.meshHandle.allocPage.indices.cpuData, (int)update.meshHandle.allocIndices.start, (int)update.meshHandle.allocIndices.size);
-                        NativeSlice<UInt16> destIndices = new NativeSlice<UInt16>(update.permPage.indices.cpuData, (int)update.permAllocIndices.start, (int)update.meshHandle.allocIndices.size);
-
-                        // Carry original indices, but repoint them at the new vertices
-                        int indexCount = destIndices.Length;
-                        int indexDifference = (int)update.permAllocVerts.start - (int)update.meshHandle.allocVerts.start;
-                        for (int i = 0; i < indexCount; i++)
-                            destIndices[i] = (UInt16)(srcIndices[i] + indexDifference);
-
-                        update.permPage.indices.RegisterUpdate(update.permAllocIndices.start, update.meshHandle.allocIndices.size);
-                    }
-                    queueToFree.Add(new AllocToFree() { alloc = update.meshHandle.allocVerts, page = update.meshHandle.allocPage, vertices = true });
-                    queueToFree.Add(new AllocToFree() { alloc = update.meshHandle.allocIndices, page = update.meshHandle.allocPage, vertices = false });
-
-                    update.meshHandle.allocVerts = update.permAllocVerts;
-                    update.meshHandle.allocIndices = update.permAllocIndices;
-                    update.meshHandle.allocPage = update.permPage;
-                    update.meshHandle.updateAllocID = 0;
-                }
-            }
-            queueToUpdate.Clear();
+            m_MeshManager.AdvanceFrame();
 
             foreach (var mesh in m_MeshesPendingFree)
-            {
                 Free(mesh);
-            }
 
             m_MeshesPendingFree.Clear();
 
-            PruneUnusedPages();
-
             s_MarkerAdvanceFrame.End();
-        }
-
-        void PruneUnusedPages()
-        {
-            Page current, firstToKeep, lastToKeep, firstToPrune, lastToPrune;
-            firstToKeep = lastToKeep = firstToPrune = lastToPrune = null;
-
-            // Find pages to keep/prune and update their consecutive-empty-frames counters.
-            current = m_FirstPage;
-            while (current != null)
-            {
-                if (!current.isEmpty)
-                    current.framesEmpty = 0;
-                else
-                    ++current.framesEmpty;
-
-                if (current.framesEmpty < k_PruneEmptyPageFrameCount)
-                {
-                    if (firstToKeep != null)
-                        lastToKeep.next = current;
-                    else
-                        firstToKeep = current;
-                    lastToKeep = current;
-                }
-                else
-                {
-                    if (firstToPrune != null)
-                        lastToPrune.next = current;
-                    else
-                        firstToPrune = current;
-                    lastToPrune = current;
-                }
-
-                Page next = current.next;
-                current.next = null;
-                current = next;
-            }
-
-            m_FirstPage = firstToKeep;
-
-            // Prune pages.
-            current = firstToPrune;
-            while (current != null)
-            {
-                Page next = current.next;
-                current.next = null;
-                current.Dispose();
-                current = next;
-            }
         }
 
         internal static void PrepareForGfxDeviceRecreate()
@@ -1424,30 +1020,10 @@ namespace UnityEngine.UIElements.UIR
             public PageStatistics[] pages;
             public int[] freesDeferred;
         }
+
         internal AllocationStatistics GatherAllocationStatistics()
         {
-            AllocationStatistics stats = new AllocationStatistics();
-            stats.freesDeferred = new int[m_DeferredFrees.Count];
-            for (int i = 0; i < m_DeferredFrees.Count; i++)
-                stats.freesDeferred[i] = m_DeferredFrees[i].Count;
-            int pageCount = 0;
-            Page page = m_FirstPage;
-            while (page != null)
-            {
-                pageCount++;
-                page = page.next;
-            }
-            stats.pages = new AllocationStatistics.PageStatistics[pageCount];
-            pageCount = 0;
-            page = m_FirstPage;
-            while (page != null)
-            {
-                stats.pages[pageCount].vertices = page.vertices.allocator.GatherStatistics();
-                stats.pages[pageCount].indices = page.indices.allocator.GatherStatistics();
-                pageCount++;
-                page = page.next;
-            }
-            return stats;
+            return m_MeshManager.GatherAllocationStatistics();
         }
 
         internal struct DrawStatistics

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using UnityEditor.Search;
 using UnityEngine.UIElements;
 
@@ -139,8 +140,8 @@ namespace Unity.UI.Builder
 
                 if (bindingDataSource != null)
                 {
-                    if (bindingDataSource is BuilderObjectField.NonUnityObjectValue nonuUnityObjVale)
-                        source = nonuUnityObjVale.data;
+                    if (bindingDataSource is AnyObjectField.NonUnityObjectValue nonUnityObjVal)
+                        source = nonUnityObjVal.data;
                     PropertyContainer.TryGetProperty(source, propertyInfo.propertyPath, out property);
                 }
 
@@ -176,7 +177,7 @@ namespace Unity.UI.Builder
                     {
                         var source = bindingDataSource;
 
-                        if (source is BuilderObjectField.NonUnityObjectValue nonUnityObject)
+                        if (source is AnyObjectField.NonUnityObjectValue nonUnityObject)
                             source = nonUnityObject.data;
                         DataBindingUtility.GetPropertyPaths(source, int.MaxValue, m_AllProperties);
                     }

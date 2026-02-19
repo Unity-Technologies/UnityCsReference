@@ -76,9 +76,7 @@ namespace UnityEditor
 
         internal bool upgradeMaterials
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            get { return importers.Any(i => i.materialsShouldBeRegenerated); }
-#pragma warning restore UA2001
+            get { return Array.Exists(targets, i => (i as SpeedTreeImporter).materialsShouldBeRegenerated); }
         }
 
         internal GUIContent GetGenButtonText(bool modified, bool upgrade)

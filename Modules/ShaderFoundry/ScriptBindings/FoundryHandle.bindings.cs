@@ -14,7 +14,7 @@ namespace UnityEditor.ShaderFoundry
         private UInt64 m_Handle;
 
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
-        [ThreadSafe] internal extern static FoundryHandle Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Invalid();
         internal bool ReferenceEquals(FoundryHandle other)
         {
             return m_Handle == other.m_Handle;

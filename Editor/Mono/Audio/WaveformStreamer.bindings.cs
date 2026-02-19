@@ -46,7 +46,7 @@ namespace UnityEditor
             return new WaveformStreamer(clip, start, duration, numOutputSamples, onNewWaveformData);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal static extern IntPtr Internal_WaveformStreamerCreate([UnityMarshalAs(NativeType.ScriptingObjectPtr)] WaveformStreamer instance, [NotNull] AudioClip clip, double start, double duration,
             int numOutputSamples, [NotNull] Func<WaveformStreamer, float[], int, bool> onNewWaveformData);
 
@@ -54,7 +54,7 @@ namespace UnityEditor
 
         internal static extern void Internal_WaveformStreamerStop(IntPtr streamer);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal static extern IntPtr Internal_WaveformStreamerCreateUntyped(object instance, [NotNull] AudioClip clip, double start, double duration,
             int numOutputSamples, [NotNull] Func<object, float[], int, bool> onNewWaveformData);
 

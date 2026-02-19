@@ -59,9 +59,9 @@ namespace UnityEditor.SearchService
                 return null;
 
             var keyCombination = KeyCombination.FromKeyboardInput(evt);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (shortcutBinding.keyCombinationSequence.Any(shortcutCombination => keyCombination.Equals(shortcutCombination)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
             {
                 evt.Use();
                 return OpenSearchInContext(window, searchText, "jumpShortcut");
@@ -92,9 +92,9 @@ namespace UnityEditor.SearchService
         public static bool IsShortcutAvailable()
         {
             var shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return shortcutIds.Any(path => path == k_SearchAllShortcutName);
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
     }
 }

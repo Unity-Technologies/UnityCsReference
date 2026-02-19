@@ -42,14 +42,14 @@ namespace UnityEngine.Experimental.Animations
             InternalSetSortingOrder(output.GetHandle(), (int)sortingOrder);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimationStreamSource InternalGetAnimationStreamSource(PlayableOutputHandle output);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalSetAnimationStreamSource(PlayableOutputHandle output, AnimationStreamSource streamSource);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int InternalGetSortingOrder(PlayableOutputHandle output);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalSetSortingOrder(PlayableOutputHandle output, int sortingOrder);
     }
 }

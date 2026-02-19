@@ -139,7 +139,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private void BuildFields()
+        internal void BuildFields()
         {
             m_FieldsContainer.Clear();
             m_IdToFieldDictionary.Clear();
@@ -679,6 +679,10 @@ namespace UnityEditor.UIElements.Debugger
                         textShadow.blurRadius = newBlur;
 
                     val = new StyleTextShadow(textShadow);
+                }
+                else if (type == typeof(StyleMaterialDefinition))
+                {
+                    val = new StyleMaterialDefinition(newValue as Material);
                 }
                 else if (val is TextAutoSize textAutoSize)
                 {

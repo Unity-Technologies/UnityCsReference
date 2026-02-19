@@ -270,7 +270,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // The virtual keyword is needed for unit tests
         public virtual bool IsRefreshInProgress(RefreshOptions options)
         {
-            return m_RefreshOperationsInProgress.AnyMatches(i => options.Contains(i.refreshOptions));
+            return m_RefreshOperationsInProgress.Exists(i => options.Contains(i.refreshOptions));
         }
 
         // The virtual keyword is needed for unit tests

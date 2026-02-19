@@ -105,9 +105,7 @@ namespace Unity.GraphToolkit.Editor
                 var command = new CreateNodeCommand();
 
                 var portTarget = (e.target as VisualElement)?.GetFirstOfType<Port>();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var variablesCount = variablesWithInfo.Count();
-#pragma warning restore UA2001
+                var variablesCount = variablesWithInfo.Count;
                 foreach (var (model, position) in variablesWithInfo)
                 {
                     if (portTarget != null && variablesCount == 1 && portTarget.CanAcceptDrop(new List<GraphElementModel> { model }))

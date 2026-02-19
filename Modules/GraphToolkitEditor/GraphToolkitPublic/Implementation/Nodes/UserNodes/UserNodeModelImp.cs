@@ -23,6 +23,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         string m_CustomTooltip;
         string m_CustomTitle;
+        string m_CustomSubtitle;
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -40,7 +41,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string Title
         {
-            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            get
+            {
+                var title = m_Node?.GetType().Name ?? "Missing Node";
+
+                if (!string.IsNullOrEmpty(m_CustomTitle))
+                {
+                    title = m_CustomTitle;
+                }
+                else if (m_Node?.GetType().GetAttribute<NodeAttribute>()?.Title is var attributeTitle && !string.IsNullOrEmpty(attributeTitle))
+                {
+                    title = attributeTitle;
+                }
+
+                return title;
+            }
+
             set
             {
                 if (m_CustomTitle == value)
@@ -51,7 +67,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        public override string Subtitle
+        {
+            get => !string.IsNullOrEmpty(m_CustomSubtitle) ? m_CustomSubtitle : base.Subtitle;
+            set
+            {
+                if (m_CustomSubtitle == value)
+                    return;
+
+                m_CustomSubtitle = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
         public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override string CategoryPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.CategoryPath ?? base.CategoryPath;
 
         public override Color DefaultColor
         {
@@ -59,7 +90,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             set
             {
                 if (m_CustomDefaultColor == value)
-                    return;                
+                    return;
 
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
@@ -113,6 +144,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         string m_CustomTooltip;
         string m_CustomTitle;
+        string m_CustomSubtitle;
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -130,7 +162,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string Title
         {
-            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            get
+            {
+                var title = m_Node?.GetType().Name ?? "Missing Node";
+
+                if (!string.IsNullOrEmpty(m_CustomTitle))
+                {
+                    title = m_CustomTitle;
+                }
+                else if (m_Node?.GetType().GetAttribute<NodeAttribute>()?.Title is var attributeTitle && !string.IsNullOrEmpty(attributeTitle))
+                {
+                    title = attributeTitle;
+                }
+
+                return title;
+            }
+
             set
             {
                 if (m_CustomTitle == value)
@@ -141,7 +188,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        public override string Subtitle
+        {
+            get => !string.IsNullOrEmpty(m_CustomSubtitle) ? m_CustomSubtitle : base.Subtitle;
+            set
+            {
+                if (m_CustomSubtitle == value)
+                    return;
+
+                m_CustomSubtitle = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
         public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override string CategoryPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.CategoryPath ?? base.CategoryPath;
 
         public override Color DefaultColor
         {
@@ -149,7 +211,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             set
             {
                 if (m_CustomDefaultColor == value)
-                    return;                
+                    return;
 
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
@@ -205,6 +267,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         string m_CustomTooltip;
         string m_CustomTitle;
+        string m_CustomSubtitle;
         Color m_CustomDefaultColor = Color.darkGreen;
 
         public override string Tooltip
@@ -222,7 +285,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string Title
         {
-            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            get
+            {
+                var title = m_Node?.GetType().Name ?? "Missing Node";
+
+                if (!string.IsNullOrEmpty(m_CustomTitle))
+                {
+                    title = m_CustomTitle;
+                }
+                else if (m_Node?.GetType().GetAttribute<NodeAttribute>()?.Title is var attributeTitle && !string.IsNullOrEmpty(attributeTitle))
+                {
+                    title = attributeTitle;
+                }
+
+                return title;
+            }
+
             set
             {
                 if (m_CustomTitle == value)
@@ -233,7 +311,22 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        public override string Subtitle
+        {
+            get => !string.IsNullOrEmpty(m_CustomSubtitle) ? m_CustomSubtitle : base.Subtitle;
+            set
+            {
+                if (m_CustomSubtitle == value)
+                    return;
+
+                m_CustomSubtitle = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
         public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override string CategoryPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.CategoryPath ?? base.CategoryPath;
 
         public override Color DefaultColor
         {
@@ -241,7 +334,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             set
             {
                 if (m_CustomDefaultColor == value)
-                    return;                
+                    return;
 
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);

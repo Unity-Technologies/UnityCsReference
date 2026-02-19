@@ -23,8 +23,8 @@ namespace UnityEditor
         ChartSeriesViewData m_EventsSeries;
         UISystemProfilerModel m_UIModel;
 
-        public UISystemProfilerModelBuilder(IProfilerPersistentSettingsService settingsService, ProfilerModuleChartType type, int seriesCount, string name, string localizedName, string iconName)
-            : base(settingsService, type, seriesCount + 1, name, localizedName, iconName)
+        public UISystemProfilerModelBuilder(IProfilerPersistentSettingsService settingsService, ProfilerModuleChartType type, int seriesCount, string name, string localizedName, string tooltip, string iconName)
+            : base(settingsService, type, seriesCount + 1, name, localizedName, tooltip, iconName)
         {
             m_UIModel = new UISystemProfilerModel();
         }
@@ -35,7 +35,7 @@ namespace UnityEditor
         {
             base.ConfigureChartSeries(historySize, counters);
 
-            Model.series[counters.Length] = m_EventsSeries = new ChartSeriesViewData("Events", string.Empty, historySize, ProfilerColors.chartAreaColors[(uint)counters.Length % ProfilerColors.chartAreaColors.Length]);
+            Model.series[counters.Length] = m_EventsSeries = new ChartSeriesViewData("Events", string.Empty, string.Empty, historySize, ProfilerColors.chartAreaColors[(uint)counters.Length % ProfilerColors.chartAreaColors.Length]);
         }
 
         public override void UpdateData(int firstEmptyFrame, int firstFrame, int frameCount)

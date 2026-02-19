@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +15,7 @@ using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -965,6 +965,12 @@ namespace UnityEngine.UIElements
             set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxDirty : transformFlags & ~VisualElementTransformFlags.BoundingBoxDirty;
         }
 
+        internal bool isBoundingBoxWithoutNestedDirty
+        {
+            get => (transformFlags & VisualElementTransformFlags.BoundingBoxWithoutNestedDirty) == VisualElementTransformFlags.BoundingBoxWithoutNestedDirty;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxWithoutNestedDirty : transformFlags & ~VisualElementTransformFlags.BoundingBoxWithoutNestedDirty;
+        }
+
         internal bool isWorldBoundingBoxDirty
         {
             get => (transformFlags & VisualElementTransformFlags.WorldBoundingBoxDirty) == VisualElementTransformFlags.WorldBoundingBoxDirty;
@@ -997,10 +1003,10 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (isBoundingBoxDirty)
+                if (isBoundingBoxWithoutNestedDirty)
                 {
-                    UpdateBoundingBox();
-                    isBoundingBoxDirty = false;
+                    UpdateBoundingBoxWithoutNested();
+                    isBoundingBoxWithoutNestedDirty = false;
                 }
 
                 return WorldSpaceDataStore.GetWorldSpaceData(this).boundingBoxWithoutNested;
@@ -1034,40 +1040,28 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void UpdateBoundingBox()
         {
-            // World-space implementation is managed only for now.
-            if (elementPanel != null && !elementPanel.isFlat)
-            {
-                UpdateBoundingBoxManaged();
-                return;
-            }
-
             // The native implementation is about 8 times faster. See MathTests.cs.
-            UpdateBoundingBoxNative();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe void UpdateBoundingBoxNative()
-        {
             NativeTransformUtils.UpdateBoundingBox(layoutNode.Handle);
         }
 
-        internal void UpdateBoundingBoxManaged()
+        internal void UpdateBoundingBoxWithoutNested()
         {
-            // boundingBoxWithoutNested is only used in world-space mode.
-            bool shouldComputedWithoutNested = (elementPanel != null && !elementPanel.isFlat);
-            ref var bbox = ref transformData.BoundingBox;
             Rect bboxWithoutNested;
 
             var r = rect;
             if (float.IsNaN(r.x) || float.IsNaN(r.y) || float.IsNaN(r.width) || float.IsNaN(r.height))
             {
                 // Ignored unlayouted VisualElements.
-                bbox = Rect.zero;
                 bboxWithoutNested = Rect.zero;
+            }
+            else if (elementPanel == null || elementPanel.isFlat || this is not IPanelComponentRootElement)
+            {
+                // boundingBoxWithoutNested is only used in world-space mode and for panel components.
+                // For any other element it's the same as a regular bounding box.
+                bboxWithoutNested = boundingBox;
             }
             else
             {
-                bbox = r;
                 bboxWithoutNested = r;
                 if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
@@ -1078,34 +1072,27 @@ namespace UnityEngine.UIElements
                         if (!child.areAncestorsAndSelfDisplayed)
                             continue;
 
-                        var childBB = child.boundingBoxInParentSpace;
-                        bbox.xMin = Math.Min(bbox.xMin, childBB.xMin);
-                        bbox.xMax = Math.Max(bbox.xMax, childBB.xMax);
-                        bbox.yMin = Math.Min(bbox.yMin, childBB.yMin);
-                        bbox.yMax = Math.Max(bbox.yMax, childBB.yMax);
+                        // Only update "bounding-box without nested" for non-UIDocumentRootElement
+                        if (child is IPanelComponentRootElement)
+                            continue;
 
-                        if (shouldComputedWithoutNested && !(child is IPanelComponentRootElement))
-                        {
-                            // Only update "bounding-box without nested" for non-UIDocumentRootElement
-                            bboxWithoutNested.xMin = Math.Min(bboxWithoutNested.xMin, childBB.xMin);
-                            bboxWithoutNested.xMax = Math.Max(bboxWithoutNested.xMax, childBB.xMax);
-                            bboxWithoutNested.yMin = Math.Min(bboxWithoutNested.yMin, childBB.yMin);
-                            bboxWithoutNested.yMax = Math.Max(bboxWithoutNested.yMax, childBB.yMax);
-                        }
+                        // Here we assume that nested panel components are always direct children of other components,
+                        // so we can use the regular boundingBox recursively because if we reach this point it means
+                        // we've broken the chain of component descendants in this branch of the hierarchy.
+                        var childBB = child.boundingBoxInParentSpace;
+                        bboxWithoutNested.xMin = Math.Min(bboxWithoutNested.xMin, childBB.xMin);
+                        bboxWithoutNested.xMax = Math.Max(bboxWithoutNested.xMax, childBB.xMax);
+                        bboxWithoutNested.yMin = Math.Min(bboxWithoutNested.yMin, childBB.yMin);
+                        bboxWithoutNested.yMax = Math.Max(bboxWithoutNested.yMax, childBB.yMax);
                     }
                 }
             }
 
-            if (shouldComputedWithoutNested)
-            {
-                // This value is only used in world-space mode. So, we store the "without nested"
-                // result in the WorldSpaceData struct to avoid uselessly inflating the VisualElement class.
-                var data = WorldSpaceDataStore.GetWorldSpaceData(this);
-                data.boundingBoxWithoutNested = bboxWithoutNested;
-                WorldSpaceDataStore.SetWorldSpaceData(this, data);
-            }
-
-            isWorldBoundingBoxDirty = true;
+            // This value is only used in world-space mode. So, we store the "without nested"
+            // result in the WorldSpaceData struct to avoid uselessly inflating the VisualElement class.
+            var data = WorldSpaceDataStore.GetWorldSpaceData(this);
+            data.boundingBoxWithoutNested = bboxWithoutNested;
+            WorldSpaceDataStore.SetWorldSpaceData(this, data);
         }
 
         internal void UpdateWorldBoundingBox()
@@ -1118,6 +1105,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (!needs3DBounds)
+                {
+                    var bbox = boundingBox;
+                    return new Bounds(bbox.center, bbox.size);
+                }
+
                 if (isLocalBounds3DDirty)
                 {
                     UpdateBounds3D();
@@ -1132,13 +1125,19 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (!needs3DBounds)
+                {
+                    var bbox = boundingBox;
+                    return new Bounds(bbox.center, bbox.size);
+                }
+
                 if (isLocalBounds3DDirty)
                 {
                     UpdateBounds3D();
                     isLocalBounds3DDirty = false;
                 }
 
-                return WorldSpaceDataStore.GetWorldSpaceData(this).localBounds3D;
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsPicking3D;
             }
         }
 
@@ -1146,6 +1145,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (!needs3DBounds)
+                {
+                    var bboxWithoutNested = boundingBoxWithoutNested;
+                    return new Bounds(bboxWithoutNested.center, bboxWithoutNested.size);
+                }
+
                 if (isLocalBoundsWithoutNested3DDirty)
                 {
                     UpdateBounds3D();
@@ -1161,25 +1166,6 @@ namespace UnityEngine.UIElements
             if (!areAncestorsAndSelfDisplayed)
             {
                 WorldSpaceDataStore.ClearLocalBounds3DData(this);
-                return;
-            }
-
-            if (!needs3DBounds)
-            {
-                // Fast path for elements that don't need 3D transforms
-                var bbox = boundingBox;
-                var localBounds = new Bounds(bbox.center, bbox.size);
-
-                var bboxWithoutNested = boundingBoxWithoutNested;
-                var boundsWithoutNested = new Bounds(bboxWithoutNested.center, bboxWithoutNested.size);
-
-                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData()
-                {
-                    localBounds3D = localBounds,
-                    localBoundsPicking3D = localBounds,
-                    localBoundsWithoutNested3D = boundsWithoutNested,
-                    boundingBoxWithoutNested = bboxWithoutNested,
-                });
                 return;
             }
 
@@ -1373,22 +1359,20 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe void UpdateWorldTransformNative()
+        internal void UpdateWorldTransformNative()
         {
-            NativeTransformUtils.UpdateWorldTransform(layoutNode.Handle,
-                elementPanel == null || elementPanel.duringLayoutPhase,
-                elementPanel != null && elementPanel.isFlat);
+            NativeTransformUtils.UpdateWorldTransform(layoutNode.Handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe void UpdateWorldTransformHierarchyNative()
+        internal void UpdateWorldTransformHierarchyNative()
         {
+            // It makes no sense to call this method during layout phase, as it will not remove any of the dirty flags
             Debug.Assert(!elementPanel.duringLayoutPhase, "!elementPanel.duringLayoutPhase");
-            NativeTransformUtils.UpdateWorldTransformHierarchy(layoutNode.Handle,
-                elementPanel != null && elementPanel.isFlat);
+            NativeTransformUtils.UpdateWorldTransformHierarchy(layoutNode.Handle);
         }
 
-        // Kept for performance tests. Must also be called if manual layout is in use.
+        // Kept for performance tests.
         internal void UpdateWorldTransformManaged()
         {
             // If we are during a layout we don't want to remove the dirty transform flag
@@ -1679,8 +1663,6 @@ namespace UnityEngine.UIElements
             hasOneOrMorePointerCaptures = hasCapture;
         }
 
-        private PickingMode m_PickingMode;
-
         /// <summary>
         /// Determines if this element can be the target of pointer events or
         /// picked by <see cref="IPanel.Pick"/> queries.
@@ -1698,12 +1680,14 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public PickingMode pickingMode
         {
-            get => m_PickingMode;
+            get => (transformFlags & VisualElementTransformFlags.PickingIgnore) != 0 ? PickingMode.Ignore : PickingMode.Position;
             set
             {
-                if (m_PickingMode == value)
+                if (pickingMode == value)
                     return;
-                m_PickingMode = value;
+                transformFlags = value == PickingMode.Ignore
+                    ? transformFlags | VisualElementTransformFlags.PickingIgnore
+                    : transformFlags & ~VisualElementTransformFlags.PickingIgnore;
                 IncrementVersion(VersionChangeType.Picking);
                 NotifyPropertyChanged(pickingModeProperty);
             }
@@ -1777,7 +1761,7 @@ namespace UnityEngine.UIElements
             get => ref layoutNode.ComputedStyle;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         // Variables that children inherit
         internal StyleVariableContext variableContext = StyleVariableContext.none;
 
@@ -1850,15 +1834,18 @@ namespace UnityEngine.UIElements
 
             renderHints = RenderHints.None;
 
-            EventInterestReflectionUtils.GetDefaultEventInterests(GetType(),
-                out var defaultActionCategories, out var defaultActionAtTargetCategories,
-                out var handleEventTrickleDownCategories, out var handleEventBubbleUpCategories);
+            m_TypeData = GetOrCreateTypeData(GetType());
 
-            m_TrickleDownHandleEventCategories = handleEventTrickleDownCategories;
+            usesContainsPoint = m_TypeData.hasContainsPoint;
+
+            var defaultEventInterests = m_TypeData.defaultEventInterests;
+
+            m_TrickleDownHandleEventCategories = defaultEventInterests.HandleEventTrickleDownCategories;
 
             // Combine the obsolete default actions into the BubbleUp categories
-            m_BubbleUpHandleEventCategories = handleEventBubbleUpCategories |
-                                              defaultActionAtTargetCategories | defaultActionCategories;
+            m_BubbleUpHandleEventCategories = defaultEventInterests.HandleEventBubbleUpCategories |
+                                              defaultEventInterests.DefaultActionAtTargetCategories |
+                                              defaultEventInterests.DefaultActionCategories;
 
             UpdateEventInterestSelfCategories();
         }
@@ -2042,14 +2029,20 @@ namespace UnityEngine.UIElements
                     }
 
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
+                    var layoutConfig = p != null ? p.layoutConfig : LayoutManager.SharedManager.GetDefaultConfig();
 
                     InvokeHierarchyChanged(HierarchyChangeType.DetachedFromPanel, elements);
                     foreach (var e in elements)
                     {
+                        e.elementPanel?.MemberElementsByHandle.Remove(e.layoutNode.Handle);
                         e.elementPanel = p;
+                        e.elementPanel?.MemberElementsByHandle.Add(e.layoutNode.Handle, e);
+
                         e.flags |= flagToAdd;
                         e.m_CachedNextParentWithEventInterests = null;
+                        e.layoutNode.Config = layoutConfig;
                     }
+
                     InvokeHierarchyChanged(HierarchyChangeType.AttachedToPanel, elements);
 
                     foreach (var e in elements)
@@ -2110,7 +2103,6 @@ namespace UnityEngine.UIElements
         {
             if (elementPanel != null)
             {
-                layoutNode.Config = elementPanel.layoutConfig;
                 layoutNode.SoftReset();
 
                 RegisterRunningAnimations();
@@ -2146,7 +2138,6 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                layoutNode.Config = LayoutManager.SharedManager.GetDefaultConfig();
                 layoutNode.Cache.ClearCachedMeasurements();
             }
 
@@ -2670,6 +2661,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool usesContainsPoint
+        {
+            get => (transformFlags & VisualElementTransformFlags.UsesContainsPoint) == VisualElementTransformFlags.UsesContainsPoint;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.UsesContainsPoint : transformFlags & ~VisualElementTransformFlags.UsesContainsPoint;
+        }
+
         private void AssignMeasureFunction()
         {
             layoutNode.SetOwner(this);
@@ -2720,17 +2717,24 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void SetInlineRule(StyleSheet sheet, StyleRule rule)
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetInlineRule(StyleSheet sheet, StyleRule rule, StyleVariableContext variableContext = null)
         {
             if (inlineStyleAccess == null)
                 inlineStyleAccess = new InlineStyleAccess(this);
 
-            inlineStyleAccess.SetInlineRule(sheet, rule);
+            inlineStyleAccess.SetInlineRule(sheet, rule, variableContext ?? this.variableContext);
         }
 
         // Used by the builder to apply the inline styles without passing by SetComputedStyle
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule)
+        {
+            UpdateInlineRule(sheet, rule, null);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule, StyleVariableContext variableContext)
         {
             var oldStyle = computedStyle.Acquire();
 
@@ -2740,7 +2744,7 @@ namespace UnityEngine.UIElements
 
             computedStyle.CopyFrom(ref baseComputedStyle);
 
-            SetInlineRule(sheet, rule);
+            SetInlineRule(sheet, rule, variableContext);
 
             var changes = ComputedStyle.CompareChanges(ref oldStyle, ref computedStyle);
             oldStyle.Release();

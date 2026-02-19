@@ -21,13 +21,13 @@ namespace UnityEngine.Rendering
         {
             extern internal static bool enabled { get; }
 
-            [NativeThrows] extern public static void Update();
+            [NativeMethod(ThrowsException = true)] extern public static void Update();
 
-            [NativeThrows] internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlagInteger(guid.ToByteArray(), enabled ? 1 : 0); }
-            [NativeThrows] internal static void SetDebugFlagInteger(Guid guid, long value) { SetDebugFlagInteger(guid.ToByteArray(), value); }
-            [NativeThrows] internal static void SetDebugFlagDouble(Guid guid, double value) { SetDebugFlagDouble(guid.ToByteArray(), value); }
-            [NativeThrows] extern private static void SetDebugFlagInteger(byte[] guid, long value);
-            [NativeThrows] extern private static void SetDebugFlagDouble(byte[] guid, double value);
+            internal static void SetDebugFlag(Guid guid, bool enabled) { SetDebugFlagInteger(guid.ToByteArray(), enabled ? 1 : 0); }
+            internal static void SetDebugFlagInteger(Guid guid, long value) { SetDebugFlagInteger(guid.ToByteArray(), value); }
+            internal static void SetDebugFlagDouble(Guid guid, double value) { SetDebugFlagDouble(guid.ToByteArray(), value); }
+            [NativeMethod(ThrowsException = true)] extern private static void SetDebugFlagInteger(byte[] guid, long value);
+            [NativeMethod(ThrowsException = true)] extern private static void SetDebugFlagDouble(byte[] guid, double value);
 
             public const int AllMips = int.MaxValue;
         }
@@ -44,23 +44,23 @@ namespace UnityEngine.Rendering
                 public string errorMessage;
             }
 
-            [NativeThrows] extern internal static int tileSize { get; }
+            [NativeMethod(ThrowsException = true)] extern internal static int tileSize { get; }
 
-            [NativeThrows] extern public static bool ValidateTextureStack([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Texture[] textures, out string errorMessage);
+            [NativeMethod(ThrowsException = true)] extern public static bool ValidateTextureStack([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Texture[] textures, out string errorMessage);
 
-            [NativeThrows] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
+            [NativeMethod(ThrowsException = true)] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 
             [NativeConditional("UNITY_EDITOR")]
-            [NativeThrows] extern public static GraphicsFormat[] QuerySupportedFormats();
+            [NativeMethod(ThrowsException = true)] extern public static GraphicsFormat[] QuerySupportedFormats();
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
         [StaticAccessor("VirtualTexturing::Debugging", StaticAccessorType.DoubleColon)]
         public static class Debugging
         {
-            [NativeThrows] extern public static int GetNumHandles();
-            [NativeThrows] extern public static void GrabHandleInfo([Out] out Handle debugHandle, int index);
-            [NativeThrows] extern public static string GetInfoDump();
+            [NativeMethod(ThrowsException = true)] extern public static int GetNumHandles();
+            [NativeMethod(ThrowsException = true)] extern public static void GrabHandleInfo([Out] out Handle debugHandle, int index);
+            [NativeMethod(ThrowsException = true)] extern public static string GetInfoDump();
 
             [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingDebugHandle.h")]
             [StructLayout(LayoutKind.Sequential)]
@@ -74,10 +74,10 @@ namespace UnityEngine.Rendering
                 public Material material; //Material to initialize with gpu data. If null this is skipped.
             }
 
-            [NativeThrows] extern public static bool debugTilesEnabled { get; set; }
-            [NativeThrows] extern public static bool resolvingEnabled { get; set; }
-            [NativeThrows] extern public static bool flushEveryTickEnabled { get; set; }
-            [NativeThrows] extern public static int mipPreloadedTextureCount { get; }
+            [NativeMethod(ThrowsException = true)] extern public static bool debugTilesEnabled { get; set; }
+            [NativeMethod(ThrowsException = true)] extern public static bool resolvingEnabled { get; set; }
+            [NativeMethod(ThrowsException = true)] extern public static bool flushEveryTickEnabled { get; set; }
+            [NativeMethod(ThrowsException = true)] extern public static int mipPreloadedTextureCount { get; }
         }
 
         [NativeHeader("Modules/VirtualTexturing/Public/VirtualTextureResolver.h")]
@@ -189,23 +189,23 @@ namespace UnityEngine.Rendering
         [StaticAccessor("VirtualTexturing::Streaming", StaticAccessorType.DoubleColon)]
         public static class Streaming
         {
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static void RequestRegion([NotNull] Material mat, int stackNameId, Rect r, int mipMap, int numMips);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
 
             // Set the size of the CPU cache(s). This can cause a noticeable hiccup as a lot of system memory needs to be reallocated.
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static void SetCPUCacheSize(int sizeInMegabytes);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static int GetCPUCacheSize();
 
             // Apply settings to the streaming GPU caches. In the worst case this triggers a recreation of all streaming GPU caches which takes several frames to be fully applied.
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static GPUCacheSetting[] GetGPUCacheSettings();
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             extern public static void EnableMipPreloading(int texturesPerFrame, int mipCount);
         }
 
@@ -214,23 +214,23 @@ namespace UnityEngine.Rendering
         [Obsolete("Procedural Virtual Texturing is experimental, not ready for production use and Unity does not currently support it. The feature might be changed or removed in the future.", false)]
         public static class Procedural
         {
-            [NativeThrows] public static void SetDebugFlagInteger(Guid guid, long value) { System.SetDebugFlagInteger(guid, value); }
-            [NativeThrows] public static void SetDebugFlagDouble(Guid guid, double value) { System.SetDebugFlagDouble(guid, value); }
+            public static void SetDebugFlagInteger(Guid guid, long value) { System.SetDebugFlagInteger(guid, value); }
+            public static void SetDebugFlagDouble(Guid guid, double value) { System.SetDebugFlagDouble(guid, value); }
 
             // Set the size of the CPU cache(s). All PVT Stacks must have been freed before calling this.
-            [NativeThrows] extern public static void SetCPUCacheSize(int sizeInMegabytes);
-            [NativeThrows] extern public static int GetCPUCacheSize();
+            [NativeMethod(ThrowsException = true)] extern public static void SetCPUCacheSize(int sizeInMegabytes);
+            [NativeMethod(ThrowsException = true)] extern public static int GetCPUCacheSize();
 
             // Apply settings to the streaming GPU caches. All PVT Stacks must have been freed before calling this.
-            [NativeThrows] extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
-            [NativeThrows] extern public static GPUCacheSetting[] GetGPUCacheSettings();
+            [NativeMethod(ThrowsException = true)] extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
+            [NativeMethod(ThrowsException = true)] extern public static GPUCacheSetting[] GetGPUCacheSettings();
 
             // Set GPU cache upload staging resources area size. All PVT Stacks must have been freed before calling this.
             // Default is 128 tiles; internally 3x number of that is created to avoid stalls due to frame latency.
             // If you expect to upload much less than 128 tiles per frame, or your tiles are large then you might want
             // to decrease this setting. An editor/game restart is needed for the change to actually take effect.
-            [NativeThrows] extern public static void SetGPUCacheStagingAreaCapacity(uint tilesPerFrame);
-            [NativeThrows] extern public static uint GetGPUCacheStagingAreaCapacity();
+            [NativeMethod(ThrowsException = true)] extern public static void SetGPUCacheStagingAreaCapacity(uint tilesPerFrame);
+            [NativeMethod(ThrowsException = true)] extern public static uint GetGPUCacheStagingAreaCapacity();
 
             [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
             [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
@@ -239,20 +239,20 @@ namespace UnityEngine.Rendering
                 extern internal static ulong Create(CreationParameters p);
                 extern internal static void Destroy(ulong handle);
 
-                [NativeThrows] extern internal static int PopRequests(ulong handle, IntPtr requestHandles, int length);
-                [NativeThrows][ThreadSafe] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
+                [NativeMethod(ThrowsException = true)] extern internal static int PopRequests(ulong handle, IntPtr requestHandles, int length);
+                [NativeMethod(ThrowsException = true, IsThreadSafe = true)] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
 
                 // These are two version instead of just one function with fenceBuffer==null so the version without CommandBuffer is burst compatible
-                [NativeThrows][ThreadSafe] extern internal static void UpdateRequestState(IntPtr requestHandles, IntPtr requestUpdates, int length);
-                [NativeThrows][ThreadSafe] extern internal static void UpdateRequestStateWithCommandBuffer(IntPtr requestHandles, IntPtr requestUpdates, int length, CommandBuffer fenceBuffer);
+                [NativeMethod(ThrowsException = true, IsThreadSafe = true)] extern internal static void UpdateRequestState(IntPtr requestHandles, IntPtr requestUpdates, int length);
+                [NativeMethod(ThrowsException = true, IsThreadSafe = true)] extern internal static void UpdateRequestStateWithCommandBuffer(IntPtr requestHandles, IntPtr requestUpdates, int length, CommandBuffer fenceBuffer);
 
                 extern internal static void BindToMaterialPropertyBlock(ulong handle, [NotNull] MaterialPropertyBlock material, string name);
                 extern internal static void BindToMaterial(ulong handle, [NotNull] Material material, string name);
                 extern internal static void BindGlobally(ulong handle, string name);
 
-                [NativeThrows] extern internal static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
-                [NativeThrows] extern internal static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
-                [NativeThrows] extern public static void EvictRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeMethod(ThrowsException = true)] extern internal static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeMethod(ThrowsException = true)] extern internal static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeMethod(ThrowsException = true)] extern public static void EvictRegion(ulong handle, Rect r, int mipMap, int numMips);
             }
 
             [StructLayout(LayoutKind.Sequential)]

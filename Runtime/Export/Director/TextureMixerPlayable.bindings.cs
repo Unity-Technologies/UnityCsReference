@@ -67,7 +67,7 @@ namespace UnityEngine.Experimental.Playables
         }
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateTextureMixerPlayableInternal(ref PlayableGraph graph, ref PlayableHandle handle);
 
     }

@@ -79,6 +79,15 @@ namespace UnityEditor.Build.Profile.Handlers
             }
         }
 
+        public IEnumerable<IBuildProfileSettingsProvider> FetchRequiredPackageSettings()
+        {
+            foreach (var provider in s_GenericSettingProviders)
+            {
+                if (provider.GetIsRequired())
+                    yield return provider;
+            }
+        }
+
         /// <summary>
         /// Returns a collection of all settings in the current profile.
         /// </summary>

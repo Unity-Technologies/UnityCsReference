@@ -725,7 +725,7 @@ namespace Unity.UI.Builder
             else
             {
                 var explorerItem = tooltipElement.GetFirstOfType<BuilderExplorerItem>();
-                row.tooltip = explorerItem.elidableLabels.Any(x => x.isElided) ? fullSelectorText : string.Empty;
+                row.tooltip = explorerItem.elidableLabels.Exists(x => x.isElided) ? fullSelectorText : string.Empty;
             }
         }
 
@@ -770,7 +770,7 @@ namespace Unity.UI.Builder
 
             if (m_TreeView != null)
             {
-                foreach (var selectedIndex in m_TreeView.selectedIndices)
+                foreach (var selectedIndex in m_TreeView.selectedIndicesList)
                 {
                     var selectedItem = m_TreeViewController.GetTreeViewItemDataForIndex(selectedIndex);
                     var documentElement = selectedItem.data;
@@ -831,7 +831,7 @@ namespace Unity.UI.Builder
 #pragma warning restore UA2001
                 m_RegisteredState.expandedIndices.Sort();
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_RegisteredState.selectedIndices = m_TreeView.selectedIndices.ToList();
+                m_RegisteredState.selectedIndices = m_TreeView.selectedIndicesList.ToList();
 #pragma warning restore UA2001
                 m_RegisteredState.scrollOffset = m_TreeView.scrollView.scrollOffset;
                 ListPool<int>.Release(list);

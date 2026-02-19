@@ -609,6 +609,9 @@ namespace UnityEditor
             {
                 name = "HelpBoxLabel"
             };
+
+            // Sets the image alignment to help match the UIToolkit version
+            m_HelpBox.imageIsTopAligned = true;
         }
 
         internal GUIStyle GetStyle(string styleName)

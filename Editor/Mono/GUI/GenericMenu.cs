@@ -161,7 +161,7 @@ namespace UnityEditor
 
         private void CatchMenu(object userData, string[] options, int selected)
         {
-            MenuItem i = (MenuItem)m_MenuItems[selected];
+            MenuItem i = m_MenuItems[selected];
             if (i.func2 != null)
                 i.func2(i.userData);
             else if (i.func != null)

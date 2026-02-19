@@ -745,11 +745,11 @@ namespace UnityEngine.UIElements
                 onRemove.Invoke(this);
             }
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            else if (selectedIndices.Any())
+            else if (selectedIndicesList.Count > 0)
 #pragma warning restore UA2002
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                viewController.RemoveItems(selectedIndices.ToList());
+                viewController.RemoveItems(selectedIndicesList.ToList());
 #pragma warning restore UA2001
                 ClearSelection();
             }
@@ -1227,7 +1227,7 @@ namespace UnityEngine.UIElements
         {
             var hasChanges = false;
 
-            foreach (var index in selectedIndices)
+            foreach (var index in selectedIndicesList)
             {
                 foreach (var reusableCollectionItem in activeItems)
                 {

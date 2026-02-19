@@ -63,7 +63,9 @@ namespace UnityEditor.IMGUI.Controls
 
         internal object userData { get; set; }
 
+        [Obsolete("Please use childList because it exposes fast Count and indexing properties. (UnityUpgradable) -> childList", true)]
         public IEnumerable<AdvancedDropdownItem> children => m_Children;
+        public IReadOnlyList<AdvancedDropdownItem> childList => m_Children;
 
         internal bool hasChildren => m_Children.Count > 0;
 

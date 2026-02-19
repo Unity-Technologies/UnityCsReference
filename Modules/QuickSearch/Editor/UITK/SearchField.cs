@@ -565,7 +565,7 @@ namespace UnityEditor.Search
                 var queryErrorStart = searchQueryError.index;
 
                 // Do not stack errors on top of each other
-                if (alreadyShownErrors.Any(e => e.Overlaps(searchQueryError)))
+                if (alreadyShownErrors.Exists(e => e.Overlaps(searchQueryError)))
                     continue;
 
                 alreadyShownErrors.Add(searchQueryError);

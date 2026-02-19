@@ -771,7 +771,7 @@ namespace UnityEditor.Search
         private void SaveNewIndexSettingsFile(string path, int currentIndex)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_IndexSettingsExists.Where(index => !index).Count() > 1)
+            if (m_IndexSettingsExists.Count(index => !index) > 1)
 #pragma warning restore UA2001
             {
                 m_ListViewIndexSettings.selectedIndex = currentIndex;
@@ -1457,7 +1457,7 @@ namespace UnityEditor.Search
                 if (searchDatabaseSettings.roots != null)
                 {
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    hasPackagesRoot = searchDatabaseSettings.roots.Any(r => r == "Packages");
+                    hasPackagesRoot = searchDatabaseSettings.roots.Contains("Packages");
 #pragma warning restore UA2001
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     roots.AddRange(searchDatabaseSettings.roots.Where(r => r != "Packages"));

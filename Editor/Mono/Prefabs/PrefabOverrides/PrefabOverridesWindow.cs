@@ -816,9 +816,7 @@ namespace UnityEditor
         void CalculateStatistics()
         {
             m_SingleInstanceWithUnusedMods = m_InstanceOverridesInfos[0];
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SelectedInstanceCount = m_InstanceOverridesInfos.Count();
-#pragma warning restore UA2001
+            m_SelectedInstanceCount = m_InstanceOverridesInfos.Length;
 
             if (m_SelectedInstanceCount > 1)
             {

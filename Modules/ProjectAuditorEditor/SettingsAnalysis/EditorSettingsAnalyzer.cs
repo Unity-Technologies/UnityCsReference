@@ -22,6 +22,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "In Editor Settings, enable the <b>Enter Play Mode Settings > Enter Play Mode Options</b> option, then disable the <b>Reload Domain</b> option. Be sure to view the <b>Code/Domain Reload</b> view in this tool for additional things you may need to fix as a result of disabling domain reload."
         )
         {
+            DocumentationUrl = "https://docs.unity3d.com/Manual/code-reloading-editor.html",
             MaximumVersion = "2023.4",
             Fixer = (issue, analysisParams) =>
             {
@@ -38,6 +39,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "In Editor Settings, enable the <b>Enter Play Mode Settings > Enter Play Mode Options</b> option, then disable the <b>Reload Domain</b> checkbox. Be sure to view the <b>Code/Domain Reload</b> view in this tool for additional things you may need to fix as a result of disabling domain reload."
         )
         {
+            DocumentationUrl = "https://docs.unity3d.com/Manual/code-reloading-editor.html",
             MaximumVersion = "2023.4",
             Fixer = (issue, analysisParams) =>
             {

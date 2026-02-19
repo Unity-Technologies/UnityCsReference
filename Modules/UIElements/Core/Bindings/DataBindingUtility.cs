@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Type result of a binding visitation.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct BindingTypeResult
     {
         /// <summary>
@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides information about the resolved type of a property.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct PropertyPathInfo
     {
         /// <summary>
@@ -113,7 +113,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides a subset of helper methods for the data binding system.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class DataBindingUtility
     {
         static readonly Pool.ObjectPool<TypePathVisitor> k_TypeVisitors = new(() => new TypePathVisitor(), v => v.Reset(), defaultCapacity: 1);
@@ -197,6 +197,15 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        public static bool HasActiveBinding(in BindingId bindingId, VisualElement element)
+        {
+            // Check against a pending removal request
+            if (DataBindingManager.TryGetBindingRequest(element, bindingId, out var binding))
+                return binding != null;
+
+            return element.elementPanel.dataBindingManager.TryGetBindingData(element, bindingId, out var bindingData);
+        }
+
         /// <summary>
         /// Finds the closest unresolved data source object or the data source type and the chain of binding paths inherited from the hierarchy of the specified visual element.
         /// </summary>
@@ -271,7 +280,7 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element to start from.</param>
         /// <param name="type">The data source type found.</param>
         /// <returns>True if the resolved data source type is found.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static bool TryGetRelativeDataSourceTypeFromHierarchy(VisualElement element, out Type type)
         {
             type = null;

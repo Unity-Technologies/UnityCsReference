@@ -28,6 +28,9 @@ namespace UnityEngine.UIElements
     {
         private static Dictionary<uint, WorldSpaceData> m_WorldSpaceData = new();
 
+        // For unit tests
+        internal static int Count => m_WorldSpaceData.Count;
+
         public static void SetWorldSpaceData(VisualElement ve, WorldSpaceData data)
         {
             m_WorldSpaceData[ve.controlid] = data;

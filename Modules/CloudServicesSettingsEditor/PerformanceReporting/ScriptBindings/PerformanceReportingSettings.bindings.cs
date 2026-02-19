@@ -14,8 +14,8 @@ namespace UnityEditor.Analytics
     {
         public static extern bool enabled
         {
-            [ThreadSafe] get;
-            [ThreadSafe] set;
+            [NativeMethod(IsThreadSafe = true)] get;
+            [NativeMethod(IsThreadSafe = true)] set;
         }
     }
 

@@ -14,7 +14,7 @@ namespace UnityEngine.Playables
     [StaticAccessor("DataPlayableOutputExtensionsBindings", StaticAccessorType.DoubleColon)]
     internal static class DataPlayableOutputExtensions
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool InternalCreateDataOutput(ref PlayableGraph graph, string name, Type type, out PlayableOutputHandle handle);
     }
 }

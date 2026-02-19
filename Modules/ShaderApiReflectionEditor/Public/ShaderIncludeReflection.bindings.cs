@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -13,13 +14,31 @@ namespace UnityEditor.ShaderApiReflection
 {
     [NativeHeader("Modules/ShaderApiReflectionEditor/Public/ShaderIncludeReflection.h")]
     [NativeClass("ShaderApiReflection::ShaderIncludeReflection")]
-    internal sealed class ShaderIncludeReflection : Object
+    public sealed class ShaderIncludeReflection : Object
     {
         // Public API
 
-        public List<ReflectedFunction> ReflectedFunctions => GetOrLoadFunctions();
+        public ReadOnlyCollection<LogMessage> LogMessages => GetOrLoadLogMessages().AsReadOnly();
+        public ReadOnlyCollection<ReflectedFunction> ReflectedFunctions => GetOrLoadFunctions().AsReadOnly();
 
         // Private API
+
+        [NativeName("GetLogMessages")]
+        private extern LogMessage.MarshalledType[] GetMessagesFromNative();
+
+        private List<LogMessage> m_LogMessages;
+
+        private List<LogMessage> GetOrLoadLogMessages()
+        {
+            if (m_LogMessages == null)
+            {
+                LogMessage.MarshalledType[] nativeMessages = GetMessagesFromNative();
+                m_LogMessages = new List<LogMessage>(nativeMessages.Length);
+                foreach (LogMessage.MarshalledType nativeMessage in nativeMessages)
+                    m_LogMessages.Add(new LogMessage(nativeMessage));
+            }
+            return m_LogMessages;
+        }
 
         [NativeName("GetFunctions")]
         private extern ReflectedFunction.MarshalledType[] GetFunctionsFromNative();
@@ -36,6 +55,11 @@ namespace UnityEditor.ShaderApiReflection
                     m_Functions.Add(new ReflectedFunction(nativeFunction));
             }
             return m_Functions;
+        }
+
+        // This class is read-only and should not be constructed by users.
+        internal ShaderIncludeReflection()
+        {
         }
     }
 }

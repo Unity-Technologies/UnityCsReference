@@ -67,7 +67,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
 
             var assembliesToScanForTypeDB = new HashSet<string>();
-            var unityAssembliesToScanForLifecycle = new HashSet<string>();
             var searchPaths = new HashSet<string>(BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget));
             EditorScriptCompilationOptions options;
 
@@ -115,7 +114,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!a.Flags.HasFlag(AssemblyFlags.EditorOnly) && !assembliesToScanForTypeDB.Contains(a.Path))
                 {
                     var path = a.Path;
-                    unityAssembliesToScanForLifecycle.Add(path);
                     searchPaths.Add(Path.GetDirectoryName(path));
                 }
             }
@@ -139,9 +137,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                UnityAssembliesToScanForLifecycle = unityAssembliesToScanForLifecycle.ToArray(),
 #pragma warning restore UA2001
                 EmitInfoForScriptUpdater = enableScriptUpdater,
                 TargetingPacks = new[]

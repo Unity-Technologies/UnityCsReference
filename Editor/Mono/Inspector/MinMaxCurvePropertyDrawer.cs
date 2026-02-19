@@ -291,9 +291,9 @@ namespace UnityEditorInternal
 
                 constantMax.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if(constantMax.Children().Count() > 0)
-#pragma warning restore UA2001
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if(constantMax.Children().Any())
+#pragma warning restore UA2002
                 {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     constantMax.Children().First().EnableInClassList(AlignClass, state != MinMaxCurveState.k_TwoScalars);

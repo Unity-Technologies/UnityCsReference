@@ -20,6 +20,7 @@ using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text;
+using UnityEngine.Assemblies;
 
 namespace UnityEditorInternal
 {
@@ -261,6 +262,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetEngineCoreModuleAssemblyPath")]
         public extern static string GetEngineCoreModuleAssemblyPath();
 
+        [FreeFunction("InternalEditorUtilityBindings::GetEngineScriptingAssemblyPath")]
+        public extern static string GetEngineScriptingAssemblyPath();
+
         [FreeFunction("InternalEditorUtilityBindings::GetBuildSystemVariationArgs")]
         internal extern static string GetBuildSystemVariationArgs();
 
@@ -340,12 +344,8 @@ namespace UnityEditorInternal
         [Obsolete("LoadAssemblyWrapper is no longer supported and will be removed.", error: false)]
         public static Assembly LoadAssemblyWrapper(string dllName, string dllLocation)
         {
-            return (Assembly)LoadAssemblyWrapperInternal(dllLocation);
+            return CurrentAssemblies.LoadFromPath(dllLocation);
         }
-
-        [StaticAccessor("GetMonoManager()", StaticAccessorType.Dot)]
-        [NativeMethod("LoadNonUnityAssembly")]
-        extern internal static object LoadAssemblyWrapperInternal(string dllLocation);
 
         public static void SaveToSerializedFileAndForget(Object[] obj, string path, bool allowTextSerialization)
         {
@@ -414,8 +414,7 @@ namespace UnityEditorInternal
             return BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU);
         }
 
-        [NativeThrows]
-        [FreeFunction("InternalEditorUtilityBindings::GetBoundsOfDesktopAtPoint")]
+        [FreeFunction("InternalEditorUtilityBindings::GetBoundsOfDesktopAtPoint", ThrowsException = true)]
         extern public static Rect GetBoundsOfDesktopAtPoint(Vector2 pos);
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]

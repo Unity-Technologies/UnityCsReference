@@ -10,23 +10,6 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [CustomPropertyDrawer(typeof(UxmlTypeReferenceAttribute))]
-    class UxmlTypeReferencePropertyDrawer : PropertyDrawer
-    {
-        public static readonly PropertyName typeCompleterPropertyKey = new PropertyName("--unity-type-completer");
-
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var desiredType = ((UxmlTypeReferenceAttribute)attribute).baseType ?? typeof(object);
-            var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
-            var label = uxmlAttribute != null ? StyleSheetUtility.ConvertDashToHuman(uxmlAttribute.name) : property.localizedDisplayName;
-            var field = new BuilderTypeField(label, desiredType);
-            field.AddToClassList(BuilderTypeField.alignedFieldUssClassName);
-            field.BindProperty(property);
-            return field;
-        }
-    }
-
     [CustomPropertyDrawer(typeof(LayerDecoratorAttribute))]
     class LayerDecoratorPropertyDrawer : PropertyDrawer
     {

@@ -398,9 +398,7 @@ namespace UnityEditor.Search
                 return false;
             var startIndex = token[0] == '!' ? 1 : 0;
             var sv = token.GetStringView(startIndex);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_QuoteDelimiters.Any(tokens => sv.StartsWith(tokens.openingToken) && sv.EndsWith(tokens.closingToken));
-#pragma warning restore UA2001
+            return m_QuoteDelimiters.Exists(tokens => sv.StartsWith(tokens.openingToken) && sv.EndsWith(tokens.closingToken));
         }
 
         public StringView RemoveQuotes(in StringView token)

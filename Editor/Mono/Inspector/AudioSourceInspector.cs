@@ -370,9 +370,7 @@ namespace UnityEditor
                 }
             }
             EditorGUILayout.PropertyField(m_BypassEffects);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (targets.Any(t => (t as AudioSource).outputAudioMixerGroup != null))
-#pragma warning restore UA2001
+            if (System.Array.Exists(targets, t => (t as AudioSource).outputAudioMixerGroup != null))
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
@@ -507,7 +505,9 @@ namespace UnityEditor
             if (targets.Length == 1)
             {
                 AudioSource t = (AudioSource)target;
+#pragma warning disable CS0618 // Type or member is obsolete
                 AudioListener audioListener = (AudioListener)FindFirstObjectByType(typeof(AudioListener));
+#pragma warning restore CS0618 // Type or member is obsolete
                 if (audioListener != null)
                 {
                     float distToListener = (AudioUtil.GetListenerPos() - t.transform.position).magnitude;

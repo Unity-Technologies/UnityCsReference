@@ -810,17 +810,6 @@ namespace Unity.UI.Builder
                 return false;
             }
 
-            if (fieldElement.GetProperty(BuilderConstants.FoldoutFieldPropertyName) is FoldoutField foldout)
-            {
-                foldout.UpdateFromChildFields();
-
-                // disable initially so we can check if we have any overridden fields, otherwise it'll think of the header as an overriden field (UUM-53358)
-                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, false);
-
-                var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(foldout);
-                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, hasOverriddenField);
-            }
-
             var val = StyleDebug.GetComputedStyleValue(currentVisualElement.computedStyle, styleName);
             var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
@@ -1387,6 +1376,20 @@ namespace Unity.UI.Builder
             }
 
             return false;
+        }
+
+        public void SetFoldoutHeaderEnabledState(VisualElement fieldElement)
+        {
+            if (fieldElement.GetProperty(BuilderConstants.FoldoutFieldPropertyName) is FoldoutField foldout)
+            {
+                foldout.UpdateFromChildFields();
+
+                // disable initially so we can check if we have any overridden fields, otherwise it'll think of the header as an overriden field (UUM-53358)
+                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, false);
+
+                var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(foldout);
+                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, hasOverriddenField);
+            }
         }
 
         internal void UpdateOverrideStyles(VisualElement fieldElement, StyleProperty styleProperty)
@@ -1996,9 +1999,7 @@ namespace Unity.UI.Builder
             if (currentRule.properties.Length == 0)
                 return DropdownMenuAction.Status.Disabled;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return currentRule.properties.Any(property => !property.name.StartsWith(BuilderConstants.UssVariablePrefix))
-#pragma warning restore UA2001
+            return Array.Exists(currentRule.properties, property => !property.name.StartsWith(BuilderConstants.UssVariablePrefix))
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled;
         }

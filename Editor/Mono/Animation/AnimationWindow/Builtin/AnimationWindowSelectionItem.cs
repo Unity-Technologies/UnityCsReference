@@ -119,7 +119,23 @@ namespace UnityEditor.AnimationWindowBuiltin
                 if (gameObject == null && !ReferenceEquals(gameObject, null))
                     return true;
 
+                if (animatorIsOptimized)
+                    return true;
+
                 return false;
+            }
+        }
+
+        // Is the hierarchy in animator optimized
+        public bool animatorIsOptimized
+        {
+            get
+            {
+                Animator animator = animationPlayer as Animator;
+                if (animator == null)
+                    return false;
+
+                return animator.isOptimizable && !animator.hasTransformHierarchy;
             }
         }
 
@@ -153,7 +169,8 @@ namespace UnityEditor.AnimationWindowBuiltin
                 if (animator != null)
                 {
                     // Need a valid state machine to create clips in the Animator.
-                    return (animator.runtimeAnimatorController != null);
+                    return animator.runtimeAnimatorController != null &&
+                           (animator.runtimeAnimatorController.hideFlags & HideFlags.NotEditable) == 0;
                 }
 
                 return true;
@@ -164,9 +181,12 @@ namespace UnityEditor.AnimationWindowBuiltin
 
         public int GetRefreshHash()
         {
-            return unchecked(
-                (animationClip != null ? 729 * animationClip.GetHashCode() : 0) ^
-                (rootGameObject != null ? 27 * rootGameObject.GetHashCode() : 0));
+            return new Hash128(
+                    (uint)nameof(AnimationWindowSelectionItem).GetHashCode(),
+                    (uint)(animationClip != null ? animationClip.GetHashCode() : 0),
+                    (uint)(rootGameObject != null ? rootGameObject.GetHashCode() : 0),
+                    0u)
+                .GetHashCode();
         }
 
         virtual public void Synchronize()

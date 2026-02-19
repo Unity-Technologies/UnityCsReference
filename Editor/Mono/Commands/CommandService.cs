@@ -167,9 +167,7 @@ namespace UnityEditor
 
                 foreach (var attr in mi.GetCustomAttributes<CommandHandlerAttribute>())
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (commands.Any(c => c.id == attr.id))
-#pragma warning restore UA2001
+                    if (commands.Exists(c => c.id == attr.id))
                     {
                         Debug.LogWarning($"There is already a command with the ID {attr.id}. " +
                             "Commands need to have a unique ID, i.e. \"Unity/Category/Command_42\".");

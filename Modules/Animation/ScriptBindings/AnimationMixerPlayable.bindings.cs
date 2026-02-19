@@ -75,7 +75,7 @@ namespace UnityEngine.Animations
             return GetHandle() == other.GetHandle();
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
     }
 }

@@ -484,7 +484,7 @@ namespace UnityEditor
             // even after an assemblyreload or assetdatabase refresh.
             List<Object> locked = new List<Object>();
             tracker.GetObjectsLockedByThisTracker(locked);
-            if (locked.Any(o => o != null))
+            if (locked.Exists(o => o != null))
                 return false;
 
             EditorApplication.delayCall += Close;
@@ -1729,9 +1729,7 @@ namespace UnityEditor
 
             Object[] assets = GetInspectedAssets();
             bool hasLabels = assets.Length > 0;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
-#pragma warning restore UA2001
+            bool hasBundleName = Array.Exists(assets, a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
 
             if (!m_HasPreview && !hasLabels)
                 return;
@@ -1902,9 +1900,7 @@ namespace UnityEditor
             if (assets == null || assets.Length == 0)
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
-#pragma warning restore UA2001
+            bool hasBundleName = Array.Exists(assets, a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
             IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
@@ -1914,18 +1910,14 @@ namespace UnityEditor
             }
 
             GUILayout.BeginVertical(Styles.footer);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
-#pragma warning restore UA2001
+            using (new EditorGUI.DisabledScope(Array.Exists(assets, a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
             {
                 m_LabelGUI.OnLabelGUI(assets);
             }
 
             if (hasBundleName)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a))))
-#pragma warning restore UA2001
+                using (new EditorGUI.DisabledScope(Array.Exists(assets, a => !IsOpenForEdit(a))))
                 {
                     m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
                 }
@@ -2334,9 +2326,7 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count() > 0)
-#pragma warning restore UA2001
+            if (m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count > 0)
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
                 foreach(var sourceComponent in m_AdditionalRemovedComponents)

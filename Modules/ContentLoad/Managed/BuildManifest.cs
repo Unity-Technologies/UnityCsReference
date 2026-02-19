@@ -68,6 +68,7 @@ namespace UnityEngine.Loading
     internal class BuildManifest
     {
         public int Version;
+        public string BuildName;
         public string[] RootAssets;
         public LoadableMapEntry[] Loadables;
         public LoadableSceneEntry[] LoadableScenes;

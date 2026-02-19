@@ -14,19 +14,17 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// The context in which UXML attributes are being viewed or edited.
 /// </summary>
-class UxmlAttributesEditingContext
+class UxmlAttributesEditingContext : IDisposable
 {
     /// <summary>
     /// Arguments for the context changed event.
     /// </summary>
-    public readonly record struct ContextChangedEventArgs(VisualElement newElement, Environment newEnvironment, bool newIsReadOnly,
-        VisualElement oldElement, Environment oldEnvironment, bool oldIsReadOnly)
+    public readonly record struct ContextChangedEventArgs(VisualElement newElement, bool newIsReadOnly,
+        VisualElement oldElement, bool oldIsReadOnly)
     {
         public readonly VisualElement newElement = newElement;
-        public readonly Environment newEnvironment = newEnvironment;
         public readonly bool newIsReadOnly = newIsReadOnly;
         public readonly VisualElement oldElement = oldElement;
-        public readonly Environment oldEnvironment = oldEnvironment;
         public readonly bool oldIsReadOnly = oldIsReadOnly;
     }
 
@@ -41,23 +39,9 @@ class UxmlAttributesEditingContext
     internal static readonly string k_TempSerializedRootPath = nameof(TempSerializedData.serializedData);
 
     /// <summary>
-    /// The environment where the uxml attributes are being viewed or edited.
-    /// </summary>
-    public enum Environment
-    {
-        Scene,
-        Staging,
-    }
-
-    /// <summary>
     /// The controller that manages authoring of UXML attributes.
     /// </summary>
     public UxmlAttributesEditingController editingController { get; }
-
-    /// <summary>
-    /// The environment where the uxml attributes are being viewed or edited
-    /// </summary>
-    public Environment environment { get; private set; }
 
     /// <summary>
     /// The VisualElement that is currently being viewed or edited.
@@ -115,19 +99,17 @@ class UxmlAttributesEditingContext
     /// <param name="element">The VisualElement associated to the attributes to view or edit</param>
     /// <param name="environment">The environment where the uxml attributes are view or edited</param>
     /// <param name="isReadOnly">Indicates whether the attributes are read-only</param>
-    public void Set(VisualElement element, Environment environment, bool isReadOnly = false)
+    public void Set(VisualElement element, bool isReadOnly = false)
     {
         var oldElement = this.element;
-        var oldEnvironment = this.environment;
         var oldIsReadOnly = this.isReadOnly;
 
         // If nothing changed, do nothing
-        if (oldElement == element && oldEnvironment == environment && oldIsReadOnly == isReadOnly)
+        if (oldElement == element && oldIsReadOnly == isReadOnly)
             return;
 
         ClearWithoutNotification();
         this.element = element;
-        this.environment = environment;
         this.isReadOnly = isReadOnly || (element != null && element.visualElementAsset == null);
 
         try
@@ -136,13 +118,13 @@ class UxmlAttributesEditingContext
         }
         finally
         {
-            NotifyContextChanged(oldElement, oldEnvironment, oldIsReadOnly);
+            NotifyContextChanged(oldElement, oldIsReadOnly);
         }
     }
 
-    void NotifyContextChanged(VisualElement oldElement, Environment oldEnvironment, bool oldIsReadOnly)
+    void NotifyContextChanged(VisualElement oldElement, bool oldIsReadOnly)
     {
-        contextChanged?.Invoke(this, new ContextChangedEventArgs(element, environment, isReadOnly, oldElement, oldEnvironment, oldIsReadOnly));
+        contextChanged?.Invoke(this, new ContextChangedEventArgs(element, isReadOnly, oldElement, oldIsReadOnly));
     }
 
     protected virtual void Init()
@@ -154,7 +136,9 @@ class UxmlAttributesEditingContext
             if (uxmlSerializedDataDescription == null)
                 return;
 
-            if (isReadOnly)
+            // If the element has a VisualElementAsset, we always use it for displaying in the inspector.
+            var elementAsset = element.visualElementAsset;
+            if (elementAsset == null)
             {
                 tempSerializedData = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData;
 
@@ -165,11 +149,11 @@ class UxmlAttributesEditingContext
                     // We need to keep the serialized data alive so we can undo/redo changes
                     element.SetProperty(k_TempSerializedDataPropertyName, tempSerializedData);
 
-                    // Elements without a VisualElementAsset should not be editable,
-                    // except for elements that can have an attribute override.
+                    // Elements without a VisualElementAsset should not be editable
                     tempSerializedData.hideFlags = HideFlags.NotEditable;
 
-                    tempSerializedData.serializedData = uxmlSerializedDataDescription.CreateSerializedData();
+                    // We use the default serialized data so we can detect what values are different from the defaults when applying driven properties.
+                    tempSerializedData.serializedData = uxmlSerializedDataDescription.CreateDefaultSerializedData();
                 }
 
                 rootSerializedObject = new SerializedObject(tempSerializedData);
@@ -179,7 +163,6 @@ class UxmlAttributesEditingContext
             else
             {
                 var visualTreeAsset = element.visualTreeAssetSource;
-                var elementAsset = element.visualElementAsset;
 
                 // If the UXML file has been modified, the element may no longer be in the asset so we will ignore it. (UUM-59305)
                 if (elementAsset.visualTreeAsset != visualTreeAsset)
@@ -209,12 +192,12 @@ class UxmlAttributesEditingContext
     /// </summary>
     public void Clear()
     {
-        Set(null, Environment.Scene);
+        Set(null);
     }
 
     void ClearWithoutNotification()
     {
-        environment = Environment.Scene;
+        editingController.liveAttributePropertyController.RemoveLiveProperties();
         element = null;
         uxmlSerializedDataDescription = null;
         uxmlSerializedData = null;
@@ -270,5 +253,11 @@ class UxmlAttributesEditingContext
         sb.Append(k_UxmlSerializedDataFieldName);
 
         return sb.ToString();
+    }
+
+    public void Dispose()
+    {
+        Clear();
+        editingController.Dispose();
     }
 }

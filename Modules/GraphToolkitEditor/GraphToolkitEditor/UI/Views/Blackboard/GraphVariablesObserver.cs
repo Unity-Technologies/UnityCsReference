@@ -81,6 +81,11 @@ namespace Unity.GraphToolkit.Editor
                         ++i;
                 }
 
+                // If we found new models, but none of them were Groups or Variables,
+                // we should not clear the selection. This happens when DefineNode() recreates ports/edges.
+                if (newVariableDeclarations.Count == 0 && newGroups.Count == 0)
+                    return;
+
                 using (var bbUpdater = m_BlackboardViewStateComponent.UpdateScope)
                 {
                     var modelsToExpand = changeset.ExpandedModels;

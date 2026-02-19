@@ -155,7 +155,7 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequest/Public/UploadHandler/UploadHandlerFile.h")]
     public sealed class UploadHandlerFile : UploadHandler
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] UploadHandlerFile self, string filePath);
 
         public UploadHandlerFile(string filePath)

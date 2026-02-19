@@ -468,7 +468,7 @@ namespace UnityEditor
             if (element == null)
                 return false;
 
-            if (m_TrackedElements.Any(t => t.Item1 == element))
+            if (m_TrackedElements.Exists(t => t.Item1 == element))
                 return false;
 
             renderPipelineAssetTypes ??= new Type[] { null };
@@ -510,9 +510,7 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderPipelineAssetTypes.Contains(currentRenderPipelineAssetType)
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                   || renderPipelineAssetTypes.Any(t => t != null && t.IsAssignableFrom(currentRenderPipelineAssetType));
-#pragma warning restore UA2001
+                   || Array.Exists(renderPipelineAssetTypes, t => t != null && t.IsAssignableFrom(currentRenderPipelineAssetType));
         }
 
         void UpdateElementVisibility(Type currentRenderPipelineAssetType, (VisualElement, Type[]) pair)

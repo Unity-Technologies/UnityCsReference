@@ -109,7 +109,7 @@ namespace UnityEditor
             return Internal_Start(name, description, options, parentId);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void Finish(int id, Status status = Status.Succeeded);
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Remove")]
@@ -185,7 +185,7 @@ namespace UnityEditor
 
         public static extern bool Cancel(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void RegisterCancelCallbackFromScript(int id, Func<bool> callback);
 
         public static void RegisterCancelCallback(int id, Func<bool> callback)
@@ -193,13 +193,13 @@ namespace UnityEditor
             RegisterCancelCallbackFromScript(id, callback);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void UnregisterCancelCallback(int id);
 
         public static extern bool Pause(int id);
         public static extern bool Resume(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void RegisterPauseCallbackFromScript(int id, Func<bool, bool> callback);
 
         public static void RegisterPauseCallback(int id, Func<bool, bool> callback)
@@ -207,7 +207,7 @@ namespace UnityEditor
             RegisterPauseCallbackFromScript(id, callback);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void UnregisterPauseCallback(int id);
 
         public static extern int GetCount();
@@ -224,7 +224,7 @@ namespace UnityEditor
 
         public static extern string GetDescription(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetDescription(int id, string description);
 
         public static extern long GetStartDateTime(int id);
@@ -245,10 +245,10 @@ namespace UnityEditor
 
         public static extern Options GetOptions(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetTimeDisplayMode(int id, TimeDisplayMode displayMode);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetRemainingTime(int id, long seconds);
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::SetPriority")]
@@ -281,7 +281,7 @@ namespace UnityEditor
 
         internal static extern long GetElapsedTimeUntilLastPause(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStepLabel(int id, string label);
 
         public static extern string GetStepLabel(int id);

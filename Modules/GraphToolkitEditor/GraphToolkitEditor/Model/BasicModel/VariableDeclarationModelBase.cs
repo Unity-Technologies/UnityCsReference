@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -194,6 +195,26 @@ namespace Unity.GraphToolkit.Editor
         public abstract Constant InitializationModel { get; set; }
 
         /// <summary>
+        /// Whether this variable declaration model has at least one connected variable node in the graph.
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                if (GraphModel == null)
+                    return false;
+
+                foreach (var nodeModel in GraphModel.NodeModels)
+                {
+                    if (nodeModel is VariableNodeModel hasDeclarationModel && hasDeclarationModel.DeclarationModel == this && hasDeclarationModel.IsConnected)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Indicates whether a <see cref="VariableDeclarationModelBase"/> requires initialization.
         /// </summary>
         /// <returns>True if the variable declaration model requires initialization, false otherwise.</returns>
@@ -268,9 +289,36 @@ namespace Unity.GraphToolkit.Editor
             return InitializationModel.TryGetValue(out value);
         }
 
-        string IVariable.Name => Title;
+        bool IVariable.TrySetDefaultValue<T>(T value)
+        {
 
-        Type IVariable.DataType => DataType.Resolve();
+            CheckModificationLock();
+
+            if (InitializationModel == null)
+                return false;
+
+            return InitializationModel.TrySetValue(value);
+        }
+
+        string IVariable.Name
+        {
+            get => Title;
+            set
+            {
+                CheckModificationLock();
+                Title = value;
+            }
+        }
+
+        Type IVariable.DataType
+        {
+            get => DataType.Resolve();
+            set
+            {
+                CheckModificationLock();
+                DataType = value.GenerateTypeHandle();
+            }
+        }
 
         VariableKind IVariable.VariableKind
         {
@@ -281,6 +329,57 @@ namespace Unity.GraphToolkit.Editor
                 if (Modifiers == ModifierFlags.Read)
                     return VariableKind.Input;
                 return VariableKind.Local;
+            }
+            set
+            {
+                CheckModificationLock();
+                switch (value)
+                {
+                    case VariableKind.Input:
+                        Modifiers = ModifierFlags.Read;
+                        Scope = GraphModel.AllowExposedVariableCreation ? VariableScope.Exposed : VariableScope.Local;
+                        break;
+                    case VariableKind.Output:
+                        Modifiers = ModifierFlags.Write;
+                        Scope = GraphModel.AllowExposedVariableCreation? VariableScope.Exposed : VariableScope.Local;
+                        break;
+                    case VariableKind.Local:
+                        Modifiers = ModifierFlags.None;
+                        Scope = VariableScope.Local;
+                        break;
+                }
+            }
+        }
+
+        void IVariable.RemoveFromGraph(bool forceRemove)
+        {
+            (GraphModel as GraphModelImp)?.RemoveVariable(this, forceRemove);
+        }
+
+        void IVariable.GetNodes(List<IVariableNode> nodes)
+        {
+            if (nodes == null)
+                throw new ArgumentNullException(nameof(nodes), "The list provided to retrieve variable nodes cannot be null.");
+
+            nodes.Clear();
+            GraphModel?.FindReferencesInGraph(this, nodes);
+        }
+
+        int IVariable.NodeCount
+        {
+            get
+            {
+                if (GraphModel == null)
+                    return 0;
+
+                var count = 0;
+                foreach (var nodeModel in GraphModel.NodeModels)
+                {
+                    if (nodeModel is VariableNodeModel hasDeclarationModel && hasDeclarationModel.DeclarationModel == this)
+                        ++count;
+                }
+
+                return count;
             }
         }
 

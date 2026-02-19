@@ -370,9 +370,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>Whether the type was supported and this method could enable or disable sub-fields.</returns>
         public virtual bool HandleEnabledStateWithWiredSubPorts()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (Owners.Count() != 1 || Owners[0] is not PortModel portModel)
-#pragma warning restore UA2001
+            if (Owners.Count != 1 || Owners[0] is not PortModel portModel)
                 return false;
             bool markConnectedPortSubFieldMixed = (Owners[0].GraphModel?.HideConnectedPortsEditor ?? true);
 

@@ -368,9 +368,7 @@ namespace UnityEditor.Audio
         // ancestor path from items in the list to any other items in the list.
         public bool AreAnyOfTheGroupsInTheListAncestors(List<AudioMixerGroupController> groups)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return groups.Any(g => IsChildOf(g, groups));
-#pragma warning restore UA2001
+            return groups.Exists(g => IsChildOf(g, groups));
         }
 
         // Before duplicating or removing a selection, this function is called to make sure that the selection does not contain any items that are in a

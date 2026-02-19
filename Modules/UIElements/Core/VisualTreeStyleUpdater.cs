@@ -344,7 +344,22 @@ namespace UnityEngine.UIElements
                 newStyle.Acquire();
 
                 if (element.hasInlineStyle)
-                    element.inlineStyleAccess.ApplyInlineStyles(ref newStyle);
+                {
+                    var variableContext = m_StyleMatchingContext.variableContext;
+                    var rule = element.inlineStyleAccess.inlineRule.rule;
+                    if (rule != null && rule.customPropertiesCount > 0)
+                    {
+                        variableContext = new StyleVariableContext(m_StyleMatchingContext.variableContext);
+                        foreach (var property in rule.properties)
+                        {
+                            if (!property.isCustomProperty)
+                                continue;
+                            var sv = new StyleVariable(property.name, rule.styleSheet, property.values);
+                            variableContext.Add(sv);
+                        }
+                    }
+                    element.inlineStyleAccess.ApplyInlineStyles(ref newStyle, variableContext);
+                }
 
                 ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle, out var computedTransitions);
 

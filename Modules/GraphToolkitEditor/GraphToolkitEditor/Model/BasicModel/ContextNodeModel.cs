@@ -124,6 +124,7 @@ namespace Unity.GraphToolkit.Editor
 
             blockModel.GraphModel = GraphModel;
             blockModel.ContextNodeModel = this;
+            blockModel.OnCreateNode(); // Needs to be after setting the ContextNodeModel so that the block can access it during OnCreateNode and DefineNode.
             GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
         }
 
@@ -141,14 +142,15 @@ namespace Unity.GraphToolkit.Editor
         /// Creates a new block and inserts it in the context.
         /// </summary>
         /// <param name="blockType">The type of block to instantiate.</param>
+        /// <param name="nodeName">The name of the block to instantiate.</param>
         /// <param name="index">The index at which insert the block. -1 means at the end of the list.</param>
         /// <param name="guid">The GUID of the new block.</param>
         /// <param name="initializationCallback">A callback called once the block is ready.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created block.</returns>
-        public BlockNodeModel CreateAndInsertBlock(Type blockType, int index = -1, Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
+        public BlockNodeModel CreateAndInsertBlock(Type blockType, string nodeName, int index = -1, Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
-            var block = (BlockNodeModel)GraphModel.CreateNode(blockType, blockType.Name, Vector2.zero, guid, initializationCallback, spawnFlags);
+            var block = (BlockNodeModel)GraphModel.CreateNode(blockType, nodeName, Vector2.zero, guid, initializationCallback, spawnFlags);
 
             InsertBlock(block, index, spawnFlags);
 
@@ -156,6 +158,20 @@ namespace Unity.GraphToolkit.Editor
                 GraphModel.CurrentGraphChangeDescription.AddNewModel(block);
 
             return block;
+        }
+
+        /// <summary>
+        /// Creates a new block and inserts it in the context.
+        /// </summary>
+        /// <param name="blockType">The type of block to instantiate.</param>
+        /// <param name="index">The index at which insert the block. -1 means at the end of the list.</param>
+        /// <param name="guid">The GUID of the new block.</param>
+        /// <param name="initializationCallback">A callback called once the block is ready.</param>
+        /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
+        /// <returns>The newly created block.</returns>
+        public BlockNodeModel CreateAndInsertBlock(Type blockType, int index = -1, Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
+        {
+            return CreateAndInsertBlock(blockType, blockType.Name, index, guid, initializationCallback, spawnFlags);
         }
 
         /// <summary>

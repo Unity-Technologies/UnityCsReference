@@ -11,19 +11,10 @@ namespace UnityEngine.UIElements
     {
         internal List<IPanelComponent> m_AttachedPanelComponents = new();
 
-        bool IsHierarchyOrderGreater(IPanelComponent a, IPanelComponent b)
-        {
-            if (a is PanelRenderer aRenderer && b is PanelRenderer bRenderer)
-                return aRenderer.hierarchyOrder > bRenderer.hierarchyOrder;
-
-            // UIDocuments are not compared by hierarchy
-            return false;
-        }
-
         internal void RemoveFromListAndFromVisualTree(IPanelComponent panelComponent)
         {
             m_AttachedPanelComponents.Remove(panelComponent);
-            PanelComponentUtils.GetRootVisualElement(panelComponent)?.RemoveFromHierarchy();
+            panelComponent.GetRootVisualElement()?.RemoveFromHierarchy();
         }
 
         internal void AddToListAndToVisualTree(IPanelComponent panelComponent, VisualElement visualTree, bool ignoreContentContainer, int firstChildIndex = 0)
@@ -31,20 +22,30 @@ namespace UnityEngine.UIElements
             int index = 0;
             foreach (var sibling in m_AttachedPanelComponents)
             {
-                if ((panelComponent.sortingOrder > sibling.sortingOrder) ||
-                    ((panelComponent.sortingOrder == sibling.sortingOrder) && IsHierarchyOrderGreater(panelComponent, sibling)))
+                if (panelComponent.sortingOrder > sibling.sortingOrder)
                 {
                     index++;
+                    continue;
                 }
-                else
+
+                if (panelComponent.sortingOrder < sibling.sortingOrder)
                     break;
+
+                // They're the same value, compare their count (UIDocuments created first show up first).
+                if (panelComponent.creationIndex > sibling.creationIndex)
+                {
+                    index++;
+                    continue;
+                }
+
+                break;
             }
 
             if (index < m_AttachedPanelComponents.Count)
             {
                 m_AttachedPanelComponents.Insert(index, panelComponent);
 
-                if (visualTree == null || PanelComponentUtils.GetRootVisualElement(panelComponent) == null)
+                if (visualTree == null || panelComponent.GetRootVisualElement() == null)
                     return;
 
                 int childCount = visualTree.ChildCount(ignoreContentContainer);
@@ -63,11 +64,11 @@ namespace UnityEngine.UIElements
             int insertionIndex = index + firstChildIndex;
             if (insertionIndex < visualTree.ChildCount(ignoreContentContainer))
             {
-                visualTree.Insert(insertionIndex, PanelComponentUtils.GetRootVisualElement(panelComponent), ignoreContentContainer);
+                visualTree.Insert(insertionIndex, panelComponent.GetRootVisualElement(), ignoreContentContainer);
             }
             else
             {
-                visualTree.Add(PanelComponentUtils.GetRootVisualElement(panelComponent), ignoreContentContainer);
+                visualTree.Add(panelComponent.GetRootVisualElement(), ignoreContentContainer);
             }
         }
     }

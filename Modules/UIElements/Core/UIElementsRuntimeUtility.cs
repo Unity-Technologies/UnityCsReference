@@ -358,9 +358,12 @@ namespace UnityEngine.UIElements
 
         private static void PreUpdatePanelRenderers()
         {
-            // Refresh enabled state
+            // Refresh enabled state and sorting order
             foreach (var panelRenderer in s_AllPanelRenderers)
+            {
                 UpdateEnabledState(panelRenderer);
+                UpdateSortingOrder(panelRenderer);
+            }
 
             // Process dirty assets
             PanelRenderer.shouldCheckForRequiredReinsertions |= s_DirtyPanelRenderers.Count > 0;
@@ -375,7 +378,7 @@ namespace UnityEngine.UIElements
             s_DirtyPanelRenderers.Clear();
 
             // Process hierarchy changes and sorting orders
-            if (PanelRenderer.CheckHierarchyChanges() || PanelRenderer.shouldCheckForRequiredReinsertions)
+            if (PanelRenderer.shouldCheckForRequiredReinsertions)
             {
                 PanelRenderer.shouldCheckForRequiredReinsertions = false;
 
@@ -409,6 +412,16 @@ namespace UnityEngine.UIElements
                 panelRenderer.RemoveFromHierarchy();
 
             panelRenderer.previousEnabled = panelRenderer.enabled;
+        }
+
+        private static void UpdateSortingOrder(PanelRenderer panelRenderer)
+        {
+            Renderer r = (Renderer)panelRenderer;
+            if (r.sortingOrder == panelRenderer.previousSortingOrder)
+                return;
+
+            panelRenderer.previousSortingOrder = r.sortingOrder;
+            panelRenderer.requiresReinsertion = true;
         }
 
         private static List<PanelSettings> s_PotentiallyEmptyPanelSettings = new List<PanelSettings>();

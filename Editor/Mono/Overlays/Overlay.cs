@@ -112,8 +112,10 @@ namespace UnityEditor.Overlays
         OverlayDragger m_Dragger;
         Toggle m_ToggleElement;
         VisualElement m_ResizeTarget;
+        VisualElement m_Header;
 
         internal VisualElement resizeTarget => m_ResizeTarget;
+        internal VisualElement header => m_Header;
 
         internal OverlayDropZone m_BeforeDropZone;
         internal OverlayDropZone m_AfterDropZone;
@@ -421,7 +423,7 @@ namespace UnityEditor.Overlays
             m_Dragger = new OverlayDragger(this);
             var contextClick = new ContextualMenuManipulator(BuildContextMenu);
 
-            var header = m_RootVisualElement.Q(null, k_Header);
+            m_Header = m_RootVisualElement.Q(null, k_Header);
             m_ToggleElement = m_RootVisualElement.Q<Toggle>("overlay-header__toggle");
             m_ToggleElement.RegisterValueChangedCallback(evt => folded = !evt.newValue);
             header.AddManipulator(contextClick);
@@ -448,6 +450,7 @@ namespace UnityEditor.Overlays
 
             rootVisualElement.RegisterCallback<AttachToPanelEvent>(AttachToPanel);
             rootVisualElement.RegisterCallback<DetachFromPanelEvent>(DetachFromPanel);
+            rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
         }
 
         void AttachToPanel(AttachToPanelEvent evt)
@@ -804,7 +807,7 @@ namespace UnityEditor.Overlays
 
             ApplySize(m_ResizeTarget, IsResizeCompatible());
 
-            var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
+            var position = OverlayUtilities.EnsureOverlayWithinCanvas(floatingPosition, this, canvas);
             UpdateSnapping(position);
 
             if (m_ModalPopup != null)

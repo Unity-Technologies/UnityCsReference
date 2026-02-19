@@ -18,6 +18,8 @@ namespace UnityEngine.UIElements
         bool forceGammaRendering { get; set; }
         uint vertexBudget { get; set; }
         TextureSlotCount textureSlotCount { get; set; }
+        GpuUpdateMode requestedGpuUpdateMode { get; set; }
+        GpuUpdateMode? actualGpuUpdateMode { get; }
         void Reset();
         void Render();
     }
@@ -72,6 +74,32 @@ namespace UnityEngine.UIElements
         {
             get => m_TextureSlotCount;
             set => m_TextureSlotCount = value;
+        }
+
+        GpuUpdateMode m_RequestedGpuUpdateMode = GpuUpdateMode.Default;
+
+        public GpuUpdateMode requestedGpuUpdateMode
+        {
+            get => m_RequestedGpuUpdateMode;
+            set
+            {
+                if (m_RequestedGpuUpdateMode == value)
+                    return;
+
+                m_RequestedGpuUpdateMode = value;
+                DestroyRenderChain();
+            }
+        }
+
+        public GpuUpdateMode? actualGpuUpdateMode
+        {
+            get
+            {
+                if (renderTreeManager == null)
+                    return null;
+
+                return renderTreeManager.device.gpuUpdateMode;
+            }
         }
 
         public bool drawStats { get; set; }

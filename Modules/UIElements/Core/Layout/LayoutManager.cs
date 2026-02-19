@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements.StyleSheets;
@@ -29,7 +28,8 @@ enum LayoutNodeDataType
 [RequiredByNativeCode]
 enum LayoutConfigDataType
 {
-    Config = 0
+    Config = 0,
+    PanelTransform = 1
 }
 
 delegate void LayoutMeasureFunction(
@@ -183,7 +183,7 @@ internal class LayoutManager : IDisposable
         if (!s_AppDomainUnloadRegistered)
         {
             // important: this will always be called from a special unload thread (main thread will be blocking on this)
-#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using BeforeCodeUnloading on Shutdown
+#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using OnCodeUnloading on Shutdown
             AppDomain.CurrentDomain.DomainUnload += (_, __) =>
             {
                Shutdown();
@@ -194,9 +194,6 @@ internal class LayoutManager : IDisposable
         }
 
         s_SharedInstance = new LayoutManager(Allocator.Persistent);
-
-        fixed (UnmanagedDataStore* nodesPtr = &s_SharedInstance.m_Nodes)
-            NativeTransformUtils.SetDataAccess((IntPtr)nodesPtr);
     }
 
     static void Shutdown()
@@ -227,6 +224,9 @@ internal class LayoutManager : IDisposable
 
     UnmanagedDataStore m_Nodes;
     UnmanagedDataStore m_Configs;
+
+    internal UnmanagedDataStore Nodes => m_Nodes;
+    internal UnmanagedDataStore Configs => m_Configs;
 
     readonly ConcurrentQueue<UnmanagedDataHandle> m_NodesToFree = new();
 
@@ -285,17 +285,20 @@ internal class LayoutManager : IDisposable
 
         var configComponentTypes = new[]
         {
-            UnmanagedComponentType.Create<LayoutConfigData>()
+            UnmanagedComponentType.Create<LayoutConfigData>(),
+            UnmanagedComponentType.Create<PanelTransformData>()
         };
         ReadOnlySpan<MemoryLabel> configComponentLabels = stackalloc MemoryLabel[]
         {
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutConfigData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(PanelTransformData)}>"),
         };
 
         m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, initialNodeCapacity, allocator);
         m_Configs = new UnmanagedDataStore(configComponentTypes, configComponentLabels, k_InitialConfigCapacity, allocator);
 
         m_DefaultConfig = CreateConfig().Handle;
+        LayoutNodeData.Default.Config = m_DefaultConfig;
     }
 
     // Called by unit tests
@@ -352,7 +355,7 @@ internal class LayoutManager : IDisposable
 
     public LayoutConfig CreateConfig()
     {
-        return new LayoutConfig(GetAccess(), m_Configs.Allocate(LayoutConfigData.Default));
+        return new LayoutConfig(GetAccess(), m_Configs.Allocate(LayoutConfigData.Default, PanelTransformData.Default));
     }
 
     public void DestroyConfig(ref LayoutConfig config)
@@ -378,7 +381,7 @@ internal class LayoutManager : IDisposable
         return node;
     }
 
-    unsafe LayoutNode CreateNodeInternal(UnmanagedDataHandle configHandle)
+    LayoutNode CreateNodeInternal(UnmanagedDataHandle configHandle)
     {
         TryRecycleSingleNode();
 

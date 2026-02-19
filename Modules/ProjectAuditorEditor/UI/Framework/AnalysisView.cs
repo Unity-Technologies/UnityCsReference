@@ -25,28 +25,41 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             Selected
         }
 
+        class NullFilter : IIssueFilter
+        {
+            public bool Match(ReportItem issue)
+            {
+                return true;
+            }
+        }
+
         protected Draw2D m_2D;
         protected bool m_Dirty = true;
         protected bool m_ColumnWidthsDirty;
         protected SeverityRules m_Rules;
         protected ViewStates m_ViewStates;
         protected ViewDescriptor m_Desc;
-        protected IIssueFilter m_BaseFilter;
         protected List<ReportItem> m_Issues = new List<ReportItem>();
         protected IssueLayout m_Layout;
         protected IssueTable m_Table;
         protected TextFilter m_TextFilter;
         protected ViewManager m_ViewManager;
+        protected ProjectAuditorWindow m_Window;
 
+        IIssueFilter m_BaseFilter;
         DependencyView m_DependencyView;
         GUIContent m_HelpButtonContent;
         Utility.DropdownItem[] m_GroupDropdownItems;
 
         int m_SortPropertyIndex = -1;
         bool m_SortAscending = true;
+        int m_TabButtonControlID = -1;
+        int m_TabButtonClickedID = -1;
+        DateTime m_TabButtonClickedStartTimer;
 
         Vector2 m_VerticalScrollViewPos;
         Vector2 m_LastVerticalScrollViewSize;
+        Vector2 m_DetailsScrollPos;
 
         public ViewDescriptor Desc => m_Desc;
 
@@ -83,16 +96,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public AnalysisView(ViewManager viewManager)
         {
             m_2D = new Draw2D(ProjectAuditor.s_DataPath + "/Shaders/ProjectAuditor.shader");
-
             m_ViewManager = viewManager;
         }
 
-        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, IIssueFilter filter)
+        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window)
         {
             m_Desc = descriptor;
             m_Rules = rules;
             m_ViewStates = viewStates;
-            m_BaseFilter = filter;
+            m_Window = window;
+            m_BaseFilter = (IIssueFilter)window ?? new NullFilter();
             m_Layout = layout;
 
             if (layout.Properties == null || layout.Properties.Length == 0)
@@ -395,13 +408,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
         }
 
-        public virtual void DrawContent(bool showDetails = false)
+        public virtual void DrawContent()
         {
             using (new EditorGUILayout.HorizontalScope(GUI.skin.box, GUILayout.ExpandHeight(true)))
             {
                 DrawTable();
 
-                if (showDetails)
+                if (m_Desc.ShowDetails)
                 {
                     EditorGUILayout.BeginVertical(GUILayout.Width(LayoutSize.DetailsPanelWidth));
 
@@ -518,6 +531,40 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             EditorGUILayout.BeginVertical();
             EditorGUILayout.EndVertical();
+        }
+
+        protected void DrawDetailsHeader(GUIContent title, string copyText, string docsUrl)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(title, SharedStyles.BoldLabel);
+                DrawDetailsButtons(copyText, docsUrl);
+            }
+        }
+        protected void DrawDetailsContent(string text, string docsUrl)
+        {
+            DrawDetailsContent(text, docsUrl, ref m_DetailsScrollPos);
+        }
+
+        protected void DrawDetailsContent(string text, string docsUrl, ref Vector2 scrollPos)
+        {
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.ExpandHeight(true));
+
+            GUILayout.TextArea(text, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
+            DrawDetailsExternalDocsLink(docsUrl);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        protected void DrawDetailsExternalDocsLink(string docsUrl)
+        {
+            if (!string.IsNullOrEmpty(docsUrl) && !Utility.IsInternalDocsLink(docsUrl))
+            {
+                if (GUILayout.Button(SharedContents.DocumentationExternal, SharedStyles.LinkLabel))
+                    Application.OpenURL(docsUrl); // Only show this icon for external docs
+
+                EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+            }
         }
 
         public virtual void DrawViewOptions()
@@ -839,6 +886,80 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        void DrawDetailsButtons(string copyText, string docsUrl)
+        {
+            int size = LayoutSize.TabButtonSize;
+
+            if (!string.IsNullOrEmpty(docsUrl))
+            {
+                if (Utility.IsInternalDocsLink(docsUrl)) // Only show this icon for internal docs
+                {
+                    var rect = GUILayoutUtility.GetRect(SharedContents.DocumentationInternal, SharedStyles.DocumentationButton, GUILayout.Width(size), GUILayout.Height(size));
+                    bool result = GUI.Button(rect, SharedContents.DocumentationInternal, SharedStyles.DocumentationButton);
+                    EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+
+                    if (result)
+                        Application.OpenURL(docsUrl);
+                }
+            }
+
+            if (copyText != null)
+            {
+                var evt = Event.current;
+                var content = SharedContents.CopyToClipboard;
+                int id = GUIUtility.GetControlID(content, FocusType.Passive);
+                var styleToUse = (m_TabButtonClickedID == id) ? SharedStyles.CopyToClipboardButtonClicked : SharedStyles.CopyToClipboardButton;
+                var rect = GUILayoutUtility.GetRect(content, styleToUse, GUILayout.Width(size), GUILayout.Height(size));
+                var isHoverState = rect.Contains(evt.mousePosition);
+                bool result = GUI.Button(rect, content, styleToUse);
+
+                EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+
+                if (result)
+                    EditorInterop.CopyToClipboard(Formatting.StripRichTextTags(copyText));
+
+                if (evt.type == EventType.MouseMove)
+                {
+                    if (isHoverState)
+                    {
+                        if (m_TabButtonControlID != id)
+                        {
+                            m_TabButtonControlID = id;
+                            m_Window?.Repaint();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (m_TabButtonControlID == id)
+                        {
+                            m_TabButtonControlID = 0;
+                            m_Window?.Repaint();
+                            return;
+                        }
+                    }
+                }
+
+                // Display the clicked state for 1 second
+                if (result)
+                {
+                    m_TabButtonClickedStartTimer = DateTime.UtcNow;
+                    m_TabButtonClickedID = id;
+                }
+                if (evt.type == EventType.Layout)
+                {
+                    if (m_TabButtonClickedID == id)
+                    {
+                        var endTime = m_TabButtonClickedStartTimer + TimeSpan.FromSeconds(1);
+                        if (DateTime.UtcNow < endTime)
+                            m_Window?.Repaint();
+                        else
+                            m_TabButtonClickedID = 0;
+                    }
+                }
+            }
+        }
+
         // pref keys
         const string k_PrefKeyPrefix = "ProjectAuditor.AnalysisView.";
         const string k_ColumnSizeKey = "ColumnSize";
@@ -879,7 +1000,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly int ToolbarLargeButtonSize = 120;
             public static readonly int ToolbarIconSize = 32;
             public static readonly int ActionButtonHeight = 30;
-            public static readonly int CopyToClipboardButtonSize = 24;
+            public static readonly int TabButtonSize = 16;
             public static readonly int CellItemIconSize = 16;
             public static readonly int CellWidthPadding = 6;
             public static readonly int CellItemTreeIndent = 30;
@@ -897,6 +1018,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent InfoFoldout = new GUIContent("Information");
             public static readonly GUIContent SearchStringLabel = new GUIContent("Search: ", "Text search options");
             public static readonly GUIContent Dependencies = new GUIContent("Dependencies");
+        }
+        protected static class SharedContents
+        {
+            public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
+            public static readonly GUIContent Recommendation = new GUIContent("Recommendation", "Recommendation on how to solve the issue");
+            public static readonly GUIContent CopyToClipboard = EditorGUIUtility.TrTextContent(string.Empty, "Copy to Clipboard");
+            public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
+            public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
+            public static readonly GUIContent DocumentationInternal = EditorGUIUtility.TrTextContent(string.Empty, "Open the Unity documentation");
+            public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
         }
     }
 }

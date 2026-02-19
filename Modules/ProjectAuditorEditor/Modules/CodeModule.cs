@@ -550,10 +550,29 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 PerfCriticalContext = perfCriticalContext
             };
 
-            for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
-                m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeMethodBody(caller, assemblyUserData[analyzerIndex]);
-
             var sequencePoints = caller.DebugInformation.SequencePoints;
+
+            for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
+            {
+                var methodContext = new MethodAnalysisContext
+                {
+                    MethodDefinition = caller,
+                    AssemblyUserData = assemblyUserData[analyzerIndex]
+                };
+
+                var reportItemBuilder = m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeMethodBody(methodContext);
+                if (reportItemBuilder != null)
+                {
+                    var s = sequencePoints[0];
+
+                    reportItemBuilder.WithDependencies(callerNode); // set root
+                    reportItemBuilder.WithLocation(new Location(() => AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, s.Document.Url), s.IsHidden ? 0 : s.StartLine));
+                    reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]);
+
+                    onIssueFound(reportItemBuilder);
+                }
+            }
+
             var lastSequencePointIndex = 0;
             var instructions = caller.Body.Instructions;
             for (var i = 0; i < instructions.Count; i++)

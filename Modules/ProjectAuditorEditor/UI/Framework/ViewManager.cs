@@ -13,16 +13,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
     [Serializable]
     internal sealed class ViewManager
     {
-        class NullFilter : IIssueFilter
-        {
-            public bool Match(ReportItem issue)
-            {
-                return true;
-            }
-        }
-
         Report m_Report;
         AnalysisView[] m_Views;
+        ProjectAuditorAssistantController m_AssistantController;
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
@@ -33,6 +26,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public int NumViews => m_Views != null ? m_Views.Length : 0;
 
+        public ProjectAuditorAssistantController AssistantController => m_AssistantController;
+
         // user interactions
         public Action<int> OnActiveViewChanged { get; set; }
         public Action<bool> OnIgnoredIssuesVisibilityChanged { get; set; }
@@ -42,7 +37,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public Action<ReportItem[]>  OnSelectedIssuesIgnoreRequested { get; set; }
         public Action<ReportItem[]>  OnSelectedIssuesDisplayRequested { get; set; }
         public Action<ReportItem[]>  OnSelectedIssuesQuickFixRequested { get; set; }
-        public Action<ReportItem[]>  OnSelectedIssuesDocumentationRequested { get; set; }
 
         // events based on past operations
         public Action OnViewExportCompleted { get; set; }
@@ -80,11 +74,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
-        public void Create(SeverityRules rules, ViewStates viewStates, Action<ViewDescriptor, bool> onCreateView = null, IIssueFilter filter = null)
+        public void Create(SeverityRules rules, ViewStates viewStates, Action<ViewDescriptor, bool> onCreateView = null, ProjectAuditorWindow window = null)
         {
-            if (filter == null)
-                filter = new NullFilter();
-
             var views = new List<AnalysisView>();
             foreach (var category in m_Categories)
             {
@@ -109,12 +100,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 var view = desc.Type != null ? (AnalysisView)Activator.CreateInstance(desc.Type, this) : new AnalysisView(this);
-                view.Create(desc, layout, rules, viewStates, filter);
+                view.Create(desc, layout, rules, viewStates, window);
                 view.OnEnable();
                 views.Add(view);
             }
 
             m_Views = views.ToArray();
+            m_AssistantController = new ProjectAuditorAssistantController();
         }
 
         public void ClearView(IssueCategory category)
@@ -229,15 +221,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
-        public void LoadSettings()
+        public void OnDisable()
         {
-            if (!IsValid())
-                return;
-
-            foreach (var view in m_Views)
+            if (m_AssistantController != null)
             {
-                view.LoadSettings();
+                m_AssistantController.Dispose();
+                m_AssistantController = null;
             }
+
+            SaveSettings();
         }
 
         public HashSet<IssueCategory> PendingCategories
@@ -260,7 +252,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return m_PendingCategories != null && m_PendingCategories.Contains(category);
         }
 
-        public void SaveSettings()
+        private void SaveSettings()
         {
             if (!IsValid())
                 return;

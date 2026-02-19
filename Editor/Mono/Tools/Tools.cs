@@ -409,9 +409,9 @@ namespace UnityEditor
                 if(m_VertexDraggingShortcutEvent == null)
                 {
                     var vertexSnappingBinding = ShortcutManager.instance.GetShortcutBinding(VertexSnapping.k_VertexSnappingShortcut);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if(Enumerable.Count(vertexSnappingBinding.keyCombinationSequence) == 0)
-#pragma warning restore UA2001
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    if(!vertexSnappingBinding.keyCombinationSequence.Any())
+#pragma warning restore UA2002
                         m_VertexDraggingShortcutEvent = new Event();
                     else
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

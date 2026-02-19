@@ -94,8 +94,11 @@ namespace UnityEditor
                 var tmpPath = Path.Combine(StreamingAssets, "BuildManifestHash.txt");
                 if (File.Exists(tmpPath))
                 {
-                    // Find the build metadata folder for the most recent build into the StreamingAssets folder.
-                    string metadataLocation = BuildMetadata.GetDirectory(StreamingAssets);
+                    // Look in the Build History for the most recent build made into
+                    // the StreamingAssets folder.
+                    // TBD: it would be better to match based on the manifest hash which would work
+                    // even when the build had been made to a different path and then moved to StreamingAssets.
+                    string metadataLocation = BuildHistory.GetDirectory(StreamingAssets);
                     if (metadataLocation != String.Empty)
                     {
                         return new string[] { metadataLocation };

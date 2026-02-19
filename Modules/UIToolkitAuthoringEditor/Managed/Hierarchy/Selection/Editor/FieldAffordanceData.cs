@@ -183,6 +183,24 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        StyleSheet m_VariableSheet;
+
+        /// <summary>
+        /// The stylesheet containing the variable.
+        /// </summary>
+        public StyleSheet variableSheet
+        {
+            get => m_VariableSheet;
+            set
+            {
+                if (m_VariableSheet != value)
+                {
+                    m_VariableSheet = value;
+                    Notify();
+                }
+            }
+        }
+
         private void Notify([CallerMemberName] string name = null)
         {
             propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(name));
@@ -199,6 +217,7 @@ namespace Unity.UIToolkit.Editor
             binding = null;
             selector = default;
             inlineValue = null;
+            variableSheet = null;
         }
     }
 }

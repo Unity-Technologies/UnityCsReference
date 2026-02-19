@@ -27,9 +27,9 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_InitializerLocationHandle;
         internal Flags m_Flags;
 
-        [ThreadSafe] internal static extern StructFieldInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal static extern StructFieldInternal Invalid();
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
             => ListType.Enumerate<ShaderAttribute>(container, m_AttributeListHandle);

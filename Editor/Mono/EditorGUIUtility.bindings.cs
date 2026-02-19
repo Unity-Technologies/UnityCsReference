@@ -127,7 +127,7 @@ namespace UnityEditor
 
         internal static extern Object GetScript(string scriptClass);
         public static extern void SetIconForObject([NotNull] Object obj, Texture2D icon);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal static extern Object GetBuiltinExtraResource(Type type, string path);
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal static extern BuiltinResource[] GetBuiltinResourceList(int classID);

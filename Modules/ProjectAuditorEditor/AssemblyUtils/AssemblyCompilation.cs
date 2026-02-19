@@ -125,7 +125,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             // Remove any duplicates
             if (editorPaths.Count > 0 && playerPaths.Count > 0)
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                editorPaths = editorPaths.Where(e => !playerPaths.Any(p => p.Name == e.Name)).ToList();
+                editorPaths = editorPaths.Where(e => !playerPaths.Exists(p => p.Name == e.Name)).ToList();
 #pragma warning restore UA2001
 
             // Add Unity assemblies

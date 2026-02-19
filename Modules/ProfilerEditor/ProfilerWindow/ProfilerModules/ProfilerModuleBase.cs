@@ -154,7 +154,7 @@ namespace UnityEditorInternal.Profiling
                     var counter = new ProfilerCounterData()
                     {
                         m_Category = categoryName,
-                        m_Name = legacyStatName,
+                        m_Name = legacyStatName
                     };
                     chartCounters.Add(counter);
                 }

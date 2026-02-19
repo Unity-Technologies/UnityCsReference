@@ -18,8 +18,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_OutputLinkOverridesListHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static StageDescriptionInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static StageDescriptionInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         StageDescriptionInternal IInternalType<StageDescriptionInternal>.ConstructInvalid() => Invalid();

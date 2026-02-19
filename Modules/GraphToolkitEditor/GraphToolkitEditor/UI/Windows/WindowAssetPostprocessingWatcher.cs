@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -16,6 +16,9 @@ namespace Unity.GraphToolkit.Editor
         // ReSharper disable once UnusedMember.Local
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, bool didDomainReload)
         {
+            if (GraphViewEditorWindow.OpenedWindows.Count == 0)
+                return;
+
             DoUpdatesOnAssetRename(importedAssets);
 
             UpdateExternalAssetStateComponents(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths, didDomainReload);
@@ -37,12 +40,16 @@ namespace Unity.GraphToolkit.Editor
         {
             foreach (var assetFilePath in importedAssets)
             {
-                var assetName = System.IO.Path.GetFileNameWithoutExtension(assetFilePath);
+                string extension = Path.GetExtension(assetFilePath);
+                if (!GraphObjectFactory.KnowsExtension(extension))
+                    continue;
+
                 var graphObject = GraphObject.LoadGraphObjectAtPath(assetFilePath);
 
                 // Skip if the asset is not a graph asset
                 if (graphObject == null) continue;
 
+                var assetName = Path.GetFileNameWithoutExtension(assetFilePath);
                 if (graphObject.GraphModel.Name != assetName)
                     graphObject.GraphModel.Name = assetName;
 
@@ -55,9 +62,8 @@ namespace Unity.GraphToolkit.Editor
             // Note: Could optimize to not include windows that aren't visible (no API to check this currently)
             // If we use CSO to do the update, this isn't required
 
-            var windows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
             var guid = AssetDatabase.GUIDFromAssetPath(assetFilePath);
-            foreach (var window in windows)
+            foreach (var window in GraphViewEditorWindow.OpenedWindows)
             {
                 if (window.GraphView == null) continue;
 
@@ -102,8 +108,7 @@ namespace Unity.GraphToolkit.Editor
             if (didDomainReload || importedAssets.Length == 0 && deletedAssets.Length == 0 && movedAssets.Length == 0)
                 return;
 
-            var windows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
-            foreach (var window in windows)
+            foreach (var window in GraphViewEditorWindow.OpenedWindows)
             {
                 var openedGraph = window.GraphTool.ToolState.CurrentGraph;
                 if( openedGraph == default )
@@ -135,10 +140,6 @@ namespace Unity.GraphToolkit.Editor
             if (importedAssets.Length == 0 && deletedAssets.Length == 0 && movedAssets.Length == 0)
                 return;
 
-            var windows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
-            if (windows.Length == 0)
-                return;
-
             var changedAssets = new HashSet<string>(importedAssets);
             changedAssets.UnionWith(movedAssets);
             changedAssets.UnionWith(deletedAssets);
@@ -148,7 +149,7 @@ namespace Unity.GraphToolkit.Editor
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var changedGuids = changedAssets.ToDictionary(path => path, AssetDatabase.GUIDFromAssetPath);
 #pragma warning restore UA2001
-            foreach (var window in windows)
+            foreach (var window in GraphViewEditorWindow.OpenedWindows)
             {
                 if (window.GraphView != null)
                 {

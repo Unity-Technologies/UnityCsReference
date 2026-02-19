@@ -248,7 +248,7 @@ namespace UnityEngine
         extern internal void SetManagedJobHandle(JobHandle handle);
         [FreeFunction("ScheduleManagedJob", ThrowsException = true)]
         unsafe internal static extern JobHandle ScheduleManagedJob(ref JobsUtility.JobScheduleParameters parameters, void* additionalData);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         unsafe internal static extern void CopyManagedJobData(void* systemPtr, out NativeParticleData particleData);
         internal static extern bool UserJobCanBeScheduled();
 

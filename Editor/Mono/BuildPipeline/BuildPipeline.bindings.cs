@@ -424,12 +424,12 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(buildParameters.outputPath))
                 throw new ArgumentException("BuildContentDirectoryParameters.outputPath cannot be empty");
 
-            if (!System.IO.Directory.Exists(buildParameters.outputPath))
+            if (!Directory.Exists(buildParameters.outputPath))
             {
                 // Attempt an on the fly creation of the directory.
                 try
                 {
-                    System.IO.Directory.CreateDirectory(buildParameters.outputPath);
+                    Directory.CreateDirectory(buildParameters.outputPath);
                 }
                 catch (System.Exception ex)
                 {
@@ -438,11 +438,22 @@ namespace UnityEditor
                     throw ex;
                 }
             }
+
             buildParameters.outputPath = buildParameters.outputPath.Replace('\\', '/');
-            return BuildContentDirectoryInternal(buildParameters);
+
+            // Default the build name to the output folder leaf if not explicitly set
+            if (string.IsNullOrEmpty(buildParameters.name))
+                buildParameters.name = Path.GetFileName(buildParameters.outputPath.TrimEnd('/'));
+            
+            var report = BuildContentDirectoryInternal(buildParameters);
+
+            // Write BuildReportSummary.json to metadata directory
+            BuildReportSummary.WriteJson(report);
+
+            return report;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern BuildReport BuildContentDirectoryInternal(BuildContentDirectoryParameters buildParameters);
 
         ///<summary>Build all AssetBundles.</summary>
@@ -704,7 +715,7 @@ namespace UnityEditor
             return BuildAssetBundlesInternal(buildParameters);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern AssetBundleManifest BuildAssetBundlesInternal(BuildAssetBundlesParameters buildParameters);
 
         [FreeFunction("GetPlayerDataCache")]

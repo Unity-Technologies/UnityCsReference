@@ -28,6 +28,7 @@ namespace UnityEditor
         X86 = 1 << 2,
 
         // x86_64
+        [Obsolete("X86_64 is no longer supported.")]
         X86_64 = 1 << 3,
 
         // All architectures
@@ -610,14 +611,6 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidTargetArchitectures")]
                 get;
                 [NativeMethod("SetAndroidTargetArchitectures")]
-                set;
-            }
-
-            internal static extern AndroidArchitecture allowedArchitectures
-            {
-                [NativeMethod("GetAndroidAllowedArchitectures")]
-                get;
-                [NativeMethod("SetAndroidAllowedArchitectures")]
                 set;
             }
 

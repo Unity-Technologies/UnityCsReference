@@ -174,8 +174,6 @@ internal class ATGTextJobSystem
         }
         if (m_PrepareShapingDataList.Count > 0)
         {
-            FontAsset.CreateHbFaceIfNeeded();
-
             var handle = GCHandle.Alloc(m_PrepareShapingDataList);
 
             var job = new PrepareShapingJob
@@ -275,9 +273,6 @@ internal class ATGTextJobSystem
             if (!valid)
                 textJobDatas.RemoveAt(i);
         }
-
-        // This ensures Fallbacks are properly created.
-        FontAsset.CreateHbFaceIfNeeded();
 
         if (k_IsMultiThreaded)
         {

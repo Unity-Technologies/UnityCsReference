@@ -4,6 +4,7 @@
 
 using System.Linq;
 using Unity.ProjectAuditor.Editor.UI.Framework;
+using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,26 +26,21 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public override void DrawDetails(ReportItem[] selectedIssues)
         {
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(LayoutSize.FoldoutWidth)))
-            {
-                if (selectedIssues.Length == 0)
-                {
-                    GUILayout.TextArea(k_NoSelectionText, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-                    return;
-                }
-
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedDescriptors = selectedIssues.Select(i => i.GetCustomProperty(0)).Distinct().ToArray();
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var selectedDescriptors = selectedIssues.Select(i => i.GetCustomProperty(0)).Distinct().ToArray();
 #pragma warning restore UA2001
-                if (selectedDescriptors.Length > 1)
-                {
-                    GUILayout.TextArea(k_MultipleSelectionText, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-                    return;
-                }
 
-                GUILayout.TextArea(selectedIssues[0].Description, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            }
+            string selectedText = k_NoSelectionText;
+            if (selectedDescriptors.Length > 1)
+                selectedText = k_MultipleSelectionText;
+            else if (selectedDescriptors.Length == 1)
+                selectedText = selectedIssues[0].Description;
+
+            DrawDetailsHeader(SharedContents.Details,
+                (selectedDescriptors.Length > 0) ? selectedText : null,
+                null);
+
+            DrawDetailsContent(selectedText, null);
         }
 
         public override void DrawViewOptions()

@@ -14,7 +14,6 @@ struct ExecutionStatusData
     public int NodesCount;
     public int IdleNodesCount;
     public int RunningNodesCount;
-    public int ActiveNodesCount;
     public int CompletedNodesCount;
     public int FailedNodesCount;
     public int AbortedNodesCount;
@@ -40,9 +39,6 @@ struct ExecutionStatusData
             if (CompletedNodesCount == NodesCount)
                 return ExecutionState.Completed;
 
-            if (ActiveNodesCount > 0 && (ActiveNodesCount + CompletedNodesCount) == NodesCount)
-                return ExecutionState.Active;
-
             return ExecutionState.Running;
         }
     }
@@ -52,7 +48,6 @@ struct ExecutionStatusData
         int nodesCount,
         int idleNodesCount,
         int runningNodesCount,
-        int activeNodesCount,
         int completedNodesCount,
         int failedNodesCount,
         int abortedNodesCount)
@@ -61,21 +56,19 @@ struct ExecutionStatusData
         NodesCount += nodesCount;
         IdleNodesCount += idleNodesCount;
         RunningNodesCount += runningNodesCount;
-        ActiveNodesCount += activeNodesCount;
         CompletedNodesCount += completedNodesCount;
         FailedNodesCount += failedNodesCount;
         AbortedNodesCount += abortedNodesCount;
     }
 
     public void Aggregate(ExecutionStatusData other) => Aggregate(
-        other.ProgressSum,
-        other.NodesCount,
-        other.IdleNodesCount,
-        other.RunningNodesCount,
-        other.ActiveNodesCount,
-        other.CompletedNodesCount,
-        other.FailedNodesCount,
-        other.AbortedNodesCount);
+        progress: other.ProgressSum,
+        nodesCount: other.NodesCount,
+        idleNodesCount: other.IdleNodesCount,
+        runningNodesCount: other.RunningNodesCount,
+        completedNodesCount: other.CompletedNodesCount,
+        failedNodesCount: other.FailedNodesCount,
+        abortedNodesCount: other.AbortedNodesCount);
 
     public void Aggregate(IEnumerable<Node> nodes)
     {
@@ -91,9 +84,6 @@ struct ExecutionStatusData
                     break;
                 case ExecutionState.Running:
                     RunningNodesCount++;
-                    break;
-                case ExecutionState.Active:
-                    ActiveNodesCount++;
                     break;
                 case ExecutionState.Completed:
                     CompletedNodesCount++;

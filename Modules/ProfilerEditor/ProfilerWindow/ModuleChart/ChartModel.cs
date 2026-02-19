@@ -10,6 +10,7 @@ namespace Unity.Profiling.Editor
     internal class ChartSeriesViewData
     {
         public string name { get; private set; }
+        public string description { get; private set; }
         public string category { get; private set; }
         public Color color { get; private set; }
         public bool enabled;
@@ -20,9 +21,10 @@ namespace Unity.Profiling.Editor
         public readonly int firstXValue = 0;
         public readonly int lastXValue = 0;
 
-        public ChartSeriesViewData(string name, string category, int numDataPoints, Color color)
+        public ChartSeriesViewData(string name, string description, string category, int numDataPoints, Color color)
         {
             this.name = name;
+            this.description = description;
             this.category = category;
             this.color = color;
             this.numDataPoints = numDataPoints;
@@ -33,7 +35,7 @@ namespace Unity.Profiling.Editor
         }
 
         // Used by legacy areas that don't use counters and therefore don't have a category.
-        public ChartSeriesViewData(string name, int numDataPoints, Color color) : this(name, string.Empty, numDataPoints, color) {}
+        public ChartSeriesViewData(string name, int numDataPoints, Color color) : this(name, string.Empty, string.Empty, numDataPoints, color) {}
     }
 
     internal class ChartModel

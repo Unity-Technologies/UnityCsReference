@@ -761,7 +761,7 @@ namespace UnityEditor
             }
 
             Handles.Internal_SetCurrentCamera(null);
-            EditorGUI.s_DelayedTextEditor.BeginGUI();
+            EditorGUI.s_DelayedTextEditor?.BeginGUI();
         }
 
         [RequiredByNativeCode]
@@ -782,7 +782,7 @@ namespace UnityEditor
             }
 
             // Give the delayed text editor a chance to notice that it lost focus.
-            EditorGUI.s_DelayedTextEditor.EndGUI(Event.current.type);
+            EditorGUI.s_DelayedTextEditor?.EndGUI(Event.current.type);
         }
 
         const float k_KHandleSize = 80.0f;
@@ -1231,7 +1231,7 @@ namespace UnityEditor
                     else
                     {
                         // If isEntity is false, then pickingID stores the object EntityId.
-                        EntityId entityId = EntityId.From(pickingID);
+                        EntityId entityId = EntityId.FromULong(pickingID);
                         pickedObject = EditorUtility.EntityIdToObject(entityId);
                     }
 
@@ -1977,11 +1977,9 @@ namespace UnityEditor
 #pragma warning restore UA2001
         }
 
-        internal static void FilterEntityIds(IEnumerable<GameObject> gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
+        internal static void FilterEntityIds(GameObject[] gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (gameObjects.Count() == 0)
-#pragma warning restore UA2001
+            if (gameObjects.Length == 0)
             {
                 parentEntityIds = Array.Empty<EntityId>();
                 childEntityIds = Array.Empty<EntityId>();

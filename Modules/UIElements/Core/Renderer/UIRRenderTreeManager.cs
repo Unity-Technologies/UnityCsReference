@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements.UIR
                     forceGammaRendering = true;
             }
             isFlat = panel.isFlat;
-            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering);
+            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering, panel.panelRenderer.requestedGpuUpdateMode);
 
             Shaders.Acquire();
 

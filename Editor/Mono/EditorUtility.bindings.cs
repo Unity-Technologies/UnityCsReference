@@ -54,7 +54,7 @@ namespace UnityEditor
         public static extern bool IsPersistent(Object target);
         public static extern bool IsValidUnityYAML(string yaml);
         public static extern string SaveFilePanel(string title, string directory, string defaultName, string extension);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int NaturalCompare(string a, string b);
 
         [Obsolete("InstanceIDToObject(int) is obsolete. Use EditorUtility.EntityIdToObject instead.")]
@@ -106,7 +106,7 @@ namespace UnityEditor
         [FreeFunction("CopySerializedIfDifferent")]
         private static extern void InternalCopySerializedIfDifferent([NotNull] Object source, [NotNull] Object dest);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Object[] CollectDependencies([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
         public static extern Object[] CollectDeepHierarchy([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
@@ -196,7 +196,7 @@ namespace UnityEditor
         [FreeFunction("OpenWithDefaultApp")]
         public static extern void OpenWithDefaultApp(string fileName);
 
-        [NativeThrows] internal static extern bool WSACreateTestCertificate(string path, string publisher, string password, bool overwrite);
+        [NativeMethod(ThrowsException = true)] internal static extern bool WSACreateTestCertificate(string path, string publisher, string password, bool overwrite);
         internal static extern bool WSAGetCertificateExpirationDate(string path, string password, out long expirationDate);
 
         internal static extern bool IsWindows10OrGreater();
@@ -315,7 +315,7 @@ namespace UnityEditor
         extern public static void RequestScriptReload();
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void RequestPartialScriptReload();
 
         internal static extern bool isInSafeMode

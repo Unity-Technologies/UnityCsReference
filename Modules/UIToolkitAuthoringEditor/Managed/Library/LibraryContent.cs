@@ -26,20 +26,20 @@ namespace Unity.UIToolkit.Editor
 
         static readonly Dictionary<string, HashSet<string>> s_CategoriesByType = new()
         {
-            ["Numeric Fields"] = new()
+            ["Numeric Fields"] = new(new[]
             {
                 nameof(IntegerField),
                 nameof(FloatField),
                 nameof(LongField),
                 nameof(DoubleField)
-            }
+            })
         };
 
         /// <summary>
         /// Unity core controls to display in "Standard Elements".
         /// Only these controls will appear (unless they have subcategories defined in s_Categories).
         /// </summary>
-        static readonly HashSet<string> s_StandardElementControls = new()
+        static readonly HashSet<string> s_StandardElementControls = new(new[]
         {
             nameof(VisualElement),
             nameof(ScrollView),
@@ -54,7 +54,7 @@ namespace Unity.UIToolkit.Editor
             nameof(FloatField),
             nameof(DoubleField),
             nameof(LongField),
-        };
+        });
 
         static readonly Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes = GenerateLibraryTypeFromSerializedDataTypes();
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -26,12 +27,15 @@ namespace UnityEngine.SceneManagement
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static string GetNameInternal(SceneHandle sceneHandle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static void SetNameInternal(SceneHandle sceneHandle, string name);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static string GetGUIDInternal(SceneHandle sceneHandle);
+
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static LoadableScene GetLoadableSceneInternal(SceneHandle sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsSubScene(SceneHandle sceneHandle);
@@ -141,8 +145,8 @@ namespace UnityEngine.SceneManagement
 
         internal EntityId ToEntityId() => m_Value;
 
-        public ulong GetRawData() => m_Value.GetRawData();
-        public static SceneHandle FromRawData(ulong rawdata) => new() { m_Value = EntityId.From(rawdata) };
+        public ulong GetRawData() => EntityId.ToULong(m_Value);
+        public static SceneHandle FromRawData(ulong rawdata) => new() { m_Value = EntityId.FromULong(rawdata) };
     }
 
     internal static class SceneHandleExtensions

@@ -11,6 +11,8 @@ using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Profiling;
+using Unity.Collections;
+
 
 
 using System.Reflection;
@@ -193,9 +195,7 @@ namespace UnityEditor.Search
 
             if (handler is TDelegate selectorHandler)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (loaded.Any(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
-#pragma warning restore UA2001
+                if (loaded.Exists(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
                     throw new CustomAttributeFormatException($"{attributeName} id \"{attribute.id}\" for \"{ReflectionUtils.GetMethodFullName(mi)}\" is already used by another handler.");
                 return wrapperGenerator(attribute, selectorHandler);
             }
@@ -811,70 +811,38 @@ namespace UnityEditor.Search
             Debug.LogWarning("You cannot create new index anymore. Unity uses a single index solution.");
         }
 
+        // TODO: to remove (SearchIndexingService will offer this functionality)
         internal static bool IsDeepIndexingEnabled()
         {
-            var db = SearchDatabase.GetDefaultSearchDatabase();
-            return db.settings.options.extended;
+            return SearchIndexingService.IsDeepIndexingEnabled();
         }
 
+        // TODO: to remove (SearchIndexingService will offer this functionality)
         internal static bool IsPackageIndexingEnabled()
         {
-            var db = SearchDatabase.GetDefaultSearchDatabase();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return db.settings.roots.Any(r => r == "Packages");
-#pragma warning restore UA2001
+            return SearchIndexingService.IsPackageIndexingEnabled();
         }
 
+        // TODO: to remove (SearchIndexingService will offer this functionality)
         internal static void ChangeIndexingSettings(bool deepIndexing, bool packageIndexing, Action indexingReady)
         {
-            var settingsDirty = false;
-            var db = SearchDatabase.GetDefaultSearchDatabase();
-            if (db.settings.options.extended != deepIndexing)
-            {
-                db.settings.options.extended = deepIndexing;
-                settingsDirty = true;
-            }
-
-            if (IsPackageIndexingEnabled() != packageIndexing)
-            {
-                if (packageIndexing)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    db.settings.roots = db.settings.roots.Concat(new [] {"Packages"}).ToArray();
-#pragma warning restore UA2001
-                else
-                {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    db.settings.roots = db.settings.roots.Where(r => !r.Equals("Packages", StringComparison.InvariantCultureIgnoreCase)).ToArray();
-#pragma warning restore UA2001
-                }
-                settingsDirty = true;
-            }
-
-            if (settingsDirty)
-                db.SaveSettingsOptions(true);
-
-            WaitForForIndexReady(indexingReady);
+            SearchIndexingService.ChangeIndexingSettings(deepIndexing, packageIndexing, indexingReady);
         }
 
+        // TODO: to remove (SearchIndexingService will offer this functionality)
         internal static void WaitForForIndexReady(Action indexingReady)
         {
-            var db = SearchDatabase.GetDefaultSearchDatabase();
-            if (db.ready)
-            {
-                indexingReady?.Invoke();
-            }
-            else
-            {
-                Utils.CallDelayed(() => WaitForForIndexReady(indexingReady), 1d);
-            }
+            SearchIndexingService.WaitForForIndexReady(indexingReady);
         }
 
+        // TODO: to remove (since it will be in the SearchIndexingService)
         public static IEnumerable<ISearchDatabase> EnumerateDatabases()
         {
             foreach (var db in SearchDatabase.EnumerateAll())
                 yield return db;
         }
 
+        // TODO: to remove (SearchIndexingService will offer this functionality)
         /// <summary>
         /// Checks if a search index is ready to be used.
         /// </summary>

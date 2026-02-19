@@ -328,14 +328,7 @@ namespace UnityEngine.UIElements
             return default;
         }
 
-        internal static IEnumerable<Type> allowedAssetTypes
-        {
-            get
-            {
-                yield return typeof(Material);
-                yield return typeof(Texture2D); // Allow Texture2D for property values
-            }
-        }
+        internal static IReadOnlyList<Type> allowedAssetTypes => [ typeof(Material), typeof(Texture2D) ]; // Allow Texture2D for property values
 
         /// <summary>
         /// Help verify whether an asset has been assigned or not.

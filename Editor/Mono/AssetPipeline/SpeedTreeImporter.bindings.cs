@@ -116,8 +116,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableSettingOverride", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSettingOverride", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSettingOverride", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -125,8 +124,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetLODHeights", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetLODHeights", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetLODHeights", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -134,8 +132,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetCastShadows", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetCastShadows", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetCastShadows", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -143,8 +140,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetReceiveShadows", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetReceiveShadows", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetReceiveShadows", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -152,8 +148,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetUseLightProbes", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetUseLightProbes", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetUseLightProbes", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -161,8 +156,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetReflectionProbeUsages", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetReflectionProbeUsages", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetReflectionProbeUsages", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -170,8 +164,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableBump", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableBump", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableBump", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -179,8 +172,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableHue", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableHue", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableHue", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -188,8 +180,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableSubsurface", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSubsurface", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSubsurface", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -197,8 +188,7 @@ namespace UnityEditor
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetWindQuality", HasExplicitThis = true)]
             get;
-            [NativeThrows]
-            [FreeFunction(Name = "SpeedTreeImporterBindings::SetWindQuality", HasExplicitThis = true)]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetWindQuality", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 

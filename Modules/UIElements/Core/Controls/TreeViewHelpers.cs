@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
         {
             if (treeView.viewController is TDefaultController defaultController)
             {
-                foreach (var index in treeView.selectedIndices)
+                foreach (var index in treeView.selectedIndicesList)
                 {
                     yield return defaultController.GetTreeViewItemDataForIndex(index);
                 }

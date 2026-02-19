@@ -79,7 +79,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var isDarkTheme = EditorGUIUtility.isProSkin;
             var selectedPath = isDarkTheme ? s_DarkUssPath : s_LightUssPath;
             var loadedStyleSheet = EditorGUIUtility.LoadRequired(selectedPath) as StyleSheet;
-            
+
             if (loadedStyleSheet != null)
             {
                 styleSheets.Add(loadedStyleSheet);
@@ -106,13 +106,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             ActiveUpdatedEvent?.Invoke(evt.newValue);
         }
 
-        public Pill AddPill(string newValue)
+        Pill CreatePill(string newValue)
         {
-            var p = new Pill
+            var p = new Pill()
             {
-                Text = newValue,
+                text = newValue,
             };
-            PlayerTagPills.Add(p);
+            p.CloseEvent += (tag) => { PillCloseEvent?.Invoke(tag); };
             return p;
         }
 
@@ -133,9 +133,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 if (!contains)
                 {
-                    choices.Add(tag.Length >= 24
-                        ? $"{tag[..22]}..."
-                        : tag);
+                    choices.Add(tag);
                 }
             }
             choices.Add(TagLineBreak);
@@ -145,18 +143,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             PlayerTagDropdown.SetValueWithoutNotify(TagDefault);
             PlayerTagDropdown.choices = choices;
 
-            var pills = this.Query<Pill>().ToList();
-            foreach (var pill in pills)
-            {
-                pill.RemoveFromHierarchy();
-            }
+            PlayerTagPills.Clear();
             foreach (var tagEntry in unityPlayerTags)
             {
-                var p = AddPill(tagEntry);
-                p.CloseEvent += sender =>
-                {
-                    PillCloseEvent?.Invoke(tagEntry);
-                };
+                PlayerTagPills.Add(CreatePill(tagEntry));
             }
         }
 

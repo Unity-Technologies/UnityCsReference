@@ -109,7 +109,11 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal event Action reset;
 
-        SerializedProperty serializedProperty => m_SerializedProperty;
+        internal SerializedProperty serializedProperty
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_SerializedProperty;
+        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -988,7 +992,6 @@ namespace UnityEditor.UIElements
         private VisualElement CreateOrUpdateFieldFromProperty(SerializedProperty property, object originalField = null)
         {
             var propertyType = property.propertyType;
-
 
             if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray && property.type != nameof(ToggleButtonGroupState))
                 return CreateFoldout(property, originalField);

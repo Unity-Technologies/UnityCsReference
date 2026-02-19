@@ -2398,15 +2398,18 @@ namespace UnityEditor
             {
                 Undo.FlushTrackedObjects();
 
-                // Make sure all instance are unpacked so the merge code can delete GameObjects that are not matched
-                TransformVisitor visitor = new TransformVisitor();
-                visitor.VisitAll(plainGameObject.transform, (transform, userdata) => {
-                    GameObject go = transform.gameObject;
-                    if (IsOutermostPrefabInstanceRoot(go))
-                    {
-                        UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
-                    }
-                }, null);
+                if (!settings.gameObjectsNotMatchedBecomesOverride)
+                {
+                    // Make sure all instance are unpacked so the merge code can delete GameObjects that are not matched
+                    TransformVisitor visitor = new TransformVisitor();
+                    visitor.VisitAll(plainGameObject.transform, (transform, userdata) => {
+                        GameObject go = transform.gameObject;
+                        if (IsOutermostPrefabInstanceRoot(go))
+                        {
+                            UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
+                        }
+                    }, null);
+                }
 
                 Undo.SetCurrentGroupName(undoActionName);
                 Undo.RegisterFullObjectHierarchyUndo(plainGameObject, undoActionName);
@@ -3406,9 +3409,7 @@ namespace UnityEditor
         {
             var requiredComps = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
             List<Component> dependencies = new List<Component>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (requiredComps.Count() == 0)
-#pragma warning restore UA2001
+            if (requiredComps.Length == 0)
                 return dependencies;
 
             // Iterate all components.

@@ -1216,25 +1216,23 @@ namespace UnityEditor.Search
 
                     indexOnEditorStartup = EditorGUILayout.Toggle("Index on editor startup", indexOnEditorStartup);
 
-                    var db = SearchDatabase.GetDefaultSearchDatabase();
-                    var indexReady = db.ready;
+                    var indexReady = SearchIndexingService.IsIndexReady();
 
                     using (new EditorGUI.DisabledScope(!indexReady))
                     {
-                        var hasDeepIndexing = db.indexingOptions.HasFlag(IndexingOptions.Extended);
-                        var deepIndexing = EditorGUILayout.Toggle("Deep scene and prefab indexing", hasDeepIndexing);
-                        if (deepIndexing != hasDeepIndexing)
+                        var hasDeepIndexing = SearchIndexingService.IsDeepIndexingEnabled();
+                        var hasPackageIndexing = SearchIndexingService.IsPackageIndexingEnabled();
+
+                        var newDeepIndexing = EditorGUILayout.Toggle("Deep scene and prefab indexing", hasDeepIndexing);
+                        if (newDeepIndexing != hasDeepIndexing)
                         {
-                            db.settings.options.extended = deepIndexing;
-                            db.SaveSettingsOptions( startIndexing:true);
+                            SearchIndexingService.ChangeIndexingSettings(deepIndexing: newDeepIndexing, packageIndexing: hasPackageIndexing);
                         }
 
-                        var hasPackageIndexing = db.settings.IsPackagesIndexingEnabled();
-                        var packageIndexing = EditorGUILayout.Toggle("Packages indexing", hasPackageIndexing);
-                        if (hasPackageIndexing != packageIndexing)
+                        var newPackageIndexing = EditorGUILayout.Toggle("Packages indexing", hasPackageIndexing);
+                        if (hasPackageIndexing != newPackageIndexing)
                         {
-                            db.settings.EnablePackagesIndexing(packageIndexing);
-                            db.SaveSettingsOptions(startIndexing: true);
+                            SearchIndexingService.ChangeIndexingSettings(deepIndexing: hasDeepIndexing, packageIndexing: newPackageIndexing);
                         }
                     }
                     if (indexReady)
@@ -1242,6 +1240,7 @@ namespace UnityEditor.Search
                     else
                         EditorGUILayout.HelpBox("You can only change this settings if indexing is done.", MessageType.Warning);
 
+                    var db = SearchDatabase.GetDefaultSearchDatabase();
                     GUILayout.Label("Index Information", EditorStyles.boldLabel);
                     GUILayout.Label($"Index settings location: {db.path}");
                     var str = GetIndexReport(db);
@@ -1250,7 +1249,7 @@ namespace UnityEditor.Search
                     {
                         if (GUILayout.Button("Force rebuild Index", GUILayout.Width(200)))
                         {
-                            SearchDatabase.ForceRebuildIndex(db);
+                            SearchIndexingService.ForceRebuildIndex();
                         }
                     }
 
@@ -1517,7 +1516,7 @@ namespace UnityEditor.Search
             public static GUIContent decreaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
             public static GUIContent trackSelectionContent = EditorGUIUtility.TrTextContent(
                 "Track the current selection in the search view.",
-                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window.");
+                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window. This setting does not apply to the Advanced Object Selector.");
             public static GUIContent fetchPreviewContent = EditorGUIUtility.TrTextContent(
                 "Generate an asset preview thumbnail for found items",
                 "Fetching the preview of the items can consume more memory and make searches within very large project slower.");

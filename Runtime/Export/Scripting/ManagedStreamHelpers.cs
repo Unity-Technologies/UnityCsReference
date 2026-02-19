@@ -20,12 +20,13 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        unsafe internal static void ManagedStreamRead(byte[] buffer, int offset, int count, System.IO.Stream stream, IntPtr returnValueAddress)
+        unsafe internal static void ManagedStreamRead(Span<byte> buffer, System.IO.Stream stream, IntPtr returnValueAddress)
         {
             if (returnValueAddress == IntPtr.Zero)
                 throw new ArgumentException("Return value address cannot be 0.", "returnValueAddress");
+
             ValidateLoadFromStream(stream);
-            (*(int*)returnValueAddress) = stream.Read(buffer, offset, count);
+            (*(int*)returnValueAddress) = stream.Read(buffer);
         }
 
         [RequiredByNativeCode]
@@ -33,6 +34,7 @@ namespace UnityEngine
         {
             if (returnValueAddress == IntPtr.Zero)
                 throw new ArgumentException("Return value address cannot be 0.", "returnValueAddress");
+
             ValidateLoadFromStream(stream);
             (*(long*)returnValueAddress) = stream.Seek(offset, (System.IO.SeekOrigin)origin);
         }
@@ -42,6 +44,7 @@ namespace UnityEngine
         {
             if (returnValueAddress == IntPtr.Zero)
                 throw new ArgumentException("Return value address cannot be 0.", "returnValueAddress");
+
             ValidateLoadFromStream(stream);
             (*(long*)returnValueAddress) = stream.Length;
         }

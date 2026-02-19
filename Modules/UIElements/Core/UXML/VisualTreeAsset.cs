@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -75,12 +74,6 @@ namespace UnityEngine.UIElements
         {
             get { return m_ImportedWithWarnings; }
             internal set { m_ImportedWithWarnings = value; }
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal int GetNextChildSerialNumber()
-        {
-            return DepthFirstTraversal().GetCount();
         }
 
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
@@ -734,10 +727,7 @@ namespace UnityEngine.UIElements
                         Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
                             context.slotInsertionPoints == null
                                 ? String.Empty
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                : String.Join(", ",
-                                    System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
-#pragma warning restore UA2001
+                                : String.Join(", ", context.slotInsertionPoints.Keys));
                         ve.Add(childVe);
                     }
                     else

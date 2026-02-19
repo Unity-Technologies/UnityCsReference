@@ -277,8 +277,9 @@ namespace UnityEditor.IMGUI.Controls
             /// one of the deeper levels. Making sure we find the largest set of immediate children ensures we allocate enough height for any level.
             AdvancedDropdownItem largestChild = FindLargestChild(root);
 
-            foreach (var child in largestChild.children)
+            for (int i = 0; i < largestChild.childList.Count; i++)
             {
+                var child = largestChild.childList[i];
                 var content = child.content;
                 var a = CalcItemSize(content);
                 a.x += iconSize.x + 1;
@@ -286,9 +287,7 @@ namespace UnityEditor.IMGUI.Controls
                 if (maxWidth < a.x)
                 {
                     maxWidth = a.x + 1;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    includeArrow |= child.children.Count() > 0;
-#pragma warning restore UA2001
+                    includeArrow |= child.childList.Count > 0;
                 }
 
                 if (child.IsSeparator())
@@ -308,15 +307,13 @@ namespace UnityEditor.IMGUI.Controls
             AdvancedDropdownItem largest = item;
 
             // Recursively search through all children
-            foreach (var child in item.children)
+            foreach (var child in item.childList)
             {
                 // Find the largest node in this child's branch
                 var largestChild = FindLargestChild(child);
 
                 // Compare immediate child counts - if this branch has more direct children, it becomes the new largest
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (largestChild.children.Count() > largest.children.Count())
-#pragma warning restore UA2001
+                if (largestChild.childList.Count > largest.childList.Count)
                 {
                     largest = largestChild;
                 }
@@ -329,30 +326,26 @@ namespace UnityEditor.IMGUI.Controls
         {
             if (state.GetSelectedIndex(dataSource.mainTree) == -1)
                 return 0;
-            float heigth = 0;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            for (int i = 0; i < dataSource.mainTree.children.Count(); i++)
-#pragma warning restore UA2001
+            float height = 0;
+            for (int i = 0; i < dataSource.mainTree.childList.Count; i++)
             {
-#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var child = dataSource.mainTree.children.ElementAt(i);
-#pragma warning restore UA2004
+                var child = dataSource.mainTree.childList[i];
                 var content = child.content;
                 if (state.GetSelectedIndex(dataSource.mainTree) == i)
                 {
                     var diff = (CalcItemHeight(content, 0) - buttonRect.height) / 2f;
-                    return heigth + diff;
+                    return height + diff;
                 }
                 if (child.IsSeparator())
                 {
-                    heigth += Styles.lineSeparator.CalcHeight(content, 0) + Styles.lineSeparator.margin.vertical;
+                    height += Styles.lineSeparator.CalcHeight(content, 0) + Styles.lineSeparator.margin.vertical;
                 }
                 else
                 {
-                    heigth += CalcItemHeight(content, 0);
+                    height += CalcItemHeight(content, 0);
                 }
             }
-            return heigth;
+            return height;
         }
 
         internal virtual Rect GetItemRect(in GUIContent content)

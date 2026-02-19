@@ -247,17 +247,13 @@ namespace UnityEditorInternal.VersionControl
 
                 if (task != null && task.success)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
-#pragma warning restore UA2001
+                    for (int i = batchStart; i < batchStart + deleteAssetList.Count; i++)
                         deletionResults[i] = File.Exists(assetPaths[i]) ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.DidDelete;
                 }
                 else
                 {
                     //NOTE: we most likely don't know which assets failed to actually be deleted
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
-#pragma warning restore UA2001
+                    for (int i = batchStart; i < batchStart + deleteAssetList.Count; i++)
                         deletionResults[i] = AssetDeleteResult.FailedDelete;
                 }
             }

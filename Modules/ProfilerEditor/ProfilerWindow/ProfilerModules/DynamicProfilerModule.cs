@@ -48,6 +48,7 @@ namespace UnityEditor.Profiling
             return new SerializedData()
             {
                 m_Name = DisplayName,
+                m_Tooltip = Tooltip,
                 m_ChartCounters = m_LegacyChartCounters,
                 m_DetailCounters = m_LegacyDetailCounters,
             };
@@ -57,6 +58,7 @@ namespace UnityEditor.Profiling
         public struct SerializedData
         {
             public string m_Name;
+            public string m_Tooltip;
             public List<ProfilerCounterData> m_ChartCounters;
             public List<ProfilerCounterData> m_DetailCounters;
         }

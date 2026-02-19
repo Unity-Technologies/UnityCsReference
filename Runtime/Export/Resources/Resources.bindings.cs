@@ -52,12 +52,10 @@ namespace UnityEngine
         public extern static Shader FindShaderByName(string name);
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
-        [NativeThrows]
-        [FreeFunction("Resources_Bindings::Load")]
+        [FreeFunction("Resources_Bindings::Load", ThrowsException = true)]
         public extern static Object Load(string path, [NotNull] Type systemTypeInstance);
 
-        [NativeThrows]
-        [FreeFunction("Resources_Bindings::LoadAll")]
+        [FreeFunction("Resources_Bindings::LoadAll", ThrowsException = true)]
         public extern static Object[] LoadAll([NotNull] string path, [NotNull] Type systemTypeInstance);
 
         [FreeFunction("Resources_Bindings::GetAllPaths")]
@@ -236,6 +234,24 @@ namespace UnityEngine
         internal static bool IsInstanceLoaded(EntityId entityId)
         {
             return IsObjectLoaded(entityId);
+        }
+
+        [FreeFunction("Resources_Bindings::InstanceIDToObjectArray", IsThreadSafe = true)]
+        extern private static void InstanceIDToObjectArray(IntPtr instanceIDs, int instanceCount, [Out, NotNull] Object[] objects);
+
+        internal static unsafe void InstanceIDToObjectArray(NativeArray<EntityId> instanceIDs, Object[] objects)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+            if (objects == null)
+                throw new ArgumentNullException(nameof(objects));
+            if (objects.Length < instanceIDs.Length)
+                throw new ArgumentException("Output array is too small.", nameof(objects));
+
+            if (instanceIDs.Length == 0)
+                return;
+
+            InstanceIDToObjectArray((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]

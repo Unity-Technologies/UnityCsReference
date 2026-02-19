@@ -93,9 +93,9 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyPaths = assembliesToUpdate.Select(c => c.Path);
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var anyAssemblyInAssetsFolder = assemblyPaths.Any(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
-#pragma warning restore UA2001
+#pragma warning restore UA2006
 
             var sw = Stopwatch.StartNew();
             var updatedCount = 0;
@@ -365,9 +365,9 @@ namespace UnityEditorInternal.APIUpdating
             }
 
             assembliesToUpdate.Clear();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return succeededUpdates.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
 
             bool CheckoutFromVCSIfNeeded(string[] assemblyPathsToCheck)
             {
@@ -459,14 +459,12 @@ namespace UnityEditorInternal.APIUpdating
             SaveDependencyGraph(depGraph, k_AssemblyDependencyGraphFilePath);
 
             sw.Stop();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assembly(ies))."), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count());
-#pragma warning restore UA2001
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assembly(ies))."), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count);
 
             UpdateAssemblies();
         }
 
-        private static void CollectImportedAssembliesToBeUpdated(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, IEnumerable<AssemblyUpdateCandidate> candidatesForUpdating)
+        private static void CollectImportedAssembliesToBeUpdated(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, List<AssemblyUpdateCandidate> candidatesForUpdating)
         {
             foreach (var importedCandidate in candidatesForUpdating)
             {
@@ -475,7 +473,7 @@ namespace UnityEditorInternal.APIUpdating
             }
         }
 
-        private static void UpdatePublishUpdaterConfigStatusAndAddDependents(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, IEnumerable<AssemblyUpdateCandidate> candidatesForUpdating, AssemblyDependencyGraph depGraph)
+        private static void UpdatePublishUpdaterConfigStatusAndAddDependents(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, List<AssemblyUpdateCandidate> candidatesForUpdating, AssemblyDependencyGraph depGraph)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tasks = candidatesForUpdating
@@ -568,7 +566,7 @@ namespace UnityEditorInternal.APIUpdating
          * Given a list of assemblies, returns those that references assemblies contributing updater configurations
          * sorted by dependency (i.e, given assemblies, A, B & C such A -> B -> C, should return in C, B, A order)
          */
-        private static IEnumerable<AssemblyUpdateCandidate> FindCandidatesForUpdatingSortedByDependency(IEnumerable<string> assemblyPaths, AssemblyDependencyGraph depGraph)
+        private static List<AssemblyUpdateCandidate> FindCandidatesForUpdatingSortedByDependency(IEnumerable<string> assemblyPaths, AssemblyDependencyGraph depGraph)
         {
             var candidates = new HashSet<AssemblyUpdateCandidate>();
             foreach (var assemblyPath in assemblyPaths)

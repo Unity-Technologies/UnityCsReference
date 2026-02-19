@@ -117,7 +117,7 @@ namespace UnityEditor
     [UsedByNativeCode]
     internal static partial class GUIViewDebuggerHelper
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         static internal extern void GetViews([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<GUIView> views);
 
         static internal extern void DebugWindow([UnityMarshalAs(NativeType.ScriptingObjectPtr)] GUIView view);

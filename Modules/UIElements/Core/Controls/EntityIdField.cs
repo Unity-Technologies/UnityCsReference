@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
             m_IntegerField.RegisterValueChangedCallback(evt =>
             {
                 // Update the value when the integer field changes
-                value = EntityId.From(evt.newValue);
+                value = EntityId.FromULong((ulong)evt.newValue);
             });
         }
 
@@ -58,7 +58,12 @@ namespace UnityEngine.UIElements
         {
             base.SetValueWithoutNotify(newValue);
             // Update the integer field when the value changes
-            m_IntegerField.SetValueWithoutNotify((int)newValue.GetRawData());
+            m_IntegerField.SetValueWithoutNotify((int)EntityId.ToULong(newValue));
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            m_IntegerField.showMixedValue = showMixedValue;
         }
     }
 }

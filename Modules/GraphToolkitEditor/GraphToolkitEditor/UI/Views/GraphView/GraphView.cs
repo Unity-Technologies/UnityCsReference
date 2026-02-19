@@ -1563,9 +1563,9 @@ namespace Unity.GraphToolkit.Editor
 
             foreach (var elementModel in selection)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (elementModel is not AbstractNodeModel node || node.GetConnectedWires().Count() == 0)
-#pragma warning restore UA2001
+                #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if (elementModel is not AbstractNodeModel node || !node.GetConnectedWires().Any())
+#pragma warning restore UA2002
                     continue;
 
                 connectedNodes.Add(node);
@@ -2884,16 +2884,16 @@ namespace Unity.GraphToolkit.Editor
                     for (int i = 0; i < contextNodeModel.BlockCount; ++i)
                     {
                         var block = contextNodeModel.GetBlock(i);
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (block.GetConnectedWires().Count() > 0)
-#pragma warning restore UA2001
+                        #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        if (block.GetConnectedWires().Any())
+#pragma warning restore UA2002
                             nodes.Add(block);
                     }
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (nodeModel.GetConnectedWires().Count() == 0)
-#pragma warning restore UA2001
+                #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if (!nodeModel.GetConnectedWires().Any())
+#pragma warning restore UA2002
                     continue;
 
                 nodes.Add(nodeModel);
@@ -3090,7 +3090,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public override void Update()
         {
-            if (m_UpdateObserver == null || GraphViewModel == null)
+            if (m_UpdateObserver == null || GraphViewModel == null || panel == null)
                 return;
 
             using (var graphViewObservation = m_UpdateObserver.ObserveState(GraphViewModel.GraphViewState))
@@ -3193,9 +3193,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (GraphTool.Preferences.GetBool(BoolPref.LogUIUpdate))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Debug.Log($"Partial GraphView Update {modelChangeSet?.NewModels.Count() ?? 0} new {modelChangeSet?.ChangedModels.Count() ?? 0} changed {modelChangeSet?.DeletedModels.Count() ?? 0} deleted");
-#pragma warning restore UA2001
+                Debug.Log($"Partial GraphView Update {modelChangeSet?.NewModels.Count ?? 0} new {modelChangeSet?.ChangedModels.Count ?? 0} changed {modelChangeSet?.DeletedModels.Count ?? 0} deleted");
             }
 
             var changedModels = new Dictionary<Hash128, ChangeHintList>();
@@ -3737,7 +3735,8 @@ namespace Unity.GraphToolkit.Editor
 
             HideAutoPlacedElements();
 
-            UpdateViewTransform(GraphViewModel.GraphViewState.Position, GraphViewModel.GraphViewState.Scale);
+            if (panel != null)
+                UpdateViewTransform(GraphViewModel.GraphViewState.Position, GraphViewModel.GraphViewState.Scale);
         }
 
         internal bool CreateWireUI(WireModel wire)

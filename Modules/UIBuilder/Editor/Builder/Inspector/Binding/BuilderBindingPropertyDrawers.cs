@@ -10,52 +10,24 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    [CustomPropertyDrawer(typeof(BindingModeDrawerAttribute))]
-    class BindingModePropertyDrawer : PropertyDrawer
-    {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var enumField = new EnumField
-            {
-                bindingPath = property.propertyPath,
-                label = property.displayName
-            };
-            enumField.AddToClassList(EnumField.alignedFieldUssClassName);
-            return enumField;
-        }
-    }
-
-    [CustomPropertyDrawer(typeof(DataSourceDrawerAttribute))]
-    class BuilderDataSourcePropertyDrawer : PropertyDrawer
-    {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var field = new BuilderObjectField()
-            {
-                bindingPath = property.propertyPath,
-                objectType = typeof(ScriptableObject),
-                label = " ",
-            };
-            field.AddToClassList(BuilderObjectField.alignedFieldUssClassName);
-            return field;
-        }
-    }
-
-    [CustomPropertyDrawer(typeof(BindingPathDrawerAttribute))]
-    class BuilderBindingPathPropertyDrawer : PropertyDrawer
-    {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var field = new TextField("Editor Binding Path");
-            field.bindingPath = property.propertyPath;
-            field.AddToClassList(TextField.alignedFieldUssClassName);
-            return field;
-        }
-    }
-
     [CustomPropertyDrawer(typeof(ConverterDrawerAttribute))]
     class BuilderConverterPropertyDrawer : PropertyDrawer
     {
+        [CustomPropertyDrawer(typeof(BindingModeDrawerAttribute))]
+        class BindingModePropertyDrawer : PropertyDrawer
+        {
+            public override VisualElement CreatePropertyGUI(SerializedProperty property)
+            {
+                var enumField = new EnumField
+                {
+                    bindingPath = property.propertyPath,
+                    label = property.localizedDisplayName
+                };
+                enumField.AddToClassList(EnumField.alignedFieldUssClassName);
+                return enumField;
+            }
+        }
+
         protected static readonly string k_BindingMode = nameof(DataBinding.bindingMode);
         protected static readonly string k_DataSource = nameof(DataBinding.dataSource);
         protected static readonly string k_DataSourceType = nameof(DataBinding.dataSourceTypeString);

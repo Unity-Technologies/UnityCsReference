@@ -15,7 +15,6 @@ namespace UnityEngine
         SubsystemRegistration
     }
 
-    [Scripting.RequiredByNativeCode]
     [System.AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class RuntimeInitializeOnLoadMethodAttribute : Scripting.PreserveAttribute
     {

@@ -61,9 +61,7 @@ namespace UnityEditor
                 return;
 
             // Return if any of the dragged objects are null, e.g. a MonoBehaviour without a managed instance
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (objectReferences.Any(obj => obj == null))
-#pragma warning restore UA2001
+            if (System.Array.Exists(objectReferences, obj => obj == null))
                 return;
 
             // Regardless of EditorBehaviorMode or SceneView mode we don't handle if texture is dragged over a GO with renderer

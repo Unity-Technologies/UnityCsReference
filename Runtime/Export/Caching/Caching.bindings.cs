@@ -244,12 +244,12 @@ namespace UnityEngine
 
         [StaticAccessor("CachingManagerWrapper", StaticAccessorType.DoubleColon)]
         [NativeName("Caching_GetCacheHandleAt")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static Cache GetCacheAt(int cacheIndex);
 
         [StaticAccessor("CachingManagerWrapper", StaticAccessorType.DoubleColon)]
         [NativeName("Caching_GetCacheHandleByPath")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static Cache GetCacheByPath(string cachePath);
 
         public static void GetAllCachePaths(List<string> cachePaths)
@@ -264,17 +264,17 @@ namespace UnityEngine
 
         [StaticAccessor("CachingManagerWrapper", StaticAccessorType.DoubleColon)]
         [NativeName("Caching_RemoveCacheByHandle")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static bool RemoveCache(Cache cache);
 
         [StaticAccessor("CachingManagerWrapper", StaticAccessorType.DoubleColon)]
         [NativeName("Caching_MoveCacheBeforeByHandle")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void MoveCacheBefore(Cache src, Cache dst);
 
         [StaticAccessor("CachingManagerWrapper", StaticAccessorType.DoubleColon)]
         [NativeName("Caching_MoveCacheAfterByHandle")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void MoveCacheAfter(Cache src, Cache dst);
 
         extern public static int cacheCount { get; }
@@ -292,7 +292,7 @@ namespace UnityEngine
             [NativeName("Caching_GetCurrentCacheHandle")]
             get;
             [NativeName("Caching_SetCurrentCacheByHandle")]
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             set;
         }
     }

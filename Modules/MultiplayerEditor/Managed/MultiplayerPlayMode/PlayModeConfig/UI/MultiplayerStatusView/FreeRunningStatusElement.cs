@@ -190,8 +190,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Disable Dropdown if scenario is running
             if (ScenarioRunner.instance.ActiveScenario != null)
             {
-                var scenarioState = ScenarioRunner.instance.ActiveScenario.StatusData.OverallStatus.State;
-                var enabledDropdown = scenarioState is not (ExecutionState.Running or ExecutionState.Active);
+                var enabledDropdown = !ScenarioRunner.instance.ActiveScenario.StatusData.IsExecuting();
                 m_DropDown.SetEnabled(enabledDropdown && !isInstanceRunning);
             }
 
@@ -237,7 +236,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_Instance != null &&
                    m_Instance.IsFreeRunMode() &&
                    m_Instance.HasStartedAsFreeRunning() &&
-                   m_Instance.StatusData.OverallStatus.State is ExecutionState.Running or ExecutionState.Active;
+                   m_Instance.StatusData.IsExecuting();
         }
 
         private bool HasInstanceDeployed()
@@ -282,7 +281,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (shouldActivate)
                 m_Instance!.StartOrResumeAsFreeRunning(false).Forget();
             else
-                m_Instance!.StopAsFreeRunning();
+                m_Instance!.StopAsFreeRunning().Forget();
         }
 
         private void RefreshPlayModeConfigsWindowIfShown()

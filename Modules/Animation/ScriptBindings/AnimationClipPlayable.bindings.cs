@@ -128,46 +128,46 @@ namespace UnityEngine.Animations
             SetSampleRateInternal(ref m_Handle, value);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AnimationClip GetAnimationClipInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetApplyFootIKInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetApplyFootIKInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetApplyPlayableIKInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetApplyPlayableIKInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetRemoveStartOffsetInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetRemoveStartOffsetInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetOverrideLoopTimeInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetOverrideLoopTimeInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetLoopTimeInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetLoopTimeInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetSampleRateInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetSampleRateInternal(ref PlayableHandle handle, float value);
     }
 }

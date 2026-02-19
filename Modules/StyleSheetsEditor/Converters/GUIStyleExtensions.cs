@@ -60,6 +60,9 @@ namespace UnityEditor.StyleSheets
                 style.contentOffset = new Vector2(contentOffsetSize.width, contentOffsetSize.height);
             }
 
+            var contentSpacingKey = "-unity-content-spacing".GetHashCode();
+            style.contentSpacing = styleBlock.GetFloat(contentSpacingKey, style.contentSpacing);
+
             // Support both properties for font:
             style.font = styleBlock.GetResource<Font>("-unity-font".GetHashCode(), style.font);
             style.font = styleBlock.GetResource<Font>("font".GetHashCode(), style.font);

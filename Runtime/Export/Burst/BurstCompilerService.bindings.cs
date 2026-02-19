@@ -18,7 +18,7 @@ namespace Unity.Burst.LowLevel
         [NativeMethod("Initialize")]
         static extern string InitializeInternal(string path, ExtractCompilerFlags extractCompilerFlags);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetDisassembly(MethodInfo m, string compilerOptions);
 
         [FreeFunction(IsThreadSafe = true)]
@@ -27,10 +27,10 @@ namespace Unity.Burst.LowLevel
         [FreeFunction(IsThreadSafe = true)]
         public static extern unsafe void* GetAsyncCompiledAsyncDelegateMethod(int userID);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void* GetOrCreateSharedMemory(ref Hash128 key, uint size_of, uint alignment);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetMethodSignature(MethodInfo method);
 
         public static extern bool IsInitialized { get; }
@@ -38,10 +38,10 @@ namespace Unity.Burst.LowLevel
         public static extern bool DequeuePendingBurstLoad();
         public static extern bool WasScriptDebugInfoEnabledAtDomainReload { get; }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCurrentExecutionMode(uint environment);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern uint GetCurrentExecutionMode();
 
         [FreeFunction("DefaultBurstLogCallback", isThreadSafe: true)]

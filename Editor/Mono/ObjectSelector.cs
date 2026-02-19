@@ -121,6 +121,21 @@ namespace UnityEditor
             {
                 os?.FilterSettingsChanged();
             }
+
+            public static void SetSelection(ObjectSelector os, EntityId[] selection, bool doubleClicked)
+            {
+                if (os == null)
+                    return;
+
+                if (os.IsUsingTreeView())
+                {
+                    os.m_ObjectTreeWithSearch.SetSelectionAndNotify(selection, doubleClicked);
+                }
+                else
+                {
+                    os.m_ListArea.SetSelection(selection, doubleClicked);
+                }
+            }
         }
 
         // Filters
@@ -665,11 +680,11 @@ namespace UnityEditor
                         Undo.RevertAllDownToGroup(m_ModalUndoGroup);
                         SetSelectedInstanceID(EntityId.None);
                         m_SelectionCancelled = true;
+                        SendEvent(ObjectSelectorCanceledCommand, false);
                     }
                     else if (!m_PreventSetSelectionOnClose) // prevent re-set selection if it has been set programmatically before closing
                     {
                         SetSelectedInstanceID(selectedObj == null ? EntityId.None : selectedObj.GetEntityId());
-                        NotifySelectionChanged(false);
                     }
 
                     m_EditedProperty = null;
@@ -771,8 +786,6 @@ namespace UnityEditor
 
         void ItemWasDoubleClicked()
         {
-            SendEvent(ObjectSelectorSelectionDoneCommand, false);
-
             Close();
             GUIUtility.ExitGUI();
         }
@@ -1327,6 +1340,11 @@ namespace UnityEditor
 
         void NotifySelectorClosed(UnityObject selectedObject, bool exitGUI)
         {
+            // Notification of the Done command should be sent everytime the selector is closed
+            // except when we are cancelling. It means that we have accepted the selection.
+            if (!m_SelectionCancelled)
+                SendEvent(ObjectSelectorSelectionDoneCommand, false);
+
             if (m_ObjectSelectorReceiver != null)
             {
                 m_ObjectSelectorReceiver.OnSelectionClosed(selectedObject);

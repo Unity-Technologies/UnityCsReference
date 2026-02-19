@@ -415,7 +415,7 @@ namespace UnityEngine
             Internal_Create(this, version, SpeedTreeWindConfig9.Serialize(config));
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         static extern void Internal_Create([Writable] SpeedTreeWindAsset notSelf, int version, byte[] data);
     }
 }

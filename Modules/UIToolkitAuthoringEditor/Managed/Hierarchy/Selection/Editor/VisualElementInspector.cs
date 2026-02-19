@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal sealed class VisualElementInspector : VisualElement
+internal sealed class VisualElementInspector : VisualElement, IDisposable
 {
     [Serializable]
     public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -36,6 +36,7 @@ internal sealed class VisualElementInspector : VisualElement
     public const string UssClass = "unity-visual-element-inspector";
     public const string HeaderUssClass = UssClass + "__header";
     public const string OpenInBuilderUssClass = UssClass + "__open-in-builder-button";
+    public const string BindingsSectionViewClass = UssClass + "__bindings-section";
     public const string StyleInspectorClass = UssClass + "__style-inspector";
     public const string ReadOnlyStyleInspectorClass = StyleInspectorClass + "--readonly";
 
@@ -48,9 +49,10 @@ internal sealed class VisualElementInspector : VisualElement
 
     private readonly VisualElementHeader m_Header;
     private readonly OpenInBuilderElement m_OpenInBuilder;
+    private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
+    private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
-    private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
 
     [CreateProperty]
     public VisualElement Element
@@ -68,7 +70,7 @@ internal sealed class VisualElementInspector : VisualElement
             {
                 m_OpenInBuilder.VisualTreeAsset = null;
                 m_StyleInspector.Target = new StyleInspectorTarget(null);
-                m_AttributesInspector.context.Clear();
+                m_AttributesInspector.Target = null;
             }
             else
             {
@@ -77,7 +79,7 @@ internal sealed class VisualElementInspector : VisualElement
                     : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
                 m_OpenInBuilder.VisualTreeAsset = visualTreeAsset;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
-                m_AttributesInspector.context.Set(m_Element, UxmlAttributesEditingContext.Environment.Scene, true);
+                m_AttributesInspector.Target = m_Element;
             }
             NotifyPropertyChanged(ElementProperty);
         }
@@ -98,6 +100,7 @@ internal sealed class VisualElementInspector : VisualElement
                 // Complete read-only.
                 case VisualElementEditFlags.None:
                     m_Header.SetEnabled(false);
+                    m_AttributesInspector.IsReadOnly = true;
                     m_OpenInBuilder.style.display = DisplayStyle.Flex;
                     m_StyleInspector.IsReadOnly = true;
                     m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
@@ -105,6 +108,7 @@ internal sealed class VisualElementInspector : VisualElement
                 // Attribute overrides
                 case VisualElementEditFlags.Attributes:
                     m_Header.SetEnabled(false);
+                    m_AttributesInspector.IsReadOnly = false;
                     m_OpenInBuilder.style.display = DisplayStyle.None;
                     m_StyleInspector.IsReadOnly = true;
                     m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
@@ -119,6 +123,7 @@ internal sealed class VisualElementInspector : VisualElement
                 // Full editing
                 case VisualElementEditFlags.Attributes | VisualElementEditFlags.Styles:
                     m_Header.SetEnabled(true);
+                    m_AttributesInspector.IsReadOnly = false;
                     m_OpenInBuilder.style.display = DisplayStyle.None;
                     m_StyleInspector.IsReadOnly = false;
                     m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, false);
@@ -145,7 +150,18 @@ internal sealed class VisualElementInspector : VisualElement
         m_Header = this.Q<VisualElementHeader>(className:HeaderUssClass);
         m_Header.SetEnabled(false);
         m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
+
+        // Attributes
         m_AttributesInspector = this.Q<VisualElementAttributesInspectorElement>();
+
+        // Bindings
+        var bindingsSection = this.Q<VisualElement>(className: BindingsSectionViewClass);
+
+        bindingsSection.SetEnabled(false);
+        m_BindingsInspector = bindingsSection.Q<VisualElementBindingsInspectorElement>();
+        m_BindingsInspector.ShareContext(m_AttributesInspector);
+
+        // Styles
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
     }
 
@@ -171,5 +187,10 @@ internal sealed class VisualElementInspector : VisualElement
             }
         }
         base.HandleEventBubbleUp(evt);
+    }
+
+    public void Dispose()
+    {
+        m_AttributesInspector.Context.Dispose();
     }
 }

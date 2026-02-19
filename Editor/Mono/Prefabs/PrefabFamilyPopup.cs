@@ -240,9 +240,7 @@ namespace UnityEditor
             {
                 if (m_OverridesCounter.changedCount)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    for (int i = 0; i < m_AncestorItems.Count(); ++i)
-#pragma warning restore UA2001
+                    for (int i = 0; i < m_AncestorItems.Length; ++i)
                     {
                         m_AncestorItems[i].overrideCount = m_OverridesCounter.GetCurrentOverrideCount(i);
                     }

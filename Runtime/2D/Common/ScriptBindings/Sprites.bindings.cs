@@ -5,8 +5,22 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+
+namespace UnityEngine.U2D
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpriteBlendShapeVertex
+    {
+        public uint index;
+        public Vector3 vertex;
+        public Vector3 normal;
+        public Vector3 tangent;
+    }
+}
 
 namespace UnityEngine
 {
@@ -95,8 +109,23 @@ namespace UnityEngine
         [FreeFunction("SpritesBindings::CreateSpriteWithoutTextureScripting")]
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
-        [FreeFunction("SpritesBindings::CreateSprite", ThrowsException = true)]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] SecondarySpriteTexture[] secondaryTexture);
+        [FreeFunction("SpritesBindings::CreateSprite")]
+        extern static Sprite CreateSpriteInternal(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTexture);
+
+        internal static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTexture)
+        {
+            if (secondaryTexture != null)
+            {
+                foreach (var secondarySpriteTexture in secondaryTexture)
+                {
+                    if (string.IsNullOrEmpty(secondarySpriteTexture.name))
+                        throw new ArgumentException("Empty secondary texture name provided.");
+                }
+            }
+
+            return CreateSpriteInternal(texture, rect, pivot,pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape, secondaryTexture);  
+
+        }
 
         public extern Bounds bounds
         {
@@ -127,8 +156,8 @@ namespace UnityEngine
         internal extern Texture2D GetSecondaryTexture(int index);
         // Get Secondary Texture count
         public extern int GetSecondaryTextureCount();
-        [FreeFunction("SpritesBindings::GetSecondaryTextures", ThrowsException = true, HasExplicitThis = true)]
-        public extern int GetSecondaryTextures([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] SecondarySpriteTexture[] secondaryTexture);
+        [FreeFunction("SpritesBindings::GetSecondaryTextures", HasExplicitThis = true)]
+        public extern int GetSecondaryTextures([NotNull][Out] SecondarySpriteTexture[] secondaryTexture);
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.
@@ -220,8 +249,8 @@ namespace UnityEngine
         public extern int GetPhysicsShapeCount();
 
         public extern uint GetScriptableObjectsCount();
-        [FreeFunction("SpritesBindings::GetScriptableObjects", ThrowsException = true, HasExplicitThis = true)]
-        public extern uint GetScriptableObjects([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] ScriptableObject[] scriptableObjects);
+        [FreeFunction("SpritesBindings::GetScriptableObjects", HasExplicitThis = true)]
+        public extern uint GetScriptableObjects([NotNull][Out] ScriptableObject[] scriptableObjects);
         public extern bool AddScriptableObject([NotNull]ScriptableObject obj);
         public extern bool RemoveScriptableObjectAt(uint i);
         public extern bool SetScriptableObjectAt([NotNull]ScriptableObject obj, uint i);
@@ -294,6 +323,137 @@ namespace UnityEngine
 
         [FreeFunction("SpritesBindings::OverrideGeometry", HasExplicitThis = true)]
         public extern void OverrideGeometry([NotNull] Vector2[] vertices, [NotNull] UInt16[] triangles);
+
+        // BlendShape API
+        public extern int blendShapeCount
+        {
+            [NativeMethod("GetBlendShapeChannelCount")]
+            get;
+        }
+
+        [FreeFunction(Name = "SpritesBindings::ClearBlendShapes", HasExplicitThis = true)]
+        public extern void ClearBlendShapes();
+
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeName", HasExplicitThis = true, ThrowsException = true)]
+        public extern string GetBlendShapeName(int shapeIndex);
+
+        /// <summary>
+        /// Returns the index of the blend shape with the given name, or -1 if it does not exist.
+        /// </summary>
+        /// <param name="blendShapeName">The name of the blend shape.</param>
+        /// <returns>The index of the blend shape (0-based), or -1 if not found.</returns>
+        /// <exception cref="System.ArgumentNullException">blendShapeName is null or empty.</exception>
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeIndex", HasExplicitThis = true, ThrowsException = true)]
+        extern internal int GetBlendShapeIndexInternal(string blendShapeName);
+
+        public int GetBlendShapeIndex(string blendShapeName)
+        {
+            if (string.IsNullOrEmpty(blendShapeName))
+                throw new System.ArgumentNullException(nameof(blendShapeName));
+            return GetBlendShapeIndexInternal(blendShapeName);
+        }
+
+        /// <summary>
+        /// Returns the number of frames in the given blend shape.
+        /// </summary>
+        /// <param name="shapeIndex">The index of the blend shape.</param>
+        /// <returns>The number of frames in the blend shape.</returns>
+        /// <exception cref="System.ArgumentException">shapeIndex is out of range.</exception>
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeFrameCount", HasExplicitThis = true, ThrowsException = true)]
+        public extern int GetBlendShapeFrameCount(int shapeIndex);
+
+        /// <summary>
+        /// Returns the weight of the given frame in the blend shape.
+        /// </summary>
+        /// <param name="shapeIndex">The index of the blend shape.</param>
+        /// <param name="frameIndex">The index of the frame within the blend shape.</param>
+        /// <returns>The weight of the blend shape frame.</returns>
+        /// <exception cref="System.ArgumentException">shapeIndex or frameIndex is out of range.</exception>
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeFrameWeight", HasExplicitThis = true, ThrowsException = true)]
+        public extern float GetBlendShapeFrameWeight(int shapeIndex, int frameIndex);
+
+        [FreeFunction(Name = "SpritesBindings::AddBlendShape", HasExplicitThis = true, ThrowsException = true)]
+        extern internal int AddBlendShapeInternal(string shapeName);
+
+        public int AddBlendShape(string shapeName)
+        {
+            if (string.IsNullOrEmpty(shapeName))
+                throw new System.ArgumentNullException(nameof(shapeName));
+            return AddBlendShapeInternal(shapeName);
+        }
+
+        [FreeFunction(Name = "SpritesBindings::AddBlendShapeFrame", HasExplicitThis = true, ThrowsException = true)]
+        private extern int AddBlendShapeFrame_Internal(int shapeIndex, float frameWeight, IntPtr vertices, int vertexCount);
+
+        public int AddBlendShapeFrame(int shapeIndex, float frameWeight, NativeArray<U2D.SpriteBlendShapeVertex> vertices)
+        {
+            unsafe
+            {
+                return AddBlendShapeFrame_Internal(shapeIndex, frameWeight, (IntPtr)vertices.GetUnsafePtr(), vertices.Length);
+            }
+        }
+
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeFrameVertexCount", HasExplicitThis = true, ThrowsException = true)]
+        public extern int GetBlendShapeFrameVertexCount(int shapeIndex, int frameIndex);
+
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeFrame", HasExplicitThis = true, ThrowsException = true)]
+        private extern void GetBlendShapeFrame_Internal(int shapeIndex, int frameIndex, IntPtr outVertices, int outVertexCount);
+
+        public void GetBlendShapeFrame(int shapeIndex, int frameIndex, NativeArray<U2D.SpriteBlendShapeVertex> outVertices)
+        {
+            unsafe
+            {
+                GetBlendShapeFrame_Internal(shapeIndex, frameIndex, (IntPtr)outVertices.GetUnsafePtr(), outVertices.Length);
+            }
+        }
+
+        [FreeFunction(Name = "SpritesBindings::UpdateBlendShapeFrame", HasExplicitThis = true, ThrowsException = true)]
+        private extern void UpdateBlendShapeFrame_Internal(int shapeIndex, int frameIndex, IntPtr vertices, int vertexCount);
+
+        public void UpdateBlendShapeFrame(int shapeIndex, int frameIndex, NativeArray<U2D.SpriteBlendShapeVertex> vertices)
+        {
+            unsafe
+            {
+                UpdateBlendShapeFrame_Internal(shapeIndex, frameIndex, (IntPtr)vertices.GetUnsafePtr(), vertices.Length);
+            }
+        }
+
+        [FreeFunction(Name = "SpritesBindings::GetBlendShapeBufferPtr", HasExplicitThis = true, ThrowsException = true)]
+        extern GraphicsBuffer GetBlendShapeBufferImpl(int layout);
+
+        public GraphicsBuffer GetBlendShapeBuffer(Rendering.BlendShapeBufferLayout layout)
+        {
+            if (this == null)
+                throw new System.NullReferenceException();
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogError("Only possible to access Blend Shape buffer on platforms that supports compute shaders.");
+                return null;
+            }
+
+            var buf = GetBlendShapeBufferImpl((int)layout);
+            if (buf != null)
+                buf.AddBufferToLeakDetector();
+            return buf;
+        }
+
+        public GraphicsBuffer GetBlendShapeBuffer()
+        {
+            if (this == null)
+                throw new System.NullReferenceException();
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogError("Only possible to access Blend Shape buffer on platforms that supports compute shaders.");
+                return null;
+            }
+
+            var buf = GetBlendShapeBufferImpl((int)Rendering.BlendShapeBufferLayout.PerShape);
+            if (buf != null)
+                buf.AddBufferToLeakDetector();
+            return buf;
+        }
 
         // Workaround for Overloads as described in
         [VisibleToOtherModules] 

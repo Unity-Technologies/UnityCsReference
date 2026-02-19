@@ -18,7 +18,7 @@ namespace UnityEditor
         public static void CreateAndSetTreeView(ObjectTreeForSelector.TreeSelectorData data)
         {
             Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update data.userData to use long instead of int");
-            var ignoreController = InternalEditorUtility.GetObjectFromEntityId(EntityId.From(data.userData)) as AudioMixerController;
+            var ignoreController = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)data.userData)) as AudioMixerController;
 
             // Create treeview
             var treeView = new TreeViewController<EntityId>(data.editorWindow, data.state);
@@ -240,7 +240,7 @@ namespace UnityEditor
             public override void FetchData()
             {
                 int depth = -1;
-                m_RootItem = new TreeViewItem<EntityId>(EntityId.From(1010101010), depth, null, "InvisibleRoot");
+                m_RootItem = new TreeViewItem<EntityId>(EntityId.FromULong(1010101010), depth, null, "InvisibleRoot");
                 SetExpanded(m_RootItem.id, true);
 
                 List<EntityId> allowedEntityIds = ObjectSelector.get.allowedEntityIds;

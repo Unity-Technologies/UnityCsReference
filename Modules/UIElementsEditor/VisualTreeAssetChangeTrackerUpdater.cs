@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
             public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
         }
 
-        internal struct StyleSheetToTrackMappingEntry
+        internal class StyleSheetToTrackMappingEntry
         {
             public int m_LastDirtyCount;
             public HashSet<ILiveReloadAssetTracker<StyleSheet>> m_Trackers;

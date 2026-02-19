@@ -377,120 +377,120 @@ namespace UnityEngine
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void ReleaseStringChars(JStringBinding str);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("jni", StaticAccessorType.DoubleColon)]
         public static extern IntPtr GetJavaVM();
 
         // Attaches the current thread to a Java (Dalvik) VM.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int AttachCurrentThread();
 
         // Detaches the current thread from a Java (Dalvik) VM.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int DetachCurrentThread();
 
         [RequiredByNativeCode]
         private static void InvokeAction(Action action) => action();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void InvokeAttached(Action action);
 
         // Returns the version of the native method interface.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int GetVersion();
 
         // This function loads a locally-defined class.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FindClass(string name);
 
         // Converts a <tt>java.lang.reflect.Method</tt> or <tt>java.lang.reflect.Constructor</tt> object to a method ID.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FromReflectedMethod(IntPtr refMethod);
         // Converts a <tt>java.lang.reflect.Field</tt> to a field ID.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr FromReflectedField(IntPtr refField);
         // Converts a method ID derived from clazz to a <tt>java.lang.reflect.Method</tt> or <tt>java.lang.reflect.Constructor</tt> object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ToReflectedMethod(IntPtr clazz, IntPtr methodID, bool isStatic);
         // Converts a field ID derived from cls to a <tt>java.lang.reflect.Field</tt> object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ToReflectedField(IntPtr clazz, IntPtr fieldID, bool isStatic);
 
         // If <tt>clazz</tt> represents any class other than the class <tt>Object</tt>, then this function returns the object that represents the superclass of the class specified by <tt>clazz</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetSuperclass(IntPtr clazz);
         // Determines whether an object of <tt>clazz1</tt> can be safely cast to <tt>clazz2</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsAssignableFrom(IntPtr clazz1, IntPtr clazz2);
 
         // Causes a <tt>java.lang.Throwable</tt> object to be thrown.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int Throw(IntPtr obj);
         // Constructs an exception object from the specified class with the <tt>message</tt> specified by message and causes that exception to be thrown.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int ThrowNew(IntPtr clazz, string message);
         // Determines if an exception is being thrown
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr ExceptionOccurred();
         // Prints an exception and a backtrace of the stack to the <tt>logcat</tt>
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void ExceptionDescribe();
         // Clears any exception that is currently being thrown.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void ExceptionClear();
         // Raises a fatal error and does not expect the VM to recover. This function does not return.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void FatalError(string message);
 
         // Creates a new local reference frame, in which at least a given number of local references can be created.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int PushLocalFrame(int capacity);
         // Pops off the current local reference frame, frees all the local references, and returns a local reference in the previous local reference frame for the given <tt>result</tt> object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr PopLocalFrame(IntPtr ptr);
 
         // Creates a new global reference to the object referred to by the <tt>obj</tt> argument.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewGlobalRef(IntPtr obj);
         // Deletes the global reference pointed to by <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteGlobalRef(IntPtr obj);
         // Checks that current thread is attached and deletes the global reference pointed to by <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void QueueDeleteGlobalRef(IntPtr obj);
         // Returns the number of global references to delete in queue.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern uint GetQueueGlobalRefsCount();
         // Force delete all global references in queue.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void CleanQueueGlobalRefs();
         // Creates a new global weak reference to the object referred to by the <tt>obj</tt> argument.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewWeakGlobalRef(IntPtr obj);
         // Deletes the global weak reference pointed to by <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteWeakGlobalRef(IntPtr obj);
         // Creates a new local reference that refers to the same object as <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewLocalRef(IntPtr obj);
         // Deletes the local reference pointed to by <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void DeleteLocalRef(IntPtr obj);
         // Tests whether two references refer to the same Java object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsSameObject(IntPtr obj1, IntPtr obj2);
 
         // Ensures that at least a given number of local references can be created in the current thread.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int EnsureLocalCapacity(int capacity);
 
         //-------------------------------------------
 
         // Allocates a new Java object without invoking any of the constructors for the object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr AllocObject(IntPtr clazz);
 
         // Constructs a new Java object. The method ID indicates which constructor method to invoke. This ID must be obtained by calling GetMethodID() with <init> as the method name and void (V) as the return type.
@@ -508,27 +508,27 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr NewObjectA(IntPtr clazz, IntPtr methodID, jvalue* args);
 
         // Returns the class of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectClass(IntPtr obj);
         // Tests whether an object is an instance of a class.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsInstanceOf(IntPtr obj, IntPtr clazz);
 
         // Returns the method ID for an instance (nonstatic) method of a class or interface.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetMethodID(IntPtr clazz, string name, string sig);
         // Returns the field ID for an instance (nonstatic) field of a class.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetFieldID(IntPtr clazz, string name, string sig);
         // Returns the method ID for a static method of a class.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticMethodID(IntPtr clazz, string name, string sig);
         // Returns the field ID for a static field of a class.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticFieldID(IntPtr clazz, string name, string sig);
 
         public static IntPtr NewString(string chars)
@@ -536,15 +536,15 @@ namespace UnityEngine
             return NewStringFromStr(chars);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern IntPtr NewStringFromStr(string chars);
 
         // Constructs a new <tt>java.lang.String</tt> object from an array of Unicode characters.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewString(char[] chars);
 
         // Constructs a new <tt>java.lang.String</tt> object from an array of characters in modified UTF-8 encoding.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewStringUTF(string bytes);
 
         public static string GetStringChars(IntPtr str)
@@ -553,17 +553,17 @@ namespace UnityEngine
                 return jstring.ToString();
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern JStringBinding GetStringCharsInternal(IntPtr str);
 
         // Returns the length (the count of Unicode characters) of a Java string.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int GetStringLength(IntPtr str);
         // Returns the length in bytes of the modified UTF-8 representation of a string.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int GetStringUTFLength(IntPtr str);
         // Returns a managed string object representing the string in modified UTF-8 encoding.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetStringUTFChars(IntPtr str);
 
         //---------------------------------------------
@@ -589,7 +589,7 @@ namespace UnityEngine
                 return jstring.ToString();
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern unsafe JStringBinding CallStringMethodUnsafeInternal(IntPtr obj, IntPtr methodID, jvalue* args);
 
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
@@ -607,7 +607,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr CallObjectMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int32 CallIntMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -624,7 +624,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int32 CallIntMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -641,7 +641,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe bool CallBooleanMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -658,7 +658,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int16 CallShortMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         [Obsolete("AndroidJNI.CallByteMethod is obsolete. Use AndroidJNI.CallSByteMethod method instead")]
         public static Byte CallByteMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -681,7 +681,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe SByte CallSByteMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Char CallCharMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -698,7 +698,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Char CallCharMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static float CallFloatMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -715,7 +715,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe float CallFloatMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -732,7 +732,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe double CallDoubleMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int64 CallLongMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -749,7 +749,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int64 CallLongMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static void CallVoidMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
@@ -766,7 +766,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void CallVoidMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
 
         //---------------------------------------------
@@ -778,14 +778,14 @@ namespace UnityEngine
                 return jstring.ToString();
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern JStringBinding GetStringFieldInternal(IntPtr obj, IntPtr fieldID);
 
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetBooleanField(IntPtr obj, IntPtr fieldID);
         [Obsolete("AndroidJNI.GetByteField is obsolete. Use AndroidJNI.GetSByteField method instead")]
         public static Byte GetByteField(IntPtr obj, IntPtr fieldID)
@@ -794,37 +794,37 @@ namespace UnityEngine
         }
 
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetSByteField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetCharField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetShortField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetIntField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetLongField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern float GetFloatField(IntPtr obj, IntPtr fieldID);
         // This function returns the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern double GetDoubleField(IntPtr obj, IntPtr fieldID);
 
         //---------------------------------------------
 
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStringField(IntPtr obj, IntPtr fieldID, string val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetObjectField(IntPtr obj, IntPtr fieldID, IntPtr val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetBooleanField(IntPtr obj, IntPtr fieldID, bool val);
         [Obsolete("AndroidJNI.SetByteField is obsolete. Use AndroidJNI.SetSByteField method instead")]
         public static void SetByteField(IntPtr obj, IntPtr fieldID, Byte val)
@@ -833,25 +833,25 @@ namespace UnityEngine
         }
 
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetSByteField(IntPtr obj, IntPtr fieldID, SByte val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCharField(IntPtr obj, IntPtr fieldID, Char val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetShortField(IntPtr obj, IntPtr fieldID, Int16 val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetIntField(IntPtr obj, IntPtr fieldID, Int32 val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetLongField(IntPtr obj, IntPtr fieldID, Int64 val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetFloatField(IntPtr obj, IntPtr fieldID, float val);
         // This function sets the value of an instance (nonstatic) field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetDoubleField(IntPtr obj, IntPtr fieldID, double val);
 
 
@@ -877,7 +877,7 @@ namespace UnityEngine
             using (var jstring = CallStaticStringMethodUnsafeInternal(clazz, methodID, args))
                 return jstring.ToString();
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern unsafe JStringBinding CallStaticStringMethodUnsafeInternal(IntPtr clazz, IntPtr methodID, jvalue* args);
 
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
@@ -895,7 +895,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr CallStaticObjectMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int32 CallStaticIntMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -912,7 +912,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int32 CallStaticIntMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -929,7 +929,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe bool CallStaticBooleanMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -946,7 +946,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int16 CallStaticShortMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         [Obsolete("AndroidJNI.CallStaticByteMethod is obsolete. Use AndroidJNI.CallStaticSByteMethod method instead")]
@@ -969,7 +969,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe SByte CallStaticSByteMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -986,7 +986,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Char CallStaticCharMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -1003,7 +1003,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe float CallStaticFloatMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -1020,7 +1020,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe double CallStaticDoubleMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static Int64 CallStaticLongMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -1037,7 +1037,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe Int64 CallStaticLongMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static void CallStaticVoidMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
@@ -1054,7 +1054,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void CallStaticVoidMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
 
         //---------------------------------------------
@@ -1066,13 +1066,13 @@ namespace UnityEngine
                 return jstring.ToString();
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern JStringBinding GetStaticStringFieldInternal(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetStaticObjectField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetStaticBooleanField(IntPtr clazz, IntPtr fieldID);
         [Obsolete("AndroidJNI.GetStaticByteField is obsolete. Use AndroidJNI.GetStaticSByteField method instead")]
         public static Byte GetStaticByteField(IntPtr clazz, IntPtr fieldID)
@@ -1081,37 +1081,37 @@ namespace UnityEngine
         }
 
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetStaticSByteField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetStaticCharField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetStaticShortField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetStaticIntField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetStaticLongField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern float GetStaticFloatField(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern double GetStaticDoubleField(IntPtr clazz, IntPtr fieldID);
 
         //---------------------------------------------
 
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticStringField(IntPtr clazz, IntPtr fieldID, string val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticObjectField(IntPtr clazz, IntPtr fieldID, IntPtr val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticBooleanField(IntPtr clazz, IntPtr fieldID, bool val);
         [Obsolete("AndroidJNI.SetStaticByteField is obsolete. Use AndroidJNI.SetStaticSByteField method instead")]
         public static void SetStaticByteField(IntPtr clazz, IntPtr fieldID, Byte val)
@@ -1120,30 +1120,30 @@ namespace UnityEngine
         }
 
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticSByteField(IntPtr clazz, IntPtr fieldID, SByte val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticCharField(IntPtr clazz, IntPtr fieldID, Char val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticShortField(IntPtr clazz, IntPtr fieldID, Int16 val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticIntField(IntPtr clazz, IntPtr fieldID, Int32 val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticLongField(IntPtr clazz, IntPtr fieldID, Int64 val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticFloatField(IntPtr clazz, IntPtr fieldID, float val);
         // This function ets the value of a static field of an object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetStaticDoubleField(IntPtr clazz, IntPtr fieldID, double val);
 
 
         //---------------------------------------
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr ConvertToBooleanArray(Boolean[] array);
         // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
         public static IntPtr ToBooleanArray(Boolean[] array)
@@ -1151,7 +1151,7 @@ namespace UnityEngine
             return array == null ? IntPtr.Zero : ConvertToBooleanArray(array);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [Obsolete("AndroidJNI.ToByteArray is obsolete. Use AndroidJNI.ToSByteArray method instead")]
         public static extern IntPtr ToByteArray(Byte[] array);
         // Convert a managed array of System.SByte to a Java array of <tt>byte</tt>.
@@ -1167,7 +1167,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToSByteArray(SByte* array, int length);
         // Convert a managed array of System.Char to a Java array of <tt>char</tt>.
         public static IntPtr ToCharArray(Char[] array)
@@ -1182,7 +1182,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToCharArray(Char* array, int length);
         // Convert a managed array of System.Int16 to a Java array of <tt>short</tt>.
         public static IntPtr ToShortArray(Int16[] array)
@@ -1197,7 +1197,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToShortArray(Int16* array, int length);
         // Convert a managed array of System.Int32 to a Java array of <tt>int</tt>.
         public static IntPtr ToIntArray(Int32[] array)
@@ -1212,7 +1212,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToIntArray(Int32* array, int length);
         // Convert a managed array of System.Int64 to a Java array of <tt>long</tt>.
         public static IntPtr ToLongArray(Int64[] array)
@@ -1227,7 +1227,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToLongArray(Int64* array, int length);
         // Convert a managed array of System.Single to a Java array of <tt>float</tt>.
         public static IntPtr ToFloatArray(float[] array)
@@ -1242,7 +1242,7 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToFloatArray(float* array, int length);
         // Convert a managed array of System.Double to a Java array of <tt>double</tt>.
         public static IntPtr ToDoubleArray(double[] array)
@@ -1257,11 +1257,11 @@ namespace UnityEngine
                 }
             }
         }
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToDoubleArray(double* array, int length);
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr ToObjectArray(IntPtr* array, int length, IntPtr arrayClass);
 
         public static IntPtr ToObjectArray(IntPtr[] array, IntPtr arrayClass)
@@ -1284,49 +1284,49 @@ namespace UnityEngine
         }
 
         // Convert a Java array of <tt>boolean</tt> to a managed array of System.Boolean.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Boolean[] FromBooleanArray(IntPtr array);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [Obsolete("AndroidJNI.FromByteArray is obsolete. Use AndroidJNI.FromSByteArray method instead")]
         public static extern Byte[] FromByteArray(IntPtr array);
         // Convert a Java array of <tt>byte</tt> to a managed array of System.SByte.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern SByte[] FromSByteArray(IntPtr array);
         // Convert a Java array of <tt>char</tt> to a managed array of System.Char.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Char[] FromCharArray(IntPtr array);
         // Convert a Java array of <tt>short</tt> to a managed array of System.Int16.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int16[] FromShortArray(IntPtr array);
         // Convert a Java array of <tt>int</tt> to a managed array of System.Int32.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int32[] FromIntArray(IntPtr array);
         // Convert a Java array of <tt>long</tt> to a managed array of System.Int64.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int64[] FromLongArray(IntPtr array);
         // Convert a Java array of <tt>float</tt> to a managed array of System.Single.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[] FromFloatArray(IntPtr array);
         // Convert a Java array of <tt>double</tt> to a managed array of System.Double.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern double[] FromDoubleArray(IntPtr array);
         // Convert a Java array of <tt>java.lang.Object</tt> to a managed array of System.IntPtr, representing Java objects.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr[] FromObjectArray(IntPtr array);
 
         // Returns the number of elements in the array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int GetArrayLength(IntPtr array);
 
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewBooleanArray(int size);
         [Obsolete("AndroidJNI.NewByteArray is obsolete. Use AndroidJNI.NewSByteArray method instead")]
         public static IntPtr NewByteArray(int size)
@@ -1335,32 +1335,32 @@ namespace UnityEngine
         }
 
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewSByteArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewCharArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewShortArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewIntArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewLongArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewFloatArray(int size);
         // Construct a new primitive array object.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewDoubleArray(int size);
         // Constructs a new array holding objects in class <tt>clazz</tt>. All elements are initially set to <tt>obj</tt>.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr NewObjectArray(int size, IntPtr clazz, IntPtr obj);
 
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetBooleanArrayElement(IntPtr array, int index);
         [Obsolete("AndroidJNI.GetByteArrayElement is obsolete. Use AndroidJNI.GetSByteArrayElement method instead")]
         public static Byte GetByteArrayElement(IntPtr array, int index)
@@ -1369,28 +1369,28 @@ namespace UnityEngine
         }
 
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern SByte GetSByteArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Char GetCharArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int16 GetShortArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int32 GetIntArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern Int64 GetLongArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern float GetFloatArrayElement(IntPtr array, int index);
         // Returns the value of one element of a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern double GetDoubleArrayElement(IntPtr array, int index);
         // Returns an element of an <tt>Object</tt> array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr GetObjectArrayElement(IntPtr array, int index);
 
         // Sets the value of one element in a primitive array.
@@ -1400,7 +1400,7 @@ namespace UnityEngine
             SetBooleanArrayElement(array, index, val != 0);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetBooleanArrayElement(IntPtr array, int index, bool val);
         [Obsolete("AndroidJNI.SetByteArrayElement is obsolete. Use AndroidJNI.SetSByteArrayElement method instead")]
         public static void SetByteArrayElement(IntPtr array, int index, sbyte val)
@@ -1409,33 +1409,33 @@ namespace UnityEngine
         }
 
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetSByteArrayElement(IntPtr array, int index, sbyte val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCharArrayElement(IntPtr array, int index, Char val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetShortArrayElement(IntPtr array, int index, Int16 val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetIntArrayElement(IntPtr array, int index, Int32 val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetLongArrayElement(IntPtr array, int index, Int64 val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetFloatArrayElement(IntPtr array, int index, float val);
         // Sets the value of one element in a primitive array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetDoubleArrayElement(IntPtr array, int index, double val);
         // Sets an element of an <tt>Object</tt> array.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetObjectArrayElement(IntPtr array, int index, IntPtr obj);
 
         // ------------------------------------------
         // ByteBuffer support
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe IntPtr NewDirectByteBuffer(byte* buffer, Int64 capacity);
 
         public static IntPtr NewDirectByteBuffer(NativeArray<byte> buffer)
@@ -1464,7 +1464,7 @@ namespace UnityEngine
             return null;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern long GetDirectBufferCapacity(IntPtr buffer);
 
         private static NativeArray<T> GetDirectBuffer<T>(IntPtr buffer)
@@ -1510,16 +1510,16 @@ namespace UnityEngine
             return 0;  // false-success in Editor if parameters are correct
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern IntPtr RegisterNativesAllocate(int length);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void RegisterNativesSet(IntPtr natives, int idx, string name, string signature, IntPtr fnPtr);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern int RegisterNativesAndFree(IntPtr clazz, IntPtr natives, int n);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int UnregisterNatives(IntPtr clazz);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool DumpReferenceTables();
     }
 }

@@ -38,16 +38,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var lines = new NPath(assemblyData.MovedFromExtractorFile).ReadAllLines();
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return typeNames.Any(t => lines.Contains(t));
 #pragma warning restore UA2001
+#pragma warning restore UA2006
 
             CompilerMessageParser GetCompilerMessageParser()
             {
                 if (!localizedCompilerMessages) return EnglishMessageParser;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return AlternativeLanguageMessageParser.TargetLanguages.Any(l => l == LocalizationDatabase.currentEditorLanguage)
-#pragma warning restore UA2001
+                return System.Array.Exists(AlternativeLanguageMessageParser.TargetLanguages, l => l == LocalizationDatabase.currentEditorLanguage)
                     ? AlternativeLanguageMessageParser
                     : EnglishMessageParser;
             }

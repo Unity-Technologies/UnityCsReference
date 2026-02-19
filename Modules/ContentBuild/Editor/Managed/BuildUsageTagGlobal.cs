@@ -27,8 +27,9 @@ namespace UnityEditor.Build.Content
         internal uint m_BrgShaderStripModeMask;
         internal bool m_ForceInstancingStrip;
         internal bool m_ForceInstancingKeep;
-        internal bool m_ShadowMasksUsed;
-        internal bool m_SubtractiveUsed;
+        internal bool m_HasBakedLightingData;
+        internal bool m_HasBakedShadowMaskLight;
+        internal bool m_HasBakedSubtractiveLight;
         internal bool m_HybridRendererPackageUsed;
         internal bool m_BuildForServer;
         internal bool m_LODFadeCrossfade;
@@ -43,8 +44,9 @@ namespace UnityEditor.Build.Content
             results.m_FogModesUsed = x.m_FogModesUsed | y.m_FogModesUsed;
             results.m_ForceInstancingStrip = x.m_ForceInstancingStrip | y.m_ForceInstancingStrip;
             results.m_ForceInstancingKeep = x.m_ForceInstancingKeep | y.m_ForceInstancingKeep;
-            results.m_ShadowMasksUsed = x.m_ShadowMasksUsed | y.m_ShadowMasksUsed;
-            results.m_SubtractiveUsed = x.m_SubtractiveUsed | y.m_SubtractiveUsed;
+            results.m_HasBakedLightingData = x.m_HasBakedLightingData | y.m_HasBakedLightingData;
+            results.m_HasBakedShadowMaskLight = x.m_HasBakedShadowMaskLight | y.m_HasBakedShadowMaskLight;
+            results.m_HasBakedSubtractiveLight = x.m_HasBakedSubtractiveLight | y.m_HasBakedSubtractiveLight;
             results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
             results.m_BrgShaderStripModeMask = x.m_BrgShaderStripModeMask | y.m_BrgShaderStripModeMask;
             results.m_BuildForServer = x.m_BuildForServer | y.m_BuildForServer;

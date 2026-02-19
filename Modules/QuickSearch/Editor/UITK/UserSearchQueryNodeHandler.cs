@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -73,9 +74,8 @@ namespace UnityEditor.Search
         void HandleUserQueriesAdded(ISearchEvent evt)
         {
             var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() <= 0)
+            if (queries.Length == 0)
                 return;
-
             foreach (var query in queries)
                 AddQuery(query);
             NotifyQueryListChanged();
@@ -84,7 +84,7 @@ namespace UnityEditor.Search
         void HandleUserQueriesChanged(ISearchEvent evt)
         {
             var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() <= 0)
+            if (queries.Length == 0)
                 return;
             foreach (var query in queries)
                 UpdateQuery(query);
@@ -94,12 +94,10 @@ namespace UnityEditor.Search
         void HandleUserQueriesRemoved(ISearchEvent evt)
         {
             var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() <= 0)
+            if (queries.Length == 0)
                 return;
             foreach (var query in queries)
-            {
                 RemoveQuery(query);
-            }
             NotifyQueryListChanged();
         }
 
@@ -129,7 +127,7 @@ namespace UnityEditor.Search
             var treeId = HashingUtils.GetHashCode(query.guid);
             var rootChildren = m_RootItem?.children;
             TreeViewItemData<SearchQueryNodeData>? queryItem = null;
-            if (rootChildren != null && rootChildren.GetCount() > 0)
+            if (rootChildren != null)
             {
                 foreach (var child in rootChildren)
                 {
@@ -149,10 +147,10 @@ namespace UnityEditor.Search
                 m_QueryIdLookup[treeId] = query;
 
                 // Re-insert the item sorted by new name
-                if (rootChildren.GetCount() > 0)
+                if (m_RootItem?.hasChildren ?? false)
                 {
                     m_RootItem.Value.RemoveChild(treeId);
-                    var index = GetSortedInsertionIndex(new List<TreeViewItemData<SearchQueryNodeData>>(rootChildren), queryItem.Value, s_TreeViewItemComparer);
+                    var index = GetSortedInsertionIndex(m_RootItem?.children, queryItem.Value, s_TreeViewItemComparer);
                     m_RootItem.Value.InsertChild(queryItem.Value, index);
                 }
             }
@@ -169,7 +167,7 @@ namespace UnityEditor.Search
             m_RootItem?.RemoveChild(queryId);
             m_QueryIdLookup.Remove(queryId, out _);
 
-            if (m_RootItem?.children.GetCount() == 0)
+            if (!(m_RootItem?.hasChildren ?? false))
                 m_RootItem = null;
         }
     }

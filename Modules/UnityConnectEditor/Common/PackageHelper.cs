@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
+using Unity.Collections;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Connect
@@ -24,9 +24,7 @@ namespace UnityEditor.Connect
 
         static bool HasDependencyToPackage(PackageManager.PackageInfo packageInfo, string dependencyPackageName)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return packageInfo.dependencies.Any(dependencyInfo => dependencyInfo.name.Equals(dependencyPackageName));
-#pragma warning restore UA2001
+            return packageInfo.dependencies.Exists(dependencyInfo => dependencyInfo.name.Equals(dependencyPackageName));
         }
 
         public static bool IsInstalledPackageAtMinimumVersionOrHigher(string packageName, string minimumVersionString)

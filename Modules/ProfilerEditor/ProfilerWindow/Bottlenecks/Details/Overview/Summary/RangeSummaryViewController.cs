@@ -28,8 +28,8 @@ namespace Unity.Profiling.Editor.UI
             bool rangeIsWholeCapture = false) : base(dataService, settingsService, profilerWindow, responder, detailsBinder)
         {
             m_RangeIsWholeCapture = rangeIsWholeCapture;
-            m_RangeDescriptor = (rangeIsWholeCapture) ? "capture" : "selection";
-            m_NoDataText = (rangeIsWholeCapture) ?
+            m_RangeDescriptor = rangeIsWholeCapture ? "capture" : "selection";
+            m_NoDataText = rangeIsWholeCapture ?
                 "Record a new capture or load an existing one to see its details here." :
                 "Select a frame from the charts above to see its details here.";
         }
@@ -37,7 +37,16 @@ namespace Unity.Profiling.Editor.UI
         public void ReloadData(Range frameRange)
         {
             UnityEngine.Debug.Assert(IsViewLoaded);
-            m_SelectedRange = m_RangeIsWholeCapture ? new Range(m_DataService.FirstFrameIndex, m_DataService.FirstFrameIndex + m_DataService.FrameCount) : frameRange;
+
+            if (m_DataService.FirstFrameIndex < 0 || m_DataService.FirstFrameIndex + m_DataService.FrameCount < 0)
+                m_SelectedRange = Range.All;
+            else
+            {
+                m_SelectedRange = m_RangeIsWholeCapture
+                    ? new Range(m_DataService.FirstFrameIndex, m_DataService.FirstFrameIndex + m_DataService.FrameCount)
+                    : frameRange;
+            }
+
             ReloadDataAsync(frameRange);
         }
 

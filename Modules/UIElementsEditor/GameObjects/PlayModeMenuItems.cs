@@ -20,7 +20,7 @@ namespace UnityEditor.UIElements.GameObjects
         private static readonly string k_PanelSettingsAssetPath = k_UITKEssentialResourcesFolderPath + "/PanelSettings.asset";
         private static string[] k_AssetsFolderFilter = new[] { k_AssetsFolder };
 
-        [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 11)]
+        [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 9)]
         public static void AddPanelInputConfiguration(MenuCommand menuCommand)
         {
             AddPanelInputConfiguration(menuCommand.context as GameObject);
@@ -52,7 +52,7 @@ namespace UnityEditor.UIElements.GameObjects
             Selection.activeGameObject = root;
         }
 
-        [MenuItem("GameObject/UI Toolkit/UI Document with Asset", false, 10)]
+        [MenuItem("GameObject/UI Toolkit/Legacy/UI Document with Asset", false, 11)]
         public static void AddPreFilledUIDocument(MenuCommand menuCommand)
         {
             // Creates new asset and upon successful rename will create the UIDoc & link asset
@@ -63,7 +63,7 @@ namespace UnityEditor.UIElements.GameObjects
             }));
         }
 
-        [MenuItem("GameObject/UI Toolkit/UI Document", false, 9)]
+        [MenuItem("GameObject/UI Toolkit/Legacy/UI Document", false, 10)]
         public static void AddUIDocument(MenuCommand menuCommand)
         {
             AddPanelComponentHelper<UIDocument>(menuCommand);

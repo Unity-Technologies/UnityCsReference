@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Advertisements;
 using UnityEditor.Connect.Fallback;
+using Unity.Collections;
 
 namespace UnityEditor.Connect
 {
@@ -155,9 +156,7 @@ namespace UnityEditor.Connect
                 if (!enable)
                 {
                     var notifications = NotificationManager.instance.GetNotificationsForTopics(Notification.Topic.AdsService);
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (notifications.Any(notification => notification.rawMessage == k_AdsPermissionMessage))
-#pragma warning restore UA2001
+                    if (notifications.Exists(notification => notification.rawMessage == k_AdsPermissionMessage))
                     {
                         return;
                     }

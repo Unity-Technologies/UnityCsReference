@@ -361,12 +361,10 @@ namespace UnityEditor.Search
             {
                 if (!combinedRight)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int rightReturnOriginalCount = rightReturn.Count();
-#pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int leftReturnOriginalCount = leftReturn.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                     var result = eval(new EvalHandlerArgs(null, null, SearchIndexOperator.None, false, leftReturn, rightReturn, payload));
                     results = result.results;
                     if (!result.combined)

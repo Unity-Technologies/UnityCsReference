@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEngine.LowLevelPhysics2D;
 
 namespace UnityEditor
 {
@@ -22,7 +21,6 @@ namespace UnityEditor
 
             public static readonly GUIContent kGeneralLabel = EditorGUIUtility.TrTextContent("General Settings", "General Settings");
             public static readonly GUIContent kCollisionLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Collision Settings");
-            public static readonly GUIContent kLowLevelLabel = EditorGUIUtility.TrTextContent("Low Level", "Low Level");
         }
 
         class Styles
@@ -33,12 +31,10 @@ namespace UnityEditor
         // These are to maintain UI selection.
         const string UniqueSettingsKey = "UnityEditor.U2D.Physics/";
         const string Physics2DSettingsTabKey = UniqueSettingsKey + "Physics2DSettingsTabSelected";
-        const string PhysicsLowLevelSettingsKey = "PhysicsLowLevel2D";
 
         // Tab styles.
         static GUIStyle s_TabFirstStyle;
         static GUIStyle s_TabMiddleStyle;
-        static GUIStyle s_TabLastStyle;
 
         SerializedProperty m_ReuseCollisionCallbacks;
         SerializedProperty m_AutoSyncTransforms;
@@ -54,6 +50,7 @@ namespace UnityEditor
 
         SerializedProperty m_PhysicsLowLevelSettings;
 
+
         public void OnEnable()
         {
             m_ReuseCollisionCallbacks = serializedObject.FindProperty("m_ReuseCollisionCallbacks");
@@ -68,31 +65,18 @@ namespace UnityEditor
             m_GizmoOptions = serializedObject.FindProperty("m_GizmoOptions");
 
             m_PhysicsLowLevelSettings = serializedObject.FindProperty("m_PhysicsLowLevelSettings");
-
-            // Register to be notified of undo/redo.
-            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         public void OnDisable()
         {
             // Remove any undo for the preference state.
             Undo.ClearUndo(this);
-
-            // Unregister undo/redo notifications.
-            Undo.undoRedoEvent -= OnUndoRedo;
-        }
-
-        private void OnUndoRedo(in UndoRedoInfo info)
-        {
-            if (info.undoName == PhysicsLowLevelSettingsKey)
-                LowLevelPhysics2D.PhysicsEditor.ReadProjectSettings();
         }
 
         private enum Physics2DSettingsTab : int
         {
             General = 0,
-            CollisionMatrix = 1,
-            LowLevel = 2
+            CollisionMatrix = 1
         }
 
         private Physics2DSettingsTab settingsTabSelected
@@ -109,8 +93,6 @@ namespace UnityEditor
                 style = s_TabFirstStyle;
             else if (tab == Physics2DSettingsTab.CollisionMatrix)
                 style = s_TabMiddleStyle;
-            else if (tab == Physics2DSettingsTab.LowLevel)
-                style = s_TabLastStyle;
 
             // Draw tab selector.
             if (GUILayout.Toggle(settingsTabSelected == tab, content, style))
@@ -126,7 +108,6 @@ namespace UnityEditor
             {
                 s_TabFirstStyle = "Tab first";
                 s_TabMiddleStyle = "Tab middle";
-                s_TabLastStyle = "Tab last";
             }
 
             // Tab selectors.
@@ -135,7 +116,6 @@ namespace UnityEditor
 
                 DrawTabSelector(Physics2DSettingsTab.General, Content.kGeneralLabel);
                 DrawTabSelector(Physics2DSettingsTab.CollisionMatrix, Content.kCollisionLabel);
-                DrawTabSelector(Physics2DSettingsTab.LowLevel, Content.kLowLevelLabel);
 
                 GUILayout.EndHorizontal();
             }
@@ -152,23 +132,24 @@ namespace UnityEditor
                         EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
                         EditorGUI.indentLevel++;
 
-                        // Draw standard property settings.
-                        DrawPropertiesExcluding(
-                            serializedObject,
-                            m_ReuseCollisionCallbacks.name,
-                            m_AutoSyncTransforms.name,
-                            m_SimulationMode.name,
-                            m_SimulationLayers.name,
-                            m_UseSubStepping.name,
-                            m_UseSubStepContacts.name,
-                            m_MaxSubStepCount.name,
-                            m_MinSubStepFPS.name,
-                            m_GizmoOptions.name,
-                            m_Multithreading.name,
-                            m_PhysicsLowLevelSettings.name);
+                    // Draw standard property settings.
+                    DrawPropertiesExcluding(
+                        serializedObject,
+                        m_ReuseCollisionCallbacks.name,
+                        m_AutoSyncTransforms.name,
+                        m_SimulationMode.name,
+                        m_SimulationLayers.name,
+                        m_UseSubStepping.name,
+                        m_UseSubStepContacts.name,
+                        m_MaxSubStepCount.name,
+                        m_MinSubStepFPS.name,
+                        m_GizmoOptions.name,
+                        m_Multithreading.name,
+                        m_PhysicsLowLevelSettings.name
+                        );
 
-                        // Reuse Collision Callbacks.
-                        EditorGUILayout.PropertyField(m_ReuseCollisionCallbacks);
+                    // Reuse Collision Callbacks.
+                    EditorGUILayout.PropertyField(m_ReuseCollisionCallbacks);
                         if (!m_ReuseCollisionCallbacks.boolValue)
                         {
                             EditorGUILayout.HelpBox(Content.kReuseCollisionCallbacksLabel.ToString(), MessageType.Warning, false);
@@ -240,35 +221,6 @@ namespace UnityEditor
                             (int layerA, int layerB) => { return !Physics2D.GetIgnoreLayerCollision(layerA, layerB); },
                             (int layerA, int layerB, bool val) => { Physics2D.IgnoreLayerCollision(layerA, layerB, !val); }
                             );
-                    }
-                    break;
-
-                case Physics2DSettingsTab.LowLevel:
-                    {
-                        EditorGUI.BeginChangeCheck();
-
-                        // Update object.
-                        serializedObject.Update();
-                    
-                        EditorGUI.indentLevel++;
-
-                        // Low Level Settings.
-                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing);
-                        EditorGUILayout.ObjectField(m_PhysicsLowLevelSettings, typeof(PhysicsLowLevelSettings2D));
-
-                        // Padding.
-                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
-
-                        EditorGUI.indentLevel--;
-
-                        // Apply changes.
-                        serializedObject.ApplyModifiedProperties();
-
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            Undo.RecordObject(this, PhysicsLowLevelSettingsKey);
-                            LowLevelPhysics2D.PhysicsEditor.ReadProjectSettings();
-                        }
                     }
                     break;
 

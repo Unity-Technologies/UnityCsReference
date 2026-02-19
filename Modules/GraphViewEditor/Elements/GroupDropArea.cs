@@ -16,9 +16,11 @@ namespace UnityEditor.Experimental.GraphView
             if (selection.Count == 0)
                 return false;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return !selection.Cast<GraphElement>().Any(ge => !(ge is Edge) && (ge == null || ge is Group || !ge.IsGroupable()));
-#pragma warning restore UA2001
+            return !selection.Exists(ge =>
+            {
+                var element = ge as GraphElement;
+                return !(element is Edge) && (element == null || element is Group || !element.IsGroupable());
+            });
         }
 
         public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)

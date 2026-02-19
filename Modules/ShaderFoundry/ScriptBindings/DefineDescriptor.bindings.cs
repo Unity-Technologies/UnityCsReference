@@ -13,13 +13,13 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_LocationHandle;
         internal FoundryHandle m_ListHandle;
 
-        [ThreadSafe] internal extern static DefineDescriptorInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static DefineDescriptorInternal Invalid();
 
-        [ThreadSafe] internal extern void Setup(ShaderContainer container, string name, string value);
+        [NativeMethod(IsThreadSafe = true)] internal extern void Setup(ShaderContainer container, string name, string value);
 
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
-        [ThreadSafe] internal extern string GetValue(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetValue(ShaderContainer container);
 
         // IInternalType
         DefineDescriptorInternal IInternalType<DefineDescriptorInternal>.ConstructInvalid() => Invalid();

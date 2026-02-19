@@ -843,9 +843,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public bool HasItem(string name)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return connectionItems != null && connectionItems.Any(x => x.DisplayName == name);
-#pragma warning restore UA2001
+            return connectionItems != null && connectionItems.Exists(x => x.DisplayName == name);
         }
 
         public override Vector2 GetWindowSize()

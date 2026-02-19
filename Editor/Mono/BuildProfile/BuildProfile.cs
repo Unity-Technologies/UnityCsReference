@@ -135,7 +135,33 @@ namespace UnityEditor.Build.Profile
         public string[] scriptingDefines
         {
             get => m_ScriptingDefines;
-            set => m_ScriptingDefines = value;
+            set => SetAndApplyScriptingDefines(value);
+        }
+
+        /// <summary>
+        /// Internal method for setting Scripting Defines. Cleans, applies and reloads.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")] 
+        internal void SetAndApplyScriptingDefines(string[] defines)
+        {
+            var cleanedValue = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(defines);
+
+            if (!ArrayUtility.ArrayEquals(m_ScriptingDefines, cleanedValue))
+            {
+                m_ScriptingDefines = cleanedValue;
+                EditorUtility.SetDirty(this);
+            }
+
+            if (IsActiveBuildProfileOrPlatform())
+            {
+                var lastCompiled = BuildProfileContext.instance.cachedEditorScriptingDefines;
+                
+                // Reload when actual changes happen, after cleaning has occurred
+                if (!ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiled))
+                {
+                    BuildProfileModuleUtil.RequestScriptCompilation(this);
+                }
+            }
         }
 
         [VisibleToOtherModules]
@@ -166,6 +192,13 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         [VisibleToOtherModules]
         internal BuildProfileQualitySettings qualitySettings;
+
+        /// <summary>
+        /// Required components to appear in the build profile.
+        /// </summary>
+        [VisibleToOtherModules]
+        [SerializeReference]
+        internal ScriptableObject[] requiredComponents = [];
 
         // TODO: Return server IBuildTargets for server build profiles. (https://jira.unity3d.com/browse/PLAT-6612)
         /// <summary>
@@ -334,7 +367,7 @@ namespace UnityEditor.Build.Profile
         {
             if (IsActiveBuildProfileOrPlatform())
             {
-                m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);                
+                m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
                 if (!overrideGlobalScenes)
                     EditorUserBuildSettings.SetCachedActiveProfileScenes(EditorBuildSettings.globalScenes);

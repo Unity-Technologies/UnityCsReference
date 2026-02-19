@@ -27,14 +27,58 @@ public sealed class NodeAttribute : Attribute
     public string IconPath { get; }
 
     /// <summary>
+    /// The category path of this node in the graph item library.
+    /// </summary>
+    /// <remarks>
+    /// This does not modify the node's title in the graph item library.
+    /// For example, if class A that inherits from Node has a NodeAttribute that sets its CategoryPath to "My Nodes/A",
+    /// then node A will have the path "My Nodes/A/A" inside the graph item library.
+    /// If you wish to modify the node's title, use <see cref="Title"/>.
+    /// </remarks>
+    /// <seealso cref="Title"/>
+    public string CategoryPath { get; }
+
+    /// <summary>
+    /// The title of this node in the graph item library.
+    /// </summary>
+    /// <remarks>
+    /// If <see cref="Title"/> is not empty and non-null, it serves as the default title of the node when instantiated
+    /// in a graph. You can overwrite this default title with <see cref="INode.Title"/>.
+    /// </remarks>
+    /// <seealso cref="INode.Title"/>
+    /// <seealso cref="CategoryPath"/>
+    public string Title { get; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="NodeAttribute"/> class.
     /// </summary>
-    /// <param name="iconPath">The file path to the node's icon.</param>
-    public NodeAttribute(string iconPath)
+    /// <param name="categoryPath">The category path of the node in the graph item library.</param>
+    public NodeAttribute(string categoryPath)
     {
-        if (string.IsNullOrEmpty(iconPath))
-            Debug.LogWarning("Icon path cannot be null or empty. Please provide a valid icon path. Default icon will be used.");
+        CategoryPath = categoryPath;
+    }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeAttribute"/> class.
+    /// </summary>
+    /// <param name="categoryPath">The category path of the node in the graph item library.</param>
+    /// <param name="iconPath">The file path to the node's icon.</param>
+    public NodeAttribute(string categoryPath, string iconPath)
+    {
+        CategoryPath = categoryPath;
         IconPath = iconPath;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeAttribute"/> class.
+    /// </summary>
+    /// <param name="categoryPath">The category path of the node in the graph item library.</param>
+    /// <param name="iconPath">The file path to the node's icon.</param>
+    /// <param name="title">The title of the node in the graph item library. It is also used as the title of this node when it is instantiated in a graph.</param>
+    public NodeAttribute(string categoryPath, string iconPath, string title)
+    {
+        CategoryPath = categoryPath;
+        IconPath = iconPath;
+        Title = title;
     }
 }

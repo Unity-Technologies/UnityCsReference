@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Internal;
@@ -15,15 +16,19 @@ namespace Unity.UIToolkit.Editor;
 /// Represents an inspector element that displays and allows editing of the attributes of a selected VisualElement.
 /// </summary>
 [UxmlElement]
-sealed class VisualElementAttributesInspectorElement : VisualElement
+sealed class VisualElementAttributesInspectorElement : UxmlAttributesView
 {
-    static readonly string ussClassName = "unity-attributes-inspector";
-    internal static readonly string rootPropertyFieldUssClassName = "unity-uxml-serialized-data-root-property-field";
-    static readonly string linkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
-    internal static readonly string usingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API; or did not define its UxmlSerializedData class." +
-                                                                          $" To make attributes readable and editable, update the control to use UxmlElement. <a href=\"{linkToCustomControlMigrationDoc}\">Learn more</a>.");
+    new const string UssClassName = "unity-attributes-inspector";
+    internal const string k_RootPropertyFieldUssClassName = "unity-uxml-serialized-data-root-property-field";
+    const string k_LinkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
+    internal static readonly string k_UsingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API; or did not define its UxmlSerializedData class." +
+                                                                          $" To make attributes readable and editable, update the control to use UxmlElement. <a href=\"{k_LinkToCustomControlMigrationDoc}\">Learn more</a>.");
+    public static BindingId TargetProperty = nameof(Target);
+    public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
+
+
     [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+    public new class UxmlSerializedData : UxmlAttributesView.UxmlSerializedData
     {
         /// <summary>
         /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
@@ -44,32 +49,69 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
     PropertyField m_RootPropertyField;
     HelpBox m_DeprecatedApiWarningBox;
 
-    public UxmlAttributesEditingContext context { get; private set; }
+    private bool m_IsReadOnly;
+
+    [CreateProperty]
+    public VisualElement Target
+    {
+        get => Context.element;
+        set
+        {
+            if (Context.element == value)
+                return;
+
+            if (value == null)
+                Context.Clear();
+            else
+                Context.Set(value, IsReadOnly);
+            NotifyPropertyChanged(TargetProperty);
+        }
+    }
+
+    [CreateProperty]
+    public bool IsReadOnly
+    {
+        get => m_IsReadOnly;
+        set
+        {
+            if (m_IsReadOnly == value)
+                return;
+            m_IsReadOnly = value;
+            if (Target != null)
+            {
+                Context.Set(Target, m_IsReadOnly);
+            }
+            NotifyPropertyChanged(IsReadOnlyProperty);
+        }
+    }
 
     /// <summary>
     /// Constructor for the VisualElementAttributesInspectorElement.
     /// </summary>
     public VisualElementAttributesInspectorElement()
     {
-        AddToClassList(ussClassName);
+        AddToClassList(UssClassName);
         AddToClassList(InspectorElement.ussClassName);
         AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
         AddToClassList(InspectorElement.uIECustomVariantUssClassName);
         AddToClassList(InspectorElement.customInspectorUssClassName);
-        context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
-        context.contextChanged += OnContextChanged;
+
+        Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
     }
 
-    void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)
+    void UpdateContext()
     {
-        ReleaseSelection(args.oldElement);
-        if (args.newElement != null)
+        if (Target != null)
         {
-            AcquireSelection(args.newElement);
+            Context.Set(Target, IsReadOnly);
+        }
+        else
+        {
+            Context.Clear();
         }
     }
 
-    private void AcquireSelection(VisualElement element)
+    protected override void CreateViewContent(UxmlAttributesEditingContext context)
     {
         if (context.uxmlSerializedDataDescription == null)
         {
@@ -80,7 +122,7 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
             var serializedField = context.rootSerializedObject.FindProperty(context.serializedBasePath);
 
             m_RootPropertyField = new PropertyField(serializedField);
-            m_RootPropertyField.AddToClassList(rootPropertyFieldUssClassName);
+            m_RootPropertyField.AddToClassList(k_RootPropertyFieldUssClassName);
             m_RootPropertyField.reset += OnPropertyFieldReset;
             Add(m_RootPropertyField);
             m_RootPropertyField.Bind(context.rootSerializedObject);
@@ -88,7 +130,7 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
         }
     }
 
-    private void ReleaseSelection(VisualElement element)
+    protected override void ReleaseViewContent(UxmlAttributesEditingContext context)
     {
         if (m_RootPropertyField != null)
             m_RootPropertyField.reset -= OnPropertyFieldReset;
@@ -106,7 +148,7 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
         // Set the context of the root property view.
         if (propertyView != null)
         {
-            propertyView.context = context;
+            propertyView.context = Context;
         }
     }
 
@@ -114,7 +156,7 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
     {
         if (m_DeprecatedApiWarningBox == null)
         {
-            m_DeprecatedApiWarningBox = new HelpBox(usingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning, HelpBoxMessageType.Warning);
+            m_DeprecatedApiWarningBox = new HelpBox(k_UsingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning, HelpBoxMessageType.Warning);
             Add(m_DeprecatedApiWarningBox);
         }
         m_DeprecatedApiWarningBox.style.display = DisplayStyle.Flex;

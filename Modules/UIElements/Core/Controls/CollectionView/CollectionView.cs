@@ -7,13 +7,12 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Properties;
 using System.Buffers;
-using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
-    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+    [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class CollectionView : VisualElement
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
@@ -167,15 +166,17 @@ namespace UnityEngine.UIElements.HierarchyV2
                 m_Configuration = value;
                 m_Configuration.m_View = this;
 
-                if (value is MultiColumnLayoutConfiguration multiColumnLayoutConfiguration)
+                if (MultiColumnLayout != null)
                 {
-                    Insert(0, multiColumnLayoutConfiguration.CreateMultiColumnHeader());
+                    Insert(0, MultiColumnLayout.CreateMultiColumnHeader());
                 }
 
                 UnbindAllItems();
                 RefreshItems();
             }
         }
+
+        MultiColumnLayoutConfiguration MultiColumnLayout => layoutConfiguration as MultiColumnLayoutConfiguration;
 
         /// <summary>
         /// The scroll container for the CollectionView.
@@ -372,6 +373,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             // Triggered the scroller(s) appears/disappears
             m_HorizontalScroller.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
             m_VerticalScroller.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
+            m_ScrollView.viewport.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
         }
 
         void OnDetachFromPanelEvent(DetachFromPanelEvent evt)
@@ -386,6 +388,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_ScrollView.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             m_HorizontalScroller.UnregisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
             m_VerticalScroller.UnregisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
+            m_ScrollView.viewport.UnregisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
 
             if (m_ScrollScheduledItem?.isActive == true)
             {
@@ -406,10 +409,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void OnHorizontalScrollerChangeEvent(ChangeEvent<double> evt)
         {
-            if (layoutConfiguration is MultiColumnLayoutConfiguration columnLayout)
-            {
-                columnLayout.header.ScrollHorizontally((float)evt.newValue);
-            }
+            MultiColumnLayout?.header.ScrollHorizontally((float)evt.newValue);
         }
 
         void OnHorizontalScrollerGeometryChange(GeometryChangedEvent evt)
@@ -445,6 +445,28 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             // Refresh the vertical scroll range (resolves the annoying issue of, we need to wait for the next frame to get the right dimension)
             UpdateVerticalScrollRange();
+
+            // Update the header's maxWidth to account for the scrollbar
+            if (MultiColumnLayout != null)
+                UpdateMultiColumnHeaderWidth();
+        }
+
+        void OnViewportGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Only update if width changed for multicolumn layout
+            if (Mathf.Approximately(evt.oldRect.width, evt.newRect.width)
+                || MultiColumnLayout == null)
+                return;
+
+            UpdateMultiColumnHeaderWidth();
+        }
+
+        void UpdateMultiColumnHeaderWidth()
+        {
+            var header = MultiColumnLayout.header;
+            var viewportWidth = m_ScrollView.viewport.layout.width;
+            var headerPadding = header.resolvedStyle.paddingLeft + header.resolvedStyle.paddingRight;
+            header.style.maxWidth = viewportWidth - headerPadding;
         }
 
         internal void UpdateVerticalScrollValue(double value)
@@ -783,9 +805,9 @@ namespace UnityEngine.UIElements.HierarchyV2
             var maxWidth = 0f;
             var verticalScrollerWidth = m_VerticalScroller.worldBound.width;
 
-            if (layoutConfiguration is MultiColumnLayoutConfiguration columnLayout)
+            if (MultiColumnLayout != null)
             {
-                maxWidth = columnLayout.header.columnContainer.layoutSize.x - verticalScrollerWidth;
+                maxWidth = MultiColumnLayout.header.columnContainer.layoutSize.x - verticalScrollerWidth;
             }
             else
             {
@@ -881,6 +903,11 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (forceBindItem || itemWrapper.index != index)
                 {
                     BindItem(itemWrapper, index);
+                }
+                else
+                {
+                    // Item is reused for the same index - update width to match current column widths
+                    MultiColumnLayout?.UpdateRowCellsWidth(itemWrapper.element);
                 }
 
                 // Since we are hiding the reusable items instead of removing it, we need to make them visible again.
@@ -1579,10 +1606,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
             var shiftKey = sourceEvent is KeyDownEvent { shiftKey: true } or INavigationEvent { shiftKey: true };
-            if (Apply(op, shiftKey))
-            {
-                sourceEvent.StopPropagation();
-            }
+            Apply(op, shiftKey);
 
             focusController?.IgnoreEvent(sourceEvent);
         }

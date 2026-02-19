@@ -137,7 +137,7 @@ namespace UnityEditor.Build.Reporting
 #pragma warning restore UA2001
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern Object[] GetAppendicesByType([NotNull] Type type);
 
         internal extern Object[] GetAllAppendices();
@@ -152,6 +152,8 @@ namespace UnityEditor.Build.Reporting
         internal static extern BuildReport GetReport(GUID guid);
 
         internal extern void SetBuildGUID(GUID guid);
+
+        internal extern void SetBuildSessionGUID(GUID guid);
 
         internal void ReplaceAllFileEntries(IEnumerable<NPath> paths)
         {

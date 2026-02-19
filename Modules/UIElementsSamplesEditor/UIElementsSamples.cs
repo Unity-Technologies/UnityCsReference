@@ -228,15 +228,15 @@ namespace UnityEditor.UIElements.Samples
             // Force TreeView to call onSelectionChanged when it restores its own selection from view data.
             treeView.schedule.Execute(() =>
             {
-                onSelectionChanged(treeView.selectedIndices);
+                onSelectionChanged(treeView.selectedIndicesList);
             }).StartingIn(k_TreeViewSelectionRestoreDelay);
 
             // Force TreeView to select something if nothing is selected.
             treeView.schedule.Execute(() =>
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (treeView.selectedItems.Count() > 0)
-#pragma warning restore UA2001
+                #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if (treeView.selectedItems.Any())
+#pragma warning restore UA2002
                     return;
 
                 treeView.SetSelection(0);

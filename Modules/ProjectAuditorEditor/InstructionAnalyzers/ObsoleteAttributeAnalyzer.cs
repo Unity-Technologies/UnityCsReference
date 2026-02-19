@@ -65,13 +65,15 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             return new AnalysisCache();
         }
 
-        internal override void OnAnalyzeMethodBody(MethodDefinition methodDefinition, object assemblyUserData)
+        internal override ReportItemBuilder OnAnalyzeMethodBody(MethodAnalysisContext context)
         {
-            var cache = (AnalysisCache)assemblyUserData;
+            var cache = (AnalysisCache)context.AssemblyUserData;
 
             // If the method being analyzed is obsolete, do not worry about it calling other Obsolete things
-            var obsolete = FindObsoleteAttribute(methodDefinition, cache, out var _, out var _);
+            var obsolete = FindObsoleteAttribute(context.MethodDefinition, cache, out var _, out var _);
             cache.ObsoleteMethod = (obsolete != null);
+
+            return null;
         }
 
         public override ReportItemBuilder Analyze(InstructionAnalysisContext context)

@@ -19,7 +19,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     class MultiplayerWindow : EditorWindow
     {
         public MainView MainView { get; private set; }
-        public HelpBox DisabledHelpBox;
+        private HelpBox m_DisabledHelpBox;
         private bool m_IsNarrowWindow;
         private const float k_WindowMinWidth = 275f;
         private const float k_WindowMinHeight = 400f;
@@ -40,10 +40,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Set minimum window size to prevent UI overlapping issues for non-docked mppm window
             minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
 
-            DisabledHelpBox = new HelpBox("Play Mode is currently managed by Play Mode Scenarios. Please use the dropdown next to the play button to change scenarios, " +
+            m_DisabledHelpBox = new HelpBox("Play Mode is currently managed by Play Mode Scenarios. Please use the dropdown next to the play button to change scenarios, " +
                                           "and use the configuration window to modify the scenario settings." + "\n" + "\n" +
                                           "To use the original Multiplayer Play Mode, select 'Default' from the scenario dropdown. When there is an active scenario selected all currently active players will be deactivated", HelpBoxMessageType.Info);
-            rootVisualElement.Add(DisabledHelpBox);
+            rootVisualElement.Add(m_DisabledHelpBox);
 
 
 
@@ -52,20 +52,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var currentConfig = PlayModeScenarioManager.ActiveScenario;
             MainView.SetEnabled(currentConfig.name == "Default");
             UnityPlayer[] players = MultiplayerPlaymode.Players;
-            DisabledHelpBox.style.display = currentConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
-            DisabledHelpBox.style.marginLeft = 6;
-            DisabledHelpBox.style.marginRight = 16;
-            DisabledHelpBox.style.marginTop = 8;
-            DisabledHelpBox.style.marginBottom = 10;
-            DisabledHelpBox.style.alignSelf = Align.Auto;
-            DisabledHelpBox.style.height = StyleKeyword.Auto;
-            DisabledHelpBox.style.flexShrink = 0;
+            m_DisabledHelpBox.style.display = currentConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
+            m_DisabledHelpBox.style.marginLeft = 6;
+            m_DisabledHelpBox.style.marginRight = 16;
+            m_DisabledHelpBox.style.marginTop = 8;
+            m_DisabledHelpBox.style.marginBottom = 10;
+            m_DisabledHelpBox.style.alignSelf = Align.Auto;
+            m_DisabledHelpBox.style.height = StyleKeyword.Auto;
+            m_DisabledHelpBox.style.flexShrink = 0;
 
             ScenarioManagerProvider.instance.ConfigAssetChanged += () =>
             {
                 var newConfig = PlayModeScenarioManager.ActiveScenario;
                 MainView.SetEnabled(newConfig.name == "Default");
-                DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
+                m_DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
                 foreach (var player in players)
                 {
                     if (player.PlayerState is PlayerState.Launched or PlayerState.Launching && newConfig.name != "Default")
@@ -286,8 +286,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                                         throw new ArgumentOutOfRangeException();
                                 }
                             }
-
-                            view.AddPill(newValue);
                         }
                         else
                         {

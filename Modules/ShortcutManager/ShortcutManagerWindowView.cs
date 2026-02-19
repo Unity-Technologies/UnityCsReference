@@ -299,15 +299,14 @@ namespace UnityEditor.ShortcutManagement
 
         void CategorySelectionChanged(IEnumerable<object> selection)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Assert.AreEqual(1, selection.Count());
-#pragma warning restore UA2001
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var count = selection.Count();
+#pragma warning restore UA2005
+            Assert.AreEqual(1, count);
 
             m_ShortcutsTable.selectedIndex = -1;
 
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!selection.Any())
-#pragma warning restore UA2002
+            if (count == 0)
                 m_ViewController.SetCategorySelected(null);
             else
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

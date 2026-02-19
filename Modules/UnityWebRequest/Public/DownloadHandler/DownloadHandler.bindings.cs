@@ -161,7 +161,7 @@ namespace UnityEngine.Networking
             return (T)www.downloadHandler;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [VisibleToOtherModules]
         internal extern static unsafe byte* InternalGetByteArray(DownloadHandler dh, out int length);
 
@@ -297,7 +297,7 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerVFS.h")]
     public sealed class DownloadHandlerFile : DownloadHandler
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerFile obj, string path, bool append);
 
         private void InternalCreateVFS(string path, bool append)

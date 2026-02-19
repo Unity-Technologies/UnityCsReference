@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Mono.Cecil;
 using UnityEngine;
 
@@ -14,10 +15,22 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         static readonly int k_MonoBehaviourHashCode = "UnityEngine.MonoBehaviour".GetHashCode();
         static readonly int k_ILPostProcessorHashCode = "Unity.CompilationPipeline.Common.ILPostProcessing.ILPostProcessor".GetHashCode();
 
-        static readonly string[] k_EventNames =
-        {"Awake", "Start", "OnEnable", "OnDisable", "Update", "LateUpdate", "FixedUpdate"};
+        static readonly HashSet<string> k_EventNames = new HashSet<string>(
+        [
+            "Awake", "Start", "OnEnable", "OnDisable",
+            "OnControllerColliderHit", "OnCollisionEnter2D", "OnCollisionExit2D", "OnCollisionStay2D", "OnTriggerEnter2D", "OnTriggerExit2D", "OnTriggerStay2D",
+            "OnJointBreak2D", "OnTerrainChanged", "OnCanvasHierarchyChanged", "OnCanvasGroupChanged",
+            "OnBecameVisible", "OnBecameInvisible", "OnParticleCollision", "OnParticleTrigger","OnParticleSystemStopped","OnParticleUpdateJobScheduled",
+            "OnTriggerEnter","OnTriggerExit","OnTriggerStay","OnCollisionEnter", "OnCollisionExit", "OnCollisionStay", "OnJointBreak", "RigidbodyAdded",
+            "OnApplicationPause", "OnApplicationFocus", "OnApplicationQuit", "OnLevelWasLoaded", "OnRectTransformRemoved","OnRectTransformDimensionsChange","OnChildRectTransformDimensionsChange",
+            "OnBeforeTransformParentChanged","OnTransformParentChanged","OnTransformChildrenChanged"
+        ]);
 
-        static readonly string[] k_UpdateMethodNames = {"Update", "LateUpdate", "FixedUpdate", "OnAnimatorIK", "OnAnimatorMove", "OnWillRenderObject", "OnRenderObject"};
+        static readonly HashSet<string> k_UpdateMethodNames = new HashSet<string>(
+        [
+            "Update", "LateUpdate", "FixedUpdate", "OnAnimatorIK", "OnAnimatorMove", "OnWillRenderObject", "OnRenderObject",
+            "OnPreCull", "OnPostRender", "OnPreRender"
+        ]);
 
         public static bool IsMonoBehaviour(TypeReference typeReference)
         {
@@ -53,12 +66,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 
         public static bool IsMonoBehaviourEvent(MethodDefinition methodDefinition)
         {
-            return Array.IndexOf(k_EventNames, methodDefinition.Name) != -1;
+            return IsMonoBehaviourUpdateMethod(methodDefinition) || k_EventNames.Contains(methodDefinition.Name);
         }
 
         public static bool IsMonoBehaviourUpdateMethod(MethodDefinition methodDefinition)
         {
-            return Array.IndexOf(k_UpdateMethodNames, methodDefinition.Name) != -1;
+            return k_UpdateMethodNames.Contains(methodDefinition.Name);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem m_ScrollScheduledItem;
         Action m_ScrollCallback;
 
-        public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems;
+        public override IReadOnlyList<ReusableCollectionItem> activeItems => m_ActiveItems;
 
         int m_LastFocusedElementIndex = -1;
         List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();

@@ -32,6 +32,14 @@ namespace UnityEngine.Bindings
         public T this[int i] { get; set; }
         public ref T GetRef(int i);
         public ref T GetPinnableReference();
+        public CollectionMarshallingType OutMarshallingType { get; }
+    }
+
+    [VisibleToOtherModules]
+    internal enum CollectionMarshallingType
+    {
+       SizeWithBlankElements,
+       EmptyWithCapacity
     }
 
     [VisibleToOtherModules]
@@ -39,6 +47,7 @@ namespace UnityEngine.Bindings
     [StructLayout(LayoutKind.Sequential)]
     /// <summary>
     /// Represents an array that can be marshalled to and from native code.
+
     /// </summary>
     /// <remarks
     /// Note blittable arrays that are only marshalled in are passed as spans, since they are pinned in and are not changed
@@ -54,44 +63,49 @@ namespace UnityEngine.Bindings
             PinnedBuffer = 0,
 
             /// <summary>
-            /// The collection size changed, but data is still pointing to the same pinned buffer
+            /// Data is a pointer to native memory allocated by the temp allocator, that needs to be freed
             /// </summary>
-            PinnedBufferSizeChanged = 1,
+            TempAllocated = 1,
 
             /// <summary>
             /// Data is a pointer to native memory allocated by the temp allocator, that needs to be freed
             /// </summary>
-            TempAllocated = 2,
-
-            /// <summary>
-            /// Data is a pointer to native memory allocated by the temp allocator, that needs to be freed
-            /// </summary>
-            TempAllocatedCleanupRequired = 3,
+            TempAllocatedCleanupRequired = 2,
 
             /// <summary>
             /// Data is a pointer that someone else owns, we do not need to free it
             /// </summary>
-            ExternallyOwned = 4,
+            ExternallyOwned = 3,
 
             /// <summary>
             /// Data is native owned memory, that we need to free
             /// </summary>
-            NativeOwnedMemory = 5,
+            NativeOwnedMemory = 4,
 
             /// <summary>
             /// Zero length collection
             /// </summary>
-            Empty = 6,
+            Empty = 5,
 
             /// <summary>
             ///Collection is null
             /// </summary>
-            Null = 7,
+            Null = 6,
+
+            /// <summary>
+            ///Collection is null, but is marshalled out
+            /// </summary>
+            OutNullCollection = 7,
 
             /// <summary>
             ///Collection is only marshalled out
             /// </summary>
-            Out = 8,
+            OutWithSize = 8,
+
+            /// <summary>
+            ///Collection is only marshalled out
+            /// </summary>
+            OutWithCapacity = 9,
         }
 
         internal void* data;
@@ -122,13 +136,13 @@ namespace UnityEngine.Bindings
 
         public void MarkAsOutMarshalledWithCapacity<T, TAccessor>(in TAccessor accessor) where TAccessor:ICollectionMarshallingAccessor<T>
         {
-            // We assume that if we have data, it is a pinned buffer
-            // Otherwise reseting the dataOwner to Null/Out would lose track of the pinned buffer
-            Debug.Assert(data == null || dataOwner == DataOwner.PinnedBuffer);
+            // We assume that if we have data, it is a buffer that we don't need to track/free
+            // Otherwise reseting the dataOwner to Null/Out would lose track of the buffer
+            System.Diagnostics.Debug.Assert(data == null || dataOwner == DataOwner.PinnedBuffer || dataOwner == DataOwner.ExternallyOwned);
 
             if (accessor.IsNull)
             {
-                dataOwner = DataOwner.Null;
+                dataOwner = DataOwner.OutNullCollection;
             }
             else
             {
@@ -136,7 +150,17 @@ namespace UnityEngine.Bindings
                 // The marshalling code may have already set data and capacity to a pinned/stackalloc'd buffer and we want to keep that untouched
                 // so the out marshaller can use that buffer.  But this.size is free so we use that.
                 size = accessor.Capacity;
-                dataOwner = DataOwner.Out;
+                switch (accessor.OutMarshallingType)
+                {
+                    case CollectionMarshallingType.SizeWithBlankElements:
+                        dataOwner = DataOwner.OutWithSize;
+                        break;
+                    case CollectionMarshallingType.EmptyWithCapacity:
+                        dataOwner = DataOwner.OutWithCapacity;
+                        break;
+                    default:
+                        throw new NotImplementedException($"Unhandled case for {nameof(CollectionMarshallingType)}.{accessor.OutMarshallingType}");
+                }
             }
         }
 
@@ -224,10 +248,9 @@ namespace UnityEngine.Bindings
         {
             switch (dataOwner)
             {
-                case DataOwner.PinnedBuffer:
                 case DataOwner.TempAllocated: // If we're still marked as temp allocated, then we didn't change anything
                     break;
-                case DataOwner.PinnedBufferSizeChanged:
+                case DataOwner.PinnedBuffer:
                 case DataOwner.ExternallyOwned:
                     collectionAccessor.CollectionChanged(size);
                     new ReadOnlySpan<TBlittable>(data, size).CopyTo(collectionAccessor.AsSpan());
@@ -257,10 +280,8 @@ namespace UnityEngine.Bindings
             switch (dataOwner)
             {
                 case DataOwner.PinnedBuffer:
-                    return new Span<TNative>(data, size);
                 case DataOwner.TempAllocated:
                 case DataOwner.TempAllocatedCleanupRequired:
-                case DataOwner.PinnedBufferSizeChanged:
                 case DataOwner.ExternallyOwned:
                     collectionAccessor.CollectionChanged(size);
                     return new Span<TNative>(data, size);
@@ -287,7 +308,6 @@ namespace UnityEngine.Bindings
                 case DataOwner.ExternallyOwned:
                 case DataOwner.Empty:
                 case DataOwner.Null:
-                case DataOwner.PinnedBufferSizeChanged:
                 case DataOwner.PinnedBuffer:
                     break;
                 case DataOwner.TempAllocated:

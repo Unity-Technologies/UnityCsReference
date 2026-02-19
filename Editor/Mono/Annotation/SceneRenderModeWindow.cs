@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -170,16 +171,10 @@ namespace UnityEditor
                 // Hide unsupported items and headers
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
-#pragma warning restore UA2001
-                              .Select(mode => mode.section).Distinct().Count() +
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                              .Select(mode => mode.section).DistinctCount() +
                           SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
-#pragma warning restore UA2001
-                              .Select(mode => mode.section).Distinct().Count();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                              .Select(mode => mode.section).DistinctCount();
                 modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show) +
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show);
 #pragma warning restore UA2001
 

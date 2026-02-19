@@ -55,9 +55,63 @@ namespace UnityEditorInternal.Profiling
         internal const string jobThreadNamePrefix = "Job";
         internal const string scriptingThreadNamePrefix = "Scripting Thread";
 
+        static readonly ProfilerCounterData[] k_LegacyAreaCounterNames =
+        {
+            new()
+            {
+                m_Name = "Rendering",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "Scripts",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "Physics",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "Animation",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "GarbageCollector",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "VSync",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "Global Illumination",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "UI",
+                m_Description = string.Format(ChartModelBuilder.k_LocalizedTooltipFormat, "UI") + L10n.Tr(" Includes UI systems such as UI Toolkit and Canvas (if applicable)."),
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+            new()
+            {
+                m_Name = "Others",
+                m_Category = ProfilerCategory.Scripts.Name,
+            },
+        };
 
         [NonSerialized]
         string m_LastThreadName = "";
+
+        protected override List<ProfilerCounterData> CollectDefaultChartCounters()
+        {
+            return new List<ProfilerCounterData>(k_LegacyAreaCounterNames);
+        }
 
         internal override void OnEnable()
         {

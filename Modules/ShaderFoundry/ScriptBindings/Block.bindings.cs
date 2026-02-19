@@ -30,7 +30,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_PackageRequirementListHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static BlockInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static BlockInternal Invalid();
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
 
         // IInternalType

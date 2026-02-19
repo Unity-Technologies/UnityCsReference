@@ -176,6 +176,135 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Adds a node to the Graph.
+        /// </summary>
+        /// <param name="node">The node to add.</param>
+        /// <remarks>
+        /// If the node is already in this graph, this method does nothing.
+        /// If the node is currently in another graph, it will be removed from that graph and added to this one.
+        /// </remarks>
+        public void AddNode(Node node)
+        {
+            CheckImplementation();
+            m_Implementation.AddNode(node);
+        }
+
+        /// <summary>
+        /// Removes a node from the Graph.
+        /// </summary>
+        /// <param name="node">The node to remove.</param>
+        public void RemoveNode(INode node)
+        {
+            CheckImplementation();
+            m_Implementation.RemoveNode(node);
+        }
+
+        /// <summary>
+        /// Creates and adds a new constant node to the graph.
+        /// </summary>
+        /// <param name="position">The position of the node.</param>
+        /// <param name="valueType">The type of the value held by the constant.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The newly created constant node.</returns>
+        /// <remarks> If the node is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        public IConstantNode CreateConstantNode(Vector2 position, Type valueType, object defaultValue = null)
+        {
+            CheckImplementation();
+            return m_Implementation.CreateConstantNode(position, valueType, defaultValue);
+        }
+
+        /// <summary>
+        /// Creates and adds a new constant node to the graph.
+        /// </summary>
+        /// <typeparam name="T">The type of the value held by the constant.</typeparam>
+        /// <param name="position">The position of the node.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The newly created constant node.</returns>
+        /// <remarks> If the node is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        public IConstantNode CreateConstantNode<T>(Vector2 position, T defaultValue = default)
+        {
+            return CreateConstantNode(position, typeof(T), defaultValue);
+        }
+
+        /// <summary>
+        /// Creates and adds a new variable node referencing an existing variable.
+        /// </summary>
+        /// <param name="variable">The variable to reference. Must belong to this graph.</param>
+        /// <param name="position">The position of the node.</param>
+        /// <returns>The newly created variable node.</returns>
+        public IVariableNode AddVariableNode(IVariable variable, Vector2 position)
+        {
+            CheckImplementation();
+            return m_Implementation.AddVariableNode(variable, position);
+        }
+
+        /// <summary>
+        /// Creates and adds a new subgraph node referencing an existing Graph asset.
+        /// </summary>
+        /// <param name="subgraph">The Graph asset to reference.</param>
+        /// <param name="position">The position of the node.</param>
+        /// <returns>The newly created subgraph node.</returns>
+        public ISubgraphNode AddSubgraphNode(Graph subgraph, Vector2 position)
+        {
+            CheckImplementation();
+            return m_Implementation.AddSubgraphNode(subgraph, position);
+        }
+
+        /// <summary>
+        /// Creates and adds a new local subgraph node.
+        /// </summary>
+        /// <param name="subgraphType">The type of the subgraph to create.</param>
+        /// <param name="name">The name of the local subgraph.</param>
+        /// <param name="position">The position of the node.</param>
+        /// <returns>The newly created subgraph node.</returns>
+        public ISubgraphNode CreateLocalSubgraphNode(Type subgraphType, string name, Vector2 position)
+        {
+            CheckImplementation();
+            return m_Implementation.CreateLocalSubgraphNode(subgraphType, name, position);
+        }
+
+        /// <summary>
+        /// Creates and adds a new local subgraph node.
+        /// </summary>
+        /// <typeparam name="TSubGraph">The type of the subgraph to create.</typeparam>
+        /// <param name="name">The name of the local subgraph.</param>
+        /// <param name="position">The position of the node.</param>
+        /// <returns>The newly created subgraph node.</returns>
+        public ISubgraphNode CreateLocalSubgraphNode<TSubGraph>(string name, Vector2 position) where TSubGraph : Graph, new()
+        {
+            return CreateLocalSubgraphNode(typeof(TSubGraph), name, position);
+        }
+
+        /// <summary>
+        /// Creates a wire connection between two ports.
+        /// </summary>
+        /// <param name="output">The output port to connect from.</param>
+        /// <param name="input">The input port to connect to.</param>
+        /// <returns>true if the connection was created; false if the connection already existed.</returns>
+        public bool Connect(IPort output, IPort input)
+        {
+            CheckImplementation();
+            return m_Implementation.Connect(output, input);
+        }
+
+        /// <summary>
+        /// Removes the wire connection between two ports.
+        /// </summary>
+        /// <param name="output">The output port to disconnect.</param>
+        /// <param name="input">The input port to disconnect.</param>
+        /// <returns>true if a connection (wire or portal) existed and was removed; otherwise false.</returns>
+        /// <remarks>
+        /// This method will remove direct wires. If the ports are connected via Portals, and those Portals serve only this specific connection, 
+        /// the Portals may also be removed.
+        /// </remarks>
+        public bool Disconnect(IPort output, IPort input)
+        {
+            CheckImplementation();
+            return m_Implementation.DeleteWiresBetween(output, input);
+        }
+
+
+        /// <summary>
         /// Retrieves a node defined in the graph by its index.
         /// </summary>
         /// <param name="index">The zero-based index of the node to retrieve.</param>

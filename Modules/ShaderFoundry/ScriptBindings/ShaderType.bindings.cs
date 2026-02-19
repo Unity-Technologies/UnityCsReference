@@ -241,7 +241,7 @@ namespace UnityEditor.ShaderFoundry
         internal UInt32 m_Private11;
         internal UInt32 m_Private12;
 
-        [ThreadSafe] internal static extern ShaderTypeInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal static extern ShaderTypeInternal Invalid();
 
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
         internal extern bool IsVoid { [NativeMethod(Name = "IsVoid", IsThreadSafe = true)] get; }
@@ -256,13 +256,13 @@ namespace UnityEditor.ShaderFoundry
         internal extern bool IsEnum { [NativeMethod(Name = "IsEnum", IsThreadSafe = true)] get; }
         internal extern bool IsBuffer { [NativeMethod(Name = "IsBuffer", IsThreadSafe = true)] get; }
 
-        [ThreadSafe] internal extern VectorTypeData GetVectorTypeData();
-        [ThreadSafe] internal extern MatrixTypeData GetMatrixTypeData();
-        [ThreadSafe] internal extern ArrayTypeData GetArrayTypeData();
-        [ThreadSafe] internal extern StructTypeData GetStructTypeData();
-        [ThreadSafe] internal extern ResourceTypeData GetResourceTypeData();
-        [ThreadSafe] internal extern EnumTypeData GetEnumTypeData();
-        [ThreadSafe] internal extern BufferTypeData GetBufferTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern VectorTypeData GetVectorTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern MatrixTypeData GetMatrixTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern ArrayTypeData GetArrayTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern StructTypeData GetStructTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern ResourceTypeData GetResourceTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern EnumTypeData GetEnumTypeData();
+        [NativeMethod(IsThreadSafe = true)] internal extern BufferTypeData GetBufferTypeData();
 
         internal IEnumerable<StructField> StructFields(ShaderContainer container)
         {
@@ -342,17 +342,17 @@ namespace UnityEditor.ShaderFoundry
             return new ShaderType(container, resourceData.m_Private0);
         }
 
-        [ThreadSafe] internal extern static FoundryHandle Void(ShaderContainer container);
-        [ThreadSafe] internal extern static FoundryHandle Scalar(ShaderContainer container, ScalarInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Vector(ShaderContainer container, VectorInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Matrix(ShaderContainer container, MatrixInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Texture(ShaderContainer container, TextureInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle SamplerState(ShaderContainer container, SamplerStateInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Array(ShaderContainer container, ArrayInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle BuildStruct(ShaderContainer container, FoundryHandle typeHandle, StructInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Resource(ShaderContainer container, FoundryHandle typeHandle, ResourceInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Enum(ShaderContainer container, FoundryHandle typeHandle, EnumInitializationData initData);
-        [ThreadSafe] internal extern static FoundryHandle Buffer(ShaderContainer container, FoundryHandle typeHandle, BufferInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Void(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Scalar(ShaderContainer container, ScalarInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Vector(ShaderContainer container, VectorInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Matrix(ShaderContainer container, MatrixInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Texture(ShaderContainer container, TextureInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle SamplerState(ShaderContainer container, SamplerStateInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Array(ShaderContainer container, ArrayInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle BuildStruct(ShaderContainer container, FoundryHandle typeHandle, StructInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Resource(ShaderContainer container, FoundryHandle typeHandle, ResourceInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Enum(ShaderContainer container, FoundryHandle typeHandle, EnumInitializationData initData);
+        [NativeMethod(IsThreadSafe = true)] internal extern static FoundryHandle Buffer(ShaderContainer container, FoundryHandle typeHandle, BufferInitializationData initData);
 
         // IInternalType
         ShaderTypeInternal IInternalType<ShaderTypeInternal>.ConstructInvalid() => Invalid();

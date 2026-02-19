@@ -212,12 +212,10 @@ namespace UnityEditor.U2D.SpritePacking
             return jobHandle;
         }
 
-        [NativeThrows]
-        [FreeFunction("PackCustomSprites")]
+        [FreeFunction("PackCustomSprites", ThrowsException = true)]
         extern internal unsafe static IntPtr PackCustomSpritesInternal(int spriteCount, SpritePackDatasetInternal* data, SpritePackConfig packConfig);
 
-        [NativeThrows]
-        [FreeFunction("SpritePacking::FitSpriteAtlas")]
+        [FreeFunction("SpritePacking::FitSpriteAtlas", ThrowsException = true)]
         extern internal unsafe static JobHandle FitSpriteAtlasInternal(string spriteAtlasPath, SpriteFitInfo* data, int dataCount);
     }
 }

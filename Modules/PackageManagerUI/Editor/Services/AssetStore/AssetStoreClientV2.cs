@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<AssetStorePurchases> onProductListFetched;
         event Action<long> onProductExtraFetched;
         event Action<IOperation> onListOperation;
-        event Action<IEnumerable<long>> onUpdateChecked;
+        event Action<IReadOnlyCollection<long>> onUpdateChecked;
 
         void ExtraFetch(long productId);
         void FetchPurchaseInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null);
@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IOperation> onListOperation = delegate {};
 
-        public event Action<IEnumerable<long>> onUpdateChecked = delegate {};
+        public event Action<IReadOnlyCollection<long>> onUpdateChecked = delegate {};
 
         [SerializeField]
         private AssetStoreListOperation m_ListOperation;

@@ -27,9 +27,9 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class PrimitiveTests
     {
-        [NativeThrows] public static extern void ParameterBool(bool param1, bool param2, int param3);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterBool(bool param1, bool param2, int param3);
 
-        [NativeThrows] public static extern void ParameterInt(int param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterInt(int param);
 
         public static extern void ParameterOutInt(out int param);
 
@@ -37,9 +37,9 @@ namespace UnityEngine
 
         public static extern int ReturnInt();
 
-        [NativeThrows] public static extern void ParameterIntVector(int[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntVector(int[] param);
 
-        [NativeThrows] public static extern void ParameterIntNullableVector(int[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntNullableVector(int[] param);
 
         public static extern int[] ReturnIntVector();
 
@@ -76,25 +76,25 @@ namespace UnityEngine
     {
         public static extern void SetTestOutString(string testString);
 
-        [NativeThrows] public static extern void ParameterICallString(string param);
-        [NativeThrows] public static extern void ParameterICallNullString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterICallString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterICallNullString(string param);
 
-        [NativeThrows] public static extern void ParameterCoreString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCoreString(string param);
 
-        [NativeThrows] public static extern void ParameterConstCharPtr(string param);
-        [NativeThrows] public static extern void ParameterConstCharPtrNull(string param);
-        [NativeThrows] public static extern void ParameterConstCharPtrEmptyString(string param);
-        [NativeThrows] public static extern void ParameterNullableString(string param);
-        [NativeThrows] public static extern void ParameterNullableStringNull(string param);
-        [NativeThrows] public static extern void ParameterNullableStringEmptyString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterConstCharPtr(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterConstCharPtrNull(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterConstCharPtrEmptyString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNullableString(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNullableStringNull(string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNullableStringEmptyString(string param);
 
-        [NativeThrows] public static extern void ParameterCoreStringVector(string[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCoreStringVector(string[] param);
 
-        [NativeThrows] public static extern void ParameterStructCoreString(StructCoreString param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructCoreString(StructCoreString param);
 
-        [NativeThrows] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
 
-        [NativeThrows] public static extern StructCoreString TestCoreStringViaProxy(StructCoreString param);
+        [NativeMethod(ThrowsException = true)] public static extern StructCoreString TestCoreStringViaProxy(StructCoreString param);
 
         public static extern string ReturnCoreString();
         public static extern string ReturnCoreStringRef();
@@ -110,12 +110,12 @@ namespace UnityEngine
 
         public static extern StructCoreStringVector ReturnStructCoreStringVector();
 
-        [NativeThrows] public static extern void ParameterOutString(out string param);
-        [NativeThrows] public static extern void ParameterOutStringInNull(out string param);
-        [NativeThrows] public static extern void ParameterOutStringNotSet(out string param);
-        [NativeThrows] public static extern void ParameterRefString(ref string param);
-        [NativeThrows] public static extern void ParameterRefStringInNull(ref string param);
-        [NativeThrows] public static extern void ParameterRefStringNotSet(ref string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterOutString(out string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterOutStringInNull(out string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterOutStringNotSet(out string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterRefString(ref string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterRefStringInNull(ref string param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterRefStringNotSet(ref string param);
     }
 
     // --------------------------------------------------------------------
@@ -153,28 +153,28 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class BlittableStructTests
     {
-        [NativeThrows] public static extern void ParameterStructInt(StructInt param);
-        [NativeThrows] public static extern void ParameterStructIntByRef(ref StructInt param);
-        [NativeThrows] public static extern void ParameterStructIntIn(in StructInt param);
-        [NativeThrows] public static extern void ParameterStructIntOut(out StructInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructInt(StructInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntByRef(ref StructInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntIn(in StructInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntOut(out StructInt param);
 
         public static extern void ParameterStructInt2(StructInt2 param);
 
         public static extern StructInt ReturnStructInt();
 
-        [NativeThrows] public static extern void ParameterNestedBlittableStruct(StructNestedBlittable s);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNestedBlittableStruct(StructNestedBlittable s);
 
         public static extern StructNestedBlittable ReturnNestedBlittableStruct();
 
-        [NativeThrows] public static extern void ParameterStructIntVector(StructInt[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntVector(StructInt[] param);
 
         public static extern StructInt[] ReturnStructIntVector();
 
-        [NativeThrows] public static extern void ParameterStructNestedBlittableVector(StructNestedBlittable[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructNestedBlittableVector(StructNestedBlittable[] param);
 
         public static extern StructNestedBlittable[] ReturnStructNestedBlittableVector();
 
-        [NativeThrows] public static extern void ParameterStructFixedBuffer(StructFixedBuffer param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructFixedBuffer(StructFixedBuffer param);
 
         public static extern StructFixedBuffer ReturnStructFixedBuffer();
 
@@ -185,7 +185,7 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class RealWorldTypesTests
     {
-        [NativeThrows] public static extern void GetAccessibilityNodeData();
+        [NativeMethod(ThrowsException = true)] public static extern void GetAccessibilityNodeData();
     }
 
     // --------------------------------------------------------------------
@@ -254,15 +254,15 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class IntPtrObjectTests
     {
-        [NativeThrows] public static extern void ParameterIntPtrObject(MyIntPtrObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntPtrObject(MyIntPtrObject param);
 
-        [NativeThrows] public static extern void ParameterIntPtrObjectVector(MyIntPtrObject[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntPtrObjectVector(MyIntPtrObject[] param);
 
-        [NativeThrows] public static extern void ParameterStructIntPtrObject(StructIntPtrObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntPtrObject(StructIntPtrObject param);
 
         public static extern MyIntPtrObject[] ReturnIntPtrObjectVector();
 
-        [NativeThrows] public static extern void ParameterStructIntPtrObjectVector(StructIntPtrObjectVector param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructIntPtrObjectVector(StructIntPtrObjectVector param);
 
         public static extern MyIntPtrObject ReturnIntPtrObject(int value);
     }
@@ -337,21 +337,31 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class UnityObjectTests
     {
-        [NativeThrows] public static extern void ParameterUnityObject(MarshallingTestObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObject(MarshallingTestObject param);
 
-        [NativeThrows] public static extern void ParameterUnityObjectByRef(ref MarshallingTestObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectByRef(ref MarshallingTestObject param);
 
-        [NativeThrows] public static extern void ParameterUnityObjectPPtr(MarshallingTestObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectPPtr(MarshallingTestObject param);
 
-        [NativeThrows] public static extern void ParameterStructUnityObject(StructUnityObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructUnityObject(StructUnityObject param);
 
-        [NativeThrows] public static extern void ParameterStructUnityObjectPPtr(StructUnityObjectPPtr param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructUnityObjectPPtr(StructUnityObjectPPtr param);
 
-        [NativeThrows] public static extern void ParameterStructUnityObjectVector(StructUnityObjectVector param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructUnityObjectVector(StructUnityObjectVector param);
 
-        [NativeThrows] public static extern void ParameterUnityObjectVector(MarshallingTestObject[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructUnityObjectVectorOut(out StructUnityObjectVector param, int expectedLength);
 
-        [NativeThrows] public static extern void ParameterUnityObjectPPtrVector(MarshallingTestObject[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectVector(MarshallingTestObject[] param);
+
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectPPtrVector(MarshallingTestObject[] param);
+
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectNullCoreVector(MarshallingTestObject[] param);
+
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterUnityObjectPPtrNullCoreVector(MarshallingTestObject[] param);
+
+        [NativeMethod("ParameterUnityObjectNullCoreVector", ThrowsException = true)] public static extern void ParameterUnityObjectNullCoreVectorOut([Out] MarshallingTestObject[] param);
+
+        [NativeMethod("ParameterUnityObjectPPtrNullCoreVector", ThrowsException = true)] public static extern void ParameterUnityObjectPPtrNullCoreVectorOut([Out] MarshallingTestObject[] param);
 
         public static extern MarshallingTestObject ReturnUnityObject();
         public static extern MarshallingTestObject ReturnInUnityObject(MarshallingTestObject obj);
@@ -387,13 +397,13 @@ namespace UnityEngine
         public static extern void ArrayParameterNullAllowed(int[] param);
         public static extern void ArrayParameterNullNotAllowed([NotNull] int[] param);
 
-        [NativeThrows] public static extern void ObjectParameterNullAllowed(MarshallingTestObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void ObjectParameterNullAllowed(MarshallingTestObject param);
         public static extern void ObjectParameterNullNotAllowed([NotNull] MarshallingTestObject param);
 
         public static extern void WritableObjectParameterNullAllowed([Writable] MarshallingTestObject param);
         public static extern void WritableObjectParameterNullNotAllowed([NotNull][Writable] MarshallingTestObject param);
 
-        [NativeThrows] public static extern void IntPtrObjectParameterNullAllowed(MyIntPtrObject param);
+        [NativeMethod(ThrowsException = true)] public static extern void IntPtrObjectParameterNullAllowed(MyIntPtrObject param);
         public static extern void IntPtrObjectParameterNullNotAllowed([NotNull] MyIntPtrObject param);
     }
     // --------------------------------------------------------------------
@@ -424,13 +434,13 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class ManagedObjectTests
     {
-        [NativeThrows] public static extern MyManagedObject ParameterManagedObject(MyManagedObject param);
-        [NativeThrows] public static extern StructManagedObject ParameterStructManagedObject(StructManagedObject param);
+        [NativeMethod(ThrowsException = true)] public static extern MyManagedObject ParameterManagedObject(MyManagedObject param);
+        [NativeMethod(ThrowsException = true)] public static extern StructManagedObject ParameterStructManagedObject(StructManagedObject param);
         public static extern MyManagedObject[] ReturnNullManagedObjectArray();
 
-        [NativeThrows] public static extern MyManagedObject[] ParameterManagedObjectVector(MyManagedObject[] param);
+        [NativeMethod(ThrowsException = true)] public static extern MyManagedObject[] ParameterManagedObjectVector(MyManagedObject[] param);
 
-        [NativeThrows] public static extern StructManagedObjectVector ParameterStructManagedObjectVector(StructManagedObjectVector param);
+        [NativeMethod(ThrowsException = true)] public static extern StructManagedObjectVector ParameterStructManagedObjectVector(StructManagedObjectVector param);
 
         public static extern void ManagedObjectToGCHandleInNative([UnityMarshalAs(NativeType.ScriptingObjectPtr)] object param);
         public static extern void ManagedObjectMarshalledAsGCHandle([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Strong)] object param);
@@ -441,6 +451,12 @@ namespace UnityEngine
         [return: UnityMarshalAs(NativeType.GCHandle)]
         public static extern object GCHandleReturnsMarshalledAsObject(GCHandle handle);
 
+        [RequiredByNativeCode]
+        static bool ApplyModificationToManagedObject(MyManagedObject o, int value)
+        {
+            o.value = value;
+            return true;
+        }
     }
 
     // --------------------------------------------------------------------
@@ -572,7 +588,7 @@ namespace UnityEngine
 
         public extern int ParameterWritable([Writable] UnityEngine.Object unityObject);
 
-        [NativeThrows] public static extern void ParameterInt(int param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterInt(int param);
 
         public static extern int ReturnInt();
 
@@ -604,34 +620,34 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class ExceptionTests
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void VoidReturnStringParameter(string param);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern int NonUnmarshallingReturn();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern string UnmarshallingReturn();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern StructInt BlittableStructReturn();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern StructCoreString NonblittableStructReturn();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern int PropertyThatCanThrow { get; set; }
 
         public static extern int PropertyGetThatCanThrow
         {
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             get;
             set;
         }
         public static extern int PropertySetThatCanThrow
         {
             get;
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             set;
         }
     }
@@ -640,19 +656,19 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class ExceptionTypeTests
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void NullReferenceException(string nativeFormat, string values);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ArgumentNullException(string argumentName);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ArgumentException(string nativeFormat, string values);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void InvalidOperationException(string nativeFormat, string values);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void IndexOutOfRangeException(string nativeFormat, int index);
     }
 
@@ -672,7 +688,7 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class EnumTests
     {
-        [NativeThrows] public static extern void ParameterVectorEnum(SomeEnum[] enumArray);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterVectorEnum(SomeEnum[] enumArray);
         public static extern void ParameterOutVectorEnum([Out] SomeEnum[] enumArray);
     }
 
@@ -766,34 +782,35 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class NonBlittableStructTests
     {
-        [NativeThrows] public static extern void ParameterStructWithStringIntAndFloat(StructWithStringIntAndFloat param);
-        [NativeThrows] public static extern void RefParameterStructWithStringIntAndFloat(ref StructWithStringIntAndFloat param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithStringIntAndFloat(StructWithStringIntAndFloat param);
+        [NativeMethod(ThrowsException = true)] public static extern void RefParameterStructWithStringIntAndFloat(ref StructWithStringIntAndFloat param);
         public static extern void OutParameterStructWithStringIntAndFloat(out StructWithStringIntAndFloat param);
         public static extern void ParameterStructWithStringIntAndFloat2(StructWithStringIntAndFloat2 param);
-        [NativeThrows] public static extern void ParameterStructWithStringIgnoredIntAndFloat(StructWithStringIgnoredIntAndFloat param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithStringIgnoredIntAndFloat(StructWithStringIgnoredIntAndFloat param);
 
-        [NativeThrows] public static extern void ParameterStructWithStringIntAndFloatArray(StructWithStringIntAndFloat[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithStringIntAndFloatArray(StructWithStringIntAndFloat[] param);
         public static extern StructWithStringIntAndFloat[] ReturnStructWithStringIntAndFloatArray();
 
-        [NativeThrows] public static extern void ParameterStructWithNonBlittableArrayField(StructWithNonBlittableArrayField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableArrayField(StructWithNonBlittableArrayField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableArrayFieldOut(out StructWithNonBlittableArrayField param, int expectedArraySize);
         public static extern StructWithNonBlittableArrayField ReturnStructWithNonBlittableArrayField();
 
-        [NativeThrows] public static extern void CanMarshalManagedObjectToStruct(ClassToStruct param);
-        [NativeThrows] public static extern void CanMarshalOutManagedObjectToStruct([In, Out] ClassToStruct param);
-        [NativeThrows] public static extern void CanMarshalStructWithNativeAsStructField(StructWithClassToStruct param);
-        [NativeThrows] public static extern void CanMarshalNativeAsStructArray(ClassToStruct[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void CanMarshalManagedObjectToStruct(ClassToStruct param);
+        [NativeMethod(ThrowsException = true)] public static extern void CanMarshalOutManagedObjectToStruct([In, Out] ClassToStruct param);
+        [NativeMethod(ThrowsException = true)] public static extern void CanMarshalStructWithNativeAsStructField(StructWithClassToStruct param);
+        [NativeMethod(ThrowsException = true)] public static extern void CanMarshalNativeAsStructArray(ClassToStruct[] param);
         public static extern ClassToStruct CanUnmarshalManagedObjectFromStruct();
         public static extern StructWithClassToStruct CanUnmarshalStructWithNativeAsStructField();
         public static extern ClassToStruct[] CanUnmarshalNativeAsStructArray();
 
-        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutNull(StructWithNullableString param, out StructWithNullableString outputParam);
-        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutNull(StructWithNullableArray param, out StructWithNullableArray outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableStringInAndOutNull(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableArrayInAndOutNull(StructWithNullableArray param, out StructWithNullableArray outputParam);
 
-        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
-        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableStringInAndOutEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableArrayInAndOutEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
 
-        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutNotNullNotEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
-        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutNotNullNotEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableStringInAndOutNotNullNotEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeMethod(ThrowsException = true)] public static extern void ParamStructWithNullableArrayInAndOutNotNullNotEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
     }
 
     // --------------------------------------------------------------------
@@ -891,8 +908,8 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class BoolStructTests
     {
-        [NativeThrows] public static extern void ParameterStructWith8ByteAndBoolFields(StructWith8ByteAndBoolFields param);
-        [NativeThrows] public static extern void ParameterStructWith8ByteAndBoolFieldsArray(StructWith8ByteAndBoolFields[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWith8ByteAndBoolFields(StructWith8ByteAndBoolFields param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWith8ByteAndBoolFieldsArray(StructWith8ByteAndBoolFields[] param);
     }
 
     struct BlittableCornerCases
@@ -918,17 +935,17 @@ namespace UnityEngine
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeArrayTests
     {
-        [NativeThrows] public static extern void ParameterIntArrayReadOnly(int[] param);
-        [NativeThrows] public static extern void ParameterIntArrayWritable(int[] param);
-        [NativeThrows] public static extern void ParameterIntArrayEmpty(int[] param, int[] param2);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntArrayReadOnly(int[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntArrayWritable(int[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntArrayEmpty(int[] param, int[] param2);
         public static extern void ParameterIntArrayNullExceptions([NotNull] int[] param);
-        [NativeThrows] public static extern void ParameterIntMultidimensionalArray(int[,] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntMultidimensionalArray(int[,] param);
         public static extern void ParameterIntMultidimensionalArrayNullExceptions([NotNull] int[,] param);
-        [NativeThrows] public static extern void ParameterCharArrayReadOnly(char[] param);
-        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructArrayReadOnly(BlittableCornerCases[] param);
-        [NativeThrows] public static extern void ParameterIntArrayOutAttr([Out] int[] param);
-        [NativeThrows] public static extern void ParameterCharArrayOutAttr([Out]char[] param);
-        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructArrayOutAttr([Out]BlittableCornerCases[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCharArrayReadOnly(char[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterBlittableCornerCaseStructArrayReadOnly(BlittableCornerCases[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntArrayOutAttr([Out] int[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCharArrayOutAttr([Out]char[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterBlittableCornerCaseStructArrayOutAttr([Out]BlittableCornerCases[] param);
         public static extern int[] ParameterIntArrayReturn();
         public static extern int[] ParameterIntArrayReturnEmpty();
         public static extern int[] ParameterIntArrayReturnNull();
@@ -1003,13 +1020,13 @@ namespace UnityEngine
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeSpanTests
     {
-        [NativeThrows] public static extern void ParameterIntReadOnlySpan(ReadOnlySpan<int> param);
-        [NativeThrows] public static extern void ParameterIntSpan(Span<int> param);
-        [NativeThrows] public static extern void ParameterBoolReadOnlySpan(ReadOnlySpan<bool> param);
-        [NativeThrows] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
-        [NativeThrows] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
-        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
-        [NativeThrows] public static extern void ParameterStructWithSelfPointerSpan(Span<StructWithSelfPointer> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntReadOnlySpan(ReadOnlySpan<int> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterIntSpan(Span<int> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterBoolReadOnlySpan(ReadOnlySpan<bool> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithSelfPointerSpan(Span<StructWithSelfPointer> param);
         public static extern Span<int> ReturnsArrayRefWritableAsSpan(int val1, int val2, int val3);
         public static extern Span<int> ReturnsVectorRefAsSpan(int val1, int val2, int val3);
         public static extern Span<int> ReturnsScriptingSpanAsSpan(int val1, int val2, int val3);
@@ -1024,20 +1041,20 @@ namespace UnityEngine
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class BlittableListOfTTests
     {
-        [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntReadChangeVaules(List <int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntAddNoGrow(List <int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntAddAndGrow(List <int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntPassNullThrow([NotNull] List <int> param);
-        [NativeThrows] public static extern void ParameterListOfIntPassNullNoThrow(List<int> param);
-        [NativeThrows] public static extern void ParameterListOfIntNativeAllocateSmaller(List<int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntNativeAttachOtherMemoryBlock(List<int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfIntNativeCallsClear(List<int> param, int expectedCapacity);
-        [NativeThrows] public static extern void ParameterListOfBoolReadWrite(List<bool> param);
-        [NativeThrows] public static extern void ParameterListOfCharReadWrite(List<char> param);
-        [NativeThrows] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
-        [NativeThrows] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
-        [NativeThrows] public static extern void PamameterArrayOfStructsWithListsAddWithCapacity([In, Out] StructWithBlittableListField[] param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntRead(List <int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntReadChangeVaules(List <int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntAddNoGrow(List <int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntAddAndGrow(List <int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntPassNullThrow([NotNull] List <int> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntPassNullNoThrow(List<int> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntNativeAllocateSmaller(List<int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntNativeAttachOtherMemoryBlock(List<int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfIntNativeCallsClear(List<int> param, int expectedCapacity);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfBoolReadWrite(List<bool> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfCharReadWrite(List<char> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
+        [NativeMethod(ThrowsException = true)] public static extern void PamameterArrayOfStructsWithListsAddWithCapacity([In, Out] StructWithBlittableListField[] param);
     }
 
     // --------------------------------------------------------------------
@@ -1045,39 +1062,39 @@ namespace UnityEngine
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class NonBlittableListOfTTests
     {
-        [NativeThrows] public static extern void ParameterRead([In] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterReadChangeValues([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterAdd([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterPassNullThrow([NotNull,In] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterPassNullNoThrow([In] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterNativeAllocateSmaller([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterNativeAttachOtherMemoryBlock([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterNativeCallsClear([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterNativeRemovesItem([In,Out] List<StructWithStringIntAndFloat> param);
-        [NativeThrows] public static extern void ParameterOutOnly([Out] List<StructWithStringIntAndFloat> param, StructWithStringIntAndFloat item1, StructWithStringIntAndFloat item2);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterRead([In] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterReadChangeValues([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterAdd([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterPassNullThrow([NotNull,In] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterPassNullNoThrow([In] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeAllocateSmaller([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeAttachOtherMemoryBlock([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeCallsClear([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeRemovesItem([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterOutOnly([Out] List<StructWithStringIntAndFloat> param, StructWithStringIntAndFloat item1, StructWithStringIntAndFloat item2);
 
-        [NativeThrows] public static extern void ParameterStructWithNonBlittableList(StructWithNonBlittableListField param);
-        [NativeThrows] public static extern void ParameterStructWithNonBlittableListByRef(ref StructWithNonBlittableListField param);
-        [NativeThrows] public static extern void ParameterStructWithNonBlittableListIn(in StructWithNonBlittableListField param);
-        [NativeThrows] public static extern void ParameterStructWithNonBlittableListOut(out StructWithNonBlittableListField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableList(StructWithNonBlittableListField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableListByRef(ref StructWithNonBlittableListField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableListIn(in StructWithNonBlittableListField param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterStructWithNonBlittableListOut(out StructWithNonBlittableListField param, int expectedSizeOrCapacity);
         public static extern StructWithNonBlittableListField ReturnStructWithNonBlittableList();
 
-        [NativeThrows] public static extern void ParameterReadUnityObjectVector([In] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterReadUnityObjectPPtrVector([In] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterReadChangeValuesUnityObjectVector([In,Out] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterReadChangeValuesUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterAddUnityObjectVector([In,Out] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterAddUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterNativeRemovesItemUnityObjectVector([In,Out] List<MarshallingTestObject> param);
-        [NativeThrows] public static extern void ParameterNativeRemovesItemUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterReadUnityObjectVector([In] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterReadUnityObjectPPtrVector([In] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterReadChangeValuesUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterReadChangeValuesUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterAddUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterAddUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeRemovesItemUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterNativeRemovesItemUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
 
-        [NativeThrows] public static extern void ParameterTwoListOfStringAddWithCapacity([In,Out] List<string> param1, [In,Out] List<string> param2);
-        [NativeThrows] public static extern void ParameterListOfStringRefAddWithCapacity([In,Out] List<string> param);
-        [NativeThrows] public static extern void ParameterListOfConstCharPtrAddWithCapacity([In,Out] List<string> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterTwoListOfStringAddWithCapacity([In,Out] List<string> param1, [In,Out] List<string> param2);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfStringRefAddWithCapacity([In,Out] List<string> param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterListOfConstCharPtrAddWithCapacity([In,Out] List<string> param);
         
-        [NativeThrows] public static extern void ParameterCheckNullableWithNull([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
-        [NativeThrows] public static extern void ParameterCheckNullableWithNotNullEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
-        [NativeThrows] public static extern void ParameterCheckNullableWithNotNullNotEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCheckNullableWithNull([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCheckNullableWithNotNullEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterCheckNullableWithNotNullNotEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
     }
 
     // --------------------------------------------------------------------
@@ -1270,100 +1287,82 @@ namespace UnityEngine
             public static int ConvertToUnmanaged(ICustomMarshalled c) => c == null ? 0 : int.Parse(c.Value) * 2;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalled(CustomMarshalledClass arg, int expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalledIn(in CustomMarshalledClass arg, int expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalledOut(out CustomMarshalledClass arg, int expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalledRef(ref CustomMarshalledClass arg, int expected);
         public static extern CustomMarshalledClass ParameterCustomMarshalledReturn(int value);
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledIn")]
+        [NativeMethod("ParameterCustomMarshalledIn", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledIn_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] in CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledOut")]
+        [NativeMethod("ParameterCustomMarshalledOut", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledOut_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] out CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledRef")]
+        [NativeMethod("ParameterCustomMarshalledRef", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledRef_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] ref CustomMarshalledClass arg, int expected);
 
         [NativeMethod("ParameterCustomMarshalledReturn")]
         [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))]
         public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_Attribute(int value);
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledIn")]
+        [NativeMethod("ParameterCustomMarshalledIn", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledIn_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] in CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledOut")]
+        [NativeMethod("ParameterCustomMarshalledOut", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledOut_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] out CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledRef")]
+        [NativeMethod("ParameterCustomMarshalledRef", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledRef_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] ref CustomMarshalledClass arg, int expected);
 
         [NativeMethod("ParameterCustomMarshalledReturn")]
         [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))]
         public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_CustomMarshallerUsesInParameters(int value);
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledIn")]
+        [NativeMethod("ParameterCustomMarshalledIn", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledIn_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] in CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledOut")]
+        [NativeMethod("ParameterCustomMarshalledOut", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledOut_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] out CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledRef")]
+        [NativeMethod("ParameterCustomMarshalledRef", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledRef_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] ref CustomMarshalledClass arg, int expected);
         [NativeMethod("ParameterCustomMarshalledReturn")]
         [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))]
         public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_Free(int value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_NeedingMarshalling([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] CustomMarshalledClass arg, string expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_NeedingMarshalling_In([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] in CustomMarshalledClass arg, string expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_NeedingMarshalling_Out([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] out CustomMarshalledClass arg, string expected);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_NeedingMarshalling_Ref([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] ref CustomMarshalledClass arg, string expected);
         [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))]
         public static extern CustomMarshalledClass ParameterCustomMarshalled_NeedingMarshalling_Return(string value);
 
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledIn")]
+        [NativeMethod("ParameterCustomMarshalledIn", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledIn_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] in CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledOut")]
+        [NativeMethod("ParameterCustomMarshalledOut", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledOut_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] out CustomMarshalledClass arg, int expected);
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalledRef")]
+        [NativeMethod("ParameterCustomMarshalledRef", ThrowsException = true)]
         public static extern void ParameterCustomMarshalledRef_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] ref CustomMarshalledClass arg, int expected);
         [NativeMethod("ParameterCustomMarshalledReturn")]
         [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))]
         public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_GenericMarshaller(int value);
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_DerivedType([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] CustomMarshalledDerivedClass arg, int expected);
 
-        [NativeThrows]
-        [NativeMethod("ParameterCustomMarshalled")]
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_InterfaceMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerInterface))] CustomMarshalledClass arg, int expected);
 
         [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
@@ -1385,13 +1384,13 @@ namespace UnityEngine
             }
         }
 
-        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructInt), isFreeFunction: true)]
+        [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructInt), isFreeFunction: true, ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_AsStruct(CustomMarshalledAsStruct arg);
-        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntIn), isFreeFunction: true)]
+        [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntIn), isFreeFunction: true, ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_AsStruct_In(in CustomMarshalledAsStruct arg);
-        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntOut), isFreeFunction: true)]
+        [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntOut), isFreeFunction: true, ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_AsStruct_Out(out CustomMarshalledAsStruct arg);
-        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntByRef), isFreeFunction: true)]
+        [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntByRef), isFreeFunction: true, ThrowsException = true)]
         public static extern void ParameterCustomMarshalled_AsStruct_Ref(ref CustomMarshalledAsStruct arg);
         [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ReturnStructInt), isFreeFunction: true)]
         public static extern CustomMarshalledAsStruct ParameterCustomMarshalled_AsStruct_Return();
@@ -1433,31 +1432,28 @@ namespace UnityEngine
     }
     internal class BlittableNestedCollectionMarshallerTests
     {
-        [NativeThrows]
-        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection", ThrowsException = true)]
         public extern static void PassInNestedLists([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] List<List<int>> nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
 
-        [NativeThrows]
-        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection", ThrowsException = true)]
         public extern static void PassInNestedArrays([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] int[][] nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
 
-        [NativeThrows]
-        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection", ThrowsException = true)]
         public extern static void PassInListOfInts([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] List<int[]> nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
     }
 
     internal static class ObjectAsGCHandleMarshallingTests
     {
         [NativeName("ObjectAsGCHandleParameter")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void ObjectAsStrongGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Strong)] object obj, bool hasTarget);
 
         [NativeName("ObjectAsGCHandleParameter")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void ObjectAsWeakGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Weak)] object obj, bool hasTarget);
 
         [NativeName("ObjectAsGCHandleParameter")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void ObjectAsPinnedGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Pinned)] object obj, bool hasTarget);
 
         public static void ObjectAsGCHandleParameter(object obj, GCHandleType type)
@@ -1492,7 +1488,7 @@ namespace UnityEngine
 
     internal static class GCHandleMarshallingTests
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern static void GCHandleParameter(GCHandle handle, bool hasTarget);
 
         public extern static GCHandle GCHandleReturn(GCHandle handle);

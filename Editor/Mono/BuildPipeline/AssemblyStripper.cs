@@ -370,9 +370,7 @@ namespace UnityEditorInternal
             }
 
             public bool IsModuleIncluded(string moduleName)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                => m_ForceIncludes.Any(i => string.Equals(i, moduleName));
-#pragma warning restore UA2001
+                => m_ForceIncludes.Exists(i => string.Equals(i, moduleName));
         }
 
         public static event Action<IPreStrippingModuleAdder> onCollectIncludedModules;

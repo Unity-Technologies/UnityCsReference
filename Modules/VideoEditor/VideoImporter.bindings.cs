@@ -98,6 +98,15 @@ namespace UnityEditor
         public int                    customHeight;
         public VideoBitrateMode       bitrateMode;
         public VideoSpatialQuality    spatialQuality;
+
+        [UsedByNativeCode, RequiredMember]
+        internal static VideoImporterTargetSettings CreateNew(bool enableTranscoding, VideoCodec codec, VideoResizeMode resizeMode, VideoEncodeAspectRatio aspectRatio, int customWidth, int customHeight, VideoBitrateMode bitrateMode, VideoSpatialQuality spatialQuality)
+        {
+            return new VideoImporterTargetSettings
+            {
+                enableTranscoding = enableTranscoding, codec = codec, resizeMode = resizeMode, aspectRatio = aspectRatio, customWidth = customWidth, customHeight = customHeight, bitrateMode = bitrateMode, spatialQuality = spatialQuality
+            };
+        }
     }
 
     [NativeConditional("ENABLE_VIDEO")]

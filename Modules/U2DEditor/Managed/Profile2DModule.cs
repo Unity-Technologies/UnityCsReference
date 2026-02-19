@@ -88,7 +88,7 @@ namespace UnityEditor.U2D.Profiling
                     var spriteAtlasGuid = "?";
                     if (atlasItems.ContainsKey(s.atlasEntityId))
                     {
-                        bool valid = s.atlasEntityId.GetRawData() != 0;
+                        bool valid = EntityId.ToULong(s.atlasEntityId) != 0;
                         spriteTextureSizeRatio = s.spriteTextureSizeRatio;
                         if (valid)
                         {
@@ -101,7 +101,7 @@ namespace UnityEditor.U2D.Profiling
 
                     var texValid = frameData.GetUnityObjectInfo(s.textureEntityId, out var textureInfo);
                     var spriteValid = frameData.GetUnityObjectInfo(s.spriteEntityId, out var spriteInfo);
-                    var wrapper = new SpriteAtlasProfilerInfoWrapper((int)s.spriteEntityId.GetRawData(),
+                    var wrapper = new SpriteAtlasProfilerInfoWrapper((int)EntityId.ToULong(s.spriteEntityId),
                          spriteAtlasName,
                          spriteAtlasGuid,
                          spriteValid ? spriteInfo.name : "(none)",
@@ -160,8 +160,8 @@ namespace UnityEditor.U2D.Profiling
         {
             ("Sprite Count", ProfilerCategory.Memory),
             ("SpriteAtlas Count", ProfilerCategory.Memory),
-            ("Sprites Rendered", ProfilerCategory.U2D),
-            ("SpriteAtlases used in Rendering", ProfilerCategory.U2D)
+            ("Sprites rendered", ProfilerCategory.U2D),
+            ("SpriteAtlases rendered", ProfilerCategory.U2D)
         };
 
         public override ProfilerModuleViewController CreateDetailsViewController()

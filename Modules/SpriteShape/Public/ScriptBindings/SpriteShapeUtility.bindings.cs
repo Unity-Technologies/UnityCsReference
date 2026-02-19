@@ -43,11 +43,9 @@ namespace UnityEngine.U2D
     [MovedFrom("UnityEngine.Experimental.U2D")]
     public class SpriteShapeUtility
     {
-        [NativeThrows]
-        [FreeFunction("SpriteShapeUtility::Generate")]
+        [FreeFunction("SpriteShapeUtility::Generate", ThrowsException = true)]
         extern public static int[] Generate(Mesh mesh, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
-        [NativeThrows]
-        [FreeFunction("SpriteShapeUtility::GenerateSpriteShape")]
+        [FreeFunction("SpriteShapeUtility::GenerateSpriteShape", ThrowsException = true)]
         extern public static void GenerateSpriteShape(SpriteShapeRenderer renderer, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
     }
 }

@@ -11,7 +11,7 @@ namespace UnityEngine.Windows.Speech
     {
         public extern static bool isSupported
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
             get;
         }
@@ -22,7 +22,7 @@ namespace UnityEngine.Windows.Speech
             get;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         public extern static void Restart();
 
@@ -32,15 +32,15 @@ namespace UnityEngine.Windows.Speech
 
     public abstract partial class PhraseRecognizer : IDisposable
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         protected static extern IntPtr CreateFromKeywords(object self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] keywords, ConfidenceLevel minimumConfidence);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         protected static extern IntPtr CreateFromGrammarFile(object self, string grammarFilePath, ConfidenceLevel minimumConfidence);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Start_Internal(IntPtr recognizer);
 
@@ -53,18 +53,18 @@ namespace UnityEngine.Windows.Speech
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Destroy(IntPtr recognizer);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void DestroyThreaded(IntPtr recognizer);
     }
 
     public partial class DictationRecognizer
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private static extern IntPtr Create(object self, ConfidenceLevel minimumConfidence, DictationTopicConstraint topicConstraint);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Start(IntPtr self);
 
@@ -74,7 +74,7 @@ namespace UnityEngine.Windows.Speech
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Destroy(IntPtr self);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void DestroyThreaded(IntPtr self);
 

@@ -209,7 +209,7 @@ namespace UnityEditor.AssetImporters
         void InitializeUnsavedChangesCache()
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>().ToList();
+            var editors = Resources.FindObjectsOfTypeAll(typeof(AssetImporterEditor)).Cast<AssetImporterEditor>().ToList();
 #pragma warning restore UA2001
 
             CheckExtraDataArray();
@@ -504,9 +504,7 @@ namespace UnityEditor.AssetImporters
         {
             if (!m_AssetHasIssues.HasValue)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_AssetHasIssues = targets != null && targets.Length > 0 && targets.Any(t =>
-#pragma warning restore UA2001
+                m_AssetHasIssues = targets != null && targets.Length > 0 && Array.Exists(targets, t =>
                     t is AssetImporter importer
                     && AssetImporter.GetImportLogEntriesCount(AssetDatabase.GUIDFromAssetPath(importer.assetPath), out int nbErrors, out int nbWarnings)
                     && (nbErrors > 0 || nbWarnings > 0));
@@ -926,9 +924,9 @@ namespace UnityEditor.AssetImporters
                     .Select(t => t.GetType())
                     .Select(t => m_AvailableImporterTypes.IndexOf(t))
                     .Distinct();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selection.Count() > 1)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 {
                     m_SelectedImporterType = k_MultipleSelectedImporterTypes;
                 }

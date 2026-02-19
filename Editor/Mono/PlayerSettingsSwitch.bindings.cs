@@ -38,6 +38,11 @@ namespace UnityEditor
                 JoyLeft = 8,
                 JoyRight = 16,
             }
+            public enum SwitchCaStoreSource
+            {
+                UnityEditor = 0,
+                CustomPath = 1,
+            }
 
             [Flags]
             public enum SupportedNpadStyle
@@ -323,6 +328,14 @@ namespace UnityEditor
             // HTCS for player connection
             [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]
             extern public static bool disableHTCSPlayerConnection { get; set; }
+
+            // Source of CA store for Switch TLS connection
+            [NativeProperty("switchCaStoreSource", TargetType.Field)]
+            extern public static SwitchCaStoreSource caStoreSource { get; set; }
+
+            // File path of CA store for Switch TLS connection
+            [NativeProperty("switchCaStoreFilePath", TargetType.Function)]
+            extern public static string caStoreFilePath { get; set; }
 
             // Forces all FMOD threads to use nn::os::LowestThreadPriority
             [NativeProperty("switchUseLegacyFmodPriorities", TargetType.Field)]

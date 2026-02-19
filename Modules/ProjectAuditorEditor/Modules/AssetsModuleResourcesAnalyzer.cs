@@ -24,6 +24,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             "Use AssetBundles or Addressables when possible."
             )
         {
+            DocumentationUrl = "https://docs.unity3d.com/Manual/LoadingResourcesatRuntime.html",
             MessageFormat = "Asset '{0}' is in a Resources folder"
         };
 
@@ -36,6 +37,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             "Use AssetBundles or Addressables when possible."
             )
         {
+            DocumentationUrl = "https://docs.unity3d.com/Manual/LoadingResourcesatRuntime.html",
             MessageFormat = "Asset '{0}' is a dependency of a Resources folder asset"
         };
 

@@ -781,11 +781,10 @@ namespace Unity.UI.Builder
                     {
                         var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(x);
                         var bindingId = new BindingId(bindingProperty);
-                        if (currentVisualElement.GetBinding(bindingId) != null)
+                        if (DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement,
+                                out var bindingResult) && DataBindingUtility.HasActiveBinding(bindingId, currentVisualElement))
                         {
                             hasBindings = true;
-                            DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement,
-                                out var bindingResult);
                             hasResolvedBindings |= bindingResult.status == BindingStatus.Success;
                         }
                     });
@@ -850,6 +849,7 @@ namespace Unity.UI.Builder
                 {
                     var forceInlineIfBinding = IsInlineEditingEnabled(field) && cachedBinding != null && cachedBinding.property == boundFieldInlineValueBeingEditedName;
                     styleFields.RefreshStyleFieldValue(styleName, field, forceInlineIfBinding);
+                    styleFields.SetFoldoutHeaderEnabledState(field);
                 }
             }
         }

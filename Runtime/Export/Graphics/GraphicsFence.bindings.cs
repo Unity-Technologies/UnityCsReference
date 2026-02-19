@@ -99,8 +99,7 @@ namespace UnityEngine.Rendering
             return -1;
         }
 
-        [NativeThrows]
-        [FreeFunction("GPUFenceInternals::GetVersionNumber")]
+        [FreeFunction("GPUFenceInternals::GetVersionNumber", ThrowsException = true)]
         extern private static int GetVersionNumber(IntPtr fencePtr);
     }
 }

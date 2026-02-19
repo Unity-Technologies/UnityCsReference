@@ -191,7 +191,7 @@ By default, Windows will combine these under a single taskbar item.");
         private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
         private bool m_EnableExtendedLogging;
-        private SavedBool m_UseGlobalEditorLog = new SavedBool("UseGlobalEditorLog", true);
+        private SavedBool m_UseGlobalEditorLog = new SavedBool("UseGlobalEditorLog", false);
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
         private readonly string kWindowsTaskbarPrefKey = "WindowsTaskbarBehavior";
 

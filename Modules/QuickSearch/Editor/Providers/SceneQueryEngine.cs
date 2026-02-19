@@ -337,7 +337,7 @@ namespace UnityEditor.Search.Providers
             {
                 overlapCount = 0;
 
-                var renderers = UnityEngine.Object.FindObjectsByType<Renderer>(UnityEngine.FindObjectsSortMode.None);
+                var renderers = UnityEngine.Object.FindObjectsByType<Renderer>();
 
                 foreach (var r in renderers)
                 {

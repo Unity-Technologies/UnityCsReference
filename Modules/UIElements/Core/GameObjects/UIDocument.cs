@@ -99,7 +99,7 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UIDocument_Example.cs"/>
     /// </example>
     [HelpURL("UIE-get-started-with-runtime-ui")]
-    [AddComponentMenu("UI Toolkit/UI Document"), ExecuteAlways, DisallowMultipleComponent]
+    [AddComponentMenu(@"UI Toolkit/Legacy/UI Document (UI Toolkit)"), ExecuteAlways, DisallowMultipleComponent] // Hide in Add Component menu
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
     public sealed class UIDocument : MonoBehaviour, IPanelComponent
     {
@@ -115,6 +115,8 @@ namespace UnityEngine.UIElements
         // deterministic way (i.e. instances created before will be placed before in the visual tree).
         private static int s_CurrentUIDocumentCounter = 0;
         internal readonly int m_UIDocumentCreationIndex;
+
+        int IPanelComponent.creationIndex => m_UIDocumentCreationIndex;
 
         internal static Func<bool> IsEditorPlaying;
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
@@ -249,6 +251,8 @@ namespace UnityEngine.UIElements
                 focusRing = value != null ? new(value) : null;
             }
         }
+
+        VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
 
         internal VisualElementFocusRing focusRing { get; private set; } = null;
 
@@ -461,6 +465,8 @@ namespace UnityEngine.UIElements
             if (TryGetComponent<UIRenderer>(out var renderer))
                 renderer.enabled = true;
         }
+
+        void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
         /// <summary>
         /// The runtime panel whose visualTree contains this document's rootVisualElement, if any.
@@ -1105,7 +1111,7 @@ namespace UnityEngine.UIElements
 
                 foreach (var companion in companions)
                 {
-                    if (companion != this && companion.isActiveAndEnabled)
+                    if (companion != null && companion != this && companion.isActiveAndEnabled)
                     {
                         companion.enabled = false;
                         disabledCompanions.Add(companion);

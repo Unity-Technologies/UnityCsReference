@@ -18,6 +18,11 @@ namespace UnityEditor.Build.Profile
         public string displayName { get; set; }
 
         /// <summary>
+        /// Returns the display order for the settings provider.
+        /// </summary>
+        internal int displayOrder { get; set; } = 0;
+
+        /// <summary>
         /// Foldout tooltip text. If empty, no tooltip is displayed.
         /// </summary>
         public string tooltip { get; set; } = string.Empty;
@@ -27,6 +32,14 @@ namespace UnityEditor.Build.Profile
         /// Otherwise, the default inspector for the settings object is displayed.
         /// </summary>
         public bool hasCustomEditor { get; set; } = false;
+
+        /// <summary>
+        /// Returns true if the setting is marked as required
+        /// by the provider. A required setting will appear in
+        /// every build profile it is valid for as  defined by
+        /// CanAddSettings.
+        /// </summary>
+        internal bool isRequired { get; set; } = false;
 
         /// <summary>
         /// Callback determining if the settings object described by this provider can be

@@ -602,9 +602,9 @@ namespace UnityEditor
                 return true;
 
             // If normals are the only difference, ignore them, because the default particle streams include normals, to make it easy for users to switch between lit and unlit
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (difference.Count() == 1)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (difference.First() == ParticleSystemVertexStream.Normal)

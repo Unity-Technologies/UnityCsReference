@@ -86,17 +86,7 @@ namespace UnityEngine.Loading
         /// </param>
         public static ContentDirectoryHandle RegisterContentDirectory(string contentDirectoryPath)
         {
-            var handle = RegisterInternal(contentDirectoryPath, true);
-            if (!handle.isValid)
-                throw new Exception($"Failed to register content directory at path {contentDirectoryPath}. See log for details.");
-            OnRegisterContentDirectory?.Invoke(handle);
-            return handle;
-        }
-
-        // Temporary function that we will migrate all tests to. See https://jira.unity3d.com/browse/CBD-1711
-        internal static ContentDirectoryHandle RegisterContentDirectory_DontLoadRoots(string contentDirectoryPath)
-        {
-            var handle = RegisterInternal(contentDirectoryPath, false);
+            var handle = RegisterInternal(contentDirectoryPath);
             if (!handle.isValid)
                 throw new Exception($"Failed to register content directory at path {contentDirectoryPath}. See log for details.");
             OnRegisterContentDirectory?.Invoke(handle);
@@ -104,7 +94,7 @@ namespace UnityEngine.Loading
         }
 
         [FreeFunction("ContentLoad::RegisterContentDirectory")]
-        static extern ContentDirectoryHandle RegisterInternal(string contentDirectoryPath, bool forceLoadRoots);
+        static extern ContentDirectoryHandle RegisterInternal(string contentDirectoryPath);
 
         /// <summary>
         /// Remove access to content that had been loaded from a content directory.
@@ -224,7 +214,7 @@ namespace UnityEngine.Loading
 
         // For test and internal usage
         // This method loads the BuildManifest, which describe the content available inside a Content Directory.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern BuildManifest LoadBuildManifest(string path);
     }
 }

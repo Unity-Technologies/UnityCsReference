@@ -99,16 +99,16 @@ namespace UnityEngine
         extern private void GetHumanPose(out Vector3 bodyPosition, out Quaternion bodyRotation, [Out] float[] muscles, [Out] Vector3[] ikGoalPositions, [Out] Quaternion[] ikGoalRotations);
         extern private void SetHumanPose(ref Vector3 bodyPosition, ref Quaternion bodyRotation, float[] muscles);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private void GetInternalHumanPose(out Vector3 bodyPosition, out Quaternion bodyRotation, [Out] float[] muscles, [Out] Vector3[] ikGoalPositions, [Out] Quaternion[] ikGoalRotation);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private void SetInternalHumanPose(ref Vector3 bodyPosition, ref Quaternion bodyRotation, float[] muscles);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private unsafe void GetInternalAvatarPose(void* avatarPose, int avatarPoseLength);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private unsafe void SetInternalAvatarPose(void* avatarPose, int avatarPoseLength);
 
         public void Dispose()

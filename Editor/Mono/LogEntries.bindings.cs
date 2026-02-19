@@ -152,7 +152,7 @@ namespace UnityEditor
 
         public static extern void AddMessageWithDoubleClickCallback(LogEntry outputEntry);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern static unsafe void AddMessagesImpl(void* messagesBuffer, int messagesBufferLength);
 
         internal static extern int GetEntryRowIndex(int globalIndex, int indexHint = -1);

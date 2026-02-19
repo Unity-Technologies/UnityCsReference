@@ -176,16 +176,7 @@ namespace UnityEngine.UIElements
             return default;
         }
 
-        internal static IEnumerable<Type> allowedAssetTypes
-        {
-            get
-            {
-                yield return typeof(Texture2D);
-                yield return typeof(RenderTexture);
-                yield return typeof(Sprite);
-                yield return typeof(VectorImage);
-            }
-        }
+        internal static IReadOnlyList<Type> allowedAssetTypes => [ typeof(Texture2D), typeof(RenderTexture), typeof(Sprite), typeof(VectorImage) ];
 
         /// <summary>
         /// Retrieves the selected asset which can be of a type of Texture, Sprite, RenderTexture or VectorImage.

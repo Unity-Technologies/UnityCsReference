@@ -6,6 +6,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 namespace UnityEditor.Build.Profile.Elements
 {
@@ -27,6 +28,8 @@ namespace UnityEditor.Build.Profile.Elements
 
         public string GetDisplayName() => m_SettingsObjectInfo.displayName;
 
+        public int GetDisplayOrder() => m_SettingsObjectInfo.displayOrder;
+
         public string GetTooltip() => m_SettingsObjectInfo.tooltip;
 
         public bool CanAddSettings(BuildProfile profile)
@@ -36,12 +39,23 @@ namespace UnityEditor.Build.Profile.Elements
 
         public Action<BuildProfile> GetResetAction() => OnReset;
 
+        public bool GetIsRequired() => m_SettingsObjectInfo.isRequired;
+
         public bool HasSettings(BuildProfile profile) => profile.GetComponent<T>() is not null;
 
         public void OnAdd(BuildProfile profile)
         {
             var instance = ScriptableObject.CreateInstance<T>();
             profile.AddComponent(instance);
+
+            if (m_SettingsObjectInfo.isRequired)
+            {
+                var componentRef = profile.GetComponent<T>() as ScriptableObject;
+
+                var result = new List<ScriptableObject>(profile.requiredComponents);
+                result.Add(componentRef);
+                profile.requiredComponents = result.ToArray();
+            }
         }
 
         public void OnRemove(BuildProfile profile)

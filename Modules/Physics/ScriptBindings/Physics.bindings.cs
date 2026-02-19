@@ -90,6 +90,14 @@ namespace UnityEngine
             }
         }
 
+        internal ushort sDKMajorVersion => m_SdkVersion[0];
+        internal ushort sDKMinorVersion => m_SdkVersion[1];
+        internal ushort sDKPatchVersion => m_SdkVersion[2];
+
+        internal ushort majorVersion => m_IntegrationVersion[0];
+        internal ushort minorVersion => m_IntegrationVersion[1];
+        internal ushort patchVersion => m_IntegrationVersion[2];
+
         public bool isFallback => id == k_FallbackIntegrationId;
 
         internal bool isExperimental => m_IntegrationVersion[0] < 1;
@@ -109,7 +117,7 @@ namespace UnityEngine
 
         extern private unsafe static void GetIntegrationInfos(out IntPtr integrations, out ulong integrationCount);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private unsafe static void GetCurrentIntegrationInfo(out IntPtr integration);
 
         internal static ReadOnlySpan<IntegrationInfo> GetIntegrationInfos()
@@ -132,7 +140,7 @@ namespace UnityEngine
             return *(IntegrationInfo*)infoPtr.ToPointer();
         }
 
-        extern public static Vector3 gravity { [ThreadSafe] get; set; }
+        extern public static Vector3 gravity { [NativeMethod(IsThreadSafe = true)] get; set; }
         extern public static float defaultContactOffset { get; set; }
         extern public static float sleepThreshold { get; set; }
         extern public static bool queriesHitTriggers { get; set; }
@@ -774,7 +782,7 @@ namespace UnityEngine
         [StaticAccessor("GetPhysicsManager()")]
         public extern static bool interCollisionSettingsToggle {[NativeName("GetClothInterCollisionSettingsToggle")] get; [NativeName("SetClothInterCollisionSettingsToggle")] set; }
 
-        extern public static Vector3 clothGravity { [ThreadSafe] get; set; }
+        extern public static Vector3 clothGravity { [NativeMethod(IsThreadSafe = true)] get; set; }
 
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1065,7 +1073,7 @@ namespace UnityEngine
         public static extern void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions);
 
         [StaticAccessor("GetPhysicsManager()")]
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void BakeMesh(EntityId meshEntityId, bool convex, MeshColliderCookingOptions cookingOptions);
 
         [Obsolete("BakeMesh(int, bool, MeshColliderCookingOptions) is obsolete. Use BakeMesh(EntityId, bool, MeshColliderCookingOptions) instead.")]
@@ -1100,7 +1108,7 @@ namespace UnityEngine
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         internal static extern Component GetBodyByInstanceID(EntityId entityId);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         internal static extern uint TranslateTriangleIndexFromID(EntityId instanceID, uint faceIndex);
 

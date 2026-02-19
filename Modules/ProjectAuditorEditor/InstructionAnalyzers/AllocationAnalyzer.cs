@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 
@@ -29,6 +30,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Try to avoid allocating objects in frequently-updated code."
             )
         {
+            DocumentationUrl = "https://learn.microsoft.com/en-us/dotnet/standard/automatic-memory-management",
             MessageFormat = "'{0}' allocation",
             DefaultSeverity = Severity.Minor
         };
@@ -42,6 +44,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Try to avoid allocating objects in frequently-updated code."
             )
         {
+            DocumentationUrl = "https://learn.microsoft.com/en-us/dotnet/standard/automatic-memory-management",
             MessageFormat = "Closure allocation in '{0}.{1}'",
             DefaultSeverity = Severity.Minor
         };
@@ -55,6 +58,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Try to avoid allocating arrays in frequently-updated code."
             )
         {
+            DocumentationUrl = "https://learn.microsoft.com/en-us/dotnet/standard/automatic-memory-management",
             MessageFormat = "'{0}' array allocation",
             DefaultSeverity = Severity.Minor
         };
@@ -68,6 +72,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Try to avoid calling this method in frequently-updated code."
             )
         {
+            DocumentationUrl = "https://learn.microsoft.com/en-us/dotnet/standard/automatic-memory-management",
             MessageFormat = "Parameters array '{0} {1}' allocation"
         };
 
@@ -80,6 +85,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             "Try to avoid allocating arrays in frequently-updated code."
             )
         {
+            DocumentationUrl = "https://learn.microsoft.com/en-us/dotnet/standard/automatic-memory-management",
             MessageFormat = "'{0}' array allocation",
             DefaultSeverity = Severity.Minor
         };
@@ -114,8 +120,8 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var lastParam = callee.Parameters.Last();
-                    if (lastParam.HasCustomAttributes && lastParam.CustomAttributes.Any(a => a.AttributeType.FastFullName().GetHashCode() == k_ParamArrayAtributeHashCode))
 #pragma warning restore UA2001
+                    if (lastParam.HasCustomAttributes && lastParam.CustomAttributes.Exists(a => a.AttributeType.FastFullName().GetHashCode() == k_ParamArrayAtributeHashCode))
                     {
                         // If the previous instruction is loading Array.Empty<T>, we know that the method is being called with no `params`, and we are not actually allocating a managed array for the params array
                         // This looks like:

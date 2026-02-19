@@ -92,9 +92,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var assemblyByGuidLookup = assemblies.ToDictionary(x => x.GUID, x => x);
 #pragma warning restore UA2001
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool rootOverridden = assemblies.Any(x => AssetPath.ComparePaths(x.PathPrefix, _projectPath));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
             if (!rootOverridden)
             {
                 _npp.Insert(_globalAssemblyDefinition.PathPrefix, _globalAssemblyDefinition);

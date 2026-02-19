@@ -5,6 +5,7 @@
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
@@ -25,6 +26,9 @@ namespace UnityEngine
     [RequiredByNativeCode]
     public partial class ControllerColliderHit
     {
+        //[AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        private static readonly ControllerColliderHit s_ReusableCollision = new ControllerColliderHit();
+
         internal CharacterController m_Controller;
         internal Collider m_Collider;
         internal Vector3 m_Point;
@@ -43,6 +47,42 @@ namespace UnityEngine
         public Vector3 moveDirection { get { return m_MoveDirection; } }
         public float moveLength { get { return m_MoveLength; } }
         private bool push { get { return m_Push != 0; } set { m_Push = value ? 1 : 0; } }
+
+        private void SetAllFields(CharacterController controller, Collider collider, Vector3 point, Vector3 normal, Vector3 moveDirection, float moveLength)
+        {
+            m_Controller = controller;
+            m_Collider = collider;
+            m_Point = point;
+            m_Normal = normal;
+            m_MoveDirection = moveDirection;
+            m_MoveLength = moveLength;
+            m_Push = 0;
+        }
+
+        internal void Clear()
+        {
+            m_Controller = null;
+            m_Collider = null;
+            m_Point = Vector3.zero;
+            m_Normal = Vector3.zero;
+            m_MoveDirection = moveDirection;
+            m_MoveLength = 0.0f;
+            m_Push = 0;
+        }
+
+        [RequiredByNativeCode]
+        static ControllerColliderHit Create(CharacterController controller, Collider collider, Vector3 point, Vector3 normal, Vector3 moveDirection, float moveLength)
+        {
+            var hit = new ControllerColliderHit();
+            hit.SetAllFields(controller, collider, point, normal, moveDirection, moveLength);
+            return hit;
+        }
+
+        [RequiredByNativeCode]
+        static void Update(ControllerColliderHit hit, CharacterController controller, Collider collider, Vector3 point, Vector3 normal, Vector3 moveDirection, float moveLength)
+        {
+            hit.SetAllFields(controller, collider, point, normal, moveDirection, moveLength);
+        }
     }
 
     [NativeHeader("Modules/Physics/CharacterController.h")]

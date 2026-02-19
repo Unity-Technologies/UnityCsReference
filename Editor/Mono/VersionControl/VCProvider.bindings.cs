@@ -135,8 +135,7 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_CacheStatus")]
         private static extern Asset Internal_CacheStatus(string assetPath);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Status")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Status", ThrowsException = true)]
         private static extern Task Internal_Status(Asset[] assets, bool recursively);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_StatusStrings")]
@@ -145,19 +144,16 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_StatusAbsolutePath")]
         private static extern Task Internal_StatusAbsolutePath(string assetPath);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_CheckoutIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_CheckoutIsValid", ThrowsException = true)]
         private static extern bool Internal_CheckoutIsValid(Asset[] assets, CheckoutMode mode);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Checkout")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Checkout", ThrowsException = true)]
         private static extern Task Internal_Checkout(Asset[] assets, CheckoutMode mode, ChangeSet changeset);
 
         [FreeFunction("VersionControlBindings::VCProvider::MakeEditable")]
         internal static extern bool MakeEditableImpl(string[] assets, string prompt, ChangeSet changeSet, [Out] List<string> outNotEditablePathsList);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Delete")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Delete", ThrowsException = true)]
         private static extern Task Internal_Delete(Asset[] assets);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_DeleteAtProjectPath")]
@@ -166,84 +162,64 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_MoveAsStrings")]
         private static extern Task Internal_MoveAsStrings([NotNull] string from, [NotNull] string to);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_AddIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_AddIsValid", ThrowsException = true)]
         private static extern bool Internal_AddIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Add")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Add", ThrowsException = true)]
         private static extern Task Internal_Add(Asset[] assets, bool recursive);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_DeleteChangeSetsIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_DeleteChangeSetsIsValid", ThrowsException = true)]
         private static extern bool Internal_DeleteChangeSetsIsValid(ChangeSet[] changesets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_DeleteChangeSets")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_DeleteChangeSets", ThrowsException = true)]
         private static extern Task Internal_DeleteChangeSets(ChangeSet[] changesets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_RevertChangeSets")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_RevertChangeSets", ThrowsException = true)]
         private static extern Task Internal_RevertChangeSets(ChangeSet[] changesets, RevertMode mode);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_SubmitIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_SubmitIsValid", ThrowsException = true)]
         private static extern bool Internal_SubmitIsValid(ChangeSet changeset, Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Submit")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Submit", ThrowsException = true)]
         private static extern Task Internal_Submit(ChangeSet changeset, Asset[] assets, string description, bool saveOnly);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_DiffIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_DiffIsValid", ThrowsException = true)]
         private static extern bool Internal_DiffIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_DiffHead")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_DiffHead", ThrowsException = true)]
         private static extern Task Internal_DiffHead(Asset[] assets, bool includingMetaFiles);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_ResolveIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_ResolveIsValid", ThrowsException = true)]
         private static extern bool Internal_ResolveIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Resolve")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Resolve", ThrowsException = true)]
         private static extern Task Internal_Resolve(Asset[] assets, ResolveMethod resolveMethod);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Merge")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Merge", ThrowsException = true)]
         private static extern Task Internal_Merge(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_LockIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_LockIsValid", ThrowsException = true)]
         private static extern bool Internal_LockIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_UnlockIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_UnlockIsValid", ThrowsException = true)]
         private static extern bool Internal_UnlockIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Lock")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Lock", ThrowsException = true)]
         private static extern Task Internal_Lock(Asset[] assets, bool locked);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_RevertIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_RevertIsValid", ThrowsException = true)]
         private static extern bool Internal_RevertIsValid(Asset[] assets, RevertMode revertMode);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_Revert")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_Revert", ThrowsException = true)]
         private static extern Task Internal_Revert(Asset[] assets, RevertMode revertMode);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_GetLatestIsValid")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_GetLatestIsValid", ThrowsException = true)]
         private static extern bool Internal_GetLatestIsValid(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_GetLatest")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_GetLatest", ThrowsException = true)]
         private static extern Task Internal_GetLatest(Asset[] assets);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_SetFileMode")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_SetFileMode", ThrowsException = true)]
         private static extern Task Internal_SetFileMode(Asset[] assets, FileMode fileMode);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_SetFileModeStrings")]
@@ -258,8 +234,7 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::ChangeSets")]
         public static extern Task ChangeSets();
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_ChangeSetMove")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_ChangeSetMove", ThrowsException = true)]
         private static extern Task Internal_ChangeSetMove(Asset[] assets, [NotNull] ChangeSet target);
 
         [FreeFunction("VersionControlBindings::VCProvider::Incoming")]
@@ -302,8 +277,7 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_CreateErrorTask")]
         public static extern Task Internal_ErrorTask([NotNull] string message);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList", ThrowsException = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private static extern Asset[] Internal_ConsolidateAssetList(Asset[] assets, CheckoutMode mode);
 
@@ -315,8 +289,7 @@ namespace UnityEditor.VersionControl
         [NativeMethod("ShouldPathBeVersioned")]
         static internal extern bool PathIsVersioned(string path);
 
-        [NativeThrows]
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_WaitForRelatedTasks")]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_WaitForRelatedTasks", ThrowsException = true)]
         internal static extern void WaitForRelatedTasks(Asset[] assets);
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

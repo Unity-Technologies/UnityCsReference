@@ -38,6 +38,7 @@ namespace UnityEditor
         GUIContent m_SpriteAlignmentContent;
         GUIContent m_SpriteBorderContent;
         StringBuilder m_ElementStringBuilder;
+        Vector2 m_ScrollPos;
         void OnEnable()
         {
             m_Name = serializedObject.FindProperty("m_Name");
@@ -160,8 +161,31 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.borderLabel, m_SpriteBorderContent);
             else
                 EditorGUILayout.LabelField(Styles.borderLabel, Styles.multiValueText);
+
+            ShowBlendShapeInfo(sprite);
         }
 
+        void ShowBlendShapeInfo(Sprite sprite)
+        {
+            var blendShapeCount = sprite.blendShapeCount;
+            if (blendShapeCount <= 0)
+                return;
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField($"Blend Shapes: {blendShapeCount}", EditorStyles.boldLabel);
+
+            var showScroll = blendShapeCount > 10;
+            if (showScroll)
+                m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos, GUILayout.Height(10 * EditorGUIUtility.singleLineHeight));
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < blendShapeCount; ++i)
+            {
+                EditorGUILayout.LabelField($"#{i}: {sprite.GetBlendShapeName(i)} ({sprite.GetBlendShapeFrameCount(i)} frames)");
+            }
+            EditorGUI.indentLevel--;
+            if (showScroll)
+                EditorGUILayout.EndScrollView();
+        }
 
         public static Texture2D BuildPreviewTexture(Sprite sprite, Material spriteRendererMaterial, bool isPolygon, int width, int height)
         {

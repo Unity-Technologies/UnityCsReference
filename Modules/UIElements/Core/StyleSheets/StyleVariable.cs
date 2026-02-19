@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleVariableContext
     {
         public static readonly StyleVariableContext none = new StyleVariableContext();

@@ -22,7 +22,8 @@ namespace UnityEditor.SceneManagement
         AllowMonoBehaviourEvents = 4,
         AllowGlobalIlluminationLights = 8,
         AllowAutoPlayAudioSources = 16,
-        AllFlags = 1 + 2 + 4 + 8 + 16
+        IsPlayableScene = 32,
+        AllFlags = 1 + 2 + 4 + 8 + 16 + 32
     }
 
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
@@ -73,9 +74,8 @@ namespace UnityEditor.SceneManagement
         [FreeFunction("GetSceneTracker().CanOpenScene")]
         internal static extern bool CanOpenScene();
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OpenScene")]
+        [NativeMethod("OpenScene", ThrowsException = true)]
         public extern static Scene OpenScene(string scenePath, [uei.DefaultValue("OpenSceneMode.Single")] OpenSceneMode mode);
 
         public static Scene OpenPreviewScene(string scenePath)
@@ -83,14 +83,12 @@ namespace UnityEditor.SceneManagement
             return OpenPreviewScene(scenePath, true);
         }
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OpenPreviewScene")]
+        [NativeMethod("OpenPreviewScene", ThrowsException = true)]
         internal extern static Scene OpenPreviewScene(string scenePath, bool allocateSceneCullingMask);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("NewScene")]
+        [NativeMethod("NewScene", ThrowsException = true)]
         public extern static Scene NewScene(NewSceneSetup setup, [uei.DefaultValue("NewSceneMode.Single")] NewSceneMode mode);
 
         public static Scene NewPreviewScene()
@@ -125,14 +123,12 @@ namespace UnityEditor.SceneManagement
             );
         }
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("CloseScene")]
+        [NativeMethod("CloseScene", ThrowsException = true)]
         public extern static bool CloseScene(Scene scene, bool removeScene);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("ClosePreviewScene")]
+        [NativeMethod("ClosePreviewScene", ThrowsException = true)]
         public extern static bool ClosePreviewScene(Scene scene);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -158,9 +154,8 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("IsAuthoringScene")]
         internal extern static bool IsAuthoringScene(Scene scene);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("ReloadScene")]
+        [NativeMethod("ReloadScene", ThrowsException = true)]
         internal extern static bool ReloadScene(Scene scene);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -177,9 +172,8 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("SetTargetSceneForNewGameObjects")]
         internal extern static void SetTargetSceneForNewGameObjects(SceneHandle sceneHandle);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("GetTargetSceneForNewGameObjects")]
+        [NativeMethod("GetTargetSceneForNewGameObjects", ThrowsException = true)]
         internal extern static Scene GetTargetSceneForNewGameObjects();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -194,63 +188,53 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("MoveSceneAfter")]
         public extern static void MoveSceneAfter(Scene src, Scene dst);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveSceneAs")]
+        [NativeMethod("SaveSceneAs", ThrowsException = true)]
         internal extern static bool SaveSceneAs(Scene scene);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveSceneInternal")]
+        [NativeMethod("SaveSceneInternal", ThrowsException = true)]
         private extern static bool SaveSceneInternal(Scene scene, string dstScenePath, bool saveAsCopy);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveOpenScenes")]
+        [NativeMethod("SaveOpenScenes", ThrowsException = true)]
         public extern static bool SaveOpenScenes();
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveScenes")]
+        [NativeMethod("SaveScenes", ThrowsException = true)]
         public extern static bool SaveScenes([NotNull] Scene[] scenes);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveCurrentModifiedScenesIfUserWantsTo")]
+        [NativeMethod("SaveCurrentModifiedScenesIfUserWantsTo", ThrowsException = true)]
         internal extern static bool SaveCurrentModifiedScenesIfUserWantsTo(string message);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("SaveModifiedScenesIfUserWantsTo")]
+        [NativeMethod("SaveModifiedScenesIfUserWantsTo", ThrowsException = true)]
         public extern static bool SaveModifiedScenesIfUserWantsTo([NotNull] Scene[] scenes);
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         [NativeMethod("EnsureUntitledSceneHasBeenSaved")]
         public extern static bool EnsureUntitledSceneHasBeenSaved(string dialogContent);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("MarkSceneDirty")]
+        [NativeMethod("MarkSceneDirty", ThrowsException = true)]
         public extern static bool MarkSceneDirty(Scene scene);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("MarkAllScenesDirty")]
+        [NativeMethod("MarkAllScenesDirty", ThrowsException = true)]
         public extern static void MarkAllScenesDirty();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("ClearSceneDirtiness")]
         internal extern static void ClearSceneDirtiness(Scene scene);
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("GetSceneManagerSetup")]
+        [NativeMethod("GetSceneManagerSetup", ThrowsException = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static SceneSetup[] GetSceneManagerSetup();
 
-        [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("RestoreSceneManagerSetup")]
+        [NativeMethod("RestoreSceneManagerSetup", ThrowsException = true)]
         public extern static void RestoreSceneManagerSetup([UnityMarshalAs(NativeType.ScriptingObjectPtr)] SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]

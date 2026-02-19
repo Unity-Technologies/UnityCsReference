@@ -8,11 +8,12 @@ using System.IO;
 using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
+using static UnityEditor.RendererEditorBase;
 
 namespace UnityEditor
 {
@@ -254,8 +255,10 @@ namespace UnityEditor
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable CS0618 // Type or member is obsolete
             ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.InstanceID).ToArray();
 #pragma warning restore UA2001
+#pragma warning restore CS0618 // Type or member is obsolete
             collidingProbe = null;
             foreach (var probe in probes)
             {
@@ -764,7 +767,8 @@ namespace UnityEditor
 
             Bounds b = new Bounds(center, size);
 
-            if (b.Contains(localTransformPosition)) return false;
+            if (b.Contains(localTransformPosition))
+                return false;
 
             b.Encapsulate(localTransformPosition);
 
@@ -882,10 +886,13 @@ namespace UnityEditor
             // Drawing of the probe box is done from GizmoDrawers.cpp,
             // here we only want to show the box editing handles when needed.
             ReflectionProbe p = (ReflectionProbe)target;
+            Matrix4x4 probeSpace = GetLocalSpace(p);
 
-            using (new Handles.DrawingScope(Matrix4x4.Translate(p.center) * GetLocalSpace(p)))
+            using (new Handles.DrawingScope(probeSpace))
             {
-                m_BoundsHandle.center = Vector3.zero;
+                // A reflection probe's center is in world space but the bounds handles are in
+                // the probe's local space.
+                m_BoundsHandle.center = probeSpace.inverse * p.center;
                 m_BoundsHandle.size = p.size;
 
                 EditorGUI.BeginChangeCheck();
@@ -893,10 +900,11 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(p, "Modified Reflection Probe AABB");
-                    Vector3 center = p.center;
+                    Vector3 center = m_BoundsHandle.center;
                     Vector3 size = m_BoundsHandle.size;
                     ValidateAABB(ref center, ref size);
-                    p.center = center;
+                    // Transform back the probe center to world space
+                    p.center = probeSpace * center;
                     p.size = size;
                     EditorUtility.SetDirty(target);
                 }

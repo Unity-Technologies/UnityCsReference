@@ -64,10 +64,10 @@ namespace UnityEngine.Rendering
         [FreeFunction("UI::GetCanvasManager().EmitGeometryForCamera")]
         extern static public void EmitGeometryForCamera(Camera camera);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void ExecuteCommandBuffer_Internal(CommandBuffer commandBuffer);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void ExecuteCommandBufferAsync_Internal(CommandBuffer commandBuffer, ComputeQueueType queueType);
 
         extern private void SetupCameraProperties_Internal([NotNull] Camera camera, bool stereoSetup, int eye);

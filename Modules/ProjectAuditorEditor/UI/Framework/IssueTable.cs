@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.Utils;
@@ -30,16 +32,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Resize to Fit"), false, new GenericMenu.MenuFunction(this.ResizeToFit));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Resize to Fit"), false, new GenericMenu.MenuFunction(ResizeToFit));
             menu.AddSeparator("");
-            for (int userData = 0; userData < this.state.columns.Length; ++userData)
+            for (int userData = 0; userData < state.columns.Length; ++userData)
             {
-                MultiColumnHeaderState.Column column = this.state.columns[userData];
-                string text = !string.IsNullOrEmpty(column.contextMenuText) ? column.contextMenuText : column.headerContent.text;
+                MultiColumnHeaderState.Column column = state.columns[userData];
+                string text = string.IsNullOrEmpty(column.contextMenuText) ? column.headerContent.text : column.contextMenuText;
                 if (column.allowToggleVisibility)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    menu.AddItem(new GUIContent(text), ((IEnumerable<int>) this.state.visibleColumns).Contains<int>(userData), new GenericMenu.MenuFunction2(this.MyToggleVisibility), (object) userData);
-#pragma warning restore UA2001
+                    menu.AddItem(new GUIContent(text), state.visibleColumns.Contains(userData), new GenericMenu.MenuFunction2(MyToggleVisibility), userData);
             }
         }
     }
@@ -240,9 +240,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var groupedItems in groupedItemQuery)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var groupName = groupedItems.Key;
-#pragma warning restore UA2001
                     var group = m_TreeViewItemGroupsLookup[groupName];
 
                     if (!groupNameItemLookup.TryGetValue(groupName, out var children))
@@ -537,7 +535,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     GUI.enabled = true;
             }
 
-            ShowContextMenu(cellRect, item, propertyType);
+            ShowContextMenu(cellRect, item, propertyType, args.GetNumVisibleColumns());
         }
 
         new void CenterRectUsingSingleLineHeight(ref Rect rect)
@@ -597,10 +595,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public int GetNumIgnoredIssues()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var allIssues = m_TreeViewItemIssues.ToArray();
-            var ignored_children = allIssues.Where(item => item.Value.ReportItem.IsIgnored);
-            return ignored_children.Count();
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return m_TreeViewItemIssues.Count(item => item.Value.ReportItem.IsIgnored);
 #pragma warning restore UA2001
         }
 
@@ -664,7 +660,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             SortIfNeeded(GetRows());
         }
 
-        void ShowContextMenu(Rect cellRect, IssueTableItem item, PropertyType propertyType)
+        void ShowContextMenu(Rect cellRect, IssueTableItem item, PropertyType propertyType, int numVisibleColumns)
         {
             var current = Event.current;
             if (cellRect.Contains(current.mousePosition) && current.type == EventType.ContextClick)
@@ -718,16 +714,62 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 menu.AddSeparator("");
-                menu.AddItem(Utility.CopyToClipboard, false, () =>
-                {
-                    EditorInterop.CopyToClipboard(
-                        item.IsGroup() ? item.GetDisplayName() : item.ReportItem.GetProperty(propertyType));
-                });
+                menu.AddItem(Utility.CopyRowToClipboard, false, () => CopySelectionToClipboard(item, propertyType, numVisibleColumns, CopyType.Row));
+                menu.AddItem(Utility.CopyCellToClipboard, false, () => CopySelectionToClipboard(item, propertyType, numVisibleColumns, CopyType.Cell));
 
                 menu.ShowAsContext();
 
                 current.Use();
             }
+        }
+
+        enum CopyType
+        {
+            Row,
+            Cell
+        }
+
+        void CopySelectionToClipboard(IssueTableItem item, PropertyType propertyType, int numVisibleColumns, CopyType copyType)
+        {
+            var sortedSelectedIDs = new List<int>(SortItemIDsInRowOrder(state.selectedIDs));
+
+            var text = new StringBuilder();
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            bool indentItems = !flatView && sortedSelectedIDs.Exists(id => m_TreeViewItemGroupsLookup.Values.Any(g => g.id == id));
+#pragma warning restore UA2006
+            foreach (var id in sortedSelectedIDs)
+            {
+                if (text.Length > 0)
+                    text.Append("\n");
+
+                if (!m_TreeViewItemIssues.TryGetValue(id, out var currentItem))
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    currentItem = m_TreeViewItemGroupsLookup.Values.First(g => g.id == id); // Group name
+#pragma warning restore UA2001
+                else if (indentItems)
+                    text.Append("\t");  // If showing in groups, indent the items
+
+                if (currentItem.IsGroup())
+                {
+                    text.Append(currentItem.GetDisplayName());
+                }
+                else if (copyType == CopyType.Row)
+                {
+                    for (int columnIndex = 0; columnIndex < numVisibleColumns; columnIndex++)
+                    {
+                        if (columnIndex > 0)
+                            text.Append(", ");
+                        var property = m_Layout.Properties[columnIndex];
+                        text.Append(currentItem.ReportItem.GetProperty(property.Type));
+                    }
+                }
+                else
+                {
+                    text.Append(currentItem.ReportItem.GetProperty(propertyType));
+                }
+            }
+
+            EditorInterop.CopyToClipboard(text.ToString());
         }
 
         public void ClearSelection()

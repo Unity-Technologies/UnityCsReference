@@ -271,22 +271,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!selectedIndices.Any()) return;
-#pragma warning restore UA2002
+                    if (selectedIndicesList.Count == 0) return;
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
+                    index = Mathf.Max(0, selectedIndicesList.Max() - (virtualizationController.visibleItemCount - 1));
 #pragma warning restore UA2001
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!selectedIndices.Any()) return;
-#pragma warning restore UA2002
+                    if (selectedIndicesList.Count == 0) return;
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        selectedIndicesList.Max() + (virtualizationController.visibleItemCount - 1));
 #pragma warning restore UA2001
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();

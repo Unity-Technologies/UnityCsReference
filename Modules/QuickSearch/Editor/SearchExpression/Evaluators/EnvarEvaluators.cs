@@ -109,7 +109,7 @@ namespace UnityEditor.Search
                 if (string.IsNullOrEmpty(selectionResult.assetPath))
                 {
                     Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
-                    yield return SearchExpression.CreateItem(selectionResult.entityId.GetRawData(), c.ResolveAlias("Selection"));
+                    yield return SearchExpression.CreateItem(EntityId.ToULong(selectionResult.entityId), c.ResolveAlias("Selection"));
                 }
                 else
                     yield return SearchExpression.CreateItem(selectionResult.assetPath, c.ResolveAlias("Selection"));
@@ -144,9 +144,9 @@ namespace UnityEditor.Search
                         if (mi.Name == "Env")
                             return false;
                         var categories = mi.GetCustomAttributes<CategoryAttribute>();
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         return categories.Any(category => category.Category == "Env");
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                     }).ToDictionary(mi => Utils.FastToLower(mi.Name));
                 }
 

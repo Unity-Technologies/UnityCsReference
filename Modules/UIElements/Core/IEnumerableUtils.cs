@@ -39,30 +39,6 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static int GetCount(this IEnumerable collection)
-        {
-            var count = 0;
-            foreach (var item in collection)
-            {
-                count++;
-            }
-
-            return count;
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static bool Any<T>(this List<T> source, Func<T, bool> predicate)
-        {
-            foreach (var item in source)
-            {
-                if (predicate(item))
-                    return true;
-            }
-
-            return false;
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static HashSet<TResult> UniqueSelect<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
             var list = new HashSet<TResult>();

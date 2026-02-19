@@ -22,8 +22,8 @@ namespace UnityEditor
     {
         public static extern string Encode([NotNull] JSONObject t);
         public static extern string EncodeObject(object o);
-        [NativeThrows] public static extern JSONObject Decode([NotNull] byte[] sjson);
-        [NativeThrows] public static extern object DecodeObject([NotNull] byte[] sjson);
+        [NativeMethod(ThrowsException = true)] public static extern JSONObject Decode([NotNull] byte[] sjson);
+        [NativeMethod(ThrowsException = true)] public static extern object DecodeObject([NotNull] byte[] sjson);
 
         public static JSONObject Load(string path)
         {

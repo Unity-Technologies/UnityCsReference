@@ -38,7 +38,7 @@ namespace UnityEngine.Scripting
             }
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void SetMode(Mode mode);
         extern static Mode GetMode();
 
@@ -46,8 +46,7 @@ namespace UnityEngine.Scripting
 
         public extern static ulong incrementalTimeSliceNanoseconds { get; set; }
 
-        [NativeThrows]
-        [NativeMethod("CollectIncrementalWrapper")]
+        [NativeMethod("CollectIncrementalWrapper", ThrowsException = true)]
         public extern static bool CollectIncremental(ulong nanoseconds = 0);
     }
 }

@@ -69,7 +69,7 @@ namespace UnityEditor.Search
             }
 
             rootItem.SortChildren(SortColumnProviders);
-            foreach (var c in rootItem.children)
+            foreach (var c in rootItem.childList)
                 c.SortChildren(SortColumns, true);
             return rootItem;
         }
@@ -80,11 +80,9 @@ namespace UnityEditor.Search
             if (m_ColumnIndexes.TryGetValue(i.id, out var column))
                 properties.Add(column);
             else if (i.userData is AdvancedDropdownItem addAllItem)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                AddAll(properties, addAllItem.children, addAllItem.children.Where(c => c.userData is SearchColumn).All(c => c.children.Any()));
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                AddAll(properties, addAllItem.childList, addAllItem.childList.Where(c => c.userData is SearchColumn).All(c => c.hasChildren));
 #pragma warning restore UA2001
-#pragma warning restore UA2002
 
             m_AddColumnsHandler?.Invoke(properties, m_ActiveColumnIndex);
         }
@@ -95,7 +93,7 @@ namespace UnityEditor.Search
             var name = pos == -1 ? path : path.Substring(0, pos);
             var suffix = pos == -1 ? null : path.Substring(pos + 1);
 
-            foreach (var c in root.children)
+            foreach (var c in root.childList)
             {
                 if (suffix == null && string.Equals(c.name, name, StringComparison.Ordinal))
                     return c;
@@ -165,12 +163,12 @@ namespace UnityEditor.Search
             return lhs.displayName.CompareTo(rhs.displayName);
         }
 
-        private void AddAll(List<SearchColumn> properties, IEnumerable<AdvancedDropdownItem> children, bool recursive)
+        private void AddAll(List<SearchColumn> properties, IReadOnlyList<AdvancedDropdownItem> children, bool recursive)
         {
             foreach (var toAdd in children)
             {
                 if (recursive)
-                    AddAll(properties, toAdd.children, recursive);
+                    AddAll(properties, toAdd.childList, recursive);
 
                 if (!(toAdd.userData is SearchColumn ac))
                     continue;

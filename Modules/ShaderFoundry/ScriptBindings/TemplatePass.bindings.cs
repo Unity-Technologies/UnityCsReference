@@ -22,9 +22,9 @@ namespace UnityEditor.ShaderFoundry
         internal bool m_EnableDebugging;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static TemplatePassInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern bool IsUsePass();
+        [NativeMethod(IsThreadSafe = true)] internal extern static TemplatePassInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsUsePass();
 
         // IInternalType
         TemplatePassInternal IInternalType<TemplatePassInternal>.ConstructInvalid() => Invalid();

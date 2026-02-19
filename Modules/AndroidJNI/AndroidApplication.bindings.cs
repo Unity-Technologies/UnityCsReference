@@ -17,9 +17,9 @@ namespace UnityEngine.Android
         private static AndroidJavaObjectUnityOwned m_Context = null;
         private static AndroidJavaObjectUnityOwned m_Activity = null;
         private static AndroidJavaObjectUnityOwned m_UnityPlayer = null;
-        internal static extern IntPtr UnityPlayerRaw { [ThreadSafe] get; }
-        private static extern IntPtr CurrentContextRaw { [ThreadSafe] get; }
-        private static extern IntPtr CurrentActivityRaw { [ThreadSafe] get; }
+        internal static extern IntPtr UnityPlayerRaw { [NativeMethod(IsThreadSafe = true)] get; }
+        private static extern IntPtr CurrentContextRaw { [NativeMethod(IsThreadSafe = true)] get; }
+        private static extern IntPtr CurrentActivityRaw { [NativeMethod(IsThreadSafe = true)] get; }
 
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void AcquireMainThreadSynchronizationContext()

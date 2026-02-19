@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
@@ -212,11 +213,26 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically
-        /// allowing to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
+        /// This event is fired when a <see cref="HierarchyView"/> is bound to the hierarchy window.
+        /// Typically used to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
         /// </summary>
+        /// <remarks>
+        /// This event provides the same functionality as <see cref="HierarchyNodeTypeHandler.OnBindView(HierarchyView)"/>
+        /// but at the window level for global customization. Use <see cref="UnbindView"/> for symmetric cleanup.
+        /// </remarks>
         [AutoStaticsCleanupOnCodeReload]
-        public static event Action<VisualElement> InitializingView;
+        public static event Action<HierarchyView> BindView;
+
+        /// <summary>
+        /// This event is fired when a <see cref="HierarchyView"/> is about to be unbound from the hierarchy window.
+        /// Typically used to cleanup resources associated with the view.
+        /// </summary>
+        /// <remarks>
+        /// This event provides the same functionality as <see cref="HierarchyNodeTypeHandler.OnUnbindView(HierarchyView)"/>
+        /// but at the window level for global cleanup.
+        /// </remarks>
+        [AutoStaticsCleanupOnCodeReload]
+        public static event Action<HierarchyView> UnbindView;
 
         /// <summary>
         /// This event is fired when a <see cref="HierarchyViewItem"/> is bound to a hierarchy view, allowing customization of the view item.
@@ -279,7 +295,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyWindowManager.InstantiateNodeTypeHandlers(m_Hierarchy);
 
             m_HierarchyView = new HierarchyView();
-            m_HierarchyView.Initializing += OnHierarchyViewInitializing;
+            m_HierarchyView.Bind += OnBindView;
             m_HierarchyView.FlagsChanged += OnHierarchyViewFlagsChanged;
             m_HierarchyView.SourceHierarchyChanged += OnSourceHierarchyChanged;
             m_HierarchyView.BindViewItem += OnBindViewItem;
@@ -436,13 +452,15 @@ namespace Unity.Hierarchy.Editor
 
             if (m_HierarchyView != null)
             {
+                UnbindView?.Invoke(m_HierarchyView);
+
                 m_HierarchyView.ListView?.UnregisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
                 if (m_HierarchyView.ListViewLayoutConfiguration != null)
                     m_HierarchyView.ListViewLayoutConfiguration.headerContextMenuPopulateEvent -= OnHeaderContextMenu;
                 m_HierarchyView.SourceHierarchyChanged -= OnSourceHierarchyChanged;
-                m_HierarchyView.Initializing -= OnHierarchyViewInitializing;
+                m_HierarchyView.Bind -= OnBindView;
                 m_HierarchyView.BindViewItem -= OnBindViewItem;
                 m_HierarchyView.UnbindViewItem -= OnUnbindViewItem;
                 m_HierarchyView.PopulateContextMenu -= OnPopulateContextMenu;
@@ -471,6 +489,26 @@ namespace Unity.Hierarchy.Editor
         {
             // Update last interacted hierarchy when user presses mouse button (including right-click).
             s_LastInteractedHierarchy = this;
+
+            // Synchronize global selection from view model on right-click.
+            // This makes sure the element currently selected by the right click in the view
+            // is set to the global selection. This is important since some context-menu operations
+            // don't take parameters and instead are reading directly from Selection.activeObject or Selection.entityIds.
+            if (IsRightClick((MouseButton)evt.button, evt.modifiers))
+                m_SelectionHandler.SyncGlobalSelectionFromViewModel();
+
+            static bool IsRightClick(MouseButton btn, EventModifiers modifiers)
+            {
+                // on OSX a right click can be either right click or ctrl+left click
+                if (UIElementsUtility.isOSXContextualMenuPlatform)
+                {
+                    return btn == MouseButton.RightMouse
+                           || (btn == MouseButton.LeftMouse
+                               && modifiers == EventModifiers.Control);
+                }
+
+                return btn == MouseButton.RightMouse;
+            }
         }
 
         void OnHierarchyWindowDragExited(DragExitedEvent evt)
@@ -508,7 +546,7 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        void OnHierarchyViewInitializing() => InitializingView?.Invoke(m_HierarchyView);
+        void OnBindView() => BindView?.Invoke(m_HierarchyView);
 
         void OnBindViewItem(HierarchyViewItem item) => BindViewItem?.Invoke(item);
 
@@ -771,21 +809,25 @@ namespace Unity.Hierarchy.Editor
 
                 case EventCommandNames.SelectAll:
                     m_HierarchyView.SelectAll(exposedOnly: true);
+                    m_SelectionHandler.SyncGlobalSelectionFromViewModel();
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.DeselectAll:
                     m_HierarchyView.DeselectAll();
+                    m_SelectionHandler.SyncGlobalSelectionFromViewModel();
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.InvertSelection:
                     m_HierarchyView.ToggleSelection();
+                    m_SelectionHandler.SyncGlobalSelectionFromViewModel();
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.SelectChildren:
                     m_HierarchyView.SelectChildrenAndExpandRecursive();
+                    m_SelectionHandler.SyncGlobalSelectionFromViewModel();
                     evt.StopPropagation();
                     break;
 
@@ -1287,6 +1329,7 @@ namespace Unity.Hierarchy.Editor
 
             menu.AddItem(new GUIContent("Reset Columns"), false, () => ResetColumns());
             menu.AddItem(new GUIContent("Copy Search Text"), false, () => CopyQueryToClipboard());
+
         }
 
         internal void OnToggleQueryBuilder()
@@ -1348,5 +1391,20 @@ namespace Unity.Hierarchy.Editor
             public event Action<ValidateCommandEvent> ValidateCommand;
             public event Action<ExecuteCommandEvent> ExecuteCommand;
         }
+
+        #region Marked as obsolete warning in 6.5
+        /// <summary>
+        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically
+        /// allowing to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
+        /// </summary>
+        [AutoStaticsCleanupOnCodeReload]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("InitializingView is deprecated. Use BindView instead, which provides direct access to the HierarchyView and has a symmetric UnbindView event.", false)]
+        public static event Action<VisualElement> InitializingView
+        {
+            add => BindView += value;
+            remove => BindView -= value;
+        }
+        #endregion
     }
 }

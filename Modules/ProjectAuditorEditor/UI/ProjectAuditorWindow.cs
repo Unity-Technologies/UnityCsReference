@@ -371,10 +371,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             InitializeTabs(!initialize);
 
             InitializeViewSelection(!initialize);
-
-            var summary = m_ViewManager.GetView(IssueCategory.Metadata);
-            if (summary is SummaryView summaryView)
-                summaryView.m_ProjectAuditorWindow = this;
         }
 
         void InitializeTabs(bool reload)
@@ -448,7 +444,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             // Make sure 'dirty' scriptable objects are saved to their corresponding assets
             AssetDatabase.SaveAssets();
 
-            m_ViewManager?.SaveSettings();
+            m_ViewManager?.OnDisable();
         }
 
         // Called when the EditorWindow is closed
@@ -613,7 +609,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Category = IssueCategory.Metadata,
                 DisplayName = "Summary",
                 MenuOrder = -1,
-                ShowInfoPanel = false,
                 Type = typeof(SummaryView),
                 ShowAssemblySelection = true,
                 GetAssemblyName = issue => issue.GetCustomProperty(CodeProperty.Assembly),
@@ -629,6 +624,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowDependencyView = true,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 DependencyViewGuiContent = new GUIContent("Asset Dependencies"),
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.Assets,
@@ -672,6 +668,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuLabel = "Assets/Shaders/Compiler Messages",
                 MenuOrder = 4,
                 DescriptionWithIcon = true,
+                ShowDetails = true,
                 OnOpenIssue = EditorInterop.OpenTextFile<Shader>,
                 Type = typeof(ShaderCompilerMessagesView),
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.ShaderCompilerMessages
@@ -685,6 +682,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuLabel = "Assets/Shaders/Variants",
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 OnDrawToolbar = (viewManager) =>
                 {
@@ -710,6 +708,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuLabel = "Assets/Shaders/Compute Variants",
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 OnDrawToolbar = (viewManager) =>
                 {
@@ -865,6 +864,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowDependencyView = true,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 DependencyViewGuiContent = new GUIContent("Inverted Call Hierarchy", "Expand the tree to see all of the methods which lead to the call site of a selected issue."),
                 GetAssemblyName = issue => issue.GetCustomProperty(assemblyProperty),
                 OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,
@@ -880,6 +880,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuLabel = "Code/C# Compiler Messages",
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,
                 OnOpenManual = EditorInterop.OpenCompilerMessageDescriptor,
                 Type = typeof(CompilerMessagesView),
@@ -893,6 +894,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuOrder = 1,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 OnOpenIssue = (location) =>
                 {
                     if (location.Path.StartsWith("Packages/"))
@@ -921,6 +923,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuOrder = 100,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 Type = typeof(BuildStepsView),
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.BuildSteps
             });
@@ -933,6 +936,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 DescriptionWithIcon = true,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 ShowAdditionalInfoPanel = BuildSizeView.ShowAdditionalInfo,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 Type = typeof(BuildSizeView),
@@ -948,6 +952,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowAssemblySelection = true,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 GetAssemblyName = issue => issue.GetCustomProperty(domainReloadAssemblyProperty),
                 OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,
                 OnOpenManual = EditorInterop.OpenCodeDescriptor,
@@ -962,6 +967,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuOrder = 12,
                 ShowFilters = true,
                 ShowInfoPanel = true,
+                ShowDetails = true,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 //AnalyticsEventId = (int)AnalyticsReporter.UIButton.ApiCalls,
                 Type = typeof(DiagnosticView)
@@ -1692,7 +1698,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     m_ShouldRefresh = false;
                 }
 
-                activeView.DrawContent(true);
+                activeView.DrawContent();
             }
         }
 

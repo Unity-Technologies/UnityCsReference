@@ -46,6 +46,7 @@ namespace Unity.Profiling.Editor
 
         internal ChartViewController ChartViewController => m_ChartViewController;
 
+        private protected string Tooltip { get; private set; }
         private protected string IconPath { get; private set; }
 
         // Must be non-serialized to prevent the value being overridden after it is set in the constructor during deserialization.
@@ -56,7 +57,7 @@ namespace Unity.Profiling.Editor
 
         internal virtual ChartModelBuilder CreateChartModelBuilder()
         {
-            var builder = new ChartModelBuilder(SettingsService, ChartType, ChartCounters.Length, Identifier, DisplayName, IconPath);
+            var builder = new ChartModelBuilder(SettingsService, ChartType, ChartCounters.Length, Identifier, DisplayName, Tooltip, IconPath);
             builder.SetArea(area);
             builder.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
             return builder;
@@ -88,6 +89,7 @@ namespace Unity.Profiling.Editor
         {
             m_Identifier = args.Identifier;
             DisplayName = args.DisplayName;
+            Tooltip = args.Tooltip;
             IconPath = args.IconPath;
             ProfilerWindow = args.ProfilerWindow;
             SettingsService = args.SettingsService;
@@ -189,10 +191,11 @@ namespace Unity.Profiling.Editor
 
         internal readonly struct InitializationArgs
         {
-            public InitializationArgs(string identifier, string name, string iconPath, ProfilerWindow profilerWindow, IProfilerPersistentSettingsService settingsService)
+            public InitializationArgs(string identifier, string name, string tooltip, string iconPath, ProfilerWindow profilerWindow, IProfilerPersistentSettingsService settingsService)
             {
                 Identifier = identifier;
                 DisplayName = name;
+                Tooltip = tooltip;
                 IconPath = iconPath;
                 ProfilerWindow = profilerWindow;
                 SettingsService = settingsService;
@@ -201,6 +204,8 @@ namespace Unity.Profiling.Editor
             public string Identifier { get; }
 
             public string DisplayName { get; }
+
+            public string Tooltip { get; }
 
             public string IconPath { get; }
 

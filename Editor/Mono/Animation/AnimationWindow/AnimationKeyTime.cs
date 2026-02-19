@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.IntegerTime;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -77,5 +78,8 @@ namespace UnityEditorInternal
                 m_FrameRate == key.m_FrameRate &&
                 Mathf.Approximately(m_Time, key.m_Time);
         }
+
+        public static implicit operator DiscreteTime(AnimationKeyTime key) =>
+            new DiscreteTime(key.time);
     }
 }

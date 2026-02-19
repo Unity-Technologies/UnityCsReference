@@ -148,7 +148,6 @@ namespace UnityEngine.Bindings
                 case MarshalledArray.DataOwner.Empty:
                 case MarshalledArray.DataOwner.Null:
                     break;
-                case MarshalledArray.DataOwner.PinnedBufferSizeChanged:
                 case MarshalledArray.DataOwner.PinnedBuffer:
                 case MarshalledArray.DataOwner.TempAllocated:
                 case MarshalledArray.DataOwner.TempAllocatedCleanupRequired:

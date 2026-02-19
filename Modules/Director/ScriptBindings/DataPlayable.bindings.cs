@@ -14,7 +14,7 @@ namespace UnityEngine.Playables
     [StaticAccessor("DataPlayableBindings", StaticAccessorType.DoubleColon)]
     static class DataPlayableBindings
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
     }
 }

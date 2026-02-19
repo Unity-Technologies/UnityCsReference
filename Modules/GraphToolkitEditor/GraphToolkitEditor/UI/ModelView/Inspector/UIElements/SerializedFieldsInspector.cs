@@ -161,9 +161,9 @@ namespace Unity.GraphToolkit.Editor
                         continue;
 
                     var overrideForFields = fieldInfo.GetCustomAttributes<OverrideForFieldAttribute>();
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (overrideForFields.Count() > 0)
-#pragma warning restore UA2001
+                    #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    if (overrideForFields.Any())
+#pragma warning restore UA2002
                     {
                         if (fieldInfo.FieldType != typeof(bool))
                         {

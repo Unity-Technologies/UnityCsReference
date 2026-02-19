@@ -13,6 +13,8 @@ using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using static UnityEditor.AnimationUtility;
 using UnityEditor.AnimationWindowBuiltin;
 
+using TimeFormat = UnityEditor.Animations.AnimationWindow.TimelineFoundation.TimeFormat;
+
 namespace UnityEditorInternal
 {
     [System.Serializable]
@@ -47,12 +49,12 @@ namespace UnityEditorInternal
         [SerializeField] private bool m_RippleTime; // Toggle ripple time option for curve editor and dopesheet.
         private bool m_RippleTimeClutch; // Toggle ripple time option for curve editor and dopesheet.
         [SerializeField] private int m_ActiveKeyframeHash; // Which keyframe is active (selected key that user previously interacted with)
-        [SerializeField] private float m_FrameRate = kDefaultFrameRate;
         [SerializeField] private EntityId[] m_SelectionFilter;
 
         [NonSerialized] public Action onStartLiveEdit;
         [NonSerialized] public Action onEndLiveEdit;
         [NonSerialized] public Action<float> onFrameRateChange;
+        [NonSerialized] public Action onRefresh;
 
         private static List<AnimationWindowKeyframe> s_KeyframeClipboard; // For copy-pasting keyframes
 
@@ -74,7 +76,7 @@ namespace UnityEditorInternal
         // Hash of all the things that require animationWindow to refresh if they change
         private int m_PreviousRefreshHash;
 
-        // Changing m_Refresh means you are ordering a refresh at the next OnGUI().
+        // Changing m_Refresh means you are ordering a refresh at the next Update ().
         // CurvesOnly means that there is no need to refresh the hierarchy, since only the keyframe data changed.
         private RefreshType m_Refresh = RefreshType.None;
 
@@ -155,12 +157,12 @@ namespace UnityEditorInternal
         {
             get
             {
-                // SBZ Todo. This will be removed alongside classic.
-                Animator animator = activeAnimationPlayer as Animator;
-                if (animator == null)
-                    return false;
+                if (selection is AnimationWindowSelectionItem builtinSelection)
+                {
+                    return builtinSelection.animatorIsOptimized;
+                }
 
-                return animator.isOptimizable && !animator.hasTransformHierarchy;
+                return false;
             }
         }
 
@@ -221,11 +223,13 @@ namespace UnityEditorInternal
 
         public bool showFrameRate { get { return AnimationWindowOptions.showFrameRate; } set { AnimationWindowOptions.showFrameRate = value; } }
 
-        public void OnGUI()
+        public void Update()
         {
             RefreshHashCheck();
             Refresh();
         }
+
+        public void OnGUI() => Update();
 
         private void RefreshHashCheck()
         {
@@ -241,19 +245,23 @@ namespace UnityEditorInternal
         {
             selection.Synchronize();
 
+            if (refresh == RefreshType.None)
+                return;
+
+            m_ActiveKeyframeCache = null;
+            m_SelectedKeysCache = null;
+            m_SelectionBoundsCache = null;
+
+            if (animEditor != null && animEditor.curveEditor != null)
+                animEditor.curveEditor.InvalidateSelectionBounds();
+
             if (refresh == RefreshType.Everything)
             {
                 m_AllCurvesCacheDirty = true;
                 m_FilteredCurvesCacheDirty = true;
                 m_ActiveCurvesCacheDirty = true;
 
-                m_ActiveKeyframeCache = null;
                 m_dopelinesCache = null;
-                m_SelectedKeysCache = null;
-                m_SelectionBoundsCache = null;
-
-                if (animEditor != null && animEditor.curveEditor != null)
-                    animEditor.curveEditor.InvalidateSelectionBounds();
 
                 ClearCurveWrapperCache();
 
@@ -268,24 +276,18 @@ namespace UnityEditorInternal
                 if (activeCurves.Count == 0 && dopelines.Count > 0)
                     SelectHierarchyItem(dopelines[0], false, false);
 
-                m_Refresh = RefreshType.None;
             }
             else if (refresh == RefreshType.CurvesOnly)
             {
-                m_ActiveKeyframeCache = null;
-                m_SelectedKeysCache = null;
-                m_SelectionBoundsCache = null;
-
-                if (animEditor != null && animEditor.curveEditor != null)
-                    animEditor.curveEditor.InvalidateSelectionBounds();
-
                 ReloadModifiedAnimationCurveCache();
                 ReloadModifiedDopelineCache();
                 ReloadModifiedCurveWrapperCache();
 
-                m_Refresh = RefreshType.None;
                 m_ModifiedCurves.Clear();
             }
+
+            onRefresh?.Invoke();
+            m_Refresh = RefreshType.None;
         }
 
         // Hash for checking if any of these things is changed
@@ -370,8 +372,7 @@ namespace UnityEditorInternal
 
         public void OnSelectionChanged()
         {
-            if (onFrameRateChange != null)
-                onFrameRateChange(frameRate);
+            onFrameRateChange?.Invoke(frameRate);
 
             UpdateSelectionFilter();
 
@@ -392,7 +393,7 @@ namespace UnityEditorInternal
             }
         }
 
-        // Set this property to ask for refresh at the next OnGUI.
+        // Set this property to ask for refresh at the next Update.
         public RefreshType refresh
         {
             get { return m_Refresh; }
@@ -982,8 +983,7 @@ namespace UnityEditorInternal
 
         public void StartLiveEdit()
         {
-            if (onStartLiveEdit != null)
-                onStartLiveEdit();
+            onStartLiveEdit?.Invoke();
 
             m_LiveEditSnapshot = new List<LiveEditCurve>();
 
@@ -1018,8 +1018,7 @@ namespace UnityEditorInternal
 
             m_LiveEditSnapshot = null;
 
-            if (onEndLiveEdit != null)
-                onEndLiveEdit();
+            onEndLiveEdit?.Invoke();
         }
 
         public bool InLiveEdit()
@@ -1306,7 +1305,6 @@ namespace UnityEditorInternal
                     newKeyframe.curve.AddKeyframe(newKeyframe, keyTime);
                     SelectKey(newKeyframe);
 
-                    // SBZ TODO: Optimize to only save curve once instead once per keyframe
                     selection.clip.SaveCurve(newKeyframe.curve, kEditCurveUndoLabel);
 
                     lastTargetCurve = newKeyframe.curve;
@@ -1637,20 +1635,24 @@ namespace UnityEditorInternal
                 UnityEditor.Selection.activeGameObject = rootGameObject;
         }
 
+        [Obsolete("Use frameRate property instead.")]
         public float clipFrameRate
         {
-            get
-            {
-                if (selection.clip == null)
-                    return 60.0f;
-                return selection.clip.frameRate;
-            }
+            get => frameRate;
+            set => frameRate = value;
+        }
+
+        public float frameRate
+        {
+            get => selection.clip?.frameRate ?? kDefaultFrameRate;
             set
             {
                 // @TODO: Changing the clip in AnimationWindowState.frame rate feels a bit intrusive
                 // Should probably be done explicitly from the UI and not go through AnimationWindowState...
                 if (selection.clip != null && value > 0 && value <= 10000)
                 {
+                    var oldFrameRate = selection.clip.frameRate;
+
                     // Clear selection and save empty selection snapshot for undo consistency.
                     ClearKeySelections();
                     SaveKeySelection(kEditCurveUndoLabel);
@@ -1660,14 +1662,13 @@ namespace UnityEditorInternal
                     {
                         foreach (var key in curve.keyframes)
                         {
-                            int frame = AnimationKeyTime.Time(key.time, clipFrameRate).frame;
+                            int frame = AnimationKeyTime.Time(key.time, oldFrameRate).frame;
                             key.time = AnimationKeyTime.Frame(frame, value).time;
                         }
                     }
 
                     selection.clip.SaveCurves(allCurves, kEditCurveUndoLabel);
 
-                    // SBZ TODO Events are an issue.
                     if (selection.clip is UnityEditor.AnimationWindowBuiltin.AnimationWindowClip clip)
                     {
                         var animationClip = clip.animationClip;
@@ -1675,31 +1676,15 @@ namespace UnityEditorInternal
                         AnimationEvent[] events = AnimationUtility.GetAnimationEvents(animationClip);
                         foreach (AnimationEvent ev in events)
                         {
-                            int frame = AnimationKeyTime.Time(ev.time, clipFrameRate).frame;
+                            int frame = AnimationKeyTime.Time(ev.time, oldFrameRate).frame;
                             ev.time = AnimationKeyTime.Frame(frame, value).time;
                         }
 
                         AnimationUtility.SetAnimationEvents(animationClip, events);
 
-                        clip.frameRate = value;
                     }
-                }
-            }
-        }
 
-        public float frameRate
-        {
-            get
-            {
-                return m_FrameRate;
-            }
-            set
-            {
-                if (m_FrameRate != value)
-                {
-                    m_FrameRate = value;
-                    if (onFrameRateChange != null)
-                        onFrameRateChange(m_FrameRate);
+                    selection.clip.frameRate = value;
                 }
             }
         }
@@ -1718,7 +1703,27 @@ namespace UnityEditorInternal
             set => controller.time = value;
         }
 
-        public TimeArea.TimeFormat timeFormat { get { return AnimationWindowOptions.timeFormat; } set { AnimationWindowOptions.timeFormat = value; } }
+        public TimeFormat timeFormat
+        {
+            get => AnimationWindowOptions.timeFormat;
+            set => AnimationWindowOptions.timeFormat = value;
+        }
+
+        // Compatibility function for Curve Editor.
+        // Curve Editor cannot work with TimeCode.
+        TimeArea.TimeFormat ICurveEditorState.timeFormat
+        {
+            get
+            {
+                return timeFormat switch
+                {
+                    TimeFormat.Seconds => TimeArea.TimeFormat.None,
+                    TimeFormat.Timecode => TimeArea.TimeFormat.TimeFrame,
+                    TimeFormat.Frames => TimeArea.TimeFormat.Frame,
+                    _ => TimeArea.TimeFormat.None
+                };
+            }
+        }
 
         public TimeArea timeArea
         {
@@ -1765,8 +1770,7 @@ namespace UnityEditorInternal
             if (snap == SnapMode.Disabled)
                 return time;
 
-            float fps = (snap == SnapMode.SnapToFrame) ? frameRate : clipFrameRate;
-            return SnapToFrame(time, fps);
+            return SnapToFrame(time, frameRate);
         }
 
         public float SnapToFrame(float time, float fps)
@@ -1861,7 +1865,7 @@ namespace UnityEditorInternal
         {
             List<AnimationWindowCurve> curves = (showCurveEditor && activeCurves.Count > 0) ? activeCurves : filteredCurves;
 
-            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), controller.time, clipFrameRate);
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), controller.time, frameRate);
             controller.time = SnapToFrame(newTime, SnapMode.SnapToFrame);
         }
 
@@ -1869,7 +1873,7 @@ namespace UnityEditorInternal
         {
             List<AnimationWindowCurve> curves = (showCurveEditor && activeCurves.Count > 0) ? activeCurves : filteredCurves;
 
-            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), controller.time, clipFrameRate);
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), controller.time, frameRate);
             controller.time = SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame);
         }
 

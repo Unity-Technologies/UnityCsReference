@@ -21,5 +21,14 @@ namespace UnityEngine.TextCore.Text
         public TextCoreVertex[] vertexData;
         public Material material;
         public int vertexCount;
+
+        [UsedByNativeCode, RequiredMember]
+        internal static void DeconstructArrayElementRaw(MeshInfoBindings[] array, int index, out object vertexData, out object material, out int vertexCount)
+        {
+            ref MeshInfoBindings tmp = ref array[index];
+            vertexData = tmp.vertexData;
+            material = tmp.material;
+            vertexCount = tmp.vertexCount;
+        }
     }
 }

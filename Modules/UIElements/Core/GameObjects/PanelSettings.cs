@@ -1161,6 +1161,7 @@ namespace UnityEngine.UIElements
             m_OldFallbackDpi = m_FallbackDpi;
             m_OldTargetTexture = m_TargetTexture;
             m_OldSortingOrder = m_SortingOrder;
+            m_OldThemeUss = themeUss;
 
             if (isDirty)
             {

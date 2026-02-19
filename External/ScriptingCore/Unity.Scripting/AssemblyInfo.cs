@@ -1,0 +1,37 @@
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("LongLivingCode")]
+[assembly: InternalsVisibleTo("ShortLivingCode")]
+[assembly: InternalsVisibleTo("Unity.Private.Scripting")]
+[assembly: InternalsVisibleTo("Unity.Scripting.ObjectTransfer")]
+[assembly: InternalsVisibleTo("UnityEngine.CoreModule")]
+[assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
+
+[assembly: InternalsVisibleTo("UnityEngine")]
+[assembly: InternalsVisibleTo("UnityEditor")]
+[assembly: InternalsVisibleTo("Unity.Scripting.Tests")]
+[assembly: InternalsVisibleTo("Unity.Scripting.ObjectTransfer.Tests")]
+[assembly: InternalsVisibleTo("Unity.Scripting.ObjectTransfer.PerformanceTests")]
+[assembly: InternalsVisibleTo("Unity.Scripting.ObjectTransferStrategy.Tests")]
+
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+
+//Remove when we move API to be public
+[assembly: InternalsVisibleTo("SomeTestAssembly")]
+[assembly: InternalsVisibleTo("UnityEngine.ContentLoadModule")]
+[assembly: InternalsVisibleTo("UnityEngine.HierarchyModule")]
+[assembly: InternalsVisibleTo("UnityEditor.HierarchyModule")]
+[assembly: InternalsVisibleTo("UnityEngine.HierarchyCoreModule")]
+[assembly: InternalsVisibleTo("UnityEditor.ShaderFoundryModule")]
+[assembly: InternalsVisibleTo("UnityEditor.QuickSearchModule")]
+[assembly: InternalsVisibleTo("UnityEditor.EditorToolbarModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
+[assembly: InternalsVisibleTo("UnityEngine.IMGUIModule")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
+[assembly: InternalsVisibleTo("LifecycleTestAssembly1")]
+[assembly: InternalsVisibleTo("LifecycleTestAssembly2")]
+[assembly: InternalsVisibleTo("LifecycleTestAssembly3")]
+[assembly: InternalsVisibleTo("LifecycleTestAssembly4")]

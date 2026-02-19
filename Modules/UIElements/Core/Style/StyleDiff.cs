@@ -453,6 +453,17 @@ namespace UnityEngine.UIElements
                     }
                     var d = uxmlData.GetValueOrDefault(property.id);
                     uxmlData[property.id] = UxmlData.WithProperty(d, property);
+
+                    if (StyleDebug.IsShorthandProperty(property.id))
+                    {
+                        using var listHandle = ListPool<StylePropertyId>.Get(out var longHandPropertyIds);
+                        StyleDebug.PopulateLonghandPropertyIds(property.id, longHandPropertyIds);
+                        foreach (var longHandId in longHandPropertyIds)
+                        {
+                            var longHandData = uxmlData.GetValueOrDefault(longHandId);
+                            uxmlData[longHandId] = UxmlData.WithProperty(longHandData, property);
+                        }
+                    }
                 }
             }
 
@@ -494,7 +505,8 @@ namespace UnityEngine.UIElements
                         StyleDebug.PopulateLonghandPropertyIds(propertyId, longHandPropertyIds);
                         foreach (var longHandId in longHandPropertyIds)
                         {
-                            uxmlData[longHandId] = UxmlData.WithSelector(d, record.Value);
+                            var longHandData = uxmlData.GetValueOrDefault(longHandId);
+                            uxmlData[longHandId] = UxmlData.WithSelector(longHandData, record.Value);
                         }
                     }
                 }

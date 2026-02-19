@@ -801,9 +801,7 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectedItems.Count() == 0)
-#pragma warning restore UA2001
+            if (selectedItems.Count == 0)
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -824,9 +822,7 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_Overview.importProcessAnalysis.treeView.GetSelection();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectedItems.Count() == 0)
-#pragma warning restore UA2001
+            if (selectedItems.Count == 0)
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -847,9 +843,7 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectedItems.Count() == 0)
-#pragma warning restore UA2001
+            if (selectedItems.Count == 0)
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -871,9 +865,7 @@ namespace UnityEditor
             var copyItemName = "Copy";
             var revealInExplorerItemName = GetOSSpecificShowIn();
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectedItems.Count() == 0)
-#pragma warning restore UA2001
+            if (selectedItems.Count == 0)
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
                 menu.AddDisabledItem(new GUIContent(revealInExplorerItemName));
@@ -1847,9 +1839,7 @@ namespace UnityEditor
 
         private static MultiColumnHeaderState.Column[] CreateColumns(params Column[] columns)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var colCount = columns.Count();
-#pragma warning restore UA2001
+            var colCount = columns.Length;
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return columns.Select(col =>
 #pragma warning restore UA2001
@@ -1984,8 +1974,6 @@ namespace UnityEditor
         {
             m_ReasonsToReimportList.Clear();
 
-            IEnumerable<ArtifactDifferenceReporter.ArtifactInfoDifference> differences = new List<ArtifactDifferenceReporter.ArtifactInfoDifference>();
-
             if (previousArtifactInfo == null)
             {
                 m_ItemContainers.reasonsForImport.header.text = "Reason for Import";
@@ -2002,20 +1990,14 @@ namespace UnityEditor
             {
                 var reporter = new ArtifactDifferenceReporter();
                 var messages = reporter.GatherDifferences(previousArtifactInfo, selectedArtifactInfo);
-                differences = reporter.GetAllDifferences();
+                var differences = reporter.GetAllDifferences();
                 var reimportMessages = new StringBuilder();
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                reimportMessages.AppendLine(messages.Count() > 1
-#pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    ? $"Reasons for Import ({messages.Count()})"
-#pragma warning restore UA2001
+                reimportMessages.AppendLine(messages.Count > 1
+                    ? $"Reasons for Import ({messages.Count})"
                     : "Reason (1)");
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ReasonsToReimportList = differences.ToList();
-#pragma warning restore UA2001
+                m_ReasonsToReimportList = new List<ArtifactDifferenceReporter.ArtifactInfoDifference>(differences);
             }
 
             m_ItemContainers.reasonsForImport.treeView.UpdateItemList(m_ReasonsToReimportList);
@@ -3002,12 +2984,8 @@ namespace UnityEditor
                     .Select(AssetDatabase.GUIDFromAssetPath)
                     .ToArray());
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(revisions.Count());
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            for (int i = 0; i < revisions.Count(); ++i)
-#pragma warning restore UA2001
+            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(revisions.Length);
+            for (int i = 0; i < revisions.Length; ++i)
             {
                 artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
                 {

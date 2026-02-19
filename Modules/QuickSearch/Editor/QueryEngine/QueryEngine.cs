@@ -112,9 +112,9 @@ namespace UnityEditor.Search
         public List<IQueryNode> expressionNodes;
         public NodesToStringPosition nodesToStringPosition;
         public ICollection<string> tokens;
-        public ICollection<QueryToggle> toggles;
+        public IList<QueryToggle> toggles;
 
-        public QueryEngineParserData(NodesToStringPosition nodesToStringPosition, ICollection<string> tokens, ICollection<QueryToggle> toggles)
+        public QueryEngineParserData(NodesToStringPosition nodesToStringPosition, ICollection<string> tokens, IList<QueryToggle> toggles)
         {
             expressionNodes = new List<IQueryNode>();
             this.nodesToStringPosition = nodesToStringPosition;
@@ -677,7 +677,7 @@ namespace UnityEditor.Search
             RemoveQuoteDelimiter(textDelimiter, true);
         }
 
-        IQueryNode BuildGraphRecursively(string text, int startIndex, int endIndex, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, NodesToStringPosition nodesToStringPosition)
+        IQueryNode BuildGraphRecursively(string text, int startIndex, int endIndex, ICollection<QueryError> errors, ICollection<string> tokens, IList<QueryToggle> toggles, NodesToStringPosition nodesToStringPosition)
         {
             var userData = new QueryEngineParserData(nodesToStringPosition, tokens, toggles);
             var result = Parse(text, startIndex, endIndex, errors, userData);
@@ -689,7 +689,7 @@ namespace UnityEditor.Search
             return rootNode;
         }
 
-        internal BuildGraphResult BuildGraph(string text, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
+        internal BuildGraphResult BuildGraph(string text, ICollection<QueryError> errors, ICollection<string> tokens, IList<QueryToggle> toggles)
         {
             if (text == null)
                 return new BuildGraphResult(new QueryGraph(null), new QueryGraph(null));
@@ -1027,10 +1027,10 @@ namespace UnityEditor.Search
                 return null;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(op.token)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
 #pragma warning restore UA2002
             {
                 args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
@@ -1195,10 +1195,10 @@ namespace UnityEditor.Search
                 }
 
                 var opToken = op.token;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(opToken)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
 #pragma warning restore UA2002
                 {
                     args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
@@ -3273,7 +3273,7 @@ namespace UnityEditor.Search
             return BuildQuery(text, queryHandlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new ParsedQuery<TData, TPayload>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
         }
 
-        TQuery BuildQuery<TQuery, TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory, Func<QueryGraph, QueryGraph, ICollection<QueryError>, ICollection<string>, ICollection<QueryToggle>, TQueryHandler, TQuery> queryCreator)
+        TQuery BuildQuery<TQuery, TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory, Func<QueryGraph, QueryGraph, ICollection<QueryError>, ICollection<string>, IReadOnlyList<QueryToggle>, TQueryHandler, TQuery> queryCreator)
             where TQueryHandler : IQueryHandler<TData, TPayload>
             where TPayload : class
             where TQuery : ParsedQuery<TData, TPayload>

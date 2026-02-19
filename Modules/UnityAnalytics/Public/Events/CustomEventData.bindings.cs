@@ -49,7 +49,7 @@ namespace UnityEngine.Analytics
         }
 
         internal static extern IntPtr Internal_Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] CustomEventData ced, string name);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
         public extern bool AddString(string key, string value);

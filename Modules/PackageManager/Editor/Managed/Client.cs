@@ -47,15 +47,11 @@ namespace UnityEditor.PackageManager
             {
                 throw new ArgumentException("No packages provided to add or remove");
             }
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (packagesToAdd.Any(string.IsNullOrWhiteSpace))
-#pragma warning restore UA2001
+            if (Array.Exists(packagesToAdd, string.IsNullOrWhiteSpace))
             {
                 throw new ArgumentException("Packages to add cannot contain null, empty or whitespace values", nameof(packagesToAdd));
             }
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (packagesToRemove.Any(string.IsNullOrWhiteSpace))
-#pragma warning restore UA2001
+            if (Array.Exists(packagesToRemove, string.IsNullOrWhiteSpace))
             {
                 throw new ArgumentException("Packages to remove cannot contain null, empty or whitespace values", nameof(packagesToRemove));
             }

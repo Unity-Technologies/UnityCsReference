@@ -227,9 +227,16 @@ namespace UnityEditor.Search
         private readonly VisualElement m_Target;
         private readonly Image m_SpinnerImage;
         private readonly GUIContent[] m_Wheels;
+        private Func<bool> m_KeepSpinning;
 
         public SearchProgressBinding(ISearchView viewModel, VisualElement target)
+            : this(viewModel, target, () => viewModel.searchInProgress)
         {
+        }
+
+        public SearchProgressBinding(ISearchView viewModel, VisualElement target, Func<bool> keepSpinning)
+        {
+            m_KeepSpinning = keepSpinning;
             m_ViewModel = viewModel;
             m_Target = target;
             m_SpinnerImage = target.Query<Image>();
@@ -244,17 +251,21 @@ namespace UnityEditor.Search
         void IBinding.PreUpdate() { }
         void IBinding.Release() { }
 
+        public void Spin()
+        {
+            int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 5, 11.99f);
+            m_SpinnerImage.image = m_Wheels[frame].image;
+            m_SpinnerImage.tooltip = m_Wheels[frame].tooltip;
+        }
+
         public void Update()
         {
-            var searchInProgress = m_ViewModel.searchInProgress;
-            if (searchInProgress && m_SpinnerImage != null)
+            var keepSpinning = m_KeepSpinning();
+            if (keepSpinning && m_SpinnerImage != null)
             {
-                int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 5, 11.99f);
-                m_SpinnerImage.image = m_Wheels[frame].image;
-                m_SpinnerImage.tooltip = m_Wheels[frame].tooltip;
+                Spin();
             }
-
-            m_Target.EnableInClassList(SearchStatusBar.hiddenClassName, !searchInProgress);
+            m_Target.EnableInClassList(SearchStatusBar.hiddenClassName, !keepSpinning);
         }
     }
 }

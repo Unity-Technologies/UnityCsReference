@@ -28,8 +28,7 @@ If your project uses a custom build script, ensure that it passes the <b>BuildOp
 
         List<ReportItem> m_MetaData = new List<ReportItem>();
 
-        public BuildReportView(ViewManager viewManager) :
-            base(viewManager)
+        public BuildReportView(ViewManager viewManager) : base(viewManager)
         {
         }
 
@@ -66,26 +65,23 @@ If your project uses a custom build script, ensure that it passes the <b>BuildOp
             EditorGUILayout.EndVertical();
         }
 
-        Vector2 m_DetailsScrollPos;
-
         public override void DrawDetails(ReportItem[] selectedIssues)
         {
-            EditorGUILayout.BeginVertical();
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var selectedDescriptors = selectedIssues.Select(i => i.GetCustomProperty(0)).Distinct().ToArray();
+#pragma warning restore UA2001
 
-            if (selectedIssues.Length == 0)
-                GUILayout.TextArea(k_NoSelectionText, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else if (selectedIssues.Length > 1)
-                GUILayout.TextArea(k_MultipleSelectionText, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else // if (selectedDescriptors.Length == 1)
-            {
-                var description = GetIssueDescription(selectedIssues[0]);
+            string selectedText = k_NoSelectionText;
+            if (selectedDescriptors.Length > 1)
+                selectedText = k_MultipleSelectionText;
+            else if (selectedDescriptors.Length == 1)
+                selectedText = GetIssueDescription(selectedIssues[0]);
 
-                m_DetailsScrollPos = EditorGUILayout.BeginScrollView(m_DetailsScrollPos, GUILayout.ExpandHeight(true));
-                GUILayout.TextArea(description, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-                EditorGUILayout.EndScrollView();
-            }
+            DrawDetailsHeader(SharedContents.Details,
+                (selectedDescriptors.Length > 0) ? selectedText : null,
+                null);
 
-            EditorGUILayout.EndVertical();
+            DrawDetailsContent(selectedText, null);
         }
 
         public virtual string GetIssueDescription(ReportItem issue)

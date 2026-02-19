@@ -12,6 +12,7 @@ using UnityEditor.IMGUI.Controls;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
 using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using Unity.Collections;
 
 namespace UnityEditorInternal
 {
@@ -522,9 +523,7 @@ namespace UnityEditorInternal
             {
                 foreach (var curve in node.curves)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (curve.keyframes.Any(key => state.time.ContainsTime(key.time)))
-#pragma warning restore UA2001
+                    if (curve.keyframes.Exists(key => state.time.ContainsTime(key.time)))
                     {
                         hasKey = true;
                     }

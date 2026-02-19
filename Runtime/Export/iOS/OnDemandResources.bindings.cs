@@ -19,7 +19,7 @@ namespace UnityEngine.iOS
 
         extern public string GetResourcePath(string resourceName);
 
-        [ThreadSafe] extern private static void DestroyFromScript(IntPtr ptr);
+        [NativeMethod(IsThreadSafe = true)] extern private static void DestroyFromScript(IntPtr ptr);
 
         public void Dispose()
         {

@@ -21,7 +21,7 @@ namespace UnityEngine.Pool
         {
             var size = length * UnsafeUtility.SizeOf<T>();
             m_Array = ArrayPool<byte>.Shared.Rent(size);
-            Span = MemoryMarshal.Cast<byte, T>(new(m_Array, 0, size));
+            Span = MemoryMarshal.Cast<byte, T>(new Span<byte>(m_Array, 0, size));
             if (clear)
                 Span.Clear();
         }

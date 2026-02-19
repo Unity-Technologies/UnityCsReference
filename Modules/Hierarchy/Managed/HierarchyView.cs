@@ -180,7 +180,7 @@ namespace Unity.Hierarchy
         /// allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal event Action Initializing; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
+        internal event Action Bind; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
 
         /// <summary>
         /// Gets the source hierarchy used to populate the hierarchy view.
@@ -204,7 +204,11 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The <see cref="CollectionView"/> used to display the hierarchy.
         /// </summary>
-        internal CollectionView ListView => m_CollectionView;
+        internal CollectionView ListView
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_CollectionView;
+        }
 
         /// <summary>
         /// Returns the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
@@ -1159,7 +1163,7 @@ namespace Unity.Hierarchy
             BindHandlers();
             try
             {
-                Initializing?.Invoke();
+                Bind?.Invoke();
             }
             catch (Exception ex)
             {

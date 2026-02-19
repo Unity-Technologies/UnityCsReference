@@ -41,7 +41,9 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         internal UnityObject m_Target;
 
-        public IEnumerable<UnityObject> targets => m_Targets != null && m_Targets.Length > 0
+        public IEnumerable<UnityObject> targets => targetList;
+
+        internal IReadOnlyList<UnityObject> targetList => m_Targets != null && m_Targets.Length > 0
             ? m_Targets
             : Selection.objects;
 

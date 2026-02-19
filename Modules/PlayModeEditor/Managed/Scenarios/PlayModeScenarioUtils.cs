@@ -75,7 +75,7 @@ namespace Unity.PlayMode.Editor
 
         static IEnumerable<PlayModeScenario> EnumerateAssetScenarios()
         {
-            var guids = AssetDatabase.FindAssets($"t:{nameof(PlayModeScenario)}");
+            var guids = AssetDatabase.FindAssets($"t:{typeof(PlayModeScenario).FullName}");
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -109,9 +109,18 @@ namespace Unity.PlayMode.Editor
             var config = ScriptableObject.CreateInstance(type) as PlayModeScenario;
             config.name = name;
 
-            AssetDatabase.CreateAsset(config, $"{k_ConfigAssetsPath}/{config.name}.asset");
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            try
+            {
+                AssetDatabase.CreateAsset(config, $"{k_ConfigAssetsPath}/{config.name}.asset");
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+            catch (Exception ex)
+            {
+                ScriptableObject.DestroyImmediate(config);
+                Debug.LogWarning($"Failed to create scenario '{name}'. The name may contain invalid characters. Error: {ex.Message}");
+                return null;
+            }
 
             return config;
         }

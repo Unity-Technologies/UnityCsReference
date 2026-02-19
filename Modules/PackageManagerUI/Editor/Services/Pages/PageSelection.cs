@@ -46,12 +46,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newSelectionLookup = packageUniqueIds.ToHashSet();
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectionUpdated = newSelectionLookup.Any(s => !m_SelectionsLookup.Contains(s))
-#pragma warning restore UA2001
-                                   #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2006
+                                   #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                    || m_SelectionsLookup.Any(s => !newSelectionLookup.Contains(s));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
 
             if (selectionUpdated)
             {

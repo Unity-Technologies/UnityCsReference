@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsAnyExperimentalPackagesInUse()
         {
-            return PackageInfo.GetAllRegisteredPackages().AnyMatches(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
+            return Array.Exists(PackageInfo.GetAllRegisteredPackages(), info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
         }
 
         public void OnBeforeSerialize()

@@ -242,7 +242,7 @@ namespace UnityEditor.Search
         {
             var fileIdHint = Utils.GetFileIDHint(obj);
             if (fileIdHint == 0)
-                fileIdHint = (ulong)obj.GetEntityId().GetRawData();
+                fileIdHint = EntityId.ToULong(obj.GetEntityId());
             return fileIdHint * 1181783497276652981UL + assetHash;
         }
 
@@ -1735,9 +1735,9 @@ namespace UnityEditor.Search
             SearchAnalytics.GenericEventType eventType = SearchAnalytics.GenericEventType.QuickSearchOpen, string eventContext = "Contextual")
         {
             var contextualProviders = SearchService.GetProviders(providerIds);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (contextualProviders.Count() == 0)
-#pragma warning restore UA2001
+            #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (!contextualProviders.Any())
+#pragma warning restore UA2002
             {
                 return OpenDefaultQuickSearch();
             }
@@ -1818,9 +1818,9 @@ namespace UnityEditor.Search
         {
             var isGroupInvalid = groupId == null ||
                                  (groupId == GroupedSearchList.allGroupId && viewState.hideAllGroup) ||
-                                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                 #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                  (groupId == GroupedSearchList.allGroupId && viewState.context.providers.Count() == 1) ||
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                                  #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                  (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null);
 #pragma warning restore UA2001
@@ -1860,12 +1860,12 @@ namespace UnityEditor.Search
             if (!IsGroupValid(viewState, groupId))
             {
                 var providers = viewState.context.providers;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (viewState.hideAllGroup || providers.Count() == 1)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 {
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    groupId = viewState.context.providers.First().id;
+                    groupId = providers.First().id;
 #pragma warning restore UA2001
                 }
                 else
@@ -1984,21 +1984,20 @@ namespace UnityEditor.Search
             if (dbs == null)
                 return false;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (dbs.Count() == 0)
-#pragma warning restore UA2001
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            int dbsCount = dbs.Count();
+#pragma warning restore UA2005
+            if (dbsCount == 0)
                 return false;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (dbs.Count() == 1)
-#pragma warning restore UA2001
+            if (dbsCount == 1)
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return predicate(dbs.First());
 #pragma warning restore UA2001
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultDb = dbs.FirstOrDefault(db => db.path == "UserSettings/Search.index");
 #pragma warning restore UA2001
             if (defaultDb != null && predicate(defaultDb))

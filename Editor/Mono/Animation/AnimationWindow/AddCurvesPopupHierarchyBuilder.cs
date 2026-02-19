@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.IMGUI.Controls;
+using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
@@ -250,6 +249,22 @@ namespace UnityEditorInternal
             List<EditorCurveBinding> singlePropertyBindings = new List<EditorCurveBinding>();
             SerializedObject so = null;
 
+            // Track path segment nodes to avoid duplicates (key: full path to segment)
+            Dictionary<string, TreeViewItem> pathSegmentNodes = null;
+
+            Dictionary<TreeViewItem, List<TreeViewItem>> childrenOfASpecificNode = null;
+
+            void AddAsChild(TreeViewItem parent, TreeViewItem child)
+            {
+                if (!childrenOfASpecificNode.TryGetValue(parent, out var childrens))
+                {
+                    childrens = new(1);
+                    childrenOfASpecificNode[parent] = childrens;
+                }
+
+                childrens.Add(child);
+            }
+
             for (int i = 0; i < curveBindings.Count; i++)
             {
                 EditorCurveBinding curveBinding = curveBindings[i];
@@ -265,16 +280,76 @@ namespace UnityEditorInternal
                 // We expect curveBindings to come sorted by propertyname
                 if (i == curveBindings.Count - 1 || AnimationWindowUtility.GetPropertyGroupName(curveBindings[i + 1].propertyName) != AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName))
                 {
-                    TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node, so);
-                    if (newNode != null)
+                    string displayName = AnimationWindowUtility.GetNicePropertyGroupDisplayName(curveBinding, so);
+                    var segments = PropertyPathTokenizer.TokenizePath(displayName);
+
+                    TreeViewItem immediateParent = node;
+
+                    // Create intermediate path segment nodes for slash-delimited paths
+                    if (segments != null && segments.Length > 1)
+                    {
+                        if (pathSegmentNodes == null)
+                        {
+                            pathSegmentNodes = new();
+                            pathSegmentNodes.Add("", node); // Root for this component
+
+                            childrenOfASpecificNode ??= new();
+                        }
+
+                        for (int depth = 0; depth < segments.Length - 1; depth++)
+                        {
+                            string pathToSegment = PropertyPathTokenizer.GetPathUpToDepth(segments, depth);
+
+                            if (!pathSegmentNodes.TryGetValue(pathToSegment, out var segmentNode))
+                            {
+                                segmentNode = new AddCurvesPopupPathSegmentNode(immediateParent, path, pathToSegment, segments[depth]);
+                                segmentNode.icon = null;
+                                pathSegmentNodes.Add(pathToSegment, segmentNode);
+                            
+
+                                // The root level nodes are added directly to the explicit list only to not allocate the dictionnary if not needed.
+                                // We need to add the intermediate nodes to that list instead of the dictionnary so that all sibling are grouped at the same place
+                                // And sorted togheter
+                                if (immediateParent == node)
+                                    childNodes.Add(segmentNode);
+                                else
+                                    AddAsChild(immediateParent, segmentNode);
+
+                            }
+
+                            immediateParent = segmentNode;
+                        }
+
+                        TreeViewItem newNode = new AddCurvesPopupPropertyNode(immediateParent, singlePropertyBindings.ToArray(), segments[segments.Length - 1]);
+
+
+                        AddAsChild(immediateParent, newNode);
+
+                        newNode.icon = null;
+                    }
+                    else
+                    {
+                        TreeViewItem newNode = new AddCurvesPopupPropertyNode(immediateParent, singlePropertyBindings.ToArray(), displayName);
+                        newNode.icon = null;
                         childNodes.Add(newNode);
+                    }
+
                     singlePropertyBindings.Clear();
                 }
             }
 
             childNodes.Sort();
-
             TreeViewUtility.SetChildParentReferences(childNodes, node);
+
+            if (childrenOfASpecificNode != null && childrenOfASpecificNode.Count > 0)
+            {
+                foreach((var parent, var childrens) in childrenOfASpecificNode)
+                {
+                    childrens.Sort();
+                    TreeViewUtility.SetChildParentReferences(childrens, parent);
+                }
+            }
+
             return node;
         }
 
@@ -294,6 +369,28 @@ namespace UnityEditorInternal
         }
     }
 
+    class AddCurvesPopupPathSegmentNode : TreeViewItem
+    {
+        public AddCurvesPopupPathSegmentNode(TreeViewItem parent, string componentPath, string fullPathToSegment, string segmentDisplayName)
+            : base((componentPath + "/" + fullPathToSegment).GetHashCode(), parent.depth + 1, parent, segmentDisplayName)
+        {
+        }
+
+        public override int CompareTo(TreeViewItem other)
+        {
+            // Segment nodes always come before property nodes
+            if (other is AddCurvesPopupPropertyNode)
+                return -1;
+
+            // When comparing with other segment nodes, maintain insertion order
+            // by not reordering them (return 0 for stable sort behavior)
+            if (other is AddCurvesPopupPathSegmentNode)
+                return 0;
+
+            return base.CompareTo(other);
+        }
+    }
+
     class AddCurvesPopupPropertyNode : TreeViewItem
     {
         public EditorCurveBinding[] curveBindings;
@@ -306,6 +403,10 @@ namespace UnityEditorInternal
 
         public override int CompareTo(TreeViewItem other)
         {
+            // Property nodes always come after segment nodes
+            if (other is AddCurvesPopupPathSegmentNode)
+                return 1;
+
             AddCurvesPopupPropertyNode otherNode = other as AddCurvesPopupPropertyNode;
             if (otherNode != null)
             {

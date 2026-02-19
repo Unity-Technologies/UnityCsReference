@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -150,5 +151,17 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.colorItem,
             ContextualMenuHelpers.alignAndDistributeElementsItem
         };
+
+        /// <summary>
+        /// Indicates whether the parent Graph can be modified at the time of calling.
+        /// </summary>
+        /// <remarks>
+        /// This method checks if the parent GraphModel is currently locked for modifications.
+        /// If it is locked (in OnEnable, OnDisable and OnGraphChanged), an exception is thrown to prevent changes.
+        /// </remarks>
+        protected void CheckModificationLock()
+        {
+            (GraphModel as GraphModelImp)?.CheckModificationLock();
+        }
     }
 }

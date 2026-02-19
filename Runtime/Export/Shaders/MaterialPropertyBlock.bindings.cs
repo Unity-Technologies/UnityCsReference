@@ -20,54 +20,54 @@ namespace UnityEngine
     {
         // TODO: get buffer is missing
 
-        [NativeName("GetIntFromScript"), ThreadSafe]     extern private int       GetIntImpl(int name);
-        [NativeName("GetFloatFromScript"), ThreadSafe]   extern private float     GetFloatImpl(int name);
-        [NativeName("GetVectorFromScript"), ThreadSafe]  extern private Vector4   GetVectorImpl(int name);
-        [NativeName("GetColorFromScript"), ThreadSafe]   extern private Color     GetColorImpl(int name);
-        [NativeName("GetMatrixFromScript"), ThreadSafe]  extern private Matrix4x4 GetMatrixImpl(int name);
-        [NativeName("GetTextureFromScript"), ThreadSafe] extern private Texture   GetTextureImpl(int name);
+        [NativeMethod("GetIntFromScript", IsThreadSafe = true)]     extern private int       GetIntImpl(int name);
+        [NativeMethod("GetFloatFromScript", IsThreadSafe = true)]   extern private float     GetFloatImpl(int name);
+        [NativeMethod("GetVectorFromScript", IsThreadSafe = true)]  extern private Vector4   GetVectorImpl(int name);
+        [NativeMethod("GetColorFromScript", IsThreadSafe = true)]   extern private Color     GetColorImpl(int name);
+        [NativeMethod("GetMatrixFromScript", IsThreadSafe = true)]  extern private Matrix4x4 GetMatrixImpl(int name);
+        [NativeMethod("GetTextureFromScript", IsThreadSafe = true)] extern private Texture   GetTextureImpl(int name);
 
-        [NativeName("HasPropertyFromScript")] extern private bool HasPropertyImpl(int name);
-        [NativeName("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
-        [NativeName("HasIntegerFromScript")] extern private bool HasIntImpl(int name);
-        [NativeName("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
-        [NativeName("HasMatrixFromScript")] extern private bool HasMatrixImpl(int name);
-        [NativeName("HasVectorFromScript")] extern private bool HasVectorImpl(int name);
-        [NativeName("HasBufferFromScript")] extern private bool HasBufferImpl(int name);
-        [NativeName("HasConstantBufferFromScript")] extern private bool HasConstantBufferImpl(int name);
+        [NativeMethod("HasPropertyFromScript")] extern private bool HasPropertyImpl(int name);
+        [NativeMethod("HasFloatFromScript")] extern private bool HasFloatImpl(int name);
+        [NativeMethod("HasIntegerFromScript")] extern private bool HasIntImpl(int name);
+        [NativeMethod("HasTextureFromScript")] extern private bool HasTextureImpl(int name);
+        [NativeMethod("HasMatrixFromScript")] extern private bool HasMatrixImpl(int name);
+        [NativeMethod("HasVectorFromScript")] extern private bool HasVectorImpl(int name);
+        [NativeMethod("HasBufferFromScript")] extern private bool HasBufferImpl(int name);
+        [NativeMethod("HasConstantBufferFromScript")] extern private bool HasConstantBufferImpl(int name);
 
-        [NativeName("SetIntFromScript"), ThreadSafe]     extern private void SetIntImpl(int name, int value);
-        [NativeName("SetFloatFromScript"), ThreadSafe]   extern private void SetFloatImpl(int name, float value);
-        [NativeName("SetVectorFromScript"), ThreadSafe]  extern private void SetVectorImpl(int name, Vector4 value);
-        [NativeName("SetColorFromScript"), ThreadSafe]   extern private void SetColorImpl(int name, Color value);
-        [NativeName("SetMatrixFromScript"), ThreadSafe]  extern private void SetMatrixImpl(int name, Matrix4x4 value);
-        [NativeName("SetTextureFromScript"), ThreadSafe] extern private void SetTextureImpl(int name, [NotNull] Texture value);
-        [NativeName("SetRenderTextureFromScript"), ThreadSafe] extern private void SetRenderTextureImpl(int name, [NotNull] RenderTexture value, RenderTextureSubElement element);
-        [NativeName("SetBufferFromScript"), ThreadSafe]  extern private void SetBufferImpl(int name, ComputeBuffer value);
-        [NativeName("SetBufferFromScript"), ThreadSafe]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
-        [NativeName("SetConstantBufferFromScript"), ThreadSafe] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
-        [NativeName("SetConstantBufferFromScript"), ThreadSafe] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
+        [NativeMethod("SetIntFromScript", IsThreadSafe = true)]     extern private void SetIntImpl(int name, int value);
+        [NativeMethod("SetFloatFromScript", IsThreadSafe = true)]   extern private void SetFloatImpl(int name, float value);
+        [NativeMethod("SetVectorFromScript", IsThreadSafe = true)]  extern private void SetVectorImpl(int name, Vector4 value);
+        [NativeMethod("SetColorFromScript", IsThreadSafe = true)]   extern private void SetColorImpl(int name, Color value);
+        [NativeMethod("SetMatrixFromScript", IsThreadSafe = true)]  extern private void SetMatrixImpl(int name, Matrix4x4 value);
+        [NativeMethod("SetTextureFromScript", IsThreadSafe = true)] extern private void SetTextureImpl(int name, [NotNull] Texture value);
+        [NativeMethod("SetRenderTextureFromScript", IsThreadSafe = true)] extern private void SetRenderTextureImpl(int name, [NotNull] RenderTexture value, RenderTextureSubElement element);
+        [NativeMethod("SetBufferFromScript", IsThreadSafe = true)]  extern private void SetBufferImpl(int name, ComputeBuffer value);
+        [NativeMethod("SetBufferFromScript", IsThreadSafe = true)]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
+        [NativeMethod("SetConstantBufferFromScript", IsThreadSafe = true)] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
+        [NativeMethod("SetConstantBufferFromScript", IsThreadSafe = true)] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
-        [NativeName("SetFloatArrayFromScript"), ThreadSafe]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
-        [NativeName("SetVectorArrayFromScript"), ThreadSafe] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);
-        [NativeName("SetMatrixArrayFromScript"), ThreadSafe] extern private void SetMatrixArrayImpl(int name, Matrix4x4[] values, int count);
+        [NativeMethod("SetFloatArrayFromScript", IsThreadSafe = true)]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
+        [NativeMethod("SetVectorArrayFromScript", IsThreadSafe = true)] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);
+        [NativeMethod("SetMatrixArrayFromScript", IsThreadSafe = true)] extern private void SetMatrixArrayImpl(int name, Matrix4x4[] values, int count);
 
-        [NativeName("GetFloatArrayFromScript"), ThreadSafe]  extern private float[]     GetFloatArrayImpl(int name);
-        [NativeName("GetVectorArrayFromScript"), ThreadSafe] extern private Vector4[]   GetVectorArrayImpl(int name);
-        [NativeName("GetMatrixArrayFromScript"), ThreadSafe] extern private Matrix4x4[] GetMatrixArrayImpl(int name);
+        [NativeMethod("GetFloatArrayFromScript", IsThreadSafe = true)]  extern private float[]     GetFloatArrayImpl(int name);
+        [NativeMethod("GetVectorArrayFromScript", IsThreadSafe = true)] extern private Vector4[]   GetVectorArrayImpl(int name);
+        [NativeMethod("GetMatrixArrayFromScript", IsThreadSafe = true)] extern private Matrix4x4[] GetMatrixArrayImpl(int name);
 
-        [NativeName("GetFloatArrayCountFromScript"), ThreadSafe]  extern private int GetFloatArrayCountImpl(int name);
-        [NativeName("GetVectorArrayCountFromScript"), ThreadSafe] extern private int GetVectorArrayCountImpl(int name);
-        [NativeName("GetMatrixArrayCountFromScript"), ThreadSafe] extern private int GetMatrixArrayCountImpl(int name);
+        [NativeMethod("GetFloatArrayCountFromScript", IsThreadSafe = true)]  extern private int GetFloatArrayCountImpl(int name);
+        [NativeMethod("GetVectorArrayCountFromScript", IsThreadSafe = true)] extern private int GetVectorArrayCountImpl(int name);
+        [NativeMethod("GetMatrixArrayCountFromScript", IsThreadSafe = true)] extern private int GetMatrixArrayCountImpl(int name);
 
-        [NativeName("ExtractFloatArrayFromScript"), ThreadSafe]  extern private void ExtractFloatArrayImpl(int name, [Out] float[] val);
-        [NativeName("ExtractVectorArrayFromScript"), ThreadSafe] extern private void ExtractVectorArrayImpl(int name, [Out] Vector4[] val);
-        [NativeName("ExtractMatrixArrayFromScript"), ThreadSafe] extern private void ExtractMatrixArrayImpl(int name, [Out] Matrix4x4[] val);
+        [NativeMethod("ExtractFloatArrayFromScript", IsThreadSafe = true)]  extern private void ExtractFloatArrayImpl(int name, [Out] float[] val);
+        [NativeMethod("ExtractVectorArrayFromScript", IsThreadSafe = true)] extern private void ExtractVectorArrayImpl(int name, [Out] Vector4[] val);
+        [NativeMethod("ExtractMatrixArrayFromScript", IsThreadSafe = true)] extern private void ExtractMatrixArrayImpl(int name, [Out] Matrix4x4[] val);
 
-        [FreeFunction("ConvertAndCopySHCoefficientArraysToPropertySheetFromScript"), ThreadSafe]
+        [FreeFunction("ConvertAndCopySHCoefficientArraysToPropertySheetFromScript" ,IsThreadSafe = true)]
         extern internal static void Internal_CopySHCoefficientArraysFrom(MaterialPropertyBlock properties, SphericalHarmonicsL2[] lightProbes, int sourceStart, int destStart, int count);
 
-        [FreeFunction("CopyProbeOcclusionArrayToPropertySheetFromScript"), ThreadSafe]
+        [FreeFunction("CopyProbeOcclusionArrayToPropertySheetFromScript", IsThreadSafe = true)]
         extern internal static void Internal_CopyProbeOcclusionArrayFrom(MaterialPropertyBlock properties, Vector4[] occlusionProbes, int sourceStart, int destStart, int count);
 
         [NativeMethod(Name = "MaterialPropertyBlockScripting::Create", IsFreeFunction = true)]
@@ -75,9 +75,9 @@ namespace UnityEngine
         [NativeMethod(Name = "MaterialPropertyBlockScripting::Destroy", IsFreeFunction = true, IsThreadSafe = true)]
         extern private static void DestroyImpl(System.IntPtr mpb);
 
-        extern public bool isEmpty {[NativeName("IsEmpty"), ThreadSafe] get; }
+        extern public bool isEmpty {[NativeMethod("IsEmpty", IsThreadSafe = true)] get; }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private void Clear(bool keepMemory);
         public void Clear() { Clear(true); }
 

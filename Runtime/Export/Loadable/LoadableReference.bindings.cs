@@ -37,9 +37,9 @@ namespace UnityEngine
     [UsedByNativeCode]
     /*UCBP-PUBLIC*/ internal struct LoadableReference : IEquatable<LoadableReference>
     {
-        internal GUID m_GUID;
-        internal FileIdentifierType m_FileIdentifierType;
-        internal long m_LocalIdentifierInFile;
+        [VisibleToOtherModules] internal GUID m_GUID;
+        [VisibleToOtherModules] internal FileIdentifierType m_FileIdentifierType;
+        [VisibleToOtherModules] internal long m_LocalIdentifierInFile;
         internal Hash128 m_ObjectIdHash;
 
         /// <summary>

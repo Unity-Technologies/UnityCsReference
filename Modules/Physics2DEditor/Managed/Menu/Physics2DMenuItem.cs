@@ -5,20 +5,17 @@
 using System;
 using System.IO;
 using UnityEngine;
-using UnityEngine.LowLevelPhysics2D;
 
-namespace UnityEditor.U2D.Physics2D
+namespace UnityEditor
 {
     [InitializeOnLoad]
-    static internal class MenuItems
+    static internal class Physics2DMenuItems
     {
         internal const string k_CreatePhysicsMaterial2DMenuPath = "Assets/Create/2D/Physics Material 2D";
-        internal const string k_CreatePhysicsLowLevelSettings2DMenuPath = "Assets/Create/2D/Physics LowLevel Settings";
         static internal Action<EntityId, ProjectWindowCallback.AssetCreationEndAction, string, Texture2D, string> StartNewAssetNameEditingDelegate = ProjectWindowUtil.StartNameEditingIfProjectWindowExists;
         const int k_PhysicsMaterial2DAssetMenuPriority = 13;
-        const int k_PhysicsLowLevelSettings2DAssetMenuPriority = k_PhysicsMaterial2DAssetMenuPriority + 1;
 
-        static MenuItems()
+        static Physics2DMenuItems()
         {
             EditorApplication.CallDelayed(UpdateMenuItem);
         }
@@ -28,19 +25,14 @@ namespace UnityEditor.U2D.Physics2D
             if (ModuleMetadata.GetModuleIncludeSettingForModule("Physics2D") == ModuleIncludeSetting.ForceExclude)
             {
                 Menu.RemoveMenuItem(k_CreatePhysicsMaterial2DMenuPath);
-                Menu.RemoveMenuItem(k_CreatePhysicsLowLevelSettings2DMenuPath);
             }
         }
 
         [MenuItem(k_CreatePhysicsMaterial2DMenuPath, priority = k_PhysicsMaterial2DAssetMenuPriority)]
         static void AssetsCreatePhysicsMaterial2D(MenuCommand menuCommand) => CreateAsset<PhysicsMaterial2D>("New Physics Material 2D.physicsMaterial2D", CreateUnityObject<PhysicsMaterial2D>);
 
-        [MenuItem(k_CreatePhysicsLowLevelSettings2DMenuPath, priority = k_PhysicsLowLevelSettings2DAssetMenuPriority)]
-        static void AssetsCreatePhysicsLowLevelSettings2D(MenuCommand menuCommand) => CreateAsset<PhysicsLowLevelSettings2D>("New Physics LowLevel Settings 2D.asset", CreateScriptablObject<PhysicsLowLevelSettings2D>);
-
         private delegate UnityEngine.Object CreateObject<T>() where T : UnityEngine.Object;
         static private UnityEngine.Object CreateUnityObject<T>() where T: UnityEngine.Object => Activator.CreateInstance<T>();
-        static private UnityEngine.Object CreateScriptablObject<T>() where T: ScriptableObject => ScriptableObject.CreateInstance<T>();
 
         static private T CreateAsset<T>(string name, CreateObject<T> createObject) where T : UnityEngine.Object
         {

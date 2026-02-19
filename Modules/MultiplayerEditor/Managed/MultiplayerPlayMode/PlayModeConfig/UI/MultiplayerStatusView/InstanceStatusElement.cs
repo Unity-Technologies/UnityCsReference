@@ -129,8 +129,7 @@ internal class InstanceStatusElement : VisualElement
         m_StatusIcon.style.backgroundImage = Icons.GetImage(state switch
         {
             ExecutionState.Idle => Icons.ImageName.Idle,
-            ExecutionState.Running => Icons.ImageName.Loading,
-            ExecutionState.Active => Icons.ImageName.CompletedTask,
+            ExecutionState.Running => status.IsExecutingRunningStage() ? Icons.ImageName.CompletedTask : Icons.ImageName.Loading,
             ExecutionState.Completed => Icons.ImageName.Idle,
             ExecutionState.Aborted => Icons.ImageName.Warning,
             ExecutionState.Failed => Icons.ImageName.Error,
@@ -147,20 +146,13 @@ internal class InstanceStatusElement : VisualElement
             return;
         }
 
-        if (state is ExecutionState.Active)
+        if (status.IsExecutingRunningStage())
         {
             m_StatusLabel.text = $"Running";
             return;
         }
 
-        m_StatusLabel.text = stage switch
-        {
-            ExecutionStage.None => "Idle",
-            ExecutionStage.Prepare => $"Preparing... {stageProgress:P0}",
-            ExecutionStage.Deploy => $"Deploying... {stageProgress:P0}",
-            ExecutionStage.Run => $"Launching... {stageProgress:P0}",
-            _ => "Unknown"
-        };
+        m_StatusLabel.text = $"{LaunchingScenarioWindow.GetLabelForStage(stage)}... {stageProgress:P0}";
     }
 
     void ComputeStatusValues(InstanceStatusData status, out ExecutionState state, out ExecutionStage stage, out float stageProgress, out float totalProgress)
@@ -169,7 +161,7 @@ internal class InstanceStatusElement : VisualElement
 
         if (state is ExecutionState.Invalid)
         {
-            stage = ExecutionStage.None;
+            stage = default;
             stageProgress = 0;
             totalProgress = 0;
             return;

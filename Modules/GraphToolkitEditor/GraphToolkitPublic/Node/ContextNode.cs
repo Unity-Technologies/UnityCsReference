@@ -23,6 +23,11 @@ namespace Unity.GraphToolkit.Editor
     [Serializable]
     public abstract class ContextNode : Node
     {
+        internal override void CreateImplementation()
+        {
+            (new UserContextNodeModelImp()).InitCustomNode(this);
+        }
+
         /// <summary>
         /// The number of <see cref="BlockNode"/>s contained in this context node.
         /// </summary>

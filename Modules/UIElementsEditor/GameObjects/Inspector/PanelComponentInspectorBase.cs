@@ -57,6 +57,20 @@ namespace UnityEditor.UIElements.Inspector
         {
             // Using MandatoryQ instead of just Q to make sure modifications of the UXML file don't make the
             // necessary elements disappear unintentionally.
+
+            // Show the PanelRenderer migration warning when inspecting a UIDocument,
+            // but only if there isn't a PanelRenderer component on the same GameObject.
+            bool shouldShowMigrationWarning = (parentObjectType == typeof(UIDocument));
+            bool shouldEnableConversionButton = (target as Component).GetComponent<PanelRenderer>() == null;
+
+            var migrationContainer = m_RootVisualElement.MandatoryQ<VisualElement>("migration-warning-container");
+            if (!shouldShowMigrationWarning)
+                migrationContainer.style.display = DisplayStyle.None;
+
+            var addPanelRendererButton = migrationContainer.MandatoryQ<Button>("add-panelrenderer-button");
+            addPanelRendererButton.SetEnabled(shouldEnableConversionButton);
+            addPanelRendererButton.clicked += AddPanelRendererComponent;
+
             m_DrivenByParentWarning = m_RootVisualElement.MandatoryQ<HelpBox>("driven-by-parent-warning");
             m_MissingPanelSettings = m_RootVisualElement.MandatoryQ<HelpBox>("missing-panel-warning");
             m_EditorElementsWarning = m_RootVisualElement.MandatoryQ<HelpBox>("editor-elements-warning");
@@ -109,12 +123,12 @@ namespace UnityEditor.UIElements.Inspector
 
             m_WorldSpaceHeightField = m_RootVisualElement.MandatoryQ<FloatField>("height-field");
             m_WorldSpaceHeightField.isDelayed = true;
-            //m_WorldSpaceHeightField.RegisterValueChangedCallback(evt =>
-            //{
-            //    var size = pc.worldSpaceSize;
-            //    size.y = evt.newValue;
-            //    pc.worldSpaceSize = size;
-            //});
+            m_WorldSpaceHeightField.RegisterValueChangedCallback(evt =>
+            {
+                var size = pc.worldSpaceSize;
+                size.y = evt.newValue;
+                pc.worldSpaceSize = size;
+            });
 
             m_PivotReferenceSizeField = m_RootVisualElement.MandatoryQ<EnumField>("pivot-reference-size-field");
             m_PivotReferenceSizeField.Init(pc.pivotReferenceSize);
@@ -256,8 +270,12 @@ namespace UnityEditor.UIElements.Inspector
 
         private void UpdateInputConfigurationOptions()
         {
+            var panelComp = (IPanelComponent)target;
+            if (panelComp == null)
+                return;
+
+            bool isWorldSpace = panelComp.panelSettings?.renderMode == PanelRenderMode.WorldSpace;
             bool hasNoConfig = PanelInputConfiguration.s_ActiveInstances == 0;
-            bool isWorldSpace = ((IPanelComponent)target).panelSettings?.renderMode == PanelRenderMode.WorldSpace;
             m_InputConfiguration.style.display = hasNoConfig && isWorldSpace ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
@@ -285,6 +303,50 @@ namespace UnityEditor.UIElements.Inspector
             m_InputConfiguration.schedule.Execute(UpdateInputConfigurationOptions).Every(200);
 
             return m_RootVisualElement;
+        }
+
+        void AddPanelRendererComponent()
+        {
+            var component = (Component)target;
+            var pr = component.gameObject.AddComponent<PanelRenderer>();
+
+            var uiDoc = (target as UIDocument);
+            if (uiDoc == null)
+                return;
+
+            // Copy properties from the UIDocument to the new PanelRenderer
+            SerializedObject srcSO = new SerializedObject(uiDoc);
+            SerializedObject dstSO = new SerializedObject(pr);
+
+            SerializedProperty srcProp = srcSO.GetIterator();
+            if (srcProp.NextVisible(true))
+            {
+                do
+                {
+                    // Skip m_SortingOrder as the type won't match (float in UIDocument, int in Renderer)
+                    if (srcProp.propertyPath == "m_SortingOrder")
+                        continue;
+
+                    // Skip m_ParentUI, which is evaluated at insertion time
+                    if (srcProp.propertyPath == "m_ParentUI")
+                        continue;
+
+                    SerializedProperty dstProp = dstSO.FindProperty(srcProp.propertyPath);
+                    if (dstProp != null)
+                    {
+                        dstSO.CopyFromSerializedProperty(srcProp);
+                    }
+                }
+                while (srcProp.NextVisible(false));
+            }
+
+            // Manually copy m_SortingOrder with type conversion (float -> int)
+            SerializedProperty srcSortingOrder = srcSO.FindProperty("m_SortingOrder");
+            SerializedProperty dstSortingOrder = dstSO.FindProperty("m_SortingOrder");
+            if (srcSortingOrder != null && dstSortingOrder != null)
+                dstSortingOrder.intValue = (int)srcSortingOrder.floatValue;
+
+            dstSO.ApplyModifiedProperties();
         }
     }
 }

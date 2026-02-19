@@ -679,7 +679,7 @@ namespace UnityEditor
             var cachedExpandedStateRaw = SessionState.GetIntArray(GetUniqueAudioMixerName(m_Controller), null);
             if (cachedExpandedStateRaw != null)
             {
-                var cachedExpandedState = Array.ConvertAll(cachedExpandedStateRaw, input => EntityId.From(input));
+                var cachedExpandedState = Array.ConvertAll(cachedExpandedStateRaw, input => EntityId.FromULong((ulong)input));
                 m_AudioGroupTreeState.expandedIDs = new List<EntityId>(cachedExpandedState);
             }
             else

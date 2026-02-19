@@ -82,9 +82,11 @@ namespace UnityEditor.Search.Providers
 
         internal static bool IsExplicitQuery(SearchContext context)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (context.searchQuery.StartsWith(filterId) || context.providers.Count() == 1 || context.searchWords.Contains(explicitToggle)) && !context.searchWords.Contains(implicitToggle);
 #pragma warning restore UA2001
+#pragma warning restore UA2005
         }
 
         internal static string ConvertProjectQueryToAdb(string query, ref bool filterByTypeIntersection)

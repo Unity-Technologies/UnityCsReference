@@ -4,8 +4,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -219,7 +217,6 @@ namespace UnityEngine.UIElements.UIR
 
             Block after = m_BlockPool.Get();
 
-
             after.next = block.next;
             after.nextAvailable = block.nextAvailable;
             after.prev = block;
@@ -341,16 +338,18 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal unsafe class Page : IDisposable
+    class Page : IDisposable
     {
-        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount)
+        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mapped)
         {
             // The vertexMaxCount imposed here is only because we use UInt16 as the index type.
             // The actual render device may not support 0xFFFF as an index but it is up to the device
             // to limit the allocation size.
             vertexMaxCount = Math.Min(vertexMaxCount, (1 << 16));
-            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32);
-            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32);
+
+            // TODO: Find some way to make the boolean customizable depndending on the type of GpuUpdater used by the mesh manager
+            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, mapped, vertexMaxCount, maxQueuedFrameCount, 32);
+            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, mapped, indexMaxCount, maxQueuedFrameCount, 32);
         }
 
         #region Dispose Pattern
@@ -384,185 +383,13 @@ namespace UnityEngine.UIElements.UIR
 
         public bool isEmpty { get { return vertices.allocator.isEmpty && indices.allocator.isEmpty; } }
 
-        public class DataSet<T> : IDisposable where T : struct
-        {
-            static readonly MemoryLabel s_CpuMemoryLabel = new (nameof(UIElements), "Renderer.RendererCpuData");
-            static readonly MemoryLabel s_RangesMemoryLabel = new (nameof(UIElements), "Renderer.GfxUpdateBufferRange");
-            public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize)
-            {
-                gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
-                cpuData = new NativeArray<T>((int)totalCount, s_CpuMemoryLabel, NativeArrayOptions.UninitializedMemory);
-                allocator = new GPUBufferAllocator(totalCount);
-                m_ElemStride = (uint)gpuData.ElementStride;
-
-                m_UpdateRangePoolSize = updateRangePoolSize;
-                uint multipliedUpdateRangePoolSize = m_UpdateRangePoolSize * maxQueuedFrameCount;
-                updateRanges = new NativeArray<GfxUpdateBufferRange>((int)multipliedUpdateRangePoolSize, s_RangesMemoryLabel, NativeArrayOptions.UninitializedMemory);
-                m_UpdateRangeMin = uint.MaxValue;
-                m_UpdateRangeMax = 0;
-                m_UpdateRangesEnqueued = 0;
-                m_UpdateRangesBatchStart = 0;
-            }
-
-            #region Dispose Pattern
-
-            protected bool disposed { get; private set; }
-
-
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            public void Dispose(bool disposing)
-            {
-                if (disposed)
-                    return;
-
-                if (disposing)
-                {
-                    gpuData?.Dispose();
-                    cpuData.Dispose();
-                    updateRanges.Dispose();
-                }
-                else
-                    UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
-
-                disposed = true;
-            }
-
-            #endregion // Dispose Pattern
-
-            public void RegisterUpdate(uint start, uint size)
-            {
-                Debug.Assert(start + size <= cpuData.Length);
-
-                int rangeIndex = (int)(m_UpdateRangesBatchStart + m_UpdateRangesEnqueued);
-
-                if (m_UpdateRangesEnqueued > 0)
-                {
-                    // If this update chains with the previous one, just grow the previous one
-                    int lastIndex = rangeIndex - 1;
-                    var lastRange = updateRanges[lastIndex];
-                    uint startBytes = start * m_ElemStride;
-                    if (lastRange.offsetFromWriteStart + lastRange.size == startBytes)
-                    {
-                        updateRanges[lastIndex] = new GfxUpdateBufferRange() { source = lastRange.source, offsetFromWriteStart = lastRange.offsetFromWriteStart, size = lastRange.size + size * m_ElemStride };
-                        m_UpdateRangeMax = Math.Max(m_UpdateRangeMax, start + size);
-                        return;
-                    }
-                }
-
-                m_UpdateRangeMin = Math.Min(m_UpdateRangeMin, start);
-                m_UpdateRangeMax = Math.Max(m_UpdateRangeMax, start + size);
-                if (m_UpdateRangesEnqueued == m_UpdateRangePoolSize)
-                {
-                    m_UpdateRangesSaturated = true;
-                    return; // Reached the max for this frame, ignore any more notifications, and just upload the entire affected regions including any holes inbetween
-                }
-
-                var cpuDataSlice = new UIntPtr(cpuData.Slice((int)start, (int)size).GetUnsafeReadOnlyPtr());
-                updateRanges[rangeIndex] = new GfxUpdateBufferRange() { source = cpuDataSlice, offsetFromWriteStart = start * m_ElemStride, size = size * m_ElemStride };
-                m_UpdateRangesEnqueued++;
-            }
-
-            bool HasMappedBufferRange()
-            {
-                return Utility.HasMappedBufferRange();
-            }
-
-            // This is expected to be called no more than once per frame
-            public void SendUpdates()
-            {
-                if (HasMappedBufferRange())
-                    SendPartialRanges();
-                else
-                    SendFullRange();
-            }
-
-            public void SendFullRange()
-            {
-                uint fullRangeBytes = (uint)(cpuData.Length * m_ElemStride);
-                updateRanges[(int)m_UpdateRangesBatchStart] = new GfxUpdateBufferRange() {
-                    source = new UIntPtr(cpuData.GetUnsafeReadOnlyPtr()),
-                    offsetFromWriteStart = 0,
-                    size = fullRangeBytes
-                };
-                gpuData?.UpdateRanges(updateRanges.Slice((int)m_UpdateRangesBatchStart, 1), (int)0, (int)fullRangeBytes);
-
-                ResetUpdateState();
-            }
-
-            public void SendPartialRanges()
-            {
-                if (m_UpdateRangesEnqueued == 0)
-                    return;
-
-                if (m_UpdateRangesSaturated)
-                {
-                    uint updateSize = m_UpdateRangeMax - m_UpdateRangeMin;
-                    m_UpdateRangesEnqueued = 1;
-                    updateRanges[(int)m_UpdateRangesBatchStart] = new GfxUpdateBufferRange()
-                    {
-                        source = new UIntPtr(cpuData.Slice((int)m_UpdateRangeMin, (int)updateSize).GetUnsafeReadOnlyPtr()),
-                        offsetFromWriteStart = m_UpdateRangeMin * m_ElemStride,
-                        size = updateSize * m_ElemStride
-                    };
-                }
-
-                // Send to the GPU, if the minimum affected byte address is not zero, we need to adjust the range entries
-                // to factor out that offset as the 'offsetFromWriteStart' member is refering to the buffer lock position
-                // not the start of the GPU buffer
-                uint minByte = m_UpdateRangeMin * m_ElemStride;
-                uint maxByte = m_UpdateRangeMax * m_ElemStride;
-                if (minByte > 0)
-                {
-                    for (uint i = 0; i < m_UpdateRangesEnqueued; i++)
-                    {
-                        int index = (int)(i + m_UpdateRangesBatchStart);
-                        updateRanges[index] = new GfxUpdateBufferRange()
-                        {
-                            source = updateRanges[index].source,
-                            offsetFromWriteStart = updateRanges[index].offsetFromWriteStart - minByte,
-                            size = updateRanges[index].size
-                        };
-                    }
-                }
-
-                gpuData?.UpdateRanges(updateRanges.Slice((int)m_UpdateRangesBatchStart, (int)m_UpdateRangesEnqueued), (int)minByte, (int)maxByte);
-
-                ResetUpdateState();
-            }
-
-            private void ResetUpdateState()
-            {
-                m_UpdateRangeMin = uint.MaxValue;
-                m_UpdateRangeMax = 0;
-                m_UpdateRangesEnqueued = 0;
-                m_UpdateRangesBatchStart = (m_UpdateRangesBatchStart + m_UpdateRangePoolSize);
-                if (m_UpdateRangesBatchStart >= updateRanges.Length)
-                    m_UpdateRangesBatchStart = 0;
-                m_UpdateRangesSaturated = false;
-            }
-
-            public Utility.GPUBuffer<T> gpuData;
-            public NativeArray<T> cpuData;
-            public NativeArray<GfxUpdateBufferRange> updateRanges; // Powers of two count
-            public GPUBufferAllocator allocator;
-            private readonly uint m_UpdateRangePoolSize;
-            private uint m_ElemStride;
-            private uint m_UpdateRangeMin;
-            private uint m_UpdateRangeMax;
-            private uint m_UpdateRangesEnqueued;
-            private uint m_UpdateRangesBatchStart;
-            private bool m_UpdateRangesSaturated;
-        }
-
         public DataSet<Vertex> vertices;
         public DataSet<UInt16> indices;
         public Page next;
         public int framesEmpty; // For how many consecutive frames has the page been empty?
     }
+
+
+
     #endregion
 }

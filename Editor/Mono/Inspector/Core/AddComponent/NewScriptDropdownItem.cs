@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using Microsoft.CSharp;
 using UnityEngine.Assemblies;
+using Unity.Collections;
 
 namespace UnityEditor.AddComponent
 {
@@ -111,9 +112,7 @@ namespace UnityEditor.AddComponent
             return s_CSharpDOMProvider.IsValidIdentifier(className);
         }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        private bool ClassExists(string className) => CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(className, false) != null);
-#pragma warning restore UA2001
+        private bool ClassExists(string className) => CurrentAssemblies.GetLoadedAssemblies().Exists(a => a.GetType(className, false) != null);
         private bool ClassAlreadyExists()
         {
             if (m_ClassName == string.Empty)

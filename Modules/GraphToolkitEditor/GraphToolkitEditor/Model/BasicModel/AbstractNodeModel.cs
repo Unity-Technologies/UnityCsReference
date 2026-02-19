@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
+using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -54,6 +55,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public virtual string IconPath => GetType().GetAttribute<LibraryItemAttribute>()?.IconPath;
 
+        public virtual string CategoryPath
+        {
+            get
+            {
+                ItemLibraryItem.ExtractPathAndNameFromFullName(GetType().GetAttribute<LibraryItemAttribute>()?.Path, out var categoryPath, out _);
+
+                return categoryPath;
+            }
+        }
+
         /// <inheritdoc />
         public abstract ElementColor ElementColor { get; }
 
@@ -98,7 +109,22 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>Setter implementations must set the <see cref="ChangeHint.Data"/> change hint.</remarks>
         public virtual string Title
         {
-            get => m_Title;
+            get
+            {
+                if (string.IsNullOrEmpty(m_Title))
+                {
+                    var libraryItemPath = GetType().GetAttribute<LibraryItemAttribute>()?.Path;
+                    if (!string.IsNullOrEmpty(libraryItemPath))
+                    {
+                        ItemLibraryItem.ExtractPathAndNameFromFullName(GetType().GetAttribute<LibraryItemAttribute>()?.Path, out _, out var title);
+
+                        return title;
+                    }
+                }
+
+                return m_Title;
+            }
+
             set
             {
                 if (m_Title == value)
@@ -112,7 +138,11 @@ namespace Unity.GraphToolkit.Editor
         /// The subtitle of the node.
         /// </summary>
         /// <remarks>Setter implementations must set the <see cref="ChangeHint.Data"/> change hints.</remarks>
-        public virtual string Subtitle => GetType().GetAttribute<LibraryItemAttribute>()?.Subtitle;
+        public virtual string Subtitle
+        {
+            get => GetType().GetAttribute<LibraryItemAttribute>()?.Subtitle;
+            set => throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The tooltip to display when hovering on the node.

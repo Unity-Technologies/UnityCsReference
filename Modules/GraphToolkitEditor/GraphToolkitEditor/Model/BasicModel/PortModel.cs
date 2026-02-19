@@ -49,17 +49,17 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The port has no constant to set its value when not connected.
         /// </summary>
-        NoEmbeddedConstant = 1<<0,
+        NoEmbeddedConstant = 1 << 0,
 
         /// <summary>
         /// The port is hidden.
         /// </summary>
-        Hidden = 1<<1,
+        Hidden = 1 << 1,
 
         /// <summary>
         /// The port is a node option.
         /// </summary>
-        IsNodeOption = 1<<2,
+        IsNodeOption = 1 << 2,
 
         /// <summary>
         /// Default port options.
@@ -78,7 +78,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public const char SubPortIdSeparator = '.';
 
-        static StringBuilder s_LabelSuffixBuilder = new ();
+        static StringBuilder s_LabelSuffixBuilder = new();
 
         string m_PortId;
 
@@ -140,7 +140,7 @@ namespace Unity.GraphToolkit.Editor
 
         internal void SetAttributes(IReadOnlyList<Attribute> attributes)
         {
-            if (m_Attributes  == null && attributes == null || (m_Attributes != null && attributes != null && m_Attributes.Equals(attributes)))
+            if (m_Attributes == null && attributes == null || (m_Attributes != null && attributes != null && m_Attributes.Equals(attributes)))
                 return;
             m_Attributes = attributes;
             GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.UIHints);
@@ -174,7 +174,7 @@ namespace Unity.GraphToolkit.Editor
         internal static string ComputeUniqueName(string uniqueId, string title, Hash128 guid, string parentPortUniqueName)
         {
             var uniqueName = uniqueId ?? title ?? guid.ToString();
-            if( parentPortUniqueName != null)
+            if (parentPortUniqueName != null)
             {
                 uniqueName = $"{parentPortUniqueName}{SubPortIdSeparator}{uniqueName}";
             }
@@ -649,7 +649,7 @@ namespace Unity.GraphToolkit.Editor
         {
             get
             {
-                if( m_ComputedConstant != null)
+                if (m_ComputedConstant != null)
                 {
                     return m_ComputedConstant;
                 }
@@ -772,7 +772,7 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>Users of the NodeModel class must not use this method.</remarks>
         public void ClearSubPorts()
         {
-            if( m_SubPorts.Count == 0)
+            if (m_SubPorts.Count == 0)
                 return;
             m_SubPorts.Clear();
             GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
@@ -841,7 +841,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 s_LabelSuffixBuilder.Append(ancestors[i].Title);
 
-                if( i > 0)
+                if (i > 0)
                     s_LabelSuffixBuilder.Append('/');
             }
             s_LabelSuffixBuilder.Append(")");
@@ -875,69 +875,79 @@ namespace Unity.GraphToolkit.Editor
         }
 
         bool ApplyOnAllConnectedPorts(Func<IPort, bool> predicate)
-         {
-             var wires = GetConnectedWires();
+        {
+            var wires = GetConnectedWires();
 
-             for (var i = 0; i < wires.Count; i++)
-             {
-                 var wire = wires[i];
-                 var port = wire.GetOtherPort(this);
-                 if (port == null)
-                     return true;
-                 if (port.NodeModel is WirePortalModel portal)
-                 {
-                     var declaration = portal.DeclarationModel;
+            for (var i = 0; i < wires.Count; i++)
+            {
+                var wire = wires[i];
+                var port = wire.GetOtherPort(this);
+                if (port == null)
+                    return true;
+                if (port.NodeModel is WirePortalModel portal)
+                {
+                    var declaration = portal.DeclarationModel;
 
-                     foreach (var otherNode in (port.NodeModel is WirePortalEntryModel ? GraphModel.GetExitPortals(declaration) : GraphModel.GetEntryPortals(declaration)))
-                     {
-                         foreach (var portalPort in otherNode.GetPorts())
-                         {
-                             if (!portalPort.ApplyOnAllConnectedPorts(predicate))
-                                 return false;
-                         }
-                     }
-                 }
-                 else
-                 {
-                     if (!predicate(port))
-                         return false;
-                 }
-             }
+                    foreach (var otherNode in (port.NodeModel is WirePortalEntryModel ? GraphModel.GetExitPortals(declaration) : GraphModel.GetEntryPortals(declaration)))
+                    {
+                        foreach (var portalPort in otherNode.GetPorts())
+                        {
+                            if (!portalPort.ApplyOnAllConnectedPorts(predicate))
+                                return false;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!predicate(port))
+                        return false;
+                }
+            }
 
-             return true;
-         }
+            return true;
+        }
 
-         IPort IPort.FirstConnectedPort
-         {
-             get
-             {
-                 IPort first = null;
-                 ApplyOnAllConnectedPorts(p =>
-                 {
-                     first = p;
-                     return false;
-                 });
+        IPort IPort.FirstConnectedPort
+        {
+            get
+            {
+                IPort first = null;
+                ApplyOnAllConnectedPorts(p =>
+                {
+                    first = p;
+                    return false;
+                });
 
-                 return first;
-             }
-         }
+                return first;
+            }
+        }
 
-         bool IPort.TryGetValue<T>(out T value)
-         {
-             if (EmbeddedValue == null || IsConnected())
-             {
-                 value = default;
-                 return false;
-             }
-             return EmbeddedValue.TryGetValue(out value);
-         }
+        bool IPort.TryGetValue<T>(out T value)
+        {
+            if (EmbeddedValue == null || IsConnected())
+            {
+                value = default;
+                return false;
+            }
+            return EmbeddedValue.TryGetValue(out value);
+        }
 
-         Type IPort.DataType => DataTypeHandle == TypeHandle.ExecutionFlow ? null : PortDataType;
+        bool IPort.TrySetValue<T>(T value)
+        {
+            CheckModificationLock();
 
-         /// <inheritdoc />
-         public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;
+            if (EmbeddedValue == null || IsConnected())
+                return false;
 
-         static readonly List<ContextualMenuItem> k_ContextualMenuItems = new() {
+            return EmbeddedValue.TrySetValue(value);
+        }
+
+        Type IPort.DataType => DataTypeHandle == TypeHandle.ExecutionFlow ? null : PortDataType;
+
+        /// <inheritdoc />
+        public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;
+
+        static readonly List<ContextualMenuItem> k_ContextualMenuItems = new() {
              ContextualMenuHelpers.addNodeFromPortItem,
              ContextualMenuHelpers.createVariableFromPortItem,
              ContextualMenuHelpers.copyValueItem,

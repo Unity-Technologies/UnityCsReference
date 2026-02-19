@@ -53,6 +53,8 @@ namespace UnityEditor.Search
             : base("SearchWindowCustomPanel", view, "search-custom-panel")
         {
             this.window = window;
+            // This panel is hidden by default.
+            style.display = DisplayStyle.None;
         }
 
         public SearchWindowCustomPanelConfig config

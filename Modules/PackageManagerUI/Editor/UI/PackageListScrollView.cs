@@ -263,9 +263,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (args.reorder)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (packageGroups.Any(group => !group.isHidden))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 {
                     // re-order if there are any added or updated items
                     foreach (var group in packageGroups)
@@ -517,9 +517,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Func<VisualElement, bool> nonEmptyGroup = (element) =>
                 {
                     var group = element as PackageGroup;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return group.packageItems.Any(p => UIUtils.IsElementVisible(p));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 };
                 var nextGroup = UIUtils.FindNextSibling(packageItem.packageGroup, reverseOrder, nonEmptyGroup) as PackageGroup;
                 if (nextGroup != null)

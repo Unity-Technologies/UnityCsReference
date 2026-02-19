@@ -54,7 +54,7 @@ namespace UnityEditor.ShortcutManagement
         CanRenameProfileResult CanRenameProfile(ShortcutProfile profile, string newProfileId);
         void RenameProfile(ShortcutProfile profile, string newProfileId);
 
-        IEnumerable<ShortcutEntry> GetAllShortcuts(); // Preferences UI relies on this order being stable
+        IReadOnlyList<ShortcutEntry> GetAllShortcuts(); // Preferences UI relies on this order being stable
         void ModifyShortcutEntry(Identifier identifier, IEnumerable<KeyCombination> combinationSequence);
         void ClearShortcutOverride(Identifier identifier);
         void ResetToDefault(); // TODO: Remove this when current UI is replaced. Set activeProfile to null instead.
@@ -155,9 +155,9 @@ namespace UnityEditor.ShortcutManagement
                 return CanCreateProfileResult.InvalidProfileId;
 
             // Profile id must be unique (case-insensitive)
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_LoadedProfiles.Any(pair => pair.Key.Equals(profileId, StringComparison.OrdinalIgnoreCase)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 return CanCreateProfileResult.DuplicateProfileId;
 
             // Parent profile must exist, if given
@@ -200,9 +200,9 @@ namespace UnityEditor.ShortcutManagement
                 return CanDeleteProfileResult.ProfileNotFound;
 
             // Profile cannot have any dependent profiles
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_LoadedProfiles.Values.Any(p => p.parentId == profile.id))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 return CanDeleteProfileResult.ProfileHasDependencies;
 
             return CanDeleteProfileResult.Success;
@@ -295,7 +295,7 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public IEnumerable<ShortcutEntry> GetAllShortcuts()
+        public IReadOnlyList<ShortcutEntry> GetAllShortcuts()
         {
             return m_Entries;
         }

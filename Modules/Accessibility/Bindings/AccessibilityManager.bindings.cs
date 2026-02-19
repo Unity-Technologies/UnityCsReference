@@ -496,9 +496,9 @@ namespace UnityEngine.Accessibility
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Lock();
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Unlock();
     }
 }

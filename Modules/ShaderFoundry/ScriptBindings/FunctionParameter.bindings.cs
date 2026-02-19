@@ -26,10 +26,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_LocationHandle;
 
         // TODO no need to make this extern, can duplicate it here
-        [ThreadSafe] internal static extern FunctionParameterInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal static extern FunctionParameterInternal Invalid();
 
         internal bool IsValid => (m_NameHandle.IsValid && (m_Flags != 0));
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
 
         // IInternalType
         FunctionParameterInternal IInternalType<FunctionParameterInternal>.ConstructInvalid() => Invalid();

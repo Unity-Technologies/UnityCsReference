@@ -21,16 +21,16 @@ namespace UnityEngine.CrashReportHandler
         [NativeProperty("EnableCloudDiagnosticsReporting")]
         public static extern bool enableCaptureExceptions { get; set; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern UInt32 logBufferSize { get; set; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal static extern string installationIdentifier { get; set; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern string GetUserMetadata(string key);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void SetUserMetadata(string key, string value);
     }
 }

@@ -49,28 +49,28 @@ namespace UnityEditor.Profiling
             m_Ptr = Internal_Create(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr Internal_Create(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending);
 
-        public extern ViewModes viewMode { [ThreadSafe] get; }
+        public extern ViewModes viewMode { [NativeMethod(IsThreadSafe = true)] get; }
 
-        public extern int sortColumn { [ThreadSafe] get; }
+        public extern int sortColumn { [NativeMethod(IsThreadSafe = true)] get; }
 
-        public extern bool sortColumnAscending { [ThreadSafe] get; }
+        public extern bool sortColumnAscending { [NativeMethod(IsThreadSafe = true)] get; }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern int GetRootItemID();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern int GetItemMarkerID(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern MarkerFlags GetItemMarkerFlags(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern ushort GetItemCategoryIndex(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern int GetItemDepth(int id);
 
         public extern bool HasItemChildren(int id);
@@ -83,16 +83,16 @@ namespace UnityEditor.Profiling
 
         public extern void GetItemDescendantsThatHaveChildren(int id, [NotNull] List<int> outChildren);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern string GetItemName(int id);
 
         [Obsolete("Use GetItemEntityId(int id) instead. This method will be removed in a future version.")]
         public int GetItemInstanceID(int id) => GetItemEntityId(id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern EntityId GetItemEntityId(int id);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern string GetItemColumnData(int id, int column);
 
         public float GetItemColumnDataAsSingle(int id, int column)
@@ -100,10 +100,10 @@ namespace UnityEditor.Profiling
             return GetItemColumnDataAsFloat(id, column);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern float GetItemColumnDataAsFloat(int id, int column);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern double GetItemColumnDataAsDouble(int id, int column);
 
         public int GetItemMetadataCount(int id) { return GetItemMergedSamplesMetadataCount(id, 0); }
@@ -126,7 +126,7 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern long GetItemMergedSamplesMetadataAsLong(int id, int sampleIndex, int metadataIndex);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal extern string GetItemTooltip(int id, int column);
 
         public string ResolveItemCallstack(int id)
@@ -139,7 +139,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSampleCallstack(id, 0, outCallstack);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public extern int GetItemMergedSamplesCount(int id);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
@@ -156,8 +156,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSamplesColumnDataInternal(id, column, outStrings);
         }
 
-        [NativeMethod("GetItemMergedSamplesColumnData")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSamplesColumnData", IsThreadSafe = true)]
         extern void GetItemMergedSamplesColumnDataInternal(int id, int column, [Out,NotNull] List<string> outStrings);
 
         public void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues)
@@ -168,8 +167,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSamplesColumnDataAsFloatsInternal(id, column, outValues);
         }
 
-        [NativeMethod("GetItemMergedSamplesColumnDataAsFloats")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSamplesColumnDataAsFloats", IsThreadSafe = true)]
         extern void GetItemMergedSamplesColumnDataAsFloatsInternal(int id, int column, List<float> outValues);
 
         public void GetItemMergedSamplesColumnDataAsDoubles(int id, int column, List<double> outValues)
@@ -180,8 +178,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSamplesColumnDataAsDoublesInternal(id, column, outValues);
         }
 
-        [NativeMethod("GetItemMergedSamplesColumnDataAsDoubles")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSamplesColumnDataAsDoubles", IsThreadSafe = true)]
         extern void GetItemMergedSamplesColumnDataAsDoublesInternal(int id, int column, List<double> outValues);
 
         [Obsolete("Deprecated, use GetItemMergedSamplesEntityId instead. This method will be removed in a future version.")]
@@ -193,8 +190,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSamplesInstanceIDInternal(id, outInstanceIds);
         }
 
-        [NativeMethod("GetItemMergedSamplesInstanceID")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSamplesInstanceID", IsThreadSafe = true)]
         extern void GetItemMergedSamplesInstanceIDInternal(int id, List<int> outInstanceIds);
 
         public void GetItemMergedSamplesEntityId(int id, List<EntityId> outEntityIds)
@@ -205,8 +201,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSamplesEntityIdInternal(id, outEntityIds);
         }
 
-        [NativeMethod("GetItemMergedSamplesEntityId")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSamplesEntityId", IsThreadSafe = true)]
         extern void GetItemMergedSamplesEntityIdInternal(int id, List<EntityId> outEntityIds);
 
         public void GetItemMergedSampleCallstack(int id, int sampleIndex, List<ulong> outCallstack)
@@ -217,8 +212,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSampleCallstackInternal(id, sampleIndex, outCallstack);
         }
 
-        [NativeMethod("GetItemMergedSampleCallstack")]
-        [ThreadSafe]
+        [NativeMethod("GetItemMergedSampleCallstack", IsThreadSafe = true)]
         extern void GetItemMergedSampleCallstackInternal(int id, int sampleIndex, List<ulong> outCallstack);
 
         public extern string ResolveItemMergedSampleCallstack(int id, int sampleIndex);

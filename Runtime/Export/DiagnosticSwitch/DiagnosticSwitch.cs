@@ -49,7 +49,7 @@ namespace UnityEngine
         private extern object GetScriptingValue();
         private extern object GetScriptingPersistentValue();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern void SetScriptingValue(object value, bool setPersistent);
 
         public bool isSetToDefault => Equals(persistentValue, defaultValue);

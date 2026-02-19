@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -26,7 +27,7 @@ namespace Unity.UI.Builder
         internal struct TestAccess
         {
             public ToggleButtonGroup buttonStrip;
-            public BuilderObjectField dataSourceField;
+            public AnyObjectField dataSourceField;
             public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
             public BuilderDataSourcePathCompleter dataSourcePathCompleter;
@@ -53,7 +54,7 @@ namespace Unity.UI.Builder
         VisualElement m_TypeFieldContainer;
         VisualElement m_PathFieldContainer;
 
-        protected BuilderObjectField m_DataSourceField;
+        protected AnyObjectField m_DataSourceField;
         protected BaseField<string> m_DataSourceTypeField;
         protected TextField m_DataSourcePathField;
         BuilderDataSourcePathCompleter m_DataSourcePathCompleter;
@@ -160,11 +161,12 @@ namespace Unity.UI.Builder
             switch (bindingAttribute)
             {
                 case k_BindingAttr_DataSource:
-                    m_DataSourceField = target.Q<BuilderObjectField>();
+                    m_DataSourceField = target.Q<AnyObjectField>();
                     if (m_DataSourceField == null)
                     {
                         break;
                     }
+                    m_DataSourceField.label = " ";
 
                     if (m_DataSourceField.value == null)
                     {
@@ -179,6 +181,8 @@ namespace Unity.UI.Builder
                     {
                         break;
                     }
+
+                    m_DataSourceTypeField.label = " ";
 
                     if (string.IsNullOrEmpty(m_DataSourceTypeField.value))
                     {
@@ -197,6 +201,7 @@ namespace Unity.UI.Builder
                         break;
                     }
 
+                    m_DataSourcePathField.label = "Data Source Path";
                     m_DataSourcePathField.isDelayed = true;
                     m_DataSourcePathCompleter = new BuilderDataSourcePathCompleter(m_DataSourcePathField);
                     // HACK: We pass the text field as the field to "edit" by the completer.
@@ -554,7 +559,7 @@ namespace Unity.UI.Builder
             {
                 object source = dataSource;
 
-                if (source is BuilderObjectField.NonUnityObjectValue value)
+                if (source is AnyObjectField.NonUnityObjectValue value)
                     source = value.data;
 
                 if (!string.IsNullOrEmpty(dataSourcePath) && DataBindingUtility.IsPathValid(source, dataSourcePath).returnCode != VisitReturnCode.Ok)

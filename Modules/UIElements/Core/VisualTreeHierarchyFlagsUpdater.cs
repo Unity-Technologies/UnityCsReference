@@ -152,7 +152,10 @@ namespace UnityEngine.UIElements
         }
 
         private new const VisualElementTransformFlags BoundingBoxDirtyFlags =
-            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementTransformFlags.LocalBounds3DDirty | VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
+            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags |
+            VisualElementTransformFlags.BoundingBoxWithoutNestedDirty |
+            VisualElementTransformFlags.LocalBounds3DDirty |
+            VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
         private static VisualElementTransformFlags GetParentMustDirtyFlags(VisualElement ve)
         {

@@ -203,7 +203,7 @@ namespace UnityEditor
 
         internal string localizedDisplayName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (!this.isValidDisplayNameCache)
@@ -1375,11 +1375,11 @@ namespace UnityEditor
         private extern void SetManagedReferenceValueInternal(object value);
 
         [NativeName("SetStructValue")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern void SetStructValueInternal(object value);
 
         [NativeName("GetStructValue")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern object GetStructValueInternal(string assemblyName, string nameSpace, string className);
 
         // exposed for public access via boxedValue
@@ -1850,6 +1850,15 @@ namespace UnityEditor
 
         [FreeFunction(Name = "SerializedPropertyBindings::NextInternal", HasExplicitThis = true)]
         extern private bool NextInternal(bool enterChildren);
+
+        public bool Parent()
+        {
+            Verify(VerifyFlags.IteratorNotAtEnd);
+            return ParentInternal();
+        }
+
+        [FreeFunction(Name = "SerializedPropertyBindings::ParentInternal", HasExplicitThis = true)]
+        extern private bool ParentInternal();
 
         // Move to first property of the object.
         public void Reset()

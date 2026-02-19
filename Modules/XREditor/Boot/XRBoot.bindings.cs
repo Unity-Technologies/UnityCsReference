@@ -36,7 +36,7 @@ namespace UnityEditor.XR
         }
 
         [ExcludeFromDocs]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [NativeConditional("ENABLE_XR")]
         [StaticAccessor("XRBoot", StaticAccessorType.DoubleColon)]
         [NativeName("SetXRSDKPreInitLibrary")]

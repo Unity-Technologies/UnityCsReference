@@ -212,7 +212,7 @@ namespace UnityEditor
             int depth = -1;
             bool expandAll = m_TreeView.state.expandedIDs.Count == 0; // State is persisted so only do this once per new AudioMixerWindow
 
-            m_RootItem = new TreeViewItem<EntityId>(EntityId.From(1010101010), depth, null, "InvisibleRoot");
+            m_RootItem = new TreeViewItem<EntityId>(EntityId.FromULong(1010101010), depth, null, "InvisibleRoot");
             SetExpanded(m_RootItem.id, true);
 
             List<AudioMixerController> m_Mixers = m_GetAllControllersCallback();

@@ -125,7 +125,7 @@ namespace UnityEditor
         internal static extern bool SetOverrideLightingSettingsInternal(SceneHandle sceneHandle);
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void RestoreOverrideLightingSettings();
 
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
@@ -253,7 +253,7 @@ namespace UnityEditor
 
         internal static extern UInt64 GetFileIDHint([NotNull] UnityEngine.Object obj);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal static extern UInt64 GenerateFileIDHint([NotNull] UnityEngine.Object obj);
 
         internal static UInt64 GetOrGenerateFileIDHint(UnityEngine.Object obj)

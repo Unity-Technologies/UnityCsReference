@@ -378,9 +378,9 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var runningProgresses = Progress.EnumerateItems().Where(item => item.running);
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (Progress.globalRemainingTime.TotalSeconds > 0 && runningProgresses.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle) &&
-#pragma warning restore UA2001
+#pragma warning restore UA2006
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     runningProgresses.All(item => !item.indefinite))
 #pragma warning restore UA2001

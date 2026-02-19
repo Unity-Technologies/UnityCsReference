@@ -22,10 +22,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_BodyLocationHandle;
         internal bool m_IsStatic;
 
-        [ThreadSafe] internal extern static ShaderFunctionInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static ShaderFunctionInternal Invalid();
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
-        [ThreadSafe] internal extern string GetBody(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetBody(ShaderContainer container);
 
         // IInternalType
         ShaderFunctionInternal IInternalType<ShaderFunctionInternal>.ConstructInvalid() => Invalid();

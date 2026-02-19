@@ -336,8 +336,8 @@ namespace UnityEditor.Search.Providers
             }
             else if (context.filterType != null && string.IsNullOrEmpty(context.searchQuery))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                yield return UnityEngine.Object.FindObjectsByType(context.filterType, UnityEngine.FindObjectsSortMode.None)
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                yield return UnityEngine.Object.FindObjectsByType(context.filterType)
 #pragma warning restore UA2001
                     .Select(obj =>
                     {

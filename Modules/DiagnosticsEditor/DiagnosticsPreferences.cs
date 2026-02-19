@@ -30,12 +30,8 @@ namespace UnityEditor
             public string name;
             public DiagnosticSwitch[] switches;
             public bool foldout;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public bool HasAnyChangedValues => switches.Any(s => !s.isSetToDefault);
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public bool HasAnyUnappliedValues => switches.Any(s => s.needsRestart);
-#pragma warning restore UA2001
+            public bool HasAnyChangedValues => Array.Exists(switches, s => !s.isSetToDefault);
+            public bool HasAnyUnappliedValues => Array.Exists(switches, s => s.needsRestart);
         }
 
         private const uint kMaxRangeForSlider = 10;
@@ -48,9 +44,7 @@ namespace UnityEditor
             : base("Preferences/Editor Diagnostics", SettingsScope.User, GetKeywords())
         {
             var switches = Debug.diagnosticSwitches;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);
-#pragma warning restore UA2001
+            m_HasAcceptedWarning = Array.Exists(switches, s => !s.isSetToDefault);
         }
 
         public override bool HasSearchInterest(string searchContext)
@@ -77,9 +71,9 @@ namespace UnityEditor
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     switches = group.OrderBy(s => s.name).ToArray(),
 #pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foldout = group.Any(s => !s.isSetToDefault)
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 })
                 .OrderBy(group => group.name)
                 .ToList();
@@ -142,9 +136,7 @@ namespace UnityEditor
         public override void OnFooterBarGUI()
         {
             var helpBox = GUILayoutUtility.GetRect(Styles.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_Switches.Any(group => group.HasAnyUnappliedValues))
-#pragma warning restore UA2001
+            if (m_Switches.Exists(group => group.HasAnyUnappliedValues))
                 EditorGUI.HelpBox(helpBox, Styles.restartNeededWarning.text, MessageType.Warning);
         }
 

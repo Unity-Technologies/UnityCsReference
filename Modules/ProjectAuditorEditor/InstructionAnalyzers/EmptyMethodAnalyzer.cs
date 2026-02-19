@@ -49,13 +49,14 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             if (previousIL != null)
                 return null;
 
-            if (!MonoBehaviourAnalysis.IsMonoBehaviour(context.MethodDefinition.DeclaringType))
+            var methodDefinition = context.MethodDefinition;
+            if (!MonoBehaviourAnalysis.IsMonoBehaviourEvent(methodDefinition))
                 return null;
 
-            if (!MonoBehaviourAnalysis.IsMonoBehaviourEvent(context.MethodDefinition))
+            if (!MonoBehaviourAnalysis.IsMonoBehaviour(methodDefinition.DeclaringType))
                 return null;
 
-            return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, context.MethodDefinition.Name);
+            return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, methodDefinition.Name);
         }
 
         internal static string GetDescriptorID()

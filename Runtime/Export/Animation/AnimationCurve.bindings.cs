@@ -172,7 +172,7 @@ namespace UnityEngine
         }
 
         // Evaluate the curve at /time/.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern public float Evaluate(float time);
 
         //  All keys defined in the animation curve.
@@ -193,16 +193,14 @@ namespace UnityEngine
         extern private int AddKey_Internal(Keyframe key);
 
         // Removes the keyframe at /index/ and inserts key.
-        [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::MoveKey", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("AnimationCurveBindings::MoveKey", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern public int MoveKey(int index, Keyframe key);
 
         [FreeFunction("AnimationCurveBindings::ClearKeys", HasExplicitThis = true, IsThreadSafe = true)]
         extern public void ClearKeys();
 
         // Removes a key
-        [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::RemoveKey", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("AnimationCurveBindings::RemoveKey", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern public void RemoveKey(int index);
 
         // Retrieves the key at index (RO)
@@ -218,8 +216,7 @@ namespace UnityEngine
             get;
         }
 
-        [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::GetKey", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("AnimationCurveBindings::GetKey", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern private Keyframe GetKey(int index);
 
         [FreeFunction("AnimationCurveBindings::GetKeysArray", HasExplicitThis = true, IsThreadSafe = true)]
@@ -245,8 +242,7 @@ namespace UnityEngine
         extern public override int GetHashCode();
 
         // Smooth the in and out tangents of the keyframe at /index/.
-        [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::SmoothTangents", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("AnimationCurveBindings::SmoothTangents", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern public void SmoothTangents(int index, float weight);
 
         // A constant line at /value/ starting at /timeStart/ and ending at /timeEnd/

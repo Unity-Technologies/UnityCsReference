@@ -45,7 +45,7 @@ namespace Unity.Multiplayer.PlayMode
             // Ideally the CurrentPlayerEditor type should be injected when it's assembly is loaded.
             // However, the only event it currently has access to is InitializeOnLoadMethod, which can lead to issues
             // where user code gets invoked before, and therefore CurrentPlayer is not initialized yet.
-            // It can be fixed by when events like AfterAssemblyLoaded are available to editor code.
+            // It can be fixed by when events like OnAssemblyLoaded are available to editor code.
             // For now, we use reflection to make sure editor api is initialized.
             var editorApiType = Type.GetType("Unity.Multiplayer.PlayMode.Editor.CurrentPlayerEditor, UnityEditor.MultiplayerModule");
             Assert.IsNotNull(editorApiType, "CurrentPlayerEditor API type not found");

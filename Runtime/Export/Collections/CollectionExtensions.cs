@@ -285,7 +285,109 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="item">The item to locate in the array.</param>
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
-        internal static bool Contains<T>([DisallowNull]this T[] array, T item) => Array.IndexOf(array, item) != -1;
+        public static bool Contains<T>([DisallowNull]this T[] array, T item) => Array.IndexOf(array, item) != -1;
+		
+		    /// <summary>
+        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool Exists<T>(this T[] collection, Predicate<T> match)
+        {
+            return Array.Exists(collection, match);
+        }
+
+        /// <summary>
+        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool Exists<T>(this IReadOnlyCollection<T> collection, Predicate<T> match)
+        {
+            return ExistsInternal(collection, match);
+        }
+
+        /// <summary>
+        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool Exists<T>(this ICollection<T> collection, Predicate<T> match)
+        {
+            return ExistsInternal(collection, match);
+        }
+
+        private static bool ExistsInternal<T>(this IEnumerable<T> enumerable, Predicate<T> match)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+            if (match == null)
+                throw new ArgumentNullException(nameof(match));
+
+            // Fast path: concrete List<T>
+            if (enumerable is List<T> list)
+            {
+                return list.Exists(match); // uses List<T>.Exists
+            }
+
+            // Fast path: T[] array
+            if (enumerable is T[] array)
+            {
+                return Array.Exists(array, match); // uses Array.Exists
+            }
+
+            // Fallback for any other IEnumerable<T> implementation
+            // Profiling using DotNetBenchmark showed that even on NET 8, which contains optimizations
+            // for Spans, having detection of arrays and lists resulted in a 2.5-3.0x performance
+            // benefit compared to calling System.Linq.Any directly.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return System.Linq.Enumerable.Any(enumerable, match.Invoke);
+#pragma warning restore UA2006
+        }
+
+        /// <summary>
+        /// Check how many unique elements an enumerable contains. Logically equivalent to Distinct().Count() in Linq.
+        /// </summary>
+        /// <param name="enumerable">Enumerable to inspect</param>
+        /// <typeparam name="T">Enumerable type</typeparam>
+        /// <returns>Number of unique items</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static int DistinctCount<T>(this IEnumerable<T> enumerable)
+        {
+            var set = new HashSet<T>(enumerable);
+            return set.Count;
+        }
+
+        /// <summary>
+        /// Check if an enumerable contains at least N elements without always iterating the whole sequence.
+        /// </summary>
+        /// <param name="enumerable">Enumerable to inspect</param>
+        /// <param name="count">Returns true if count is greater than this</param>
+        /// <typeparam name="T">Enumerable type</typeparam>
+        /// <returns>True if enumerable contains at least N unique items</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool DistinctCountGreaterThan<T>(this IEnumerable<T> enumerable, int count)
+        {
+            var set = new HashSet<T>(count + 1);
+            foreach (var item in enumerable)
+            {
+                if (set.Add(item))
+                {
+                    if (set.Count > count)
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
 
             foreach (var toggle in m_CategoriesFoldOut?.Children().FilterByType<Toggle>() ?? Array.Empty<Toggle>())
-                toggle.SetValueWithoutNotify(m_Filters.categories?.Contains(toggle.name.ToLower()) ?? false);
+                toggle.SetValueWithoutNotify(m_Filters.categories?.Contains(toggle.name) ?? false);
 
             var selectedLabelsCount = 0;
             var labelsCount = 0;
@@ -164,7 +164,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_CategoriesFoldOut = new Foldout {text = L10n.Tr("Categories"), name = k_CategoriesFoldOutName, classList = {k_FoldoutClass}};
                 foreach (var category in m_Categories)
                 {
-                    var toggle = new Toggle(L10n.Tr(category)) {name = category.ToLower(), classList = {k_ToggleClass}};
+                    var toggle = new Toggle(L10n.Tr(category)) {name = category, classList = {k_ToggleClass}};
                     toggle.RegisterValueChangedCallback(evt => UpdateFiltersIfNeeded());
                     m_CategoriesFoldOut.Add(toggle);
                 }
@@ -210,32 +210,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             filters.status = selectedStatus;
 
             if (m_CategoriesFoldOut != null)
-            {
-                var categories = filters.categories;
-                if (categories == null)
-                    categories = new ();
-                else
-                    categories.Clear();
-
-                foreach (var toggle in EnumerateSelectedToggle(m_CategoriesFoldOut))
-                    categories.Add(toggle.name.ToLower());
-
-                filters.categories = categories;
-            }
+                filters.categories = new List<string>(EnumerateSelectedToggle(m_CategoriesFoldOut).SelectAsEnumerable(i => i.name));
 
             if (m_LabelsFoldOut != null)
-            {
-                var labels = filters.labels;
-                if (labels == null)
-                    labels = new ();
-                else
-                    labels.Clear();
-
-                foreach (var toggle in EnumerateSelectedToggle(m_LabelsFoldOut))
-                    labels.Add(toggle.name.ToLower());
-
-                filters.labels = labels;
-            }
+                filters.labels = new List<string>(EnumerateSelectedToggle(m_LabelsFoldOut).SelectAsEnumerable(i => i.name));
 
             if (!filters.Equals(m_Filters))
             {

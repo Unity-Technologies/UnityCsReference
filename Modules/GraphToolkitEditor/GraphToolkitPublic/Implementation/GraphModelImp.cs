@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor.Implementation
@@ -153,6 +153,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        // Disallow modifications while in OnEnable, OnDisable and OnGraphChanged
         bool LockForModification { get; set; }
 
         internal void CheckModificationLock()
@@ -316,59 +317,321 @@ namespace Unity.GraphToolkit.Editor.Implementation
             return true;
         }
 
+        internal void AddNode(Node node)
+        {
+            CheckModificationLock();
+
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            if (node is BlockNode)
+                throw new ArgumentException("Cannot add a BlockNode directly to a Graph. Use ContextNode.AddBlockNode instead.");
+
+            if (!IsNodeCompatible(node))
+            {
+                throw new ArgumentException($"Node '{node.GetType().Name}' is not compatible with this graph type ({Graph.GetType().Name}). Ensure it is decorated with [UseWithGraph] or is in the same assembly.");
+            }
+
+            var previousGraph = node.Graph;
+
+            // If already here, do nothing.
+            if (previousGraph == m_Graph)
+            {
+                return;
+            }
+
+            // Reparenting: Remove from old graph first.
+            if (previousGraph != null)
+            {
+                previousGraph.RemoveNode(node);
+            }
+
+            var nodeImp = node.GetImplementation();
+
+            // Perform node initialization (similar to InstantiateNode behavior)
+            nodeImp.GraphModel = this;
+            nodeImp.OnCreateNode();
+            AddNode(nodeImp);
+        }
+
+        internal void RemoveNode(INode node)
+        {
+            CheckModificationLock();
+
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            if (!(node is Node || node is AbstractNodeModel))
+                throw new ArgumentException($"The provided INode ('{node.GetType().Name}') is not a valid internal node implementation.", nameof(node));
+
+            if (node.Graph != Graph)
+                throw new ArgumentException("The node provided does not belong to this graph.", nameof(node));
+
+            switch (node)
+            {
+                case BlockNode blockNode:
+                    DeleteNode(blockNode.GetImplementation(), deleteConnections: true);
+                    break;
+                case Node userNode:
+                    DeleteNode(userNode.GetImplementation(), deleteConnections: true);
+                    break;
+                case AbstractNodeModel abstractNode:
+                    DeleteNode(abstractNode, deleteConnections: true);
+                    break;
+                default:
+                    DeleteNode(node.NodeModel, deleteConnections: true);
+                    break;
+            }
+        }
+
+        public IConstantNode CreateConstantNode(Vector2 position, Type valueType, object defaultValue = null)
+        {
+            CheckModificationLock();
+
+            if (valueType == null)
+                throw new ArgumentNullException(nameof(valueType));
+
+            bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
+            if (!isSerializable)
+            {
+                throw new ArgumentException($"The type '{valueType.Name}' is not serializable. Constant nodes require serializable types.", nameof(valueType));
+            }
+
+            if (defaultValue != null && defaultValue.GetType() != valueType)
+            {
+                throw new ArgumentException($"Default value type {defaultValue.GetType()} does not match constant type {valueType}.", nameof(defaultValue));
+            }
+
+            var typeHandle = valueType.GenerateTypeHandle();
+
+            var nodeModel = base.CreateConstantNode(typeHandle, string.Empty, position, initializationCallback: n =>
+            {
+                if (defaultValue != null)
+                    n.Value.ObjectValue = defaultValue;
+            });
+
+            // Add to supported types for Blackboard compatibility
+            if (nodeModel != null && !SupportedTypes.Contains(valueType))
+            {
+                m_SupportedTypes.Add(valueType);
+            }
+
+            return (IConstantNode)nodeModel;
+        }
+
+        public IVariableNode AddVariableNode(IVariable variable, Vector2 position)
+        {
+            CheckModificationLock();
+
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            if (variable.Graph != Graph)
+            {
+                throw new ArgumentException("The variable does not belong to this graph.", nameof(variable));
+            }
+
+            if (variable is not VariableDeclarationModel declModel)
+                throw new ArgumentException("Invalid variable implementation.", nameof(variable));
+
+            if (!VariableDeclarations.Contains(declModel))
+            {
+                throw new ArgumentException("The variable declaration doesn't exist in the graph. It may have been removed", nameof(variable));
+            }
+
+            return (IVariableNode)base.CreateVariableNode(declModel, position);
+        }
+
+        public ISubgraphNode AddSubgraphNode(Graph subgraph, Vector2 position)
+        {
+            CheckModificationLock();
+
+            if (subgraph == null)
+                throw new ArgumentNullException(nameof(subgraph));
+
+            if (!AllowSubgraphCreation)
+                throw new InvalidOperationException("This graph does not support subgraphs.");
+
+            // If local subgraph, throw
+            if (subgraph.m_Implementation is GraphModelImp { IsLocalSubgraph: true })
+            {
+                throw new ArgumentException("Cannot add a Local Subgraph directly. Use CreateLocalSubgraphNode to create a new local instance.");
+            }
+
+            // Compatibility Check
+            var validTypes = PublicGraphFactory.GetSubGraphTypes(Graph.GetType());
+            if (!validTypes.Contains(subgraph.GetType()))
+            {
+                throw new ArgumentException($"The subgraph type '{subgraph.GetType().Name}' is not compatible with '{Graph.GetType().Name}'.");
+            }
+
+            // We need the GraphModel of the target to create the node reference
+            var targetModel = subgraph.m_Implementation as GraphModel;
+            if (targetModel == null)
+                throw new ArgumentException("Invalid subgraph implementation.");
+
+            return (ISubgraphNode)base.CreateSubgraphNode(targetModel, position);
+        }
+
+        public ISubgraphNode CreateLocalSubgraphNode(Type subgraphType, string name, Vector2 position)
+        {
+            CheckModificationLock();
+
+            if (subgraphType == null)
+                throw new ArgumentNullException(nameof(subgraphType));
+
+            if (!AllowSubgraphCreation)
+                throw new InvalidOperationException("This graph does not support subgraphs.");
+
+            if (!typeof(Graph).IsAssignableFrom(subgraphType) || subgraphType.IsAbstract)
+            {
+                throw new ArgumentException("Subgraph type must be a concrete class deriving from Graph.", nameof(subgraphType));
+            }
+
+            // Compatibility Check
+            var validTypes = PublicGraphFactory.GetSubGraphTypes(Graph.GetType());
+            if (!validTypes.Contains(subgraphType))
+            {
+                throw new ArgumentException($"The subgraph type '{subgraphType.Name}' is not compatible with '{Graph.GetType().Name}'.");
+            }
+
+            // Create the local subgraph model
+            name ??= SubgraphCreationHelper.defaultLocalSubgraphName;
+            var template = new SubgraphTemplateImp(subgraphType, name);
+            var localSubgraphModel = CreateLocalSubgraph(typeof(GraphModelImp), name, template);
+
+            // Create the node referencing it
+            return (ISubgraphNode)base.CreateSubgraphNode(localSubgraphModel, position);
+        }
+
+        public bool Connect(IPort output, IPort input)
+        {
+            CheckModificationLock();
+
+            // Null checks
+            if (output == null)
+                throw new ArgumentNullException(nameof(output));
+
+            if (input == null)
+                throw new ArgumentNullException(nameof(input));
+
+            // Validate Order : Output -> Input
+            if (output.Direction != PortDirection.Output)
+                throw new ArgumentException($"The 'output' parameter must be an Output port. It was {output.Direction}.", nameof(output));
+
+            if (input.Direction != PortDirection.Input)
+                throw new ArgumentException($"The 'input' parameter must be an Input port. It was {input.Direction}.", nameof(input));
+
+            // Ownership Validation
+            if (output.GetNode().Graph != Graph)
+                throw new ArgumentException("The output port does not belong to this graph.", nameof(output));
+
+            if (input.GetNode().Graph != Graph)
+                throw new ArgumentException("The input port does not belong to this graph.", nameof(input));
+
+            var outputModel = (PortModel)output;
+            var inputModel = (PortModel)input;
+
+            // Check Basic Compatibility (Types)
+            if (!IsCompatiblePort(outputModel, inputModel))
+            {
+                if (!CanAssignTo(inputModel, outputModel))
+                    throw new ArgumentException($"Ports are incompatible. Cannot connect type {TypeHelpers.GetFriendlyName(output.DataType)} to {TypeHelpers.GetFriendlyName(input.DataType)}.");
+
+                // Check Self-Connection
+                if (outputModel.NodeModel == inputModel.NodeModel)
+                    throw new ArgumentException("Cannot connect a node to itself.");
+
+                throw new ArgumentException("Ports are not compatible.");
+            }
+
+            //  Check Capacity
+            if (inputModel.Capacity == PortCapacity.Single && inputModel.IsConnected())
+                throw new ArgumentException("Input port capacity reached. Cannot connect multiple wires to a Single capacity port.");
+
+            if (outputModel.Capacity == PortCapacity.Single && outputModel.IsConnected())
+                throw new ArgumentException("Output port capacity reached.");
+
+            // Check Existing Connection
+            bool alreadyConnected = GetAnyWireConnectedToPorts(inputModel, outputModel) != null;
+            if (alreadyConnected)
+                return false;
+
+            return CreateWire(inputModel, outputModel) != null;
+        }
+
         public bool DeleteWiresBetween(IPort output, IPort input)
         {
+            CheckModificationLock();
+
+            // Null checks
+            if (output == null)
+                throw new ArgumentNullException(nameof(output));
+            if (input == null)
+                throw new ArgumentNullException(nameof(input));
+
+            // Direction check
             if (input.Direction == output.Direction)
             {
                 return false;
             }
-            if( output.Direction == PortDirection.Input )
+            if (output.Direction == PortDirection.Input)
             {
                 (output, input) = (input, output);
             }
+
+            var outputModel = (PortModel)output;
+            var inputModel = (PortModel)input;
             using var dispose = ListPool<GraphElementModel>.Get( out var elementsToDelete);
+
+            // A. Check Direct Wires
             foreach (var wire in WireModels)
             {
-                bool sameInput = wire.ToPort == input;
-                bool sameOutput = wire.ToPort == output;
-
-                if (sameInput && sameOutput)
+                if (wire.FromPort == outputModel && wire.ToPort == inputModel)
                 {
                     elementsToDelete.Add(wire);
                 }
-                else if (sameInput || sameOutput) // Check if ports are connected through a portal.
+            }
+
+            // B. Portal Connections
+            foreach (var wireFromOutput in outputModel.GetConnectedWires())
+            {
+                if (wireFromOutput.ToPort.NodeModel is WirePortalEntryModel entryPortal)
                 {
-                    var otherWirePort = sameInput ? wire.FromPort : wire.ToPort;
-                    var otherPortToDelete = sameInput ? output : input;
-                    if (otherWirePort.NodeModel is WirePortalModel portalModel)
+                    var declaration = entryPortal.DeclarationModel;
+                    var exitPortals = GetExitPortals(declaration);
+
+                    foreach (var exitPortal in exitPortals)
                     {
-                        var otherPortals = sameInput ? GetExitPortals(portalModel.DeclarationModel) : GetEntryPortals(portalModel.DeclarationModel);
-
-                        foreach( var otherPortal in otherPortals)
+                        var exitPortalModel = ((WirePortalExitModel)exitPortal);
+                        foreach (var wireToInput in exitPortalModel.OutputPort.GetConnectedWires())
                         {
-                            var otherPortalPort = otherPortal is WirePortalEntryModel entryPortal ? entryPortal.InputPort : ((WirePortalExitModel)otherPortal).OutputPort;
-
-                            foreach (var wireOnTheOtherSideOfPortal in otherPortalPort.GetConnectedWires())
+                            if (wireToInput.ToPort == inputModel)
                             {
-                                if (wireOnTheOtherSideOfPortal.FromPort == otherPortToDelete || wireOnTheOtherSideOfPortal.ToPort == otherPortToDelete)
-                                {
-                                    elementsToDelete.Add(wire);
-                                    elementsToDelete.Add(wireOnTheOtherSideOfPortal);
+                                // Always delete the final wire (Exit -> Input)
+                                elementsToDelete.Add(wireToInput);
 
-                                    // If there is only one entry portal and one exit portal, and they are only connected to one wire (the one we are asked to delete), we delete them as well.
-                                    if (otherPortalPort.GetConnectedWires().Count == 1 && otherPortals.Count == 1)
-                                    {
-                                        var samePortals = sameInput ? GetEntryPortals(portalModel.DeclarationModel) : GetExitPortals(portalModel.DeclarationModel);
-                                        if (samePortals.Count == 1)
-                                        {
-                                            var samePortalPort = portalModel is WirePortalEntryModel entryPortal2 ? entryPortal2.InputPort : ((WirePortalExitModel)otherPortal).OutputPort;
-                                            if (samePortalPort.GetConnectedWires().Count == 1)
-                                            {
-                                                elementsToDelete.Add(samePortals[0]);
-                                                elementsToDelete.Add(otherPortals[0]);
-                                            }
-                                        }
-                                    }
+                                // Check if the Entry Portal is serving other Exits
+                                int activeExits = 0;
+                                foreach (var otherExit in exitPortals)
+                                {
+                                    if (exitPortalModel.OutputPort.IsConnected())
+                                        activeExits++;
+                                }
+
+                                // If this was the only active chain, we cleanup the Entry side too.
+                                bool isLastConnection = activeExits <= 1;
+
+                                if (isLastConnection)
+                                {
+                                    elementsToDelete.Add(wireFromOutput);
+                                    elementsToDelete.Add(entryPortal);
+                                    elementsToDelete.Add(exitPortal);
+                                }
+                                else
+                                {
+                                    // Only remove the specific Exit portal used for this connection
+                                    elementsToDelete.Add(exitPortal);
                                 }
                             }
                         }
@@ -376,6 +639,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 }
             }
 
+
+            // Execution
             if (elementsToDelete.Count > 0)
             {
                 DeleteElements(elementsToDelete);
@@ -399,9 +664,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return SupportedTypes.Contains(constantNodeModel.Type);
 
                 case SubgraphNodeModel subgraphNodeModel:
-                    var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph;
-                    if (subgraph == null )
+                    var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph ??
+                                   (GraphReference.ResolveGraphModel(subgraphNodeModel.SubgraphReference) as GraphModelImp)?.Graph;
+
+                    if (subgraph == null)
+                    {
+                        Debug.LogWarning("Cannot paste subgraph node because the referenced subgraph could not be resolved.");
                         return false;
+                    }
 
                     var subgraphTypes = PublicGraphFactory.GetSubGraphTypes(Graph.GetType());
 
@@ -411,7 +681,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                             return true;
                     }
 
-                    return false;
+                    break;
             }
 
             return false;
@@ -420,12 +690,18 @@ namespace Unity.GraphToolkit.Editor.Implementation
         bool IsNodeCompatible(Node node)
         {
             var graphType = m_Graph.GetType();
-            if (node.GetType().GetCustomAttribute<UseWithGraphAttribute>()?.IsGraphTypeSupported(graphType) == true )
+
+            // If the attribute is present, we do not fall into auto inclusion
+            var attr = node.GetType().GetCustomAttribute<UseWithGraphAttribute>(true);
+            if (attr != null)
             {
-                return true;
+                return attr.IsGraphTypeSupported(graphType);
             }
-            var attribute = graphType.GetCustomAttribute<GraphAttribute>();
-            if (attribute?.Options.HasFlag(GraphOptions.DisableAutoInclusionOfNodesFromGraphAssembly) == false && node.GetType().Assembly == graphType.Assembly)
+
+            // Default behaviour : Check Assembly Auto-inclusion rules
+            var graphAttr = graphType.GetCustomAttribute<GraphAttribute>();
+            bool autoInclude = graphAttr == null || !graphAttr.Options.HasFlag(GraphOptions.DisableAutoInclusionOfNodesFromGraphAssembly);
+            if (autoInclude && node.GetType().Assembly == graphType.Assembly)
             {
                 return true;
             }
@@ -558,7 +834,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             if (nodeCreationData is GraphBlockCreationData blockData)
                 return blockData.ContextNodeModel.CreateAndInsertBlock(
-                    typeof(UserBlockNodeModelImp), blockData.OrderInContext, nodeCreationData.Guid, initializationCallback, nodeCreationData.SpawnFlags);
+                    typeof(UserBlockNodeModelImp), "", blockData.OrderInContext, nodeCreationData.Guid, initializationCallback, nodeCreationData.SpawnFlags);
 
             //This code path is only meant to display the block in the Item Library
             if (nodeCreationData.SpawnFlags != SpawnFlags.Orphan)
@@ -566,7 +842,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             var context = nodeCreationData.GraphModel.CreateNode(typeof(UserContextNodeModelImp) , "Dummy Context", nodeCreationData.Position, nodeCreationData.Guid,
                 n => ((UserContextNodeModelImp)n).InitCustomNode((ContextNode)Activator.CreateInstance(contextType)), nodeCreationData.SpawnFlags);
-            (context as ContextNodeModel)?.CreateAndInsertBlock(typeof(UserBlockNodeModelImp), -1, nodeCreationData.Guid, initializationCallback, nodeCreationData.SpawnFlags);
+            (context as ContextNodeModel)?.CreateAndInsertBlock(typeof(UserBlockNodeModelImp), "", -1, nodeCreationData.Guid, initializationCallback, nodeCreationData.SpawnFlags);
 
             return context;
         }
@@ -703,6 +979,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 LockForModification = false;
             }
             return result;
+        }
+
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+            m_Graph?.SetImplementation(this);
         }
     }
 }

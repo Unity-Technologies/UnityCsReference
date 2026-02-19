@@ -59,7 +59,8 @@ namespace UnityEditor.Search
             {
                 if (ExcludeProviderProposition(p.id))
                     continue;
-                yield return new SearchProposition($"{p.name} ({p.filterId})", p.filterId, p.id, p.priority, Icons.quicksearch, p, color: QueryColors.area);
+                // UUM-119687: Use SkipNicifyVariableName so provider filter IDs are displayed as-is
+                yield return new SearchProposition($"{p.name} ({p.filterId})", p.filterId, p.id, p.priority, Icons.quicksearch, p, color: QueryColors.area, SearchPropositionGenerationOptions.SkipNicifyVariableName);
             }
         }
 

@@ -108,24 +108,22 @@ namespace UnityEditor
         public static string kEnvironment_PlatformGroup = "Environment/BuildTargetPlatformGroup";
         public static string kIndeterministicImporter = "ImporterRegistry/IndeterministicImporter";
 
-        internal IEnumerable<ArtifactInfoDifference> GetAllDifferences()
+        internal IReadOnlyList<ArtifactInfoDifference> GetAllDifferences()
         {
             return m_AllDiffs;
         }
 
-        internal IEnumerable<string> GatherDifferences(ArtifactInfo oldInfo, ArtifactInfo newInfo)
+        internal List<string> GatherDifferences(ArtifactInfo oldInfo, ArtifactInfo newInfo)
         {
-            IEnumerable<ArtifactInfoDifference> ignoreDifferences = null;
+            List<ArtifactInfoDifference> ignoreDifferences = null;
             var messages = GatherDifferences(oldInfo, newInfo, ref ignoreDifferences);
             return messages;
         }
 
-        internal IEnumerable<string> GatherDifferences(ArtifactInfo oldInfo, ArtifactInfo newInfo, ref IEnumerable<ArtifactInfoDifference> differences)
+        internal List<string> GatherDifferences(ArtifactInfo oldInfo, ArtifactInfo newInfo, ref List<ArtifactInfoDifference> differences)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllDiffs = newInfo.dependencies.Except(oldInfo.dependencies)
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(oldInfo.dependencies.Except(newInfo.dependencies))
 #pragma warning restore UA2001
                 .Select(e => e.Key)
@@ -147,9 +145,7 @@ namespace UnityEditor
                 }).ToList();
 
             var msgs = new List<string>();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            for (int i = 0; i < m_AllDiffs.Count(); ++i)
-#pragma warning restore UA2001
+            for (int i = 0; i < m_AllDiffs.Count; ++i)
             {
                 var artifactInfoDiff = m_AllDiffs[i];
                 foreach (var formatter in getMessageFormatters())
@@ -165,9 +161,7 @@ namespace UnityEditor
                 }
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_AllDiffs.Count() == 0 && newInfo.importResultID != oldInfo.importResultID)
-#pragma warning restore UA2001
+            if (m_AllDiffs.Count == 0 && newInfo.importResultID != oldInfo.importResultID)
             {
                 var indeterministicImporterDifference = new ArtifactInfoDifference(kIndeterministicImporter, DiffType.Modified, oldInfo, newInfo);
                 indeterministicImporterDifference.message = "the importer used is non-deterministic, as it has produced a different result even though all the dependencies are the same";

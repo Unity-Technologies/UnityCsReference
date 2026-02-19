@@ -94,7 +94,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     new NodeItemLibraryData(nodeType),
                     d => isContextNode ? GraphModelImp.CreateContextNodeFromData(d, nodeType) : GraphModelImp.CreateNodeFromData(d, nodeType))
                 {
-                    CategoryPath = isContextNode ? "Contexts" : "Nodes",
+                    Name = string.IsNullOrEmpty(nodeAttribute?.Title) ? nodeType.Name : nodeAttribute.Title,
+                    CategoryPath = nodeAttribute?.CategoryPath ?? (isContextNode ? "Contexts" : "Nodes"),
                     IconPath = nodeAttribute?.IconPath ?? ""
                 };
 
@@ -114,7 +115,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     new NodeItemLibraryData(blockType),
                     d => GraphModelImp.CreateContextFromBlockData(d, blockType, contextType))
                 {
-                    CategoryPath = "Blocks",
+                    Name = string.IsNullOrEmpty(nodeAttribute?.Title) ? blockType.Name : nodeAttribute.Title,
+                    CategoryPath = nodeAttribute?.CategoryPath ?? "Blocks",
                     IconPath = nodeAttribute?.IconPath ?? ""
                 };
 

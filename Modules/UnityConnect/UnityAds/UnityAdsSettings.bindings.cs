@@ -17,8 +17,8 @@ namespace UnityEngine.Advertisements
         [StaticAccessor("GetUnityAdsSettings()", StaticAccessorType.Dot)]
         public extern static bool enabled
         {
-            [ThreadSafe] get;
-            [ThreadSafe] set;
+            [NativeMethod(IsThreadSafe = true)] get;
+            [NativeMethod(IsThreadSafe = true)] set;
         }
 
         [Obsolete("warning No longer supported and will always return true")]

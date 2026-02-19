@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using Event = UnityEngine.Event;
@@ -326,9 +325,7 @@ namespace UnityEditor.IMGUI.Controls
                     var selected = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
                     if (selected != null)
                     {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (selected.children.Any())
-#pragma warning restore UA2002
+                        if (selected.hasChildren)
                         {
                             GoToChild();
                         }
@@ -359,11 +356,7 @@ namespace UnityEditor.IMGUI.Controls
                     else if (evt.keyCode == KeyCode.RightArrow)
                     {
                         var idx = m_State.GetSelectedIndex(m_CurrentlyRenderedTree);
-#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (idx > -1 && m_CurrentlyRenderedTree.children.ElementAt(idx).children.Any())
-#pragma warning restore UA2004
-#pragma warning restore UA2002
+                        if (idx > -1 && m_CurrentlyRenderedTree.childList[idx].hasChildren)
                         {
                             GoToChild();
                         }
@@ -423,13 +416,9 @@ namespace UnityEditor.IMGUI.Controls
             m_State.SetScrollState(item, GUILayout.BeginScrollView(m_State.GetScrollState(item), GUIStyle.none, GUI.skin.verticalScrollbar));
             EditorGUIUtility.SetIconSize(m_Gui.iconSize);
             Rect selectedRect = new Rect();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            for (var i = 0; i < item.children.Count(); i++)
-#pragma warning restore UA2001
+            for (var i = 0; i < item.childList.Count; i++)
             {
-#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var child = item.children.ElementAt(i);
-#pragma warning restore UA2004
+                var child = item.childList[i];
                 bool selected = m_State.GetSelectedIndex(item) == i;
 
                 if (child.IsSeparator())
@@ -438,9 +427,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_Gui.DrawItem(child, child.displayName, child.icon, child.enabled, child.children.Any(), selected, hasSearch);
-#pragma warning restore UA2002
+                    m_Gui.DrawItem(child, child.displayName, child.icon, child.enabled, child.hasChildren, selected, hasSearch);
                 }
 
                 var r = GUILayoutUtility.GetLastRect();
@@ -465,9 +452,7 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     m_State.SetSelectedIndex(item, i);
                     var selectedChild = m_State.GetSelectedChild(item);
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (selectedChild.children.Any())
-#pragma warning restore UA2002
+                    if (selectedChild.hasChildren)
                     {
                         GoToChild();
                     }

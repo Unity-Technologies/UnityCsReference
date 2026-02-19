@@ -51,7 +51,7 @@ namespace UnityEditor
         extern internal static Object GetPrefabAssetHandle(Object assetComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static bool HasManagedReferencesWithMissingTypes(Object assetComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -99,7 +99,7 @@ namespace UnityEditor
         extern public static void SetPropertyModifications(Object targetPrefab, PropertyModification[] modifications);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool HasApplicableObjectOverridesForTarget([NotNull] Object targetPrefab, [NotNull] Object applyTarget, bool includeDefaultOverrides);
 
         [NativeMethod("PrefabUtilityBindings::FindNearestInstanceOfAsset", IsFreeFunction = true)]
@@ -119,43 +119,43 @@ namespace UnityEditor
         // Force re-merging all prefab instances of this prefab.
         [Obsolete("MergeAllPrefabInstances is deprecated. Prefabs are merged automatically. There is no need to call this method.")]
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void MergeAllPrefabInstances(Object targetObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void MergePrefabInstance_internal([NotNull] Object gameObjectOrComponent);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static MergeStatus GetMergeStatus(GameObject componentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull] GameObject prefabRoot, SceneHandle sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots_internal(GameObject instanceRoot, PrefabUnpackMode unpackMode);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private Object InstantiatePrefab_internal(Object target, Scene destinationScene, Transform parent);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool ReplacePrefabAssetOfPrefabInstance_Internal([NotNull] GameObject instanceRoot, [NotNull] GameObject assetRootRoot, PrefabReplacingSettings settings);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool ConvertToPrefabInstance_Internal([NotNull] GameObject plainGameObject, [NotNull] GameObject assetRootRoot, ConvertToPrefabInstanceSettings settings);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool InstantiateDraggedPrefabUpon_Internal([NotNull] GameObject draggedUponGameObject, [NotNull] GameObject assetRootRoot);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject LoadPrefabContentsIntoPreviewScene_Internal(string prefabPath, Scene scene);
 
         public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene)
@@ -250,22 +250,22 @@ namespace UnityEditor
         extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, bool connectToInstance, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static GameObject ApplyPrefabInstance_Internal([NotNull] GameObject root);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject SaveAsPrefabAsset_Internal([NotNull] GameObject root, string path, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject SaveAsPrefabAssetAndConnect_Internal([NotNull] GameObject root, string path, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static GameObject SavePrefabAsset_Internal([NotNull] GameObject root, out bool success);
 
         internal static void AddGameObjectsToPrefabAndConnect(GameObject[] gameObjects, Object targetPrefab)
@@ -335,19 +335,19 @@ namespace UnityEditor
         extern private static bool VerifyNestingFromScript([NotNull] GameObject[] gameObjects, [NotNull] string targetPrefabGUID, Object prefabInstance);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static Component[] GetRemovedComponents([NotNull] Object prefabInstance);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void SetRemovedComponents([NotNull] Object prefabInstance, [NotNull] Component[] removedComponents);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static GameObject[] GetRemovedGameObjects([NotNull] Object prefabInstance);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static void SetRemovedGameObjects([NotNull] Object prefabInstance, [NotNull] GameObject[] removedGameObjects);
 
         // Returns true if the object is part of a any type of prefab, asset or instance
@@ -451,19 +451,19 @@ namespace UnityEditor
         extern internal static bool IsPathInStreamingAssets(string path);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyObjectOverride([NotNull] Object componentOrGameObject, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyObjectOverrideWithoutUndo([NotNull] Object componentOrGameObject, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyPropertyOverride([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyPropertyOverrideWithoutUndo([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
 
     }

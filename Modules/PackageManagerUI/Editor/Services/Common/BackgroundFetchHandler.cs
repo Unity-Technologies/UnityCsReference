@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -45,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var numDownloadedAssets = m_AssetStoreCache.localInfos.Count;
-                var numItemsChecked = numDownloadedAssets - new HashSet<long>(m_CheckUpdateStack).Count;
+                var numItemsChecked = numDownloadedAssets - m_CheckUpdateStack.DistinctCount();
                 return numItemsChecked <= 0 || numDownloadedAssets <= 0 ? 0 : Math.Min(100, numItemsChecked * 100 / numDownloadedAssets);
             }
         }

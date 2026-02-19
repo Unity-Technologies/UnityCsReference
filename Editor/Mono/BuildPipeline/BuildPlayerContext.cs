@@ -32,16 +32,20 @@ namespace UnityEditor.Build
         internal IEnumerable<(NPath dst, NPath src)> StreamingAssets => StreamingAssetFiles.Select(e => (e.Key, e.Value));
 #pragma warning restore UA2001
 
-        ///<summary>Add an additional metadataPath to the BuildPlayerOptions.previousBuildMetadataLocations array passed in as part of the build. This is useful if you want the player build 
-        ///to automatically retrieve type stripping information from builds you do before the player build itself.</summary>
+        ///<summary>Add an additional build metadata path to the BuildPlayerOptions.previousBuildMetadataLocations array passed in as part of the build.
+        ///</summary>
         ///<remarks>
-        ///If this method is called on the same path multiple times, it will only be called once.
+        /// This is useful if you want the player build
+        /// to retrieve type stripping information from content-only builds you do prior to the player build.
         ///
-        ///If the path passed into this method is not a valid build metadata directory, at build time an error will be thrown. 
+        /// If this method is called on the same path multiple times, it will only be called once.
         ///
-        ///For more information on locating the metadata directory associated with a given build, refer to the UnityEditor.Build.BuildMetadata class</remarks>
+        /// If the path passed into this method is not a valid build metadata directory, at build time an error will be thrown.
+        ///
+        /// For more information on locating the build metadata directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.</remarks>
         ///<param name="metadataPath">The path to a build metadata directory. If the path is invalid, an error will be thrown during the build process.</param>
-        /*UCBP-PUBLIC*/ internal void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
+        /*UCBP-PUBLIC*/
+        internal void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
         {
             if (!AdditionalMetadataLocations.Contains(metadataPath))
                 AdditionalMetadataLocations.Add(metadataPath);

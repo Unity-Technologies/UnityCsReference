@@ -14,13 +14,13 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_LocationHandle;
         internal FoundryHandle m_ListHandle;
 
-        [ThreadSafe] internal extern static PragmaDescriptorInternal Invalid();
-        [ThreadSafe][NativeName("SetupFromScripting")] internal extern void Setup(ShaderContainer container, string name, string[] ops);
+        [NativeMethod(IsThreadSafe = true)] internal extern static PragmaDescriptorInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)][NativeName("SetupFromScripting")] internal extern void Setup(ShaderContainer container, string name, string[] ops);
 
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
-        [ThreadSafe] internal extern ulong GetOpCount(ShaderContainer container);
-        [ThreadSafe] internal extern string GetOp(ShaderContainer container, ulong index);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern ulong GetOpCount(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetOp(ShaderContainer container, ulong index);
 
         // IInternalType
         PragmaDescriptorInternal IInternalType<PragmaDescriptorInternal>.ConstructInvalid() => Invalid();

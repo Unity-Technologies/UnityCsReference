@@ -633,7 +633,7 @@ namespace UnityEditor.StyleSheets
 
         public static bool IsVariableProperty(Property property)
         {
-            return property.Values.Any(IsVariableValue);
+            return property.Values.Exists(IsVariableValue);
         }
 
         public static bool IsVariableValue(StyleSheetResolver.Value value)

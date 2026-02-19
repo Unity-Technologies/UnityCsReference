@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
         public abstract void OnFocusOut(VisualElement willFocus);
         public abstract void UpdateBackground();
 
-        public abstract IEnumerable<ReusableCollectionItem> activeItems { get; }
+        public abstract IReadOnlyList<ReusableCollectionItem> activeItems { get; }
 
         internal abstract void StartDragItem(ReusableCollectionItem item);
         internal abstract void EndDrag(int dropIndex);

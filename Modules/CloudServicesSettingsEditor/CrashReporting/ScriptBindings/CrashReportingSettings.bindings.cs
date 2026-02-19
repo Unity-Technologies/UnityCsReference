@@ -16,19 +16,19 @@ namespace UnityEditor.CrashReporting
         [NativeProperty("EnableCloudDiagnosticsReporting")]
         public static extern bool enabled
         {
-            [ThreadSafe] get;
-            [ThreadSafe] set;
+            [NativeMethod(IsThreadSafe = true)] get;
+            [NativeMethod(IsThreadSafe = true)] set;
         }
 
         [NativeProperty("Enabled")]
         internal static extern bool canUploadReports
         {
-            [ThreadSafe] get;
+            [NativeMethod(IsThreadSafe = true)] get;
         }
 
         public static extern bool captureEditorExceptions { get; set; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern UInt32 logBufferSize { get; set; }
 
         internal static extern void SetEnabledServiceWindow(bool enabled);

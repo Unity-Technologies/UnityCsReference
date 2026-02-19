@@ -177,7 +177,7 @@ namespace UnityEditor
             [Obsolete("PlayerSettings.WSA.commandLineArgsFile is deprecated", error: true)]
             public static string commandLineArgsFile { get { return string.Empty; } set {} }
 
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             public static extern bool SetCertificate(string path, string password);
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]

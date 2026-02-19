@@ -18,15 +18,15 @@ namespace UnityEditor.ShaderFoundry
         internal ShaderStageFlags m_Stage;
         internal FoundryHandle m_ListHandle;
 
-        [ThreadSafe] internal extern static KeywordDescriptorInternal Invalid();
-        [ThreadSafe] internal extern void Setup(ShaderContainer container, KeywordDescriptor.DefinitionType definition,
+        [NativeMethod(IsThreadSafe = true)] internal extern static KeywordDescriptorInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern void Setup(ShaderContainer container, KeywordDescriptor.DefinitionType definition,
             KeywordDescriptor.ScopeType scope, ShaderStageFlags stage, string[] ops);
 
-        [ThreadSafe] internal extern KeywordDescriptor.DefinitionType GetDefinition();
-        [ThreadSafe] internal extern KeywordDescriptor.ScopeType GetScope();
-        [ThreadSafe] internal extern ShaderStageFlags GetStage();
-        [ThreadSafe] internal extern ulong GetOpCount(ShaderContainer container);
-        [ThreadSafe] internal extern string GetOp(ShaderContainer container, ulong index);
+        [NativeMethod(IsThreadSafe = true)] internal extern KeywordDescriptor.DefinitionType GetDefinition();
+        [NativeMethod(IsThreadSafe = true)] internal extern KeywordDescriptor.ScopeType GetScope();
+        [NativeMethod(IsThreadSafe = true)] internal extern ShaderStageFlags GetStage();
+        [NativeMethod(IsThreadSafe = true)] internal extern ulong GetOpCount(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetOp(ShaderContainer container, ulong index);
 
         // IInternalType
         KeywordDescriptorInternal IInternalType<KeywordDescriptorInternal>.ConstructInvalid() => Invalid();

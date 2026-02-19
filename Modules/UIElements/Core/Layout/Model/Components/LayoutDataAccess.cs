@@ -65,6 +65,10 @@ readonly unsafe struct LayoutDataAccess
         => ref GetTypedConfigDataRef<LayoutConfigData>(handle, LayoutConfigDataType.Config);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref PanelTransformData GetPanelTransformData(UnmanagedDataHandle handle)
+        => ref GetTypedConfigDataRef<PanelTransformData>(handle, LayoutConfigDataType.PanelTransform);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutMeasureFunction GetMeasureFunction(UnmanagedDataHandle handle)
         => LayoutManager.GetManager(m_Manager).GetMeasureFunction(handle);
 

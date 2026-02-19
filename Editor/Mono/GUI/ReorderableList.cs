@@ -975,7 +975,7 @@ namespace UnityEditorInternal
                         }
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        bool activeElement = m_Selection.Any(id => id == i);
+                        bool activeElement = m_Selection.Contains(i);
 #pragma warning restore UA2001
                         bool focusedElement = (activeElement && HasKeyboardControl());
 

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEditor.Presets;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -1014,9 +1015,9 @@ namespace UnityEditor
 
             // Handle reparenting
             var validChildren = new List<GameObject>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (nonChildObjects.Count() > 0)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             {
                 const string kReparent = "Some objects are not children of the LODGroup GameObject. Do you want to reparent them and add them to the LODGroup?";
                 if (EditorUtility.DisplayDialog(
@@ -1820,9 +1821,7 @@ namespace UnityEditor
             var camera = SceneView.lastActiveSceneView.camera;
 
             var info = LODUtility.CalculateVisualizationData(camera, m_LODGroup, activeLOD);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return activeLOD != -1 ? string.Format("{0} Renderer(s)\n{1} Triangle(s)\n{2} Material(s)", renderers.arraySize, info.triangleCount, materials.Distinct().Count()) : "LOD: culled";
-#pragma warning restore UA2001
+            return activeLOD != -1 ? string.Format("{0} Renderer(s)\n{1} Triangle(s)\n{2} Material(s)", renderers.arraySize, info.triangleCount, materials.DistinctCount()) : "LOD: culled";
         }
     }
 }

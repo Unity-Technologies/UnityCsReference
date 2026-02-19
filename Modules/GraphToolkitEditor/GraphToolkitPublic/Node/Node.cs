@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -211,6 +212,11 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// The Graph that contains this node.
+        /// </summary>
+        public Graph Graph => (m_Implementation?.GraphModel as GraphModelImp)?.Graph;
+
+        /// <summary>
         /// The text displayed when hovering over the node's header.
         /// </summary>
         public string Tooltip
@@ -223,12 +229,23 @@ namespace Unity.GraphToolkit.Editor
         /// The main text displayed in the node's header.
         /// </summary>
         /// <remarks>
-        /// This attribute will only modify the node's title in the graph view.
+        /// Use this property to specify the node title displayed in the graph view.
+        /// To modify the node title displayed in the graph item library, use <see cref="NodeAttribute.Title"/>.
         /// </remarks>
+        /// <seealso cref="NodeAttribute.Title"/>
         public string Title
         {
             get => m_Implementation.Title;
             set => m_Implementation.Title = value;
+        }
+
+        /// <summary>
+        /// The secondary text displayed in the node's header.
+        /// </summary>
+        public string Subtitle
+        {
+            get => m_Implementation.Subtitle;
+            set => m_Implementation.Subtitle = value;
         }
 
         /// <summary>
@@ -265,6 +282,8 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public void DefineNode()
         {
+            if (Graph == null)
+                return;
             (m_Implementation as NodeModel)?.DefineNode();
         }
 
@@ -414,5 +433,19 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The output port with the specified name, or null if no match is found.</returns>
         /// <remarks>The output port's name is unique within the node's output ports.</remarks>
         public IPort GetOutputPortByName(string name) => ((INode)m_Implementation).GetOutputPortByName(name);
+
+        /// <summary>
+        /// The position of the node in the graph.
+        /// </summary>
+        public Vector2 Position
+        {
+            get => m_Implementation?.Position ?? Vector2.zero;
+            set => NodeModificationExtensions.SetNodeModelPosition(GetImplementation(), value);
+        }
+
+        /// <summary>
+        /// Removes the node from its graph.
+        /// </summary>
+        public void RemoveFromGraph() => ((INode)m_Implementation).RemoveFromGraph();
     }
 }

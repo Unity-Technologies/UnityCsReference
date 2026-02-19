@@ -16,6 +16,7 @@ namespace UnityEditor.Utils
     internal static class Paths
     {
         internal static char[] invalidFilenameChars;
+        internal const int kMaxPathComponentLength = 255;
 
         static Paths()
         {
@@ -210,6 +211,13 @@ namespace UnityEditor.Utils
                 }
 
                 fileName = Path.GetFileName(assetPath); // Will throw an ArgumentException if the path contains one or more of the invalid characters defined in GetInvalidPathChars
+
+                if (fileName.Length > kMaxPathComponentLength)
+                {
+                    if (errorMsg != null)
+                        SetFullErrorMessage($"Asset filename is too long - max is {kMaxPathComponentLength}", assetPath, ref errorMsg);
+                    return false;
+                }
             }
             catch (Exception e)
             {

@@ -274,7 +274,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ProcessErrors(PackageInfo info)
         {
-            m_HasErrorWithEntitlementMessage = info.errors.AnyMatches(error
+            m_HasErrorWithEntitlementMessage = Array.Exists(info.errors, error
                 => error.errorCode == ErrorCode.Forbidden
                 && error.message.IndexOf(k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 

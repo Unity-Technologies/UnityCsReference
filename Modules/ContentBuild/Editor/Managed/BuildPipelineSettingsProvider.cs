@@ -9,11 +9,11 @@ namespace UnityEditor.Build
     class BuildPipelineSettingsProvider : SettingsProvider
     {
         static readonly GUIContent k_GenerateTEPFileText = EditorGUIUtility.TrTextContent("Generate build performance profiling file", "Create a trace event profiling file under Logs folder to analyze build performance.");
-        static readonly GUIContent k_WriteDebugFileText = EditorGUIUtility.TrTextContent("Write debug files", "Write intermediate files with additional debugging information to BuildMetadata directory.");
-        static readonly GUIContent k_ResetMetadataFolderText = EditorGUIUtility.TrTextContent("Reset Metadata Folder Location");
-        static readonly GUIContent k_ChangeMetadataFolderLocationText = EditorGUIUtility.TrTextContent("Change Metadata Folder Location", "Change the Build Metadata folder path to a new path on your device. Note that this does not move any existing metadata folders. ");
-        static readonly GUIContent k_CleanMetadataFolderText = EditorGUIUtility.TrTextContent("Clean Build Metadata Directories", "Deletes all of the build metadata directories within the current build metadata folder.");
-        //static readonly GUIContent k_MetadataFolderPathText = EditorGUIUtility.TrTextContent(metadataFolderPath, "The path that Build metadata folders will be created in.");
+        static readonly GUIContent k_WriteDebugFileText = EditorGUIUtility.TrTextContent("Write debug files", "Write intermediate files with additional debugging information into the build history.");
+        static readonly GUIContent k_ResetBuildHistoryFolderText = EditorGUIUtility.TrTextContent("Reset Build History folder Location");
+        static readonly GUIContent k_ChangeBuildHistoryFolderLocationText = EditorGUIUtility.TrTextContent("Change Build History Folder Location", "Change the build history path to a new path on your device. Note that this does not move any existing history. ");
+        static readonly GUIContent k_CleanBuildHistoryFolderText = EditorGUIUtility.TrTextContent("Delete Build History", "Deletes all of the build history within the current build history folder.");
+        //static readonly GUIContent k_BuildHistoryFolderPathText = EditorGUIUtility.TrTextContent(buildHistoryFolderPath, "The Build History path.");
         private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder");
 
         private static readonly string k_ChangeLocation = L10n.Tr("Change Location");
@@ -36,10 +36,10 @@ namespace UnityEditor.Build
             set => EditorPrefs.SetBool(k_WriteDebugFilesKey, value);
         }
 
-        /*UCBP-PUBLIC*/ internal static string metadataFolderPath
+        /*UCBP-PUBLIC*/ internal static string buildHistoryFolderPath
         {
-            get => BuildMetadata.GetRootDirectory();
-            set => BuildMetadata.SetRootDirectory(value);
+            get => BuildHistory.GetRootDirectory();
+            set => BuildHistory.SetRootDirectory(value);
         }
 
         public override void OnGUI(string searchContext)

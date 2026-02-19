@@ -228,7 +228,7 @@ namespace UnityEditor
             popupArray.AddRange(descriptors.OrderBy(d => d.displayName).Select(d => new EditorSettingsInspector.PopupElement(d.name, d.displayName)));
 #pragma warning restore UA2001
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            availvc = availvc.Where(p => !descriptors.Any(d => string.Equals(d.name, p.name, StringComparison.Ordinal)));
+            availvc = availvc.Where(p => !Array.Exists(descriptors, d => string.Equals(d.name, p.name, StringComparison.Ordinal)));
 #pragma warning restore UA2001
             foreach (var plugin in availvc)
             {
@@ -243,7 +243,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             GUILayout.Space(10);
-            GUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
 
             using (new EditorGUI.DisabledScope(true))
             {
@@ -442,7 +441,6 @@ namespace UnityEditor
                 if (newProjectOverlayIcons || newHierarchyOverlayIcons || newOtherOverlayIcons)
                     DrawOverlayDescriptions();
             }
-            GUILayout.EndVertical();
         }
 
         [SettingsProvider]

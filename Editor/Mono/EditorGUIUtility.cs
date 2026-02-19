@@ -30,7 +30,7 @@ namespace UnityEditor
     {
         internal static void RegisterResourceForCleanupOnDomainReload(UnityObject obj)
         {
-#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using BeforeCodeUnloading/AfterCodeLoaded
+#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using OnCodeUnloading/OnCodeLoaded
             AppDomain.CurrentDomain.DomainUnload += (object sender, EventArgs e) => { UnityObject.DestroyImmediate(obj); };
 #pragma warning restore UAC0006
         }
@@ -110,6 +110,10 @@ namespace UnityEditor
         private static ScalableGUIContent s_InfoIcon;
         private static ScalableGUIContent s_WarningIcon;
         private static ScalableGUIContent s_ErrorIcon;
+
+        private static ScalableGUIContent s_InfoSmallIcon;
+        private static ScalableGUIContent s_WarningSmallIcon;
+        private static ScalableGUIContent s_ErrorSmallIcon;
 
         private static GUIStyle s_WhiteTextureStyle;
         private static GUIStyle s_BasicTextureStyle;
@@ -344,7 +348,7 @@ namespace UnityEditor
                 }
 
                 AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                Func<EditorHeaderItemAttribute, bool> filter = (a) => targetObjTypes.Any(c => a.TargetType == c);
+                Func<EditorHeaderItemAttribute, bool> filter = (a) => targetObjTypes.Exists(c => a.TargetType == c);
                 var methodInfos = methods.FilterAndSortOnAttribute(filter, (a) => a.callbackOrder);
                 s_EditorHeaderItemsMethods = new List<HeaderItemDelegate>();
                 foreach (MethodInfo methodInfo in methodInfos)
@@ -415,6 +419,7 @@ namespace UnityEditor
         /// Use this container and helper class when implementing lock behaviour on a window.
         /// </summary>
         [Serializable]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal class EditorLockTracker
         {
             [Serializable] public class LockStateEvent : UnityEvent<bool> {}
@@ -801,7 +806,7 @@ namespace UnityEditor
 
         // Automatically loads version of icon that matches current skin.
         // Equivalent to Texture2DNamed in ObjectImages.cpp
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule")]
         internal static Texture2D LoadIcon(string name)
         {
             return LoadIconForSkin(name, skinIndex);
@@ -1197,16 +1202,45 @@ namespace UnityEditor
             }
         }
 
+        internal static Texture2D infoSmallIcon
+        {
+            get
+            {
+                if (s_InfoSmallIcon == null)
+                    s_InfoSmallIcon = new ScalableGUIContent("console.infoicon.sml");
+                return s_InfoSmallIcon.image as Texture2D;
+            }
+        }
+        internal static Texture2D warningSmallIcon
+        {
+            get
+            {
+                if (s_WarningSmallIcon == null)
+                    s_WarningSmallIcon = new ScalableGUIContent("console.warnicon.sml");
+                return s_WarningSmallIcon.image as Texture2D;
+            }
+        }
+
+        internal static Texture2D errorSmallIcon
+        {
+            get
+            {
+                if (s_ErrorSmallIcon == null)
+                    s_ErrorSmallIcon = new ScalableGUIContent("console.erroricon.sml");
+                return s_ErrorSmallIcon.image as Texture2D;
+            }
+        }
+
         internal static Texture2D GetHelpIcon(MessageType type)
         {
             switch (type)
             {
                 case MessageType.Info:
-                    return infoIcon;
+                    return infoSmallIcon;
                 case MessageType.Warning:
-                    return warningIcon;
+                    return warningSmallIcon;
                 case MessageType.Error:
-                    return errorIcon;
+                    return errorSmallIcon;
             }
             return null;
         }
@@ -1310,7 +1344,7 @@ namespace UnityEditor
             }
         }
 
-        // Same as PingObject, but renamed to avoid ambiguity when calling externally (i.e. using CallStaticMonoMethod)
+        // Same as PingObject, but renamed to avoid ambiguity when calling from native code
         [RequiredByNativeCode]
         private static void PingObjectFromCPP(EntityId targetEntityId)
         {

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using UnityEditor.Overlays;
 using UnityEngine;
 using UObject = UnityEngine.Object;
@@ -259,9 +260,9 @@ namespace UnityEditor.EditorTools
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var globalEditorTools = GetCustomEditorToolsForType(null).Where(t => EditorToolManager.additionalContextToolTypesCache.All(tc => tc != t.editor));
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return globalEditorTools.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
         }
 
         internal static bool IsComponentEditor(Type type)
@@ -392,9 +393,7 @@ namespace UnityEditor.EditorTools
                 return !IsComponentTool(type)   // Component tool?
                     && !IsManipulationTool(GetEnumWithEditorTool(tool, EditorToolManager.GetSingleton<GameObjectToolContext>())) // Built-in tool?
                     && !IsBuiltinOverride(tool) // Built-in tool override?
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    && EditorToolManager.additionalContextToolTypesCache.Any(t => t == type); // Additional/Extra tool?
-#pragma warning restore UA2001
+                    && EditorToolManager.additionalContextToolTypesCache.Exists(t => t == type); // Additional/Extra tool?
             }
 
             return false;

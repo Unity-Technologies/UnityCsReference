@@ -72,11 +72,11 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryUIToolkit = 40;
         internal const ushort CategoryAny = 0xFFFF;
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern ushort CreateCategory(string name, ProfilerCategoryColor colorIndex);
 
         // Burst shadow
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
@@ -89,7 +89,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return CreateCategory_Unsafe(name, nameLen, colorIndex);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe ushort CreateCategory_Unsafe(char* name, int nameLen, ProfilerCategoryColor colorIndex);
 
         // 256 : Aggressive inlining
@@ -99,19 +99,19 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return GetCategoryByName_Unsafe(name, nameLen);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe ushort GetCategoryByName_Unsafe(char* name, int nameLen);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern ProfilerCategoryDescription GetCategoryDescription(ushort categoryId);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern Color32 GetCategoryColor(ProfilerCategoryColor colorIndex);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
         // Burst shadow
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
@@ -124,16 +124,16 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return CreateMarker_Unsafe(name, nameLen, categoryId, flags, metadataCount);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe IntPtr CreateMarker_Unsafe(char* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern IntPtr GetMarker(string name);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
         // Burst shadow
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
@@ -146,25 +146,25 @@ namespace Unity.Profiling.LowLevel.Unsafe
             SetMarkerMetadata_Unsafe(markerPtr, index, name, nameLen, type, unit);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe void SetMarkerMetadata_Unsafe(IntPtr markerPtr, int index, char* name, int nameLen, byte type, byte unit);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void BeginSample(IntPtr markerPtr);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void BeginSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void EndSample(IntPtr markerPtr);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void SingleSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void* CreateCounterValue(out IntPtr counterPtr, string name, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
         // Burst shadow
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
@@ -177,10 +177,10 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return CreateCounterValue_Unsafe(out counterPtr, name, nameLen, categoryId, flags, dataType, dataUnit, dataSize, counterOptions);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern unsafe void* CreateCounterValue_Unsafe(out IntPtr counterPtr, char* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void FlushCounterValue(void* counterValuePtr);
 
         internal static unsafe string Utf8ToString(byte* chars, int charsLen)
@@ -193,13 +193,13 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return Encoding.UTF8.GetString(arr, 0, charsLen);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern uint CreateFlow(ushort categoryId);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void FlowEvent(uint flowId, ProfilerFlowEventType flowEventType);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);
 
         [NativeConditional("ENABLE_PROFILER")]
@@ -207,7 +207,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         public static extern long Timestamp
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
@@ -219,22 +219,22 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         public static extern TimestampConversionRatio TimestampToNanosecondsConversionRatio
         {
-            [ThreadSafe]
+            [NativeMethod(IsThreadSafe = true)]
             get;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern IntPtr GetOrCreateMemLabel(string areaName, string objectName);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
         internal static extern unsafe IntPtr GetOrCreateMemLabel__Unmanaged(byte* areaName, int areaNameLen, byte* objectName, int objectNameLen);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern long GetMemLabelRelatedMemorySize(IntPtr label);
 

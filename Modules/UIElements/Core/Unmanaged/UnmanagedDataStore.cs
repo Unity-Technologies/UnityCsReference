@@ -314,7 +314,8 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         return toPtr;
     }
 
-    public UnmanagedDataHandle Allocate<T0>(in T0 component0) where T0 : unmanaged
+    public UnmanagedDataHandle Allocate<T0>(in T0 component0)
+        where T0 : unmanaged
     {
         fixed (T0* ptr0 = &component0)
         {
@@ -323,6 +324,22 @@ unsafe partial struct UnmanagedDataStore : IDisposable
             data[0] = (byte*)ptr0;
 
             return Allocate(data, 1);
+        }
+    }
+
+    public UnmanagedDataHandle Allocate<T0, T1>(in T0 component0, in T1 component1)
+        where T0 : unmanaged
+        where T1 : unmanaged
+    {
+        fixed (T0* ptr0 = &component0)
+        fixed (T1* ptr1 = &component1)
+        {
+            var data = stackalloc byte*[2];
+
+            data[0] = (byte*)ptr0;
+            data[1] = (byte*)ptr1;
+
+            return Allocate(data, 2);
         }
     }
 

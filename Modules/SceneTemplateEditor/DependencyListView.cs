@@ -334,7 +334,7 @@ namespace UnityEditor.SceneTemplate
 
         void SyncListSelectionToValue(TemplateInstantiationMode mode)
         {
-            foreach(var indice in listView.selectedIndices)
+            foreach(var indice in listView.selectedIndicesList)
             {
                 SetDependencyInstantiationMode(indice, mode);
             }
@@ -362,7 +362,7 @@ namespace UnityEditor.SceneTemplate
         IEnumerable<SerializedProperty> GetSelectedDependencies()
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return listView.selectedIndices.Select(indice => m_FilteredItems[indice]);
+            return listView.selectedIndicesList.Select(indice => m_FilteredItems[indice]);
 #pragma warning restore UA2001
         }
 

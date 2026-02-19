@@ -40,6 +40,7 @@ namespace UnityEngine
         [NativeProperty("m_WordWrap", false, TargetType.Field)] public extern bool wordWrap { get; set; }
         [NativeProperty("m_Clipping", false, TargetType.Field)] public extern TextClipping clipping { get; set; }
         [NativeProperty("m_ContentOffset", false, TargetType.Field)] public extern Vector2 contentOffset { get; set; }
+        [NativeProperty("m_ContentSpacing", false, TargetType.Field)] internal extern float contentSpacing { get; set; }
         [NativeProperty("m_FixedWidth", false, TargetType.Field)] public extern float fixedWidth { get; set; }
         [NativeProperty("m_FixedHeight", false, TargetType.Field)] public extern float fixedHeight { get; set; }
         [NativeProperty("m_StretchWidth", false, TargetType.Field)] public extern bool stretchWidth { get; set; }
@@ -48,6 +49,7 @@ namespace UnityEngine
         [NativeProperty("m_FontStyle", false, TargetType.Field)] public extern FontStyle fontStyle { get; set; }
         [NativeProperty("m_RichText", false, TargetType.Field)] public extern bool richText { get; set; }
         [NativeProperty("m_IsGizmo", false, TargetType.Field)] internal extern bool isGizmo { get; set; }
+        [NativeProperty("m_ImageIsTopAligned", false, TargetType.Field)] internal extern bool imageIsTopAligned { get; set; }
 
         [Obsolete("Don't use clipOffset - put things inside BeginGroup instead. This functionality will be removed in a later version.", false)]
         [NativeProperty("m_ClipOffset", false, TargetType.Field)] public extern Vector2 clipOffset { get; set; }

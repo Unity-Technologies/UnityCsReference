@@ -15,6 +15,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines a component that connects <see cref="VisualElement"/> to <see cref="GameObject"/>.
     /// </summary>
+    /// <example>
+    /// The following example uses the Panel Renderer component to display a runtime UI in a scene:
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/SimpleRuntimeUI.cs"/>
+    /// </example>
     [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     public sealed class PanelRenderer : Renderer, IPanelComponent
@@ -28,7 +32,7 @@ namespace UnityEngine.UIElements
         /// Specifies the PanelSettings instance to connect this PanelRenderer component to.
         /// </summary>
         /// <remarks>
-        /// The Panel Settings asset defines the panel that renders UI in the game view. Refer to <see cref="PanelSettings"/> for more information.
+        /// The Panel Settings asset defines the panel that renders UI in the Game view. Refer to <see cref="PanelSettings"/> for more information.
         ///
         /// If this PanelRenderer has a parent PanelRenderer, it uses the parent's PanelSettings automatically.
         /// </remarks>
@@ -85,6 +89,8 @@ namespace UnityEngine.UIElements
             get => m_RootVisualElement;
             set => m_RootVisualElement = value;
         }
+
+        VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
 
         VisualElementReferenceProvider m_ReferenceProvider;
 
@@ -144,9 +150,6 @@ namespace UnityEngine.UIElements
 
         extern PanelRenderer nativeParentUI { get; set; }
 
-        extern internal bool hasHierarchyChanged { get; set; }
-        extern internal PanelRendererHierarchyOrder hierarchyOrder { get; }
-
         extern private int nativeWorldSpaceSizeMode { get; set; }
 
         extern private float nativeWorldSpaceSizeWidth { get; set; }
@@ -195,28 +198,16 @@ namespace UnityEngine.UIElements
         internal PanelSettings previousPanelSettings { get; set; }
         internal VisualTreeAsset previousVisualTreeAsset { get; set; }
         internal bool previousEnabled { get; set; }
+        internal int previousSortingOrder { get; set; }
+
+        float IPanelComponent.sortingOrder => ((Renderer)this).sortingOrder;
+
+        void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
         /// <summary>
-        /// The order in which this PanelRenderer appears in the hierarchy relative to other PanelRenderer either
-        /// attached to the same PanelSettings, or with the same PanelRenderer parent.
+        /// Defines how the size of the root element is calculated for world space.
         /// </summary>
-        public new int sortingOrder
-        {
-            get => ((Renderer)this).sortingOrder;
-            set
-            {
-                Renderer r = (Renderer)this;
-                if (r.sortingOrder != value)
-                {
-                    r.sortingOrder = value;
-                    requiresReinsertion = true;
-                }
-            }
-        }
-
-        float IPanelComponent.sortingOrder => sortingOrder;
-
-        WorldSpaceSizeMode IPanelComponent.worldSpaceSizeMode
+        public WorldSpaceSizeMode worldSpaceSizeMode
         {
             get { return (WorldSpaceSizeMode)nativeWorldSpaceSizeMode; }
             set
@@ -226,7 +217,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        Vector2 IPanelComponent.worldSpaceSize
+        /// <summary>
+        /// When the <see cref="worldSpaceSizeMode"/> is set to <see cref="WorldSpaceSizeMode.Fixed"/>, this property
+        /// determines the size of the PanelRenderer in world space.
+        /// </summary>
+        public Vector2 worldSpaceSize
         {
             get
             {
@@ -300,6 +295,13 @@ namespace UnityEngine.UIElements
             set => m_FirstChildInsertIndex = value;
         }
 
+        // We count instances of PanelRenderer to be able to insert PanelRenderers that have the same sort order in a
+        // deterministic way (i.e. instances created before will be placed before in the visual tree).
+        private static int s_CurrentPanelRendererCounter = 0;
+        private int m_PanelRendererCreationIndex = 0;
+
+        int IPanelComponent.creationIndex => m_PanelRendererCreationIndex;
+
         private BoxCollider m_WorldSpaceCollider;
 
         #endregion
@@ -313,21 +315,26 @@ namespace UnityEngine.UIElements
         internal extern void ResetDrawCallData(int safeFrameIndex);
         internal extern void ResetAllDrawCallData();
 
-        // This will dirty the hierarchy flag of affected PanelRenderers if a hierarchy change occurred
-        extern static internal bool CheckHierarchyChanges();
         #endregion
 
         #region Lifecycle
 
         internal static bool shouldCheckForRequiredReinsertions = false;
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         void OnPanelRendererAwake()
         {
+            if (m_PanelRendererCreationIndex == 0)
+                m_PanelRendererCreationIndex = ++s_CurrentPanelRendererCounter;
+
             // Add ourselves to the UIElementsRuntimeUtility list
             UIElementsRuntimeUtility.MarkPanelRendererDirty(this);
 
             SetAllDirty();
+
+            // Initialize previous state tracking
+            previousSortingOrder = sortingOrder;
 
             // When instantiated from a prefab, the panel settings may already be set.
             // If so, let's initialize the root visual element.
@@ -335,7 +342,8 @@ namespace UnityEngine.UIElements
                 InitRootVisualElement(true);
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         void OnPanelRendererCleanup()
         {
             OnPanelRendererDeactivated();
@@ -346,7 +354,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         void OnPanelRendererDeactivated()
         {
             if (rootVisualElement != null)
@@ -358,7 +367,8 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtility.RemovePanelRenderer(this);
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         void OnPanelRendererCheckConsistency()
         {
             // Called from ApplyModifiedProperties, so our assets are probably dirty
@@ -496,12 +506,11 @@ namespace UnityEngine.UIElements
             if (!enabled)
                 return;
 
-            if (hasHierarchyChanged || requiresReinsertion)
+            if (requiresReinsertion)
             {
                 SetupFromHierarchy();
                 SetupRootClassList();
                 AddRootVisualElementToTree();
-                hasHierarchyChanged = false;
                 requiresReinsertion = false;
             }
         }
@@ -837,36 +846,5 @@ namespace UnityEngine.UIElements
         public IntPtr drawRangesPtr;
         public IntPtr constantPropsPtr;
         public IntPtr stencilStatePtr;
-    }
-
-    [RequiredByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PanelRendererHierarchyOrder
-    {
-        public int ancestorCount;
-        public IntPtr ancestorSiblingIndices;
-
-        public static bool operator<(PanelRendererHierarchyOrder first, PanelRendererHierarchyOrder second)
-        {
-            int minCount = Math.Min(first.ancestorCount, second.ancestorCount);
-            unsafe
-            {
-                int* firstIndices = (int*)first.ancestorSiblingIndices;
-                int* secondIndices = (int*)second.ancestorSiblingIndices;
-                for (int i = 0; i < minCount; i++)
-                {
-                    if (firstIndices[i] < secondIndices[i])
-                        return true;
-                    else if (firstIndices[i] > secondIndices[i])
-                        return false;
-                }
-            }
-            return first.ancestorCount < second.ancestorCount;
-        }
-
-        public static bool operator>(PanelRendererHierarchyOrder first, PanelRendererHierarchyOrder second)
-        {
-            return second < first;
-        }
     }
 }

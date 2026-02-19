@@ -385,7 +385,7 @@ namespace UnityEngine
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal static extern string[] GetOSFallbacks();
 
-        [ThreadSafe][VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
+        [NativeMethod(IsThreadSafe = true)][VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
         internal static extern bool IsFontSmoothingEnabled();
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);

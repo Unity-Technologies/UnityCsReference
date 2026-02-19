@@ -680,7 +680,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         ref m_CachedEventData.m_ShadingRateImageTexture,
                         ref m_ShadingRateImageTextureCopy,
                         m_CachedEventData.m_ShadingRateImageTexture.width,
-                        m_CachedEventData.m_ShadingRateImageTexture.height
+                        m_CachedEventData.m_ShadingRateImageTexture.height,
+                        FrameDebuggerWindow.shadingRateLut
                     );
                 }
 

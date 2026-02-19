@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -26,7 +25,8 @@ namespace UnityEngine.UIElements
         internal extern void ResetDrawCallData();
         internal extern int GetDrawCallDataCount();
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional =true)]
+        [RequiredMember]
         static void OnRenderNodeExecute(UIRenderer renderer, int safeFrameIndex, int cmdListIndex)
         {
             if (renderer.skipRendering)

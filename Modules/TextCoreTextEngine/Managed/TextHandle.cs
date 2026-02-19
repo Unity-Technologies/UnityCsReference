@@ -285,7 +285,7 @@ namespace UnityEngine.TextCore.Text
             s_PermanentCache.RemoveFromCache(this);
         }
 
-        public void RemoveFromPermanentCacheATG()
+        public virtual void RemoveFromPermanentCacheATG()
         {
             if (IsCachedPermanentATG)
             {
@@ -843,7 +843,7 @@ namespace UnityEngine.TextCore.Text
         internal virtual UnityEngine.TextAsset GetICUAsset() { return null; }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        //This method uses the asset in the editor if avialable, or try to find any asset that would be included in the resource folder for builds
+        //This method uses the asset in the editor if available, or try to find any asset that would be included in the resource folder for builds
         internal static UnityEngine.TextAsset GetICUAssetStaticFalback()
         {
             if (TextLib.GetICUAssetEditorDelegate != null)
@@ -852,10 +852,6 @@ namespace UnityEngine.TextCore.Text
                 var asset = TextLib.GetICUAssetEditorDelegate();
                 if (asset != null)
                     return asset;
-            }
-            else
-            {
-                Debug.LogError("GetICUAssetEditorDelegate is null");
             }
             // Dont know about the panelSettings class existence here so we must filter by name
             foreach (var t in Resources.FindObjectsOfTypeAll<UnityEngine.TextAsset>())
@@ -883,7 +879,14 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal protected void InitTextLib()
         {
-            s_TextLib ??= new TextLib(GetICUAsset().bytes);
+            if (s_TextLib != null)
+                return;
+
+            var icuAsset = GetICUAsset();
+            if (icuAsset == null)
+                return;
+
+            s_TextLib = new TextLib(icuAsset.bytes);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

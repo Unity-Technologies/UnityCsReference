@@ -50,7 +50,7 @@ namespace UnityEditor
             return GeneratePerTriangleUVImpl(src, settings);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static extern Vector2[] GeneratePerTriangleUVImpl(Mesh src, UnwrapParam settings);
 

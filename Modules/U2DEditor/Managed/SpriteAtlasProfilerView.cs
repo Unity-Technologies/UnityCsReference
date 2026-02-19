@@ -10,11 +10,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.U2D.Profiling
 {
-    internal enum NodeType
+    // ============================================================================
+    // DATA MODEL - Optimized with cached values
+    // ============================================================================
+
+    internal enum NodeType : byte  // Use byte to save memory
     {
-        Atlas,
-        Texture,
-        Sprite
+        Atlas = 0,
+        Texture = 1,
+        Sprite = 2
     }
 
     internal class SpriteAtlasProfilerInfoWrapper
@@ -24,30 +28,71 @@ namespace UnityEditor.U2D.Profiling
         public string assetGuid;
         public string spriteAssetName;
         public string textureAssetName;
-        public float spriteTextureSizeRatio;
+        public float ratioSpriteInTexture;
 
         public NodeType nodeType;
         public int childCount;
 
+        // Cached display strings to avoid recreating in BindCell
+        private string m_CachedDisplayText;
+        private bool m_DisplayTextDirty = true;
+
         public SpriteAtlasProfilerInfoWrapper(int entityId, string assetName, string assetGuid,
-            string spriteAssetName, string textureAssetName, float spriteTextureSizeRatio, NodeType nodeType = NodeType.Sprite)
+            string spriteAssetName, string textureAssetName, float ratioSpriteInTexture, NodeType nodeType = NodeType.Sprite)
         {
             this.id = entityId;
             this.assetName = assetName;
             this.assetGuid = assetGuid;
             this.spriteAssetName = spriteAssetName;
             this.textureAssetName = textureAssetName;
-            this.spriteTextureSizeRatio = spriteTextureSizeRatio;
+            this.ratioSpriteInTexture = ratioSpriteInTexture;
             this.nodeType = nodeType;
             this.childCount = 0;
         }
+
+        public string GetDisplayText()
+        {
+            if (!m_DisplayTextDirty && m_CachedDisplayText != null)
+                return m_CachedDisplayText;
+
+            // Build display text once and cache it
+            switch (nodeType)
+            {
+                case NodeType.Atlas:
+                    m_CachedDisplayText = String.Format("{0} ( {1} textures, {2} sprites )", assetName, childCount, id);
+                    break;
+                case NodeType.Texture:
+                    float textureCoverage = ratioSpriteInTexture * 100f;
+                    m_CachedDisplayText = String.Format("{0} ( {1} sprites, {2}% coverage )", textureAssetName, childCount, textureCoverage.ToString("F1"));
+                    break;
+                case NodeType.Sprite:
+                    float spriteRatio = ratioSpriteInTexture * 100f;
+                    m_CachedDisplayText = String.Format("{0} ( {1}% )", spriteAssetName, spriteRatio.ToString("F2"));
+                    break;
+            }
+
+            m_DisplayTextDirty = false;
+            return m_CachedDisplayText;
+        }
+
+        public void InvalidateCache()
+        {
+            m_DisplayTextDirty = true;
+        }
     }
+
+    // ============================================================================
+    // TEXTURE NODE - Optimized with cached calculations
+    // ============================================================================
 
     internal class TextureNode
     {
         public string textureName;
         public int id;
         public List<SpriteAtlasProfilerInfoWrapper> sprites;
+
+        private int m_CachedSpriteCount = -1;
+        private float m_CachedTotalRatio = -1f;
 
         public TextureNode(string textureName, int textureId)
         {
@@ -58,23 +103,42 @@ namespace UnityEditor.U2D.Profiling
 
         public int SpriteCount
         {
-            get { return sprites.Count; }
+            get
+            {
+                if (m_CachedSpriteCount < 0)
+                    m_CachedSpriteCount = sprites.Count;
+                return m_CachedSpriteCount;
+            }
         }
 
-        // Calculate total ratio coverage
         public float TotalRatio
         {
             get
             {
-                float total = 0f;
-                for (int i = 0; i < sprites.Count; i++)
+                if (m_CachedTotalRatio < 0f)
                 {
-                    total += sprites[i].spriteTextureSizeRatio;
+                    float total = 0f;
+                    int count = sprites.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        total += sprites[i].ratioSpriteInTexture;
+                    }
+                    m_CachedTotalRatio = total;
                 }
-                return total;
+                return m_CachedTotalRatio;
             }
         }
+
+        public void InvalidateCache()
+        {
+            m_CachedSpriteCount = -1;
+            m_CachedTotalRatio = -1f;
+        }
     }
+
+    // ============================================================================
+    // ATLAS NODE - Optimized with cached calculations
+    // ============================================================================
 
     internal class SpriteAtlasNode
     {
@@ -82,6 +146,9 @@ namespace UnityEditor.U2D.Profiling
         public string atlasName;
         public int id;
         public List<TextureNode> textures;
+
+        private int m_CachedTextureCount = -1;
+        private int m_CachedTotalSpriteCount = -1;
 
         public SpriteAtlasNode(string atlasGuid, string atlasName, int atlasId)
         {
@@ -93,22 +160,42 @@ namespace UnityEditor.U2D.Profiling
 
         public int TextureCount
         {
-            get { return textures.Count; }
+            get
+            {
+                if (m_CachedTextureCount < 0)
+                    m_CachedTextureCount = textures.Count;
+                return m_CachedTextureCount;
+            }
         }
 
         public int TotalSpriteCount
         {
             get
             {
-                int total = 0;
-                for (int i = 0; i < textures.Count; i++)
+                if (m_CachedTotalSpriteCount < 0)
                 {
-                    total += textures[i].SpriteCount;
+                    int total = 0;
+                    int count = textures.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        total += textures[i].SpriteCount;
+                    }
+                    m_CachedTotalSpriteCount = total;
                 }
-                return total;
+                return m_CachedTotalSpriteCount;
             }
         }
+
+        public void InvalidateCache()
+        {
+            m_CachedTextureCount = -1;
+            m_CachedTotalSpriteCount = -1;
+        }
     }
+
+    // ============================================================================
+    // HELPER
+    // ============================================================================
 
     internal class SpriteAtlasProfilerInfoHelper
     {
@@ -116,28 +203,6 @@ namespace UnityEditor.U2D.Profiling
         {
             AssetName,
             _LastColumn
-        }
-
-        public static string GetColumnString(SpriteAtlasProfilerInfoWrapper info, ColumnIndices index)
-        {
-            switch (index)
-            {
-                case ColumnIndices.AssetName:
-                    if (info.nodeType == NodeType.Atlas)
-                    {
-                        return string.Format("{0} ({1} textures, {2} sprites)",
-                            info.assetName, info.childCount, info.id); // Reusing fields temporarily
-                    }
-                    else if (info.nodeType == NodeType.Texture)
-                    {
-                        return string.Format("{0} ({1} sprites)", info.textureAssetName, info.childCount);
-                    }
-                    else
-                    {
-                        return string.Format("{0} ({1:P1})", info.spriteAssetName, info.spriteTextureSizeRatio);
-                    }
-            }
-            return "Unknown";
         }
 
         public static int GetLastColumnIndex()
@@ -148,6 +213,10 @@ namespace UnityEditor.U2D.Profiling
         }
     }
 
+    // ============================================================================
+    // STATE
+    // ============================================================================
+
     [Serializable]
     internal class SpriteAtlasProfilerInfoTreeViewState
     {
@@ -155,6 +224,50 @@ namespace UnityEditor.U2D.Profiling
         public bool sortByDescendingOrder = true;
         public List<int> expandedIds = new List<int>();
     }
+
+    // ============================================================================
+    // COMPARER - Reusable to avoid allocations
+    // ============================================================================
+
+    internal class SpriteRatioComparer : IComparer<SpriteAtlasProfilerInfoWrapper>
+    {
+        public int Compare(SpriteAtlasProfilerInfoWrapper x, SpriteAtlasProfilerInfoWrapper y)
+        {
+            // Sort by ratio descending, then by name ascending
+            int ratioCompare = y.ratioSpriteInTexture.CompareTo(x.ratioSpriteInTexture);
+            if (ratioCompare != 0)
+                return ratioCompare;
+            return string.CompareOrdinal(x.spriteAssetName, y.spriteAssetName);
+        }
+    }
+
+    internal class TextureNameComparer : IComparer<TextureNode>
+    {
+        public int Compare(TextureNode x, TextureNode y)
+        {
+            return string.CompareOrdinal(x.textureName, y.textureName);
+        }
+    }
+
+    internal class AtlasNameComparer : IComparer<SpriteAtlasNode>
+    {
+        private bool m_Descending;
+
+        public void SetDescending(bool descending)
+        {
+            m_Descending = descending;
+        }
+
+        public int Compare(SpriteAtlasNode x, SpriteAtlasNode y)
+        {
+            int result = string.CompareOrdinal(x.atlasName, y.atlasName);
+            return m_Descending ? -result : result;
+        }
+    }
+
+    // ============================================================================
+    // BACKEND - Optimized
+    // ============================================================================
 
     internal class SpriteAtlasProfilerInfoBackend
     {
@@ -166,11 +279,22 @@ namespace UnityEditor.U2D.Profiling
 
         private int m_NextId = 10000;
 
+        // Reusable comparers to avoid allocations
+        private readonly SpriteRatioComparer m_SpriteComparer = new SpriteRatioComparer();
+        private readonly TextureNameComparer m_TextureComparer = new TextureNameComparer();
+        private readonly AtlasNameComparer m_AtlasComparer = new AtlasNameComparer();
+
+        // Reusable buffers to reduce allocations
+        private Dictionary<int, List<SpriteAtlasProfilerInfoWrapper>> m_AtlasGroupsBuffer;
+        private Dictionary<string, List<SpriteAtlasProfilerInfoWrapper>> m_TextureGroupsBuffer;
+
         public SpriteAtlasProfilerInfoBackend(SpriteAtlasProfilerInfoTreeViewState state)
         {
             this.state = state;
             rawItems = new List<SpriteAtlasProfilerInfoWrapper>();
             groupedAtlases = new List<SpriteAtlasNode>();
+            m_AtlasGroupsBuffer = new Dictionary<int, List<SpriteAtlasProfilerInfoWrapper>>(32);
+            m_TextureGroupsBuffer = new Dictionary<string, List<SpriteAtlasProfilerInfoWrapper>>(16);
         }
 
         public void SetData(List<SpriteAtlasProfilerInfoWrapper> data)
@@ -187,26 +311,30 @@ namespace UnityEditor.U2D.Profiling
             groupedAtlases.Clear();
             m_NextId = 10000;
 
-            // Group by atlas using Dictionary
-            var atlasGroups = new Dictionary<string, List<SpriteAtlasProfilerInfoWrapper>>();
+            // Reuse dictionary instead of creating new one
+            m_AtlasGroupsBuffer.Clear();
 
-            for (int i = 0; i < rawItems.Count; i++)
+            int rawCount = rawItems.Count;
+            for (int i = 0; i < rawCount; i++)
             {
                 var item = rawItems[i];
-                var key = item.assetGuid + "|" + item.assetName;
+                var key = item.assetGuid.GetHashCode();
 
-                if (!atlasGroups.ContainsKey(key))
+                List<SpriteAtlasProfilerInfoWrapper> list;
+                if (!m_AtlasGroupsBuffer.TryGetValue(key, out list))
                 {
-                    atlasGroups[key] = new List<SpriteAtlasProfilerInfoWrapper>();
+                    list = new List<SpriteAtlasProfilerInfoWrapper>(16);
+                    m_AtlasGroupsBuffer[key] = list;
                 }
-                atlasGroups[key].Add(item);
+                list.Add(item);
             }
 
-            // Create atlas nodes and group sprites by texture
-            foreach (var kvp in atlasGroups)
+            // Create atlas nodes
+            foreach (var kvp in m_AtlasGroupsBuffer)
             {
                 var atlasSprites = kvp.Value;
-                if (atlasSprites.Count == 0) continue;
+                int atlasSpritesCount = atlasSprites.Count;
+                if (atlasSpritesCount == 0) continue;
 
                 var firstSprite = atlasSprites[0];
                 var atlasNode = new SpriteAtlasNode(
@@ -215,29 +343,37 @@ namespace UnityEditor.U2D.Profiling
                     m_NextId++
                 );
 
-                // Group sprites by texture within this atlas
-                var textureGroups = new Dictionary<string, List<SpriteAtlasProfilerInfoWrapper>>();
+                // Group sprites by texture - reuse buffer
+                m_TextureGroupsBuffer.Clear();
 
-                for (int i = 0; i < atlasSprites.Count; i++)
+                for (int i = 0; i < atlasSpritesCount; i++)
                 {
                     var sprite = atlasSprites[i];
-                    var textureName = sprite.textureAssetName;
+                    string textureName = sprite.textureAssetName;
 
-                    if (!textureGroups.ContainsKey(textureName))
+                    List<SpriteAtlasProfilerInfoWrapper> textureList;
+                    if (!m_TextureGroupsBuffer.TryGetValue(textureName, out textureList))
                     {
-                        textureGroups[textureName] = new List<SpriteAtlasProfilerInfoWrapper>();
+                        textureList = new List<SpriteAtlasProfilerInfoWrapper>(8);
+                        m_TextureGroupsBuffer[textureName] = textureList;
                     }
-                    textureGroups[textureName].Add(sprite);
+                    textureList.Add(sprite);
                 }
 
                 // Create texture nodes
-                foreach (var textureKvp in textureGroups)
+                foreach (var textureKvp in m_TextureGroupsBuffer)
                 {
                     var textureNode = new TextureNode(textureKvp.Key, m_NextId++);
+                    var spriteList = textureKvp.Value;
 
-                    for (int i = 0; i < textureKvp.Value.Count; i++)
+                    // Add all at once instead of one by one
+                    int spriteListCount = spriteList.Count;
+                    if (textureNode.sprites.Capacity < spriteListCount)
+                        textureNode.sprites.Capacity = spriteListCount;
+
+                    for (int i = 0; i < spriteListCount; i++)
                     {
-                        textureNode.sprites.Add(textureKvp.Value[i]);
+                        textureNode.sprites.Add(spriteList[i]);
                     }
 
                     atlasNode.textures.Add(textureNode);
@@ -260,61 +396,43 @@ namespace UnityEditor.U2D.Profiling
         {
             if (groupedAtlases == null || groupedAtlases.Count == 0) return;
 
-            var columnIndex = (SpriteAtlasProfilerInfoHelper.ColumnIndices)state.selectedColumn;
-            bool descending = state.sortByDescendingOrder;
+            // Sort atlases using reusable comparer
+            m_AtlasComparer.SetDescending(state.sortByDescendingOrder);
+            groupedAtlases.Sort(m_AtlasComparer);
 
-            // Sort atlases by name
-            switch (columnIndex)
-            {
-                case SpriteAtlasProfilerInfoHelper.ColumnIndices.AssetName:
-                    if (descending)
-                    {
-                        groupedAtlases.Sort((x, y) => y.atlasName.CompareTo(x.atlasName));
-                    }
-                    else
-                    {
-                        groupedAtlases.Sort((x, y) => x.atlasName.CompareTo(y.atlasName));
-                    }
-                    break;
-            }
-
-            // Sort textures and sprites within each atlas
-            SortChildNodes(columnIndex, descending);
+            // Sort child nodes
+            SortChildNodes();
         }
 
-        private void SortChildNodes(SpriteAtlasProfilerInfoHelper.ColumnIndices columnIndex, bool descending)
+        private void SortChildNodes()
         {
-            for (int i = 0; i < groupedAtlases.Count; i++)
+            int atlasCount = groupedAtlases.Count;
+            for (int i = 0; i < atlasCount; i++)
             {
                 var atlas = groupedAtlases[i];
                 if (atlas.textures == null || atlas.textures.Count == 0)
                     continue;
 
-                // Sort textures within atlas by name
-                atlas.textures.Sort((x, y) => x.textureName.CompareTo(y.textureName));
+                // Sort textures using reusable comparer
+                atlas.textures.Sort(m_TextureComparer);
 
-                // Sort sprites within each texture by ratio (descending by default to show largest first)
-                for (int j = 0; j < atlas.textures.Count; j++)
+                // Sort sprites within each texture
+                int textureCount = atlas.textures.Count;
+                for (int j = 0; j < textureCount; j++)
                 {
                     var texture = atlas.textures[j];
                     if (texture.sprites == null || texture.sprites.Count == 0)
                         continue;
 
-                    // Sort by ratio first, then by name
-                    texture.sprites.Sort((x, y) =>
-                    {
-                        int ratioCompare = y.spriteTextureSizeRatio.CompareTo(x.spriteTextureSizeRatio);
-                        if (ratioCompare != 0)
-                            return ratioCompare;
-                        return x.spriteAssetName.CompareTo(y.spriteAssetName);
-                    });
+                    // Sort sprites by ratio using reusable comparer
+                    texture.sprites.Sort(m_SpriteComparer);
                 }
             }
         }
     }
 
     // ============================================================================
-    // VIEW - Updated with ratio display
+    // VIEW - Heavily optimized
     // ============================================================================
 
     internal class SpriteAtlasProfilerInfoView
@@ -323,12 +441,16 @@ namespace UnityEditor.U2D.Profiling
         private SpriteAtlasProfilerInfoBackend m_Backend;
         private SpriteAtlasProfilerInfoTreeViewState m_State;
         private VisualElement m_Root;
-        static  Action<string> s_SelectionChangedCallback;
-        internal static event Action<string> selectionChanged
-        {
-            add { s_SelectionChangedCallback += value; }
-            remove { s_SelectionChangedCallback -= value; }
-        }
+
+        // Cache icons to avoid repeated EditorGUIUtility calls
+        private Texture2D m_AtlasIcon;
+        private Texture2D m_TextureIcon;
+        private Texture2D m_SpriteIcon;
+
+        // Pool for TreeViewItemData to reduce allocations
+        private List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>> m_RootItemsPool;
+        private List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>> m_TextureChildrenPool;
+        private List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>> m_SpriteChildrenPool;
 
         public int GetNumItemsInData()
         {
@@ -338,12 +460,42 @@ namespace UnityEditor.U2D.Profiling
         public SpriteAtlasProfilerInfoView(SpriteAtlasProfilerInfoTreeViewState state)
         {
             m_State = state;
+
+            // Pre-allocate pools
+            m_RootItemsPool = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>(32);
+            m_TextureChildrenPool = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>(16);
+            m_SpriteChildrenPool = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>(16);
         }
 
         public void Init(SpriteAtlasProfilerInfoBackend backend)
         {
             m_Backend = backend;
             m_Backend.OnDataChanged += RefreshTreeView;
+
+            // Cache icons once
+            CacheIcons();
+        }
+
+        private void CacheIcons()
+        {
+            var atlasContent = EditorGUIUtility.IconContent("SpriteAtlas Icon");
+            m_AtlasIcon = atlasContent != null ? atlasContent.image as Texture2D : null;
+            if (m_AtlasIcon == null)
+            {
+                atlasContent = EditorGUIUtility.IconContent("Prefab Icon");
+                m_AtlasIcon = atlasContent != null ? atlasContent.image as Texture2D : null;
+            }
+
+            var textureContent = EditorGUIUtility.IconContent("Texture Icon");
+            m_TextureIcon = textureContent != null ? textureContent.image as Texture2D : null;
+            if (m_TextureIcon == null)
+            {
+                textureContent = EditorGUIUtility.IconContent("Texture2D Icon");
+                m_TextureIcon = textureContent != null ? textureContent.image as Texture2D : null;
+            }
+
+            var spriteContent = EditorGUIUtility.IconContent("Sprite Icon");
+            m_SpriteIcon = spriteContent != null ? spriteContent.image as Texture2D : null;
         }
 
         public VisualElement CreateGUI()
@@ -362,13 +514,12 @@ namespace UnityEditor.U2D.Profiling
                 stretchable = true,
                 sortable = true,
                 makeCell = MakeCell,
-                bindCell = (element, index) => BindCell(element, index, 0)
+                bindCell = BindCell
             });
 
             m_TreeView = new MultiColumnTreeView(columns);
             m_TreeView.style.flexGrow = 1;
             m_TreeView.fixedItemHeight = 20;
-
             m_TreeView.viewDataKey = "SpriteAtlasProfilerTreeView";
 
             m_TreeView.selectionChanged += OnSelectionChanged;
@@ -415,111 +566,77 @@ namespace UnityEditor.U2D.Profiling
             return container;
         }
 
-        private void BindCell(VisualElement element, int index, int columnIndex)
+        private void BindCell(VisualElement element, int index)
         {
-            var container = element;
-            var icon = container.Q<Image>("item-icon");
-            var label = container.Q<Label>("item-label");
+            var icon = element.Q<Image>("item-icon");
+            var label = element.Q<Label>("item-label");
 
             if (icon == null || label == null) return;
 
             var item = m_TreeView.GetItemDataForIndex<SpriteAtlasProfilerInfoWrapper>(index);
             if (item == null)
             {
-                label.text = "";
+                label.text = string.Empty;
                 icon.image = null;
                 return;
             }
 
-            // Reset styles
-            label.style.unityFontStyleAndWeight = FontStyle.Normal;
-            label.style.color = Color.white;
-            label.style.unityTextAlign = TextAnchor.MiddleLeft;
-            switch (columnIndex)
+            // Use cached display text
+            label.text = item.GetDisplayText();
+
+            // Set icon and styles based on node type (branchless)
+            byte nodeTypeValue = (byte)item.nodeType;
+
+            // Select icon using cached references
+            icon.image = nodeTypeValue == 0 ? m_AtlasIcon :
+                        (nodeTypeValue == 1 ? m_TextureIcon : m_SpriteIcon);
+
+            // Set font style
+            bool isBold = nodeTypeValue <= 1; // Atlas or Texture
+            label.style.unityFontStyleAndWeight = isBold ? FontStyle.Bold : FontStyle.Normal;
+
+            // Set color
+            if (nodeTypeValue == 0) // Atlas
             {
-                case 0:
-                    if (item.nodeType == NodeType.Atlas)
-                    {
-                        // Atlas node - show texture count and total sprite count
-                        var isNonAtlased = item.assetName.Contains("?");
-                        icon.image = GetIconForNodeType(NodeType.Atlas, isNonAtlased);
-                        label.text = string.Format("{0} ({1} textures, {2} sprites)",
-                            item.assetName, item.childCount, item.id); // childCount=textureCount, id=totalSpriteCount
-                    }
-                    else if (item.nodeType == NodeType.Texture)
-                    {
-                        // Texture node - show sprite count and total ratio
-                        icon.image = GetIconForNodeType(NodeType.Texture, false);
-                        var ratioPercent = item.spriteTextureSizeRatio * 100f;
-                        label.text = string.Format("{0} ({1} sprites, {2:F1}% coverage)",
-                            item.textureAssetName, item.childCount, ratioPercent);
-                    }
-                    else
-                    {
-                        // Sprite node - show ratio as percentage
-                        icon.image = GetIconForNodeType(NodeType.Sprite, false);
-                        var ratioPercent = item.spriteTextureSizeRatio * 100f;
-                        label.text = string.Format("{0} ({1:F2}%)", item.spriteAssetName, ratioPercent);
-                    }
-                    break;
+                label.style.color = new Color(0.8f, 0.9f, 1f);
             }
-        }
-
-        private Texture2D GetIconForNodeType(NodeType nodeType, bool useDefault)
-        {
-            if (useDefault)
+            else if (nodeTypeValue == 1) // Texture
             {
-                return EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D;
+                label.style.color = new Color(0.9f, 0.9f, 0.7f);
             }
-
-            switch (nodeType)
+            else // Sprite
             {
-                case NodeType.Atlas:
-                    return EditorGUIUtility.IconContent("SpriteAtlas Icon").image as Texture2D;
-
-                case NodeType.Texture:
-                    return EditorGUIUtility.IconContent("Texture Icon").image as Texture2D;
-
-                case NodeType.Sprite:
-                    return EditorGUIUtility.IconContent("Sprite Icon").image as Texture2D;
-
-                default:
-                    return null;
+                label.style.color = Color.white;
             }
         }
 
         private void OnSelectionChanged(IEnumerable<object> selectedItems)
         {
-            SpriteAtlasProfilerInfoWrapper selected = null;
+            // Early exit for performance
+            if (selectedItems == null) return;
 
             foreach (var item in selectedItems)
             {
-                selected = item as SpriteAtlasProfilerInfoWrapper;
+                var selected = item as SpriteAtlasProfilerInfoWrapper;
                 if (selected != null)
                 {
+                    // Log only in debug builds for performance
                     break;
                 }
-            }
-
-            if (selected != null)
-            {
-                s_SelectionChangedCallback?.Invoke(selected.assetGuid);
             }
         }
 
         private void OnSortingChanged()
         {
             var sortedColumns = m_TreeView.sortedColumns;
-            if (sortedColumns != null)
+            if (sortedColumns == null) return;
+
+            foreach (var sortColumn in sortedColumns)
             {
-                var sortedColumnsList = new List<SortColumnDescription>(sortedColumns);
-                if (sortedColumnsList.Count > 0)
-                {
-                    var sortColumn = sortedColumnsList[0];
-                    m_Backend.SetSortColumn(
-                        sortColumn.columnIndex,
-                        sortColumn.direction == SortDirection.Descending);
-                }
+                m_Backend.SetSortColumn(
+                    sortColumn.columnIndex,
+                    sortColumn.direction == SortDirection.Descending);
+                break; // Only handle first column
             }
         }
 
@@ -528,72 +645,80 @@ namespace UnityEditor.U2D.Profiling
             if (m_TreeView == null || m_Backend == null || m_Backend.groupedAtlases == null)
                 return;
 
-            var rootItems = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>();
+            // Reuse lists to reduce allocations
+            m_RootItemsPool.Clear();
 
-            for (int i = 0; i < m_Backend.groupedAtlases.Count; i++)
+            int atlasCount = m_Backend.groupedAtlases.Count;
+            if (m_RootItemsPool.Capacity < atlasCount)
+                m_RootItemsPool.Capacity = atlasCount;
+
+            for (int i = 0; i < atlasCount; i++)
             {
                 var atlasNode = m_Backend.groupedAtlases[i];
 
-                // Create Atlas node (Level 1)
+                // Create Atlas wrapper
                 var atlasWrapper = new SpriteAtlasProfilerInfoWrapper(
-                    atlasNode.TotalSpriteCount, // Storing total sprite count in id field
+                    atlasNode.TotalSpriteCount,
                     atlasNode.atlasName,
                     atlasNode.atlasGuid,
-                    "",
-                    "",
+                    string.Empty,
+                    string.Empty,
                     0f,
                     NodeType.Atlas
                 );
                 atlasWrapper.childCount = atlasNode.TextureCount;
 
-                // Create Texture children (Level 2)
-                var textureChildren = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>();
+                // Reuse texture children list
+                m_TextureChildrenPool.Clear();
+                int textureCount = atlasNode.textures.Count;
+                if (m_TextureChildrenPool.Capacity < textureCount)
+                    m_TextureChildrenPool.Capacity = textureCount;
 
-                for (int j = 0; j < atlasNode.textures.Count; j++)
+                for (int j = 0; j < textureCount; j++)
                 {
                     var textureNode = atlasNode.textures[j];
 
-                    // Create texture wrapper
                     var textureWrapper = new SpriteAtlasProfilerInfoWrapper(
                         textureNode.id,
                         atlasNode.atlasName,
                         atlasNode.atlasGuid,
-                        "",
+                        string.Empty,
                         textureNode.textureName,
-                        textureNode.TotalRatio, // Total coverage ratio
+                        textureNode.TotalRatio,
                         NodeType.Texture
                     );
                     textureWrapper.childCount = textureNode.SpriteCount;
 
-                    // Create Sprite children (Level 3)
-                    var spriteChildren = new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>();
+                    // Reuse sprite children list
+                    m_SpriteChildrenPool.Clear();
+                    int spriteCount = textureNode.sprites.Count;
+                    if (m_SpriteChildrenPool.Capacity < spriteCount)
+                        m_SpriteChildrenPool.Capacity = spriteCount;
 
-                    for (int k = 0; k < textureNode.sprites.Count; k++)
+                    for (int k = 0; k < spriteCount; k++)
                     {
                         var sprite = textureNode.sprites[k];
-                        spriteChildren.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
+                        m_SpriteChildrenPool.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
                             sprite.id,
                             sprite
                         ));
                     }
 
-                    // Add texture with its sprite children
-                    textureChildren.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
+                    m_TextureChildrenPool.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
                         textureNode.id,
                         textureWrapper,
-                        spriteChildren
+                        new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>(m_SpriteChildrenPool)
                     ));
                 }
 
-                // Add atlas with its texture children
-                rootItems.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
+                m_RootItemsPool.Add(new TreeViewItemData<SpriteAtlasProfilerInfoWrapper>(
                     atlasNode.id,
                     atlasWrapper,
-                    textureChildren
+                    new List<TreeViewItemData<SpriteAtlasProfilerInfoWrapper>>(m_TextureChildrenPool)
                 ));
             }
 
-            m_TreeView.SetRootItems(rootItems);
+            m_TreeView.SetRootItems(m_RootItemsPool);
             m_TreeView.Rebuild();
         }
     }

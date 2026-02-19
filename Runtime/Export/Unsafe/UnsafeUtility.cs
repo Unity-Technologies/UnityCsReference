@@ -131,6 +131,21 @@ namespace Unity.Collections.LowLevel.Unsafe
             return SizeOf<AlignOfHelper<T>>() - SizeOf<T>();
         }
 
+
+        [VisibleToOtherModules("UnityEngine.ImageConversionModule")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe Span<byte> GetByteSpanFromArray(System.Array array, int arraySize, int elementSize)
+        {
+            if (array == null || arraySize == 0)
+                return new Span<byte>();
+
+            System.Diagnostics.Debug.Assert(SizeOf(array.GetType().GetElementType()) == elementSize);
+
+            var bArray = As<System.Array, byte[]>(ref array);
+
+            return new Span<byte>(System.Runtime.CompilerServices.Unsafe.AsPointer(ref bArray[0]), arraySize * elementSize);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Span<byte> GetByteSpanFromList<T>(List<T> list) where T : struct
         {

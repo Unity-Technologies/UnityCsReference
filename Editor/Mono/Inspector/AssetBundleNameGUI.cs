@@ -99,7 +99,7 @@ namespace UnityEditor
             // Anyway to optimize this by caching GetAssetBundleNameFromAssets() and GetAllAssetBundleNames() when they actually change?
             // As we can change the assetBundle name by script, the UI needs to detect this kind of change.
             bool mixedValue;
-            IEnumerable<string> assetBundleFromAssets = GetAssetBundlesFromAssets(assets, isVariant, out mixedValue);
+            HashSet<string> assetBundleFromAssets = GetAssetBundlesFromAssets(assets, isVariant, out mixedValue);
 
             string[] assetBundles = isVariant ? AssetDatabase.GetAllAssetBundleVariants() : AssetDatabase.GetAllAssetBundleNamesWithoutVariant();
             if (assetBundles.Length > 0)
@@ -119,9 +119,7 @@ namespace UnityEditor
                 removeUnusedIndex = displayedOptions.Count;
                 displayedOptions.Add("Remove Unused Names");
                 filterSelectedIndex = displayedOptions.Count;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (assetBundleFromAssets.Count() != 0)
-#pragma warning restore UA2001
+                if (assetBundleFromAssets.Count != 0)
                     displayedOptions.Add("Filter Selected Name" + (mixedValue ? "s" : ""));
             }
 
@@ -164,7 +162,7 @@ namespace UnityEditor
                 Debug.LogWarning("No Project Browser found to apply AssetBundle filter.");
         }
 
-        private IEnumerable<string> GetAssetBundlesFromAssets(IEnumerable<Object> assets, bool isVariant, out bool isMixed)
+        private HashSet<string> GetAssetBundlesFromAssets(IEnumerable<Object> assets, bool isVariant, out bool isMixed)
         {
             var assetBundles = new HashSet<string>();
             string lastAssetBundle = null;

@@ -26,19 +26,19 @@ namespace UnityEngine.Animations
             InternalDestroyOutput(ref graph, ref handle);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool InternalCreateAnimationOutput(ref PlayableGraph graph, string name, out PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void InternalSyncUpdateAndTimeMode(ref PlayableGraph graph, [NotNull] Animator animator);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalDestroyOutput(ref PlayableGraph graph, ref PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int InternalAnimationOutputCount(ref PlayableGraph graph);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool InternalGetAnimationOutput(ref PlayableGraph graph, int index, out PlayableOutputHandle handle);
     }
 }

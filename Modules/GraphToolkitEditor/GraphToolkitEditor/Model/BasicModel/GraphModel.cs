@@ -1856,7 +1856,11 @@ namespace Unity.GraphToolkit.Editor
             if (guid.isValid)
                 nodeModel.SetGuid(guid);
             initializationCallback?.Invoke(nodeModel);
-            nodeModel.OnCreateNode();
+
+            // Only call OnCreateNode for nodes that are not block nodes.
+            // Block nodes call OnCreateNode in ContextNodeModel.InsertBlock after their context node is assigned.
+            if (!typeof(BlockNodeModel).IsAssignableFrom(nodeTypeToCreate))
+                nodeModel.OnCreateNode();
 
             return nodeModel;
         }
@@ -2103,7 +2107,7 @@ namespace Unity.GraphToolkit.Editor
             return null;
         }
 
-        WireModel GetAnyWireConnectedToPorts(PortModel toPort, PortModel fromPort)
+        public WireModel GetAnyWireConnectedToPorts(PortModel toPort, PortModel fromPort)
         {
             var wires = GetWiresForPort(toPort);
             foreach (var wire in wires)
@@ -5017,7 +5021,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="inspectedModels">The models that are inspected.</param>
         /// <returns>The new inspector model.</returns>
-        public virtual InspectorModel CreateInspectorModel(IEnumerable<Model> inspectedModels)
+        public virtual InspectorModel CreateInspectorModel(List<Model> inspectedModels)
         {
             // PF: This should probably live in ModelInspectorViewModel
             return new InspectorModel { InspectedModels = inspectedModels };

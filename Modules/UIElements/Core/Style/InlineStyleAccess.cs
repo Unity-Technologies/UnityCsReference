@@ -166,7 +166,7 @@ namespace UnityEngine.UIElements
             this.ve = ve;
         }
 
-        public void SetInlineRule(StyleSheet sheet, StyleRule rule)
+        public void SetInlineRule(StyleSheet sheet, StyleRule rule, StyleVariableContext variableContext = null)
         {
             if (m_InlineRule.sheet && m_InlineRule.rule != null)
                 ve.elementPanel?.liveReloadSystem.StopStyleSheetAssetTracking(m_InlineRule.sheet);
@@ -176,7 +176,7 @@ namespace UnityEngine.UIElements
             if (m_InlineRule.sheet && m_InlineRule.rule != null)
                 ve.elementPanel?.liveReloadSystem.StartStyleSheetAssetTracking(m_InlineRule.sheet);
 
-            ApplyInlineStyles(ref ve.computedStyle);
+            ApplyInlineStyles(ref ve.computedStyle, variableContext);
         }
 
         public bool IsValueSet(StylePropertyId id)
@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyInlineStyles(ref ComputedStyle computedStyle)
+        public void ApplyInlineStyles(ref ComputedStyle computedStyle, StyleVariableContext variableContext)
         {
             // Apply inline rule coming from UXML if any
             var parent = ve.hierarchy.parent;
@@ -227,7 +227,7 @@ namespace UnityEngine.UIElements
 
             if (m_InlineRule.sheet != null)
             {
-                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties);
+                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties, variableContext);
                 computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
 

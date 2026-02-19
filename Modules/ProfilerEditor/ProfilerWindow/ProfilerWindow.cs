@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
 using Unity.Profiling.Editor.UI;
@@ -562,7 +563,7 @@ namespace UnityEditor
                         module = Activator.CreateInstance(moduleType) as ProfilerModule;
                     }
 
-                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.IconPath, this, m_PersistentSettingsService);
+                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.Tooltip, moduleMetadata.IconPath, this, m_PersistentSettingsService);
                     module.Initialize(args);
 
                     if (moduleIdentifier == kJobsProfilerIdentifier)
@@ -596,7 +597,7 @@ namespace UnityEditor
                         module = new DynamicProfilerModule();
                     }
 
-                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleData.m_Name, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
+                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleData.m_Name, moduleData.m_Tooltip, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
                     module.Initialize(args, moduleData.m_ChartCounters, moduleData.m_DetailCounters);
                     modules.Add(module);
                 }
@@ -1249,26 +1250,29 @@ namespace UnityEditor
             var prodName = Application.productName;
 
             // Sanitise the product name
+            var prodNameSanitised = new StringBuilder(Regex.Replace(prodName, @"(\.\.|[/\\])", "_"));
             var invalidChars = Path.GetInvalidFileNameChars();
-            var prodNameSanitised = new StringBuilder(prodName);
+            foreach (var t in invalidChars)
+                prodNameSanitised.Replace(t, '_');
+            invalidChars = Path.GetInvalidPathChars();
             foreach (var t in invalidChars)
                 prodNameSanitised.Replace(t, '_');
 
             var filePath = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
-            if (filePath.Length != 0)
+
+            EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
+            if (ProfilerDriver.SaveProfile(filePath))
             {
-                EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
-                if (ProfilerDriver.SaveProfile(filePath))
-                {
-                    // Saving the .data was successful, now save the bottleneck data and screenshot
-                    m_BottlenecksChartViewController.SaveHighlightsInfo(filePath);
-                    // If we fail to find screenshot data, try once with the previous frame,
-                    // in case the last one was cut short mid-write.
-                    if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex))
-                        m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex - 1);
-                    CurrentLoadedCaptureFile = filePath;
-                    m_CaptureDataService.SetCapturesFolderDirty();
-                }
+                // Saving the .data was successful, now save the bottleneck data and screenshot
+                // Make sure we're up to date, ready to write out the highlights file.
+                m_BottlenecksChartViewController.ReloadData();
+                m_BottlenecksChartViewController.SaveHighlightsInfo(filePath);
+                // If we fail to find screenshot data, try once with the previous frame,
+                // in case the last one was cut short mid-write.
+                if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex))
+                    m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex - 1);
+                CurrentLoadedCaptureFile = filePath;
+                m_CaptureDataService.SetCapturesFolderDirty();
             }
         }
 
@@ -1288,6 +1292,7 @@ namespace UnityEditor
 
             var profilerHasFrames = ProfilerHasAnyFrames();
             if (showWarning && !keepExistingData && profilerHasFrames && path != CurrentLoadedCaptureFile &&
+                !File.Exists(CurrentLoadedCaptureFile) && // No need to show warning if the data won't be lost
                 !EditorUtility.DisplayDialog("Load Profiler Capture",
                     "Loading Capture will clear currently loaded data. Continue?", "OK", "Cancel"))
                 return;
@@ -1759,7 +1764,8 @@ namespace UnityEditor
             var identifier = moduleData.name; // Dynamic modules use their name as their identifier for legacy reasons.
             var module = new DynamicProfilerModule();
 
-            var args = new ProfilerModule.InitializationArgs(identifier, moduleData.name, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
+            // Note: no tooltip support for module editor created modules yet.
+            var args = new ProfilerModule.InitializationArgs(identifier, moduleData.name, null, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
             module.Initialize(args, chartCounters, detailCounters);
@@ -2075,8 +2081,8 @@ namespace UnityEditor
             SetCurrentFrameRangeDontPause(frameRange);
         }
 
-        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can 
-        // occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the 
+        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can
+        // occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the
         // selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
         Range? m_LastReportedSelectedFrameRange;
         void InvokeSelectedFrameIndexChangedEventIfNecessary(int newFrame)
@@ -2156,7 +2162,7 @@ namespace UnityEditor
 
         void IProfilerWindowController.RequestCpuProfilerAssistance(Rect screenRect, CpuProfilerAssistantController.CpuProfilerContext attachment, string request)
         {
-            m_CpuProfilerAssistantController.LaunchCpuProfilerAssistant(screenRect, attachment, request);
+            m_CpuProfilerAssistantController.LaunchAssistant(screenRect, attachment, request);
         }
 
         ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();

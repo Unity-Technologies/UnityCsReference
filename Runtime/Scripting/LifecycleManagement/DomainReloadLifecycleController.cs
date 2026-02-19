@@ -4,14 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Unity.Scripting;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Assemblies;
-using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 
@@ -21,7 +17,6 @@ namespace UnityEngine
     /// DomainReloadLifecycleController represents the LifecycleManagement integration for Mono Unity
     /// It is the alternative implementation of the LifecycleManagement responsibilities of AssemblyLoader:
     ///     - ensure a LifecycleController is instantiated
-    ///     - set up AttributeUsageLocator dependency
     ///     - provide complete set of registered assemblies
     ///     - IScriptingCoreDebug dependency implementation and setup
     ///     - Enter/Exit assembly load related lifecycle scopes
@@ -72,16 +67,9 @@ namespace UnityEngine
         [RequiredByNativeCode]
         static void Internal_EnterAssembliesLoadedLifecycleScopes_PreDeserialization()
         {
-            // IAttributeUsageLocator implementations:
-            // AttributeUsageLocatorWithTypeCache: TypeCache-based - best performance, unfortunately currently only available in Editor.     "UnityEditor.AttributeUsageLocatorWithTypeCache, UnityEditor.CoreModule";
-            // AttributeUsageLocatorWithTypeDB: until we get TypeCache in player, temporary TypeDB-based implementation for lifecycle attributes, similar to RuntimeInitializeOnLoad
-            //                                                                                                                               "UnityEngine.AttributeUsageLocatorWithTypeDB, UnityEngine.CoreModule";
-            string kAttributeUsageLocatorTypeName = "UnityEditor.AttributeUsageLocatorWithTypeCache, UnityEditor";
             try
             {
-                LifecycleController.InitializeForIl2Cpp(
-                    kAttributeUsageLocatorTypeName,
-                    new ScriptingCoreDebugForIl2AndMonoCpp());
+                LifecycleController.InitializeForIl2Cpp(new ScriptingCoreDebugForIl2AndMonoCpp());
 
                 _currentAssemblyLoadedScope = new AssemblyLoadedScopeIl2Cpp(CurrentAssemblies.GetLoadedAssemblies());
                 LifecycleController.Instance.EnterScope(_currentAssemblyLoadedScope);
@@ -91,62 +79,6 @@ namespace UnityEngine
             catch (Exception e)
             {
                 DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scopes (pre deserialization) due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
-        static void Internal_EnterAssembliesLoadedLifecycleScopes_AfterManagedObjectsRestored()
-        {
-            try
-            {
-                LifecycleController.Instance.EnterScope<ManagedObjectsRestoredScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scope ManagedObjectsRestoredScope due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
-        static void Internal_EnterAssembliesLoadedLifecycleScopes_AfterManagedObjectsAwoken()
-        {
-            try
-            {
-                LifecycleController.Instance.EnterScope<ManagedObjectsAwokenScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scope ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
-        static void Internal_ExitAssembliesLoadedLifecycleScopes_BeforeManagedObjectsDisabled()
-        {
-            try
-            {
-                LifecycleController.Instance.ExitScope<ManagedObjectsAwokenScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code reload scope ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
-        static void Internal_ExitAssembliesLoadedLifecycleScopes_BeforeManagedObjectsBackup()
-        {
-            try
-            {
-                LifecycleController.Instance.ExitScope<ManagedObjectsRestoredScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code reload scope ManagedObjectsRestoredScope due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }

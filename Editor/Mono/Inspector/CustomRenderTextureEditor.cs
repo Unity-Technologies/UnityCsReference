@@ -35,7 +35,7 @@ namespace UnityEditor
             public readonly GUIContent  updateZoneRotation  = EditorGUIUtility.TrTextContent("Rotation", "Rotation of the update zone.");
             public readonly GUIContent  wrapUpdateZones     = EditorGUIUtility.TrTextContent("Wrap Update Zones", "If ticked, Update zones will wrap around the border of the Custom Render Texture. If unticked, Update zones will be clamped at the border of the Custom Render Texture.");
 
-            public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TextContent("OnLoad"), EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("OnDemand") };
+            public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TrTextContent("On Load"), EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("On Demand") };
             public readonly int[] updateModeValues = { (int)CustomRenderTextureUpdateMode.OnLoad, (int)CustomRenderTextureUpdateMode.Realtime, (int)CustomRenderTextureUpdateMode.OnDemand };
 
             public readonly GUIContent[] initSourceStrings = { EditorGUIUtility.TrTextContent("Texture and Color"), EditorGUIUtility.TrTextContent("Material") };

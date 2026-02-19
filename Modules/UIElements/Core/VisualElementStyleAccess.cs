@@ -20,9 +20,9 @@ namespace UnityEngine.UIElements
         /// Sets the style values on a <see cref="VisualElement"/>.
         /// </summary>
         /// <remarks>
-        /// The returned style data, computed from USS files or inline styles written to this object 
-        /// in C#, doesn't represent the fully resolved styles, such as the final height and width of 
-        /// a VisualElement. 
+        /// The returned style data, computed from USS files or inline styles written to this object
+        /// in C#, doesn't represent the fully resolved styles, such as the final height and width of
+        /// a VisualElement.
         /// To access these fully resolved styles, use <see cref="resolvedStyle"/>.
         /// </remarks>
         /// <remarks>
@@ -58,25 +58,25 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Use @@resolvedStyle@@ to find the actual rendered styling of a [[VisualElement]] in the
-        /// current frame, such as style values for width, height, and colors. You can get 
-        /// the resolved style value of an element to make layout decisions, troubleshoot styling issues, 
+        /// current frame, such as style values for width, height, and colors. You can get
+        /// the resolved style value of an element to make layout decisions, troubleshoot styling issues,
         /// or ensure visual consistency across different platforms.
         /// </remarks>
         /// <remarks>
-        /// The final rendered style is computed from applied classes, inherited styles from ancestors, and 
-        /// inline styles defined in UXML or C# code. Therefore, the resolved style might be different from what 
+        /// The final rendered style is computed from applied classes, inherited styles from ancestors, and
+        /// inline styles defined in UXML or C# code. Therefore, the resolved style might be different from what
         /// you set through the [[VisualElement.style]] property, depending on the other styles applied to the element.
         /// </remarks>
         /// <remarks>
-        /// To get the resolved style when the geometry changes, register a callback to the [[GeometryChangedEvent]] event. 
-        /// If the element's geometry remains unchanged, consider adding a [[IVisualElementScheduler|scheduler]] to periodically check the element's 
+        /// To get the resolved style when the geometry changes, register a callback to the [[GeometryChangedEvent]] event.
+        /// If the element's geometry remains unchanged, consider adding a [[IVisualElementScheduler|scheduler]] to periodically check the element's
         /// resolved style. You can also poll the value during the [[MonoBehaviour.LateUpdate]] phase at runtime if you have access to MonoBehaviours.
         /// </remarks>
         /// <remarks>
         /// For a list of all the style properties supported by UI Toolkit, refer to [[wiki:UIE-USS-Properties-Reference|USS properties reference]].
         /// </remarks>
         /// <remarks>
-        /// For more information about how to use this property and an example of how style changes when layout updates, 
+        /// For more information about how to use this property and an example of how style changes when layout updates,
         /// refer to [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]].
         /// </remarks>
         /// <example>
@@ -106,15 +106,15 @@ namespace UnityEngine.UIElements
         /// The custom style properties accessor of a <see cref="VisualElement"/> (RO).
         /// </summary>
         /// <remarks>
-        /// To get the custom styles properties of an element, call the <see cref="ICustomStyle.TryGetValue"/> 
-        /// method to query the returned object of this property. 
+        /// To get the custom styles properties of an element, call the <see cref="ICustomStyle.TryGetValue"/>
+        /// method to query the returned object of this property.
         /// </remarks>
         /// <remarks>
         /// For more information about how to use this property, refer to the
         /// [[wiki:UIE-get-custom-styles|Get custom styles]] manual page.
         /// </remarks>
         /// <remarks>
-        /// For a list of all the supported style properties, refer 
+        /// For a list of all the supported style properties, refer
         /// to the [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual page.
         /// </remarks>
         /// <remarks>
@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal List<StyleSheet> styleSheetList;
 
         private static readonly Regex s_InternalStyleSheetPath = new Regex("^instanceId:[-0-9]+$", RegexOptions.Compiled);

@@ -144,10 +144,10 @@ namespace UnityEditor
                 {
                     Debug.LogWarning("Using int based drop handlers is deprecated. Please use EntityId based ones instead.");
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    args[0] = e.GetRawData();
+                    args[0] = EntityId.ToULong(e);
                 }
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)
-                    args[0] = EntityId.From(number);
+                    args[0] = EntityId.FromULong((ulong)number);
                 dropResult = (DragAndDropVisualMode)dropHandler.DynamicInvoke(args);
                 if (dropResult != DragAndDropVisualMode.None)
                 {
@@ -340,9 +340,7 @@ namespace UnityEditor
             {
                 return false;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return handlers != null && handlers.Any(dropHandler => dropHandler == handler);
-#pragma warning restore UA2001
+            return handlers != null && handlers.Exists(dropHandler => dropHandler == handler);
         }
 
         [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate

@@ -17,9 +17,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            scriptAssembly.Defines = AddAdditionalToArray(scriptAssembly.Defines, compilationExtension.GetAdditionalDefines().ToArray());
-#pragma warning restore UA2001
+            scriptAssembly.Defines = AddAdditionalToArray(scriptAssembly.Defines, compilationExtension.GetAdditionalDefines());
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             scriptAssembly.References = AddAdditionalToArray(scriptAssembly.References, compilationExtension.GetAdditionalAssemblyReferences()
 #pragma warning restore UA2001

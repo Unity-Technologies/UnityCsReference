@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.ProjectAuditor.Editor.Core;
-using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,7 +16,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public override string Description => $"A list of {m_Desc.DisplayName} issues found in the project.";
         public override bool OnlyCriticalIssues() { return m_OnlyCriticalIssues; }
 
-        Vector2 m_DetailsScrollPos;
         Vector2 m_RecommendationScrollPos;
 
         bool m_OnlyCriticalIssues;
@@ -48,90 +46,42 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 descriptor = selectedIssues[0].Id.GetDescriptor();
             }
 
+            string selectedText = k_NoSelectionText;
+            string recommendationText = k_NoSelectionText;
+            string documentationUrl = null;
+            if (numSelectedIDs > 1)
+            {
+                selectedText = k_MultipleSelectionText;
+                recommendationText = k_MultipleSelectionText;
+            }
+            else if (numSelectedIDs == 1)
+            {
+                selectedText = descriptor.Description;
+                recommendationText = descriptor.Recommendation;
+                documentationUrl = descriptor.DocumentationUrl;
+            }
+
             EditorGUILayout.BeginVertical(GUILayout.Width(LayoutSize.FoldoutWidth));
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField(Contents.Details, SharedStyles.BoldLabel);
-                {
-                    if (anySelectedIDs)
-                    {
-                        if (GUILayout.Button(Contents.CopyToClipboard, SharedStyles.TabButton,
-                            GUILayout.Width(LayoutSize.CopyToClipboardButtonSize),
-                            GUILayout.Height(LayoutSize.CopyToClipboardButtonSize)))
-                        {
-                            EditorInterop.CopyToClipboard(Formatting.StripRichTextTags(descriptor.Description));
-                        }
-                    }
-                }
-            }
+            DrawDetailsHeader(SharedContents.Details,
+                anySelectedIDs ? selectedText : null,
+                documentationUrl);
 
-            m_DetailsScrollPos =
-                EditorGUILayout.BeginScrollView(m_DetailsScrollPos, GUILayout.ExpandHeight(true));
+            DrawDetailsContent(selectedText, documentationUrl);
 
-            if (noSelectedIDs)
-                GUILayout.TextArea(k_NoSelectionText, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else if (multipleSelectedIDs)
-                GUILayout.TextArea(k_MultipleSelectionText, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else
-            {
-                GUILayout.TextArea(descriptor.Description, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            }
-
-            EditorGUILayout.EndScrollView();
-
+            GUILayout.Space(8);
             ChartUtil.DrawLine(m_2D);
-            GUILayout.Space(10);
+            GUILayout.Space(8);
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField(Contents.Recommendation, SharedStyles.BoldLabel);
-                {
-                    if (anySelectedIDs)
-                    {
-                        if (GUILayout.Button(Contents.CopyToClipboard, SharedStyles.TabButton,
-                            GUILayout.Width(LayoutSize.CopyToClipboardButtonSize),
-                            GUILayout.Height(LayoutSize.CopyToClipboardButtonSize)))
-                        {
-                            EditorInterop.CopyToClipboard(Formatting.StripRichTextTags(descriptor.Recommendation));
-                        }
-                    }
-                }
-            }
+            DrawDetailsHeader(SharedContents.Recommendation,
+                anySelectedIDs ? recommendationText : null,
+                null);
 
-            m_RecommendationScrollPos =
-                EditorGUILayout.BeginScrollView(m_RecommendationScrollPos, GUILayout.ExpandHeight(true));
-
-            if (noSelectedIDs)
-                GUILayout.TextArea(k_NoSelectionText, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else if (multipleSelectedIDs)
-                GUILayout.TextArea(k_MultipleSelectionText, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            else
-            {
-                GUILayout.TextArea(descriptor.Recommendation, SharedStyles.TextAreaWithDynamicSize,
-                    GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
-            }
-
-            EditorGUILayout.EndScrollView();
+            DrawDetailsContent(recommendationText, null, ref m_RecommendationScrollPos);
 
             var issuesAreIgnored = AreIssuesIgnored(selectedIssues);
             if (oneSelectedID)
             {
-                if (!string.IsNullOrEmpty(descriptor.DocumentationUrl))
-                {
-                    DrawActionButton(Contents.Documentation, () =>
-                    {
-                        Application.OpenURL(descriptor.DocumentationUrl);
-
-                        m_ViewManager.OnSelectedIssuesDocumentationRequested?.Invoke(selectedIssues);
-                    });
-                }
-
                 using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories()))
                 {
                     if (descriptor.Fixer != null)
@@ -139,8 +89,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         bool isFixed = Array.TrueForAll(selectedIssues, i => i.WasFixed);
                         using (new EditorGUI.DisabledScope(isFixed))
                         {
-                            var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
-                            DrawActionButton(isFixed ? Contents.QuickFixDone : content, () =>
+                            var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? SharedContents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                            DrawActionButton(isFixed ? SharedContents.QuickFixDone : content, () =>
                             {
                                 foreach (var issue in selectedIssues)
                                 {
@@ -151,6 +101,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                             });
                         }
                     }
+
+                    m_ViewManager.AssistantController.DrawAskAssistantButton(descriptor, selectedIssues[0], DrawActionButton);
 
                     if (selectedIssues.Length > 0)
                     {
@@ -283,19 +235,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         internal static class Contents
         {
-            public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
-            public static readonly GUIContent Recommendation =
-                new GUIContent("Recommendation", "Recommendation on how to solve the issue");
-            public static readonly GUIContent Documentation = new GUIContent("Documentation", "Open the Unity documentation");
-            public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
-            public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
             public static readonly GUIContent ShowIgnoredIssuesButton = Utility.GetDisplayIgnoredIssuesIconWithLabel();
             public static readonly GUIContent HideIgnoredIssuesButton = Utility.GetHiddenIgnoredIssuesIconWithLabel();
             public static readonly GUIContent Ignore = new GUIContent("Ignore Issue", "Ignore selected issue");
             public static readonly GUIContent IgnoreAll = new GUIContent("Ignore Issues", "Ignore selected issues");
             public static readonly GUIContent Display = new GUIContent("Display", "Always show selected issue");
             public static readonly GUIContent DisplayAll = new GUIContent("Display All", "Always show selected issues");
-            public static readonly GUIContent CopyToClipboard = Utility.GetIcon(Utility.IconType.CopyToClipboard);
         }
     }
 }

@@ -386,10 +386,11 @@ namespace Unity.Hierarchy.Editor
             var customParent = m_CustomParentForNewGameObjects;
             var targetSceneForCreation = customParent != null ? customParent.gameObject.scene.handle : SceneHandle.None;
 
-            // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
-            // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
+            // When right-clicking on a GameObject, set the context to the current selection so created GameObjects are added as children.
+            // When right-clicking on blank space, pass no context so created GameObjects become root objects.
+            // Sets includeCreateEmptyChild to false since "Create Empty Child" is redundant when right-clicking a GameObject.
             MenuUtilsForHierarchyWindow.AddCreateGameObjectItemsToMenu(menu,
-                                           selectedGameObjects,
+                                           gameObject != null ? selectedGameObjects : Array.Empty<GameObject>(),
                                            true,
                                            false,
                                            false,

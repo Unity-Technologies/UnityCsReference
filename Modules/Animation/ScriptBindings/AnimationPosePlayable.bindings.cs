@@ -100,20 +100,20 @@ namespace UnityEngine.Animations
         }
 
         // Bindings methods.
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool GetMustReadPreviousPoseInternal(ref PlayableHandle handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetMustReadPreviousPoseInternal(ref PlayableHandle handle, bool value);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool GetReadDefaultPoseInternal(ref PlayableHandle handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetReadDefaultPoseInternal(ref PlayableHandle handle, bool value);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool GetApplyFootIKInternal(ref PlayableHandle handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetApplyFootIKInternal(ref PlayableHandle handle, bool value);
     }
 }

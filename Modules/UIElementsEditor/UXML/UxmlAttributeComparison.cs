@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlAttributeComparison
     {
         public static bool ObjectEquals(object a, object b)

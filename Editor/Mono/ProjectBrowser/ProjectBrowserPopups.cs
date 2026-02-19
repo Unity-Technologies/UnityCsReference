@@ -206,9 +206,9 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     res = res.Take(m_MaxCount);
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return res.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             }
 
             public void AddElement(string label, string[] types)
@@ -453,8 +453,10 @@ namespace UnityEditor
             if (m_EnteredTextCompletion != "" && m_EnteredTextCompletion.StartsWith(m_EnteredText, System.StringComparison.OrdinalIgnoreCase))
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectedCompletionIndex = query.TakeWhile(element => element != m_EnteredTextCompletion).Count();
 #pragma warning restore UA2001
+#pragma warning restore UA2005
                 // m_EnteredTextCompletion is already correct
             }
             else
@@ -462,12 +464,10 @@ namespace UnityEditor
                 // Clamp m_SelectedCompletionIndex to 0..query.Count () - 1
                 if (m_SelectedCompletionIndex < 0)
                     m_SelectedCompletionIndex = 0;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (m_SelectedCompletionIndex >= query.Count())
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_SelectedCompletionIndex = query.Count() - 1;
-#pragma warning restore UA2001
+#pragma warning restore UA2005
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_EnteredTextCompletion = query.Skip(m_SelectedCompletionIndex).DefaultIfEmpty("").FirstOrDefault();

@@ -17,9 +17,25 @@ namespace UnityEditor.Build.Reporting
         ///<summary>The time the build was started.</summary>
         public DateTime buildStartedAt { get { return new DateTime(buildStartTimeTicks); } }
 
-        ///<summary>The <see cref="Application.buildGUID" /> of the build.</summary>
+        ///<summary>The build guid of a Player build.</summary>
+        ///<remarks>For successful player builds this guid is written to boot.config in the build output,
+        // unless <see cref="BuildOptions.NoUniqueIdentifier"/> is set.
+        // It is available in the runtime through <see cref="Application.buildGUID" />.
+        // Incremental builds that produce the same output may reuse a previously
+        // generated build GUID.
+        ///</remarks>
         [NativeName("buildGUID")]
         public GUID guid { get; }
+
+        ///<summary>A unique identifier for the build session in the Unity Editor.</summary>
+        ///<remarks>The buildSessionGuid is set for Player, AssetBundle and ContentDirectory builds.
+        ///This GUID uniquely identifies each build session, regardless of whether the build produces identical output.
+        ///Failed or cancelled builds will also have a unique session guid.
+        ///Unlike <see cref="guid"/>, this identifier is not stored in the Player's built output, and is only used for Editor build tracking and analytics.
+        ///</remarks>
+        [NativeName("buildSessionGUID")]
+        /*UCBP-PUBLIC*/
+        internal GUID buildSessionGuid { get; }
 
         ///<summary>The platform that the build was created for.</summary>
         ///<remarks>See <see cref="BuildTarget" /> for possible values.</remarks>
@@ -41,6 +57,11 @@ namespace UnityEditor.Build.Reporting
         public string outputPath { get; }
         ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this value of this will be identical to the output path.</summary>
         public string dataPath { get; }
+
+        ///<summary>For ContentDirectory builds this returns the build name. For other build types this returns an empty string.</summary>
+        /*UCBP-PUBLIC*/
+        internal string buildName { get; }
+
         internal uint crc { get; }
         ///<summary>The total size of the build output, in bytes.</summary>
         public ulong totalSize { get; }
@@ -102,6 +123,28 @@ namespace UnityEditor.Build.Reporting
                     return ParseSubtarget<T, XboxBuildSubtarget>();
                 default:
                     throw new ArgumentException($"Subtarget property is not available for the platform ({platform})");
+            }
+        }
+
+        internal string GetSubtargetString()
+        {
+            switch (platform)
+            {
+                // ADD_NEW_PLATFORM_HERE
+                case BuildTarget.StandaloneWindows:
+                case BuildTarget.StandaloneWindows64:
+                case BuildTarget.StandaloneOSX:
+                case BuildTarget.StandaloneLinux64:
+                    return ParseSubtarget<StandaloneBuildSubtarget, StandaloneBuildSubtarget>().ToString();
+
+                case BuildTarget.PS4:
+                    return ParseSubtarget<PS4BuildSubtarget, PS4BuildSubtarget>().ToString();
+
+                case BuildTarget.XboxOne:
+                    return ParseSubtarget<XboxBuildSubtarget, XboxBuildSubtarget>().ToString();
+
+                default:
+                    return subtarget.ToString();
             }
         }
     }

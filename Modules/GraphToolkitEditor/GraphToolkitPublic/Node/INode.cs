@@ -64,14 +64,24 @@ namespace Unity.GraphToolkit.Editor
         public string Title { get; set;  }
 
         /// <summary>
+        /// The secondary text displayed in the node's header.
+        /// </summary>
+        public string Subtitle { get; set; }
+
+        /// <summary>
         /// The highlight color of the node. The highlight is located on the upper border of nodes, and on the upper and lower borders of context nodes.
         /// </summary>
         public Color DefaultColor { get; set; }
 
         /// <summary>
+        /// Whether the node is connected to at least one other node.
+        /// </summary>
+        public bool IsConnected => NodeModel.IsConnected;
+
+        /// <summary>
         /// The number of input ports on the node.
         /// </summary>
-        public int InputPortCount => ((NodeModel)this).InputsByDisplayOrder.Count;
+        public int InputPortCount => NodeModel.InputsByDisplayOrder.Count;
 
         /// <summary>
         /// Retrieves an input port using its index.
@@ -81,13 +91,13 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// The index is zero-based. The list of input ports is ordered according to their display order in the node.
         /// </remarks>
-        public IPort GetInputPort(int index) => ((NodeModel)this).InputsByDisplayOrder[index];
+        public IPort GetInputPort(int index) => NodeModel.InputsByDisplayOrder[index];
 
         /// <summary>
         /// Retrieves all input ports on the node in the order they are displayed.
         /// </summary>
         /// <returns>An <c>IEnumerable</c> of input ports.</returns>
-        public IEnumerable<IPort> GetInputPorts() => ((NodeModel)this).InputsByDisplayOrder;
+        public IEnumerable<IPort> GetInputPorts() => NodeModel.InputsByDisplayOrder;
 
         /// <summary>
         /// Retrieves an input port using its name.
@@ -95,12 +105,12 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the input port within this node.</param>
         /// <returns>The input port with the specified name, or null if no match is found.</returns>
         /// <remarks>The input port's name is unique within the node's input ports and node options.</remarks>
-        public IPort GetInputPortByName(string name) => ((NodeModel)this).InputsById.GetValueOrDefault(name);
+        public IPort GetInputPortByName(string name) => NodeModel.InputsById.GetValueOrDefault(name);
 
         /// <summary>
         /// The number of output ports on the node.
         /// </summary>
-        public int OutputPortCount => ((NodeModel)this).OutputsByDisplayOrder.Count;
+        public int OutputPortCount => NodeModel.OutputsByDisplayOrder.Count;
 
         /// <summary>
         /// Retrieves an output port using its index in the displayed order.
@@ -110,13 +120,13 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// The index is zero-based. The list of output ports is ordered according to their display order in the node.
         /// </remarks>
-        public IPort GetOutputPort(int index) => ((NodeModel)this).OutputsByDisplayOrder[index];
+        public IPort GetOutputPort(int index) => NodeModel.OutputsByDisplayOrder[index];
 
         /// <summary>
         /// Retrieves all output ports on the node in the order they are displayed.
         /// </summary>
         /// <returns>An <c>IEnumerable</c> of output ports.</returns>
-        public IEnumerable<IPort> GetOutputPorts() => ((NodeModel)this).OutputsByDisplayOrder;
+        public IEnumerable<IPort> GetOutputPorts() => NodeModel.OutputsByDisplayOrder;
 
         /// <summary>
         /// Retrieves an output port using its name.
@@ -124,7 +134,16 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the output port within this node.</param>
         /// <returns>The output port with the specified name, or null if no match is found.</returns>
         /// <remarks>The output port's name is unique within the node's output ports.</remarks>
-        public IPort GetOutputPortByName(string name) => ((NodeModel)this).OutputsById.GetValueOrDefault(name);
+        public IPort GetOutputPortByName(string name) => NodeModel.OutputsById.GetValueOrDefault(name);
+
+        /// <summary>
+        /// The position of the node in the graph.
+        /// </summary>
+        public Vector2 Position
+        {
+            get => NodeModel.Position;
+            set => NodeModel.SetNodeModelPosition(value);
+        }
 
         /// <summary>
         /// The number of node options defined in the node.
@@ -162,5 +181,17 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The node option with the specified name, or null if none is found.</returns>
         /// <remarks>The node option's name is unique within the node's input ports and node options.</remarks>
         public INodeOption GetNodeOptionByName(string name) => this is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptionsByName.GetValueOrDefault(name) : null;
+
+        /// <summary>
+        /// The Graph that contains this node.
+        /// </summary>
+        Graph Graph => (NodeModel.GraphModel as GraphModelImp)?.Graph;
+
+        /// <summary>
+        /// Removes the node from its graph.
+        /// </summary>
+        public void RemoveFromGraph() => Graph?.RemoveNode(this);
+
+        internal NodeModel NodeModel => (NodeModel)this;
     }
 }

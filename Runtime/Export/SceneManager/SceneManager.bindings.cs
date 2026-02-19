@@ -6,7 +6,6 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
-using UnityEngine.Loading;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine.SceneManagement
@@ -19,13 +18,13 @@ namespace UnityEngine.SceneManagement
         // Slim players do not contain scenes, so build settings will always return the wrong values, need to remap these to asset bundle sceneName lookup
         public static extern int GetNumScenesInBuildSettings();
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern Scene GetSceneByBuildIndex(int buildIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess);
     }
 
@@ -81,7 +80,7 @@ namespace UnityEngine.SceneManagement
         public static extern Scene GetActiveScene();
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern bool SetActiveScene(Scene scene);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -90,25 +89,28 @@ namespace UnityEngine.SceneManagement
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         public static extern Scene GetSceneByName(string name);
 
+        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
+        /*UCBP-PUBLIC*/ internal static extern Scene GetSceneByLoadableScene(LoadableScene loadableScene);
+
         public static Scene GetSceneByBuildIndex(int buildIndex)
         {
             return SceneManagerAPI.ActiveAPI.GetSceneByBuildIndex(buildIndex);
         }
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern Scene GetSceneAt(int index);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern Scene CreateScene([NotNull] string sceneName, CreateSceneParameters parameters);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern bool UnloadSceneInternal(Scene scene, UnloadSceneOptions options);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private static extern AsyncOperation UnloadSceneAsyncInternal(Scene scene, UnloadSceneOptions options);
 
         private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame)
@@ -152,8 +154,7 @@ namespace UnityEngine.SceneManagement
         /// </returns>
         /// <seealso cref="LoadableScene"/>
         /// <seealso cref="Loading.ContentLoadManager"/>
-        /// <seealso cref="Loading.ContentLoadSceneOperation"/>
-        /*UCBP-PUBLIC*/ internal static ContentLoadSceneOperation LoadSceneAsync(LoadableScene loadableScene, LoadSceneParameters parameters = new LoadSceneParameters())
+        /*UCBP-PUBLIC*/ internal static AsyncOperation LoadSceneAsync(LoadableScene loadableScene, LoadSceneParameters parameters = new LoadSceneParameters())
         {
             if (!s_AllowLoadScene)
                 return null;
@@ -162,19 +163,19 @@ namespace UnityEngine.SceneManagement
         }
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
-        private static extern ContentLoadSceneOperation LoadSceneByLoadableAsync(LoadableScene loadableScene, LoadSceneParameters parameters, bool mustCompleteNextFrame);
+        [NativeMethod(ThrowsException = true)]
+        private static extern AsyncOperation LoadSceneByLoadableAsync(LoadableScene loadableScene, LoadSceneParameters parameters, bool mustCompleteNextFrame);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void MergeScenes(Scene sourceScene, Scene destinationScene);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void MoveGameObjectToScene([NotNull] GameObject go, Scene scene);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static void MoveGameObjectsToSceneByInstanceId(IntPtr instanceIds, int instanceCount, Scene scene);
 
         [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", false)]

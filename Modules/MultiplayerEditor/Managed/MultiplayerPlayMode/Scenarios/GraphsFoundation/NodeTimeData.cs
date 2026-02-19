@@ -12,7 +12,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         [SerializeField] private long m_StartTimeTicks;
         [SerializeField] private long m_EndTimeTicks;
-        [SerializeField] private long m_MonitoringEndTimeTicks;
 
         public DateTime StartTime
         {
@@ -26,14 +25,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             set => m_EndTimeTicks = value.Ticks;
         }
 
-        public DateTime MonitoringEndTime
-        {
-            get => new(m_MonitoringEndTimeTicks);
-            set => m_MonitoringEndTimeTicks = value.Ticks;
-        }
-
         public bool HasStarted => m_StartTimeTicks != default;
         public bool HasEnded => m_EndTimeTicks != default;
-        public bool HasMonitoringEnded => m_MonitoringEndTimeTicks != default;
     }
 }

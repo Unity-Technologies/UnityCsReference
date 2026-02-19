@@ -16,14 +16,14 @@ namespace Unity.GraphToolkit.Editor
     /// Combine flags to customize behavior. This enum is marked with
     /// <see cref="System.FlagsAttribute"/>, so you can combine values using bitwise operations to enable multiple options.
     /// </remarks>
+    /// <remarks>
+    /// This example keeps the default behavior and adds support for subgraphs by enabling <see cref="GraphOptions.SupportsSubgraphs"/>.
+    /// </remarks>
     /// <example>
     /// <code>
-    /// [Graph(".mygraph", GraphOptions.SupportsSubgraphs)]
+    /// [Graph("mygraph", GraphOptions.SupportsSubgraphs)]
     /// public class MyGraph : Graph { }
     /// </code>
-    /// <para>
-    /// This example keeps the default behavior and adds support for subgraphs by enabling <see cref="GraphOptions.SupportsSubgraphs"/>.
-    /// </para>
     /// </example>
     [Flags]
     public enum GraphOptions

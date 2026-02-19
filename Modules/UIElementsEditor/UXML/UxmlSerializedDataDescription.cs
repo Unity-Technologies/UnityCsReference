@@ -309,5 +309,7 @@ namespace UnityEditor.UIElements
 
             return true;
         }
+
+        public override string ToString() => uxmlFullName;
     }
 }

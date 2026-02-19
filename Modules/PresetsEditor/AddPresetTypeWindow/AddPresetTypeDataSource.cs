@@ -81,7 +81,7 @@ namespace UnityEditor.Presets
                         continue;
                     }
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var group = (PresetTypeDropdownItem)parent.children.SingleOrDefault(c => c.name == path);
+                    var group = (PresetTypeDropdownItem)parent.childList.SingleOrDefault(c => c.name == path);
 #pragma warning restore UA2001
                     if (group == null)
                     {
@@ -113,7 +113,7 @@ namespace UnityEditor.Presets
                         continue;
                     }
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var group = parent.children.SingleOrDefault(c => c.name == path);
+                    var group = parent.childList.SingleOrDefault(c => c.name == path);
 #pragma warning restore UA2001
                     if (group == null)
                     {

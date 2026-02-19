@@ -19,6 +19,11 @@ namespace Unity.GraphToolkit.Editor
     [Serializable]
     public abstract class BlockNode : Node
     {
+        internal override void CreateImplementation()
+        {
+            (new UserBlockNodeModelImp()).InitCustomNode(this);
+        }
+
         /// <summary>
         /// The <see cref="ContextNode"/> that contains this block node.
         /// </summary>

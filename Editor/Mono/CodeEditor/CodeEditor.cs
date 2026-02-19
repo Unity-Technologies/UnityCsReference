@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Unity.Collections;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditorInternal;
@@ -194,14 +195,10 @@ namespace Unity.CodeEditor
 
         private IExternalCodeEditor ComputeCurrentEditor(string editorPath)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_ExternalCodeEditors.Count() == 0)
-#pragma warning restore UA2001
+            if (m_ExternalCodeEditors.Count == 0)
             {
                 TypeCollection collection = TypeCache.GetTypesDerivedFrom<IExternalCodeEditor>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                for (int i = 0; i < collection.Count(); i++)
-#pragma warning restore UA2001
+                for (int i = 0; i < collection.Count; i++)
                 {
                     var codeEditorType = collection[i];
                     if (codeEditorType == typeof(DefaultExternalCodeEditor))
@@ -221,8 +218,10 @@ namespace Unity.CodeEditor
         public static void Register(IExternalCodeEditor externalCodeEditor)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Editor.m_ExternalCodeEditors.Select(editor => editor.GetType()).Any(editorType => editorType == externalCodeEditor.GetType()))
 #pragma warning restore UA2001
+#pragma warning restore UA2006
                 return;
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
             if (IsCurrentEditorPathExplicitlySet)

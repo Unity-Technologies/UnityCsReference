@@ -15,18 +15,18 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ValueHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static ShaderAttributeParameterInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static ShaderAttributeParameterInternal Invalid();
 
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetName(ShaderContainer container);
-        [ThreadSafe] internal extern ShaderTypeInternal GetShaderTypeValue(ShaderContainer container);
-        [ThreadSafe] internal extern string GetStringValue(ShaderContainer container);
-        [ThreadSafe] internal extern int GetIntegerValue(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetName(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern ShaderTypeInternal GetShaderTypeValue(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetStringValue(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern int GetIntegerValue(ShaderContainer container);
 
-        [ThreadSafe] internal extern bool ValueIsInteger(ShaderContainer container);
-        [ThreadSafe] internal extern bool ValueIsShaderType(ShaderContainer container);
-        [ThreadSafe] internal extern bool ValueIsString(ShaderContainer container);
-        [ThreadSafe] internal extern bool ValueIsArray(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool ValueIsInteger(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool ValueIsShaderType(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool ValueIsString(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern bool ValueIsArray(ShaderContainer container);
 
         // IInternalType
         ShaderAttributeParameterInternal IInternalType<ShaderAttributeParameterInternal>.ConstructInvalid() => Invalid();

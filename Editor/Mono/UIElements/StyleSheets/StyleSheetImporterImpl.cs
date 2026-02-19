@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ExCSS;
+using Unity.Collections;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -547,17 +548,13 @@ namespace UnityEditor.UIElements.StyleSheets
 
                         // If no types were returned, it means this property doesn't support assets.
                         // Normal syntax validation should cover this.
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (!allowed.Any())
-#pragma warning restore UA2002
+                        if (allowed.Count == 0)
                             return;
 
                         var assetType = assetToStore.GetType();
 
                         // If none of the allowed types are compatible with the asset type, output a warning
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (!allowed.Any(t => t.IsAssignableFrom(assetType)))
-#pragma warning restore UA2001
+                        if (!allowed.Exists(t => t.IsAssignableFrom(assetType)))
                         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             string allowedTypes = string.Join(", ", allowed.Select(t => t.Name));
@@ -565,7 +562,6 @@ namespace UnityEditor.UIElements.StyleSheets
                             m_Errors.AddValidationWarning(
                                 string.Format(glossary.invalidAssetType, assetType.Name, projectRelativePath, allowedTypes),
                                 m_CurrentLine);
-
                         }
                     }
                 }
@@ -588,9 +584,9 @@ namespace UnityEditor.UIElements.StyleSheets
         bool ValidateFunction(FunctionToken functionToken, out StyleValueFunction func)
         {
             func = StyleValueFunction.Unknown;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (functionToken.ArgumentTokens.Count() == 0)
-#pragma warning restore UA2001
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (!functionToken.ArgumentTokens.Any())
+#pragma warning restore UA2002
             {
                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, string.Format(glossary.missingFunctionArgument, functionToken.Data), functionToken.Position.Line, functionToken.Position.Column);
                 return false;
@@ -862,11 +858,9 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
-        bool IsTokenString(IEnumerable<Token> tokens)
+        bool IsTokenString(TokenValue tokens)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (tokens.Count() > 1)
-#pragma warning restore UA2001
+            if (tokens.Count > 1)
             {
                 foreach (var t in tokens)
                 {
@@ -1457,16 +1451,12 @@ namespace UnityEditor.UIElements.StyleSheets
                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (parts.Any(p => p.type == StyleSelectorType.Unknown))
-#pragma warning restore UA2001
+            if (Array.Exists(parts, p => p.type == StyleSelectorType.Unknown))
             {
                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (parts.Any(p => p.type == StyleSelectorType.RecursivePseudoClass))
-#pragma warning restore UA2001
+            if (Array.Exists(parts, p => p.type == StyleSelectorType.RecursivePseudoClass))
             {
                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;

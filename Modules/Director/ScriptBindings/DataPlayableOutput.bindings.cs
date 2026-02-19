@@ -98,25 +98,25 @@ namespace UnityEngine.Playables
             InternalSetPlayer(ref m_Handle, player);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static Object InternalGetPlayer(ref PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalSetPlayer(ref PlayableOutputHandle handle, Object player);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static Type InternalGetType(ref PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static void InternalSetStream(ref PlayableOutputHandle handle, object stream);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static object InternalGetStream(ref PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static bool InternalGetConnectionChanged(ref PlayableOutputHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static void InternalClearConnectionChanged(ref PlayableOutputHandle handle);
 
 

@@ -27,6 +27,8 @@ namespace UnityEditor.AnimationWindowBuiltin
         private AnimationEvent[] m_EventsAtMouseDown;
         [System.NonSerialized]
         private float[] m_EventTimes;
+        [System.NonSerialized]
+        bool m_IsDragging = false;
         private static readonly Vector2 k_EventMarkerSize = new Vector2(16, 16);
 
         private bool m_DirtyTooltip = false;
@@ -34,6 +36,9 @@ namespace UnityEditor.AnimationWindowBuiltin
         private string m_InstantTooltipText = null;
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
         private bool m_HasSelectedEvents;
+
+        public string tooltipText => m_InstantTooltipText;
+        public Vector2 tooltipPosition => m_InstantTooltipPoint;
 
         public AnimationEventTimeLine(EditorWindow owner)
         {
@@ -74,7 +79,7 @@ namespace UnityEditor.AnimationWindowBuiltin
 
         internal bool HasSelectedEvents => m_HasSelectedEvents;
 
-        public void AddEvent(float time, GameObject gameObject, AnimationClip animationClip)
+        public static void AddEvent(float time, GameObject gameObject, AnimationClip animationClip)
         {
             AnimationWindowEvent awEvent = AnimationWindowEvent.CreateAndEdit(gameObject, animationClip, time);
             Selection.activeObject = awEvent;
@@ -291,6 +296,10 @@ namespace UnityEditor.AnimationWindowBuiltin
                             m_EventTimes = new float[events.Length];
                             for (int i = 0; i < events.Length; i++)
                                 m_EventTimes[i] = events[i].time;
+                            m_IsDragging = true;
+                            break;
+                        case HighLevelEvent.EndDrag:
+                            m_IsDragging = false;
                             break;
                         case HighLevelEvent.SelectionChanged:
                             state.ClearKeySelections();
@@ -356,7 +365,13 @@ namespace UnityEditor.AnimationWindowBuiltin
                     }
                 }
 
-                CheckRectsOnMouseMove(rect, events, hitRects);
+                if (m_IsDragging)
+                {
+                    m_HoverEvent = -1;
+                    m_InstantTooltipText = "";
+                }
+                else
+                    CheckRectsOnMouseMove(rect, events, hitRects);
 
                 // Bring up menu when context-clicking on an empty timeline area (context-clicking on events is handled above)
                 if (Event.current.type == EventType.ContextClick && eventLineRect.Contains(Event.current.mousePosition))

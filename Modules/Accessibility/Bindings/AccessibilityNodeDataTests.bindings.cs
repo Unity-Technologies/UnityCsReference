@@ -15,8 +15,8 @@ namespace UnityEngine.Accessibility
     {
         internal static AccessibilityNodeData nodeDataFromNative;
 
-        [NativeThrows] internal static extern void Test_GetNodeDataToNativeViaBinding(AccessibilityNodeData nodeData);
-        [NativeThrows] internal static extern void Test_GetNodeDataToNativeViaProxy();
+        [NativeMethod(ThrowsException = true)] internal static extern void Test_GetNodeDataToNativeViaBinding(AccessibilityNodeData nodeData);
+        [NativeMethod(ThrowsException = true)] internal static extern void Test_GetNodeDataToNativeViaProxy();
         internal static extern void Test_GetNodeDataFromNativeViaBinding(ref AccessibilityNodeData nodeData);
         internal static extern void Test_GetNodeDataFromNativeViaProxy();
         internal static extern AccessibilityNodeData Test_GetNodeDataFromNativePtr(IntPtr nodeDataPtr);

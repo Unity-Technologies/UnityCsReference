@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
@@ -150,9 +151,7 @@ internal class Sidebar : ScrollView
     private void UpdateComplianceRelatedRow()
     {
         var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var showNonCompliantPage = m_PackageDatabase.allPackages.Any(nonCompliancePage.ShouldInclude);
-#pragma warning restore UA2001
+        var showNonCompliantPage = m_PackageDatabase.allPackages.Exists(nonCompliancePage.ShouldInclude);
 
         UIUtils.SetElementDisplay(GetRow(InProjectNonCompliancePage.k_Id), showNonCompliantPage);
 

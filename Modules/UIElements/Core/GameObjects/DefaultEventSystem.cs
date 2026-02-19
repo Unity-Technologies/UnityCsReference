@@ -435,7 +435,7 @@ namespace UnityEngine.UIElements
                     if (panelComponent == null)
                         break;
                     var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
-                    target = capturingElement ?? elementUnderPointer ?? PanelComponentUtils.GetRootVisualElement(panelComponent);
+                    target = capturingElement ?? elementUnderPointer ?? panelComponent.GetRootVisualElement();
                     targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
                     targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay.ray);
                     camera = worldRay.camera;
@@ -473,7 +473,7 @@ namespace UnityEngine.UIElements
             if (picked && panelComponent != null)
             {
                 var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
-                target = capturingElement ?? elementUnderPointer ?? PanelComponentUtils.GetRootVisualElement(panelComponent);
+                target = capturingElement ?? elementUnderPointer ?? panelComponent.GetRootVisualElement();
                 targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
                 targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay);
                 return;
@@ -597,7 +597,9 @@ namespace UnityEngine.UIElements
             if (m_LogLabel == null)
             {
                 m_LogLabel = new Label {style = {position = Position.Absolute, bottom = 0, color = Color.white}};
+#pragma warning disable CS0618 // Type or member is obsolete
                 Object.FindFirstObjectByType<UIDocument>().rootVisualElement.Add(m_LogLabel);
+#pragma warning restore CS0618
             }
 
             m_LogLines.Add(s + "\n");

@@ -34,8 +34,8 @@ namespace UnityEditor
 
             // The following pair of functions are used to work around the fact that Error is a non-blittable struct,
             // so returning an Error[] from a native function is unsupported.
-            [ThreadSafe] private extern UInt64 GetErrorCountFromManaged();
-            [ThreadSafe] private extern void GetErrorsFromManaged([Out] Error[] errors);
+            [NativeMethod(IsThreadSafe = true)] private extern UInt64 GetErrorCountFromManaged();
+            [NativeMethod(IsThreadSafe = true)] private extern void GetErrorsFromManaged([Out] Error[] errors);
             private IEnumerable<Error> GetErrors()
             {
                 UInt64 errorCount = GetErrorCountFromManaged();
@@ -48,8 +48,8 @@ namespace UnityEditor
                 return new List<Error>();
             }
 
-            [NativeMethod("HasErrors")]
-            [ThreadSafe] internal extern bool Internal_HasErrors();
+            [NativeMethod("HasErrors", IsThreadSafe = true)]
+            internal extern bool Internal_HasErrors();
 
             public bool HasErrors => Internal_HasErrors();
             public IEnumerable<Error> Errors => GetErrors();

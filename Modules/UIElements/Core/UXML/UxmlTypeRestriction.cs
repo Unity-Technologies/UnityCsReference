@@ -125,7 +125,7 @@ namespace UnityEngine.UIElements
             }
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return values.All(otherE.values.Contains) && values.Count() == otherE.values.Count();
+            return values.All(otherE.values.Contains) && m_Values.Count == otherE.m_Values.Count;
 #pragma warning restore UA2001
         }
     }

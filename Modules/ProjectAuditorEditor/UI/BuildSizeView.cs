@@ -33,8 +33,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         GroupStats[] m_GroupStats;
 
-        public BuildSizeView(ViewManager viewManager) :
-            base(viewManager)
+        public BuildSizeView(ViewManager viewManager) : base(viewManager)
         {
         }
 
@@ -45,7 +44,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             var header = m_Table.multiColumnHeader;
             header.canSort = true;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var list = new List<GroupStats>(
                 m_Issues.GroupBy(i => i.GetCustomProperty(BuildReportFileProperty.RuntimeType)).Select(g => new GroupStats
                 {
@@ -56,6 +56,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             list.Sort((a, b) => b.size.CompareTo(a.size));
             m_GroupStats = list.Take(k_MaxGroupCount).ToArray();
 #pragma warning restore UA2001
+#pragma warning restore UA2005
         }
 
         public override void Clear()

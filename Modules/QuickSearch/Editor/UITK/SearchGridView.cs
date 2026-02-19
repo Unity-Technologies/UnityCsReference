@@ -189,9 +189,7 @@ namespace UnityEditor.Search
         private void OnNavigationMove(NavigationMoveEvent evt)
         {
             var itemCount = m_GridView.itemsSource.Count;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices.Last();
-#pragma warning restore UA2001
+            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices[^1];
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Right)
                 SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
@@ -214,9 +212,7 @@ namespace UnityEditor.Search
                     m_GridView.selectedIndex = nextSelectedIndex;
                 else
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!m_GridView.selectedIndices.Contains(nextSelectedIndex))
-#pragma warning restore UA2001
+                    if (!m_GridView.IndexIsSelected(nextSelectedIndex))
                     {
                         var newSelection = new List<int>();
                         if (nextSelectedIndex > currentIndex)
@@ -260,9 +256,7 @@ namespace UnityEditor.Search
                 return false;
 
             // In focus.
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices.Last();
-#pragma warning restore UA2001
+            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices[^1];
             var itemCount = m_GridView.itemsSource.Count;
             if (m_GridView == ve || m_GridView.Contains(ve))
             {
@@ -298,16 +292,12 @@ namespace UnityEditor.Search
             if (evt.keyCode == KeyCode.PageDown)
             {
                 m_GridView.Apply(KeyboardGridNavigationOperation.PageDown, evt);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count() == 0 ? -1 : m_GridView.selectedIndices.Last());
-#pragma warning restore UA2001
+                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count == 0 ? -1 : m_GridView.selectedIndices[^1]);
             }
             else if (evt.keyCode == KeyCode.PageUp)
             {
                 m_GridView.Apply(KeyboardGridNavigationOperation.PageUp, evt);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count() == 0 ? -1 : m_GridView.selectedIndices.Last());
-#pragma warning restore UA2001
+                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count == 0 ? -1 : m_GridView.selectedIndices[^1]);
             }
 
             return selectionHasChanged;
@@ -345,12 +335,11 @@ namespace UnityEditor.Search
                 return;
 
             var selectedIndexes = m_ViewModel.selection.indexes;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_GridView.selectedIndices.SequenceEqual(selectedIndexes))
-#pragma warning restore UA2001
+            var span = NoAllocHelpers.CreateReadOnlySpan(selectedIndexes);
+            if (m_GridView.MatchesExistingSelection(span))
                 return;
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
-            m_GridView.SetSelectionWithoutNotify(selectedIndexes);
+            m_GridView.SetSelectionWithoutNotify(span);
             if (firstSelection != -1)
                 m_GridView.ScrollToItem(firstSelection);
         }

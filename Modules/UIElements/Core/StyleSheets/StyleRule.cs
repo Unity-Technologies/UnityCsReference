@@ -19,13 +19,18 @@ namespace UnityEngine.UIElements
         [SerializeField]
         StyleProperty[] m_Properties = Array.Empty<StyleProperty>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal int line;
 
         // This reference is set at runtime as convenience, but is not serialized
-        [field:NonSerialized]
-        internal StyleSheet styleSheet { get; set; }
+        [field: NonSerialized]
+        internal StyleSheet styleSheet
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get;
+            set;
+        }
 
         internal StyleRule(StyleSheet styleSheet)
         {
@@ -68,7 +73,7 @@ namespace UnityEngine.UIElements
             }
 
             selector = new StyleComplexSelector { selectors = selectors, specificity = specificity };
-            CollectionExtensions.AddToArray(ref m_ComplexSelectors, selector);
+            Unity.Collections.CollectionExtensions.AddToArray(ref m_ComplexSelectors, selector);
             selector.rule = this;
 
             styleSheet.RequestRebuild();
@@ -100,7 +105,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             var selector = m_ComplexSelectors[index];
-            CollectionExtensions.RemoveFromArray(ref m_ComplexSelectors, index);
+            Unity.Collections.CollectionExtensions.RemoveFromArray(ref m_ComplexSelectors, index);
             selector.ruleIndex = -1;
             selector.rule = null;
             selector.nextInTable = null;
@@ -124,7 +129,7 @@ namespace UnityEngine.UIElements
 
         private void AddPropertyToArray(StyleProperty property)
         {
-            CollectionExtensions.AddToArray(ref m_Properties, property);
+            Unity.Collections.CollectionExtensions.AddToArray(ref m_Properties, property);
 
             if (property.isCustomProperty)
                 ++customPropertiesCount;
@@ -147,7 +152,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             var property = m_Properties[index];
-            CollectionExtensions.RemoveFromArray(ref m_Properties, index);
+            Unity.Collections.CollectionExtensions.RemoveFromArray(ref m_Properties, index);
 
             if (property.isCustomProperty)
                 --customPropertiesCount;

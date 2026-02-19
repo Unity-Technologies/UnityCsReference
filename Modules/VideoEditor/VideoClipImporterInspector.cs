@@ -226,10 +226,8 @@ namespace UnityEditor
 
         // Don't add duplicate platform groups even if there are multiple platforms in the group
         // Case 1360821
-        static IEnumerable<BuildPlatform> ValidPlatforms =>
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            BuildPlatforms.instance.GetValidPlatforms().Distinct(s_BuildPlatformGroupComparer);
-#pragma warning restore UA2001
+        static HashSet<BuildPlatform> ValidPlatforms =>
+            new HashSet<BuildPlatform>(BuildPlatforms.instance.GetValidPlatforms(), s_BuildPlatformGroupComparer);
 
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
@@ -238,9 +236,7 @@ namespace UnityEditor
             if (targetSettings != null && currentTarget != null)
             {
                 var validPlatforms = ValidPlatforms;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count() + 1);
-#pragma warning restore UA2001
+                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count + 1);
 
                 var defaultSetting = new InspectorTargetSettings();
                 defaultSetting.target = BuildTargetGroup.Unknown;

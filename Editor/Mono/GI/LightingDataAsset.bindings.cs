@@ -20,7 +20,7 @@ namespace UnityEditor
             Internal_Create(this, scene);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern static void Internal_Create([Writable] LightingDataAsset self, Scene scene);
 
         public extern void SetLights(Light[] lights);

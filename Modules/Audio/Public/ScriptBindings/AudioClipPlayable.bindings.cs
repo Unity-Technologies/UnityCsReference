@@ -205,58 +205,58 @@ namespace UnityEngine.Audio
             m_Handle.Play();
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AudioClip GetClipInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetClipInternal(ref PlayableHandle hdl, AudioClip clip);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetLoopedInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetLoopedInternal(ref PlayableHandle hdl, bool looped);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetVolumeInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetVolumeInternal(ref PlayableHandle hdl, float volume);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetClipPositionSecInternal(ref PlayableHandle hdl);
         
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetStereoPanInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetStereoPanInternal(ref PlayableHandle hdl, float stereoPan);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static float GetSpatialBlendInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetSpatialBlendInternal(ref PlayableHandle hdl, float spatialBlend);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetIsChannelPlayingInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static double GetStartDelayInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetStartDelayInternal(ref PlayableHandle hdl, double delay);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static double GetPauseDelayInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetPauseDelayInternal(ref PlayableHandle hdl, double delay);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool InternalCreateAudioClipPlayable(ref PlayableGraph graph, AudioClip clip, bool looping, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ValidateType(ref PlayableHandle hdl);
 
     }

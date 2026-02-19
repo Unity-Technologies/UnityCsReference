@@ -481,7 +481,13 @@ namespace UnityEngine.UIElements
         /// In a tree, if a child item is collapsed, its index is not included in the selection. To get selected items regardless of whether they are collapsed or not, use <see cref="selectedIds"/> instead.
         /// </remarks>
         [CreateProperty(ReadOnly = true)]
-        public IEnumerable<int> selectedIndices => m_Selection.indices;
+        public IEnumerable<int> selectedIndices => selectedIndicesList;
+
+        internal IReadOnlyList<int> selectedIndicesList // TODO: Consider making this public and deprecating selectedIndices
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+            get => m_Selection.indices;
+        }
 
         /// <summary>
         /// Returns the persistent IDs of selected items in the data source, regardless of whether they are collapsed or not. Always returns an enumerable, even if no item is selected, or a
@@ -494,8 +500,7 @@ namespace UnityEngine.UIElements
 
         internal ReadOnlySpan<int> selectedIndicesSpan => NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
 
-        static readonly List<ReusableCollectionItem> k_EmptyItems = new();
-        internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
+        internal IReadOnlyList<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? Array.Empty<ReusableCollectionItem>();
 
         internal ScrollView scrollView
         {
@@ -1118,6 +1123,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.viewDataKey = "unity-vertical-collection-scroll-view";
             m_ScrollView.verticalScroller.viewDataKey = null;
             m_ScrollView.horizontalScroller.viewDataKey = null;
+            m_ScrollView.m_TouchDraggingAllowed = false;
 
             focusable = true;
             isCompositeRoot = true;
@@ -1780,7 +1786,7 @@ namespace UnityEngine.UIElements
                         return;
 
                     var wasClickedIndexInSelection = false;
-                    foreach (var index in selectedIndices)
+                    foreach (var index in selectedIndicesList)
                     {
                         if (clickedIndex == index)
                         {
@@ -1972,7 +1978,6 @@ namespace UnityEngine.UIElements
         /// <param name="indices">The collection of items to be selected.</param>
         public void SetSelectionWithoutNotify(IEnumerable<int> indices) => SetSelectionInternal(indices, false);
 
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         internal void SetSelectionWithoutNotify(ReadOnlySpan<int> indices) => SetSelectionInternal(indices, false);
 
         internal void SetSelectionInternal(IEnumerable<int> indices, bool sendNotification)
@@ -1980,9 +1985,9 @@ namespace UnityEngine.UIElements
             if (indices == null)
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var count = indices.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             if (count == 0)
             {
                 SetSelectionInternal(stackalloc int[0], sendNotification);

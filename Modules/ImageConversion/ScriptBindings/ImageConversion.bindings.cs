@@ -63,19 +63,43 @@ namespace UnityEngine
         public static bool LoadImage(this Texture2D tex, byte[] data) => tex.LoadImage(new ReadOnlySpan<byte>(data), false);
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToTGA", true)]
-        extern public static byte[] EncodeArrayToTGA(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern internal static byte[] EncodeArrayToTGA_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        public static byte[] EncodeArrayToTGA(Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0)
+        {
+            var elemSize = UnsafeUtility.SizeOf(array.GetType().GetElementType());
+            int dataLen = array.Length;
+            return EncodeArrayToTGA_Internal(UnsafeUtility.GetByteSpanFromArray(array, dataLen, elemSize), format, width, height, rowBytes);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToPNG", true)]
-        extern public static byte[] EncodeArrayToPNG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern internal static byte[] EncodeArrayToPNG_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        public static byte[] EncodeArrayToPNG(Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0)
+        {
+            var elemSize = UnsafeUtility.SizeOf(array.GetType().GetElementType());
+            int dataLen = array.Length;
+            return EncodeArrayToPNG_Internal(UnsafeUtility.GetByteSpanFromArray(array, dataLen, elemSize), format, width, height, rowBytes);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToJPG", true)]
-        extern public static byte[] EncodeArrayToJPG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75);
+        extern internal static byte[] EncodeArrayToJPG_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75);
+        public static byte[] EncodeArrayToJPG(Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75)
+        {
+            var elemSize = UnsafeUtility.SizeOf(array.GetType().GetElementType());
+            int dataLen = array.Length;
+            return EncodeArrayToJPG_Internal(UnsafeUtility.GetByteSpanFromArray(array, dataLen, elemSize), format, width, height, rowBytes, quality);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToEXR", true)]
-        extern public static byte[] EncodeArrayToEXR(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+        extern internal static byte[] EncodeArrayToEXR_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+        public static byte[] EncodeArrayToEXR(Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None)
+        {
+            var elemSize = UnsafeUtility.SizeOf(array.GetType().GetElementType());
+            int dataLen = array.Length;
+            return EncodeArrayToEXR_Internal(UnsafeUtility.GetByteSpanFromArray(array, dataLen, elemSize), format, width, height, rowBytes, flags);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToR2D", true)]
-        extern internal static byte[] EncodeArrayToR2DInternal(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern internal static byte[] EncodeArrayToR2DInternal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
         public static NativeArray<byte> EncodeNativeArrayToTGA<T>(NativeArray<T> input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0) where T : struct
         {

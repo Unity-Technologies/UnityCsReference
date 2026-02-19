@@ -171,7 +171,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var words = searchText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 var categories =  category.Split('/');
-                if (words.AllMatches(word => word.Length >= 2 && categories.AnyMatches(c => c.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                if (words.AllMatches(word => word.Length >= 2 && Array.Exists(categories, c => c.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
                     return true;
             }
             return false;

@@ -16,8 +16,7 @@ public struct TagHandle
 
     public override string ToString() => TagToString(_tagIndex);
 
-    [NativeThrows]
-    [FreeFunction]
+    [FreeFunction(ThrowsException = true)]
     [NativeHeader("Runtime/Export/Scripting/GameObject.bindings.h")]
     private static extern uint ExtractTagThrowing(string tagName);
 

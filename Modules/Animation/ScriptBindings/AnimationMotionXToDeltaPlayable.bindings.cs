@@ -78,11 +78,11 @@ namespace UnityEngine.Animations
         }
 
         // Bindings methods.
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private bool IsAbsoluteMotionInternal(ref PlayableHandle handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetAbsoluteMotionInternal(ref PlayableHandle handle, bool value);
     }
 }

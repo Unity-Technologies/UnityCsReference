@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.Experimental;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -40,12 +41,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_RowDarkBackgroundAlternate;
         static GUIStyle s_RowLightBackgroundAlternate;
 
-        static GUIStyle s_TabButtonDark;
-        static GUIStyle s_TabButtonLight;
+        static GUIStyle s_DocumentationButtonDark;
+        static GUIStyle s_DocumentationButtonLight;
+        static GUIStyle s_CopyToClipboardButtonDark;
+        static GUIStyle s_CopyToClipboardButtonLight;
+        static GUIStyle s_CopyToClipboardButtonClickedDark;
+        static GUIStyle s_CopyToClipboardButtonClickedLight;
         static GUIStyle s_TabBackgroundDark;
         static GUIStyle s_TabBackgroundLight;
-        static GUIStyle s_TabHoverButtonDark;
-        static GUIStyle s_TabHoverButtonLight;
 
         static GUIStyle s_MiniPulldown;
 
@@ -62,86 +65,131 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public static Color TabBottomHoverColor =>
             IsDarkMode ? k_TabBottomHoverDarkModeColor : k_TabBottomHoverLightModeColor;
 
-        public static GUIStyle TabButton
+        public static GUIStyle DocumentationButton
         {
             get
             {
                 if (IsDarkMode)
                 {
-                    if (s_TabButtonDark == null)
+                    if (s_DocumentationButtonDark == null)
                     {
-                        s_TabButtonDark = new GUIStyle()
+                        var normalBackground = EditorGUIUtility.LoadIcon("_Help");
+
+                        s_DocumentationButtonDark = new GUIStyle()
                         {
-                            normal = { textColor = Color.white },
-                            hover = { textColor = Color.white },
-                            active = { textColor = Color.white },
-                            margin = new RectOffset(0, 0, 0, 0),
+                            normal = { background = normalBackground, textColor = Color.white },
+                            hover = { background = normalBackground, textColor = Color.white },
+                            active = { background = normalBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
                             alignment = TextAnchor.MiddleCenter
                         };
                     }
 
-                    return s_TabButtonDark;
+                    return s_DocumentationButtonDark;
                 }
                 else
                 {
-                    if (s_TabButtonLight == null)
+                    if (s_DocumentationButtonLight == null)
                     {
-                        s_TabButtonLight = new GUIStyle()
+                        var normalBackground = EditorGUIUtility.LoadIcon("_Help");
+
+                        s_DocumentationButtonLight = new GUIStyle()
                         {
-                            margin = new RectOffset(0, 0, 0, 0),
+                            normal = { background = normalBackground, textColor = Color.white },
+                            hover = { background = normalBackground, textColor = Color.white },
+                            active = { background = normalBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
                             alignment = TextAnchor.MiddleCenter
                         };
                     }
 
-                    return s_TabButtonLight;
+                    return s_DocumentationButtonLight;
                 }
             }
         }
 
-        public static GUIStyle TabHoverButton
+        public static GUIStyle CopyToClipboardButton
         {
             get
             {
                 if (IsDarkMode)
                 {
-                    if (s_TabHoverButtonDark == null || s_TabHoverButtonDark.normal.background == null
-                        || s_TabHoverButtonDark.hover.background == null || s_TabHoverButtonDark.active.background == null)
+                    if (s_CopyToClipboardButtonDark == null)
                     {
-                        var darkBackground = Utility.MakeColorTexture(new Color(0.173f, 0.173f, 0.173f, 1));
-                        var lightBackground = Utility.MakeColorTexture(new Color(0.25f, 0.25f, 0.25f, 1));
-                        var activatedBackground = Utility.MakeColorTexture(new Color(0.4f, 0.4f, 0.4f, 1));
+                        var normalBackground = EditorResources.Load<Texture2D>("Icons/PackageManager/Dark/Copy.png");
 
-                        s_TabHoverButtonDark = new GUIStyle()
+                        s_CopyToClipboardButtonDark = new GUIStyle()
                         {
-                            normal = { background = darkBackground, textColor = Color.white },
-                            hover = { background = lightBackground, textColor = Color.white },
-                            active = { background = activatedBackground, textColor = Color.white },
-                            margin = new RectOffset(0, 0, 0, 0),
+                            normal = { background = normalBackground, textColor = Color.white },
+                            hover = { background = normalBackground, textColor = Color.white },
+                            active = { background = normalBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
                             alignment = TextAnchor.MiddleCenter
                         };
                     }
 
-                    return s_TabHoverButtonDark;
+                    return s_CopyToClipboardButtonDark;
                 }
                 else
                 {
-                    if (s_TabHoverButtonLight == null || s_TabHoverButtonLight.hover.background == null
-                        || s_TabHoverButtonLight.active.background == null)
+                    if (s_CopyToClipboardButtonLight == null)
                     {
-                        var lightBackground = Utility.MakeColorTexture(new Color(0.85f, 0.85f, 0.85f, 1));
-                        var activatedBackground = Utility.MakeColorTexture(new Color(0.95f, 0.95f, 0.95f, 1));
+                        var normalBackground = EditorResources.Load<Texture2D>("Icons/PackageManager/Light/Copy.png");
 
-                        s_TabHoverButtonLight = new GUIStyle()
+                        s_CopyToClipboardButtonLight = new GUIStyle()
                         {
-                            normal = { textColor = Color.black },
-                            hover = { background = lightBackground, textColor = Color.black },
-                            active = { background = activatedBackground, textColor = Color.black },
-                            margin = new RectOffset(0, 0, 0, 0),
+                            normal = { background = normalBackground, textColor = Color.white },
+                            hover = { background = normalBackground, textColor = Color.white },
+                            active = { background = normalBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
                             alignment = TextAnchor.MiddleCenter
                         };
                     }
 
-                    return s_TabHoverButtonLight;
+                    return s_CopyToClipboardButtonLight;
+                }
+            }
+        }
+
+        public static GUIStyle CopyToClipboardButtonClicked
+        {
+            get
+            {
+                if (IsDarkMode)
+                {
+                    if (s_CopyToClipboardButtonClickedDark == null)
+                    {
+                        var activeBackground = EditorResources.Load<Texture2D>("Icons/PackageManager/Dark/Check.png");
+
+                        s_CopyToClipboardButtonClickedDark = new GUIStyle()
+                        {
+                            normal = { background = activeBackground, textColor = Color.white },
+                            hover = { background = activeBackground, textColor = Color.white },
+                            active = { background = activeBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
+                            alignment = TextAnchor.MiddleCenter
+                        };
+                    }
+
+                    return s_CopyToClipboardButtonClickedDark;
+                }
+                else
+                {
+                    if (s_CopyToClipboardButtonClickedLight == null)
+                    {
+                        var activeBackground = EditorResources.Load<Texture2D>("Icons/PackageManager/Light/Check.png");
+
+                        s_CopyToClipboardButtonClickedLight = new GUIStyle()
+                        {
+                            normal = { background = activeBackground, textColor = Color.white },
+                            hover = { background = activeBackground, textColor = Color.white },
+                            active = { background = activeBackground, textColor = Color.white },
+                            margin = new RectOffset(4, 4, 4, 4),
+                            alignment = TextAnchor.MiddleCenter
+                        };
+                    }
+
+                    return s_CopyToClipboardButtonClickedLight;
                 }
             }
         }

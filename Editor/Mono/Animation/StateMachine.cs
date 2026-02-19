@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor;
 using System.Linq;
+using Unity.Collections;
 
 namespace UnityEditor.Animations
 {
@@ -512,9 +513,7 @@ namespace UnityEditor.Animations
 
         public bool RemoveAnyStateTransition(AnimatorStateTransition transition)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if ((new List<AnimatorStateTransition>(anyStateTransitions)).Any(t => t == transition))
-#pragma warning restore UA2001
+            if (anyStateTransitions.Contains(transition))
             {
                 undoHandler.DoUndo(this, "AnyState Transition Removed");
 
@@ -640,9 +639,7 @@ namespace UnityEditor.Animations
 
         public bool RemoveEntryTransition(AnimatorTransition transition)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if ((new List<AnimatorTransition>(entryTransitions)).Any(t => t == transition))
-#pragma warning restore UA2001
+            if (entryTransitions.Contains(transition))
             {
                 undoHandler.DoUndo(this, "Entry Transition Removed");
                 AnimatorTransition[] transitionsVector = entryTransitions;
@@ -670,45 +667,31 @@ namespace UnityEditor.Animations
 
         internal bool HasState(AnimatorState state)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return statesRecursive.Any(s => s.state == state);
-#pragma warning restore UA2001
+            return statesRecursive.Exists(s => s.state == state);
         }
 
         internal bool IsDirectParent(AnimatorStateMachine stateMachine)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return stateMachines.Any(sm => sm.stateMachine == stateMachine);
-#pragma warning restore UA2001
+            return System.Array.Exists(stateMachines, sm => sm.stateMachine == stateMachine);
         }
 
         internal bool HasStateMachine(AnimatorStateMachine child)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return stateMachinesRecursive.Any(sm => sm.stateMachine == child);
-#pragma warning restore UA2001
+            return stateMachinesRecursive.Exists(sm => sm.stateMachine == child);
         }
 
         internal bool HasTransition(AnimatorState stateA, AnimatorState stateB)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return stateA.transitions.Any(t => t.destinationState == stateB) ||
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                stateB.transitions.Any(t => t.destinationState == stateA);
-#pragma warning restore UA2001
+            return System.Array.Exists(stateA.transitions, t => t.destinationState == stateB) ||
+                System.Array.Exists(stateB.transitions, t => t.destinationState == stateA);
         }
 
         internal AnimatorStateMachine FindParent(AnimatorStateMachine stateMachine)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (stateMachines.Any(childSM => childSM.stateMachine == stateMachine))
-#pragma warning restore UA2001
+            if (System.Array.Exists(stateMachines, childSM => childSM.stateMachine == stateMachine))
                 return this;
             else
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return stateMachinesRecursive.Find(sm => sm.stateMachine.stateMachines.Any(childSM => childSM.stateMachine == stateMachine)).stateMachine;
-#pragma warning restore UA2001
+                return stateMachinesRecursive.Find(sm => System.Array.Exists(sm.stateMachine.stateMachines, childSM => childSM.stateMachine == stateMachine)).stateMachine;
         }
 
         internal AnimatorStateMachine FindStateMachine(string path)

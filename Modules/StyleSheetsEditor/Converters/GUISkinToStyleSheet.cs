@@ -127,6 +127,9 @@ namespace UnityEditor.StyleSheets
             if (helper.options.exportDefaultValues || style.contentOffset != defaultStyle.contentOffset)
                 helper.AddProperty(ConverterUtils.k_ContentOffset, style.contentOffset, "GUIStyle.contentOffset");
 
+            if (helper.options.exportDefaultValues || !GUISkinCompare.CompareTo(style.contentSpacing, defaultStyle.contentSpacing))
+                helper.AddProperty(ConverterUtils.k_ContentSpacing, style.contentSpacing, "GUIStyle.contentSpacing");
+
             if (helper.options.exportDefaultValues || !GUISkinCompare.CompareTo(style.fixedHeight, defaultStyle.fixedHeight))
                 helper.AddProperty(ConverterUtils.k_Height, style.fixedHeight, "GUIStyle.fixedHeight");
 

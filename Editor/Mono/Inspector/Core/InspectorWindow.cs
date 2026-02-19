@@ -313,7 +313,7 @@ namespace UnityEditor
         {
             get
             {
-                return m_AllInspectors.Any(i => i.m_Tracker != null && i.m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
+                return m_AllInspectors.Exists(i => i.m_Tracker != null && i.m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
             }
         }
 

@@ -14,6 +14,7 @@ namespace UnityEngine
     /// <remarks>
     /// Used by LoadableReference to distinguish between different types of asset references.
     /// </remarks>
+    [VisibleToOtherModules]
     /*UCBP-PUBLIC*/ internal enum FileIdentifierType
     {
         /// <summary>

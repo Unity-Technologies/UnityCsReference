@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -244,7 +245,9 @@ namespace Unity.UI.Builder
                     var valueFlagsField = rootSerializedObject.FindProperty(stateProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
                     valueFlagsField.intValue = (int)UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml;
 
-                    var buttonCount = group.Query<Button>().Build().GetCount();
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    var buttonCount = group.Query<Button>().Build().Count();
+#pragma warning restore UA2005
                     if (buttonCount != length && buttonCount < ToggleButtonGroupState.maxLength)
                     {
                         var value = group.value;

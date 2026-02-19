@@ -119,9 +119,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (buildData.inputFiles.Any(CheckAssetDirty))
-#pragma warning restore UA2001
+            if (Array.Exists(buildData.inputFiles, CheckAssetDirty))
                 return true;
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

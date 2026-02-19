@@ -304,7 +304,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void AddSelectedTreeViewCountersToModule()
         {
-            var selectedItems = m_AllCountersTreeView.selectedIndices;
+            var selectedItems = m_AllCountersTreeView.selectedIndicesList;
             foreach (var index in selectedItems)
             {
                 var selectedItem = m_AllCountersTreeViewController.GetTreeViewItemDataForIndex(index);
@@ -344,7 +344,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         void RemoveSelectedCountersFromModule()
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedIndices = m_ChartCountersListView.selectedIndices.ToList();
+            var selectedIndices = m_ChartCountersListView.selectedIndicesList.ToList();
 #pragma warning restore UA2001
             selectedIndices.Sort((a, b) => b.CompareTo(a)); // Ensure indices are in reverse order as we are deleting.
             for (int i = 0; i < selectedIndices.Count; i++)

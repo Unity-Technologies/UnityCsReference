@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Search.Providers
 {
@@ -124,7 +125,7 @@ namespace UnityEditor.Search.Providers
 
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
-            m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
+            m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { "=", ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
             var refFilter = m_QueryEngine.SetFilter<ulong>("ref", GetReferences, new[] { "=", ":" });
             SetupReferenceFilterTypeParsers(refFilter);
@@ -403,7 +404,7 @@ namespace UnityEditor.Search.Providers
                 if (gocs.Length > 1)
                 {
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    refs.Add(obj.GetEntityId().GetRawData());
+                    refs.Add(EntityId.ToULong(obj.GetEntityId()));
                 }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
@@ -466,11 +467,11 @@ namespace UnityEditor.Search.Providers
                 AddReference(p.objectReferenceValue, refValue, refs);
 
             Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            refs.Add(p.objectReferenceValue.GetEntityId().GetRawData());
+            refs.Add(EntityId.ToULong(p.objectReferenceValue.GetEntityId()));
             if (p.objectReferenceValue is Component c)
             {
                 Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                refs.Add(c.gameObject.GetEntityId().GetRawData());
+                refs.Add(EntityId.ToULong(c.gameObject.GetEntityId()));
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
             }
@@ -492,7 +493,7 @@ namespace UnityEditor.Search.Providers
             {
                 var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
                 Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                refs.Add(mainEntityId.GetRawData());
+                refs.Add(EntityId.ToULong(mainEntityId));
             }
 
             refValue = refValue.ToLowerInvariant();
@@ -524,15 +525,11 @@ namespace UnityEditor.Search.Providers
             return god.refs.Contains(value);
         }
 
-        protected bool CompareWords(in QueryFilterOperator op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
+        protected bool CompareWords(in QueryFilterOperator op, string value, in IReadOnlyList<string> words, StringComparison stringComparison = StringComparison.Ordinal)
         {
             if (op.type == FilterOperatorType.Equal)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return words.Any(t => t.Equals(value, stringComparison));
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return words.Any(t => t.IndexOf(value, stringComparison) != -1);
-#pragma warning restore UA2001
+                return words.Exists(t => t.Equals(value, stringComparison));
+            return words.Exists(t => t.IndexOf(value, stringComparison) != -1);
         }
 
         IEnumerable<string> OnSearchData(T go)
@@ -598,7 +595,7 @@ namespace UnityEditor.Search.Providers
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<ulong>.none;
             Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            return new ParseResult<ulong>(true, GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid).GetRawData());
+            return new ParseResult<ulong>(true, EntityId.ToULong(GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid)));
         }
 
         static ParseResult<ulong> AssetPathTypeParser(string filterValue)
@@ -606,7 +603,7 @@ namespace UnityEditor.Search.Providers
             if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
             {
                 var entityId = AssetDatabase.GetMainAssetEntityId(filterValue);
-                return new ParseResult<ulong>(true, entityId.GetRawData());
+                return new ParseResult<ulong>(true, EntityId.ToULong(entityId));
             }
             return ParseResult<ulong>.none;
         }

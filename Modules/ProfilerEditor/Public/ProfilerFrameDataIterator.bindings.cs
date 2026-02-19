@@ -133,7 +133,7 @@ namespace UnityEditorInternal
 
         private static extern IntPtr Internal_Create();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
         internal static class BindingsMarshaller

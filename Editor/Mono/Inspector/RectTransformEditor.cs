@@ -9,6 +9,7 @@ using UnityEditorInternal;
 using System.Linq;
 using UnityEditor.AnimatedValues;
 using System.Globalization;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -323,20 +324,12 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Rotation
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_RotationGUI.RotationField(targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.Rotation) != 0));
-#pragma warning restore UA2001
+            m_RotationGUI.RotationField(System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.Rotation) != 0));
 
             // Scale
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            s_ScaleDisabledMask[0] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            s_ScaleDisabledMask[1] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            s_ScaleDisabledMask[2] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
-#pragma warning restore UA2001
+            s_ScaleDisabledMask[0] = System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
+            s_ScaleDisabledMask[1] = System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
+            s_ScaleDisabledMask[2] = System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
 
             Transform t = target as Transform;
             if (t != null)
@@ -447,18 +440,10 @@ namespace UnityEditor
             rect.height = EditorGUIUtility.singleLineHeight * 2;
             Rect rect2;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool anyStretchX = targets.Any(x => (x as RectTransform).anchorMin.x != (x as RectTransform).anchorMax.x);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool anyStretchY = targets.Any(x => (x as RectTransform).anchorMin.y != (x as RectTransform).anchorMax.y);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool anyNonStretchX = targets.Any(x => (x as RectTransform).anchorMin.x == (x as RectTransform).anchorMax.x);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool anyNonStretchY = targets.Any(x => (x as RectTransform).anchorMin.y == (x as RectTransform).anchorMax.y);
-#pragma warning restore UA2001
+            bool anyStretchX = System.Array.Exists(targets, x => (x as RectTransform).anchorMin.x != (x as RectTransform).anchorMax.x);
+            bool anyStretchY = System.Array.Exists(targets, x => (x as RectTransform).anchorMin.y != (x as RectTransform).anchorMax.y);
+            bool anyNonStretchX = System.Array.Exists(targets, x => (x as RectTransform).anchorMin.x == (x as RectTransform).anchorMax.x);
+            bool anyNonStretchY = System.Array.Exists(targets, x => (x as RectTransform).anchorMin.y == (x as RectTransform).anchorMax.y);
 
             rect2 = GetColumnRect(rect, 0);
             if (anyNonStretchX || anyWithoutParent || anyDrivenX)
@@ -671,13 +656,11 @@ namespace UnityEditor
 
         void FloatFieldLabelAbove(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
-#pragma warning restore UA2001
+            using (new EditorGUI.DisabledScope(System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & driven) != 0)))
             {
                 float value = getter(target as RectTransform);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
+                EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).DistinctCountGreaterThan(1);
 #pragma warning restore UA2001
 
                 EditorGUI.BeginChangeCheck();
@@ -732,13 +715,11 @@ namespace UnityEditor
 
         void FloatField(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
-#pragma warning restore UA2001
+            using (new EditorGUI.DisabledScope(System.Array.Exists(targets, x => ((x as RectTransform).drivenProperties & driven) != 0)))
             {
                 float value = getter(target as RectTransform);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
+                EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).DistinctCountGreaterThan(1);
 #pragma warning restore UA2001
 
                 EditorGUI.BeginChangeCheck();

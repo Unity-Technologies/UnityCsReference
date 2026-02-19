@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnBeforeShowDropdown()
         {
-            var needRefresh = m_NeedRefresh || m_DropdownItems.AnyMatches(i => i.needRefresh);
+            var needRefresh = m_NeedRefresh || m_DropdownItems.Exists(i => i.needRefresh);
             if (!needRefresh)
                 return;
 

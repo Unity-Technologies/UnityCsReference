@@ -5,10 +5,12 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy.Editor
 {
-    sealed class HierarchyGlobalSelectionHandler : IDisposable
+    [VisibleToOtherModules]
+    internal sealed class HierarchyGlobalSelectionHandler : IDisposable
     {
         const int k_DefaultBufferSize = 1024;
 

@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface ILiveReloadAssetTracker<T> where T : ScriptableObject
     {
         int StartTrackingAsset(T asset);

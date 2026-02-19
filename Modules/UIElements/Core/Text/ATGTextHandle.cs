@@ -313,5 +313,16 @@ namespace UnityEngine.UIElements
             Debug.LogError("ICU Data not available. The data should be automatically assigned to the PanelSettings in the editor if the advanced text option is enable in the project settings. It will not be present on PanelSettings created at runtime, so make sure the build contains at least one PanelSettings asset");
             return null;
         }
+
+        public override void RemoveFromPermanentCacheATG()
+        {
+            if (IsCachedPermanentATG)
+            {
+                m_ATGTextEventHandler?.UnRegisterHyperlinkCallbacks();
+            }
+            base.RemoveFromPermanentCacheATG();
+           
+        }
+        
     }
 }

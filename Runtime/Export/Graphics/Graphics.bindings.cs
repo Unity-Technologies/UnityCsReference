@@ -127,7 +127,7 @@ namespace UnityEngine
 
         static extern IntPtr Create();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Destroy(IntPtr lightProbeContextWrapper);
 
         public void CalculateInterpolatedLightAndOcclusionProbe(Vector3 position, ref int tetrahedronIndex, out SphericalHarmonicsL2 lightProbe, out Vector4 occlusionProbe)
@@ -154,10 +154,10 @@ namespace UnityEngine
             }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void CalculateInterpolatedLightAndOcclusionProbe(IntPtr lightProbeContextWrapper, Vector3 position, ref int tetrahedronIndex, out SphericalHarmonicsL2 lightProbe, out Vector4 occlusionProbe);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern void CalculateInterpolatedLightAndOcclusionProbes(IntPtr lightProbeContextWrapper, IntPtr positions, IntPtr tetrahedronIndices, IntPtr lightProbes, IntPtr occlusionProbes, int count);
     }
 

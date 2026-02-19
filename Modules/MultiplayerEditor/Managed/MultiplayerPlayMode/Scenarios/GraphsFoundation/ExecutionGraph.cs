@@ -31,6 +31,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal static readonly ExecutionStage[] k_Stages = Enum.GetValues(typeof(ExecutionStage)) as ExecutionStage[];
         internal static readonly int k_StagesCount = k_Stages.Length;
 
+        // All stages except Cleanup and Validate, which have special handling in the execution flow.
+        internal static readonly ReadOnlyCollection<ExecutionStage> k_ExecutionStages = Array.AsReadOnly(
+        [
+            ExecutionStage.Prepare,
+            ExecutionStage.Deploy,
+            ExecutionStage.Start,
+            ExecutionStage.Run,
+        ]);
+
+        internal static readonly ReadOnlyCollection<ExecutionStage> k_LaunchingStages = Array.AsReadOnly(
+        [
+            ExecutionStage.Validate,
+            ExecutionStage.Prepare,
+            ExecutionStage.Deploy,
+            ExecutionStage.Start,
+        ]);
+
         [SerializeField] private StageData[] m_Stages;
         [SerializeField] private bool m_HasStarted;
         [SerializeReference] private List<NodeInput> m_ConnectedInputs;
@@ -38,13 +55,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private StageData[] Stages => m_Stages;
         internal bool HasStarted => m_HasStarted;
         internal event Action StatusRefreshed;
-
-        // The results of an executed stage
-        internal struct ExecutionResult
-        {
-            public bool Success;
-            public List<Task> MonitoringTasks;
-        }
 
         internal void Reset()
         {
@@ -110,19 +120,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal List<Node> GetAllNodes()
         {
             var allNodes = new List<Node>();
-            allNodes.AddRange(GetNodes(ExecutionStage.Prepare));
-            allNodes.AddRange(GetNodes(ExecutionStage.Deploy));
-            allNodes.AddRange(GetNodes(ExecutionStage.Run));
+            foreach (var stage in m_Stages)
+            {
+                allNodes.AddRange(stage.Nodes);
+            }
             return allNodes;
         }
 
         internal void AddNode(Node node, ExecutionStage stage)
         {
             ValidateHasNotStarted();
-
-            // Sanity check against adding nodes for invalid stages.
-            if (stage == ExecutionStage.None)
-                throw new ArgumentException("Stage cannot be None", nameof(stage));
 
             // Ensure we don't have duplicate nodes
             foreach (var s in m_Stages)
@@ -137,6 +144,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Sanity check against adding nodes with invalid states
             if (node.State != ExecutionState.Idle)
                 throw new InvalidOperationException("Trying to add a node that is not in idle state.");
+
+            // Workaround to avoid logging exceptions for nodes in the Validate stage,
+            // as those are expected to throw during validation and we don't want to flood the logs with those exceptions.
+            if (stage == ExecutionStage.Validate)
+                node.LogExceptions = false;
 
             Stages[(int)stage].Nodes.Add(node);
             SetupNodeEvents(node);
@@ -193,18 +205,24 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return -1;
         }
 
-        internal async Task<ExecutionResult> RunOrResumeAsync(ExecutionStage stage,
+        bool PreviousStageCompleted(ExecutionStage stage)
+        {
+            var previousStage = stage - 1;
+            if (previousStage < 0 || stage == ExecutionStage.Cleanup)
+                return true;
+
+            return Stages[(int)previousStage].State == ExecutionState.Completed;
+        }
+
+        internal async Task<bool> RunOrResumeAsync(ExecutionStage stage,
                                                               CancellationToken cancellationToken, String owner)
         {
             m_HasStarted = true;
 
             // First check for dependencies
-            var previousStage = stage - 1;
-            if (previousStage > 0)
+            if (!PreviousStageCompleted(stage))
             {
-                if (Stages[(int)previousStage].State != ExecutionState.Completed)
-                    throw new InvalidOperationException($"{owner} Cannot execute stage {stage} before stage " +
-                                                        $"{previousStage} is completed.");
+                throw new InvalidOperationException($"{owner} Cannot execute stage {stage} before stage {stage - 1} is completed.");
             }
 
             // Grab the current stage's nodes to run and set it State to running.
@@ -213,44 +231,46 @@ namespace Unity.Multiplayer.PlayMode.Editor
             List<Node> nodesToRun;
             int completed;
 
-            // Start executing nodes and consolidate any resulting monitoring tasks.
-            var monitoringTasks = new List<Task>();
-            while ((nodesToRun = GetNextNodesToRun(stageNodes, out completed)).Count > 0)
+            var runningTasks = new List<Task>(stageNodes.Count);
+            while ((nodesToRun = GetNextNodesToRun(stageNodes, runningTasks.Count == 0, out completed)).Count > 0 || runningTasks.Count > 0)
             {
-                var tasks = new List<Task>();
                 foreach (var node in nodesToRun)
                 {
                     switch (node.State)
                     {
                         case ExecutionState.Idle:
                             FlushInputs(node);
-                            tasks.Add(node.RunAsync(cancellationToken)
-                                          .ContinueWith(t => monitoringTasks.Add(t.Result.MonitoringTask)));
+                            runningTasks.Add(node.RunAsync(cancellationToken));
                             break;
                         case ExecutionState.Running:
-                        case ExecutionState.Active:
-                            tasks.Add(node.ResumeAsync(cancellationToken)
-                                          .ContinueWith(t => monitoringTasks.Add(t.Result.MonitoringTask)));
+                            runningTasks.Add(node.ResumeAsync(cancellationToken));
                             break;
                     }
                 }
 
-                await Task.WhenAll(tasks);
+                await Task.WhenAny(runningTasks);
+                RemoveCompletedTasks(runningTasks);
             }
 
             // Update the final stage state with the results.
             var success = completed == stageNodes.Count;
             Stages[(int)stage].State = success ? ExecutionState.Completed : ExecutionState.Failed;
 
-            // Finally return the result and monitoring tasks if any.
-            return new ExecutionResult
-            {
-                Success = success,
-                MonitoringTasks = monitoringTasks
-            };
+            return success;
         }
 
-        private List<Node> GetNextNodesToRun(IEnumerable<Node> candidates, out int completed)
+        static void RemoveCompletedTasks(List<Task> runningTasks)
+        {
+            for (int i = runningTasks.Count - 1; i >= 0; i--)
+            {
+                if (runningTasks[i].IsCompleted)
+                {
+                    runningTasks.RemoveAt(i);
+                }
+            }
+        }
+
+        private List<Node> GetNextNodesToRun(IEnumerable<Node> candidates, bool allowIsolation, out int completed)
         {
             var availableNodes = new List<Node>();
             var availableIsolationNode = (Node)null;
@@ -258,7 +278,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             foreach (var candidate in candidates)
             {
-                if (candidate.State == ExecutionState.Completed || candidate.State == ExecutionState.Active)
+                if (candidate.State == ExecutionState.Completed)
                     completed++;
 
                 if (NodeFinishedExecution(candidate))
@@ -277,7 +297,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             // If there is a node that needs to run in isolation, we run that one first before any other node.
-            if (availableIsolationNode != null)
+            if (availableIsolationNode != null && allowIsolation)
             {
                 availableNodes.Clear();
                 availableNodes.Add(availableIsolationNode);
@@ -310,7 +330,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 Assert.IsNotNull(output, "Node input is not connected to any output");
 
                 var dependency = output.GetNode();
-                if (dependency.State is not ExecutionState.Completed && dependency.State is not ExecutionState.Active)
+                if (dependency.State is not ExecutionState.Completed)
                     return false;
             }
 
@@ -340,8 +360,5 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static bool CanRequestDomainReload(Node node)
             => node.GetType().IsDefined(typeof(CanRequestDomainReloadAttribute), true);
-
-        private static bool CanRequestDomainReload(List<Node> nodes)
-            => nodes.Count == 1 && CanRequestDomainReload(nodes[0]);
     }
 }

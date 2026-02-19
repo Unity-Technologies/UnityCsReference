@@ -16,9 +16,9 @@ using UnityEditor.SceneManagement;
 namespace Unity.UIToolkit.Editor;
 
 [UsedImplicitly]
-internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandler
+internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeTypeHandler
 {
-    [InitializeOnLoadMethod, UsedImplicitly]
+    [OnCodeLoaded, UsedImplicitly]
     private static void RegisterHierarchyHandlers()
     {
         HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
@@ -30,7 +30,7 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         StageNavigationManager.instance.stageChanging += OnStageWillChange;
     }
 
-    [UsedImplicitly]
+    [OnCodeUnloading, UsedImplicitly]
     private static void UnregisterHierarchyHandlers()
     {
         HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();

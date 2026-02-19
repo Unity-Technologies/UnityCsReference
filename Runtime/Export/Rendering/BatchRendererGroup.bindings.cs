@@ -261,13 +261,13 @@ namespace UnityEngine.Rendering
         [Obsolete("GetInstanceID() is obsolete, use GetEntityId() instead.", true)]
         public int GetInstanceID()
         {
-            return (int)GetEntityId().GetRawData();
+            return 0;
         }
 
         public readonly EntityId GetEntityId()
         {
             int val = (int)(handle & 0xffffffff);
-            return EntityId.From((ulong)val);
+            return EntityId.FromULong((ulong)val);
         }
 
         [Obsolete("GetSliceIndex() is obsolete.", true)]

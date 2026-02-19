@@ -79,6 +79,12 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void PerformUpdate();
 
+        internal int creationIndex { get; }
+
+        internal VisualElement GetRootVisualElement();
+
+        internal void SetComponentEnabled(bool enabled);
+
         /// <summary>
         /// Handles live reload of the visual tree asset.
         /// </summary>

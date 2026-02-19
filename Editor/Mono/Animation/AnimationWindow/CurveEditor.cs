@@ -2340,9 +2340,7 @@ namespace UnityEditor
                                 BeginRangeSelection();
                                 for (int keyIndex = 0; keyIndex < curve.length; ++keyIndex)
                                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                    if (!selectedCurves.Any(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
-#pragma warning restore UA2001
+                                    if (!selectedCurves.Exists(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
                                     {
                                         var keySelection = new CurveSelection(selectedPoint.curveID, keyIndex);
                                         AddSelection(keySelection);
@@ -2428,9 +2426,7 @@ namespace UnityEditor
                                     BeginRangeSelection();
                                     for (var keyIndex = keyMin; keyIndex <= keyMax; ++keyIndex)
                                     {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                        if (!selectedCurves.Any(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
-#pragma warning restore UA2001
+                                        if (!selectedCurves.Exists(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
                                         {
                                             var rangeSelection = new CurveSelection(selectedPoint.curveID, keyIndex);
                                             AddSelection(rangeSelection);

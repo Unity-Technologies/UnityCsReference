@@ -597,9 +597,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return false;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_AssetPathsMetaData.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore UA2001
+            return Array.Exists(m_AssetPathsMetaData, p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
         }
 
         public void DeleteScriptAssemblies()
@@ -812,9 +810,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (scriptAssemblies.Any(s => s.Filename == targetAssembly.Filename))
-#pragma warning restore UA2001
+                if (Array.Exists(scriptAssemblies, s => s.Filename == targetAssembly.Filename))
                 {
                     continue;
                 }
@@ -1015,9 +1011,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var tempCompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
             ICompilationExtension compilationExtension =
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0 || tempCompilationExtension?.GetAdditionalEditorDefines().Count() > 0) ?
-#pragma warning restore UA2001
+                ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0 || tempCompilationExtension?.GetAdditionalEditorDefines().Length > 0) ?
                     tempCompilationExtension : null;
 
             List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget));
@@ -1773,16 +1767,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var predefinedAssemblyTargets = EditorBuildRules.GetPredefinedTargetAssemblies();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (predefinedAssemblyTargets.Any(a => ((a.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Filename == assemblyFilename))
-#pragma warning restore UA2001
+            if (Array.Exists(predefinedAssemblyTargets, a => ((a.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Filename == assemblyFilename))
             {
                 return true;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (customTargetAssemblies != null && customTargetAssemblies.Any(a => ((a.Value.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Value.Filename == assemblyFilename))
-#pragma warning restore UA2001
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (customTargetAssemblies != null && customTargetAssemblies.Values.Any(a => ((a.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Filename == assemblyFilename))
+#pragma warning restore UA2006
             {
                 return true;
             }

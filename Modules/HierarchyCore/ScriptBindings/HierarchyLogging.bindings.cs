@@ -20,22 +20,23 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="path">The file path.</param>
         [Conditional("ENABLE_HIERARCHY_LOGGING")]
-        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), ThreadSafe]
+        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), NativeMethod(IsThreadSafe = true)]
         public static extern void SetLogFile(string path);
+
 
         /// <summary>
         /// Write a message to the log file.
         /// </summary>
         /// <param name="message"></param>
         [Conditional("ENABLE_HIERARCHY_LOGGING")]
-        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), NativeThrows, ThreadSafe]
+        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public static extern void Log(string message);
 
         /// <summary>
         /// Synchronizes the file stream with the underlying storage device.
         /// </summary>
         [Conditional("ENABLE_HIERARCHY_LOGGING")]
-        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), ThreadSafe]
+        [StaticAccessor("HierarchyLogging", StaticAccessorType.DoubleColon), NativeMethod(IsThreadSafe = true)]
         public static extern void Flush();
 
         /// <summary>

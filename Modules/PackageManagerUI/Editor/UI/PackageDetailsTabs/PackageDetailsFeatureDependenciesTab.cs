@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -150,7 +151,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (dependencies == null || dependencies.Length == 0)
                     return;
 
-                if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.AnyMatches(d => d.name == selectedDependencyPackageName))
+                if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.Exists(d => d.name == selectedDependencyPackageName))
                 {
                     selectedDependencyPackageName = dependencies[0].name;
                     m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageName;

@@ -38,13 +38,13 @@ namespace UnityEngine
             get { return GraphicsFormatUtility.GetFormat(this); }
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private int GetDataWidth();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private int GetDataHeight();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         extern private TextureDimension GetDimension();
 
         // Note: not implemented setters in base class since some classes do need to actually implement them (e.g. RenderTexture)
@@ -276,8 +276,8 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
         extern private bool LoadRawTextureDataImplArray(byte[] data);
 
-        [FreeFunction(Name = "Texture2DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        [FreeFunction(Name = "Texture2DScripting::SetPixelDataSpan", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplSpan(ReadOnlySpan<byte> data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -461,8 +461,8 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetPixels(Color[] colors, CubemapFace face, int miplevel);
 
-        [FreeFunction(Name = "CubemapScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        [FreeFunction(Name = "CubemapScripting::SetPixelDataSpan", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplSpan(ReadOnlySpan<byte> data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "CubemapScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -596,8 +596,8 @@ namespace UnityEngine
             SetPixels32(colors, 0);
         }
 
-        [FreeFunction(Name = "Texture3DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        [FreeFunction(Name = "Texture3DScripting::SetPixelDataSpan", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplSpan(ReadOnlySpan<byte> data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture3DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -664,8 +664,8 @@ namespace UnityEngine
             return GetPixels(arrayElement, 0);
         }
 
-        [FreeFunction(Name = "Texture2DArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        [FreeFunction(Name = "Texture2DArrayScripting::SetPixelDataSpan", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplSpan(ReadOnlySpan<byte> data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -768,8 +768,8 @@ namespace UnityEngine
             SetPixels32(colors, face, arrayElement, 0);
         }
 
-        [FreeFunction(Name = "CubemapArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        [FreeFunction(Name = "CubemapArrayScripting::SetPixelDataSpan", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplSpan(ReadOnlySpan<byte> data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -924,7 +924,7 @@ namespace UnityEngine
         extern public void Release();
         extern public bool IsCreated();
         extern public void GenerateMips();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public void ConvertToEquirect(RenderTexture equirect, Camera.MonoOrStereoscopicEye eye = Camera.MonoOrStereoscopicEye.Mono);
 
         extern internal void SetSRGBReadWrite(bool srgb);

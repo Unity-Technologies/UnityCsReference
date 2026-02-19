@@ -2,16 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
-using UnityEngine.U2D;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using System.Collections.Generic;
-using System.Collections;
+using UnityEngine.Bindings;
+using UnityEngine.U2D;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine.Tilemaps
 {
@@ -193,14 +192,60 @@ namespace UnityEngine.Tilemaps
 
         public void SetTiles(Vector3Int[] positionArray, TileBase[] tileArray) { SetTileAssets(positionArray, tileArray); }
 
+        public void SetTiles(NativeArray<Vector3Int> positionArray, TileArray tileArray)
+        {
+            if (!positionArray.IsCreated
+                || positionArray.Length != tileArray.Length)
+                throw new ArgumentException("All NativeArrays must be created and have the same length as tileArray.");
+            if (tileArray.Length == 0)
+                return;
+            unsafe
+            {
+                Internal_SetTileAssets(positionArray.m_Buffer, tileArray.buffer);
+            }
+        }
+
         [NativeMethod(Name = "SetTileAssetsBlock")]
         private extern void INTERNAL_CALL_SetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions, Object[] tileArray);
         public void SetTilesBlock(BoundsInt position, TileBase[] tileArray) { INTERNAL_CALL_SetTileAssetsBlock(position.min, position.size, tileArray); }
+
+        public void SetTilesBlock(BoundsInt position, TileArray tileArray)
+        {
+            if (position.size.x * position.size.y * position.size.z != tileArray.Length)
+                throw new ArgumentException("tileArray length must match the size of the bounds.");
+            if (tileArray.Length == 0)
+                return;
+            Internal_SetTileAssetsBlock(position.min, position.size, tileArray.buffer);
+        }
 
         [NativeMethod(Name = "SetTileChangeData")]
         public extern void SetTile(TileChangeData tileChangeData, bool ignoreLockFlags);
         [NativeMethod(Name = "SetTileChangeDataArray")]
         public extern void SetTiles(TileChangeData[] tileChangeDataArray, bool ignoreLockFlags);
+
+        public void SetTiles(NativeArray<Vector3Int> positionArray, TileArray tileArray, NativeArray<Color> colorArray, NativeArray<Matrix4x4> transformArray, bool ignoreLockFlags)
+        {
+            if (!positionArray.IsCreated
+                || !colorArray.IsCreated
+                || !transformArray.IsCreated
+                || positionArray.Length != tileArray.Length
+                || tileArray.Length != colorArray.Length
+                || colorArray.Length != transformArray.Length)
+            {
+                throw new ArgumentException("All NativeArrays must be created and have the same length as tileArray.");
+            }
+            if (tileArray.Length == 0)
+                return;
+
+            unsafe
+            {
+                Internal_SetTileChangeDataArray(positionArray.m_Buffer
+                , tileArray.buffer
+                , colorArray.m_Buffer
+                , transformArray.m_Buffer
+                , ignoreLockFlags);
+            }
+        }
 
         public bool HasTile(Vector3Int position)
         {
@@ -439,6 +484,15 @@ namespace UnityEngine.Tilemaps
             {
                 get { return m_TileData; }
             }
+
+            [RequiredByNativeCode]
+            internal static void ReconstructArrayElementRaw(SyncTile[] array, int index, TileBase tile, Vector3Int position, TileData tileData)
+            {
+                ref SyncTile tmp = ref array[index];
+                tmp.m_Tile = tile;
+                tmp.m_Position = position;
+                tmp.m_TileData = tileData;
+            }
         }
 
         internal struct SyncTileCallbackSettings
@@ -486,6 +540,13 @@ namespace UnityEngine.Tilemaps
                 m_Allocator = Allocator.None;
             }
 
+            public unsafe TilemapBuffer(IntPtr buffer, int length)
+            {
+                m_Buffer = buffer;
+                m_Length = length;
+                m_Allocator = Allocator.None;
+            }
+
             public unsafe readonly T AsEngineObject<T>(int index) where T : class
             {
                 if (index < 0 || index >= m_Length)
@@ -503,13 +564,34 @@ namespace UnityEngine.Tilemaps
                 return UnsafeUtility.ArrayElementAsRef<T>(m_Buffer.ToPointer(), index);
             }
 
+            public unsafe void SetEngineObject<T>(T value, int index) where T : UnityEngine.Object
+            {
+                if (index < 0 || index >= m_Length)
+                    throw new ArgumentOutOfRangeException("index");
+
+                var entityId = EntityId.None;
+                if (value != null)
+                    entityId = value.GetEntityId();
+                UnsafeUtility.ArrayElementAsRef<EntityId>(m_Buffer.ToPointer(), index) = entityId;
+            }
+
+            public unsafe void SetValue<T>(T value, int index) where T : struct
+            {
+                if (index < 0 || index >= m_Length)
+                    throw new ArgumentOutOfRangeException("index");
+
+                UnsafeUtility.ArrayElementAsRef<T>(m_Buffer.ToPointer(), index) = value;
+            }
+
             public unsafe void Dispose()
             {
                 if (m_Buffer == null || m_Length == 0)
                     return;
 
                 // Free the allocation.
-                UnsafeUtility.FreeTracked(m_Buffer.ToPointer(), m_Allocator);
+                if (m_Allocator != Allocator.None)
+                    UnsafeUtility.FreeTracked(m_Buffer.ToPointer(), m_Allocator);
+
                 m_Buffer = IntPtr.Zero;
                 m_Length = 0;
                 m_Allocator = Allocator.None;
@@ -561,26 +643,102 @@ namespace UnityEngine.Tilemaps
                 }
             }
 
+            public TileArray(int length, Allocator allocator)
+            {
+                if (allocator != Allocator.Temp && allocator != Allocator.Persistent && allocator != Allocator.Domain)
+                    throw new ArgumentException(k_TilemapAllocationArgumentExceptionMessage);
+
+                if (length <= 0)
+                {
+                    m_TilemapBuffer = default;
+                    m_Allocator = Allocator.None;
+                    m_MemoryLabel = default;
+                    return;
+                }
+
+                unsafe
+                {
+                    int size = UnsafeUtility.SizeOf(typeof(EntityId));
+                    var buffer = UnsafeUtility.MallocTracked(length * size, size, allocator, 1);
+                    UnsafeUtility.MemClear(buffer, length * size);
+                    m_TilemapBuffer = new TilemapBuffer((IntPtr)buffer, length);
+                }
+                m_Allocator = allocator;
+                m_MemoryLabel = default;
+            }
+
+            public TileArray(int length, MemoryLabel memoryLabel)
+            {
+                if (length <= 0)
+                {
+                    m_TilemapBuffer = default;
+                    m_Allocator = Allocator.None;
+                    m_MemoryLabel = default;
+                    return;
+                }
+
+                unsafe
+                {
+                    int size = UnsafeUtility.SizeOf(typeof(EntityId));
+                    var buffer = UnsafeUtility.MallocTracked(length * size, size, memoryLabel, 1);
+                    UnsafeUtility.MemClear(buffer, length * size);
+                    m_TilemapBuffer = new TilemapBuffer((IntPtr) buffer, length);
+                }
+                m_Allocator = Allocator.None;
+                m_MemoryLabel = memoryLabel;
+            }
+
             internal TileArray(TilemapBuffer tilemapBuffer)
             {
                 m_TilemapBuffer = tilemapBuffer;
+                m_Allocator = Allocator.None;
+                m_MemoryLabel = default;
             }
 
-            public readonly int Length => m_TilemapBuffer.length;
-            public readonly TileBase this[int index] => m_TilemapBuffer.AsEngineObject<TileBase>(index);
+            public int Length => m_TilemapBuffer.length;
+
+            public TileBase this[int index]
+            {
+                get => m_TilemapBuffer.AsEngineObject<TileBase>(index);
+                set
+                {
+                    m_TilemapBuffer.SetEngineObject<TileBase>(value, index);
+                }
+            }
 
             #region Enumeration
 
             public readonly IEnumerator<TileBase> GetEnumerator() => new TileArrayEnumerator(this);
             readonly IEnumerator IEnumerable.GetEnumerator() => new TileArrayEnumerator(this);
 
-            public void Dispose() => m_TilemapBuffer.Dispose();
+            public void Dispose()
+            {
+                if (m_MemoryLabel.IsCreated)
+                {
+                    unsafe
+                    {
+                        UnsafeUtility.FreeTracked((void*)m_TilemapBuffer.buffer, m_MemoryLabel);
+                    }
+                }
+                else if (m_Allocator != Allocator.None)
+                {
+                    unsafe
+                    {
+                        UnsafeUtility.FreeTracked((void*)m_TilemapBuffer.buffer, m_Allocator);
+                    }
+                }
+                m_TilemapBuffer.Dispose();
+            }
 
             #endregion
 
             #region Internal
 
             TilemapBuffer m_TilemapBuffer;
+            Allocator m_Allocator;
+            MemoryLabel m_MemoryLabel;
+
+            internal readonly TilemapBuffer buffer => m_TilemapBuffer;
 
             #endregion
         }
@@ -801,6 +959,15 @@ namespace UnityEngine.Tilemaps
         extern int Internal_GetTilePositions(Vector3Int startPosition, Vector3Int endPosition, ref TilemapBuffer positions, ref TilemapBuffer tiles, int withinBounds, Allocator allocator, IntPtr memLabelPtr);
         [FreeFunction(Name = "TilemapBindings::GetTilePositions_MemoryLabel", HasExplicitThis = true)]
         extern int Internal_GetTilePositions_MemoryLabel(Vector3Int startPosition, Vector3Int endPosition, ref TilemapBuffer positions, ref TilemapBuffer tiles, int withinBounds, MemoryLabel memoryLabel);
+
+        [FreeFunction(Name = "TilemapBindings::SetTileAssets", HasExplicitThis = true)]
+        extern unsafe void Internal_SetTileAssets(void* positionArray, TilemapBuffer tileArray);
+
+        [FreeFunction(Name = "TilemapBindings::SetTileAssetsBlock", HasExplicitThis = true)]
+        extern void Internal_SetTileAssetsBlock(Vector3Int position, Vector3Int size, TilemapBuffer tileArray);
+
+        [FreeFunction(Name = "TilemapBindings::SetTileChangeDataArray", HasExplicitThis = true)]
+        extern unsafe void Internal_SetTileChangeDataArray(void* positionPtr, TilemapBuffer tileArray, void* colorPtr, void* transformPtr, bool ignoreLockFlags);
 
         #endregion
     }

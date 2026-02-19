@@ -13,9 +13,9 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ResolvedPathHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern bool IsValid();
-        [ThreadSafe] internal extern string GetValue(ShaderContainer container);
-        [ThreadSafe] internal extern static IncludeDescriptorInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetValue(ShaderContainer container);
+        [NativeMethod(IsThreadSafe = true)] internal extern static IncludeDescriptorInternal Invalid();
 
         // IInternalType
         IncludeDescriptorInternal IInternalType<IncludeDescriptorInternal>.ConstructInvalid() => Invalid();

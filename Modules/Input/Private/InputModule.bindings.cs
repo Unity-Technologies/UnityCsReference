@@ -46,11 +46,6 @@ namespace UnityEngineInternal.Input
 
         internal static extern ulong GetBackgroundEventBufferSize();
 
-        [Obsolete("This is not needed any longer.")]
-        public static void SetUpdateMask(NativeInputUpdateType mask)
-        {
-        }
-
         /// <summary>
         /// Allows creation of input devices from events.
         /// Used by input simulation package on Windows, where we can send the simulated events.

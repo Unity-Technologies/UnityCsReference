@@ -16,11 +16,18 @@ namespace UnityEditor
         private AudioManager() {}
     }
 
-    // Exposed as internal, editor-only, because we only need it do make a custom inspector
+    // Exposed as internal, editor-only, because we only need it to make a custom inspector
     [NativeClass(null)]
     internal sealed class Physics2DSettings : ProjectSettingsBase
     {
         private Physics2DSettings() {}
+    }
+
+    // Exposed as internal, editor-only, because we only need it to make a custom inspector
+    [NativeClass(null)]
+    internal sealed class PhysicsCoreProjectSettings2D : ProjectSettingsBase
+    {
+        private PhysicsCoreProjectSettings2D() { }
     }
 
     // Exposed as internal, editor-only, because we only need it do make a custom inspector

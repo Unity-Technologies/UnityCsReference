@@ -102,12 +102,29 @@ namespace UnityEditorInternal
                 }
                 else if (node.hasChildren)
                 {
-                    foreach (var childNode in node.children)
+                    // Recursively collect all property nodes from descendants
+                    // Use iterative approach with queue to avoid stack overflow
+                    var queue = new Queue<TreeViewItem>();
+                    queue.Enqueue(node);
+
+                    while (queue.Count > 0)
                     {
-                        var childPropertyNode = childNode as AddCurvesPopupPropertyNode;
-                        if (childPropertyNode != null)
+                        var currentNode = queue.Dequeue();
+
+                        if (currentNode.hasChildren)
                         {
-                            nodes.Add(childPropertyNode);
+                            foreach (var childNode in currentNode.children)
+                            {
+                                if (childNode is AddCurvesPopupPropertyNode childPropertyNode)
+                                {
+                                    nodes.Add(childPropertyNode);
+                                }
+                                else if (childNode.hasChildren)
+                                {
+                                    // Enqueue path segment nodes for further traversal
+                                    queue.Enqueue(childNode);
+                                }
+                            }
                         }
                     }
                 }

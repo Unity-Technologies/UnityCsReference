@@ -83,9 +83,9 @@ namespace UnityEditor
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var validPlatforms = ValidPlatforms.OrderBy(platform => platform.namedBuildTarget.TargetName);
 #pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 settings.sampleSettingOverrides = new List<AudioImporterPlatformSettings>(validPlatforms.Count());
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 foreach (BuildPlatform platform in validPlatforms)
                 {
                     var buildTargetGroup = platform.namedBuildTarget.ToBuildTargetGroup();

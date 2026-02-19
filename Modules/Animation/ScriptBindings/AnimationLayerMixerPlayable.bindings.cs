@@ -103,19 +103,19 @@ namespace UnityEngine.Animations
             SetLayerMaskFromAvatarMaskInternal(ref m_Handle, layerIndex, mask);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool IsLayerAdditiveInternal(ref PlayableHandle handle, uint layerIndex);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetLayerAdditiveInternal(ref PlayableHandle handle, uint layerIndex, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetSingleLayerOptimizationInternal(ref PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetLayerMaskFromAvatarMaskInternal(ref PlayableHandle handle, uint layerIndex, AvatarMask mask);
     }
 }

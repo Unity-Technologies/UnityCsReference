@@ -235,61 +235,40 @@ namespace UnityEditor.Search
             m_DataSource.searchMatchItemComparer = new ItemPropositionComparer();
         }
 
-        struct ItemSearchData
-        {
-            public string data;
-            public int lastIndex;
-            public bool isValid => lastIndex != -1;
-        }
-
-        static ItemSearchData[] s_ItemSearchDatas = new ItemSearchData[3];
         internal static bool DoSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
         {
-            void PrepareItemData(int index, string data)
+            bool DoMatch(string data, string word, ref bool didMatchStart)
             {
-                s_ItemSearchDatas[index].data = data;
-                s_ItemSearchDatas[index].lastIndex = -1;
-                if (!string.IsNullOrEmpty(data))
-                {
-                    s_ItemSearchDatas[index].lastIndex = data.LastIndexOf('(');
-                    s_ItemSearchDatas[index].lastIndex = s_ItemSearchDatas[index].lastIndex == -1 ? data.Length : s_ItemSearchDatas[index].lastIndex;
-                }
+                var fp = data.IndexOf(word, StringComparison.OrdinalIgnoreCase);
+                didMatchStart |= fp != -1 && (fp == 0 || data[fp - 1] == ' ');
+                return fp != -1;
             }
 
+            didMatchStart = false;
             // We should only have items with valid SearchPropositions. However, it can happen that
             // this method is called with an AdvancedDropdownItem that has no userData (or that userData is not a SearchProposition),
             // which is the case when there is no propositions so the root item becomes a searchable item. In that case, we should
             // just return false so that the item is not shown in the search results.
             if (item.userData is not SearchProposition proposition)
             {
-                didMatchStart = false;
                 return false;
             }
 
-            var itemDataCount = 0;
-            PrepareItemData(itemDataCount++, item.displayName);
-            PrepareItemData(itemDataCount++, item.name);
-            PrepareItemData(itemDataCount++, proposition.replacement);
-
-            didMatchStart = false;
-            var fp = -1;
+            // Algo:
+            // if any word doesn't match: return false
+            // try to find a word that match and we didStart
             foreach (var w in words)
             {
-                for (var i = 0; i < itemDataCount; ++i)
-                {
-                    if (s_ItemSearchDatas[i].isValid)
-                    {
-                        fp = s_ItemSearchDatas[i].data.IndexOf(w, 0, s_ItemSearchDatas[i].lastIndex, StringComparison.OrdinalIgnoreCase);
-                        didMatchStart |= fp != -1 && (fp == 0 || s_ItemSearchDatas[i].data[fp - 1] == ' ');
-                        if (fp != -1)
-                            break;
-                    }
-                }
+                var matchItem = DoMatch(item.displayName, w, ref didMatchStart);
+                matchItem = DoMatch(item.name, w, ref didMatchStart) || matchItem;
 
-                if (fp == -1)
+                // The word doesn't match display or name: no match
+                if (!matchItem)
                     return false;
             }
-            return fp != -1;
+
+            // At this point a match was found:
+            return true;
         }
 
         internal static AdvancedDropdownItem CreateItem(SearchProposition p, bool formatNames, out string path, out string name, out string prefix)
@@ -304,7 +283,9 @@ namespace UnityEditor.Search
                 prefix = path.Substring(0, ls);
             }
 
-            var displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name;
+            // UUM-119687: Skip NicifyVariableName for propositions with SkipNicifyVariableName flag
+            var shouldNicify = formatNames && !p.generationOptions.HasAny(SearchPropositionGenerationOptions.SkipNicifyVariableName);
+            var displayName = shouldNicify ? ObjectNames.NicifyVariableName(name) : name;
             var newItem = new AdvancedDropdownItem(path, displayName)
             {
                 icon = p.icon ?? Icons.quicksearch,

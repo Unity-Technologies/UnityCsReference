@@ -508,6 +508,28 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Whether the node is connected to at least one other node.
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                foreach (var inputPort in InputPorts)
+                {
+                    if (inputPort.IsConnected())
+                        return true;
+                }
+                foreach (var outputPort in OutputPorts)
+                {
+                    if (outputPort.IsConnected())
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="NodeModel"/> class.
         /// </summary>
         protected NodeModel()
@@ -726,9 +748,7 @@ namespace Unity.GraphToolkit.Editor
 
             IReadOnlyList<PortModel> portModels = nextList;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            while (portModels.Count() > 0)
-#pragma warning restore UA2001
+            while (portModels.Count > 0)
             {
                 currentList.Clear();
                 m_SubPortDefinition.AddedPorts = currentList;
@@ -742,9 +762,7 @@ namespace Unity.GraphToolkit.Editor
                         port.ClearSubPorts();
                         GraphModel.OnDefineSubPorts(m_SubPortDefinition, port);
 
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (m_SubPortDefinition.MustSpecifySubPorts && port.SubPorts.Count() == 0)
-#pragma warning restore UA2001
+                        if (m_SubPortDefinition.MustSpecifySubPorts && port.SubPorts.Count == 0)
                         {
                             Debug.LogError($"After OnDefineSubPorts, {port.Direction} port {port.UniqueName} from node {Title}({GetType().Name}) is expanded but has no sub ports");
                         }
@@ -781,14 +799,10 @@ namespace Unity.GraphToolkit.Editor
             {
                 //note: this will add sub port recursively.
                 var port = portInfos.portsById[i];
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (port.SubPorts.Count() > 0)
-#pragma warning restore UA2001
+                if (port.SubPorts.Count > 0)
                 {
                     portInfos.portsById.InsertRange(i + 1, port.SubPorts);
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    end += port.SubPorts.Count();
-#pragma warning restore UA2001
+                    end += port.SubPorts.Count;
                 }
             }
         }

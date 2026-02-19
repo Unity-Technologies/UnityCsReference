@@ -19,6 +19,7 @@ namespace Unity.GraphToolkit.Editor
         /// Type of <see cref="GraphModel"/> to use to create the element.
         /// </summary>
         public Type GraphModelType { get; }
+
         /// <summary>
         /// Path of the item in the <see cref="ItemLibraryLibrary"/>.
         /// </summary>

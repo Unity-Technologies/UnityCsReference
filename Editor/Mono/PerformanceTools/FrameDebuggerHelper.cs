@@ -4,12 +4,10 @@
 
 using System;
 using System.Text;
-using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEditor.Rendering;
-using UnityEditor;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -39,29 +37,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 return s_ShadingRateImageMaterial;
             }
         }
-
-        private static readonly Lazy<GraphicsBuffer> m_ShadingRateLut =
-            new Lazy<GraphicsBuffer>(() => {
-                // Keep in sync with VrsLut.cs for now
-                // TO DO: Update to match the visualization colors set in the Editor Graphics pipeline settings
-                Color[] bufferData = {
-                    (new Color(0.785f, 0.23f, 0.20f, 1)).linear,    // 1x1 - Red
-                    (new Color(1.00f, 0.80f, 0.80f, 1)).linear,     // 1x2 - Light Red
-                    (new Color(0.60f, 0.80f, 1.00f, 1)).linear,     // 1x4 - Light Blue
-                    Color.black.linear,                               
-                    (new Color(0.40f, 0.20f, 0.20f, 1)).linear,     // 2x1 - Dark Red
-                    (new Color(0.51f, 0.80f, 0.60f, 1)).linear,     // 2x2 - Green
-                    (new Color(0.80f, 1.00f, 0.80f, 1)).linear,     // 2x4 - Light Green
-                    Color.black.linear,
-                    (new Color(0.20f, 0.40f, 0.60f, 1)).linear,     // 4x1 - Medium Blue
-                    (new Color(0.20f, 0.40f, 0.20f, 1)).linear,     // 4x2 - Dark Green
-                    (new Color(0.125f, 0.22f, 0.36f, 1)).linear     // 4x4 - Dark Blue
-                };
-                GraphicsBuffer buf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, bufferData.Length, Marshal.SizeOf(typeof(Color)));
-                buf.SetData(bufferData);
-                return buf;
-            });
-        internal static GraphicsBuffer shadingRateLut = m_ShadingRateLut.Value;
 
         // Utility functions...
         internal static bool IsAValidFrame(int curEventIndex, int descsLength) => (curEventIndex >= 0 && curEventIndex < descsLength);
@@ -206,7 +181,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             ref Texture t,
             ref RenderTexture output,
             int sriWidth,
-            int sriHeight)
+            int sriHeight,
+            GraphicsBuffer shadingRateLut)
         {
             if (t == null || output == null)
                 return;

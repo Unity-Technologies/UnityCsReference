@@ -65,9 +65,9 @@ namespace UnityEngine
                 }
                 return cube;
             }
-            [NativeThrows] set => customReflectionTexture = value;
+            set => customReflectionTexture = value;
         }
-        [NativeProperty("CustomReflection")] extern public static Texture customReflectionTexture { get; [NativeThrows] set; }
+        [NativeProperty("CustomReflection")] extern public static Texture customReflectionTexture { get; [NativeMethod(ThrowsException = true)] set; }
 
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
@@ -104,11 +104,11 @@ namespace UnityEngine
     public static class TextureMipmapLimitGroups
     {
         [NativeName("CreateTextureMipmapLimitGroup")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void CreateGroup([NotNull] string groupName);
 
         [NativeName("RemoveTextureMipmapLimitGroup")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void RemoveGroup([NotNull] string groupName);
 
         [NativeName("GetTextureMipmapLimitGroupNames")]
@@ -199,11 +199,11 @@ namespace UnityEngine
         extern public static void SetLODSettings(float lodBias, int maximumLODLevel, bool setDirty = true);
 
         [NativeName("SetTextureMipmapLimitSettings")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void SetTextureMipmapLimitSettings(string groupName, TextureMipmapLimitSettings textureMipmapLimitSettings);
 
         [NativeName("GetTextureMipmapLimitSettings")]
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static TextureMipmapLimitSettings GetTextureMipmapLimitSettings(string groupName);
 
         extern public static bool  realtimeReflectionProbes         { get; set; }
@@ -245,13 +245,13 @@ namespace UnityEngine
         extern public static BlendWeights blendWeights
         {
             [NativeName("GetSkinWeights")] get;
-            [NativeThrows]
+            [NativeMethod(ThrowsException = true)]
             [NativeName("SetSkinWeights")] set; }
 
         extern public static SkinWeights skinWeights
         {
             get;
-            [NativeThrows] set;
+            [NativeMethod(ThrowsException = true)] set;
         }
 
         extern public static int count { [NativeName("GetQualitySettingsCount")] get; }

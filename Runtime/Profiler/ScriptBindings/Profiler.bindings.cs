@@ -326,7 +326,9 @@ namespace UnityEngine.Profiling
             if (!UnsafeUtility.IsBlittable(elementType))
                 throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitGlobalMetaData_Array(&id, 16, tag, data, data.Length, UnsafeUtility.SizeOf(elementType), true);
+            var elemSize = UnsafeUtility.SizeOf(elementType);
+            int dataLen = data.Length; 
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), true);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -339,7 +341,7 @@ namespace UnityEngine.Profiling
             if (!UnsafeUtility.IsBlittable(typeof(T)))
                 throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitGlobalMetaData_Array(&id, 16, tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), true);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), true);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -358,7 +360,9 @@ namespace UnityEngine.Profiling
             if (!UnsafeUtility.IsBlittable(elementType))
                 throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitGlobalMetaData_Array(&id, 16, tag, data, data.Length, UnsafeUtility.SizeOf(elementType), false);
+            var elemSize = UnsafeUtility.SizeOf(elementType);
+            int dataLen = data.Length;
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), false);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -371,7 +375,7 @@ namespace UnityEngine.Profiling
             if (!UnsafeUtility.IsBlittable(typeof(T)))
                 throw new ArgumentException(string.Format("{0} type must be blittable", elementType));
 
-            Internal_EmitGlobalMetaData_Array(&id, 16, tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), false);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromList(data), data.Count, UnsafeUtility.SizeOf(elementType), false);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -380,9 +384,9 @@ namespace UnityEngine.Profiling
             Internal_EmitGlobalMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>(), false);
         }
 
-        [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Array", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Span", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern unsafe void Internal_EmitGlobalMetaData_Array(void* id, int idLen, int tag, Array data, int count, int elementSize, bool frameData);
+        static extern unsafe void Internal_EmitGlobalMetaData_Span(void* id, int idLen, int tag, ReadOnlySpan<byte> data, int count, int elementSize, bool frameData);
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
@@ -67,9 +68,7 @@ namespace UnityEditor
                     }
                 }
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            EditorGUI.showMixedValue = geomTypes.Distinct().Count() > 1;
-#pragma warning restore UA2001
+            EditorGUI.showMixedValue = geomTypes.DistinctCountGreaterThan(1);
             EditorGUI.BeginChangeCheck();
             var setGeomType = (SpeedTreeGeometryType)EditorGUILayout.EnumPopup("Geometry Type", geomTypes[0]);
             if (EditorGUI.EndChangeCheck())
@@ -108,9 +107,7 @@ namespace UnityEditor
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var enableBump = targets.Select(t => ((Material)t).shaderKeywords.Contains("EFFECT_BUMP"));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                bool? enable = ToggleShaderProperty(bumpMap, enableBump.First(), enableBump.Distinct().Count() > 1);
+                bool? enable = ToggleShaderProperty(bumpMap, enableBump.First(), enableBump.DistinctCountGreaterThan(1));
 #pragma warning restore UA2001
                 if (enable != null)
                 {
@@ -146,7 +143,7 @@ namespace UnityEditor
             {
                 props.Remove(hueVariation);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                bool? enable = ToggleShaderProperty(hueVariation, enableHueVariation.First(), enableHueVariation.Distinct().Count() > 1);
+                bool? enable = ToggleShaderProperty(hueVariation, enableHueVariation.First(), enableHueVariation.DistinctCountGreaterThan(1));
 #pragma warning restore UA2001
                 if (enable != null)
                 {
@@ -167,9 +164,7 @@ namespace UnityEditor
             if (alphaCutoff != null)
             {
                 props.Remove(alphaCutoff);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (geomTypes.Any(t => ShouldEnableAlphaTest(t)))
-#pragma warning restore UA2001
+                if (Array.Exists(geomTypes, ShouldEnableAlphaTest))
                     ShaderProperty(alphaCutoff, alphaCutoff.displayName);
             }
 

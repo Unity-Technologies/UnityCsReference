@@ -85,9 +85,7 @@ namespace UnityEditor.AddComponent
 
         internal new void OnGUI()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_GameObjects.Any(g => !g))
-#pragma warning restore UA2001
+            if (Array.Exists(m_GameObjects, g => !g))
             {
                 // Close the popup window if one of the object is now invalid (i.e. deleted from an undo operation)
                 Close();

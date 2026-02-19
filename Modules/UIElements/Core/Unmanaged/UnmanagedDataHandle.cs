@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -43,4 +44,19 @@ readonly struct UnmanagedDataHandle
             return (Index * 397) ^ Version;
         }
     }
+
+    internal class EqualityComparer : IEqualityComparer<UnmanagedDataHandle>
+    {
+        public bool Equals(UnmanagedDataHandle x, UnmanagedDataHandle y)
+        {
+            return x.Equals(y);
+        }
+
+        public int GetHashCode(UnmanagedDataHandle handle)
+        {
+            return handle.GetHashCode();
+        }
+    }
+
+    internal static readonly EqualityComparer k_EqualityComparer = new();
 }

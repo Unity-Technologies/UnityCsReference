@@ -44,13 +44,13 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class BindingModeDrawerAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class DataSourceDrawerAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class AdvanceTextGeneratorDecoratorAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class BindingPathDrawerAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

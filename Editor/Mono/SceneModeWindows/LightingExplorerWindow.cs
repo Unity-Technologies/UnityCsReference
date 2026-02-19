@@ -91,9 +91,9 @@ namespace UnityEditor
                     if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable CS0618 // Type or member is obsolete
                         EntityId[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore CS0618 // Type or member is obsolete
                             return Selection.entityIds.Contains(mr.gameObject.GetEntityId());
 #pragma warning restore UA2001
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {

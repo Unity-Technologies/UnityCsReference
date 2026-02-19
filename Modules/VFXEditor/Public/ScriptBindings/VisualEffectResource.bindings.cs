@@ -155,9 +155,8 @@ namespace UnityEditor.VFX
         public UnityObject processor;
         public uint instanceSplitIndex;
         public int shaderSourceIndex;
-        public UnityObject model;
+        public EntityId modelId;
         public bool usesMaterialVariant;
-
     }
 
     [UsedByNativeCode]
@@ -520,7 +519,7 @@ namespace UnityEditor.VFX
         }
 
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void SetRuntimeData(VFXExpressionSheetInternal sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,

@@ -93,7 +93,7 @@ struct InstanceItem<TController, TSettings> : IInstanceItem
 
     public readonly InstanceController CreateController()
     {
-        return InstanceController<TController, TSettings>.CreateInstance(m_Settings);
+        return InstanceController<TController, TSettings>.CreateInstance(m_Name, m_Settings);
     }
 
     public readonly IInstanceItem WithName(string name)

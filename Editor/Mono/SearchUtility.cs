@@ -163,7 +163,7 @@ namespace UnityEditor
                     string refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
                     Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == UnsafeUtility.SizeOf<int>(), "EntityId size is not equal to int size update. Chances are this needs to be updated when changing EntityId.ToString");
                     if (System.UInt64.TryParse(refString, out var id))
-                        entityId = EntityId.From(id);;
+                        entityId = EntityId.FromULong(id);
                     //else
                     //  Debug.Log ("Not valid refString to case to Integer " + refString); // outcomment for debugging
                 }

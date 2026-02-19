@@ -85,6 +85,7 @@ namespace Unity.UIToolkit.Editor
             };
 
             var searchContext = SearchService.CreateContext(providers, string.Empty);
+            searchContext.useExplicitProvidersAsNormalProviders = true;
             var state = SearchViewState.CreatePickerState(k_WindowTitle, searchContext, null);
             state.excludeClearItem = true;
             state.windowTitle = new GUIContent("UI Library");
@@ -122,7 +123,8 @@ namespace Unity.UIToolkit.Editor
                 toObject = ToObject,
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Preview,
-                actions = [CreateAddElementAction(config.Id)]
+                actions = [CreateAddElementAction(config.Id)],
+                isExplicitProvider = true
             };
         }
 

@@ -10,6 +10,7 @@ using System.Text;
 using UnityEngine;
 using UnityEditor.Callbacks;
 using UnityEngine.Serialization;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -137,7 +138,7 @@ namespace UnityEditor.Search
 
         [TextArea]
         public string description;
-        public ICollection<string> providerIds
+        public IList<string> providerIds
         {
             get => viewState?.providerIds ?? Array.Empty<string>();
             set
@@ -175,15 +176,9 @@ namespace UnityEditor.Search
 
         internal static void ContentRefreshed(string[] updated, string[] removed, string[] moved)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var hasUpdated = updated != null && updated.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var hasMoved = moved != null && moved.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var hasRemoved = removed != null && removed.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
-#pragma warning restore UA2001
+            var hasUpdated = updated != null && Array.Exists(updated, p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
+            var hasMoved = moved != null && Array.Exists(moved, p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
+            var hasRemoved = removed != null && Array.Exists(removed, p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
 
             if (hasUpdated || hasMoved || hasRemoved)
             {
@@ -384,7 +379,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchQueryAsset> GetFilteredSearchQueries(SearchContext context)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return savedQueries.Where(query => query && (query.providerIds.Count == 0 || query.providerIds.Any(id => context.IsEnabled(id))));
+            return savedQueries.Where(query => query && (query.providerIds.Count == 0 || query.providerIds.Exists(id => context.IsEnabled(id))));
 #pragma warning restore UA2001
         }
 

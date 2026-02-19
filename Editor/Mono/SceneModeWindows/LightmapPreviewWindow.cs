@@ -10,6 +10,7 @@ using UnityEditor.AnimatedValues;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
@@ -193,6 +194,7 @@ namespace UnityEditor
         private float exposure
         {
             get { return SelectedTextureTypeNeedsExposureControl() ? m_ExposureSliderValue : 0.0f; }
+            set { m_ExposureSliderValue = value; }
         }
 
         public static void CreateLightmapPreviewWindowIndexed(int lightmapId, bool realtimeLightmap, bool useInteractiveLightBakingData)
@@ -216,6 +218,27 @@ namespace UnityEditor
 
             window.Show();
         }
+
+        public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased, bool useInteractiveLightBakingData, float exposure)
+        {
+            LightmapPreviewWindow window = EditorWindow.CreateInstance<LightmapPreviewWindow>();
+            window.exposure = exposure;
+            window.minSize = new Vector2(360, 390);
+            window.isRealtimeLightmap = realtimeLightmap;
+
+            if (indexBased)
+                window.lightmapIndex = lightmapId;
+            else
+            {
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                window.entityId = EntityId.FromULong((ulong)lightmapId);
+            }
+
+            window.useInteractiveLightBakingData = useInteractiveLightBakingData;
+
+            window.Show();
+        }
+
 
         void OnEnable()
         {

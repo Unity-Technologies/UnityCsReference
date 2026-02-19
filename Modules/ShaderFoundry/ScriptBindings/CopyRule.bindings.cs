@@ -15,8 +15,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_InclusionListHandle; // List<string>
         internal FoundryHandle m_ExclusionListHandle; // List<string>
 
-        [ThreadSafe] internal extern static CopyRuleInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static CopyRuleInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         CopyRuleInternal IInternalType<CopyRuleInternal>.ConstructInvalid() => Invalid();

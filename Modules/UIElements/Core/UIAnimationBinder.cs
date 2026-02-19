@@ -15,7 +15,17 @@ namespace UnityEngine.UIElements
         internal List<KeyValuePair<string, VisualElement>> m_Elements;
         internal Dictionary<PropertyName, VisualElement> m_ElementsMap;
 
-        [RequiredByNativeCode]
+        internal int GetChannelCount(StylePropertyId id)
+        {
+            return m_ChannelCount[(int)id];
+        }
+
+        internal PropertyType GetPropertyTypeMapping(StylePropertyId id)
+        {
+            return m_PropertyTypeMapping[(int)id];
+        }
+
+        [RequiredByNativeCode(Optional = true)]
         internal void SetFloatValue(int elementIndex, int propertyId, int channel, float value)
         {
             if (elementIndex < 0 || elementIndex >= m_Elements.Count)
@@ -24,9 +34,9 @@ namespace UnityEngine.UIElements
             var e = m_Elements[elementIndex].Value;
             StylePropertyId id = (StylePropertyId)propertyId;
 
-            Debug.Assert(channel < ChannelCount[id]);
+            Debug.Assert(channel < GetChannelCount(id));
 
-            switch (PropertyTypeMapping[id])
+            switch (GetPropertyTypeMapping(id))
             {
                 case PropertyType.Float:
                     e.computedStyle.ApplyPropertyAnimation(e, id, value);
@@ -101,9 +111,9 @@ namespace UnityEngine.UIElements
             var element = m_Elements[elementIndex].Value;
             StylePropertyId id = (StylePropertyId)propertyId;
 
-            Debug.Assert(channel < ChannelCount[id]);
+            Debug.Assert(channel < GetChannelCount(id));
 
-            return PropertyTypeMapping[id] switch
+            return GetPropertyTypeMapping(id) switch
             {
                 PropertyType.Length => element.computedStyle.ReadPropertyAnimationLength(id).pixelValue,
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),

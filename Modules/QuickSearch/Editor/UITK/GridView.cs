@@ -58,7 +58,7 @@ namespace UnityEditor.Search
 
         public event Action<IEnumerable<object>> itemsChosen;
         public event Action<IEnumerable<object>> selectionChanged;
-        public event Action<IEnumerable<int>> selectedIndicesChanged;
+        public event Action<IReadOnlyList<int>> selectedIndicesChanged;
         public event Action itemsBuilt;
 
         public int rowCount => m_RowCount;
@@ -138,13 +138,13 @@ namespace UnityEditor.Search
             set => SetSelection(value);
         }
 
-        public IEnumerable<int> selectedIndices => m_SelectedIndices;
+        public IReadOnlyList<int> selectedIndices => m_SelectedIndices;
 
         public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems[0];
 
-        public IEnumerable<object> selectedItems => m_SelectedItems;
+        public IReadOnlyList<object> selectedItems => m_SelectedItems;
 
-        public IEnumerable<int> selectedIds => m_SelectedIds;
+        public IReadOnlyList<int> selectedIds => m_SelectedIds;
 
         public List<ReusableGridViewItem> activeItems => GetActiveItems();
 
@@ -585,20 +585,20 @@ namespace UnityEditor.Search
                 return;
             }
 
-            SetSelection(new[] { itemIndex });
+            Span<int> newSelection = stackalloc int[1];
+            newSelection[0] = itemIndex;
+            SetSelection(newSelection);
         }
 
-        public void SetSelection(IEnumerable<int> indices)
+        public void SetSelection(ReadOnlySpan<int> indices)
         {
             switch (selectionType)
             {
                 case SelectionType.None:
                     return;
                 case SelectionType.Single:
-                    if (indices != null)
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        indices = new[] { indices.Last() };
-#pragma warning restore UA2001
+                    if (!indices.IsEmpty)
+                        indices = indices[^1..];
                     break;
                 case SelectionType.Multiple:
                     break;
@@ -609,14 +609,31 @@ namespace UnityEditor.Search
             SetSelectionInternal(indices, true);
         }
 
-        public void SetSelectionWithoutNotify(IEnumerable<int> indices)
+        public void SetSelectionWithoutNotify(ReadOnlySpan<int> indices)
         {
             SetSelectionInternal(indices, false);
         }
 
-        internal void SetSelectionInternal(IEnumerable<int> indices, bool sendNotification)
+        public bool MatchesExistingSelection(ReadOnlySpan<int> indices)
+        {
+            if (indices.Length != m_SelectedIndices.Count)
+                return false;
+
+            var existingSelection = NoAllocHelpers.CreateReadOnlySpan(m_SelectedIndices);
+            return existingSelection.SequenceEqual(indices);
+        }
+
+        public bool IndexIsSelected(int index)
+        {
+            return m_SelectedIndices.Contains(index);
+        }
+
+        internal void SetSelectionInternal(ReadOnlySpan<int> indices, bool sendNotification)
         {
             if (!HasValidDataAndBindings() || m_RowPool == null || indices == null)
+                return;
+
+            if (MatchesExistingSelection(indices))
                 return;
 
             ClearSelectionWithoutValidation();

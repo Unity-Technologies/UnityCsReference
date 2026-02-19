@@ -28,7 +28,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public ScenarioStatusData StatusData => m_StatusData;
 
         // Scenario Callbacks
-        internal static event Action<Scenario> Completed;
         internal static event Action<Scenario> ScenarioStarted;
         internal event Action<ScenarioStatusData> StatusRefreshed;
 
@@ -219,30 +218,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        /// <summary>
-        /// Validates each instance sequentially to ensure it is ready to run
-        /// Stops and returns immediately if any instance fails validation checks
-        /// </summary>
-        internal async Task<ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
-        {
-            foreach (var instance in m_Instances)
-            {
-                // Skip validation for Free Run instances from scenario
-                if (instance.IsFreeRunMode())
-                {
-                    continue;
-                }
-
-                var result = await instance.ValidateForRunningAsync(cancellationToken);
-                if (!result.IsValid)
-                {
-                    return result;
-                }
-            }
-
-            return new ValidationResult(true, string.Empty);
-        }
-
         internal void ResumeFreeRunInstances()
         {
             foreach (var instance in m_Instances)
@@ -256,9 +231,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // If the scenario is deploying, it is in a state of flux
             // and thus avoid drift notifications while in this state.
-            if (StatusData.OverallStatus.State == ExecutionState.Running &&
-                (StatusData.CurrentStage != ExecutionStage.Run ||
-                 StatusData.CurrentStageState != ExecutionState.Active))
+            if (StatusData.IsExecutingLaunchingStages())
                 return;
 
             // Only Perform Drift detection for active free running instances.
@@ -275,25 +248,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal async Task TerminateAllFreeRunningInstancesAsync()
         {
-            // Go through and cancel all Free Running Instances
+            var stopTasks = new List<Task>();
             foreach (var instance in m_Instances)
             {
                 if (instance.IsFreeRunMode() && instance.IsActive())
-                    instance.StopAsFreeRunning();
+                {
+                    stopTasks.Add(instance.StopAsFreeRunning());
+                }
             }
 
-            // Grab the monitors so that we can await and return when
-            // they have all successfully stopped.
-            var allInstanceMonitors = new List<Task>();
-            foreach (var instance in m_Instances)
-            {
-                if (!instance.IsFreeRunMode())
-                    continue;
-
-                allInstanceMonitors.AddRange(instance.GetCurrentMonitoringTasksForScenario());
-            }
-
-            await Task.WhenAll(allInstanceMonitors);
+            await Task.WhenAll(stopTasks);
         }
 
         internal async Task RunOrResumeAsync(CancellationToken cancellationToken)
@@ -310,46 +274,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 ScenarioStarted?.Invoke(this);
             }
 
-            // Orchestrate the Scenario across Execution Stages.
-            var executionStages = new Queue<ExecutionStage>(new ExecutionStage[]
+            var validationSuccess = await RunStage(ExecutionStage.Validate, cancellationToken);
+            if (!validationSuccess)
             {
-                ExecutionStage.Prepare,
-                ExecutionStage.Deploy,
-                ExecutionStage.Run,
-            });
-
-            // Now go through each State at a time
-            while (executionStages.Count > 0)
-            {
-                var currentStage = executionStages.Dequeue();
-                var allInstanceTaskForStage = new List<Task<ExecutionGraph.ExecutionResult>>();
-
-                // For each state, execute on all instances.
-                foreach (var instance in m_Instances)
-                {
-                    if (instance.IsFreeRunMode())
-                        continue;
-
-                    var instanceTask = instance.RunOrResumeAsync(currentStage, cancellationToken);
-                    allInstanceTaskForStage.Add(instanceTask);
-                }
-
-                await Task.WhenAll(allInstanceTaskForStage);
-
-                bool success = true;
-                foreach (var result in allInstanceTaskForStage)
-                    success = result.Result.Success & success;
-
-                if (!success)
-                    break;
-
+                OrchestratedScenario.NotifyValidationFailure(this);
             }
-            // Send analytics for active instances and notify listeners upon completion.
-            SendOnPlayModeEnteredFromScenarioEvent();
-            Completed?.Invoke(this);
+            else
+            {
+                var executionStages = new Queue<ExecutionStage>(ExecutionGraph.k_ExecutionStages);
+                while (executionStages.Count > 0)
+                {
+                    var currentStage = executionStages.Dequeue();
 
-            // At this point, all instances ran successfully. Now simply monitor the ExecutionStage until it is complete.
-            await MonitorAllInstances();
+                    var success = await RunStage(currentStage, cancellationToken);
+
+                    if (!success)
+                        break;
+                }
+            }
+
+            // Regardless of success or failure, always run the Cleanup stage.
+            await RunStage(ExecutionStage.Cleanup, CancellationToken.None);
+
+            SendPlayModeCompletedEvent();
 
             if (cancellationToken.IsCancellationRequested)
                 ResetAfterCancellation();
@@ -359,19 +306,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             RefreshAndNotifyStatus();
         }
 
-        // TODO MTT-10016 This is part of the Migration - Remove this in favor of a single Monitoring Task at Instance Level
-        private async Task MonitorAllInstances()
+        async Task<bool> RunStage(ExecutionStage stage, CancellationToken cancellationToken)
         {
-            var allInstanceMonitors = new List<Task>();
+            var allInstanceTaskForStage = new List<Task<bool>>();
+
+            // For each state, execute on all instances.
             foreach (var instance in m_Instances)
             {
                 if (instance.IsFreeRunMode())
                     continue;
 
-                allInstanceMonitors.AddRange(instance.GetCurrentMonitoringTasksForScenario());
+                var instanceTask = instance.RunOrResumeAsync(stage, cancellationToken);
+                allInstanceTaskForStage.Add(instanceTask);
             }
 
-            await Task.WhenAll(allInstanceMonitors);
+            await Task.WhenAll(allInstanceTaskForStage);
+
+            bool success = true;
+            foreach (var result in allInstanceTaskForStage)
+                success &= result.Result;
+
+            return success;
         }
 
         internal ReadOnlyCollection<Node> GetNodes(ExecutionStage executionStage)
@@ -385,6 +340,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             return nodes.AsReadOnly();
+        }
+
+        IEnumerable<Node> GetNonFreeRunNodes(IEnumerable<ExecutionStage> executionStages)
+        {
+            foreach (var instance in m_Instances)
+            {
+                if (instance.IsFreeRunMode())
+                    continue;
+
+                var graph = instance.GetExecutionGraph();
+                foreach (var stage in executionStages)
+                {
+                    var instanceNodes = graph.GetNodes(stage);
+                    foreach (var node in instanceNodes)
+                        yield return node;
+                }
+            }
         }
 
         private void RefreshAndNotifyStatus()
@@ -434,37 +406,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private IEnumerable<NodeTimeData> GetAllNonFreeRunNodesTimeData()
+        private void SendPlayModeCompletedEvent()
         {
-            foreach (var instance in m_Instances)
-            {
-                if (instance.IsFreeRunMode())
-                    continue;
-
-                var graph = instance.GetExecutionGraph().GetAllNodes();
-                foreach (var node in graph)
-                {
-                    yield return node.TimeData;
-                }
-            }
-        }
-
-        private void SendOnPlayModeEnteredFromScenarioEvent()
-        {
-            TryGetLaunchingDuration(out var durationMs, GetAllNonFreeRunNodesTimeData());
+            var launchingDuration = Node.ComputeExecutionDuration(GetNonFreeRunNodes(ExecutionGraph.k_LaunchingStages));
             var instances = GetAnalyticsInstancesData();
             var errors = GetErrorInfoData();
-
             var state = m_StatusData.OverallStatus.State;
-            // TODO: Active state is considered as Running. The active state will likely be removed.
-            if (state == ExecutionState.Active)
-                state = ExecutionState.Running;
 
             AnalyticsOnPlayFromScenarioEvent.Send(new OnPlayFromScenarioData()
             {
                 Instances = instances.ToArray(),
                 ScenarioState = state.ToString(),
-                ScenarioLaunchingDurationMs = durationMs,
+                ScenarioLaunchingDurationMs = launchingDuration,
                 Errors = errors.ToArray()
             });
         }
@@ -521,38 +474,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 result.Add(instance.GetAnalyticsData());
             }
             return result;
-        }
-
-        // Get launching duration for scenario
-        // Retrieve all nodes from the scenario and calculate the time difference between the earliest start time and the latest end time
-        private bool TryGetLaunchingDuration(out long durationMS, IEnumerable<NodeTimeData> nodesTimeData)
-        {
-            var hasEnded = true;
-            DateTime? startTime = null;
-            DateTime? endTime = null;
-
-            foreach (var timeData in nodesTimeData)
-            {
-                if (timeData.HasEnded)
-                {
-                    endTime = endTime == null || timeData.EndTime > endTime ? timeData.EndTime : endTime;
-                }
-                else
-                {
-                    hasEnded = false;
-                }
-                if (timeData.HasStarted)
-                {
-                    startTime = startTime == null || timeData.StartTime < startTime ? timeData.StartTime : startTime;
-                }
-            }
-            if (startTime.HasValue && endTime.HasValue)
-            {
-                durationMS = (long)Math.Round((endTime.Value - startTime.Value).TotalMilliseconds);
-                return hasEnded;
-            }
-            durationMS = 0;
-            return false;
         }
     }
 }

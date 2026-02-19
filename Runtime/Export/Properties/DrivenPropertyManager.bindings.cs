@@ -15,6 +15,7 @@ using Object = UnityEngine.Object;
 namespace UnityEngine
 {
     // NOTE: internal until further notice. Used by tests
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [NativeHeader("Editor/Src/Properties/DrivenPropertyManager.h")]
     internal class DrivenPropertyManager
     {
@@ -35,6 +36,7 @@ namespace UnityEngine
         {
             UnregisterPropertyPartial(driver, target, propertyPath);
         }
+
 
         [Conditional("UNITY_EDITOR")]
         [NativeConditional("UNITY_EDITOR")]

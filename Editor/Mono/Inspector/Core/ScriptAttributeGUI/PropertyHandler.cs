@@ -11,6 +11,7 @@ using UnityEditorInternal;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 using UnityEngine.Pool;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -547,9 +548,7 @@ namespace UnityEditor
                 if (field != null) baseFields.Add(field);
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => baseFields.Any(b => f.Equals(b)));
-#pragma warning restore UA2001
+            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Exists(f => baseFields.Exists(b => f.Equals(b)));
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);

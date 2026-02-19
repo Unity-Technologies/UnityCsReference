@@ -27,8 +27,8 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle m_AccessorHandle;
             internal FoundryHandle m_LocationHandle;
 
-            [ThreadSafe] internal extern static LinkAccessorInternal Invalid();
-            [ThreadSafe] internal extern bool IsValid();
+            [NativeMethod(IsThreadSafe = true)] internal extern static LinkAccessorInternal Invalid();
+            [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
             // IInternalType
             LinkAccessorInternal IInternalType<LinkAccessorInternal>.ConstructInvalid() => Invalid();
@@ -44,8 +44,8 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle m_AccessorListHandle; // List<LinkAccessor>
             internal FoundryHandle m_LocationHandle;
 
-            [ThreadSafe] internal extern static LinkElementInternal Invalid();
-            [ThreadSafe] internal extern bool IsValid();
+            [NativeMethod(IsThreadSafe = true)] internal extern static LinkElementInternal Invalid();
+            [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
             // IInternalType
             LinkElementInternal IInternalType<LinkElementInternal>.ConstructInvalid() => Invalid();
@@ -55,8 +55,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ArgumentHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static BlockLinkOverrideInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static BlockLinkOverrideInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         BlockLinkOverrideInternal IInternalType<BlockLinkOverrideInternal>.ConstructInvalid() => Invalid();

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
@@ -59,7 +60,6 @@ namespace UnityEditor.Search
         static readonly string k_AreaTooltipFormat = L10n.Tr("Double click to search in: {0}");
         static readonly string k_NoResultsFoundLabel = L10n.Tr("No results found.");
         static readonly string k_NoResultsFoundQueryFormat = L10n.Tr("No results found for <b>{0}</b>.");
-        static readonly string k_IndexingInProgressLabel = L10n.Tr("Indexing is still in progress.");
         static readonly string k_TrySomethingElseLabel = L10n.Tr("Try something else?");
         static readonly string k_NoResultsInProviderFormat = L10n.Tr("There is no result in {0}.");
         static readonly string k_SelectAnotherTabLabel = L10n.Tr("Select another search tab?");
@@ -142,16 +142,16 @@ namespace UnityEditor.Search
             switch(m_DisplayMode)
             {
                 case SearchEmptyViewMode.HideHelpersNoResult:
-                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_NoResultsLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, TryAddIsIndexingWarning(context, k_NoResultsLabel));
                     break;
                 case SearchEmptyViewMode.NoResult:
-                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_NoResultsLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, TryAddIsIndexingWarning(context, k_NoResultsLabel));
                     break;
                 case SearchEmptyViewMode.NoResultWithTips:
                     BuildNoResultsTips();
                     break;
                 case SearchEmptyViewMode.SearchInProgress:
-                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, k_SearchInProgressLabel);
+                    AddOrUpdateNoResultLabel(ref m_NoResultLabel, TryAddIsIndexingWarning(context, k_SearchInProgressLabel));
                     break;
                 default:
                     BuildQueryHelpers();
@@ -172,9 +172,9 @@ namespace UnityEditor.Search
         {
             m_QueriesContainer = new VisualElement();
             m_QueriesContainer.name = "QueryHelpersContainer";
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Count() > 0)
-#pragma warning restore UA2001
+            #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Any())
+#pragma warning restore UA2002
             {
                 Add(CreateHeader(k_NarrowYourSearchLabel));
                 Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
@@ -223,11 +223,11 @@ namespace UnityEditor.Search
             container.style.flexDirection = FlexDirection.Column;
 
             var currentAreaFilterId = SearchSettings.helperWidgetCurrentArea;
-            var filteredQueries = GetFilteredQueries(searches.queries, currentAreaFilterId, blockMode); ;
+            var filteredQueries = GetFilteredQueries(searches.queries, currentAreaFilterId, blockMode);
             PopulateSearchHelpers(filteredQueries, container);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searches.UpdateTitle(filteredQueries.Count());
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             container.Children().LastOrDefault()?.AddToClassList("last-child");
 #pragma warning restore UA2001
@@ -303,8 +303,10 @@ namespace UnityEditor.Search
             {
                 // Keep only query matching one of the active providers.
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return queries.Where(q => activeProviders.Any(p => IsFilteredQuery(q.query, p)));
 #pragma warning restore UA2001
+#pragma warning restore UA2006
             }
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentProvider = activeProviders.FirstOrDefault(p => p.filterId == currentAreaFilterId);
@@ -325,16 +327,12 @@ namespace UnityEditor.Search
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var recentSearches = SearchSettings.recentSearches.ToList();
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            for (var i = 0; i < recentSearches.Count(); ++i)
-#pragma warning restore UA2001
+            for (var i = 0; i < recentSearches.Count; ++i)
             {
                 var a = recentSearches[i];
                 yield return a;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                for (var j = i + 1; j < recentSearches.Count();)
-#pragma warning restore UA2001
+                for (var j = i + 1; j < recentSearches.Count;)
                 {
                     var b = recentSearches[j];
                     if (a.StartsWith(b) || Utils.LevenshteinDistance(a, b, false) < 9)
@@ -525,7 +523,7 @@ namespace UnityEditor.Search
                     structureChanged |= AddOrUpdateNoResultLabel(ref m_NoResultLabel, string.Format(k_NoResultsFoundQueryFormat, context.searchQuery));
 
                     if (anyNonReady)
-                        structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_IndexingInProgressLabel);
+                        structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, SearchIndexingWarningWindow.k_IndexingInProgressLabel);
                     else
                         structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_TrySomethingElseLabel);
                 }
@@ -535,7 +533,7 @@ namespace UnityEditor.Search
                 structureChanged |= ClearNoResultsTipsHelper(ref m_QueryPropositionContainer);
                 structureChanged |= AddOrUpdateNoResultLabel(ref m_NoResultLabel, string.Format(k_NoResultsInProviderFormat, provider.name));
                 if (anyNonReady)
-                    structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_IndexingInProgressLabel);
+                    structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, SearchIndexingWarningWindow.k_IndexingInProgressLabel);
                 else
                     structureChanged |= AddOrUpdateNoResultHelpLabel(ref m_NoResultsHelpLabel, k_SelectAnotherTabLabel);
             }
@@ -647,6 +645,46 @@ namespace UnityEditor.Search
 
             Add(container);
             return true;
+        }
+
+        internal static bool CheckForIndexingWarning(SearchContext context)
+        {
+            // Check if Asset provider is used:
+            var assetProviderIsUsed = false;
+            foreach (var p in context.providers)
+            {
+                if (p.id == AssetProvider.type)
+                {
+                    assetProviderIsUsed = true;
+                    break;
+                }
+            }
+
+            if (!assetProviderIsUsed)
+            {
+                return false;
+            }
+
+            // There is an explicit provider but it isn't the AssetProvider
+            if (!string.IsNullOrEmpty(context.filterId) && context.filterId != AssetProvider.filterId)
+                return false;
+
+            // Indexing is done but no results were found:
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            if (db.ready)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static string TryAddIsIndexingWarning(SearchContext context, string text)
+        {
+            if (!CheckForIndexingWarning(context))
+                return text;
+
+            return $"{text}\n{SearchIndexingWarningWindow.k_IndexingInProgressLabel}";
         }
 
         private bool AddOrUpdateNoResultLabel(ref Label label, in string text)

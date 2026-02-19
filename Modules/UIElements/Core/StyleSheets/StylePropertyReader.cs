@@ -69,10 +69,11 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         // This is for UXML inline sheet
-        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, float dpiScaling = 1.0f)
+        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, StyleVariableContext varContext, float dpiScaling = 1.0f)
         {
             m_Sheet = sheet;
             m_Properties = properties;
+            m_Resolver.variableContext = varContext;
 
             this.dpiScaling = dpiScaling;
             LoadProperties();

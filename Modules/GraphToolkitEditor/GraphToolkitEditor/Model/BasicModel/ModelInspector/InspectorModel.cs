@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 namespace Unity.GraphToolkit.Editor
 {
@@ -65,7 +64,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The models that will be inspected.
         /// </summary>
-        public IEnumerable<Model> InspectedModels
+        public List<Model> InspectedModels
         {
             set
             {
@@ -92,17 +91,13 @@ namespace Unity.GraphToolkit.Editor
         /// and structure of the inspected models. You can override this method to customize how specific model types affect the inspector
         /// sections. Overriding allows for more precise control over which sections are shown, hidden, or modified based on the different models.
         /// </remarks>
-        protected virtual void SetSectionsFromModels(IEnumerable<Model> inspectedModels)
+        protected virtual void SetSectionsFromModels(List<Model> inspectedModels)
         {
             m_SectionModels.Clear();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (inspectedModels.Count() == 1)
-#pragma warning restore UA2001
+            if (inspectedModels.Count == 1)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var inspectedModel = inspectedModels.First();
-#pragma warning restore UA2001
+                var inspectedModel = inspectedModels[0];
                 if (inspectedModel == null)
                     return;
 
@@ -346,17 +341,13 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        bool SetTitleFromModels(IEnumerable<Model> inspectedModels)
+        bool SetTitleFromModels(List<Model> inspectedModels)
         {
             var currentTitle = m_Title;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!inspectedModels.Skip(1).HasAny())
-#pragma warning restore UA2001
+            if (inspectedModels.Count <= 1)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var inspectedModel = inspectedModels.First();
-#pragma warning restore UA2001
+                var inspectedModel = inspectedModels[0];
                 if (inspectedModel is IHasTitle hasTitle)
                 {
                     m_Title = hasTitle.Title;

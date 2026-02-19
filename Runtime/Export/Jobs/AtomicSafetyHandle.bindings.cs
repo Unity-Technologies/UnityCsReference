@@ -57,44 +57,44 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal int staticSafetyId;
 
         // Creates a new AtomicSafetyHandle that is valid until Release is called.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern AtomicSafetyHandle Create();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern AtomicSafetyHandle GetTempUnsafePtrSliceHandle();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern AtomicSafetyHandle GetTempMemoryHandle();
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsTempMemoryHandle(AtomicSafetyHandle handle);
 
         // Releases a previously Created AtomicSafetyHandle.
         // You must call CheckDeallocateAndThrow before calling Release.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void Release(AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern bool IsDefaultValue(in AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void SetExclusiveWeak(ref AtomicSafetyHandle handle, bool enabled);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern bool GetExclusiveWeak(in AtomicSafetyHandle handle);
 
         // Marks the AtomicSafetyHandle so that it cannot be disposed of.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void PrepareUndisposable(ref AtomicSafetyHandle handle);
 
         // Switches the AtomicSafetyHandle to the secondary version number.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void UseSecondaryVersion(ref AtomicSafetyHandle handle);
 
         // Switches the AtomicSafetyHandle to the secondary version number.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetAllowSecondaryVersionWriting(AtomicSafetyHandle handle, bool allowWriting);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void SetBumpSecondaryVersionOnScheduleWrite(AtomicSafetyHandle handle, bool value);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
@@ -130,7 +130,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         // For debugging purposes in unit tests we need to sometimes just sync
         // all jobs against an handle before shutting down.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern EnforceJobResult EnforceAllBufferJobsHaveCompleted(AtomicSafetyHandle handle);
 
         // Waits for all jobs running against this AtomicSafetyHandle to complete,
@@ -141,43 +141,43 @@ namespace Unity.Collections.LowLevel.Unsafe
         // This is unusual behaviour, normally we would simply throw an exception
         // and thus simply not perform the Disposing.
         // But sometimes you just need to delete memory right away, for example Mesh.EndWriteVertices().
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern EnforceJobResult EnforceAllBufferJobsHaveCompletedAndRelease(AtomicSafetyHandle handle);
 
         // Waits for all jobs running against this AtomicSafetyHandle to complete,
         // Then marks the atomic safety handle to no longer be readable or writable.
         // Thus the only thing you can do with it is dispose it.
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern EnforceJobResult EnforceAllBufferJobsHaveCompletedAndDisableReadWrite(AtomicSafetyHandle handle);
 
         // Make sure that a jobhandle covers all jobs scheduled against a buffer,
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern bool CheckAllBufferJobsAreDependencyOrHaveCompleted(AtomicSafetyHandle handle, JobHandle job);
 
         // Same as CheckReadAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckReadAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Same as CheckWriteAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckWriteAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Checks if the handle can be deallocated.
         // If not (already destroyed, job currently accessing the data) throws an exception.
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckDeallocateAndThrow(AtomicSafetyHandle handle);
 
-        [ThreadSafe, NativeThrows]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckGetSecondaryDataPointerAndThrow(AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static unsafe extern int GetReaderArray(AtomicSafetyHandle handle, int maxCount, IntPtr output);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern JobHandle GetWriter(AtomicSafetyHandle handle);
 
         // Checks if the handle can be read from
@@ -246,13 +246,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             return true;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetReaderName(AtomicSafetyHandle handle, int readerIndex);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static extern string GetWriterName(AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         public static unsafe extern int NewStaticSafetyId(byte* ownerTypeNameBytes, int byteCount);
 
         public static unsafe int NewStaticSafetyId<T>()
@@ -266,7 +266,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [NativeThrows, ThreadSafe]
+        [NativeMethod(ThrowsException = true, IsThreadSafe = true)]
         public static unsafe extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, byte* messageBytes, int byteCount);
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

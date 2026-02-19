@@ -17,7 +17,7 @@ namespace Unity.Collections.LowLevel.Unsafe
     [VisibleToOtherModules("UnityEngine.ParticleSystemModule", "UnityEngine.AudioModule")]
     internal static partial class BurstLike
     {
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         [BurstAuthorizedExternalMethod]
         internal static extern int NativeFunctionCall_Int_IntPtr_IntPtr(IntPtr function, IntPtr p0, IntPtr p1, out int error);
 

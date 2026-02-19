@@ -45,8 +45,10 @@ namespace UnityEditor
                 Type = assetPostprocessorType;
                 Methods = implementedMethods;
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 StaticDependency = Methods.Intersect(AssetPostprocessingInternal.k_NonAutomaticDependencyMethods).Count() != Methods.Length;
 #pragma warning restore UA2001
+#pragma warning restore UA2005
 
                 var inst = (AssetPostprocessor)Activator.CreateInstance(assetPostprocessorType);
                 Version = inst.GetVersion();
@@ -571,9 +573,7 @@ namespace UnityEditor
             {
                 if (ImplementsAnyOfTheses(assetPostprocessorClass, distinctMethodNames, out var methods))
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
-#pragma warning restore UA2001
+                    if (Array.Exists(assetPostprocessorClass.GetConstructors(), t => t.GetParameters().Length == 0))
                         list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
                     else
                         LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
@@ -624,9 +624,7 @@ namespace UnityEditor
             {
                 if (ImplementsAnyOfTheses(assetPostprocessorClass, allMethodsNames, out var methods))
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
-#pragma warning restore UA2001
+                    if (Array.Exists(assetPostprocessorClass.GetConstructors(), t => t.GetParameters().Length == 0))
                         list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
                     else
                         LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);

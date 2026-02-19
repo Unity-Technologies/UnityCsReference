@@ -12,7 +12,25 @@ namespace Unity.GraphToolkit.Editor
     public abstract partial class Node
     {
         [NonSerialized]
-        internal AbstractNodeModel m_Implementation;
+        internal NodeModel m_Implementation;
+
+        NodeModel INode.NodeModel => GetImplementation();
+
+
+        internal NodeModel GetImplementation()
+        {
+            if (m_Implementation == null)
+            {
+                CreateImplementation();
+            }
+
+            return m_Implementation;
+        }
+
+        internal virtual void CreateImplementation()
+        {
+            (new UserNodeModelImp()).InitCustomNode(this);
+        }
 
         internal class PortDefinitionContext : IPortDefinitionContext
         {
@@ -582,7 +600,7 @@ namespace Unity.GraphToolkit.Editor
             s_OptionDefinitionContext.Finish();
         }
 
-        internal void SetImplementation(AbstractNodeModel implementation)
+        internal void SetImplementation(NodeModel implementation)
         {
             m_Implementation = implementation;
         }

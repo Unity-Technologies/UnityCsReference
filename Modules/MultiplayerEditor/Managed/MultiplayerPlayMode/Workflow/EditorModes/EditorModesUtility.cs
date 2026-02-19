@@ -54,7 +54,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (SessionState.GetBool(k_CurrentWindowSetKey, false))
                 {
                     var value = SessionState.GetInt(k_CurrentWindowIdKey, 0);
-                    return ContainerWindowProxy.FromInstanceID(EntityId.From(value));
+                    return ContainerWindowProxy.FromInstanceID(EntityId.FromULong((ulong)value));
                 }
 
                 return null;
@@ -69,7 +69,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 else
                 {
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    SessionState.SetInt(k_CurrentWindowIdKey, (int)value.GetEntityId().GetRawData());
+                    SessionState.SetInt(k_CurrentWindowIdKey, (int)EntityId.ToULong(value.GetEntityId()));
                     SessionState.SetBool(k_CurrentWindowSetKey, true);
                 }
             }

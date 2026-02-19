@@ -20,26 +20,20 @@ namespace UnityEditor.ShortcutManagement
             return (int)key <= (int)KeyCode.Mouse6 || ((int)key >= (int)KeyCode.F16 && (int)key <= (int)KeyCode.F24);
         }
 
-        public Directory(IEnumerable<ShortcutEntry> entries)
+        public Directory(IReadOnlyList<ShortcutEntry> entries)
         {
             Initialize(entries);
         }
 
-        public void Initialize(IEnumerable<ShortcutEntry> entries)
+        public void Initialize(IReadOnlyList<ShortcutEntry> entries)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ShortcutEntries = new List<ShortcutEntry>(entries.Count());
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_IndexedShortcutEntries = new Dictionary<KeyCode, List<ShortcutEntry>>(entries.Count());
-#pragma warning restore UA2001
+            m_ShortcutEntries = new List<ShortcutEntry>(entries.Count);
+            m_IndexedShortcutEntries = new Dictionary<KeyCode, List<ShortcutEntry>>(entries.Count);
             foreach (ShortcutEntry entry in entries)
             {
                 m_ShortcutEntries.Add(entry);
                 if (entry.combinations.Count > 0)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    AddEntry(entry.combinations.First().keyCode, entry);
-#pragma warning restore UA2001
+                    AddEntry(entry.combinations[0].keyCode, entry);
                 // TODO: Index unbound entries?
             }
         }

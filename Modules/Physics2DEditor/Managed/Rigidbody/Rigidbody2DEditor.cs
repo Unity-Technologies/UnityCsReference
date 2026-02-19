@@ -138,9 +138,9 @@ namespace UnityEditor
                         if (!m_UseAutoMass.hasMultipleDifferentValues)
                         {
                             // If we're using auto-mass but either the object is part of a prefab parent or is not active then we cannot show the calculated mass value.
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            if (m_UseAutoMass.boolValue && targets.Any(x => PrefabUtility.IsPartOfPrefabAsset(x) || !(x as Rigidbody2D).gameObject.activeInHierarchy))
-#pragma warning restore UA2001
+                            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            if (m_UseAutoMass.boolValue && System.Array.Exists(targets, x => PrefabUtility.IsPartOfPrefabAsset(x) || !(x as Rigidbody2D).gameObject.activeInHierarchy))
+#pragma warning restore UA2006
                             {
                                 EditorGUILayout.HelpBox("The auto mass value cannot be displayed for a prefab or if the object is not active.  The value will be calculated for a prefab instance and when the object is active.", MessageType.Info);
                             }
@@ -164,9 +164,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_CollisionDetection);
                     EditorGUILayout.PropertyField(m_SleepingMode);
                     EditorGUILayout.PropertyField(m_Interpolate);
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (targets.Any(x => (x as Rigidbody2D).interpolation != RigidbodyInterpolation2D.None))
-#pragma warning restore UA2001
+                    if (System.Array.Exists(targets, x => (x as Rigidbody2D).interpolation != RigidbodyInterpolation2D.None))
                     {
                         if (Physics2D.simulationMode == SimulationMode2D.Update)
                             EditorGUILayout.HelpBox("The physics simulation mode is set to run per-frame. Any interpolation mode will be ignored and can be set to 'None'.", MessageType.Info);

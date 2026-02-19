@@ -15,8 +15,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_BlockShaderInterfaceHandle;
         internal FoundryHandle m_RegistrationStatementListHandle;
 
-        [ThreadSafe] internal extern static RegisterTemplatesWithInterfaceInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static RegisterTemplatesWithInterfaceInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         RegisterTemplatesWithInterfaceInternal IInternalType<RegisterTemplatesWithInterfaceInternal>.ConstructInvalid() => Invalid();

@@ -42,7 +42,7 @@ namespace Unity.UIElements.Editor
 
         static bool UpdatePanelComponents<T>(ref int previousUpdateCount, Action<T> updateAction) where T : Object, IPanelComponent
         {
-            var panelComponents = Object.FindObjectsByType<T>(FindObjectsSortMode.None);
+            var panelComponents = Object.FindObjectsByType<T>();
 
             // Early exit: no UIDocument to keep track of.
             if (panelComponents == null || panelComponents.Length == 0)

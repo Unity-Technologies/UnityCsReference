@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEditor.Rendering;
@@ -84,9 +85,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             var standardShaderQualities = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).standardShaderQuality);
 #pragma warning restore UA2001
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return standardShaderQualities.Distinct().Count() > 1;
-#pragma warning restore UA2001
+            return standardShaderQualities.DistinctCountGreaterThan(1);
         }
 
         internal static bool IsUsingForwardRendering(BuildTarget platform)
@@ -96,9 +95,9 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             var renderingPaths = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).renderingPath);
 #pragma warning restore UA2001
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderingPaths.Any(path => path == RenderingPath.Forward);
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         internal static bool IsUsingDeferredRendering(BuildTarget platform)
@@ -108,9 +107,9 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             var renderingPaths = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).renderingPath);
 #pragma warning restore UA2001
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderingPaths.Any(path => path == RenderingPath.DeferredShading);
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
     }
 }

@@ -30,13 +30,18 @@ namespace UnityEditor.Scripting
             SubscribeToCodeOptimizationChanged();
         }
 
-        [FreeFunction(Name = "ManagedDebugger::Disconnect")]
-        public static extern void Disconnect();
+        public static void Disconnect()
+        {
+            DisconnectNative();
+        }
 
-        [FreeFunction(Name = "ManagedDebugger::IsAttached")]
+        [FreeFunction("ManagedDebugger::Disconnect")]
+        private static extern void DisconnectNative();
+
+        [FreeFunction("ManagedDebugger::IsAttached")]
         private static extern bool IsAttached();
 
-        [FreeFunction(Name = "ManagedDebugger::IsEnabled")]
+        [FreeFunction("ManagedDebugger::IsEnabled")]
         private static extern bool IsEnabled();
 
         [RequiredByNativeCode]

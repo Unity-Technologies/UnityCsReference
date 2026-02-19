@@ -1830,7 +1830,11 @@ namespace UnityEditor
             get
             {
                 if (m_Instance == null)
+                {
+#pragma warning disable CS0618 // Type or member is obsolete
                     m_Instance = FindFirstObjectByType(typeof(WindowFocusState)) as WindowFocusState;
+#pragma warning restore CS0618 // Type or member is obsolete
+                }
                 if (m_Instance == null)
                     m_Instance = CreateInstance<WindowFocusState>();
                 return m_Instance;

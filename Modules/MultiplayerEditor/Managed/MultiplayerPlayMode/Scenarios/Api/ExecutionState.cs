@@ -33,11 +33,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         Running,
 
         /// <summary>
-        /// Execution is active and waiting for the process to finish. Will transition to Completed or Error when done
-        /// </summary>
-        Active,
-
-        /// <summary>
         /// Execution has completed its tasks successfully and won't do anything until the next cycle. Will transition to Idle when the next cycle starts
         /// </summary>
         Completed,

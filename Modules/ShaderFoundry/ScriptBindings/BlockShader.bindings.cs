@@ -22,8 +22,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ShaderCustomEditorListHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static BlockShaderInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static BlockShaderInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         BlockShaderInternal IInternalType<BlockShaderInternal>.ConstructInvalid() => Invalid();

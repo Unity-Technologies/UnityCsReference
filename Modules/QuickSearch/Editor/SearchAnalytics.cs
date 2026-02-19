@@ -480,9 +480,9 @@ namespace UnityEditor.Search
             report.showPackageIndexes = SearchSettings.showPackageIndexes;
             report.debounceMs = SearchSettings.debounceMs;
             report.savedSearchesSortOrder = SearchSettings.savedSearchesSortOrder.ToString();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             report.savedSearchesCount = SearchQueryAsset.savedQueries.Count() + SearchQuery.userQueries.Count();
-#pragma warning restore UA2001
+#pragma warning restore UA2005
             report.sessionQueryCount = sessionQueryCount;
             report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
             report.sessionSearchOpenWindow = sessionSearchOpenWindow;

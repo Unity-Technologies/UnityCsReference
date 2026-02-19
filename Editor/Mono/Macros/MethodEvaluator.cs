@@ -92,11 +92,7 @@ namespace UnityEditor.Macros
                     try
                     {
                         var assembly = CurrentAssemblies.LoadFromPath(dllPath);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (assembly != null && assembly.GetTypes().Any(t => t.Name == args.Name))
-#pragma warning restore UA2001
-#pragma warning restore RS0030
+                        if (assembly != null && Array.Exists(assembly.GetTypes(), t => t.Name == args.Name))
                             return assembly;
                     }
                     catch (Exception)

@@ -6,7 +6,6 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
-using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor
 {
@@ -16,102 +15,22 @@ namespace UnityEditor
         // Active Animation windows
         private static List<AnimEditor> s_AnimationWindows = new List<AnimEditor>();
         public static List<AnimEditor> GetAllAnimationWindows() { return s_AnimationWindows; }
-        public bool stateDisabled { get { return m_State.disabled; } }
+        public bool stateDisabled => m_State.disabled;
 
-        [SerializeField] private SplitterState m_HorizontalSplitter;
         [SerializeReference] private AnimationWindowState m_State;
         [SerializeReference] private DopeSheetEditor m_DopeSheet;
         [SerializeReference] private CurveEditor m_CurveEditor;
         [SerializeField] private AnimationWindowHierarchy m_Hierarchy;
-        [SerializeField] private AnimationWindowClipPopup m_ClipPopup;
         [SerializeField] private UnityEditor.AnimationWindowBuiltin.AnimationEventTimeLine m_Events;
-        [SerializeField] private AnimEditorOverlay m_Overlay;
         [SerializeField] private EditorWindow m_OwnerWindow;
 
-        [System.NonSerialized] private Rect m_Position;
         [System.NonSerialized] private bool m_TriggerFraming;
         [System.NonSerialized] private bool m_Initialized;
 
-        private float hierarchyWidth { get { return m_HorizontalSplitter.realSizes[0]; } }
-        private float contentWidth { get { return m_HorizontalSplitter.realSizes[1]; } }
-
-        static private Color s_SelectionRangeColorLight = new Color32(255, 255, 255, 90);
-        static private Color s_SelectionRangeColorDark = new Color32(200, 200, 200, 40);
-
-        static private Color selectionRangeColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? s_SelectionRangeColorDark : s_SelectionRangeColorLight;
-            }
-        }
-
-        static private Color s_OutOfRangeColorLight = new Color32(160, 160, 160, 127);
-        static private Color s_OutOfRangeColorDark = new Color32(40, 40, 40, 127);
-
-        static private Color outOfRangeColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? s_OutOfRangeColorDark : s_OutOfRangeColorLight;
-            }
-        }
-
-        static private Color s_InRangeColorLight = new Color32(211, 211, 211, 255);
-        static private Color s_InRangeColorDark =  new Color32(75, 75, 75, 255);
-
-        static private Color inRangeColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? s_InRangeColorDark : s_InRangeColorLight;
-            }
-        }
-
-        static private Color s_FilterBySelectionColorLight = new Color(0.82f, 0.97f, 1.00f, 1.00f);
-        static private Color s_FilterBySelectionColorDark = new Color(0.54f, 0.85f, 1.00f, 1.00f);
-
-        static private Color filterBySelectionColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? s_FilterBySelectionColorDark : s_FilterBySelectionColorLight;
-            }
-        }
-
         internal const int kSliderThickness = 13;
-        internal const int kIntFieldWidth = 35;
-        internal const int kHierarchyMinWidth = 300;
-        internal const int kToggleButtonWidth = 80;
         internal const float kDisabledRulerAlpha = 0.12f;
 
-        private int layoutRowHeight
-        {
-            get { return (int)EditorGUI.kWindowToolbarHeight; }
-        }
-
-        internal struct FrameRateMenuEntry
-        {
-            public FrameRateMenuEntry(GUIContent content, float value)
-            {
-                this.content = content;
-                this.value = value;
-            }
-
-            public GUIContent content;
-            public float value;
-        }
-
-        internal static FrameRateMenuEntry[] kAvailableFrameRates = new FrameRateMenuEntry[]
-        {
-            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/24"), 24f),
-            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/25"), 25f),
-            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/30"), 30f),
-            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/50"), 50f),
-            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/60"), 60f)
-        };
-
-        public AnimationWindowState state { get { return m_State; } }
+        public AnimationWindowState state => m_State;
 
         public IAnimationWindowSelectionItem selection
         {
@@ -134,100 +53,11 @@ namespace UnityEditor
             }
         }
 
-        internal CurveEditor curveEditor { get { return m_CurveEditor; } }
-        internal DopeSheetEditor dopeSheetEditor { get { return m_DopeSheet; } }
+        internal CurveEditor curveEditor => m_CurveEditor;
+        internal DopeSheetEditor dopeSheetEditor => m_DopeSheet;
 
-        public void OnAnimEditorGUI(EditorWindow parent, Rect position)
-        {
-            m_DopeSheet.m_Owner = parent;
-            m_OwnerWindow = parent;
-            m_Position = position;
-
-            Initialize();
-
-            m_State.OnGUI();
-
-            if (m_State.disabled && m_State.recording)
-                m_State.recording = false;
-
-            SynchronizeLayout();
-
-            using (new EditorGUI.DisabledScope(m_State.disabled || m_State.animatorIsOptimized))
-            {
-                int optionsID = GUIUtility.GetControlID(FocusType.Passive);
-                if (Event.current.type != EventType.Repaint)
-                    OptionsOnGUI(optionsID);
-
-                OverlayEventOnGUI();
-
-                GUILayout.BeginHorizontal();
-                SplitterGUILayout.BeginHorizontalSplit(m_HorizontalSplitter);
-
-                // Left side
-                GUILayout.BeginVertical();
-
-                // First row of controls
-                Rect playControlsRect = EditorGUILayout.BeginHorizontal(AnimationWindowStyles.animPlayToolBar);
-                PlayControlsOnGUI(playControlsRect);
-                GUILayout.EndHorizontal();
-
-                // Second row of controls
-                GUILayout.BeginHorizontal(AnimationWindowStyles.animClipToolBar);
-                LinkOptionsOnGUI();
-                ClipSelectionDropDownOnGUI();
-                GUILayout.FlexibleSpace();
-                FrameRateInputFieldOnGUI();
-                FilterBySelectionButtonOnGUI();
-                AddKeyframeButtonOnGUI();
-                AddEventButtonOnGUI();
-                GUILayout.EndHorizontal();
-
-                Rect hierarchyLayoutRect = GUILayoutUtility.GetRect(hierarchyWidth, hierarchyWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
-                HierarchyOnGUI(hierarchyLayoutRect);
-
-                // Bottom row of controls
-                using (new GUILayout.HorizontalScope(AnimationWindowStyles.toolbarBottom))
-                {
-                    TabSelectionOnGUI();
-                }
-
-                GUILayout.EndVertical();
-
-                // Right side
-                GUILayout.BeginVertical();
-
-                // Acquire Rects
-                Rect timerulerRect = GUILayoutUtility.GetRect(contentWidth, layoutRowHeight);
-                Rect eventsRect = GUILayoutUtility.GetRect(contentWidth, layoutRowHeight - 1);
-                Rect contentLayoutRect = GUILayoutUtility.GetRect(contentWidth, contentWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
-
-                // MainContent must be done first since it resizes the Zoomable area.
-                MainContentOnGUI(contentLayoutRect);
-                TimeRulerOnGUI(timerulerRect);
-                EventLineOnGUI(eventsRect);
-
-                using (new GUILayout.HorizontalScope(AnimationWindowStyles.toolbarBottom))
-                {
-                    ApplyRevertOnGUI();
-                }
-
-                GUILayout.EndVertical();
-
-                SplitterGUILayout.EndHorizontalSplit();
-                GUILayout.EndHorizontal();
-
-                // Overlay
-                OverlayOnGUI(contentLayoutRect);
-
-                if (Event.current.type == EventType.Repaint)
-                {
-                    OptionsOnGUI(optionsID);
-                    AnimationWindowStyles.separator.Draw(new Rect(hierarchyWidth, 0, 1, position.height), false, false, false, false);
-                }
-
-                RenderEventTooltip();
-            }
-        }
+        internal string eventToolTipText => m_Events.tooltipText;
+        internal Vector2 eventToolTipPosition => m_Events.tooltipPosition;
 
         internal void MainContentOnGUI(Rect contentLayoutRect)
         {
@@ -242,79 +72,21 @@ namespace UnityEditor
                 return;
             }
 
-            var mainAreaControlID = 0;
             if (m_State.disabled)
             {
                 SetupWizardOnGUI(contentLayoutRect);
             }
             else
             {
-                Event evt = Event.current;
-                if (evt.type == EventType.MouseDown && contentLayoutRect.Contains(evt.mousePosition))
-                    m_Events.ClearSelection();
-
-                if (triggerFraming && evt.type == EventType.Repaint)
-                {
-                    m_DopeSheet.FrameClip();
-                    m_CurveEditor.FrameClip(true, true);
-
-                    triggerFraming = false;
-                }
-
                 if (m_State.showCurveEditor)
                 {
                     CurveEditorOnGUI(contentLayoutRect);
-                    mainAreaControlID = m_CurveEditor.areaControlID;
                 }
                 else
                 {
                     DopeSheetOnGUI(contentLayoutRect);
-                    mainAreaControlID = m_DopeSheet.areaControlID;
                 }
             }
-
-            HandleMainAreaCopyPaste(mainAreaControlID);
-        }
-
-        private void OverlayEventOnGUI()
-        {
-            if (m_State.animatorIsOptimized)
-                return;
-
-            if (m_State.disabled)
-                return;
-
-            Rect overlayRect = new Rect(hierarchyWidth - 1, 0f, contentWidth - kSliderThickness, m_Position.height - kSliderThickness);
-
-            GUI.BeginGroup(overlayRect);
-            m_Overlay.HandleEvents();
-            GUI.EndGroup();
-        }
-
-        private void OverlayOnGUI(Rect contentRect)
-        {
-            if (m_State.animatorIsOptimized)
-                return;
-
-            if (m_State.disabled)
-                return;
-
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            Rect contentRectNoSliders = new Rect(contentRect.xMin, contentRect.yMin, contentRect.width - kSliderThickness, contentRect.height - kSliderThickness);
-            Rect overlayRectNoSliders = new Rect(hierarchyWidth - 1, 0f, contentWidth - kSliderThickness, contentRect.yMax - kSliderThickness);
-
-            GUI.BeginGroup(overlayRectNoSliders);
-
-            Rect localRect = new Rect(0, 0, overlayRectNoSliders.width, overlayRectNoSliders.height);
-
-            Rect localContentRect = contentRectNoSliders;
-            localContentRect.position -= overlayRectNoSliders.min;
-
-            m_Overlay.OnGUI(localRect, localContentRect);
-
-            GUI.EndGroup();
         }
 
         public void Update()
@@ -335,20 +107,15 @@ namespace UnityEditor
                 m_State.animEditor = this;
                 m_State.selection = new FallbackSelectionItem();
 
-                InitializeHorizontalSplitter();
-                InitializeClipSelection();
                 InitializeDopeSheet();
                 InitializeEvents();
                 InitializeCurveEditor();
-                InitializeOverlay();
             }
 
             InitializeNonserializedValues();
 
             m_State.timeArea = m_State.showCurveEditor ? (TimeArea)m_CurveEditor : m_DopeSheet;
             m_DopeSheet.state = m_State;
-            m_ClipPopup.state = m_State;
-            m_Overlay.state = m_State;
 
             m_State.OnEnable();
 
@@ -471,7 +238,7 @@ namespace UnityEditor
             GUI.enabled = false; // Reset state to false. It's always false originally for SetupWizardOnGUI.
         }
 
-        private void EventLineOnGUI(Rect eventsRect)
+        internal void EventLineOnGUI(Rect eventsRect)
         {
             eventsRect.width -= kSliderThickness;
             GUI.Label(eventsRect, GUIContent.none, AnimationWindowStyles.eventBackground);
@@ -479,44 +246,6 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(selection.isReadOnly))
             {
                 m_Events.EventLineGUI(eventsRect, m_State);
-            }
-        }
-
-        private void RenderEventTooltip()
-        {
-            m_Events.DrawInstantTooltip(m_Position);
-        }
-
-        private void TabSelectionOnGUI()
-        {
-            GUILayout.FlexibleSpace();
-            EditorGUI.BeginChangeCheck();
-            GUILayout.Toggle(!m_State.showCurveEditor, AnimationWindowStyles.dopesheet, AnimationWindowStyles.miniToolbarButton, GUILayout.Width(kToggleButtonWidth));
-            GUILayout.Toggle(m_State.showCurveEditor, AnimationWindowStyles.curves, EditorStyles.toolbarButtonRight, GUILayout.Width(kToggleButtonWidth));
-            if (EditorGUI.EndChangeCheck())
-            {
-                SwitchBetweenCurvesAndDopesheet();
-            }
-        }
-
-        private void ApplyRevertOnGUI()
-        {
-            if (!selection?.isImported ?? true)
-                return;
-
-            GUILayout.FlexibleSpace();
-            using (new EditorGUI.DisabledScope(!m_State.selection?.hasUnsavedChanges ?? true))
-            {
-                if (GUILayout.Button(AnimationWindowStyles.discardChanges, AnimationWindowStyles.miniToolbarButton, GUILayout.Width(kToggleButtonWidth)))
-                {
-                    m_State.ClearSelections();
-                    m_State.selection?.DiscardChanges();
-                }
-
-                if (GUILayout.Button(AnimationWindowStyles.applyChanges, AnimationWindowStyles.miniToolbarButton, GUILayout.Width(kToggleButtonWidth)))
-                {
-                    m_State.selection?.SaveChanges();
-                }
             }
         }
 
@@ -550,35 +279,23 @@ namespace UnityEditor
                 m_Hierarchy.OnGUI(hierarchyLayoutRect);
         }
 
-        private void FrameRateInputFieldOnGUI()
-        {
-            if (!m_State.showFrameRate)
-                return;
-
-            using (new EditorGUI.DisabledScope(selection.isReadOnly))
-            {
-                GUILayout.Label(AnimationWindowStyles.samples, EditorStyles.toolbarLabel);
-
-                EditorGUI.BeginChangeCheck();
-                int clipFrameRate = EditorGUILayout.DelayedIntField((int)m_State.clipFrameRate, EditorStyles.toolbarTextField, GUILayout.Width(kIntFieldWidth));
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_State.clipFrameRate = clipFrameRate;
-                    UpdateSelectedKeysToCurveEditor();
-                }
-            }
-        }
-
-        private void ClipSelectionDropDownOnGUI()
-        {
-            m_ClipPopup.OnGUI();
-        }
-
         internal void DopeSheetOnGUI(Rect position)
         {
+            Event evt = Event.current;
+            if (evt.type == EventType.MouseDown && position.Contains(evt.mousePosition))
+                m_Events.ClearSelection();
+
+            if (triggerFraming && evt.type == EventType.Repaint)
+            {
+                m_DopeSheet.FrameClip();
+                m_CurveEditor.FrameClip(true, true);
+
+                triggerFraming = false;
+            }
+
             Rect noVerticalSliderRect = new Rect(position.xMin, position.yMin, position.width - kSliderThickness, position.height);
 
-            if (Event.current.type == EventType.Repaint)
+            if (evt.type == EventType.Repaint)
             {
                 m_DopeSheet.rect = noVerticalSliderRect;
                 m_DopeSheet.SetTickMarkerRanges();
@@ -596,7 +313,7 @@ namespace UnityEditor
 
             if (!m_State.disabled)
             {
-                m_DopeSheet.TimeRuler(noSlidersRect, m_State.frameRate, false, true, kDisabledRulerAlpha, m_State.timeFormat);  // grid
+                m_DopeSheet.TimeRuler(noSlidersRect, m_State.frameRate, false, true, kDisabledRulerAlpha, ((ICurveEditorState)m_State).timeFormat);  // grid
             }
             m_DopeSheet.OnGUI(noSlidersRect, m_State.hierarchyState.scrollPos * -1);
 
@@ -611,11 +328,25 @@ namespace UnityEditor
 
             if (m_DopeSheet.spritePreviewLoading == true)
                 Repaint();
+
+            HandleMainAreaCopyPaste(m_CurveEditor.areaControlID);
         }
 
         internal void CurveEditorOnGUI(Rect position)
         {
-            if (Event.current.type == EventType.Repaint)
+            Event evt = Event.current;
+            if (evt.type == EventType.MouseDown && position.Contains(evt.mousePosition))
+                m_Events.ClearSelection();
+
+            if (triggerFraming && evt.type == EventType.Repaint)
+            {
+                m_DopeSheet.FrameClip();
+                m_CurveEditor.FrameClip(true, true);
+
+                triggerFraming = false;
+            }
+
+            if (evt.type == EventType.Repaint)
             {
                 m_CurveEditor.rect = position;
                 m_CurveEditor.SetTickMarkerRanges();
@@ -627,7 +358,7 @@ namespace UnityEditor
             m_CurveEditor.hSlider = m_State.showCurveEditor;
 
             // Sync animation curves in curve editor.  Do it only once per frame.
-            if (Event.current.type == EventType.Layout)
+            if (evt.type == EventType.Layout)
                 UpdateCurveEditorData();
 
             m_CurveEditor.BeginViewGUI();
@@ -645,267 +376,14 @@ namespace UnityEditor
                 SaveChangedCurvesFromCurveEditor();
             }
             m_CurveEditor.EndViewGUI();
-        }
 
-        internal void TimeRulerOnGUI(Rect timeRulerRect)
-        {
-            Rect timeRulerRectNoScrollbar = new Rect(timeRulerRect.xMin, timeRulerRect.yMin, timeRulerRect.width - kSliderThickness, timeRulerRect.height);
-            Rect timeRulerBackgroundRect = timeRulerRectNoScrollbar;
-
-            GUI.Box(timeRulerBackgroundRect, GUIContent.none, AnimationWindowStyles.timeRulerBackground);
-
-            if (!m_State.disabled)
-            {
-                RenderInRangeOverlay(timeRulerRectNoScrollbar);
-                RenderSelectionOverlay(timeRulerRectNoScrollbar);
-            }
-
-            m_State.timeArea.TimeRuler(timeRulerRectNoScrollbar, m_State.frameRate, true, false, 1f, m_State.timeFormat);
-
-            if (!m_State.disabled)
-                RenderOutOfRangeOverlay(timeRulerRectNoScrollbar);
-        }
-
-        private GenericMenu GenerateOptionsMenu()
-        {
-            GenericMenu menu = new GenericMenu();
-
-            menu.AddItem(EditorGUIUtility.TextContent("Seconds"), m_State.timeFormat == TimeArea.TimeFormat.TimeFrame, () => m_State.timeFormat = TimeArea.TimeFormat.TimeFrame);
-            menu.AddItem(EditorGUIUtility.TextContent("Frames"), m_State.timeFormat == TimeArea.TimeFormat.Frame, () => m_State.timeFormat = TimeArea.TimeFormat.Frame);
-
-            menu.AddSeparator("");
-
-            menu.AddItem(EditorGUIUtility.TextContent("Ripple"), m_State.rippleTime, () => m_State.rippleTime = !m_State.rippleTime);
-
-            menu.AddSeparator("");
-
-            menu.AddItem(EditorGUIUtility.TextContent("Show Sample Rate"), m_State.showFrameRate, () => m_State.showFrameRate = !m_State.showFrameRate);
-
-            bool isAnimatable = !selection?.isReadOnly ?? false;
-
-            GenericMenu.MenuFunction2 nullMenuFunction2 = null;
-
-            for (int i = 0; i < kAvailableFrameRates.Length; ++i)
-            {
-                FrameRateMenuEntry entry = kAvailableFrameRates[i];
-
-                bool isActive = m_State.clipFrameRate.Equals(entry.value);
-                menu.AddItem(entry.content, isActive, isAnimatable ? SetFrameRate : nullMenuFunction2, entry.value);
-            }
-
-            menu.AddSeparator("");
-
-            menu.AddItem(EditorGUIUtility.TextContent("Show Read-only Properties"), m_State.showReadOnly, () => m_State.showReadOnly = !m_State.showReadOnly);
-
-            return menu;
-        }
-
-        private void OptionsOnGUI(int controlID)
-        {
-            Rect layoutRect = new Rect(hierarchyWidth, 0f, contentWidth, layoutRowHeight);
-
-            GUI.BeginGroup(layoutRect);
-
-            Vector2 optionsSize = EditorStyles.toolbarButtonRight.CalcSize(AnimationWindowStyles.optionsContent);
-            Rect optionsRect = new Rect(layoutRect.width - kSliderThickness, 0f, optionsSize.x, optionsSize.y);
-            GUI.Box(optionsRect, GUIContent.none, AnimationWindowStyles.animPlayToolBar);
-            if (EditorGUI.DropdownButton(controlID, optionsRect, AnimationWindowStyles.optionsContent, AnimationWindowStyles.optionsButton))
-            {
-                var menu = GenerateOptionsMenu();
-                menu.ShowAsContext();
-            }
-
-            GUI.EndGroup();
+            HandleMainAreaCopyPaste(m_CurveEditor.areaControlID);
         }
 
         internal void SetFrameRate(object frameRate)
         {
-            m_State.clipFrameRate = (float)frameRate;
+            m_State.frameRate = (float)frameRate;
             UpdateSelectedKeysToCurveEditor();
-        }
-
-        private void FilterBySelectionButtonOnGUI()
-        {
-            Color backupColor = GUI.color;
-
-            if (m_State.filterBySelection)
-            {
-                Color selectionColor = filterBySelectionColor;
-                selectionColor.a *= GUI.color.a;
-                GUI.color = selectionColor;
-            }
-
-            EditorGUI.BeginChangeCheck();
-            bool filterBySelection = GUILayout.Toggle(m_State.filterBySelection, AnimationWindowStyles.filterBySelectionContent, EditorStyles.toolbarButton);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_State.filterBySelection = filterBySelection;
-            }
-
-            GUI.color = backupColor;
-        }
-
-        private void AddEventButtonOnGUI()
-        {
-            // TODO. This is hardcoded to work with animation clips.
-            // Events are not edited like this in Motion.
-            if (selection.clip is not UnityEditor.AnimationWindowBuiltin.AnimationWindowClip clip)
-                return;
-
-            using (new EditorGUI.DisabledScope(selection.isReadOnly))
-            {
-                if (GUILayout.Button(AnimationWindowStyles.addEventContent, AnimationWindowStyles.animClipToolbarButton))
-                    m_Events.AddEvent(m_State.currentTime, selection.rootGameObject, clip.animationClip);
-            }
-        }
-
-        private void AddKeyframeButtonOnGUI()
-        {
-            bool canAddKey = !selection.isReadOnly && m_State.filteredCurves.Count != 0;
-            using (new EditorGUI.DisabledScope(!canAddKey))
-            {
-                if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, AnimationWindowStyles.animClipToolbarButton))
-                {
-                    SaveCurveEditorKeySelection();
-                    var keyTime = AnimationKeyTime.Time(m_State.currentTime, m_State.frameRate);
-                    AnimationWindowUtility.AddSelectedKeyframes(m_State, keyTime);
-                    UpdateSelectedKeysToCurveEditor();
-
-                    // data is scheduled for an update, bail out now to avoid using out of date data.
-                    EditorGUIUtility.ExitGUI();
-                }
-            }
-        }
-
-        private void PlayControlsOnGUI(Rect playControlsRect)
-        {
-            // Remove keyfocus when clicking within control to ensure play control shortcuts are received (UUM-113412)
-            if (Event.current.type == EventType.MouseDown && playControlsRect.Contains(Event.current.mousePosition))
-            {
-                 GUIUtility.keyboardControl = 0;
-            }
-
-            using (new EditorGUI.DisabledScope(!m_State.canPreview))
-            {
-                PreviewButtonOnGUI();
-            }
-
-            using (new EditorGUI.DisabledScope(!m_State.canRecord))
-            {
-                RecordButtonOnGUI();
-            }
-
-            if (GUILayout.Button(AnimationWindowStyles.firstKeyContent, EditorStyles.toolbarButton))
-            {
-                state.GoToFirstKeyframe();
-
-                // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
-                EditorGUI.EndEditingActiveTextField();
-            }
-
-            if (GUILayout.Button(AnimationWindowStyles.prevKeyContent, EditorStyles.toolbarButton))
-            {
-                state.GoToPreviousKeyframe();
-
-                // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
-                EditorGUI.EndEditingActiveTextField();
-            }
-
-            using (new EditorGUI.DisabledScope(!m_State.canPlay))
-            {
-                PlayButtonOnGUI();
-            }
-
-            if (GUILayout.Button(AnimationWindowStyles.nextKeyContent, EditorStyles.toolbarButton))
-            {
-                state.GoToNextKeyframe();
-
-                // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
-                EditorGUI.EndEditingActiveTextField();
-            }
-
-            if (GUILayout.Button(AnimationWindowStyles.lastKeyContent, EditorStyles.toolbarButton))
-            {
-                state.GoToLastKeyframe();
-
-                // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
-                EditorGUI.EndEditingActiveTextField();
-            }
-
-            GUILayout.FlexibleSpace();
-
-            EditorGUI.BeginChangeCheck();
-            int newFrame = EditorGUILayout.DelayedIntField(m_State.currentFrame, EditorStyles.toolbarTextField, GUILayout.Width(kIntFieldWidth));
-            if (EditorGUI.EndChangeCheck())
-            {
-                state.currentFrame = newFrame;
-            }
-        }
-
-        private void LinkOptionsOnGUI()
-        {
-            if (m_State.linkedWithSequencer)
-            {
-                if (GUILayout.Toggle(true, AnimationWindowStyles.sequencerLinkContent, EditorStyles.toolbarButton) == false)
-                {
-                    m_State.linkedWithSequencer = false;
-                    m_State.selection = new FallbackSelectionItem();
-
-                    // Layout has changed, bail out now.
-                    EditorGUIUtility.ExitGUI();
-                }
-            }
-        }
-
-        private void PlayButtonOnGUI()
-        {
-            EditorGUI.BeginChangeCheck();
-            bool playbackEnabled = GUILayout.Toggle(m_State.playing, AnimationWindowStyles.playContent, EditorStyles.toolbarButton);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_State.playing = playbackEnabled;
-
-                // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
-                EditorGUI.EndEditingActiveTextField();
-            }
-        }
-
-        private void PreviewButtonOnGUI()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            bool recordingEnabled = GUILayout.Toggle(m_State.previewing, AnimationWindowStyles.previewContent, EditorStyles.toolbarButton);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_State.previewing = recordingEnabled;
-            }
-        }
-
-        private void RecordButtonOnGUI()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            Color backupColor = GUI.color;
-            if (m_State.recording)
-            {
-                Color recordedColor = AnimationMode.recordedPropertyColor;
-                recordedColor.a *= GUI.color.a;
-                GUI.color = recordedColor;
-            }
-
-            bool recordingEnabled = GUILayout.Toggle(m_State.recording, AnimationWindowStyles.recordContent, EditorStyles.toolbarButton);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_State.recording = recordingEnabled;
-
-                if (!recordingEnabled)
-                {
-                    // Force refresh in inspector as stopping recording does not invalidate any data.
-                    InspectorWindow.RepaintAllInspectors();
-                }
-            }
-
-            GUI.color = backupColor;
         }
 
         internal void FrameClipDelayed() => triggerFraming = true;
@@ -948,75 +426,6 @@ namespace UnityEditor
             UpdateSelectedKeysToCurveEditor();
 
             Repaint();
-        }
-
-        private void RenderSelectionOverlay(Rect rect)
-        {
-            if (m_State.showCurveEditor && !m_CurveEditor.hasSelection)
-                return;
-
-            if (!m_State.showCurveEditor && m_State.selectedKeys.Count == 0)
-                return;
-
-            const int kOverlayMinWidth = 14;
-
-            Bounds bounds = m_State.showCurveEditor ? m_CurveEditor.selectionBounds : m_State.selectionBounds;
-
-            float startPixel = m_State.TimeToPixel(bounds.min.x) + rect.xMin;
-            float endPixel = m_State.TimeToPixel(bounds.max.x) + rect.xMin;
-
-            if ((endPixel - startPixel) < kOverlayMinWidth)
-            {
-                float centerPixel = (startPixel + endPixel) * 0.5f;
-
-                startPixel = centerPixel - kOverlayMinWidth * 0.5f;
-                endPixel = centerPixel + kOverlayMinWidth * 0.5f;
-            }
-
-            AnimationWindowUtility.DrawSelectionOverlay(rect, selectionRangeColor, startPixel, endPixel);
-        }
-
-        private void RenderInRangeOverlay(Rect rect)
-        {
-            Color color = inRangeColor;
-
-            if (m_State.recording)
-                color *= AnimationMode.recordedPropertyColor;
-            else if (m_State.previewing)
-                color *= AnimationMode.animatedPropertyColor;
-            else
-                color = Color.clear;
-
-            Vector2 timeRange = m_State.timeRange;
-            AnimationWindowUtility.DrawInRangeOverlay(rect, color, m_State.TimeToPixel(timeRange.x) + rect.xMin, m_State.TimeToPixel(timeRange.y) + rect.xMin);
-        }
-
-        private void RenderOutOfRangeOverlay(Rect rect)
-        {
-            Color color = outOfRangeColor;
-
-            if (m_State.recording)
-                color *= AnimationMode.recordedPropertyColor;
-            else if (m_State.previewing)
-                color *= AnimationMode.animatedPropertyColor;
-
-            Vector2 timeRange = m_State.timeRange;
-            AnimationWindowUtility.DrawOutOfRangeOverlay(rect, color, m_State.TimeToPixel(timeRange.x) + rect.xMin, m_State.TimeToPixel(timeRange.y) + rect.xMin);
-        }
-
-        private void SynchronizeLayout()
-        {
-            m_HorizontalSplitter.realSizes[1] = (int)Mathf.Max(Mathf.Min(m_Position.width - m_HorizontalSplitter.realSizes[0], m_HorizontalSplitter.realSizes[1]), 0);
-
-            // Synchronize frame rate
-            if (selection.clip?.isValid ?? false)
-            {
-                m_State.frameRate = selection.clip.frameRate;
-            }
-            else
-            {
-                m_State.frameRate = AnimationWindowState.kDefaultFrameRate;
-            }
         }
 
         // Curve editor changes curves, but we are in charge of saving them into the clip
@@ -1153,6 +562,12 @@ namespace UnityEditor
                 m_OwnerWindow.Repaint();
         }
 
+        public void SetOwnerWindow(EditorWindow parent)
+        {
+            m_DopeSheet.m_Owner = parent;
+            m_OwnerWindow = parent;
+        }
+
         // Called just-in-time by OnGUI
         internal void Initialize()
         {
@@ -1165,24 +580,16 @@ namespace UnityEditor
             m_CurveEditor.state = m_State;
 
             // The rect here is only for initialization and will be overriden at layout
-            m_HorizontalSplitter.realSizes[0] = kHierarchyMinWidth;
-            m_HorizontalSplitter.realSizes[1] = (int)Mathf.Max(m_Position.width - kHierarchyMinWidth, kHierarchyMinWidth);
-            m_DopeSheet.rect = new Rect(0, 0, contentWidth, 100);
+            m_DopeSheet.rect = new Rect(0, 0, 100, 100);
 
             m_Initialized = true;
-        }
-
-        // Called once during initialization of m_State
-        private void InitializeClipSelection()
-        {
-            m_ClipPopup = new AnimationWindowClipPopup();
         }
 
         // Called once during initialization of m_State
         private void InitializeHierarchy()
         {
             // The rect here is only for initialization and will be overriden at layout
-            m_Hierarchy = new AnimationWindowHierarchy(m_State, m_OwnerWindow, new Rect(0, 0, hierarchyWidth, 100));
+            m_Hierarchy = new AnimationWindowHierarchy(m_State, m_OwnerWindow, new Rect(0, 0, 100, 100));
         }
 
         // Called once during initialization of m_State
@@ -1193,7 +600,7 @@ namespace UnityEditor
             m_DopeSheet.hSlider = true;
             m_DopeSheet.shownArea = new Rect(1, 1, 1, 1);
             // The rect here is only for initialization and will be overriden at layout
-            m_DopeSheet.rect = new Rect(0, 0, contentWidth, 100);
+            m_DopeSheet.rect = new Rect(0, 0, 100, 100);
             m_DopeSheet.hTicks.SetTickModulosForFrameRate(m_State.frameRate);
         }
 
@@ -1207,7 +614,7 @@ namespace UnityEditor
         private void InitializeCurveEditor()
         {
             // The rect here is only for initialization and will be overriden at layout
-            m_CurveEditor = new CurveEditor(new Rect(0, 0, contentWidth, 100), Array.Empty<CurveWrapper>(), false);
+            m_CurveEditor = new CurveEditor(new Rect(0, 0, 100, 100), Array.Empty<CurveWrapper>(), false);
 
             CurveEditorSettings settings = new CurveEditorSettings();
             settings.hTickStyle.distMin = 30; // min distance between vertical lines before they disappear completely
@@ -1235,20 +642,6 @@ namespace UnityEditor
             m_CurveEditor.shownArea = new Rect(1, 1, 1, 1);
             m_CurveEditor.settings = settings;
             m_CurveEditor.state = m_State;
-        }
-
-        // Called once during initialization of m_State
-        private void InitializeHorizontalSplitter()
-        {
-            m_HorizontalSplitter = SplitterState.FromRelative(new float[] { kHierarchyMinWidth, kHierarchyMinWidth * 3 }, new float[] { kHierarchyMinWidth, kHierarchyMinWidth }, null);
-            m_HorizontalSplitter.realSizes[0] = kHierarchyMinWidth;
-            m_HorizontalSplitter.realSizes[1] = kHierarchyMinWidth;
-        }
-
-        // Called once during initialization of m_State
-        private void InitializeOverlay()
-        {
-            m_Overlay = new AnimEditorOverlay();
         }
 
         // Called during initialization, even when m_State already exists

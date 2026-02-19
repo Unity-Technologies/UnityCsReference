@@ -10,12 +10,10 @@ namespace UnityEngine
     [NativeHeader("Modules/JSONSerialize/Public/JsonUtility.bindings.h")]
     public static class JsonUtility
     {
-        [FreeFunction("ToJsonInternal", true)]
-        [ThreadSafe]
+        [FreeFunction("ToJsonInternal", IsThreadSafe = true)]
         private static extern string ToJsonInternal([NotNull] object obj, bool prettyPrint);
 
-        [FreeFunction("FromJsonInternal", true, ThrowsException = true)]
-        [ThreadSafe]
+        [FreeFunction("FromJsonInternal", true, ThrowsException = true, IsThreadSafe = true)]
         private static extern object FromJsonInternal(string json, object objectToOverwrite, Type type);
 
         public static string ToJson(object obj) { return ToJson(obj, false); }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements;
 
@@ -258,7 +259,7 @@ internal static class WorldSpaceInput
 
             // When we've hit a Document, reduce max distance to match the back of the document's bounding box.
             // We can't use hit.collider.bounds.size.magnitude because we allow multiple colliders for the same doc.
-            var root = PanelComponentUtils.GetRootVisualElement(panelComponent);
+            var root = panelComponent.GetRootVisualElement();
             var bb = GetPicking3DLocalBounds(root);
             ref var documentWt = ref root.worldTransformRef;
             Vector3 documentCenter = documentWt.MultiplyPoint3x4(bb.center);
@@ -305,10 +306,10 @@ internal static class WorldSpaceInput
         var containerPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
         containerPanel.ValidateLayout();
 
-        var root = PanelComponentUtils.GetRootVisualElement(panelComponent);
+        var root = panelComponent.GetRootVisualElement();
         var ray = root.WorldToLocal(documentRay);
 
-        return PerformPick(root, ray, null);
+        return PerformPick(root, ray, outResults);
     }
 
     // Used by tests
@@ -320,12 +321,32 @@ internal static class WorldSpaceInput
             : PerformPick2D(root, ray, outResults);
     }
 
-    private static VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults)
+    private static unsafe VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults)
     {
+        if (root.elementPanel == null)
+            return null;
+
         root.IntersectLocalRay(ray, out var point);
 
-        // Don't use Panel.PerformPick(root, root.LocalToWorld(point), outResults) because it only supports 2-D points.
-        return PerformPick2D_LocalPoint(root, point, outResults);
+        using var buffer = new UnmanagedHandleBuffer();
+
+        // Native implementation is 2-3 times faster, so we use it if we can.
+        var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, point, false, outResults != null ? &buffer : null);
+        if (handle.IsUndefined)
+            return null;
+
+        var result = root.elementPanel.GetMemberElementFromHandle(handle);
+
+        if (outResults != null)
+        {
+            outResults.Add(result);
+            foreach (var nextHandle in buffer.ReadOnlySpan.Slice(1))
+            {
+                outResults.Add(root.elementPanel.GetMemberElementFromHandle(nextHandle));
+            }
+        }
+
+        return result;
     }
 
     private static VisualElement PerformPick3D(VisualElement root, Ray ray, List<VisualElement> outResults)
@@ -377,59 +398,6 @@ internal static class WorldSpaceInput
         if (root.visible && root.pickingMode == PickingMode.Position && containsPoint)
         {
             outResults?.Add(root);
-            if (returnedChild == null)
-                returnedChild = root;
-        }
-
-        return returnedChild;
-    }
-
-    private static VisualElement PerformPick2D_LocalPoint(VisualElement root, Vector3 localPoint,
-        List<VisualElement> picked = null)
-    {
-        // Skip picking for elements with display: none
-        if (root.resolvedStyle.display == DisplayStyle.None)
-            return null;
-
-        if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
-        {
-            return null;
-        }
-
-        if (!root.boundingBox.Contains(localPoint))
-        {
-            return null;
-        }
-
-        bool containsPoint = root.ContainsPoint(localPoint);
-        // we only skip children in the case we visually clip them
-        if (!containsPoint && root.ShouldClip())
-        {
-            return null;
-        }
-
-        VisualElement returnedChild = null;
-        // Depth first in reverse order, do children
-        var cCount = root.hierarchy.childCount;
-        for (int i = cCount - 1; i >= 0; i--)
-        {
-            var child = root.hierarchy[i];
-            var childPoint = root.ChangeCoordinatesTo(child, localPoint);
-            var result = PerformPick2D_LocalPoint(child, childPoint, picked);
-            if (returnedChild == null && result != null)
-            {
-                if (picked == null)
-                {
-                    return result;
-                }
-
-                returnedChild = result;
-            }
-        }
-
-        if (root.visible && root.pickingMode == PickingMode.Position && containsPoint)
-        {
-            picked?.Add(root);
             if (returnedChild == null)
                 returnedChild = root;
         }

@@ -54,9 +54,16 @@ namespace UnityEditor.Overlays
             get => SnapToFloatingPosition(floatingSnapCorner, m_LockAnchor ? m_FloatingSnapOffset : floatingSnapOffset);
             set
             {
-                var position = canvas.EnsureOverlapsWindow(new Rect(value, rootVisualElement.rect.size)).position;
+                var position = OverlayUtilities.EnsureOverlayWithinCanvas(value, this, canvas);
                 UpdateSnapping(position);
             }
+        }
+
+        void OnOverlayGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Ensure that we aren't in a hidden state and the overlay is floating
+            if (displayed && floating && evt.newRect.width != 0 && evt.newRect.height != 0 && !float.IsNaN(evt.newRect.width) && !float.IsNaN(evt.newRect.height))
+                floatingPosition = OverlayUtilities.EnsureOverlayWithinCanvas(floatingPosition, this, canvas);
         }
 
         public bool floating

@@ -104,7 +104,7 @@ namespace UnityEngine.Networking
             get { return InternalGetTextureNative(); }
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern Texture2D InternalGetTextureNative();
 
         public static Texture2D GetContent(UnityWebRequest www)

@@ -14,8 +14,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_FilenameHandle;
         internal TextRange m_TextRange;
 
-        [ThreadSafe] internal static extern LocationInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal static extern LocationInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         LocationInternal IInternalType<LocationInternal>.ConstructInvalid() => Invalid();

@@ -336,8 +336,8 @@ namespace UnityEditor
 
             if (canScaleX)
             {
-                GUIContent leftLabelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.min.x, m_State.frameRate, m_State.timeFormat)));
-                GUIContent rightLabelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.max.x, m_State.frameRate, m_State.timeFormat)));
+                GUIContent leftLabelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.min.x, m_State.frameRate, ((ICurveEditorState)m_State).timeFormat)));
+                GUIContent rightLabelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.max.x, m_State.frameRate, ((ICurveEditorState)m_State).timeFormat)));
 
                 Vector2 leftLabelSize = styles.dragLabel.CalcSize(leftLabelContent);
                 Vector2 rightLabelSize = styles.dragLabel.CalcSize(rightLabelContent);
@@ -347,7 +347,7 @@ namespace UnityEditor
             }
             else
             {
-                GUIContent labelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.center.x, m_State.frameRate, m_State.timeFormat)));
+                GUIContent labelContent = new GUIContent(string.Format("{0}", m_DopeSheetEditor.FormatTime(selectionBounds.center.x, m_State.frameRate, ((ICurveEditorState)m_State).timeFormat)));
                 Vector2 labelSize = styles.dragLabel.CalcSize(labelContent);
 
                 EditorGUI.DoDropShadowLabel(new Rect(m_Layout.leftLabelAnchor.x, m_Layout.leftLabelAnchor.y, labelSize.x, labelSize.y), labelContent, styles.dragLabel, 0.3f);

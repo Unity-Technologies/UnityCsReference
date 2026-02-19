@@ -4,20 +4,11 @@
 
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-using Unity.Collections;
 using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.U2D;
 using UnityEditor;
 using UnityEditor.U2D;
-using UnityEngine.Experimental.U2D;
 using UnityEditor.AssetImporters;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.Bindings;
-using static Unity.VectorGraphics.VectorUtils;
 
 namespace Unity.VectorGraphics.Editor
 {
@@ -310,6 +301,8 @@ namespace Unity.VectorGraphics.Editor
         /// <param name="ctx">The asset import context of the scripted importer</param>
         public override void OnImportAsset(AssetImportContext ctx)
         {
+            SVGImporterMetaUpgrader.ApplyPackageImporterProperties(this, ctx.assetPath);
+
             UpdateProperties();
 
             // We're using a hardcoded window size of 100x100. This way, using a pixels per point value of 100
@@ -429,6 +422,8 @@ namespace Unity.VectorGraphics.Editor
             if (sprite.texture != null)
                 sprite.texture.name = name + "Atlas";
 
+            m_SpriteData.InitWithSprite(sprite);
+
             m_ImportingSprite = sprite;
 
             // Apply GUID
@@ -451,8 +446,7 @@ namespace Unity.VectorGraphics.Editor
             spriteRenderer.sprite = sprite;
             spriteRenderer.material = mat;
 
-            if (GeneratePhysicsShape)
-                SetPhysicsShape(sprite);
+            SetPhysicsShape(sprite, ctx.assetPath);
 
             if (sprite.texture != null)
                 ctx.AddObjectToAsset("texAtlas", sprite.texture);
@@ -483,8 +477,7 @@ namespace Unity.VectorGraphics.Editor
             if (svgImageProvider != null)
                 svgImage = svgImageProvider.CreateSVGImageComponent(gameObject, sprite, mat, PreserveSVGImageAspect);
 
-            if (GeneratePhysicsShape)
-                SetPhysicsShape(sprite);
+            SetPhysicsShape(sprite, ctx.assetPath);
 
             if (sprite.texture != null)
                 ctx.AddObjectToAsset("texAtlas", sprite.texture);
@@ -518,6 +511,8 @@ namespace Unity.VectorGraphics.Editor
             var texturedSprite = Sprite.Create(tex, rect, pivot, SvgPixelsPerUnit * ratio, 0, TexturedSpriteMeshType, m_SpriteData.SpriteBorder);
             texturedSprite.name = name;
 
+            m_SpriteData.InitWithSprite(texturedSprite);
+
             m_ImportingSprite = texturedSprite;
             m_ImportingTexture2D = tex;
 
@@ -525,8 +520,7 @@ namespace Unity.VectorGraphics.Editor
             texturedSprite.SetSpriteID(m_SpriteData.SpriteGUID);
             texturedSprite.hideFlags = HideFlags.None;
 
-            if (GeneratePhysicsShape)
-                SetPhysicsShape(texturedSprite);
+            SetPhysicsShape(texturedSprite, ctx.assetPath);
 
             ctx.AddObjectToAsset("sprite", texturedSprite);
             ctx.AddObjectToAsset("tex", tex);
@@ -618,13 +612,90 @@ namespace Unity.VectorGraphics.Editor
             return tex;
         }
 
-        private void SetPhysicsShape(Sprite sprite)
+        Sprite GetSprite()
         {
-            var physicsProvider = spriteProvider as ISVGSpritePhysicsProvider;
-            if (physicsProvider == null)
-                return;
+            var sprite = GetImportingSprite();
+            if (sprite == null)
+                sprite = SVGImporter.GetImportedSprite(assetPath);
+            return sprite;
+        }
 
-            physicsProvider.SetPhysicsShape(sprite);
+        Texture2D GetReadableTexture2D(out bool shouldBeDestroyedByCaller)
+        {
+            Texture2D readableTexture = null;
+            if (m_SvgType == SVGType.VectorSprite)
+            {
+                var sprite = GetSprite();
+                var size = ((Vector2)sprite.bounds.size) * sprite.pixelsPerUnit;
+                var mat = SVGImporter.GetSVGMaterial(sprite.texture != null);
+
+                readableTexture = VectorUtils.RenderSpriteToTexture2D(sprite, (int)size.x, (int)size.y, mat, 4);
+
+                shouldBeDestroyedByCaller = true;
+            }
+            else
+            {
+                readableTexture = GetImportingTexture2D();
+                if (readableTexture == null)
+                    readableTexture = GetImportedTexture2D(assetPath);
+
+                shouldBeDestroyedByCaller = false;
+            }
+
+            return readableTexture;
+        }
+
+        private void SetPhysicsShape(Sprite sprite, string assetPath)
+        {
+            var outlines = m_SpriteData.PhysicsOutlines;
+
+            if (outlines.Count == 0)
+            {
+                if (!GeneratePhysicsShape)
+                    return;
+
+                var tex = GetReadableTexture2D(out bool shouldDestroyTextureAfterUse);
+
+                UnityEditor.Sprites.SpriteUtility.GenerateOutline(tex, new Rect(0, 0, tex.width, tex.height), 0.25f, 200, false, out Vector2[][] paths, false);
+                for (int i = 0; i < paths.Length; ++i)
+                {
+                    var outlineData = new OutlineData() { Vertices = paths[i] };
+                    outlines.Add(outlineData);
+                }
+
+                if (shouldDestroyTextureAfterUse)
+                    GameObject.DestroyImmediate(tex);
+
+                if (outlines.Count == 0)
+                    return;
+            }
+
+            int width;
+            int height;
+            TextureSizeForSpriteEditor(sprite, out width, out height);
+
+            var validOutlines = new List<Vector2[]>();
+
+            // Offset the outline inside the sprite
+            foreach (var outline in outlines)
+            {
+                // Deep copy of the vertices, don't modify the originals
+                var vertices = new Vector2[outline.Vertices.Length];
+                Array.Copy(outline.Vertices, vertices, outline.Vertices.Length);
+
+                for (int i = 0; i < vertices.Length; ++i)
+                {
+                    var v = vertices[i];
+                    v.x += width / 2.0f;
+                    v.y += height / 2.0f;
+                    vertices[i] = v;
+                }
+
+                if (vertices.Length > 2)
+                    validOutlines.Add(vertices);
+            }
+
+            sprite.OverridePhysicsShape(validOutlines);
         }
 
         internal static Material GetSVGMaterial(bool hasTexture)

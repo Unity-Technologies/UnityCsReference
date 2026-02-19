@@ -61,46 +61,46 @@ namespace UnityEngine
         extern internal static bool Cache_IsValid(int handle);
 
         public bool ready { get { return Cache_IsReady(m_Handle); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool Cache_IsReady(int handle);
 
         public bool readOnly { get { return Cache_IsReadonly(m_Handle); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool Cache_IsReadonly(int handle);
 
         public string path { get { return Cache_GetPath(m_Handle); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static string Cache_GetPath(int handle);
 
         public int index { get { return Cache_GetIndex(m_Handle); } }
         extern internal static int Cache_GetIndex(int handle);
 
         public long spaceFree { get { return Cache_GetSpaceFree(m_Handle); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static long Cache_GetSpaceFree(int handle);
 
         public long maximumAvailableStorageSpace { get { return Cache_GetMaximumDiskSpaceAvailable(m_Handle); } set { Cache_SetMaximumDiskSpaceAvailable(m_Handle, value); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static long Cache_GetMaximumDiskSpaceAvailable(int handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void Cache_SetMaximumDiskSpaceAvailable(int handle, long value);
 
         public long spaceOccupied { get { return Cache_GetCachingDiskSpaceUsed(m_Handle); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static long Cache_GetCachingDiskSpaceUsed(int handle);
 
         public int expirationDelay { get { return Cache_GetExpirationDelay(m_Handle); } set { Cache_SetExpirationDelay(m_Handle, value); } }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static int Cache_GetExpirationDelay(int handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void Cache_SetExpirationDelay(int handle, int value);
 
         public bool ClearCache() { return Cache_ClearCache(m_Handle); }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool Cache_ClearCache(int handle);
 
         public bool ClearCache(int expiration) { return Cache_ClearCache_Expiration(m_Handle, expiration); }
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static bool Cache_ClearCache_Expiration(int handle, int expiration);
     }
 }

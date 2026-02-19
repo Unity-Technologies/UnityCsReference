@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
+using UnityEngine.UIElements.Unmanaged;
 using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEngine.UIElements
@@ -475,6 +477,18 @@ namespace UnityEngine.UIElements
 
         internal event Action<BaseVisualElementPanel> panelDisposed;
 
+        // Allows native code to call back into panel methods.
+        // Note that keeping a static link to all living panels would normally prevent GC from collecting panels,
+        // but the panel lifecycle destroys panels explicitly, so this shouldn't be a problem.
+        internal static readonly Dictionary<UnmanagedDataHandle, BaseVisualElementPanel> PanelsByHandle = new(UnmanagedDataHandle.k_EqualityComparer);
+
+        // Allows native code to call back into panel methods.
+        // Note that keeping a link to all living elements would normally prevent GC from collecting elements,
+        // but elements always get removed from their panels explicitly at some point, so this shouldn't be a problem.
+        internal readonly Dictionary<UnmanagedDataHandle, VisualElement> MemberElementsByHandle = new(UnmanagedDataHandle.k_EqualityComparer);
+
+        internal ref PanelTransformFlags transformFlags => ref layoutConfig.TransformFlags;
+
         private UIElementsBridge m_UIElementsBridge;
 
         internal UIElementsBridge uiElementsBridge
@@ -492,11 +506,9 @@ namespace UnityEngine.UIElements
 
         protected BaseVisualElementPanel()
         {
-            // m_VisualPanel = VisualManager.SharedManager.CreatePanel();
-            // m_VisualPanel.SetOwner(this);
-
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
             layoutConfig.Measure = VisualElement.Measure;
+            PanelsByHandle[layoutConfig.Handle] = this;
 
             m_UIElementsBridge = new RuntimeUIElementsBridge();
         }
@@ -528,10 +540,31 @@ namespace UnityEngine.UIElements
                 DisposeHelper.NotifyMissingDispose(this);
 
             panelDisposed?.Invoke(this);
-            // m_VisualPanel.Destroy();
-            // m_VisualPanel = default;
+            PanelsByHandle.Remove(layoutConfig.Handle);
             LayoutManager.SharedManager.DestroyConfig(ref layoutConfig);
+
             disposed = true;
+        }
+
+        internal static BaseVisualElementPanel GetPanelFromHandle(UnmanagedDataHandle panelHandle)
+        {
+            // Assume handle is from a valid panel, otherwise throws ElementNotFoundException
+            return PanelsByHandle[panelHandle];
+        }
+
+        internal VisualElement GetMemberElementFromHandle(UnmanagedDataHandle elementHandle)
+        {
+            // Assume element is from this panel, otherwise throws ElementNotFoundException
+            return MemberElementsByHandle[elementHandle];
+        }
+
+        // Returns an element from its handle but only if that element is inside a panel. Throws exception otherwise.
+        internal static unsafe VisualElement GetPanelElementFromHandle(UnmanagedDataHandle elementHandle)
+        {
+            var panelHandle =
+                ((LayoutNodeData*)LayoutManager.SharedManager.Nodes.GetComponentDataPtr(elementHandle.Index,
+                    (int)LayoutNodeDataType.Node))->Config;
+            return GetPanelFromHandle(panelHandle).GetMemberElementFromHandle(elementHandle);
         }
 
         public abstract void Repaint(Event e);
@@ -618,7 +651,19 @@ namespace UnityEngine.UIElements
         // For debug panels, over which panel is it overlayed. Null otherwise.
         internal IPanel overlayedOverPanel;
 
-        internal bool duringLayoutPhase { get; set; }
+        public bool duringLayoutPhase
+        {
+            get => (transformFlags & PanelTransformFlags.DuringLayoutPhase) != 0;
+            set
+            {
+                if (duringLayoutPhase == value)
+                    return;
+
+                transformFlags = value
+                    ? transformFlags | PanelTransformFlags.DuringLayoutPhase
+                    : transformFlags & ~PanelTransformFlags.DuringLayoutPhase;
+            }
+        }
 
         public bool isDirty
         {
@@ -784,20 +829,22 @@ namespace UnityEngine.UIElements
         }
 
         internal event Action isFlatChanged;
-        bool m_IsFlat = true;
 
         // Used only for testing. Can be disabled for setting a manual scale
         internal bool UpdateScalingFromEditorWindow;
 
         public bool isFlat
         {
-            get => m_IsFlat;
+            get => (transformFlags & PanelTransformFlags.IsFlat) != 0;
             set
             {
-                if (m_IsFlat == value)
+                if (isFlat == value)
                     return;
 
-                m_IsFlat = value;
+                transformFlags = value
+                    ? transformFlags | PanelTransformFlags.IsFlat
+                    : transformFlags & ~PanelTransformFlags.IsFlat;
+
                 SetSpecializedHierarchyFlagsUpdater();
                 isFlatChanged?.Invoke();
             }
@@ -1288,67 +1335,38 @@ namespace UnityEngine.UIElements
         internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             s_MarkerPickAll.Begin();
-            var result = PerformPick(root, point, picked, includeIgnoredElement);
+            // Native implementation is 2-3 times faster, so we use it if we can.
+            var result = PerformPickNative(root, point, picked, includeIgnoredElement);
             s_MarkerPickAll.End();
             return result;
         }
 
-        private static VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe VisualElement PerformPickNative(VisualElement root, Vector2 point,
+            List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
-            // Skip picking for elements with display: none
-            if (root.resolvedStyle.display == DisplayStyle.None)
+            using var buffer = new UnmanagedHandleBuffer();
+
+            // It's not impossible to have transforms directly on the panel.visualTree
+            // See for instance VisualContainerTests.ElementUnderPointWithScrolledElementUnderReturnsTrue
+            var localPoint = root.WorldToLocal3D(point);
+
+            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, picked != null ? &buffer : null);
+            if (handle.IsUndefined)
                 return null;
 
-            if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0 && !includeIgnoredElement)
-            {
-                return null;
-            }
+            var result = root.elementPanel.GetMemberElementFromHandle(handle);
 
-            if (!root.worldBoundingBox.Contains(point))
+            if (picked != null)
             {
-                return null;
-            }
-
-            // Problem here: everytime we pick, we need to do that expensive transformation.
-            // The default Contains() compares with rect, while we could cache the rect in world space (transform 2 points, 4 if there is rotation) and be done
-            // here we have to transform 1 point at every call.
-            // Now since this is a virtual, we can't just start to call it with global pos... we could break client code.
-            // EdgeControl and port connectors in GraphView overload this.
-            Vector2 localPoint = root.WorldToLocal(point);
-
-            bool containsPoint = root.ContainsPoint(localPoint);
-            // we only skip children in the case we visually clip them
-            if (!containsPoint && root.ShouldClip())
-            {
-                return null;
-            }
-
-            VisualElement returnedChild = null;
-            // Depth first in reverse order, do children
-            var cCount = root.hierarchy.childCount;
-            for (int i = cCount - 1; i >= 0; i--)
-            {
-                var child = root.hierarchy[i];
-                var result = PerformPick(child, point, picked, includeIgnoredElement);
-                if (returnedChild == null && result != null)
+                picked.Add(result);
+                foreach (var nextHandle in buffer.ReadOnlySpan.Slice(1))
                 {
-                    if (picked == null)
-                    {
-                        return result;
-                    }
-
-                    returnedChild = result;
+                    picked.Add(root.elementPanel.GetMemberElementFromHandle(nextHandle));
                 }
             }
 
-            if (root.visible && (root.pickingMode == PickingMode.Position || includeIgnoredElement) && containsPoint)
-            {
-                picked?.Add(root);
-                if (returnedChild == null)
-                    returnedChild = root;
-            }
-
-            return returnedChild;
+            return result;
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)

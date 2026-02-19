@@ -43,12 +43,12 @@ namespace UnityEditor.ShaderFoundry
             public static BlockLinker ConvertToManaged(IntPtr ptr) => new BlockLinker(ptr);
         }
 
-        [ThreadSafe] private extern static IntPtr Internal_Create();
-        [ThreadSafe] private static extern void Internal_Destroy(IntPtr ptr);
+        [NativeMethod(IsThreadSafe = true)] private extern static IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)] private static extern void Internal_Destroy(IntPtr ptr);
 
-        [ThreadSafe] extern string Run(ShaderContainer container, FoundryHandle handle);
+        [NativeMethod(IsThreadSafe = true)] extern string Run(ShaderContainer container, FoundryHandle handle);
         public string Run(ShaderContainer container, BlockShader blockShader) => Run(container, blockShader.handle);
         public extern bool HasErrors { [NativeMethod(Name = "HasErrors", IsThreadSafe = true)] get; }
-        [ThreadSafe] public extern string[] GetErrors();
+        [NativeMethod(IsThreadSafe = true)] public extern string[] GetErrors();
     }
 }

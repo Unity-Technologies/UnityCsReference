@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -227,18 +227,14 @@ namespace Unity.UI.Builder
                     continue;
                 if (vea is not VisualElementAsset visualElementAsset)
                     continue;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (visualElementAsset.classes.Contains(className))
-#pragma warning restore UA2001
                     foundList.Add(visualElementAsset);
             }
             foreach (var vea in list)
             {
                 if (vea is not TemplateAsset templateAsset)
                     continue;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (templateAsset.classes.Contains(className))
-#pragma warning restore UA2001
                     foundList.Add(templateAsset);
             }
             return foundList;
@@ -369,9 +365,7 @@ namespace Unity.UI.Builder
                 var styleSheetPaths = element.GetStyleSheetPaths();
                 if (styleSheetPaths != null)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    for (int i = 0; i < styleSheetPaths.Count(); ++i)
-#pragma warning restore UA2001
+                    for (int i = 0; i < styleSheetPaths.Count; ++i)
                     {
                         var styleSheetPath = styleSheetPaths[i];
                         if (styleSheetPath != oldUssPath && oldUssPath != String.Empty)

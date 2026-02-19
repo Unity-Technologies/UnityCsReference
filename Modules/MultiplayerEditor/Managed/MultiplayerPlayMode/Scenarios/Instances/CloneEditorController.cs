@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Multiplayer.Internal;
+using UnityEditor.Multiplayer.Internal;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
@@ -24,24 +25,43 @@ class CloneEditorController : EditorController<CloneEditorController, CloneEdito
         {
         }
     }
-    
+
     internal override string GetTypeNameForAnalytics() => "VirtualEditor";
 
     protected internal override void SetupExecutionGraph(ExecutionGraph executionGraph)
     {
-        var editorRunNode = new EditorMultiplayerPlaymodeRunNode($"CloneEditor|{Settings.PlayerInstanceIndex}_run");
-        var deployNode = new EditorMultiplayerPlaymodeDeployNode($"CloneEditor|{Settings.PlayerInstanceIndex}_deploy");
+        if (EditorMultiplayerManager.enableMultiplayerRoles)
+        {
+            var roleNode = new SetupEditorMultiplayerRoleNode("CloneEditor_SetupMultiplayerRole");
+            executionGraph.AddNode(roleNode, ExecutionStage.Deploy);
+            executionGraph.ConnectConstant(roleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            executionGraph.ConnectConstant(roleNode.Role, Settings.RoleMask);
+
+            var restoreRoleNode = new SetupEditorMultiplayerRoleNode("CloneEditor_RestoreMultiplayerRole");
+            executionGraph.AddNode(restoreRoleNode, ExecutionStage.Cleanup);
+            executionGraph.ConnectConstant(restoreRoleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            executionGraph.ConnectConstant(restoreRoleNode.Role, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Role);
+        }
+
+        var tagsNode = new SetupEditorTagsNode("CloneEditor_SetupTags");
+        executionGraph.AddNode(tagsNode, ExecutionStage.Deploy);
+        executionGraph.ConnectConstant(tagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+        executionGraph.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
+
+        var restoreTagsNode = new SetupEditorTagsNode("CloneEditor_RestoreTags");
+        executionGraph.AddNode(restoreTagsNode, ExecutionStage.Cleanup);
+        executionGraph.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+        executionGraph.ConnectConstant(restoreTagsNode.Tags, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Tags);
+
+
+        var editorRunNode = new CloneEditorRunNode($"CloneEditor|{Settings.PlayerInstanceIndex}_run");
+        var deployNode = new CloneEditorDeployNode($"CloneEditor|{Settings.PlayerInstanceIndex}_deploy");
 
         executionGraph.AddNode(deployNode, ExecutionStage.Deploy);
         executionGraph.ConnectConstant(deployNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        executionGraph.ConnectConstant(deployNode.PlayerTags, Settings.PlayerTag);
-        executionGraph.ConnectConstant(deployNode.MultiplayerRole, Settings.RoleMask);
-        executionGraph.ConnectConstant(deployNode.InitialScene, null);
 
         executionGraph.AddNode(editorRunNode, ExecutionStage.Run);
         executionGraph.ConnectConstant(editorRunNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        executionGraph.ConnectConstant(editorRunNode.PlayerTags, Settings.PlayerTag);
-
         executionGraph.ConnectConstant(editorRunNode.StreamLogs, Settings.StreamLogsToMainEditor);
         executionGraph.ConnectConstant(editorRunNode.LogsColor, Settings.LogsColor);
     }

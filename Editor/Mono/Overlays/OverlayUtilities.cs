@@ -99,15 +99,38 @@ namespace UnityEditor.Overlays
                 rect.x = boundary.xMax;
 
             if (rect.xMax < boundary.xMin)
-                rect.x = (boundary.xMin) - rect.width;
+                rect.x = boundary.xMin - rect.width;
 
             if (rect.y > boundary.yMax)
                 rect.y = boundary.yMax;
 
-            if (rect.y < boundary.yMin)
-                rect.y = boundary.yMin;
+            if (rect.yMax < boundary.yMin)
+                rect.y = boundary.yMin - rect.height;
 
             return rect;
+        }
+
+        static readonly Vector2 k_OverlayHeaderSizeAlwaysVisibleInCanvas = new Vector2(80, 20);
+        public static Vector2 EnsureOverlayWithinCanvas(Vector2 targetPosition, Overlay overlay, OverlayCanvas canvas)
+        {
+            // Overlay size values will be wrong if it's not displayed or is in some kind of hidden state
+            var layout = overlay.rootVisualElement.layout;
+           if (!overlay.displayed || layout.width == 0 || layout.height == 0)
+                return targetPosition;
+
+            var boundary = canvas.floatingContainer.rect;
+            if (float.IsNaN(boundary.width))
+                return targetPosition;
+
+            var targetRect = new Rect(targetPosition, new Vector2(layout.width, k_OverlayHeaderSizeAlwaysVisibleInCanvas.y));
+            boundary.xMax -= Mathf.Min(k_OverlayHeaderSizeAlwaysVisibleInCanvas.x, targetRect.width);
+            boundary.xMin += Mathf.Min(k_OverlayHeaderSizeAlwaysVisibleInCanvas.x, targetRect.width);
+            boundary.yMax -= Mathf.Min(k_OverlayHeaderSizeAlwaysVisibleInCanvas.y, targetRect.height);
+            boundary.yMin += Mathf.Min(k_OverlayHeaderSizeAlwaysVisibleInCanvas.y, targetRect.height);
+
+            var newPosition = EnsureRectOverlapsRect(targetRect, boundary).position;
+
+            return newPosition;
         }
 
         public static Rect ClampRectToRect(Rect rect, Rect clampingRect)

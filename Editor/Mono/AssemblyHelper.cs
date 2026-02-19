@@ -20,6 +20,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEditor.Scripting;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -31,9 +32,7 @@ namespace UnityEditor
 
         public static bool IsUnityEngineModule(AssemblyDefinition assembly)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return assembly.CustomAttributes.Any(a => a.AttributeType.FullName == typeof(UnityEngineModuleAssembly).FullName);
-#pragma warning restore UA2001
+            return assembly.CustomAttributes.Exists(a => a.AttributeType.FullName == typeof(UnityEngineModuleAssembly).FullName);
         }
 
         public static bool IsUnityEngineModule(Assembly assembly)
@@ -76,26 +75,17 @@ namespace UnityEditor
             var fileName = Path.GetFileName(path);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             userTypes = userTypes
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName))
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName)).ToList();
 #pragma warning restore UA2001
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            List<string> classNames = new List<string>(userTypes.Count());
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            List<string> nameSpaces = new List<string>(userTypes.Count());
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            List<string> originalNamespaces = new List<string>(userTypes.Count());
-#pragma warning restore UA2001
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var userTypesCount = userTypes.Count();
+#pragma warning restore UA2005
+            List<string> classNames = new List<string>(userTypesCount);
+            List<string> nameSpaces = new List<string>(userTypesCount);
+            List<string> originalNamespaces = new List<string>(userTypesCount);
 
             string pathToAssembly = null;
             foreach (var userType in userTypes)
@@ -178,9 +168,7 @@ namespace UnityEditor
 
         public static bool IsInternalAssembly(string file)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return ModuleUtils.GetAdditionalReferencesForUserScripts().Any(p => p.Equals(file));
-#pragma warning restore UA2001
+            return Array.Exists(ModuleUtils.GetAdditionalReferencesForUserScripts(), p => p.Equals(file));
         }
 
         /// <summary>

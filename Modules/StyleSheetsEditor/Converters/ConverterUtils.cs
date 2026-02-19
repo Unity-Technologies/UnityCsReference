@@ -55,6 +55,7 @@ namespace UnityEditor.StyleSheets
         public const string k_Border = "-unity-slice";
         public const string k_Clipping = "-unity-clipping";
         public const string k_ContentOffset = "-unity-content-offset";
+        public const string k_ContentSpacing = "-unity-content-spacing";
         public const string k_Overflow = "-unity-overflow";
         public const string k_Height = "height";
         public const string k_Width = "width";
@@ -112,6 +113,7 @@ namespace UnityEditor.StyleSheets
 
             k_StyleProperties.Add(k_Clipping);
             k_StyleProperties.Add(k_ContentOffset);
+            k_StyleProperties.Add(k_ContentSpacing);
             k_StyleProperties.Add(k_Height);
             k_StyleProperties.Add(k_Width);
             k_StyleProperties.Add(k_Font);
@@ -394,6 +396,7 @@ namespace UnityEditor.StyleSheets
             style.border = src.border;
             style.clipping = src.clipping;
             style.contentOffset = src.contentOffset;
+            style.contentSpacing = src.contentSpacing;
             style.fixedHeight = src.fixedHeight;
             style.fixedWidth = src.fixedWidth;
             style.focused = src.focused;
@@ -632,7 +635,7 @@ namespace UnityEditor.StyleSheets
 
         public static bool IsSkinStyleSelector(string guiStyleName)
         {
-            return IsTypeStyleSelector(guiStyleName) || k_SkinStylePrefixes.Any(guiStyleName.StartsWith);
+            return IsTypeStyleSelector(guiStyleName) || k_SkinStylePrefixes.Exists(guiStyleName.StartsWith);
         }
 
         public static void GetFontStylePropertyValues(FontStyle style, out string fontStyle, out string fontWeight)

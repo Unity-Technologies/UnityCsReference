@@ -17,8 +17,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_LinkOverridesListHandle;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static BlockSequenceElementInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static BlockSequenceElementInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         BlockSequenceElementInternal IInternalType<BlockSequenceElementInternal>.ConstructInvalid() => Invalid();

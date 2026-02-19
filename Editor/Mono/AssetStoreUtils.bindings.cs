@@ -18,11 +18,11 @@ namespace UnityEditor
         extern public static string BuildBaseDownloadPath(string publisher, string category);
         extern public static string BuildFinalDownloadPath(string baseDir, string packageName);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static void Download(string id, string url, string[] destination, string key, string jsonData, bool resumeOK, DownloadDoneCallback doneCallback = null);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static string CheckDownload(string id, string url, string[] destination, string key);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static bool AbortDownload(string[] destination);
         extern public static void RegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static void UnRegisterDownloadDelegate([NotNull] ScriptableObject d);

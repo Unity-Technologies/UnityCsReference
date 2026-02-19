@@ -136,7 +136,7 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void UpdateDisplay()
         {
             UpdateMixedValueContent();

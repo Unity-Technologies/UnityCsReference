@@ -276,9 +276,8 @@ namespace UnityEngine.Windows.WebCam
         }
 
         //-----------------------------------------------------------------
-        [ThreadSafe]
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
-        [NativeMethod("VideoCaptureBindings::GetUnsafePointerToVideoDeviceController", HasExplicitThis = true)]
+        [NativeMethod("VideoCaptureBindings::GetUnsafePointerToVideoDeviceController", HasExplicitThis = true, IsThreadSafe = true)]
         public extern IntPtr GetUnsafePointerToVideoDeviceController();
 
         //-----------------------------------------------------------------
@@ -307,9 +306,8 @@ namespace UnityEngine.Windows.WebCam
             }
         }
 
-        [ThreadSafe]
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
-        [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true)]
+        [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true, IsThreadSafe = true)]
         private extern void DisposeThreaded_Internal();
 
         internal static class BindingsMarshaller

@@ -10,6 +10,8 @@ namespace Unity.UIToolkit.Editor;
 [CustomEditor(typeof(VisualElementSelection))]
 class VisualElementSelectionEditor : UnityEditor.Editor
 {
+    VisualElementInspector m_Inspector;
+
     private VisualElementSelection Target => (VisualElementSelection)target;
 
     protected override void OnHeaderGUI()
@@ -25,17 +27,19 @@ class VisualElementSelectionEditor : UnityEditor.Editor
 
     public override VisualElement CreateInspectorGUI()
     {
-        var inspector = new VisualElementInspector
+        m_Inspector = new VisualElementInspector
         {
             Element = Target.Element,
             EditFlags = Target.EditFlags
         };
-        inspector.SetBinding(VisualElementInspector.ElementProperty, new DataBinding
+        m_Inspector.SetBinding(VisualElementInspector.ElementProperty, new DataBinding
         {
             dataSource = Target,
             dataSourcePath = VisualElementSelection.ElementProperty,
             bindingMode = BindingMode.ToTarget
         });
-        return inspector;
+        return m_Inspector;
     }
+
+    void OnDestroy() => m_Inspector?.Dispose();
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -27,6 +28,9 @@ namespace UnityEngine.TextCore
         internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
         internal static readonly Dictionary<string, WeakReference<SpriteAsset>> s_SpriteAssetCache = new();
         internal static readonly Dictionary<string, System.IntPtr> s_GradientAssetCache = new();
+
+        // Thread-safe tracking for one-time warnings (prevents console spam)
+        static readonly ConcurrentDictionary<TagType, byte> s_LoggedUnsupportedTagWarnings = new();
 
         public enum TagType
         {
@@ -65,9 +69,19 @@ namespace UnityEngine.TextCore
             Underline,
             Uppercase,
             VOffset,
+            // Unsupported in ATG
+            Width,
+            Rotate,
+            Pos,
+            Material,
+            Page,
+            Action,
+            Cr,
+            Zwsp,
+            Zwj,
+            Nbsp,
+            Shy,
             Unknown // Not a real tag, used to indicate an error
-
-            //gradient: pos, rotate, width will not be supported
         }
 
         public enum ValueID
@@ -135,10 +149,21 @@ namespace UnityEngine.TextCore
             new TagTypeInfo ( TagType.Subscript,"sub" ),
             new TagTypeInfo ( TagType.Superscript,"sup" ),
             new TagTypeInfo ( TagType.Underline,"u"),
-            new TagTypeInfo ( TagType.Uppercase,"uppercase"),//none
-            new TagTypeInfo ( TagType.VOffset,"voffset"), //<voffset=10> or <voffset=1em>
-            // page
+            new TagTypeInfo ( TagType.Uppercase,"uppercase"),
+            new TagTypeInfo ( TagType.VOffset,"voffset"),
 
+            // Unsupported in ATG
+            new TagTypeInfo ( TagType.Width,"width"),
+            new TagTypeInfo ( TagType.Rotate,"rotate"),
+            new TagTypeInfo ( TagType.Pos,"pos"),
+            new TagTypeInfo ( TagType.Material,"material"),
+            new TagTypeInfo ( TagType.Page,"page"),
+            new TagTypeInfo ( TagType.Action,"action"),
+            new TagTypeInfo ( TagType.Cr,"cr"),
+            new TagTypeInfo ( TagType.Zwsp,"zwsp"),
+            new TagTypeInfo ( TagType.Zwj,"zwj"),
+            new TagTypeInfo ( TagType.Nbsp,"nbsp"),
+            new TagTypeInfo ( TagType.Shy,"shy"),
             };
 
         internal enum TagValueType
@@ -932,7 +957,7 @@ namespace UnityEngine.TextCore
                             }
                             value = new TagValue(parsedValue, tagUnitType);
                         }
-						
+
 						if (tagType == TagType.LineHeight)
                         {
                             var tagUnitType = ParseTagUnitType(ref attributeSection);
@@ -969,7 +994,7 @@ namespace UnityEngine.TextCore
                             }
                             value = new TagValue(parsedValue, tagUnitType);
                         }
-						
+
 
                         if (tagType == TagType.VOffset)
                         {
@@ -1478,7 +1503,7 @@ namespace UnityEngine.TextCore
 
                     case TagType.Sprite:
                         if (segment.tags[i].value?.ID == ValueID.AssetID)
-                            textSpan.spriteID = EntityId.From((int)segment.tags[i].value!.NumericalValue);
+                            textSpan.spriteID = EntityId.FromULong((ulong)segment.tags[i].value!.NumericalValue);
                         if (segment.tags[i].value2?.ID == ValueID.GlyphMetrics)
                             textSpan.spriteMetrics = segment.tags[i].value2!.GlyphMetricsValue;
                         if (segment.tags[i].value3?.ID == ValueID.Tint)
@@ -1554,13 +1579,25 @@ namespace UnityEngine.TextCore
                         textSpan.mspaceUnitType = segment.tags[i].value!.unit;
                         break;
                     case TagType.LineIndent:
-                        //TODO : Add support for lineindent
-                        break;
+                    case TagType.Width:
+                    case TagType.Rotate:
                     case TagType.Space:
-                        //TODO : Add support for space
+                    case TagType.Pos:
+                    case TagType.Page:
+                    case TagType.Action:
+                    case TagType.Cr:
+                    case TagType.Zwsp:
+                    case TagType.Zwj:
+                    case TagType.Nbsp:
+                    case TagType.Shy:
+                        // These tags are parsed (stripped from text) but not supported in ATG.
+                        if (s_LoggedUnsupportedTagWarnings.TryAdd(segment.tags[i].tagType, 0))
+                        {
+                            Debug.LogWarning($"The <noparse><{TagsInfo[(int)segment.tags[i].tagType].name}></noparse> rich text tag is not supported in the Advanced Text Generator (ATG). The tag will be stripped from the text.");
+                        }
                         break;
                     case TagType.NoBr:
-                        //TODO : Add support for nobr
+                        // Handled in TextPreprocessor.ReplaceNobrTags - spaces converted to NBSP
                         break;
                     case TagType.Align:
                         Enum.TryParse<HorizontalAlignment>(segment.tags[i].value!.StringValue, true, out textSpan.alignment);
@@ -1748,6 +1785,15 @@ namespace UnityEngine.TextCore
             }
 
             return false;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool ContainsNobrTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            return text.AsSpan().IndexOf(TextPreprocessor.k_NobrOpenTag.AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]

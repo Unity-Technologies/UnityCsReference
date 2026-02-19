@@ -320,7 +320,7 @@ namespace UnityEditor.Search
             {
                 foreach (var item in items)
                 {
-                    searchItemsSet.Add(EntityId.From(Convert.ToUInt64(item.id)));
+                    searchItemsSet.Add(EntityId.FromULong(Convert.ToUInt64(item.id)));
                 }
             }, SearchFlags.Synchronous);
         }

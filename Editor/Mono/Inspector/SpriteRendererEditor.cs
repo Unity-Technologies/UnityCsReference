@@ -16,6 +16,7 @@ namespace UnityEditor
         private SerializedProperty m_Sprite;
         private SerializedProperty m_Color;
         private SerializedProperty m_Material;
+        private SerializedProperty m_BlendShapeWeights;
 
         class Styles
         {
@@ -64,6 +65,7 @@ namespace UnityEditor
             m_FlipX = serializedObject.FindProperty("m_FlipX");
             m_FlipY = serializedObject.FindProperty("m_FlipY");
             m_Material = serializedObject.FindProperty("m_Materials.Array"); // Only allow to edit one material
+            m_BlendShapeWeights = serializedObject.FindProperty("m_BlendShapeWeights");
             m_DrawMode = serializedObject.FindProperty("m_DrawMode");
             m_Size = serializedObject.FindProperty("m_Size");
             m_SpriteTileMode = serializedObject.FindProperty("m_SpriteTileMode");
@@ -90,6 +92,9 @@ namespace UnityEditor
                     SpriteUtilityWindow.ShowSpriteEditorWindow(m_Sprite.objectReferenceValue);
             }
             GUILayout.Space(5);
+
+            OnBlendShapeUI();
+
             EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
 
             FlipToggles();
@@ -151,6 +156,75 @@ namespace UnityEditor
             Other2DSettingsGUI();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void OnBlendShapeUI()
+        {
+            SpriteRenderer renderer = (SpriteRenderer)target;
+            Sprite sprite = renderer.sprite;
+            int blendShapeCount = sprite == null ? 0 : sprite.blendShapeCount;
+            if (blendShapeCount == 0)
+                return;
+
+            m_BlendShapeWeights.isExpanded = EditorGUILayout.Foldout(m_BlendShapeWeights.isExpanded, EditorGUIUtility.TempContent("BlendShapes"));
+            if (m_BlendShapeWeights.isExpanded)
+            {
+                EditorGUI.indentLevel++;
+
+                int arraySize = m_BlendShapeWeights.arraySize;
+                for (int i = 0; i < blendShapeCount; i++)
+                {
+                    string blendShapeName = sprite.GetBlendShapeName(i);
+
+                    // Calculate the min and max values for the slider from the frame blendshape weights
+                    float sliderMin = 0f, sliderMax = 0f;
+
+                    int frameCount = sprite.GetBlendShapeFrameCount(i);
+                    for (int j = 0; j < frameCount; j++)
+                    {
+                        float frameWeight = sprite.GetBlendShapeFrameWeight(i, j);
+                        sliderMin = Mathf.Min(frameWeight, sliderMin);
+                        sliderMax = Mathf.Max(frameWeight, sliderMax);
+                    }
+
+                    // If no frames, use default range
+                    if (frameCount == 0)
+                    {
+                        sliderMin = 0f;
+                        sliderMax = 100f;
+                    }
+
+                    // The SpriteRenderer blendshape weights array size can be out of sync with the size defined in the sprite
+                    // (default values in that case are 0)
+                    // The desired behaviour is to resize the blendshape array on edit.
+
+                    GUIContent label = EditorGUIUtility.TempContent(blendShapeName);
+
+                    // Default path when the blend shape array size is big enough.
+                    if (i < arraySize)
+                        EditorGUILayout.Slider(m_BlendShapeWeights.GetArrayElementAtIndex(i), sliderMin, sliderMax, float.MinValue, float.MaxValue, label);
+                    // Fall back to 0 based editing &
+                    else
+                    {
+                        EditorGUI.BeginChangeCheck();
+
+                        float value = EditorGUILayout.Slider(label, 0f, sliderMin, sliderMax, float.MinValue, float.MaxValue);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_BlendShapeWeights.arraySize = blendShapeCount;
+                            arraySize = blendShapeCount;
+                            m_BlendShapeWeights.GetArrayElementAtIndex(i).floatValue = value;
+                        }
+                    }
+                }
+
+                EditorGUI.indentLevel--;
+            }
+
+            if (PlayerSettings.meshDeformation == MeshDeformation.CPU && renderer.IsSkinned())
+            {
+                EditorGUILayout.HelpBox("BlendShapes with SpriteSkin require GPU skinning. Please enable it in the Player tab in Project Settings.", MessageType.Warning);
+            }
         }
 
         internal void SetDrawMode(SpriteDrawMode drawMode)

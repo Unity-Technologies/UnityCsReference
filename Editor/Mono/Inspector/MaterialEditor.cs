@@ -237,13 +237,13 @@ namespace UnityEditor
             public void OnEnable()
             {
                 Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(EntityId.From(SessionState.GetInt("PreviewReflectionProbe", 0))) as ReflectionProbe;
+                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)SessionState.GetInt("PreviewReflectionProbe", 0))) as ReflectionProbe;
             }
 
             public void OnDisable()
             {
                 Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                SessionState.SetInt("PreviewReflectionProbe", (int)(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None).GetRawData());
+                SessionState.SetInt("PreviewReflectionProbe", (int)EntityId.ToULong(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None));
             }
 
             public override void OnGUI(Rect rc)
@@ -631,7 +631,7 @@ namespace UnityEditor
                 {
                     var shaderNameParts = path.Split('/');
                     var group = shaderNameParts[0];
-                    foreach (var child in parent.children)
+                    foreach (var child in parent.childList)
                     {
                         if (child.name == group)
                             return child;
@@ -655,9 +655,7 @@ namespace UnityEditor
                     bool found = false;
                     foreach (var e in m_SearchableElements)
                     {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (e.children.Any())
-#pragma warning restore UA2002
+                        if (e.hasChildren)
                             continue;
 
                         var menuItem = (ShaderDropdownItem)e;

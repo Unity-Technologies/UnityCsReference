@@ -68,9 +68,7 @@ namespace UnityEditor.MPE
 #pragma warning restore UA2001
                 Console.WriteLine($"Secondary process need to refresh the following assets: {String.Join(", ", paths)}");
                 AssetDatabase.Refresh();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (paths.Any(p => p.EndsWith(".cs")))
-#pragma warning restore UA2001
+                if (Array.Exists(paths, p => p.EndsWith(".cs")))
                     EditorUtility.RequestScriptReload();
                 InternalEditorUtility.RepaintAllViews();
                 return paths;

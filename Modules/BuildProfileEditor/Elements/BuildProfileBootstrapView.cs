@@ -34,6 +34,7 @@ internal class BuildProfileBootstrapView : VisualElement
         {
             m_PackageAddProgressLabel.text = TrText.buildProfilePreparation;
             m_Spinner.AddToClassList("bp-spinner");
+            m_Spinner.AddToClassList(EditorGUIUtility.isProSkin ? "bp-spinner--dark" : "bp-spinner--light");
             m_SpinnerHasStarted = true;
         }
     }
@@ -57,7 +58,7 @@ internal class BuildProfileBootstrapView : VisualElement
                 message = TrText.buildProfileConfiguration;
                 break;
         }
-        
+
         if(message != string.Empty)
             m_PackageAddProgressLabel.text = message;
     }

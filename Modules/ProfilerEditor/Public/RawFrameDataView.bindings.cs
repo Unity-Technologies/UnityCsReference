@@ -25,7 +25,7 @@ namespace UnityEditor.Profiling
             m_Ptr = Internal_Create(frameIndex, threadIndex);
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr Internal_Create(int frameIndex, int threadIndex);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]

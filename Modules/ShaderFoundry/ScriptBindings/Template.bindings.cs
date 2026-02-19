@@ -37,8 +37,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_LocationHandle;
         internal FoundryHandle m_LodLocationHandle;
 
-        [ThreadSafe] internal extern static TemplateInternal Invalid();
-        [ThreadSafe] internal extern bool IsValid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static TemplateInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern bool IsValid();
 
         // IInternalType
         TemplateInternal IInternalType<TemplateInternal>.ConstructInvalid() => Invalid();

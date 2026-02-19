@@ -83,7 +83,8 @@ namespace UnityEditor.Search
     {
         None = 0,
         HideInTextMode = 1,
-        HideInQueryBuilderMode = 1 << 1
+        HideInQueryBuilderMode = 1 << 1,
+        SkipNicifyVariableName = 1 << 2
     }
 
     static class SearchPropositionGenerationOptionsExtensions
@@ -123,6 +124,13 @@ namespace UnityEditor.Search
         public SearchProposition(string label, string replacement, string help,
                                    int priority, Texture2D icon, object data, Color color = new Color())
             : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data, color)
+        {
+        }
+
+        internal SearchProposition(string label, string replacement, string help,
+                                   int priority, Texture2D icon, object data, Color color,
+                                   SearchPropositionGenerationOptions generationOptions)
+            : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data, color, generationOptions)
         {
         }
 
@@ -337,16 +345,12 @@ namespace UnityEditor.Search
 
         internal bool StartsWith(string token)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return tokens.Any(t => t.StartsWith(token, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore UA2001
+            return Array.Exists(tokens, t => t.StartsWith(token, StringComparison.OrdinalIgnoreCase));
         }
 
         internal bool StartsWith(params string[] tokens)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return tokens.Any(t => StartsWith(t));
-#pragma warning restore UA2001
+            return Array.Exists(tokens, t => StartsWith(t));
         }
 
         internal SearchPropositionOptions(SearchPropositionFlags flags)

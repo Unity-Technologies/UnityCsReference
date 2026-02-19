@@ -15,18 +15,18 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
     {
         private IntPtr m_Ptr;
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void OpenFile(string filename);
         extern public void Close();
 
         extern private static IntPtr Internal_Create();
         extern private static void Internal_Destroy(IntPtr ptr);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void Internal_WriteEntryString(string data, int entryType);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void Internal_WriteEntryData(IntPtr data, int dataSize, int entryType);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private void Internal_WriteEntryDataArray(IntPtr data, int dataSize, int numElements, int entryType);
 
         public void Open(string filename)

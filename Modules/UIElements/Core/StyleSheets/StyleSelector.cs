@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleSelector
     {
         [SerializeField]

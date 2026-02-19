@@ -327,7 +327,7 @@ namespace UnityEditor
             get;
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void SetTemporaryProjectKeepPath(string path);
 
         // Exit the Unity editor application.
@@ -388,7 +388,7 @@ namespace UnityEditor
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern void FileMenuNewScene();
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void SignalTick();
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]

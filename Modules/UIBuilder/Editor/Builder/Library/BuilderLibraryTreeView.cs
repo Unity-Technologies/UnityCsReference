@@ -153,7 +153,7 @@ namespace Unity.UI.Builder
             row.SetEnabled(true);
 
             var listOfOpenDocuments = m_PaneWindow.document.openUXMLFiles;
-            bool isCurrentDocumentOpen = listOfOpenDocuments.Any(doc => doc.visualTreeAsset == builderItem.sourceAsset);
+            bool isCurrentDocumentOpen = listOfOpenDocuments.Exists(doc => doc.visualTreeAsset == builderItem.sourceAsset);
             row.EnableInClassList(BuilderConstants.LibraryCurrentlyOpenFileItemClassName, isCurrentDocumentOpen);
             element.SetEnabled(!isCurrentDocumentOpen);
 

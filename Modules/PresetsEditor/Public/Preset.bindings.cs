@@ -22,7 +22,7 @@ namespace UnityEditor.Presets
             Internal_Create(this, source);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         static extern void Internal_Create([Writable] Preset notSelf, [NotNull] Object source);
 
         public extern PropertyModification[] PropertyModifications
@@ -122,9 +122,9 @@ namespace UnityEditor.Presets
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newList = list.Where(d => d.preset != preset);
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (newList.Count() != list.Length)
-#pragma warning restore UA2001
+#pragma warning restore UA2005
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetDefaultPresetsForType(type, newList.ToArray());
 #pragma warning restore UA2001

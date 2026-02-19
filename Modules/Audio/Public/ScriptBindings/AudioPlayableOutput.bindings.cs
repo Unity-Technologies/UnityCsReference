@@ -82,16 +82,16 @@ namespace UnityEngine.Audio
             InternalSetEvaluateOnSeek(ref m_Handle, value);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static AudioSource InternalGetTarget(ref PlayableOutputHandle output);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalSetTarget(ref PlayableOutputHandle output, AudioSource target);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool InternalGetEvaluateOnSeek(ref PlayableOutputHandle output);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void InternalSetEvaluateOnSeek(ref PlayableOutputHandle output, bool value);
 
     }

@@ -494,6 +494,27 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void Internal_EnterEditModeLifecycleScope()
+        {
+            if (Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>())
+                return;
+
+            if (!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<Unity.Scripting.LifecycleManagement.CodeInitializedScope>())
+                Unity.Scripting.LifecycleManagement.LifecycleController.Instance.EnterScope<Unity.Scripting.LifecycleManagement.CodeInitializedScope>();
+
+            Unity.Scripting.LifecycleManagement.LifecycleController.Instance.EnterScope<UnityEditor.Scripting.LifecycleManagement.EditModeScope>();
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_ExitEditModeLifecycleScope()
+        {
+            if (!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>())
+                return;
+
+            Unity.Scripting.LifecycleManagement.LifecycleController.Instance.ExitScope<UnityEditor.Scripting.LifecycleManagement.EditModeScope>();
+        }
+
+        [RequiredByNativeCode]
         static void Internal_PlayModeStateChanged(PlayModeStateChange state)
         {
             #pragma warning disable 618
@@ -502,10 +523,9 @@ namespace UnityEditor
             if (!m_PlayModeStateChangedEvent.hasSubscribers) return;
             var stateName = state.ToString();
 
-            // Without this workaround, you will fail Editor.GameViewTests.Playmode_PlayUnfocused_IsUnfocused_WhenGameViewFocused
-            // You can still trigger UUM-74498 by showing a ProgressScope in EnteredPlayMode (including in usercode with EditorUtility.DisplayProgressBar)
-            // This is because a progress bar going away will cause the previously focused window to be refocused
-            // The underlying issue is being tracked in UUM-86918 and this workaround should be undone as part of the fix there
+            // Workaround for focus behavior with PlayUnfocused mode (UUM-74498).
+            // After dismissing a progress dialog, the last view is refocused, but GameView
+            // should not regain focus per PlayUnfocused design (UUM-86918 closed as by-design).
             if (PlayModeView.GetMainPlayModeView() is GameView { enterPlayModeBehavior: PlayModeView.EnterPlayModeBehavior.PlayUnfocused }
                 && state == PlayModeStateChange.EnteredPlayMode)
             {

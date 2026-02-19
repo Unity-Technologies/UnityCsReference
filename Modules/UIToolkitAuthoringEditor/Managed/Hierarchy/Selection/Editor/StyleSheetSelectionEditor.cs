@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -25,13 +27,14 @@ class StyleSheetSelectionEditor : UnityEditor.Editor
 
     public override VisualElement CreateInspectorGUI()
     {
-        var inspector = new StyleSheetInspector();
+        var inspector = new StyleSheetInspector() { StyleSheet = Target.StyleSheet };
         inspector.SetBinding(StyleSheetInspector.StyleSheetProperty, new DataBinding
         {
             dataSource = Target,
             dataSourcePath = StyleSheetSelection.StyleSheetProperty,
             bindingMode = BindingMode.ToTarget
         });
+
         return inspector;
     }
 }

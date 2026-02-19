@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
-        internal static IReadOnlyCollection<Sample> FindByPackage(PackageInfo package, IUpmCache upmCache, IIOProxy ioProxy, IAssetDatabaseProxy assetDatabaseProxy)
+        internal static IReadOnlyList<Sample> FindByPackage(PackageInfo package, IUpmCache upmCache, IIOProxy ioProxy, IAssetDatabaseProxy assetDatabaseProxy)
         {
             if (package == null || (string.IsNullOrEmpty(package.upmReserved) && string.IsNullOrEmpty(package.resolvedPath)))
                 return Array.Empty<Sample>();

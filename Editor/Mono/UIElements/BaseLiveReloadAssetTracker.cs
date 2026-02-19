@@ -214,6 +214,7 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class LiveReloadStyleSheetAssetTracker : BaseLiveReloadAssetTracker<StyleSheet>
     {
         public override bool OnAssetsImported(HashSet<StyleSheet> changedAssets, HashSet<string> deletedAssets)

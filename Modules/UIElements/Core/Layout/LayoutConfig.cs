@@ -38,6 +38,7 @@ readonly struct LayoutConfig
 
     public ref bool ShouldLog => ref m_Access.GetConfigData(m_Handle).ShouldLog;
 
+    public ref PanelTransformFlags TransformFlags => ref m_Access.GetPanelTransformData(m_Handle).Flags;
 
     /// <summary>
     /// Gets or sets the custom measure function for this config.
@@ -57,5 +58,4 @@ readonly struct LayoutConfig
         get => m_Access.GetBaselineFunction(m_Handle);
         set => m_Access.SetBaselineFunction(m_Handle, value);
     }
-
 }

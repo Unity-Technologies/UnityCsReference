@@ -18,7 +18,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ConstructorSignatures;
         internal FoundryHandle m_LocationHandle;
 
-        [ThreadSafe] internal extern static CustomAttributeDefinitionInternal Invalid();
+        [NativeMethod(IsThreadSafe = true)] internal extern static CustomAttributeDefinitionInternal Invalid();
         internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
 
         // IInternalType

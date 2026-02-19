@@ -123,6 +123,22 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
+        /// <summary>
+        /// Updates width of the cells of the given row based on the column header width.
+        /// </summary>
+        internal void UpdateRowCellsWidth(VisualElement element)
+        {
+            var columnIndex = 0;
+            element.style.width = header.columnContainer.layoutSize.x;
+            foreach (var column in m_MultiColumnHeader.columns.visibleList)
+            {
+                var columnData = m_MultiColumnHeader.columnDataMap[column];
+
+                element[columnIndex].style.width = columnData.control.resolvedStyle.width;
+                columnIndex++;
+            }
+        }
+
         void UnbindCell(VisualElement element, int index)
         {
             foreach (var cellContainer in element.Children())

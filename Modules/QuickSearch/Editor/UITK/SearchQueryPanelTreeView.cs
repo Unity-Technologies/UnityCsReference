@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System;
 using UnityEditor.UIElements;
+using System.Linq;
 
 namespace UnityEditor.Search
 {
@@ -328,7 +329,9 @@ namespace UnityEditor.Search
 
         void HandleItemsSelected(IEnumerable<int> indices)
         {
-            if (indices != null && indices.GetCount() > 0)
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (indices != null && indices.Any())
+#pragma warning restore UA2002
             {
                 var itemIndex = SearchQueryPanelTreeUtils.GetFirstElement(indices);
                 var rootElement = m_TreeView.GetRootElementForIndex(itemIndex);

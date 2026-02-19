@@ -1121,6 +1121,9 @@ namespace UnityEngine.Rendering
             UpdateInstanceMask_Handle(handle, mask);
         }
 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::InternalGetNativeBufferPtr", HasExplicitThis = true)]
+        extern public IntPtr GetNativeBufferPtr();
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
         extern public void Build(BuildSettings buildSettings);
 

@@ -206,10 +206,10 @@ namespace Unity.Loading
     public static class ContentLoadInterface
     {
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         unsafe internal static extern ContentFile LoadContentFileAsync(ContentNamespace nameSpace, string filename, void *dependencies, int dependencyCount, JobHandle dependentFence, bool useUnsafe = false);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern static void ContentFile_UnloadAsync(ContentFile handle);
 
         internal extern static UnityEngine.Object ContentFile_GetObject(ContentFile handle, UInt64 localIdentifierInFile);
@@ -228,12 +228,12 @@ namespace Unity.Loading
 
         internal extern static bool ContentFile_IsUnloadComplete(ContentFile handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern unsafe internal static ContentSceneFile LoadSceneAsync(ContentNamespace nameSpace, string filename, string sceneName, ContentSceneParameters sceneParams, ContentFile *dependencies, int dependencyCount, JobHandle dependentFence);
 
         extern internal static Scene ContentSceneFile_GetScene(ContentSceneFile handle);
         extern internal static SceneLoadingStatus ContentSceneFile_GetStatus(ContentSceneFile handle);
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern internal static void ContentSceneFile_IntegrateAtEndOfFrame(ContentSceneFile handle);
 
         extern internal static bool ContentSceneFile_UnloadAtEndOfFrame(ContentSceneFile handle);

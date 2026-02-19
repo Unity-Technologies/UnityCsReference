@@ -114,13 +114,13 @@ namespace UnityEngine.Animations
             return GetProcessInputsInternal(GetHandle());
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle, IntPtr jobReflectionData);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetProcessInputsInternal(PlayableHandle handle, bool value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool GetProcessInputsInternal(PlayableHandle handle);
     }
 }

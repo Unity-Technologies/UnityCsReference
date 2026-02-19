@@ -77,16 +77,16 @@ namespace UnityEngine.Experimental.Playables
             SetCameraInternal(ref m_Handle, value);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static Camera GetCameraInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetCameraInternal(ref PlayableHandle hdl, Camera camera);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool InternalCreateCameraPlayable(ref PlayableGraph graph, Camera camera, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ValidateType(ref PlayableHandle hdl);
 
     }

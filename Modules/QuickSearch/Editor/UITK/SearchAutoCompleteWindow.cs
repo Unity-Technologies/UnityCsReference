@@ -61,9 +61,7 @@ namespace UnityEditor.Search
 
         string HightlightLabel(string label)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (string.IsNullOrEmpty(label) || m_Options.tokens.Any(string.IsNullOrEmpty) || label.IndexOf('<') != -1)
-#pragma warning restore UA2001
+            if (string.IsNullOrEmpty(label) || Array.Exists(m_Options.tokens, string.IsNullOrEmpty) || label.IndexOf('<') != -1)
                 return label;
             foreach (var token in m_Options.tokens)
             {
@@ -531,9 +529,7 @@ namespace UnityEditor.Search
             m_FilteredList = new List<SearchProposition>(Math.Min(maxCount, srcCnt));
 
             // Start with - slow
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p => inputs.Any(i => p.label.StartsWith(i, StringComparison.OrdinalIgnoreCase)));
-#pragma warning restore UA2001
+            SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p => Array.Exists(inputs, i => p.label.StartsWith(i, StringComparison.OrdinalIgnoreCase)));
 
             m_FilteredList.Sort();
 
@@ -541,13 +537,9 @@ namespace UnityEditor.Search
             inputs = FilterInputWords(inputs);
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, (p) =>
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (inputs.Any(i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
-#pragma warning restore UA2001
+                if (Array.Exists(inputs, i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
                     return true;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (p.help != null && inputs.Any(i => p.help.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
-#pragma warning restore UA2001
+                if (p.help != null && Array.Exists(inputs, i => p.help.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
                     return true;
                 return false;
             });
@@ -558,9 +550,7 @@ namespace UnityEditor.Search
                 levenshteinDistance = Mathf.Clamp01(levenshteinDistance);
                 SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p =>
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return inputs.Any(levenshteinInput =>
-#pragma warning restore UA2001
+                    return Array.Exists(inputs, levenshteinInput =>
                     {
                         int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
                         return (int)(levenshteinDistance * p.label.Length) >= distance;

@@ -36,6 +36,12 @@ namespace UnityEngine.SceneManagement
             get { return GetGUIDInternal(handle); }
         }
 
+        /*UCBP-PUBLIC*/
+        internal LoadableScene loadableScene
+        {
+            get { return GetLoadableSceneInternal(handle); }
+        }
+
         public bool IsValid()
         {
             return IsValidInternal(handle);

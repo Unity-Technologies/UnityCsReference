@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
+using Unity.Collections;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -25,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsUsedByFeature(IPackageVersion version);
         bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
         IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
-        IReadOnlyCollection<Sample> GetSamples(IPackageVersion version);
+        IReadOnlyList<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId);
@@ -63,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly Dictionary<string, IPackage> m_Features = new();
         private readonly Dictionary<string, string> m_TechnicalNameToUniqueIdMap = new();
 
-        private readonly Dictionary<string, IReadOnlyCollection<Sample>> m_ParsedSamples = new();
+        private readonly Dictionary<string, IReadOnlyList<Sample>> m_ParsedSamples = new();
 
         [SerializeField]
         private Package[] m_SerializedPackages = Array.Empty<Package>();
@@ -201,14 +202,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var p in packagesToCheck)
             {
                 var installed = p.versions.installed;
-                if (installed != null && installed.dependencies.AnyMatches(d => d.name == version.name))
+                if (installed != null && installed.dependencies.Exists(d => d.name == version.name))
                     yield return installed;
             }
         }
 
         public bool IsUsedByFeature(IPackageVersion version)
         {
-            return version != null && m_Features.Values.AnyMatches(p => p.versions.installed?.dependencies.AnyMatches(d => d.name == version.name) ?? false);
+            return version != null && m_Features.Values.AnyMatches(p => p.versions.installed?.dependencies.Exists(d => d.name == version.name) ?? false);
         }
 
         public bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
@@ -240,7 +241,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public IReadOnlyCollection<Sample> GetSamples(IPackageVersion version)
+        public IReadOnlyList<Sample> GetSamples(IPackageVersion version)
         {
             // Null check for version.package is necessary for domain reload test that uses the UpmPackageVersion directly without a package without mocking it
             var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.package?.product?.id ?? 0, version.isInstalled, version.versionString) : null;

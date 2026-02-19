@@ -16,6 +16,8 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Lighting", icon = "Lighting")]
     internal class LightingWindow : EditorWindow
     {
+        const string m_UseHardwareRayTracingConfigKey = "useHardwareRayTracing";
+
         static class Styles
         {
             public static readonly GUIContent[] modeStrings =
@@ -44,6 +46,9 @@ namespace UnityEditor
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
             public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found", MessageType.Error);
+
+            public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Use hardware ray tracing if the GPU device supports it.");
+            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Hardware ray tracing is not supported by the GPU device.");
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -572,6 +577,7 @@ namespace UnityEditor
                 DrawGPUDeviceSelector();
                 DrawBakingProfileSelector();
                 DrawBakeOnLoadSelector();
+                DrawEnableHardwareRayTracing();
 
                 {
                     // Bake button if we are not currently baking
@@ -628,11 +634,71 @@ namespace UnityEditor
                     GUILayout.EndVertical();
                 }
             }
+
+            return;
+
+            void DrawEnableHardwareRayTracing()
+            {
+                if (!Lightmapping.UnifiedBaker)
+                    return;
+
+                bool useHardwareRayTracing = SystemInfo.supportsRayTracing;
+                if (SystemInfo.supportsRayTracing)
+                {
+                    string configUseHardwareRayTracing = EditorUserSettings.GetConfigValue(m_UseHardwareRayTracingConfigKey);
+                    if (configUseHardwareRayTracing != null)
+                        useHardwareRayTracing = bool.Parse(configUseHardwareRayTracing);
+                }
+                using (new EditorGUI.DisabledScope(!SystemInfo.supportsRayTracing))
+                    useHardwareRayTracing = EditorGUILayout.Toggle(SystemInfo.supportsRayTracing ? Styles.GPUUseHardwareRayTracing : Styles.GPUUseHardwareRayTracingNotSupported, useHardwareRayTracing);
+                if (EditorGUI.EndChangeCheck())
+                    EditorUserSettings.SetConfigValue(m_UseHardwareRayTracingConfigKey, useHardwareRayTracing.ToString());
+            }
+        }
+
+        private static readonly string _coreRenderPipelinesPackageName = "com.unity.render-pipelines.core";
+        private static bool IsCoreRenderPipelinesPackageAvailable() => PackageManager.PackageInfo.FindForPackageName(_coreRenderPipelinesPackageName) is not null;
+
+        private static PackageManager.Requests.AddRequest _coreRenderPipelinesPackageAddRequest = null;
+        private static void CoreRenderPipelinesPackageInstallProgress()
+        {
+            if (_coreRenderPipelinesPackageAddRequest == null)
+            {
+                EditorApplication.update -= CoreRenderPipelinesPackageInstallProgress;
+                return;
+            }
+            if (_coreRenderPipelinesPackageAddRequest.IsCompleted)
+            {
+                if (_coreRenderPipelinesPackageAddRequest.Status == PackageManager.StatusCode.Success)
+                    Lightmapping.BakeAsync();
+                else if (_coreRenderPipelinesPackageAddRequest.Status == PackageManager.StatusCode.Failure)
+                    Debug.LogError($"Failed to install package '{_coreRenderPipelinesPackageName}'. Please install it manually from the PackageManager.");
+                _coreRenderPipelinesPackageAddRequest = null;
+                EditorApplication.update -= CoreRenderPipelinesPackageInstallProgress;
+            }
+        }
+
+        private static void CoreRenderPipelinesPackageInstallAndRunBake()
+        {
+            if (_coreRenderPipelinesPackageAddRequest != null && _coreRenderPipelinesPackageAddRequest.Status == PackageManager.StatusCode.InProgress)
+                return;
+
+            if (EditorUtility.DisplayDialog("Package required", $"In order to generate lighting the package '{_coreRenderPipelinesPackageName}' must be installed. Install package?", "Install package", "Quit"))
+            {
+                _coreRenderPipelinesPackageAddRequest = PackageManager.Client.Add(_coreRenderPipelinesPackageName);
+                EditorApplication.update += CoreRenderPipelinesPackageInstallProgress;
+            }
         }
 
         private void DoBake()
         {
-            Lightmapping.BakeAsync();
+            if (Lightmapping.UnifiedBaker && !IsCoreRenderPipelinesPackageAvailable())
+            {
+                CoreRenderPipelinesPackageInstallAndRunBake();
+                return;
+            }
+            else
+                Lightmapping.BakeAsync();
         }
 
         private void DoClear()

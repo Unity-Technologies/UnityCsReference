@@ -12,19 +12,20 @@ namespace UnityEditor.Sprites
     [StaticAccessor("SpriteUtilityBindings", StaticAccessorType.DoubleColon)]
     public sealed class SpriteUtility
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static Texture2D GetSpriteTexture([NotNull] Sprite sprite, bool getAtlasData);
 
         [System.Obsolete("Use Sprite.vertices API instead. This data is the same for packed and unpacked sprites.")]
         static public Vector2[] GetSpriteMesh(Sprite sprite, bool getAtlasData) { return sprite.vertices; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern public static Vector2[] GetSpriteUVs([NotNull] Sprite sprite, bool getAtlasData);
 
         [System.Obsolete("Use Sprite.triangles API instead. This data is the same for packed and unpacked sprites.")]
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static public ushort[] GetSpriteIndices(Sprite sprite, bool getAtlasData) { return sprite.triangles; }
 
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static void GenerateOutline(Texture2D texture, Rect rect, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths, bool zeroExtrusion = false)
         {
             var res = GenerateOutlineImpl(texture, ref rect, detail, alphaTolerance, holeDetection, zeroExtrusion);

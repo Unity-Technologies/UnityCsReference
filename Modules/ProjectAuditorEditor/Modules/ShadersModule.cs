@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -466,8 +467,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (s_ShaderVariantData.ContainsKey(context.Shader))
             {
                 var variants = s_ShaderVariantData[context.Shader];
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var numCompilerPlatforms = variants.Select(v => v.CompilerPlatform).Distinct().Count();
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var numCompilerPlatforms = variants.Select(v => v.CompilerPlatform).DistinctCount();
                 variantCountPerCompilerPlatform = variants.Count(v => ShaderTypeIsFragment(v.ShaderType, v.CompilerPlatform)) / numCompilerPlatforms;
 #pragma warning restore UA2001
             }

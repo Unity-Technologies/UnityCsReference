@@ -507,9 +507,7 @@ namespace UnityEngine.UIElements.Internal
             {
                 var index = column.visibleIndex;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (index == columns.visibleList.Count() - 1)
-#pragma warning restore UA2001
+                if (index == columns.visibleList.Count - 1)
                 {
                     columnData.control.BringToFront();
                 }
@@ -541,9 +539,7 @@ namespace UnityEngine.UIElements.Internal
         void OnContextualMenuManipulator(ContextualMenuPopulateEvent evt)
         {
             Column columnUnderMouse = null;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool canResizeToFit = this.columns.visibleList.Count() > 0;
-#pragma warning restore UA2001
+            bool canResizeToFit = this.columns.visibleList.Count > 0;
 
             foreach (var column in this.columns.visibleList)
             {

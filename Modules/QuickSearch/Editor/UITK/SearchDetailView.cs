@@ -216,8 +216,10 @@ namespace UnityEditor.Search
 
                 // Do not render anything else if the selection is composed of items with different providers
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selection.GroupBy(item => item.provider.id).Count() > 1)
 #pragma warning restore UA2001
+#pragma warning restore UA2005
                 {
                     m_SelectionLabel.text = $"Selected {selectionCount} items from different types.";
                     return;
@@ -307,12 +309,10 @@ namespace UnityEditor.Search
 
         private void RefreshActions(SearchSelection selection, IEnumerable<SearchAction> actions, Button[] buttonElements)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (actions.Count() > buttonElements.Length)
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 throw new ArgumentException($"The size of {nameof(actions)} = {actions.Count()} is greater than the number of {nameof(buttonElements)} = {buttonElements.Length}");
-#pragma warning restore UA2001
+#pragma warning restore UA2005
 
             int i = 0;
             foreach (var action in actions)
@@ -527,14 +527,14 @@ namespace UnityEditor.Search
 
             if (targets.Count > 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int maxGroupCount = targets.GroupBy(t => t.GetType()).Max(g => g.Count());
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Editors = targets.GroupBy(t => t.GetType()).Where(g => g.Count() == maxGroupCount).Select(g =>
 #pragma warning restore UA2001
+#pragma warning restore UA2005
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var editor = Editor.CreateEditor(g.ToArray());
 #pragma warning restore UA2001
                     Utils.SetFirstInspectedEditor(editor);

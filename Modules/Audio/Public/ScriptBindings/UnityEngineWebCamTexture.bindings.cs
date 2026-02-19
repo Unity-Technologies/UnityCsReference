@@ -65,6 +65,19 @@ namespace UnityEngine
 
         [NativeName("resolutions")]
         internal Resolution[] m_Resolutions;
+
+        [RequiredByNativeCode]
+        private static void ReconstructArrayElementRaw(WebCamDevice[] array, int i, object name, object depthCameraName, int flags, WebCamKind kind, Resolution[] resolutions)
+        {
+            array[i] = new WebCamDevice 
+            {
+                m_Name = (string)name,
+                m_DepthCameraName = (string)depthCameraName,
+                m_Flags = flags,
+                m_Kind = kind,
+                m_Resolutions = resolutions 
+            };
+        }
     }
 
     [NativeHeader("Runtime/Video/BaseWebCamTexture.h")]

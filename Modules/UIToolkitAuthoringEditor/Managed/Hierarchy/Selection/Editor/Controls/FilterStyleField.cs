@@ -174,7 +174,7 @@ namespace Unity.UIToolkit.Editor
             }
             else
             {
-                foreach (var selectedIndex in listView.selectedIndices)
+                foreach (var selectedIndex in listView.selectedIndicesList)
                 {
                     if (selectedIndex >= m_FilterSource.Count)
                         continue;

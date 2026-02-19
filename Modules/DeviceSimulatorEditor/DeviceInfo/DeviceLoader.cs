@@ -49,9 +49,7 @@ namespace UnityEditor.DeviceSimulation
 
                 // Devices that are not built-in will hide built-in devices with the same name. This way devices from packages can have
                 // updated or duplicate versions of the same device without causing duplicate devices to appear.
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (deviceAsset == null || deviceAsset.parseErrors != null && deviceAsset.parseErrors.Length != 0 || devices.Any(device => device.deviceInfo.friendlyName == deviceAsset.deviceInfo.friendlyName))
-#pragma warning restore UA2001
+                if (deviceAsset == null || deviceAsset.parseErrors != null && deviceAsset.parseErrors.Length != 0 || devices.Exists(device => device.deviceInfo.friendlyName == deviceAsset.deviceInfo.friendlyName))
                     continue;
 
                 deviceAsset.directory = assetDirectory;

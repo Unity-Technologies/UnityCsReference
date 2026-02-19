@@ -18,7 +18,7 @@ namespace UnityEditor
 
         public extern string GetShaderSource();
 
-        [ThreadSafe] internal static extern BlockShaderAssetDescription ImportManagedSyntaxTree(SyntaxTree tree,
+        [NativeMethod(IsThreadSafe = true)] internal static extern BlockShaderAssetDescription ImportManagedSyntaxTree(SyntaxTree tree,
             string assetName, string importAtPath);
         // TODO @ SHADERS SHADERS-90:
         // Figure out what extra bindings we want.

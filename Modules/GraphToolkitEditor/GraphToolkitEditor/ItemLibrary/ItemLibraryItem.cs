@@ -52,7 +52,11 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// Name of the item.
         /// </summary>
         /// <remarks>Used to find the item during search.</remarks>
-        public virtual string Name => m_Name ?? "";
+        public virtual string Name
+        {
+            get => m_Name ?? "";
+            set => m_Name = value;
+        }
 
         /// <summary>
         /// Full name of the item including its path as a searchable string.

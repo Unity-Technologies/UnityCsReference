@@ -244,15 +244,9 @@ namespace UnityEditor.Experimental.GraphView
                     }
                     else // prevent heterogenous selections between stack child nodes and other nodes
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var selected = selection.selection.Cast<GraphElement>();
-#pragma warning restore UA2001
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        bool selectionHasChildren = selected.Any(item => item.IsStackable());
-#pragma warning restore UA2001
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        bool selectionHasSiblings = selected.All(item => item.parent == parent);
-#pragma warning restore UA2001
+                        var selected = selection.selection;
+                        bool selectionHasChildren = selected.Exists(item => ((GraphElement)item).IsStackable());
+                        bool selectionHasSiblings = selected.TrueForAll(item => ((GraphElement)item).parent == parent);
                         bool targetIsChild = IsStackable();
                         bool isSelectionHomogenous = !targetIsChild && !selectionHasChildren || targetIsChild && selectionHasSiblings;
 

@@ -7,6 +7,7 @@ using System.IO;
 using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditor.Profiling
 {
@@ -32,12 +33,15 @@ namespace UnityEditor.Profiling
         public const string k_CustomConnectionID = k_SettingsPrefix + "CustomConnectionID";
         public const string k_TargetFramesPerSecond = k_SettingsPrefix + "TargetFramesPerSecond";
         public const string k_LastImportPathPrefKey = k_SettingsPrefix + "LastImportPath";
+        public const string k_ShouldOverrideScreenshotInterval = k_SettingsPrefix + "ShouldOverrideScreenshotInterval";
+        public const string k_ScreenshotFrameInterval = k_SettingsPrefix + "ScreenshotFrameInterval";
 
         public const int kMinFrameCount = 600;
         public const int kDefaultFrameCount = 2000;
         public const int kMaxFrameCount = 4000;
         public const int k_MinimumTargetFramesPerSecond = 1;
         public const int k_MaximumTargetFramesPerSecond = 1000;
+        public const int k_DefaultScreenshotFrameInterval = 15;
 
         private const int kMaxCustomIDLength = 26;
 
@@ -239,6 +243,27 @@ namespace UnityEditor.Profiling
             set
             {
                 SessionState.SetString(k_LastImportPathPrefKey, value);
+            }
+        }
+
+        public static bool shouldOverrideScreenshotInterval
+        {
+            get => EditorPrefs.GetBool(k_ShouldOverrideScreenshotInterval, false);
+            set
+            {
+                EditorPrefs.SetBool(k_ShouldOverrideScreenshotInterval, value);
+                Profiler.SetScreenshotCaptureFrameInterval(value ? screenshotFrameInterval : k_DefaultScreenshotFrameInterval);
+            }
+        }
+
+        public static int screenshotFrameInterval
+        {
+            get => EditorPrefs.GetInt(k_ScreenshotFrameInterval, k_DefaultScreenshotFrameInterval);
+            set
+            {
+                EditorPrefs.SetInt(k_ScreenshotFrameInterval, value);
+                if (shouldOverrideScreenshotInterval)
+                    Profiler.SetScreenshotCaptureFrameInterval(value);
             }
         }
     }

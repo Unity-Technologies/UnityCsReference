@@ -40,13 +40,5 @@ class MultiplayerRoleMaskField : PopupField<MultiplayerRoleFlags>
     }
 
     static string MultiplayerPlayerRoleFlagsText(MultiplayerRoleFlags flag)
-    {
-        return flag switch
-        {
-            MultiplayerRoleFlags.ClientAndServer => "Client And Server",
-            MultiplayerRoleFlags.Client => "Client",
-            MultiplayerRoleFlags.Server => "Server",
-            _ => "Invalid Role"
-        };
-    }
+        => ObjectNames.NicifyVariableName(flag.ToString());
 }

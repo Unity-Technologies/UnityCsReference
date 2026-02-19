@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshDropdown()
         {
-            if (m_NeedRefresh || m_DropdownItems.Any(item => item.needRefresh))
+            if (m_NeedRefresh || m_DropdownItems.Exists(item => item.needRefresh))
             {
                 m_BuiltInItems.Sort(ExtensionManager.CompareExtensions);
                 m_DropdownItems.Sort(ExtensionManager.CompareExtensions);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -287,7 +288,7 @@ namespace Unity.UI.Builder
             {
                 var source = bindingDataSource;
 
-                if (source is BuilderObjectField.NonUnityObjectValue nonUnityObject)
+                if (source is AnyObjectField.NonUnityObjectValue nonUnityObject)
                     source = nonUnityObject.data;
 
                 if (propertyPath.IsEmpty)

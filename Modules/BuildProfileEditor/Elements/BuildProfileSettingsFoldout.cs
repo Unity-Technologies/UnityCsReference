@@ -86,7 +86,8 @@ namespace UnityEditor.Build.Profile.Elements
             var menu = new GenericMenu();
             if (m_OnReset != null)
                 menu.AddItem(s_ResetContent, false, OnReset);
-            menu.AddItem(s_RemoveContent, false, OnRemove);
+            if (!m_Provider.GetIsRequired())
+                menu.AddItem(s_RemoveContent, false, OnRemove);
             menu.ShowAsContext();
         }
 

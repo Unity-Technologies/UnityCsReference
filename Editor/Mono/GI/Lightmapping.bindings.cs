@@ -14,6 +14,7 @@ using Scene = UnityEngine.SceneManagement.Scene;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections;
 using Unity.Scripting.LifecycleManagement;
+using UnityEditor.Build;
 using UnityEditor.LightBaking;
 using UnityEngine.Rendering;
 using Light = UnityEngine.Light;
@@ -80,6 +81,18 @@ namespace UnityEditor
         public int platformId;
         public string name;
     };
+
+
+    [InitializeOnLoad]
+    internal class SetLightmappingUnifiedBaker
+    {
+        static SetLightmappingUnifiedBaker()
+        {
+            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.GetScriptingDefineSymbols(buildTarget, out string[] defines);
+            Lightmapping.UnifiedBaker = Array.Exists(defines, d => d == "UNIFIED_BAKER");
+        }
+    }
 
     [NativeHeader("Editor/Mono/GI/Lightmapping.bindings.h")]
     public static partial class Lightmapping
@@ -870,9 +883,7 @@ namespace UnityEditor.Experimental
             return BakeSceneAsync(targetScene);
         }
 
-        [NativeThrows]
-        [FreeFunction]
-        [NativeName("BakeAsync")]
+        [FreeFunction("BakeAsync", ThrowsException = true)]
         static extern bool BakeSceneAsync(Scene targetScene);
 
         public static bool Bake(Scene targetScene)
@@ -881,9 +892,7 @@ namespace UnityEditor.Experimental
             return BakeScene(targetScene);
         }
 
-        [NativeThrows]
-        [FreeFunction]
-        [NativeName("Bake")]
+        [FreeFunction("Bake", ThrowsException = true)]
         static extern bool BakeScene(Scene targetScene);
 
         [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead. This API is removed and will throw if used.", true)]

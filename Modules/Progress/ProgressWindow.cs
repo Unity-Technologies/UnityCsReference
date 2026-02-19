@@ -234,9 +234,9 @@ namespace UnityEditor
 
         void UpdateDismissAllButton()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DismissAllBtn.SetEnabled(Progress.EnumerateItems().Any(item => item.finished));
-#pragma warning restore UA2001
+#pragma warning restore UA2006
         }
 
         void OperationsAdded(Progress.Item[] items)

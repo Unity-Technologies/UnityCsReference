@@ -59,7 +59,6 @@ namespace UnityEditor.Build.Profile.Elements
                     VisualElement elementIcon = el.Q<VisualElement>("platform-icon");
                     m_selected = elementIcon;
                     m_selected.AddToClassList("build-profile-label-selected");
-                    el.Focus();
                 }
             }
         }

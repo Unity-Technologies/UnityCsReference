@@ -15,10 +15,10 @@ namespace UnityEngine
     [StaticAccessor("GizmoBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class Gizmos
     {
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawLine(Vector3 from, Vector3 to);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static unsafe extern void DrawLineStrip(ReadOnlySpan<Vector3> points, bool looped);
 
         [NativeMethod(Name = "DrawLineList", ThrowsException = true)]
@@ -31,34 +31,33 @@ namespace UnityEngine
             DrawLineListInternal(points);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawWireSphere(Vector3 center, float radius);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawSphere(Vector3 center, float radius);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawWireCube(Vector3 center, Vector3 size);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawCube(Vector3 center, Vector3 size);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawMesh(Mesh mesh, int submeshIndex, [DefaultValue("Vector3.zero")] Vector3 position, [DefaultValue("Quaternion.identity")] Quaternion rotation, [DefaultValue("Vector3.one")] Vector3 scale);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawWireMesh(Mesh mesh, int submeshIndex, [DefaultValue("Vector3.zero")] Vector3 position, [DefaultValue("Quaternion.identity")] Quaternion rotation, [DefaultValue("Vector3.one")] Vector3 scale);
 
-        [NativeThrows]
         public static void DrawIcon(Vector3 center, string name, [DefaultValue("true")] bool allowScaling)
         {
             DrawIcon(center, name, allowScaling, Color.white);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawIcon(Vector3 center, string name, [DefaultValue("true")] bool allowScaling, [DefaultValue("Color(255,255,255,255)")] Color tint);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public static extern void DrawGUITexture(Rect screenRect, Texture texture, int leftBorder, int rightBorder, int topBorder, int bottomBorder, [DefaultValue("null")] Material mat);
 
         public static extern Color color

@@ -228,9 +228,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
             removed ??= Array.Empty<IPackage>();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!added.Join(updated).Join(removed).Any(p => p.hasEntitlements))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 return;
 
             if (!RefreshSupportedStatusFiltersOnEntitlementPackageChange())

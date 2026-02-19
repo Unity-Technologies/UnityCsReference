@@ -2,6 +2,7 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
+    <IntermediateOutputPath>../../artifacts/UnityEngine.dll/Debug</IntermediateOutputPath>
     <AssemblyName>UnityEngine</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -9,8 +10,9 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
     <LangVersion>12.0</LangVersion>
-    <NoWarn>1701;626</NoWarn>
+    <NoWarn>1701;626;8632</NoWarn>
     <Nullable>disable</Nullable>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>UnityEngine</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
@@ -62,6 +64,144 @@
     </Compile>
     <Compile Include="..\..\External\NVUnityPlugin\Scripts\NVDevice.cs">
       <Link>External\NVUnityPlugin\Scripts\NVDevice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\AssemblyInfo.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\AssemblyManagement\ICurrentAssemblyLoadContext.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\AssemblyManagement\ICurrentAssemblyLoadContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\AlwaysLinkAssemblyAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\AlwaysLinkAssemblyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\PreserveAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\PreserveAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireAttributeUsagesAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireAttributeUsagesAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireDerivedAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireDerivedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireImplementorsAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequireImplementorsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredByAssemblyAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredByAssemblyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredInterfaceAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredInterfaceAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\Diagnostics\Debug.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\Diagnostics\Debug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\Diagnostics\IScriptingCoreDebug.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\Diagnostics\IScriptingCoreDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\Diagnostics\Profiling.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\Diagnostics\Profiling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\GlobalUsings.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\GlobalUsings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ActiveLifecycleScopesTracker.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ActiveLifecycleScopesTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedAttributes.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedScopeBase.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedScopeBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedScopeIl2Cpp.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\AssemblyLoadedScopeIl2Cpp.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\BurstScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\BurstScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeGen\ClassAutoCleanup.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeGen\ClassAutoCleanup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeGen\LifecycleMethodRegistration.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeGen\LifecycleMethodRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeInitializedScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeInitializedScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeLoadedScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\CodeLoadedScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DebugLifecycle.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DebugLifecycle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\INativeCallbackProvider.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\INativeCallbackProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\IReadonlyOrderedAssemblyList.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\IReadonlyOrderedAssemblyList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ImplicitLifecycleScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ImplicitLifecycleScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleAttributeBase.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleAttributeBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleController.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleMethodRegistry.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleMethodRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeBase.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeKey.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeWithContext.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeWithContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ManagedObjectsAwokenScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ManagedObjectsAwokenScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\OrderedAssemblyList.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\OrderedAssemblyList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ScopeTransitionHelper.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ScopeTransitionHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ScopedLazy.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ScopedLazy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\StackOrderedAssemblyList.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\StackOrderedAssemblyList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\StaticsCleanupAttributes.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\StaticsCleanupAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\UDMScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\UDMScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\ReflectionFormatting.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\ReflectionFormatting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\SortedSubsystemGroup.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\SortedSubsystemGroup.cs</Link>
     </Compile>
     <Compile Include="..\..\External\baselib\baselib\CSharp\BaselibNativeLibrary.cs">
       <Link>External\baselib\baselib\CSharp\BaselibNativeLibrary.cs</Link>
@@ -771,11 +911,20 @@
     <Compile Include="..\..\Modules\ContentLoad\Managed\BuildManifest.cs">
       <Link>Modules\ContentLoad\Managed\BuildManifest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentDirectoryCatalog.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\ContentDirectoryCatalog.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoad.bindings.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoad.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\L1LoadingSystem.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\L1LoadingSystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\Loadable.cs">
+      <Link>Modules\ContentLoad\Managed\Loadable.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
       <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
@@ -1545,170 +1694,188 @@
     <Compile Include="..\..\Modules\PerformanceReporting\ScriptBindings\PerformanceReporting.bindings.cs">
       <Link>Modules\PerformanceReporting\ScriptBindings\PerformanceReporting.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Assets\PhysicsLowLevelSettings2D.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Assets\PhysicsLowLevelSettings2D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsBody.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsBody.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsBuffer.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsBuffer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsChain.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsChain.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsComposer2D.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsComposer2D.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsDestructor2D.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsDestructor2D.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsGeometry.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsGeometry.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsJoint.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsJoint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsQuery.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsQuery.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsShape.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsShape.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsWorld.bindings.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsWorld.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsFixedJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsFixedJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsFixedJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsFixedJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsHingeJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsHingeJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsHingeJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsHingeJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsIgnoreJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsIgnoreJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsIgnoreJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsIgnoreJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsRelativeJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsRelativeJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsRelativeJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsRelativeJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsSliderJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsSliderJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsSliderJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsSliderJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsWheelJoint.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsWheelJoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsWheelJointDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsWheelJointDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsAABB.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsAABB.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsLayers.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsLayers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsMask.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsMask.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsPlane.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsPlane.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsRotate.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsRotate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsTransform.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsTransform.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsUserData.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\Miscellaneous\PhysicsUserData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsBody.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsBody.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsBodyDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsBodyDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsCallbacks.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsCallbacks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsChain.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsChain.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsChainDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsChainDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsComposer.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsComposer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsConstants.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsConstants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsDestructor.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsDestructor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsEditor.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsEvents.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsMath.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsMath.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsNativeMethods.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsNativeMethods.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsQuery.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsShape.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsShape.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsShapeDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsShapeDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsWorld.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsWorld.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsWorldDefinition.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsWorldDefinition.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsWorldRenderer.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsWorldRenderer.cs</Link>
+    <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Legacy\PhysicsLowLevelSettings2D.cs">
+      <Link>Modules\Physics2D\ScriptBindings\Legacy\PhysicsLowLevelSettings2D.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.updates.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.updates.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Assets\PhysicsCoreSettings2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBody.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBuffer.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsBuffer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsChain.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsChain.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer2D.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor2D.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsJoint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsMiscellaneous.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsQuery.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsShape.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsTransformWatcher.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsFixedJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsFixedJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsFixedJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsFixedJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsHingeJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsHingeJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsHingeJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsHingeJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsIgnoreJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsIgnoreJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsIgnoreJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsIgnoreJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsRelativeJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsRelativeJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsRelativeJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsRelativeJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsSliderJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsSliderJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsSliderJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsSliderJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsWheelJoint.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsWheelJoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsWheelJointDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsWheelJointDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsAABB.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsAABB.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsLayers.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsLayers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsMask.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsPlane.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsPlane.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsRotate.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsRotate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsTransform.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsTransform.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsUserData.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsUserData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsBody.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsBody.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsBodyDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsBodyDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsCallbacks.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsChain.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsChain.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsChainDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsChainDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsComposer.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsComposer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsConstants.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsDestructor.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsDestructor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsEditorOnly.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsEditorOnly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsMath.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsMath.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsQuery.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsShape.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsShape.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsShapeDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsShapeDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsTransformTweener.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsTransformTweener.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsTransformWatcher.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsTransformWatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsTransformWriter.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsTransformWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsWorld.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsWorld.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsWorldDefinition.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsWorldDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsWorldRenderer.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsWorldRenderer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\AssemblyInfo.cs">
       <Link>Modules\Physics\AssemblyInfo.cs</Link>
@@ -3063,6 +3230,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs">
       <Link>Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GpuUpdateMode.cs">
+      <Link>Modules\UIElements\Core\GpuUpdateMode.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GroupBoxUtility.cs">
       <Link>Modules\UIElements\Core\GroupBoxUtility.cs</Link>
     </Compile>
@@ -3267,6 +3437,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Panel.cs">
       <Link>Modules\UIElements\Core\Panel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PanelTransformData.cs">
+      <Link>Modules\UIElements\Core\PanelTransformData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\PenButton.cs">
       <Link>Modules\UIElements\Core\PenButton.cs</Link>
     </Compile>
@@ -3342,6 +3515,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryRecorder.cs">
       <Link>Modules\UIElements\Core\Renderer\UIREntryRecorder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGpuUpdaterMapped.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRGpuUpdaterMapped.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGpuUpdaterStaged.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRGpuUpdaterStaged.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGradientSettingsAtlas.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
     </Compile>
@@ -3368,6 +3547,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshGenerator.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRMeshGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerMapped.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerMapped.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerStaged.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerStaged.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativeList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRNativeList.cs</Link>
@@ -3437,6 +3625,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRCircularRangeBuffer.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRCircularRangeBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
@@ -3630,68 +3824,65 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\FontDefinition.cs">
       <Link>Modules\UIElements\Core\Style\FontDefinition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ComputedStyle.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\ComputedStyle.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ComputedStyle.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ComputedStyle.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IResolvedStyle.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\IResolvedStyle.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IResolvedStyle.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\IResolvedStyle.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IStyle.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\IStyle.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\IStyle.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\IStyle.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InitialStyle.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\InitialStyle.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InitialStyle.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InitialStyle.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccess.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccess.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccess.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccess.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\InlineStyleAccessPropertyBag.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccess.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleAccessPropertyBag.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ResolvedStyleProperties.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ShorthandApplicator.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\ShorthandApplicator.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ShorthandApplicator.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\ShorthandApplicator.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDataStructs.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StyleDataStructs.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDataStructs.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDataStructs.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDebug.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StyleDebug.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDebug.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDebug.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDiff.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StyleDiff.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDiff.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDiff.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleProperties.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StyleProperties.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleProperties.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleProperties.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyCache.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyCache.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyCache.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyCache.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyEnums.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyEnums.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyEnums.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyEnums.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIAnimationBinder.cs">
-      <Link>Modules\UIElements\Core\Style\Generated\UIAnimationBinder.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIAnimationBinder.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\UIAnimationBinder.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IStyle.cs">
       <Link>Modules\UIElements\Core\Style\IStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\InitialStyle.cs">
-      <Link>Modules\UIElements\Core\Style\InitialStyle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs">
       <Link>Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs</Link>
@@ -3800,6 +3991,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleMaterialDefinition.cs">
       <Link>Modules\UIElements\Core\Style\StyleMaterialDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyNativeUtils.bindings.cs">
+      <Link>Modules\UIElements\Core\Style\StylePropertyNativeUtils.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\StylePropertyUtil.cs</Link>
@@ -4001,6 +4195,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedDataStore.cs">
       <Link>Modules\UIElements\Core\Unmanaged\UnmanagedDataStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedHandleBuffer.cs">
+      <Link>Modules\UIElements\Core\Unmanaged\UnmanagedHandleBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedRefCountedList.cs">
       <Link>Modules\UIElements\Core\Unmanaged\UnmanagedRefCountedList.cs</Link>
@@ -4428,6 +4625,9 @@
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\2D\Physics2D\ScriptBindings\PhysicsCommon2D.bindings.cs">
+      <Link>Runtime\2D\Physics2D\ScriptBindings\PhysicsCommon2D.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
       <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
     </Compile>
@@ -4703,9 +4903,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\ETW\EventProvider.bindings.cs">
       <Link>Runtime\Export\ETW\EventProvider.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\EntitiesLike\EntitiesLike.cs">
-      <Link>Runtime\Export\EntitiesLike\EntitiesLike.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ExpressionEvaluator.cs">
       <Link>Runtime\Export\ExpressionEvaluator.cs</Link>
@@ -5012,12 +5209,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs">
       <Link>Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Loadable\Loadable.bindings.cs">
-      <Link>Runtime\Export\Loadable\Loadable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Loadable\Loadable.cs">
-      <Link>Runtime\Export\Loadable\Loadable.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Loadable\LoadableReference.bindings.cs">
       <Link>Runtime\Export\Loadable\LoadableReference.bindings.cs</Link>
@@ -5364,9 +5555,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs">
       <Link>Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs">
-      <Link>Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ApiRestrictions.bindings.cs">
       <Link>Runtime\Export\Scripting\ApiRestrictions.bindings.cs</Link>
     </Compile>
@@ -5445,15 +5633,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Component.deprecated.cs">
       <Link>Runtime\Export\Scripting\Component.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ContentLoadOperation.bindings.cs">
-      <Link>Runtime\Export\Scripting\ContentLoadOperation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ContentLoadSceneOperation.bindings.cs">
-      <Link>Runtime\Export\Scripting\ContentLoadSceneOperation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ContentUnloadSceneOperation.bindings.cs">
-      <Link>Runtime\Export\Scripting\ContentUnloadSceneOperation.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Coroutine.bindings.cs">
       <Link>Runtime\Export\Scripting\Coroutine.bindings.cs</Link>
     </Compile>
@@ -5468,18 +5647,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
       <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UdmLogCapture.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UdmLogCapture.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\EnumDataUtility.cs">
       <Link>Runtime\Export\Scripting\EnumDataUtility.cs</Link>
@@ -5526,26 +5693,8 @@
     <Compile Include="..\..\Runtime\Export\Scripting\NoAllocHelpers.bindings.cs">
       <Link>Runtime\Export\Scripting\NoAllocHelpers.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\PreserveAttribute.cs">
-      <Link>Runtime\Export\Scripting\PreserveAttribute.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RangeInt.cs">
       <Link>Runtime\Export\Scripting\RangeInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\RequireAttributeUsagesAttribute.cs">
-      <Link>Runtime\Export\Scripting\RequireAttributeUsagesAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\RequireDerivedAttribute.cs">
-      <Link>Runtime\Export\Scripting\RequireDerivedAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\RequireImplementorsAttribute.cs">
-      <Link>Runtime\Export\Scripting\RequireImplementorsAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\RequiredInterfaceAttribute.cs">
-      <Link>Runtime\Export\Scripting\RequiredInterfaceAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\RequiredMemberAttribute.cs">
-      <Link>Runtime\Export\Scripting\RequiredMemberAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs">
       <Link>Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
@@ -5705,6 +5854,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderProperties.cs">
       <Link>Runtime\Export\Shaders\ShaderProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderResourceType.bindings.cs">
+      <Link>Runtime\Export\Shaders\ShaderResourceType.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderTypes.bindings.cs">
       <Link>Runtime\Export\Shaders\ShaderTypes.bindings.cs</Link>
@@ -5967,17 +6119,14 @@
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\AssemblyLoadedAttributes.cs">
-      <Link>Runtime\Scripting\Internal\LifecycleManagement\AssemblyLoadedAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\RequiredMemberAttribute.cs">
-      <Link>Runtime\Scripting\Internal\LifecycleManagement\RequiredMemberAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\AttributeUsageLocatorWithTypeDB.cs">
-      <Link>Runtime\Scripting\LifecycleManagement\AttributeUsageLocatorWithTypeDB.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs">
       <Link>Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\PlayModeScope.cs">
+      <Link>Runtime\Scripting\LifecycleManagement\PlayModeScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs">
+      <Link>Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs">
       <Link>Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
@@ -6041,6 +6190,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs">
+      <Link>Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>

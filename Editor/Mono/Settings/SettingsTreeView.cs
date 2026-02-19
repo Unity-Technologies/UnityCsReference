@@ -11,6 +11,7 @@ using UnityEditor.StyleSheets;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -146,9 +147,7 @@ namespace UnityEditor
             var rows = GetRows();
             if (rows.Count == 0)
                 return;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!GetSelection().Any(selectedId => rows.Any(r => r.id == selectedId)))
-#pragma warning restore UA2001
+            if (!GetSelection().Exists(selectedId => rows.Exists(r => r.id == selectedId)))
                 SetSelection(new[] { rows[0].id }, TreeViewSelectionOptions.FireSelectionChanged);
         }
 

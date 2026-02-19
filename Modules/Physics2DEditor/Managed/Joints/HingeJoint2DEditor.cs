@@ -17,9 +17,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            using (new EditorGUI.DisabledScope(!targets.Any(x => (x as HingeJoint2D).gameObject.activeInHierarchy)))
-#pragma warning restore UA2001
+            using (new EditorGUI.DisabledScope(!System.Array.Exists(targets, x => (x as HingeJoint2D).gameObject.activeInHierarchy)))
             {
                 EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), this);
                 GUILayout.Space(5);

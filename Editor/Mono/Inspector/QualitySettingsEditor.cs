@@ -674,7 +674,7 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var buildProfiles = BuildProfileModuleUtil.GetAllBuildProfiles();
+            var buildProfiles = BuildProfile.GetAllBuildProfiles();
             var profilesWithQualityLevelOverrides = 0;
             foreach (var profile in buildProfiles)
             {
@@ -1113,9 +1113,7 @@ namespace UnityEditor
                             if (m_QualitySettingsPreset.excludedProperties.Contains(groupNamesArrayPropertyPath))
 #pragma warning restore UA2001
                             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                if (!m_QualitySettingsPreset.excludedProperties.Any(p => p == groupSettingsArrayPropertyPath || groupSettingsArrayPropertyPath.StartsWith(p + ".", System.StringComparison.Ordinal)))
-#pragma warning restore UA2001
+                                if (!System.Array.Exists(m_QualitySettingsPreset.excludedProperties, p => p == groupSettingsArrayPropertyPath || groupSettingsArrayPropertyPath.StartsWith(p + ".", System.StringComparison.Ordinal)))
                                 {
                                     // If and only if the group names array was excluded in the first place,
                                     // and the group settings array was successfully included, then include
@@ -1151,9 +1149,7 @@ namespace UnityEditor
                                 while (areAllGroupSettingsExcluded && counter < m_QualitySettingsProperty.arraySize)
                                 {
                                     string propertyPathToCheck = $"m_QualitySettings.Array.data[{counter}].textureMipmapLimitSettings";
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                    if (!m_QualitySettingsPreset.excludedProperties.Any(p => p == propertyPathToCheck || propertyPathToCheck.StartsWith(p + ".", System.StringComparison.Ordinal)))
-#pragma warning restore UA2001
+                                    if (!System.Array.Exists(m_QualitySettingsPreset.excludedProperties, p => p == propertyPathToCheck || propertyPathToCheck.StartsWith(p + ".", System.StringComparison.Ordinal)))
                                     {
                                         areAllGroupSettingsExcluded = false;
                                     }
@@ -1590,9 +1586,7 @@ namespace UnityEditor
             string[] existingNames = GetAllKnownTextureMipmapLimitGroupNames();
 
             int counter = 0;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            while (existingNames.Any(existingName => existingName == newName))
-#pragma warning restore UA2001
+            while (System.Array.Exists(existingNames, existingName => existingName == newName))
             {
                 newName = L10n.Tr("New Group") + string.Format(" ({0})", ++counter);
             }

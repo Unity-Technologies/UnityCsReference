@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Profiling;
+using UnityEditor.Search.Providers;
 using UnityEditor.SearchService;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -67,13 +68,15 @@ namespace UnityEditor.Search
         private VisualElement m_SearchQueryPanelContainer;
         private VisualElement m_DetailsPanelContainer;
         private SearchWindowCustomPanel m_CustomPanelContainer;
+        private SearchIndexingWarningWindow m_IndexingWarningWindow;
         private List<SearchProvider> m_AvailableProviders;
+        private bool m_HasAssetProvider;
         Dictionary<string, (ShortcutBinding, Action)> m_ShortcutBindings;
-
         [SerializeField] protected int m_ContextHash;
         [SerializeField] private float m_PreviousItemSize = -1;
         [SerializeField] protected SearchViewState m_ViewState = null;
         [SerializeField] protected EditorWindow m_LastFocusedWindow;
+        [SerializeField] protected bool m_IsWarningWindowDismissed;
 
         internal SearchView searchView => m_SearchView;
         internal IResultView resultView => m_SearchView.resultView;
@@ -160,6 +163,11 @@ namespace UnityEditor.Search
         {
             if (guiCreated && m_SearchView != null)
                 m_SearchView.UpdateIncrementalTimed(k_MaxUpdateTime);
+
+            if (m_HasAssetProvider && !m_IsWarningWindowDismissed)
+            {
+                m_IsWarningWindowDismissed = m_IndexingWarningWindow.CheckIndexing();
+            }
         }
 
         EntityId ISearchView.GetViewId()
@@ -311,6 +319,9 @@ namespace UnityEditor.Search
             var resultContainer = SearchElement.Create<VisualElement>("SearchResultContainer", "search-panel", "search-result-container", "search-splitter__flexed-pane");
             if (groupBar != null)
                 resultContainer.Add(groupBar);
+
+            m_IndexingWarningWindow = new SearchIndexingWarningWindow(this, m_IsWarningWindowDismissed);
+            resultContainer.Add(m_IndexingWarningWindow);
 
             m_CustomPanelContainer = new SearchWindowCustomPanel(this, m_SearchView);
             m_CustomPanelContainer.config = m_ViewState.customPanelConfig;
@@ -622,8 +633,6 @@ namespace UnityEditor.Search
             m_DebounceOff?.Invoke();
             m_DebounceOff = null;
 
-            EditorApplication.delayCall -= m_SearchView.DelayTrackSelection;
-
             try
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -714,9 +723,9 @@ namespace UnityEditor.Search
                 SelectGroup(null);
 
             context.SetFilter(providerId, toggledEnabled);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (toggledEnabled && provider == null && !context.providers.Any(p => p.id == providerId))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
             {
                 // Provider that are not stored in the SearchService, might only exists in the m_AvailableProviders (local providers created directly in the context).
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -731,11 +740,23 @@ namespace UnityEditor.Search
                 }
             }
 
+            m_HasAssetProvider = HasAssetProvider();
+
             Dispatcher.Emit(SearchEvent.FilterToggled, new SearchEventPayload(this, providerId));
 
             SendEvent(SearchAnalytics.GenericEventType.FilterWindowToggle, providerId, context.IsEnabled(providerId).ToString());
             Refresh();
             return toggledEnabled;
+        }
+
+        bool HasAssetProvider()
+        {
+            foreach (var provider in context.GetProviders()) 
+            {
+                if (provider.id == AssetProvider.type)
+                    return true;
+            }
+            return false;
         }
 
         internal void TogglePanelView(SearchViewFlags panelOption)
@@ -979,8 +1000,10 @@ namespace UnityEditor.Search
             var allEnabledProviders = m_AvailableProviders.Where(p => context.IsEnabled(p.id));
 #pragma warning restore UA2001
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleProviderEnabled = allEnabledProviders.Count() == 1 ? allEnabledProviders.First() : null;
 #pragma warning restore UA2001
+#pragma warning restore UA2005
             foreach (var p in m_AvailableProviders)
             {
                 var filterContent = new GUIContent($"{p.name} ({p.filterId})");
@@ -1169,6 +1192,7 @@ namespace UnityEditor.Search
             {
                 args.queryTreeConfig = SearchQueryTreeConfig.CreateDefault();
             }
+            m_HasAssetProvider = HasAssetProvider();
         }
 
         protected virtual void LoadSessionSettings()
@@ -1543,11 +1567,6 @@ namespace UnityEditor.Search
                 }
             }
             return false;
-        }
-
-        internal void ForceTrackSelection()
-        {
-            m_SearchView.DelayTrackSelection();
         }
 
         protected virtual IEnumerable<SearchItem> FetchItems()

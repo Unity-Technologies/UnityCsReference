@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,21 +13,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected internal virtual void SetupExecutionGraph(ExecutionGraph graph) { }
 
-        protected internal virtual Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(new Scenario.ValidationResult(true, string.Empty));
-        }
-
         protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
 
         internal virtual string GetTypeNameForAnalytics() => k_CustomTypeName;
 
-        internal static new T CreateInstance<T>() where T : InstanceController
+        internal static T CreateInstance<T>(string name) where T : InstanceController
         {
             var controller = ScriptableObject.CreateInstance<T>();
+            controller.name = name;
             OrchestratedScenario.PreventScriptableObjectUnload(controller);
             return controller;
         }
+
+        internal static new T CreateInstance<T>() where T : InstanceController
+            => CreateInstance<T>(typeof(T).Name);
     }
 
     abstract class InstanceController<TController, TSettings> : InstanceController
@@ -43,9 +39,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             get => m_Settings;
         }
 
-        internal static TController CreateInstance(TSettings settings)
+        internal static TController CreateInstance(string name, TSettings settings)
         {
-            var controller = CreateInstance<TController>();
+            var controller = CreateInstance<TController>(name);
             controller.m_Settings = settings;
             return controller;
         }

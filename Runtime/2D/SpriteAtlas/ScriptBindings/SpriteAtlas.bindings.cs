@@ -15,6 +15,7 @@ namespace UnityEngine.U2D
     /// ObjectData holds information about a packed Object such as Sprite in the sprite atlas.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlasManager.h")]
     public struct ObjectData
     {
         /// <summary>
@@ -32,6 +33,7 @@ namespace UnityEngine.U2D
     /// TextureData holds information about a texture in the sprite atlas.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlasManager.h")]
     public struct TextureData
     {
         /// <summary>
@@ -49,6 +51,7 @@ namespace UnityEngine.U2D
     /// AtlasPage holds information about a page in the sprite atlas. 
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlasManager.h")]
     public struct AtlasPage
     {
         /// <summary>
@@ -103,7 +106,13 @@ namespace UnityEngine.U2D
         extern internal static void Register(SpriteAtlas spriteAtlas);
 
         [FreeFunction("SpriteAtlasManager::CreateSpriteAtlas", ThrowsException = true)]
-        extern public static SpriteAtlas CreateSpriteAtlas(string name, SpriteAtlasRuntimeConfig config, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AtlasPage[] pages);
+        extern private static SpriteAtlas CreateSpriteAtlas_Internal(string name, SpriteAtlasRuntimeConfig config, AtlasPage[] pages);
+        public static SpriteAtlas CreateSpriteAtlas(string name, SpriteAtlasRuntimeConfig config, AtlasPage[] pages)
+        {
+            if(pages == null)
+                throw new ArgumentException("No packing data has been provided.");
+            return CreateSpriteAtlas_Internal(name, config, pages);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/SpriteFrame.h")]

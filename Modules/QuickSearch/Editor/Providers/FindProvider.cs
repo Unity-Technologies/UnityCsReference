@@ -139,9 +139,9 @@ namespace UnityEditor.Search.Providers
             {
                 options |= FindOptions.Packages;
             }
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (roots == null || roots.Count() == 0)
-#pragma warning restore UA2001
+            #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (roots == null || !roots.Any())
+#pragma warning restore UA2002
                 roots = GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();

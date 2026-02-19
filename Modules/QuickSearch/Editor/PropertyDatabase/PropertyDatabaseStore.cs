@@ -1358,9 +1358,9 @@ namespace UnityEditor.Search
             var documentKeyHiWord = PropertyDatabaseDocumentKeyHiWordRange.ToHiWord(documentKey);
             if (m_InvalidatedDocumentKeyHiWords.Contains(documentKeyHiWord))
                 return false;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_InvalidatedDocumentKeyMasks.Any(mask => PropertyDatabaseDocumentKeyMaskRange.DocumentKeyMatchesMask(documentKey, mask)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                 return false;
             return true;
         }

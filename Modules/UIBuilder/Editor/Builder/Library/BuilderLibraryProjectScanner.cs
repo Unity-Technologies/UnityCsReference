@@ -72,7 +72,7 @@ namespace Unity.UI.Builder
                     if (elementAttribute == null || elementAttribute.visibility == LibraryVisibility.Default)
                     {
                         // Avoid adding our own internal factories (like Package Manager templates).
-                        if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
+                        if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Exists(elementType.Namespace.StartsWith))
                         {
                             if (!AllowPackageType(type))
                                 continue;
@@ -323,16 +323,17 @@ namespace Unity.UI.Builder
         {
             m_Assets = AssetDatabase.FindAllAssets(m_SearchFilter);
             using var pooledHashSet = HashSetPool<string>.Get(out var assetGuids);
+
+            int assetCount = 0;
             foreach (var property in m_Assets)
             {
                 m_AssetIDAndPathPair[property.guid] = AssetDatabase.GetAssetPath(property.entityId);
                 assetGuids.Add(property.guid);
+                assetCount++;
             }
 
             // If an asset is deleted, we need to remove it from the cache.
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_AssetIDAndPathPair.Count > m_Assets.Count())
-#pragma warning restore UA2001
+            if (m_AssetIDAndPathPair.Count > assetCount)
             {
                 var keyToRemove = "";
                 var removeKey = false;

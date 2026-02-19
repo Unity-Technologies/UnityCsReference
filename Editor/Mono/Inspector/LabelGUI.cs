@@ -142,12 +142,8 @@ namespace UnityEditor
                     {
                         element.filterScore = pair.Value;
                     }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    element.selected = all.Any(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    element.partiallySelected = partial.Any(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore UA2001
+                    element.selected = all.Exists(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
+                    element.partiallySelected = partial.Exists(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

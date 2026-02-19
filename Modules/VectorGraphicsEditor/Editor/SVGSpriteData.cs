@@ -9,6 +9,7 @@ using System.IO;
 using Unity.Collections;
 using UnityEngine;
 using UnityEditor;
+using static UnityEditor.U2D.ScriptablePacker;
 
 namespace Unity.VectorGraphics.Editor
 {
@@ -22,25 +23,30 @@ namespace Unity.VectorGraphics.Editor
         public SpriteAlignment SpriteAlignment = SpriteAlignment.Center;
         public Vector4 SpriteBorder = Vector4.zero;
         public Rect SpriteRect = Rect.zero;
-        public string SpriteID = null;
 
-        private GUID m_GUID;
+        public string SpriteID = null;
+        private GUID m_SpriteGUID;
+
+        public List<OutlineData> PhysicsOutlines = new List<OutlineData>();
+
+        private SpriteAlignment m_PrevAlignment;
+        private Vector2 m_PrevPivot;
 
         public GUID SpriteGUID
         {
             get
             {
-                if (m_GUID.Empty())
+                if (m_SpriteGUID.Empty())
                     ValidateGUID();
-                return m_GUID;
+                return m_SpriteGUID;
             }
             set
             {
-                m_GUID = value;
-                if (m_GUID.Empty())
+                m_SpriteGUID = value;
+                if (m_SpriteGUID.Empty())
                     SpriteID = null;
                 else
-                    SpriteID = m_GUID.ToString();
+                    SpriteID = m_SpriteGUID.ToString();
 
                 ValidateGUID();
             }
@@ -50,21 +56,24 @@ namespace Unity.VectorGraphics.Editor
         {
             if (!string.IsNullOrEmpty(SpriteID))
             {
-                m_GUID = new GUID(SpriteID);
-                if (!m_GUID.Empty())
+                m_SpriteGUID = new GUID(SpriteID);
+                if (!m_SpriteGUID.Empty())
                     return;
             }
 
-            if (m_GUID.Empty())
-                m_GUID = GUID.Generate();
+            if (m_SpriteGUID.Empty())
+                m_SpriteGUID = GUID.Generate();
 
-            SpriteID = m_GUID.ToString();
+            SpriteID = m_SpriteGUID.ToString();
         }
 
-        public List<OutlineData> PhysicsOutlines = new List<OutlineData>();
-
-        private SpriteAlignment m_PrevAlignment;
-        private Vector2 m_PrevPivot;
+        public void InitWithSprite(Sprite sprite)
+        {
+            SpriteName = sprite.name;
+            SpritePivot = sprite.pivot / sprite.rect.size;
+            SpriteRect = new Rect(0, 0, sprite.rect.width, sprite.rect.height);
+            SpriteBorder = sprite.border;
+        }
 
         public void Load(SerializedObject so)
         {
@@ -86,9 +95,9 @@ namespace Unity.VectorGraphics.Editor
             SpritePivot = sprite.pivot / textureSize;
 
             var guidSP = baseSP.FindPropertyRelative("SpriteID");
-            SpriteID = guidSP.stringValue;
+            SpriteGUID = new GUID(guidSP.stringValue);
 
-            ValidateGUID();
+            // ValidateGUID();
 
             SpriteAlignment = SpriteAlignment.Center;
             if (Enum.IsDefined(typeof(SpriteAlignment), (int)importer.Alignment))

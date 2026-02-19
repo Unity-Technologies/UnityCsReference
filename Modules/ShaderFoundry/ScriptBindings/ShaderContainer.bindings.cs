@@ -48,8 +48,8 @@ namespace UnityEditor.ShaderFoundry
             GC.SuppressFinalize(this);
         }
 
-        [ThreadSafe] private extern static IntPtr Internal_Create();
-        [ThreadSafe] private static extern void Internal_Destroy(IntPtr ptr);
+        [NativeMethod(IsThreadSafe = true)] private extern static IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)] private static extern void Internal_Destroy(IntPtr ptr);
 
         [NativeMethod(Name = "AddDependency", IsThreadSafe = true)]
         private extern void Internal_AddDependency(ShaderContainer other);
@@ -75,13 +75,13 @@ namespace UnityEditor.ShaderFoundry
         }
 
         // native member functions
-        [ThreadSafe] internal extern FoundryHandle AddString(string s);
-        [ThreadSafe] internal extern string GetString(FoundryHandle stringHandle);
+        [NativeMethod(IsThreadSafe = true)] internal extern FoundryHandle AddString(string s);
+        [NativeMethod(IsThreadSafe = true)] internal extern string GetString(FoundryHandle stringHandle);
 
-        [ThreadSafe] extern FoundryHandle AllocateStaticSized(DataType dataType, ulong sizeInBytes);
-        [ThreadSafe] unsafe extern void* GetStaticSizedPointer(FoundryHandle handle, DataType expectedDataType);
-        [ThreadSafe] unsafe extern void* GetStaticSizedPointerConst(FoundryHandle handle, DataType expectedDataType);
-        [ThreadSafe] internal extern DataType GetDataTypeFromHandle(FoundryHandle handle);
+        [NativeMethod(IsThreadSafe = true)] extern FoundryHandle AllocateStaticSized(DataType dataType, ulong sizeInBytes);
+        [NativeMethod(IsThreadSafe = true)] unsafe extern void* GetStaticSizedPointer(FoundryHandle handle, DataType expectedDataType);
+        [NativeMethod(IsThreadSafe = true)] unsafe extern void* GetStaticSizedPointerConst(FoundryHandle handle, DataType expectedDataType);
+        [NativeMethod(IsThreadSafe = true)] internal extern DataType GetDataTypeFromHandle(FoundryHandle handle);
 
         internal FoundryHandle Create<T>() where T : struct, IInternalType<T>
         {
@@ -161,19 +161,19 @@ namespace UnityEditor.ShaderFoundry
 
         [NativeMethod(Name = "CreateArray<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
         internal extern FoundryHandle CreateArray(ulong size);
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         internal extern ulong GetArraySize(FoundryHandle arrayHandle);
         [NativeMethod(Name = "GetArrayElement<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
         internal extern FoundryHandle GetArrayElement(FoundryHandle arrayHandle, ulong elementIndex);
         [NativeMethod(Name = "SetArrayElement<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
         internal extern void SetArrayElement(FoundryHandle arrayHandle, ulong elementIndex, FoundryHandle elementHandle);
 
-        [ThreadSafe] internal extern FoundryHandle GetTypeByName(string typeName);
+        [NativeMethod(IsThreadSafe = true)] internal extern FoundryHandle GetTypeByName(string typeName);
 
-        [ThreadSafe] internal extern FoundryHandle[] GetSymbolsFromTree(DataType dataType);
-        [ThreadSafe] internal extern FoundryHandle[] GetShaderTypesFromTree(ShaderTypeInternal.Kind kind);
+        [NativeMethod(IsThreadSafe = true)] internal extern FoundryHandle[] GetSymbolsFromTree(DataType dataType);
+        [NativeMethod(IsThreadSafe = true)] internal extern FoundryHandle[] GetShaderTypesFromTree(ShaderTypeInternal.Kind kind);
         // Used for testing only
-        [ThreadSafe] internal extern void AddSymbolToTree(FoundryHandle scopeNameHandle, FoundryHandle symbolHandle);
+        [NativeMethod(IsThreadSafe = true)] internal extern void AddSymbolToTree(FoundryHandle scopeNameHandle, FoundryHandle symbolHandle);
         IEnumerable<T> EnumerateSymbols<T>(FoundryHandle[] handles) where T : struct, IPublicType<T>
         {
             var symbols = new List<T>(handles.Length);
@@ -207,7 +207,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderType GetType(string name) => new ShaderType(this, GetTypeByName(name));
 
         public extern bool IsReadOnly { [NativeMethod(Name = "IsReadOnly", IsThreadSafe = true)] get; }
-        [ThreadSafe] public extern void MakeReadOnly();
+        [NativeMethod(IsThreadSafe = true)] public extern void MakeReadOnly();
 
         // TODO @ SHADERS SHADERS-253: Remove once symbol write API is gone
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]

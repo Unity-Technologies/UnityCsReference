@@ -21,7 +21,6 @@ struct LayoutConfigData
 
     public int ManagedMeasureFunctionIndex;
     public int ManagedBaselineFunctionIndex;
-
     [MarshalAs(UnmanagedType.U1)]
     public bool ShouldLog;
 }

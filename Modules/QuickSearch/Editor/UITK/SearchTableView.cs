@@ -305,9 +305,7 @@ namespace UnityEditor.Search
         {
             evt.menu.ClearItems();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var visibleColumnCount = m_ListView.columns.visibleList.Count();
-#pragma warning restore UA2001
+            var visibleColumnCount = m_ListView.columns.visibleList.Count;
             if (viewColumns.Count > 1)
             {
                 for (int i = 0; i < viewColumns.Count; ++i)
@@ -511,9 +509,9 @@ namespace UnityEditor.Search
 
             foreach (var sc in tableConfig.columns)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!clear && columns.Any(x => string.Equals(x.name, sc.path, StringComparison.Ordinal)))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
                     continue;
 
                 // FIXME: Each call to Add here does a Rebuild of the table view

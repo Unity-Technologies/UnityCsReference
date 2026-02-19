@@ -139,6 +139,12 @@ namespace UnityEngine
             set;
         }
 
+        extern public float GetBlendShapeWeight(int index);
+        extern public void SetBlendShapeWeight(int index, float value);
+        extern internal int GetBlendShapeChannelCount();
+
+        extern internal bool IsSkinned();
+
         extern IntPtr GetCurrentMeshDataPtr();
         
         internal unsafe Mesh.MeshDataArray GetCurrentMeshData()
@@ -159,4 +165,5 @@ namespace UnityEngine
             return Internal_GetSpriteBounds(drawMode);
         }
     }
+
 }

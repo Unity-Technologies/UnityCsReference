@@ -102,10 +102,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var name = field.Name;
                 var parameter = (NodeParameter)field.GetValue(node);
                 var value = parameter?.GetValue<object>();
-                result += $"\t- {name}: {(value != null ? value : "<null>")}\n";
+                result += $"\t- {name}: {FieldValueToString(value)}\n";
             }
 
             return result.TrimEnd('\n');
+        }
+
+        static string FieldValueToString(object value)
+        {
+            if (value == null)
+                return "<null>";
+
+            if (value is Array array)
+            {
+                var elements = new List<string>();
+                foreach (var item in array)
+                {
+                    elements.Add(FieldValueToString(item));
+                }
+                return $"[{string.Join(", ", elements)}]";
+            }
+
+            return value.ToString();
         }
     }
 }

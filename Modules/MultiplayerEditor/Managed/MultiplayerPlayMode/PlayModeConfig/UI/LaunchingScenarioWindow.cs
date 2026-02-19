@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -14,9 +16,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_Stylesheet = "Multiplayer/UI/LaunchingScenarioWindow.uss";
 
         private const string k_WindowTitle = "Starting Scenario";
-        private const string k_PreparingMessage = "Preparing";
-        private const string k_DeployingMessage = "Deploying";
-        private const string k_LaunchingMessage = "Launching";
+        private const string k_ValidateLabel = "Validating";
+        private const string k_PrepareLabel = "Preparing";
+        private const string k_DeployLabel = "Deploying";
+        private const string k_StartLabel = "Starting";
+        private const string k_RunLabel = "Running";
+        private const string k_CleanupLabel = "Cleaning up";
         private const string k_LoadingIconName = "LoadingIcon";
 
         private const int k_WindowWidth = 400;
@@ -43,7 +48,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
 
                 var scenario = scenarioConfig.Scenario;
-                if (scenario != null && StatusIsLaunching(scenario.StatusData))
+                if (scenario != null && scenario.StatusData.IsExecutingLaunchingStages())
                     OnScenarioStarted(scenarioConfig);
             }
         }
@@ -100,24 +105,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void OnScenarioStatusRefreshed(ScenarioStatusData status)
         {
-            if (!StatusIsLaunching(status))
+            if (!status.IsExecutingLaunchingStages())
             {
                 Close();
                 return;
             }
 
-            var stage = status.CurrentStage switch
-            {
-                ExecutionStage.Prepare => k_PreparingMessage,
-                ExecutionStage.Deploy => k_DeployingMessage,
-                ExecutionStage.Run => k_LaunchingMessage,
-                _ => "Error"
-            };
-
             if (m_Message == null)
                 return;
 
-            m_Message.text = $"Scenario is {stage}...";
+            m_Message.text = $"Scenario is {GetLabelForStage(status.CurrentStage)}...";
 
             var mainEditorCount = GetInstanceCount<MainEditorController>(m_ScenarioConfig);
             m_MainEditorMessage.text = mainEditorCount > 0 ? $"Activating main editor..." : string.Empty;
@@ -131,17 +128,21 @@ namespace Unity.Multiplayer.PlayMode.Editor
             UpdateProgressBar(m_ProgressBar, status.OverallStatus.Progress);
         }
 
-        private static bool StatusIsLaunching(ScenarioStatusData status)
+        internal static string GetLabelForStage(ExecutionStage stage)
         {
-            if (status.OverallStatus.State is not ExecutionState.Running)
-                return false;
-
-            return status.CurrentStage switch
+            var label = stage switch
             {
-                ExecutionStage.Prepare or ExecutionStage.Deploy => true,
-                ExecutionStage.Run => status.CurrentStageState is not ExecutionState.Active and not ExecutionState.Completed,
-                _ => false,
+                ExecutionStage.Validate => k_ValidateLabel,
+                ExecutionStage.Prepare => k_PrepareLabel,
+                ExecutionStage.Deploy => k_DeployLabel,
+                ExecutionStage.Start => k_StartLabel,
+                ExecutionStage.Run => k_RunLabel,
+                ExecutionStage.Cleanup => k_CleanupLabel,
+                _ => string.Empty,
             };
+
+            Assert.IsFalse(string.IsNullOrEmpty(label), $"No label defined for stage '{stage}'");
+            return label;
         }
 
         private void UpdateProgressBar(ProgressBar progressBar, float progress)

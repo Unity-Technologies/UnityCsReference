@@ -161,7 +161,7 @@ namespace UnityEngine.Networking
 
         private static extern void ClearCookieCache(string domain, string path);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern static IntPtr Create();
 
         [NativeMethod(IsThreadSafe = true)]
@@ -284,7 +284,7 @@ namespace UnityEngine.Networking
             }
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         internal extern UnityWebRequestAsyncOperation BeginWebRequest();
 
         [Obsolete("Use SendWebRequest.  It returns a UnityWebRequestAsyncOperation which contains a reference to the WebRequest object.", false)]
@@ -495,7 +495,7 @@ namespace UnityEngine.Networking
         public extern ulong downloadedBytes { get; }
 
         private extern int GetRedirectLimit();
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         private extern void SetRedirectLimitFromScripting(int limit);
 
         public int redirectLimit

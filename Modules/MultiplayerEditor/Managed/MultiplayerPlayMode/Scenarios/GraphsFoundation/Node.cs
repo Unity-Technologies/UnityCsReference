@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEditor;
 using System.Text;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -17,19 +19,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     internal abstract class Node
     {
-        // This is here just for improving readability of the code.
-        // By wrapping the monitoring class, it is explicit that the
-        // returning node of the RunAsync method is the monitoring node.
-        public struct NodeExecutionResult
-        {
-            public Task MonitoringTask;
-
-            public NodeExecutionResult(Task monitoringTask)
-            {
-                MonitoringTask = monitoringTask;
-            }
-        }
-
         /// <summary>
         /// ErrorInfo includes the Message, ExceptionType, and StackTrace from a node within a specific scenario.
         /// </summary>
@@ -86,12 +75,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private float m_Progress;
         [SerializeField] private string m_Name;
         [SerializeReference] private Error m_ErrorInfo;
+        [SerializeField] private bool m_LogExceptions = true;
 
         private NodeTimeData m_TimeData;
 
         public string Name => m_Name;
         public Error ErrorInfo => m_ErrorInfo;
         public NodeTimeData TimeData => m_TimeData;
+        internal bool LogExceptions
+        {
+            get => m_LogExceptions;
+            set => m_LogExceptions = value;
+        }
 
         public float Progress
         {
@@ -122,7 +117,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         /// <summary>
         /// Returns true if the node started but is not running because it was interrupted by a domain reload.
         /// </summary>
-        public bool Interrupted => (State == ExecutionState.Running || State == ExecutionState.Active) && !m_HasNotBeenInterrupted;
+        public bool Interrupted => (State == ExecutionState.Running) && !m_HasNotBeenInterrupted;
 
         internal event Action StatusRefreshed;
 
@@ -191,22 +186,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         protected virtual Task ExecuteResumeAsync(CancellationToken cancellationToken)
             => throw new NotSupportedException("This node does not support resuming.");
 
-        /// <summary>
-        /// This method is called when the node node execution finished.
-        /// </summary>
-        /// <remarks>
-        /// Implement this method if the node needs to be monitored after it has finished.
-        /// When a node is monitored, it will first enter the <see cref="ExecutionState.Active"/> state when the node is finished
-        /// and then the <see cref="ExecutionState.Completed"/> state when the monitoring node is finished.
-        /// </remarks>
-        protected virtual Task MonitorAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
         private bool CanRequestDomainReload => GetType().IsDefined(typeof(CanRequestDomainReloadAttribute), true);
 
         /// <summary>
         /// Runs the node.
         /// </summary>
-        public async Task<NodeExecutionResult> RunAsync(CancellationToken cancellationToken)
+        public async Task RunAsync(CancellationToken cancellationToken)
         {
             using var turn = await AssignTurnAndLockIfNeeded(cancellationToken);
 
@@ -217,35 +202,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_HasNotBeenInterrupted = true;
 
             m_TimeData.StartTime = DateTime.Now;
-            return await ExecuteAndComplete(cancellationToken);
+            await ExecuteAndComplete(cancellationToken);
         }
 
         /// <summary>
         /// Resumes the node if it has been terminated by a domain reload.
         /// </summary>
-        public async Task<NodeExecutionResult> ResumeAsync(CancellationToken cancellationToken)
+        public async Task ResumeAsync(CancellationToken cancellationToken)
         {
             using var turn = await AssignTurnAndLockIfNeeded(cancellationToken);
 
             if (m_HasNotBeenInterrupted)
                 throw new InvalidOperationException("Cannot resume a node that has not been interrupted by a domain reload.");
 
-            switch (State)
-            {
-                case ExecutionState.Running:
-                    m_HasNotBeenInterrupted = true;
-                    return await ExecuteAndComplete(cancellationToken, true);
-                case ExecutionState.Active:
-                    m_HasNotBeenInterrupted = true;
+            if (State != ExecutionState.Running)
+                throw new InvalidOperationException("Cannot resume a node that is not running.");
 
-                    // Monitor in the background
-                    return new NodeExecutionResult(MonitorAndComplete(cancellationToken));
-                default:
-                    throw new InvalidOperationException("Cannot resume a node that is not running or active.");
-            }
+            m_HasNotBeenInterrupted = true;
+            await ExecuteAndComplete(cancellationToken, true);
         }
 
-        private async Task<NodeExecutionResult> ExecuteAndComplete(CancellationToken cancellationToken, bool resume = false)
+        private async Task ExecuteAndComplete(CancellationToken cancellationToken, bool resume = false)
         {
             try
             {
@@ -258,21 +235,24 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            catch (TaskCanceledException)
-            {
-                return ExecutionCancelled();
-            }
             catch (OperationCanceledException)
             {
-                return ExecutionCancelled();
+                if (Progress < 1.0f)
+                {
+                    State = ExecutionState.Aborted;
+                    return;
+                }
             }
             catch (Exception e)
             {
-                Debug.LogError($"An error occurred while executing the node '{Name}': {e.Message}");
-                Debug.LogException(e);
+                if (LogExceptions)
+                {
+                    Debug.LogError($"An error occurred while executing the node '{Name}': {e.Message}");
+                    Debug.LogException(e);
+                }
                 m_ErrorInfo = new Error(e, GetType().FullName);
                 State = ExecutionState.Failed;
-                return new NodeExecutionResult(Task.CompletedTask);
+                return;
             }
             finally
             {
@@ -280,16 +260,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             SetProgress(1.0f);
-            State = ExecutionState.Active;
-
-            // Start monitoring in the background
-            return new NodeExecutionResult(MonitorAndComplete(cancellationToken));
-        }
-
-        private NodeExecutionResult ExecutionCancelled()
-        {
-            State = ExecutionState.Aborted;
-            return new NodeExecutionResult(Task.CompletedTask);
+            State = ExecutionState.Completed;
         }
 
         private void OnDomainReloadRequestedDuringExecution(bool executionCompleted)
@@ -342,29 +313,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private async Task MonitorAndComplete(CancellationToken cancellationToken)
+        internal static long ComputeExecutionDuration(IEnumerable<Node> nodes)
         {
-            try
+            var minStartTime = DateTime.MaxValue;
+            var maxEndTime = DateTime.MinValue;
+
+            foreach (var node in nodes)
             {
-                await MonitorAsync(cancellationToken);
-            }
-            catch (TaskCanceledException)
-            {
-                // noop. The monitoring of the node was requested to be cancelled.
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-                m_ErrorInfo = new Error(e, GetType().FullName);
-                State = ExecutionState.Failed;
-                return;
-            }
-            finally
-            {
-                m_TimeData.MonitoringEndTime = DateTime.Now;
+                if (node.TimeData.HasStarted)
+                {
+                    if (node.TimeData.StartTime < minStartTime)
+                        minStartTime = node.TimeData.StartTime;
+                }
+
+                if (node.TimeData.HasEnded)
+                {
+                    if (node.TimeData.EndTime > maxEndTime)
+                        maxEndTime = node.TimeData.EndTime;
+                }
             }
 
-            State = ExecutionState.Completed;
+            var duration = (long)Math.Round((maxEndTime - minStartTime).TotalMilliseconds);
+            return duration > 0L ? duration : 0L;
         }
     }
 }

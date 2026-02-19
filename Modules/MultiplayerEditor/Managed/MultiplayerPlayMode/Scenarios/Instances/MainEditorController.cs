@@ -4,6 +4,8 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.Multiplayer.Internal;
+using UnityEditor.SceneManagement;
 using UnityEngine.Multiplayer.Internal;
 using UnityEngine.UIElements;
 
@@ -27,18 +29,50 @@ class MainEditorController : EditorController<MainEditorController, MainEditorCo
 
     protected internal override void SetupExecutionGraph(ExecutionGraph executionGraph)
     {
-        var editorRunNode = new EditorMultiplayerPlaymodeRunNode($"MainEditor_run");
-        var deployNode = new EditorMultiplayerPlaymodeDeployNode($"MainEditor_deploy");
+        if (EditorMultiplayerManager.enableMultiplayerRoles)
+        {
+            var roleNode = new SetupEditorMultiplayerRoleNode("MainEditor_SetupMultiplayerRole");
+            executionGraph.AddNode(roleNode, ExecutionStage.Deploy);
+            executionGraph.ConnectConstant(roleNode.PlayerInstanceIndex, 0);
+            executionGraph.ConnectConstant(roleNode.Role, Settings.RoleMask);
 
-        executionGraph.AddNode(deployNode, ExecutionStage.Deploy);
-        executionGraph.ConnectConstant(deployNode.PlayerInstanceIndex, 0);
-        executionGraph.ConnectConstant(deployNode.PlayerTags, Settings.PlayerTag);
-        executionGraph.ConnectConstant(deployNode.MultiplayerRole, Settings.RoleMask);
-        executionGraph.ConnectConstant(deployNode.InitialScene, Settings.InitialScene);
+            var restoreRoleNode = new SetupEditorMultiplayerRoleNode("MainEditor_RestoreMultiplayerRole");
+            executionGraph.AddNode(restoreRoleNode, ExecutionStage.Cleanup);
+            executionGraph.ConnectConstant(restoreRoleNode.PlayerInstanceIndex, 0);
+            executionGraph.ConnectConstant(restoreRoleNode.Role, EditorMultiplayerManager.activeMultiplayerRoleMask);
+        }
 
-        executionGraph.AddNode(editorRunNode, ExecutionStage.Run);
-        executionGraph.ConnectConstant(editorRunNode.PlayerInstanceIndex, 0);
-        executionGraph.ConnectConstant(editorRunNode.PlayerTags, Settings.PlayerTag);
+        if (Settings.InitialScene != null)
+        {
+            var openSceneNode = new OpenSceneNode("MainEditor_OpenInitialScene");
+            executionGraph.AddNode(openSceneNode, ExecutionStage.Deploy);
+            executionGraph.ConnectConstant(openSceneNode.Scene, Settings.InitialScene);
+
+            var restoreSceneNode = new RestoreSceneManagerSetupNode("MainEditor_RestoreSceneSetup");
+            executionGraph.AddNode(restoreSceneNode, ExecutionStage.Cleanup);
+            executionGraph.ConnectConstant(restoreSceneNode.ScenesSetup, EditorSceneManager.GetSceneManagerSetup());
+        }
+
+        var player = MultiplayerPlaymode.Players[0];
+        if (player != null)
+        {
+            var tagsNode = new SetupEditorTagsNode("MainEditor_SetupTags");
+            executionGraph.AddNode(tagsNode, ExecutionStage.Deploy);
+            executionGraph.ConnectConstant(tagsNode.PlayerInstanceIndex, 0);
+            executionGraph.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
+
+            var restoreTagsNode = new SetupEditorTagsNode("MainEditor_RestoreTags");
+            executionGraph.AddNode(restoreTagsNode, ExecutionStage.Cleanup);
+            executionGraph.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, 0);
+            executionGraph.ConnectConstant(restoreTagsNode.Tags, player.Tags);
+        }
+
+
+        var startNode = new MainEditorStartNode("MainEditor_Start");
+        executionGraph.AddNode(startNode, ExecutionStage.Start);
+
+        var runNode = new MainEditorRunNode("MainEditor_Run");
+        executionGraph.AddNode(runNode, ExecutionStage.Run);
     }
 
     protected internal override VisualElement CreateControllerUI(Instance instance)

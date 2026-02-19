@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Unity.Collections;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -469,9 +470,9 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryBundleFilterBlock)))
                 yield return f;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SearchDatabase.EnumerateAll().Any(db => db.index?.settings?.options.extended ?? false))
-#pragma warning restore UA2001
+#pragma warning restore UA2006
             {
                 foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryIsFilterBlock)))
                     yield return f;
@@ -622,10 +623,7 @@ namespace UnityEditor.Search.Providers
         public static int GetResultLimit(string query)
         {
             var parsedQuery = queryEngine.ParseQuery(query);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var resultsLimit = parsedQuery.toggles.Any(t => t.value.Equals(k_NoResultsLimitToggle, StringComparison.InvariantCultureIgnoreCase)) ? int.MaxValue : 2999;
-#pragma warning restore UA2001
-            return resultsLimit;
+            return parsedQuery.toggles.Exists(t => t.value.Equals(k_NoResultsLimitToggle, StringComparison.InvariantCultureIgnoreCase)) ? int.MaxValue : 2999;
         }
 
         internal static SearchItem CreateItemFromPath(SearchContext context, SearchProvider provider, string assetPath)

@@ -169,7 +169,7 @@ namespace UnityEngine.Playables
             return true;
         }
 
-        [ThreadSafe]
+        [NativeMethod(IsThreadSafe = true)]
         private extern static int RegisterStreamStage(System.Type streamType, int stage);
 
         static PlayableSystems()

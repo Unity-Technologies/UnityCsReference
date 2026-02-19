@@ -580,6 +580,7 @@ namespace UnityEditor
         public void ShowModalUtility()
         {
             ShowWithMode(ShowMode.ModalUtility);
+            RepaintImmediately();
             MakeModal();
         }
 
@@ -927,7 +928,7 @@ namespace UnityEditor
                     {
                         var dockArea = view as DockArea;
                         if (dockArea == null) continue;
-                        if (dockArea.m_Panes.Any(pane => pane.GetType() == desired))
+                        if (dockArea.m_Panes.Exists(pane => pane.GetType() == desired))
                         {
                             dockArea.AddTab(win);
                             return win;

@@ -25,10 +25,12 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            using (new EditorGUI.DisabledScope(!ManagedDebugger.isEnabled))
+            bool debuggerEnabled = ManagedDebugger.isEnabled;
+            bool debuggerAttached = ManagedDebugger.isAttached;
+
+            using (new EditorGUI.DisabledScope(!debuggerEnabled))
             {
                 var codeOptimization = CompilationPipeline.codeOptimization;
-                var debuggerAttached = ManagedDebugger.isAttached;
                 var content = GetDebuggerContent(debuggerAttached, codeOptimization);
 
                 var style = AppStatusBar.Styles.statusIcon;

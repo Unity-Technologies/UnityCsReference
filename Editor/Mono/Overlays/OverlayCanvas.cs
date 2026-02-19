@@ -736,12 +736,6 @@ namespace UnityEditor.Overlays
             m_MouseInCurrentCanvas = false;
         }
 
-        // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
-        internal Rect EnsureOverlapsWindow(Rect rect)
-        {
-            return OverlayUtilities.EnsureRectOverlapsRect(rect, rootVisualElement.localBound);
-        }
-
         // This ensure the given rect is fully within the window (unless the window is smaller then the rect)
         internal Rect ClampToWindow(Rect rect)
         {

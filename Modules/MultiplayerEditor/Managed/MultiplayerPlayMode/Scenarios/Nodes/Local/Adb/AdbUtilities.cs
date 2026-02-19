@@ -4,67 +4,15 @@
 
 using System.IO;
 using UnityEditor;
-using UnityEditor.Build;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Application = UnityEngine.Application;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     internal class AdbUtilities
     {
-        internal static string m_PackageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
-        internal static string m_ActivityName = GetActivityName();
-
-        public static async Task<int> StartApk(string buildPath, string deviceName)
-        {
-            const int k_MaxRetries = 5;
-            const int k_RetryDelayMS = 500;
-
-            var adb = AdbBridgeHelper.ADB.GetInstance();
-            adb.Run(new[] { "-s", deviceName, "install", buildPath }, "error installing to device");
-            adb.Run(new[] { "-s", deviceName, "shell", "am", "start", "-n", m_PackageName + "/" + m_ActivityName, "-e", "unity", "-systemallocator" }, "Error running apk");
-
-            for (int i = 0; i < k_MaxRetries; i++)
-            {
-                try
-                {
-                    var result = adb.Run(new[] { "-s", deviceName, "shell", "pidof", m_PackageName }, "Error getting PID");
-                    if (int.TryParse(result, out var pid))
-                    {
-                        return pid;
-                    }
-                }
-                catch (Exception)
-                {
-                    await Task.Delay(k_RetryDelayMS);
-                }
-            }
-
-            throw new Exception("Failed to get PID of the running process in the device.");
-        }
-
-        public static void StopApk(string deviceName)
-        {
-            AdbBridgeHelper.ADB.GetInstance().Run(new []{"-s", deviceName, "shell", "pm ", "clear",m_PackageName},"Error killing apk process");
-        }
-
-        public static bool GetAndroidProcessRunning(string deviceName, int pid)
-        {
-            try
-            {
-                var result = int.Parse(AdbBridgeHelper.ADB.GetInstance().Run(new[] { "-s", deviceName, "shell", $"[ -d /proc/{pid} ] && echo '1' || echo '0'" }, "Error getting device name"));
-                return result == 1;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         private static AdbBridgeHelper.ADB TryGetADBInstance()
         {
             try
@@ -80,15 +28,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public static bool IsAdbAvailable()
         {
             return TryGetADBInstance() != null;
-        }
-
-        public static string GetADBDevices()
-        {
-            var instance = TryGetADBInstance();
-            if (instance == null)
-                return string.Empty;
-
-            return instance.Run(["devices"], "No devices");
         }
 
         public static List<string> GetADBDevicesDetailed()
@@ -125,8 +64,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             return formattedDeviceList;
         }
-
-
 
         internal static string GetActivityName()
         {

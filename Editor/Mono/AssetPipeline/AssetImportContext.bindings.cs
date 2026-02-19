@@ -40,7 +40,7 @@ namespace UnityEditor.AssetImporters
 
         public extern BuildTarget selectedBuildTarget { get; }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern void SetMainObject(Object obj);
         public extern Object mainObject { get; }
 
@@ -52,7 +52,7 @@ namespace UnityEditor.AssetImporters
         [FreeFunction("AssetImportContextBindings::GetObjects", HasExplicitThis = true)]
         public extern void GetObjects([NotNull][Out] List<Object> objects);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         public extern void AddObjectToAsset(string identifier, Object obj, Texture2D thumbnail);
 
         // Create a dependency against the contents of the source asset at the provided path

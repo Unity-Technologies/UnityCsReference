@@ -89,19 +89,19 @@ namespace UnityEngine.Animations
             SetRotationInternal(ref m_Handle, value);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, Vector3 position, Quaternion rotation, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private Vector3 GetPositionInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetPositionInternal(ref PlayableHandle handle, Vector3 value);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private Quaternion GetRotationInternal(ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern static private void SetRotationInternal(ref PlayableHandle handle, Quaternion value);
     }
 }

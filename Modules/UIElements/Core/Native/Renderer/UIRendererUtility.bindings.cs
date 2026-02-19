@@ -4,13 +4,13 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using Unity.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
+using Unity.Jobs;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -22,6 +22,23 @@ namespace UnityEngine.UIElements.UIR
         public UIntPtr source;
     }
 
+    // Keep in sync with GfxCopyBufferRange in GfxDeviceTypes.h
+    [StructLayout(LayoutKind.Sequential)]
+    struct GfxCopyBufferRange
+    {
+        public UInt32 srcOffset; // Offset (in bytes) from start of source buffer to begin copying
+        public UInt32 dstOffset; // Offset (in bytes) from start of destination buffer where data is written
+        public UInt32 size;      // Size (in bytes) of the region to copy
+    };
+
+    // Keep in sync with GfxCopyBufferRangesFlags in GfxDeviceTypes.h
+    [Flags]
+    enum GfxCopyBufferRangesFlags : uint
+    {
+        None = 0,
+        AcquiredPointer = (1 << 0), // Safe to use ranges data by pointer, no need to copy
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct DrawBufferRange
     {
@@ -31,22 +48,35 @@ namespace UnityEngine.UIElements.UIR
         public int vertsReferenced;
     }
 
+    [Flags]
+    enum GpuBufferFlags
+    {
+        BufferFlags_Target_Vertex = 1 << 0,
+        BufferFlags_Target_Index = 1 << 1,
+        BufferFlags_Target_CopySrc = 1 << 2,
+        BufferFlags_Target_CopyDst = 1 << 3,
+
+        BufferFlags_Mode_Immutable = 1 << 4,
+        BufferFlags_Mode_Dynamic = 1 << 5,
+        BufferFlags_Mode_SubUpdates = 1 << 6,
+    };
+
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/UIRendererUtility.h")]
     [VisibleToOtherModules("Unity.UIElements")]
-    internal partial class Utility
+    unsafe partial class Utility
     {
         internal enum GPUBufferType { Vertex, Index }
-        unsafe public class GPUBuffer<T> : IDisposable where T : struct
+        unsafe public class GPUBuffer<T> : IDisposable where T : unmanaged
         {
             IntPtr buffer;
             int elemCount;
             int elemStride;
 
-            unsafe public GPUBuffer(int elementCount, GPUBufferType type)
+            unsafe public GPUBuffer(int elementCount, GpuBufferFlags bufferFlags)
             {
                 elemCount = elementCount;
                 elemStride = UnsafeUtility.SizeOf<T>();
-                buffer = AllocateBuffer(elementCount, elemStride, type == GPUBufferType.Vertex);
+                buffer = AllocateBuffer(elementCount, elemStride, (int)bufferFlags);
             }
 
             public void Dispose()
@@ -54,9 +84,11 @@ namespace UnityEngine.UIElements.UIR
                 FreeBuffer(buffer);
             }
 
-            public void UpdateRanges(NativeSlice<GfxUpdateBufferRange> ranges, int rangesMin, int rangesMax)
+            // writeStart: Offset in bytes from the beginning of the buffer where the write begins
+            // writeEnd: Offset in bytes from the beginning of the buffer where the write ends (exclusive)
+            public void UpdateRanges(NativeSlice<GfxUpdateBufferRange> ranges, int writeStart, int writeEnd)
             {
-                UpdateBufferRanges(buffer, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, rangesMin, rangesMax);
+                UpdateBufferRanges(buffer, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, writeStart, writeEnd);
             }
 
             public int ElementStride { get { return elemStride; } }
@@ -98,40 +130,40 @@ namespace UnityEngine.UIElements.UIR
             FlushPendingResources?.Invoke();
         }
 
-        [ThreadSafe] extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
-        [ThreadSafe] extern static void FreeBuffer(IntPtr buffer);
-        [ThreadSafe] extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
-        [ThreadSafe] extern static void SetVectorArray(IntPtr shaderPropertySheet, int name, Vector4[] values, int count);
-        [ThreadSafe] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
-        [ThreadSafe] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
+        [NativeMethod(IsThreadSafe = true)] extern static IntPtr AllocateBuffer(int elementCount, int elementStride, int bufferFlags);
+        [NativeMethod(IsThreadSafe = true)] extern static void FreeBuffer(IntPtr buffer);
+        extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
+        public extern static void CopyBufferRanges(IntPtr srcBuffer, IntPtr dstBuffer, IntPtr ranges, int rangeCount, GfxCopyBufferRangesFlags flags);
+        public extern static void SyncJobFence(JobHandle fence);
+        [NativeMethod(IsThreadSafe = true)] extern static void SetVectorArray(IntPtr shaderPropertySheet, int name, Vector4[] values, int count);
+        [NativeMethod(IsThreadSafe = true)] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
+        [NativeMethod(IsThreadSafe = true)] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
+        [NativeMethod(IsThreadSafe = true)] public extern static IntPtr AllocateShaderPropertySheet();
+        [NativeMethod(IsThreadSafe = true)] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
+        [NativeMethod(IsThreadSafe = true)] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
+        [NativeMethod(IsThreadSafe = true)] public extern static void SetPropertyBlockPtr(IntPtr props);
+        [NativeMethod(IsThreadSafe = true)] public extern static void ApplyShaderPropertySheet(IntPtr shaderPropertySheet);
+        [NativeMethod(IsThreadSafe = true)] public extern static void ReleasePropertySheet(IntPtr shaderPropertySheet);
 
+        [NativeMethod(IsThreadSafe = true)] public extern static IntPtr AllocateTextureRef(Texture texture);
+        [NativeMethod(IsThreadSafe = true)] public extern static void ReleaseTextureRef(IntPtr textureRef);
 
-        [ThreadSafe] public extern static IntPtr AllocateShaderPropertySheet();
-        [ThreadSafe] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
-        [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
-        [ThreadSafe] public extern static void SetPropertyBlockPtr(IntPtr props);
-        [ThreadSafe] public extern static void ApplyShaderPropertySheet(IntPtr shaderPropertySheet);
-        [ThreadSafe] public extern static void ReleasePropertySheet(IntPtr shaderPropertySheet);
-
-        [ThreadSafe] public extern static IntPtr AllocateTextureRef(Texture texture);
-        [ThreadSafe] public extern static void ReleaseTextureRef(IntPtr textureRef);
-
-        [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);
-        [ThreadSafe] public extern static void DisableScissor();
-        [ThreadSafe] public extern static bool IsScissorEnabled();
-        [ThreadSafe] public extern static IntPtr CreateStencilState(StencilState stencilState);
-        [ThreadSafe] public extern static void SetStencilState(IntPtr stencilState, int stencilRef);
-        [ThreadSafe] public extern static bool HasMappedBufferRange();
-        [ThreadSafe] public extern static UInt32 InsertCPUFence();
-        [ThreadSafe] public extern static bool CPUFencePassed(UInt32 fence);
-        [ThreadSafe] public extern static void WaitForCPUFencePassed(UInt32 fence);
-        [ThreadSafe] public extern static void SyncRenderThread();
-        [ThreadSafe] public extern static RectInt GetActiveViewport();
-        [ThreadSafe] public extern static void ProfileDrawChainBegin();
-        [ThreadSafe] public extern static void ProfileDrawChainEnd();
+        [NativeMethod(IsThreadSafe = true)] public extern static void SetScissorRect(RectInt scissorRect);
+        [NativeMethod(IsThreadSafe = true)] public extern static void DisableScissor();
+        [NativeMethod(IsThreadSafe = true)] public extern static bool IsScissorEnabled();
+        [NativeMethod(IsThreadSafe = true)] public extern static IntPtr CreateStencilState(StencilState stencilState);
+        [NativeMethod(IsThreadSafe = true)] public extern static void SetStencilState(IntPtr stencilState, int stencilRef);
+        [NativeMethod(IsThreadSafe = true)] public extern static bool HasMappedBufferRange();
+        [NativeMethod(IsThreadSafe = true)] public extern static UInt32 InsertCPUFence();
+        [NativeMethod(IsThreadSafe = true)] public extern static bool CPUFencePassed(UInt32 fence);
+        [NativeMethod(IsThreadSafe = true)] public extern static void WaitForCPUFencePassed(UInt32 fence);
+        [NativeMethod(IsThreadSafe = true)] public extern static void SyncRenderThread();
+        [NativeMethod(IsThreadSafe = true)] public extern static RectInt GetActiveViewport();
+        [NativeMethod(IsThreadSafe = true)] public extern static void ProfileDrawChainBegin();
+        [NativeMethod(IsThreadSafe = true)] public extern static void ProfileDrawChainEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
-        [ThreadSafe] public extern static Matrix4x4 GetUnityProjectionMatrix();
-        [ThreadSafe] public extern static Matrix4x4 GetDeviceProjectionMatrix();
-        [ThreadSafe] public extern static bool DebugIsMainThread(); // For debug code only
+        [NativeMethod(IsThreadSafe = true)] public extern static Matrix4x4 GetUnityProjectionMatrix();
+        [NativeMethod(IsThreadSafe = true)] public extern static Matrix4x4 GetDeviceProjectionMatrix();
+        [NativeMethod(IsThreadSafe = true)] public extern static bool DebugIsMainThread(); // For debug code only
     }
 }

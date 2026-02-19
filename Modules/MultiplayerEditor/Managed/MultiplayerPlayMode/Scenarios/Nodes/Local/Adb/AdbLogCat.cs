@@ -25,10 +25,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_LogCallbackAction = logCallbackAction;
         }
 
-        public abstract void Start(string logPath);
+        public abstract void Start(int pid, string logPath);
         public abstract void Stop();
         public abstract void Kill();
         public abstract bool HasExited { get; }
+        public abstract int GetLogcatProcessId();
     }
 
     internal class AdbLogcat : AdbLogcatBase
@@ -40,21 +41,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
         }
 
-        private string LogcatArguments(string logPath)
+        private string LogcatArguments(int pid, string logPath)
         {
-            var filterArg = "Unity";
-            return string.Format("-s {0} logcat | grep {1} | grep -i {2} > \"{3}\"",
-                m_DeviceID, PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android) , filterArg, logPath);
+            return $"-s {m_DeviceID} logcat --pid={pid} -v {m_LogPrintFormat} | grep -i Unity > \"{logPath}\"";
         }
 
-        public Process GetLogcatProcess()
+        public override int GetLogcatProcessId()
         {
-            return m_LogcatProcess;
+            return m_LogcatProcess.Id;
         }
 
-        public override void Start(string logPath)
+        public override void Start(int pid, string logPath)
         {
-            var arguments = LogcatArguments(logPath);
+            var arguments = LogcatArguments(pid, logPath);
             var executablePath = m_ADB.GetADBPath();
             var streamLogsArgument = string.Empty;
             DebugUtils.Trace($"Starting logcat: {m_ADB.GetADBPath()} {arguments}");
@@ -62,7 +61,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 streamLogsArgument = " > \\\"" + logPath + "\\\"";
                 m_LogcatProcess.StartInfo.FileName = "/bin/bash";
-                m_LogcatProcess.StartInfo.Arguments = $"-c \"exec {executablePath} {arguments}{streamLogsArgument}\"";
+                m_LogcatProcess.StartInfo.Arguments = $"-c \"exec '{executablePath}' {arguments}{streamLogsArgument}\"";
             }
             m_LogcatProcess.StartInfo.RedirectStandardError = true;
             m_LogcatProcess.StartInfo.RedirectStandardOutput = true;
@@ -96,7 +95,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             get
             {
-                return m_LogcatProcess.HasExited;
+                return m_LogcatProcess?.HasExited ?? false;
             }
         }
 

@@ -87,22 +87,22 @@ namespace UnityEngine.Experimental.Playables
             SetPassInternal(ref m_Handle, value);
         }
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static Material GetMaterialInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetMaterialInternal(ref PlayableHandle hdl, Material material);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static int GetPassInternal(ref PlayableHandle hdl);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static void SetPassInternal(ref PlayableHandle hdl, int pass);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool InternalCreateMaterialEffectPlayable(ref PlayableGraph graph, Material material, int pass, ref PlayableHandle handle);
 
-        [NativeThrows]
+        [NativeMethod(ThrowsException = true)]
         extern private static bool ValidateType(ref PlayableHandle hdl);
 
     }

@@ -4,6 +4,8 @@
 
 using System;
 using UnityEditor;
+using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy.Editor
@@ -56,10 +58,10 @@ namespace Unity.Hierarchy.Editor
 
                 menu.AppendSeparator();
 
-                AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), () => view.SelectAll(exposedOnly: true));
-                AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), view.DeselectAll, hasSelection);
-                AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), view.ToggleSelection, hasSelection);
-                AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), () => view.SelectChildrenAndExpandRecursive(), view.DoesSelectedNodesHaveChildren());
+                AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), () => InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.SelectAll));
+                AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), () => InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.DeselectAll), hasSelection);
+                AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), () => InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.InvertSelection), hasSelection);
+                AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), () => InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.SelectChildren), view.DoesSelectedNodesHaveChildren());
 
                 menu.AppendSeparator();
 

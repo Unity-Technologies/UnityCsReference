@@ -85,9 +85,7 @@ namespace UnityEditor.Scripting.APIUpdater
             var result = new List<string>();
             foreach (var dependencyEntry in m_Graph)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (dependencyEntry.m_Dependencies.Any(candidate => candidate.m_Name == source))
-#pragma warning restore UA2001
+                if (dependencyEntry.m_Dependencies.Exists(candidate => candidate.m_Name == source))
                     result.Add(dependencyEntry.m_Name);
             }
 
