@@ -1,35 +1,79 @@
-# Please Note
-The UnityCsReference repository is not currently being updated beyond version 6.2.0b4. Updates are planned to resume at a later date once internal validation processes are complete.
+# 🎮 Unity C# Reference (Expanded & Improved)
 
+![Unity Version](https://img.shields.io/badge/Unity-2022.2%2B-black?style=for-the-badge&logo=unity)
+![License](https://img.shields.io/badge/License-Reference%20Only-red?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Improved-success?style=for-the-badge)
 
-## Unity 6000.2.0b4 C# reference source code
+> **A "Quality of Life" fork of the official Unity C# Reference Source.**
+> This repository transforms the raw reference code into modular, improved packages ready for local development and study.
 
-The C# part of the Unity engine and editor source code.
-May be used for reference purposes only.
+---
 
-For terms of use, see
-https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+## ✨ Key Improvements
 
-The repository includes third-party code subject to [third-party
-notices](third-party-notices.txt).
+We have taken the raw source code and applied modern structure and API enhancements.
 
-The terms of use do not permit you to modify or redistribute the C#
-code (in either source or binary form). If you want to modify Unity's
-source code (C# and C++), contact Unity sales for a commercial source
-code license: https://store.unity.com/contact?type=source-code
+### 📦 Modular Design
+| Module | Status | Description |
+| :--- | :--- | :--- |
+| **Grid** | 🟢 **Ready** | Fully standardized with `package.json` and `.asmdef`. Ready to drop into `Packages/`. |
+| **UI** | 🟡 *Planned* | Future candidate for package standardization. |
+| **Physics** | 🟡 *Planned* | Future candidate for package standardization. |
 
-We do not take pull requests at this time (sorry). But if you find
-something that looks like a bug, we'd appreciate it if you'd file it
-using the Unity Bug Reporter. For more information, see our blog post:
-https://blogs.unity3d.com/2018/03/26/releasing-the-unity-c-source-code/
+### 🚀 API Enhancements
+We don't just organize the code; we improve it.
+*   **Grid Module**: Added `GetCellCenterWorld(Vector3 position)` overload. No more manual casting to `Vector3Int` for simple world-space checks!
 
-Unless expressly provided otherwise, the software under this
-license is made available strictly on an "AS IS" BASIS WITHOUT
-WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. Please review the
-license for details on these and other terms and conditions.
+---
 
-The C# solution is in Projects/CSharp/UnityReferenceSource.sln
+## 🛠️ Getting Started
 
-The folder and file layout of the reference source matches
-the Unity source tree layout; it can and will change between
-different Unity versions.
+### Using the Improved Modules
+You can use these modules directly in your Unity project as **Local Packages**.
+
+1.  **Clone** this repository.
+2.  Open your Unity Project's `Packages/manifest.json`.
+3.  Add the local path to the module you want:
+    ```json
+    {
+      "dependencies": {
+        "com.unity.modules.grid": "file:../../UnityCsReference/Modules/Grid",
+        ...
+      }
+    }
+    ```
+4.  **Done!** The module is now compiled as part of your project, and you can edit it freely.
+
+---
+
+## 📂 Project Structure
+
+```mermaid
+graph TD
+    Root[📂 Repository Root] --> Modules[📂 Modules]
+    Modules --> Grid[📦 Grid (Improved)]
+    Grid --> Manifest[📄 package.json]
+    Grid --> Asmdef[⚙️ Unity.Modules.Grid.asmdef]
+    Grid --> Scripts[📂 Managed Scripts]
+    Root --> External[📂 External Libs]
+    Root --> Projects[📂 VS Projects]
+```
+
+*   **Modules/**: Contains the core Unity subsystems.
+*   **External/**: Third-party dependencies (Mono.Cecil, NRefactory, etc.).
+*   **Projects/**: Visual Studio solutions for browsing the entire codebase.
+
+---
+
+## ⚠️ License & Disclaimer
+
+**Official Unity License Applies:**
+> *The C# part of the Unity engine and editor source code. May be used for reference purposes only.*
+
+See the [Official Terms of Use](https://unity3d.com/legal/licenses/Unity_Reference_Only_License) for details.
+
+**Note for this Fork:**
+This fork is for **educational and experimental purposes**. While we have structured modules as packages, you cannot republish them commercially or violate the original reference license. Use these improvements to debug, learn, or patch your own local builds.
+
+---
+*Maintained with ❤️ by the Open Source Community*
