@@ -143,8 +143,6 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Used to define a Transform write "tween" for a body.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.SetTransformWriteTweens(ReadOnlySpan{TransformWriteTween})"/>.
-        /// See <see cref="UnityEngine.Transform"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct TransformWriteTween
@@ -605,7 +603,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static void SetBatchTransform(ReadOnlySpan<BatchTransform> batch) => PhysicsBody_SetBatchTransform(batch);
 
         /// <summary>
-        /// Get/Set a body definition by accessing all of its properties.
+        /// Get/Set a body definition by accessing all of its current properties.
         /// This is provided as convenience only and should not be used when performance is important as all the properties defined in the definition are accessed sequentially.
         /// You should try to only use the specific properties you need rather than using this feature.
         /// </summary>

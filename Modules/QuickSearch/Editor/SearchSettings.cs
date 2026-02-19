@@ -1477,7 +1477,7 @@ namespace UnityEditor.Search
             public static GUIContent decreaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
             public static GUIContent trackSelectionContent = EditorGUIUtility.TrTextContent(
                 "Track the current selection in the search view.",
-                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window.");
+                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window. This setting does not apply to the Advanced Object Selector.");
             public static GUIContent fetchPreviewContent = EditorGUIUtility.TrTextContent(
                 "Generate an asset preview thumbnail for found items",
                 "Fetching the preview of the items can consume more memory and make searches within very large project slower.");

@@ -621,7 +621,7 @@ namespace UnityEditor
                 {
                     var renderer = ((Renderer)target);
 
-                    if (Selection.gameObjects.Length == 1)
+                    if (Selection.gameObjects.Length == 1 && SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
                     {
                         // Add some space at the top..
                         GUILayout.Space(LODGUI.kSliderBarTopMargin);

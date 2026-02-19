@@ -25,6 +25,7 @@ namespace UnityEditor.Sprites
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static public ushort[] GetSpriteIndices(Sprite sprite, bool getAtlasData) { return sprite.triangles; }
 
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static void GenerateOutline(Texture2D texture, Rect rect, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths, bool zeroExtrusion = false)
         {
             var res = GenerateOutlineImpl(texture, ref rect, detail, alphaTolerance, holeDetection, zeroExtrusion);

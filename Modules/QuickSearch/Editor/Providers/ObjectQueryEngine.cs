@@ -333,7 +333,11 @@ namespace UnityEditor.Search.Providers
             });
 
             if (typeof(MonoBehaviour).IsAssignableFrom(objType) || typeof(Behaviour).IsAssignableFrom(objType))
+            {
                 types.Add("script");
+                types.Add("monobehaviour");
+                types.Add("behaviour");
+            }
         }
 
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)

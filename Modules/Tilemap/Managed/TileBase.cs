@@ -10,12 +10,12 @@ namespace UnityEngine.Tilemaps
     [RequiredByNativeCode]
     public abstract class TileBase : ScriptableObject
     {
-        private EntityId m_EntityId;
-        public EntityId cachedEntityId => m_EntityId;
+        private EntityId m_CachedEntityId;
+        public EntityId cachedEntityId => m_CachedEntityId;
 
         public virtual void OnEnable()
         {
-            m_EntityId = GetEntityId();
+            m_CachedEntityId = GetEntityId();
         }
         public virtual void OnDisable() { }
 

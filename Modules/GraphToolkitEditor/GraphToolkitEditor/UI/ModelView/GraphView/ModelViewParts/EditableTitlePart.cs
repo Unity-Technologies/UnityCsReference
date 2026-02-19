@@ -17,13 +17,18 @@ namespace Unity.GraphToolkit.Editor
     internal class EditableTitlePart : GraphElementPart
     {
         float m_TitleMinWidthPadding = 8f;
-
-        float m_ExpectedMinWidth = 0;
+        float m_ExpectedMinWidth;
+        float m_DefaultMinWidth { get; }
 
         /// <summary>
         /// The USS class name added to a <see cref="EditableTitlePart"/>.
         /// </summary>
         public static readonly string ussClassName = "ge-editable-title-part";
+
+        /// <summary>
+        /// The USS class name of the label container.
+        /// </summary>
+        public static readonly string labelContainerUssClassName = ussClassName.WithUssElement("label-container");
 
         /// <summary>
         /// The USS modifier for a title that can be renamed.
@@ -115,7 +120,7 @@ namespace Unity.GraphToolkit.Editor
             return element.MeasureTextSize(element.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined, fontSize).x;
         }
 
-        string m_PreviousTitle;
+        protected string CurrentTitle { get; private set; }
 
         /// <summary>
         /// The options, see <see cref="Options"/>.
@@ -163,10 +168,12 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="options">The <see cref="Options"/> for the title.</param>
-        protected EditableTitlePart(string name, Model model, ChildView ownerElement, string parentClassName, int options)
+        /// <param name="defaultMinWidth">The default min width of the title label container</param>
+        protected EditableTitlePart(string name, Model model, ChildView ownerElement, string parentClassName, int options, float defaultMinWidth = 0)
             : base(name, model, ownerElement, parentClassName)
         {
             m_Options = options;
+            m_DefaultMinWidth = defaultMinWidth;
         }
 
         protected virtual bool HasEditableLabel => (m_Model as GraphElementModel).IsRenamable();
@@ -212,7 +219,7 @@ namespace Unity.GraphToolkit.Editor
             if ((m_Options & Options.UseEllipsis) != 0)
             {
                 LabelContainer = new VisualElement();
-                LabelContainer.AddToClassList(ussClassName.WithUssElement("label-container"));
+                LabelContainer.AddToClassList(labelContainerUssClassName);
                 LabelContainer.Add(TitleLabel);
                 TitleContainer.Add(LabelContainer);
             }
@@ -244,10 +251,10 @@ namespace Unity.GraphToolkit.Editor
             {
                 var value = (m_Model as IHasTitle)?.Title ?? string.Empty;
 
-                if (value == m_PreviousTitle && !labelTypeChanged)
+                if (value == CurrentTitle && !labelTypeChanged)
                     return;
 
-                m_PreviousTitle = value;
+                CurrentTitle = value;
                 if (TitleLabel is EditableLabel editableLabel)
                     editableLabel.SetValueWithoutNotify(value);
                 else if (TitleLabel is Label label)
@@ -305,7 +312,7 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        protected void OnRename(ChangeEvent<string> e)
+        protected virtual void OnRename(ChangeEvent<string> e)
         {
             // Restore the value in the model in case we don't have notification (in case the change of name doesn't change the model).
             if (TitleLabel is EditableLabel editableLabel)
@@ -402,7 +409,7 @@ namespace Unity.GraphToolkit.Editor
             if (te is null)
             {
                 TitleLabel.parent.style.minWidth = StyleKeyword.Null;
-                m_ExpectedMinWidth = 0;
+                m_ExpectedMinWidth = m_DefaultMinWidth;
             }
             else
             {
@@ -431,12 +438,13 @@ namespace Unity.GraphToolkit.Editor
 
             if (!string.IsNullOrEmpty(te.text))
             {
-                m_ExpectedMinWidth = m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, WantedTextSize));
+                var expectedWidth = m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, WantedTextSize));
+                m_ExpectedMinWidth = Math.Max(expectedWidth, m_DefaultMinWidth);
                 TitleLabel.parent.style.minWidth = m_ExpectedMinWidth;
             }
             else
             {
-                m_ExpectedMinWidth = 0;
+                m_ExpectedMinWidth = m_DefaultMinWidth;
                 TitleLabel.parent.style.minWidth = StyleKeyword.Null;
             }
         }

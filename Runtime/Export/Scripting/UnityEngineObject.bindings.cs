@@ -186,7 +186,7 @@ namespace UnityEngine
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule", "UnityEngine.TextCoreTextEngineModule")]
         internal static EntityId From(int input) => new EntityId {m_Data = input};
 
         internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };

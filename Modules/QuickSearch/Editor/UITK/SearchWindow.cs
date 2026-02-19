@@ -593,8 +593,6 @@ namespace UnityEditor.Search
             m_DebounceOff?.Invoke();
             m_DebounceOff = null;
 
-            EditorApplication.delayCall -= m_SearchView.DelayTrackSelection;
-
             try
             {
                 selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
@@ -1500,11 +1498,6 @@ namespace UnityEditor.Search
                 }
             }
             return false;
-        }
-
-        internal void ForceTrackSelection()
-        {
-            m_SearchView.DelayTrackSelection();
         }
 
         protected virtual IEnumerable<SearchItem> FetchItems()

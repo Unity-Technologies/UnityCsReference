@@ -239,11 +239,21 @@ namespace Unity.GraphToolkit.Editor
         void OnMouseEnter(MouseEnterEvent evt)
         {
             ShowNodeToolbarButtons(true);
+
+            if (EditableTitlePart is NodeTitlePart nodeTitlePart)
+            {
+                nodeTitlePart.SetHoverState(true);
+            }
         }
 
         void OnMouseLeave(MouseLeaveEvent evt)
         {
             ShowNodeToolbarButtons(false);
+
+            if (EditableTitlePart is NodeTitlePart nodeTitlePart)
+            {
+                nodeTitlePart.SetHoverState(false);
+            }
         }
 
         /// <summary>

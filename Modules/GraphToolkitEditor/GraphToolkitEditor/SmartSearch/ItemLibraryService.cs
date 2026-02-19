@@ -413,10 +413,29 @@ namespace Unity.GraphToolkit.Editor
             ListenToResize(preferences, Usage.Types, window);
             window.itemChosen += item =>
             {
-                if (item is VariableLibraryItem variableItem)
-                    callback(variableItem.Type, variableItem.VariableType, variableItem.Scope, variableItem.ModifierFlags);
-                else if (item is TypeLibraryItem typeItem) // mostly for back compability
-                    callback(typeItem.Type, variableDeclarationType, VariableScope.Local, ModifierFlags.Read);
+                switch (item)
+                {
+                    case VariableLibraryItem variableItem:
+                        callback(variableItem.Type, variableItem.VariableType, variableItem.Scope, variableItem.ModifierFlags);
+                        break;
+                    case TypeLibraryItem typeItem:
+                    {
+                        var scope = VariableScope.Local;
+                        var modifierFlags = ModifierFlags.Read;
+
+                        // Get default variable infos from blackboard
+                        var blackboardModel = (rootView.Window as GraphViewEditorWindow)?.BlackboardView
+                            ?.BlackboardRootViewModel?.BlackboardContentState?.BlackboardModel;
+                        if (blackboardModel != null)
+                        {
+                            scope = blackboardModel.DefaultVariableInfos.Scope;
+                            modifierFlags = blackboardModel.DefaultVariableInfos.ModifierFlags;
+                        }
+
+                        callback(typeItem.Type, variableDeclarationType, scope, modifierFlags);
+                        break;
+                    }
+                }
             };
             window.StatusBarText = k_DefaultTypeStatusText;
             return window;

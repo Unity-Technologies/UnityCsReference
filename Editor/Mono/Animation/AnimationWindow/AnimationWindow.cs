@@ -326,17 +326,26 @@ namespace UnityEditor
                     {
                         if (selection == newSelection)
                             OnSelectionUpdated();
-                        else if (fromCallback && DisplayUnsavedChangesDialogIfNecessary())
-                            selection = newSelection;
+                        else if (fromCallback)
+                        {
+                            // Handle unsaved changes.
+                            if (DisplayUnsavedChangesDialogIfNecessary())
+                                selection = newSelection;
+                            // Fallback to last selected object if changes were canceled
+                            else
+                            {
+                                selection = newSelection;
+                                var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
+                                if (lastSelectedObject != null)
+                                {
+                                    activeObject = lastSelectedObject;
+                                    Selection.activeObject = activeObject;
+                                }
+                            }
+                        }
                         else
                         {
                             selection = newSelection;
-                            var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
-                            if (lastSelectedObject != null)
-                            {
-                                activeObject = lastSelectedObject;
-                                Selection.activeObject = activeObject;
-                            }
                         }
 
                         m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;
@@ -351,17 +360,26 @@ namespace UnityEditor
                     var fallbackSelection = GetFallbackSelection(activeObject);
                     if (selection == fallbackSelection)
                         OnSelectionUpdated();
-                    else if (fromCallback && DisplayUnsavedChangesDialogIfNecessary())
-                        selection = fallbackSelection;
+                    else if (fromCallback)
+                    {
+                        // Handle unsaved changes.
+                        if (DisplayUnsavedChangesDialogIfNecessary())
+                            selection = fallbackSelection;
+                        // Fallback to last selected object if changes were canceled
+                        else
+                        {
+                            selection = fallbackSelection;
+                            var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
+                            if (lastSelectedObject != null)
+                            {
+                                activeObject = lastSelectedObject;
+                                Selection.activeObject = activeObject;
+                            }
+                        }
+                    }
                     else
                     {
                         selection = fallbackSelection;
-                        var lastSelectedObject = EditorUtility.EntityIdToObject(m_LastSelectedObjectID);
-                        if (lastSelectedObject != null)
-                        {
-                            activeObject = lastSelectedObject;
-                            Selection.activeObject = activeObject;
-                        }
                     }
 
                     m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;

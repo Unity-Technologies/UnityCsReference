@@ -118,6 +118,11 @@ namespace Unity.UI.Builder
             }
         }
 
+        internal void SetValueWithoutRefresh(MaterialDefinition newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+        }
+
         internal static string SanitizePropertyName(string name)
         {
             if (name.StartsWith("_"))
@@ -213,10 +218,16 @@ namespace Unity.UI.Builder
 
         internal void OnMaterialPropertyAdded(MaterialPropertyValue value)
         {
-            using (var evt = MaterialPropertyAddedEvent.GetPooled())
+            using (var evt = MaterialDefinitionChangedEvent.GetPooled())
             {
                 evt.elementTarget = this;
-                evt.materialPropertyValue = value;
+
+                // Build the new MaterialDefinition with the added property
+                var propertyValues = new List<MaterialPropertyValue>(this.value.propertyValues ?? new List<MaterialPropertyValue>());
+                propertyValues.Add(value);
+                evt.newMaterialDefinition = new MaterialDefinition(this.value.material, propertyValues);
+                evt.refreshField = true;
+
                 SendEvent(evt);
             }
         }
@@ -241,10 +252,22 @@ namespace Unity.UI.Builder
                 }
             }
 
-            using (var evt = MaterialPropertyRemovedEvent.GetPooled())
+            using (var evt = MaterialDefinitionChangedEvent.GetPooled())
             {
                 evt.elementTarget = this;
-                evt.indices = indicesToRemove;
+
+                // Build the new MaterialDefinition with the removed properties
+                var propertyValues = new List<MaterialPropertyValue>(this.value.propertyValues ?? new List<MaterialPropertyValue>());
+                var sortedIndices = new List<int>(indicesToRemove);
+                sortedIndices.Sort((a, b) => b.CompareTo(a)); // Sort in descending order
+                foreach (var index in sortedIndices)
+                {
+                    if (index >= 0 && index < propertyValues.Count)
+                        propertyValues.RemoveAt(index);
+                }
+                evt.newMaterialDefinition = new MaterialDefinition(this.value.material, propertyValues);
+                evt.refreshField = true;
+
                 SendEvent(evt);
             }
         }

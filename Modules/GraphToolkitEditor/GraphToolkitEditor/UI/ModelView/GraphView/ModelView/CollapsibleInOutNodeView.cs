@@ -37,6 +37,8 @@ namespace Unity.GraphToolkit.Editor
 
         bool m_ShouldRename;
 
+        const float k_DefaultMinWidth = 80f;
+
         const float k_ByteToPercentFactor = 100 / 255.0f;
         public byte Progress
         {
@@ -72,7 +74,7 @@ namespace Unity.GraphToolkit.Editor
         {
             PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.inputPortFilter));
 
-            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth | NodeTitleOptions));
+            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth | NodeTitleOptions, k_DefaultMinWidth));
             PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, this, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
             PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, MaxInputLabelWidth, ussClassName));
 
@@ -144,6 +146,9 @@ namespace Unity.GraphToolkit.Editor
         {
             GraphView.Dispatch(new CollapseNodeCommand(evt.newValue, NodeModel));
             EnableInClassList(collapsedUssClassName, evt.newValue);
+
+            if (!evt.newValue && EditableTitlePart is NodeTitlePart nodeTitlePart)
+                nodeTitlePart.UpdateUIOnCollapseStateChange();
         }
 
         protected void OnShowButton(bool show)

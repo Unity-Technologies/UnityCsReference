@@ -288,7 +288,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool Destroy(int ownerKey = 0) => PhysicsWorld_Destroy(this, ownerKey);
 
         /// <summary>
-        /// Get/Set a world definition by accessing all of its properties.
+        /// Get/Set a world definition by accessing all of its current properties.
         /// This is provided as convenience only and should not be used when performance is important as all the properties defined in the definition are accessed sequentially.
         /// You should try to only use the specific properties you need rather than using this feature.
         /// </summary>

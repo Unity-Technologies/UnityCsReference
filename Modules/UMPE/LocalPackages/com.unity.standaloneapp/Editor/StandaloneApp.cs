@@ -121,54 +121,6 @@ namespace Unity.MPE
                 launchProgressId = -1;
             }
 
-            [MenuItem("Standalone App/Start (Editor Mode)", validate = true)]
-            [MenuItem("Standalone App/Start (Single Window)", validate = true)]
-            internal static bool StartStandaloneApplicationValidate()
-            {
-                return !IsStandaloneAppRunning();
-            }
-
-            [MenuItem("Standalone App/Start (Editor Mode)")]
-            internal static void StartStandaloneApplication1()
-            {
-                launchProgressId = Progress.Start("Launching standalone app...", options: Progress.Options.Indefinite | Progress.Options.Sticky);
-                standaloneAppProcessId = ProcessService.Launch(k_RoleName,
-                    "ump-cap", "main_window",
-                    "ump-cap", "menu_bar",
-                    "ump-cap", "asset-import",
-                    "ump-cap", "disable-extra-resources",
-                    "editor-mode", "com.unity.standaloneapp");
-            }
-
-            [MenuItem("Standalone App/Start (Single Window)")]
-            internal static void StartStandaloneApplication2()
-            {
-                launchProgressId = Progress.Start("Launching standalone window...", options: Progress.Options.Indefinite | Progress.Options.Sticky);
-                standaloneAppProcessId = ProcessService.Launch(k_RoleName,
-                    "single-window", "true",
-                    "minimal-load", "true",
-                    "ump-cap", "disable-extra-resources");
-            }
-
-            [MenuItem("Standalone App/Stop", validate = true)]
-            [MenuItem("Standalone App/Say Hello", validate = true)]
-            private static bool IsStandaloneAppRunning()
-            {
-                return standaloneAppProcessId != -1 && ProcessService.GetProcessState(standaloneAppProcessId) == ProcessState.Running;
-            }
-
-            [MenuItem("Standalone App/Stop")]
-            internal static void StopStandaloneApplication()
-            {
-                EventService.Emit(nameof(EventType.UmpExit), 0);
-                standaloneAppProcessId = -1;
-            }
-
-            [MenuItem("Standalone App/Say Hello")]
-            internal static void SayHelloStandaloneApplication()
-            {
-                EventService.Emit(nameof(EventType.UmpHello), "Hello Standalone App!");
-            }
         }
     }
 }

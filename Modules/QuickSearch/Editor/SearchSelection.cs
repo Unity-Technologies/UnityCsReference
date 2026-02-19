@@ -63,7 +63,7 @@ namespace UnityEditor.Search
             return false;
         }
 
-        internal IList<int> indexes => m_ActualSelection;
+        internal List<int> indexes => m_ActualSelection;
 
         /// <summary>
         /// How many items are selected.

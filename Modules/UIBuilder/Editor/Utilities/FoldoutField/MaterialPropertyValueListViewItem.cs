@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
+
 
 namespace Unity.UI.Builder
 {
@@ -85,11 +84,25 @@ namespace Unity.UI.Builder
 
         void SendChangeEvent(MaterialPropertyValue value)
         {
-            using (var evt = MaterialPropertyChangedEvent.GetPooled())
+            using (var evt = MaterialDefinitionChangedEvent.GetPooled())
             {
                 evt.elementTarget = m_ParentField;
-                evt.materialPropertyValue = value;
-                evt.propertyIndex = itemIndex;
+
+                // Build the new MaterialDefinition with the changed property
+                var currentValue = m_ParentField.value;
+                var propertyValues = new List<MaterialPropertyValue>(currentValue.propertyValues ?? new List<MaterialPropertyValue>());
+                if (itemIndex >= 0 && itemIndex < propertyValues.Count)
+                    propertyValues[itemIndex] = value;
+
+                m_Value = value;
+
+                var newMatDef = new MaterialDefinition(currentValue.material, propertyValues);
+                evt.newMaterialDefinition = newMatDef;
+                evt.refreshField = false;
+
+                // Update the parent field value, but there's no need to refresh the list
+                m_ParentField.SetValueWithoutRefresh(newMatDef);
+
                 SendEvent(evt);
             }
         }
