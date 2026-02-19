@@ -1,0 +1,9 @@
+{
+  "name": "com.unity.modules.grid",
+  "displayName": "Grid Module",
+  "version": "1.0.0",
+  "unity": "2022.2",
+  "description": "Grid module extracted from UnityCsReference for local modification and improvement.",
+  "keywords": ["grid", "unity", "module"],
+  "dependencies": {}
+}
