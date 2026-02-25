@@ -576,6 +576,7 @@ namespace UnityEditor
         public void ShowModalUtility()
         {
             ShowWithMode(ShowMode.ModalUtility);
+            RepaintImmediately();
             MakeModal();
         }
 

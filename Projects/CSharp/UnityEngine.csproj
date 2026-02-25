@@ -3461,6 +3461,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIToolkitConverters.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\UIToolkitConverters.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
     </Compile>
@@ -3604,6 +3607,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Translate.cs">
       <Link>Modules\UIElements\Core\Style\Translate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\UIToolkitConverters.cs">
+      <Link>Modules\UIElements\Core\Style\UIToolkitConverters.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TemplateContainer.cs">
       <Link>Modules\UIElements\Core\TemplateContainer.cs</Link>
@@ -5219,116 +5225,11 @@
     <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
       <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\LoadUdmScene.cs">
-      <Link>Runtime\Export\Scripting\DataModel\LoadUdmScene.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DeserializeContext.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DeserializeContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DocumentInstanceFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DocumentInstanceFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DocumentReferenceRemapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DocumentReferenceRemapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\EcsComponentSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\EcsComponentSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\EngineHelper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\EngineHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\IUDMObjectIDGenerator.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\IUDMObjectIDGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\InstanceIDToReferenceRemapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\InstanceIDToReferenceRemapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\InstanceRegistry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\InstanceRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\LoadUdm.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\LoadUdm.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\LocalIdentifierToObjectIDWrapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\LocalIdentifierToObjectIDWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\NoCollisionUDMObjectIDGenerator.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\NoCollisionUDMObjectIDGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\NullUnityObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\NullUnityObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureEntityFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureEntityFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTI.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIBuilder.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIResolver.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ReferenceRegistry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ReferenceRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeContext.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeUtilities.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UdmManager.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\UdmManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UnityObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UnityObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SaveUdm.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SaveUdm.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\DisassemblingGenericContext.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\DisassemblingGenericContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\FieldType.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\FieldType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\LibraryLookupEntry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\LibraryLookupEntry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\SchemaGenerator.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\SchemaGenerator.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\SerializableTypesReader.cs">
       <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\SerializableTypesReader.cs</Link>
@@ -5336,38 +5237,11 @@
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionData.cs">
       <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionDataFlags.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionDataFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionRegistry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionState.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SchemaGenerator\TypeDefinitionState.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs">
       <Link>Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMReadData.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMReadData.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolver.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolver.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolverAssetRegistry.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolverAssetRegistry.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolverExplicit.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolverExplicit.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMWriteData.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMWriteData.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UdmLogCapture.cs">
       <Link>Runtime\Export\Scripting\DataModel\UdmLogCapture.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UdmToUnityLogForwarder.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UdmToUnityLogForwarder.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\EnumDataUtility.cs">
       <Link>Runtime\Export\Scripting\EnumDataUtility.cs</Link>
@@ -5395,9 +5269,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\GarbageCollector.bindings.cs">
       <Link>Runtime\Export\Scripting\GarbageCollector.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ISimpleNativeType.cs">
-      <Link>Runtime\Export\Scripting\ISimpleNativeType.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\InspectorOrderAttribute.cs">
       <Link>Runtime\Export\Scripting\InspectorOrderAttribute.cs</Link>

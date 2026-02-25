@@ -30,16 +30,24 @@ namespace Unity.Profiling.Editor.UI
             return ComputePercentageOfValuesOverBudget(GpuDurationsNs, budget);
         }
 
-        int ComputePercentageOfValuesOverBudget(ReadOnlySpan<ulong> values, ulong budget)
+        static int ComputePercentageOfValuesOverBudget(ReadOnlySpan<ulong> values, ulong budget)
         {
             var numberOfValuesOverBudget = 0;
-            for (var i = 0; i < values.Length; ++i)
+            var numberOfEmptyFrames = 0; // Avoid incomplete frames
+            foreach (var value in values)
             {
-                if (values[i] > budget)
+                if (value == 0)
+                    numberOfEmptyFrames++;
+                else if (value > budget)
                     numberOfValuesOverBudget++;
             }
 
-            return Mathf.RoundToInt(((float)numberOfValuesOverBudget / values.Length) * 100);
+            // If we've somehow got all empty frames, just return 0 immediately, we don't have enough frames for any
+            // valid percentage to be generated
+            if (numberOfEmptyFrames >= values.Length)
+                return 0;
+
+            return Mathf.RoundToInt((float)numberOfValuesOverBudget / (values.Length - numberOfEmptyFrames) * 100);
         }
     }
 }

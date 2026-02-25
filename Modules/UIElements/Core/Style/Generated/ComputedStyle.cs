@@ -119,10 +119,14 @@ namespace UnityEngine.UIElements
         public Length width => layoutData.Read().width;
         public Length wordSpacing => inheritedData.Read().wordSpacing;
 
+
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle
+            {
+                dpiScaling = 1f
+            };
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
@@ -134,7 +138,10 @@ namespace UnityEngine.UIElements
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle
+            {
+                dpiScaling = 1f
+            };
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRef<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();

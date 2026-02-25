@@ -20,434 +20,1753 @@ namespace UnityEngine.UIElements.StyleSheets
 
         internal static readonly Dictionary<string, StylePropertyId> s_NameToId = new Dictionary<string, StylePropertyId>()
         {
-            {"align-content", StylePropertyId.AlignContent},
-            {"align-items", StylePropertyId.AlignItems},
-            {"align-self", StylePropertyId.AlignSelf},
-            {"all", StylePropertyId.All},
-            {"aspect-ratio", StylePropertyId.AspectRatio},
-            {"background-color", StylePropertyId.BackgroundColor},
-            {"background-image", StylePropertyId.BackgroundImage},
-            {"background-position", StylePropertyId.BackgroundPosition},
-            {"background-position-x", StylePropertyId.BackgroundPositionX},
-            {"background-position-y", StylePropertyId.BackgroundPositionY},
-            {"background-repeat", StylePropertyId.BackgroundRepeat},
-            {"background-size", StylePropertyId.BackgroundSize},
-            {"border-bottom-color", StylePropertyId.BorderBottomColor},
-            {"border-bottom-left-radius", StylePropertyId.BorderBottomLeftRadius},
-            {"border-bottom-right-radius", StylePropertyId.BorderBottomRightRadius},
-            {"border-bottom-width", StylePropertyId.BorderBottomWidth},
-            {"border-color", StylePropertyId.BorderColor},
-            {"border-left-color", StylePropertyId.BorderLeftColor},
-            {"border-left-width", StylePropertyId.BorderLeftWidth},
-            {"border-radius", StylePropertyId.BorderRadius},
-            {"border-right-color", StylePropertyId.BorderRightColor},
-            {"border-right-width", StylePropertyId.BorderRightWidth},
-            {"border-top-color", StylePropertyId.BorderTopColor},
-            {"border-top-left-radius", StylePropertyId.BorderTopLeftRadius},
-            {"border-top-right-radius", StylePropertyId.BorderTopRightRadius},
-            {"border-top-width", StylePropertyId.BorderTopWidth},
-            {"border-width", StylePropertyId.BorderWidth},
-            {"bottom", StylePropertyId.Bottom},
-            {"color", StylePropertyId.Color},
-            {"cursor", StylePropertyId.Cursor},
-            {"display", StylePropertyId.Display},
-            {"filter", StylePropertyId.Filter},
-            {"flex", StylePropertyId.Flex},
-            {"flex-basis", StylePropertyId.FlexBasis},
-            {"flex-direction", StylePropertyId.FlexDirection},
-            {"flex-grow", StylePropertyId.FlexGrow},
-            {"flex-shrink", StylePropertyId.FlexShrink},
-            {"flex-wrap", StylePropertyId.FlexWrap},
-            {"font-size", StylePropertyId.FontSize},
-            {"height", StylePropertyId.Height},
-            {"justify-content", StylePropertyId.JustifyContent},
-            {"left", StylePropertyId.Left},
-            {"letter-spacing", StylePropertyId.LetterSpacing},
-            {"margin", StylePropertyId.Margin},
-            {"margin-bottom", StylePropertyId.MarginBottom},
-            {"margin-left", StylePropertyId.MarginLeft},
-            {"margin-right", StylePropertyId.MarginRight},
-            {"margin-top", StylePropertyId.MarginTop},
-            {"max-height", StylePropertyId.MaxHeight},
-            {"max-width", StylePropertyId.MaxWidth},
-            {"min-height", StylePropertyId.MinHeight},
-            {"min-width", StylePropertyId.MinWidth},
-            {"opacity", StylePropertyId.Opacity},
-            {"overflow", StylePropertyId.Overflow},
-            {"padding", StylePropertyId.Padding},
-            {"padding-bottom", StylePropertyId.PaddingBottom},
-            {"padding-left", StylePropertyId.PaddingLeft},
-            {"padding-right", StylePropertyId.PaddingRight},
-            {"padding-top", StylePropertyId.PaddingTop},
-            {"position", StylePropertyId.Position},
-            {"right", StylePropertyId.Right},
-            {"rotate", StylePropertyId.Rotate},
-            {"scale", StylePropertyId.Scale},
-            {"text-overflow", StylePropertyId.TextOverflow},
-            {"text-shadow", StylePropertyId.TextShadow},
-            {"top", StylePropertyId.Top},
-            {"transform-origin", StylePropertyId.TransformOrigin},
-            {"transition", StylePropertyId.Transition},
-            {"transition-delay", StylePropertyId.TransitionDelay},
-            {"transition-duration", StylePropertyId.TransitionDuration},
-            {"transition-property", StylePropertyId.TransitionProperty},
-            {"transition-timing-function", StylePropertyId.TransitionTimingFunction},
-            {"translate", StylePropertyId.Translate},
-            {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
-            {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
-            {"-unity-editor-text-rendering-mode", StylePropertyId.UnityEditorTextRenderingMode},
-            {"-unity-font", StylePropertyId.UnityFont},
-            {"-unity-font-definition", StylePropertyId.UnityFontDefinition},
-            {"-unity-font-style", StylePropertyId.UnityFontStyleAndWeight},
-            {"-unity-material", StylePropertyId.UnityMaterial},
-            {"-unity-overflow-clip-box", StylePropertyId.UnityOverflowClipBox},
-            {"-unity-paragraph-spacing", StylePropertyId.UnityParagraphSpacing},
-            {"-unity-slice-bottom", StylePropertyId.UnitySliceBottom},
-            {"-unity-slice-left", StylePropertyId.UnitySliceLeft},
-            {"-unity-slice-right", StylePropertyId.UnitySliceRight},
-            {"-unity-slice-scale", StylePropertyId.UnitySliceScale},
-            {"-unity-slice-top", StylePropertyId.UnitySliceTop},
-            {"-unity-slice-type", StylePropertyId.UnitySliceType},
-            {"-unity-text-align", StylePropertyId.UnityTextAlign},
-            {"-unity-text-auto-size", StylePropertyId.UnityTextAutoSize},
-            {"-unity-text-generator", StylePropertyId.UnityTextGenerator},
-            {"-unity-text-outline", StylePropertyId.UnityTextOutline},
-            {"-unity-text-outline-color", StylePropertyId.UnityTextOutlineColor},
-            {"-unity-text-outline-width", StylePropertyId.UnityTextOutlineWidth},
-            {"-unity-text-overflow-position", StylePropertyId.UnityTextOverflowPosition},
-            {"visibility", StylePropertyId.Visibility},
-            {"white-space", StylePropertyId.WhiteSpace},
-            {"width", StylePropertyId.Width},
-            {"word-spacing", StylePropertyId.WordSpacing}
-        };
+
+                        {
+                "align-content",
+                StylePropertyId.AlignContent
+            },
+                        {
+                "align-items",
+                StylePropertyId.AlignItems
+            },
+                        {
+                "align-self",
+                StylePropertyId.AlignSelf
+            },
+                        {
+                "all",
+                StylePropertyId.All
+            },
+                        {
+                "aspect-ratio",
+                StylePropertyId.AspectRatio
+            },
+                        {
+                "background-color",
+                StylePropertyId.BackgroundColor
+            },
+                        {
+                "background-image",
+                StylePropertyId.BackgroundImage
+            },
+                        {
+                "background-position",
+                StylePropertyId.BackgroundPosition
+            },
+                        {
+                "background-position-x",
+                StylePropertyId.BackgroundPositionX
+            },
+                        {
+                "background-position-y",
+                StylePropertyId.BackgroundPositionY
+            },
+                        {
+                "background-repeat",
+                StylePropertyId.BackgroundRepeat
+            },
+                        {
+                "background-size",
+                StylePropertyId.BackgroundSize
+            },
+                        {
+                "border-bottom-color",
+                StylePropertyId.BorderBottomColor
+            },
+                        {
+                "border-bottom-left-radius",
+                StylePropertyId.BorderBottomLeftRadius
+            },
+                        {
+                "border-bottom-right-radius",
+                StylePropertyId.BorderBottomRightRadius
+            },
+                        {
+                "border-bottom-width",
+                StylePropertyId.BorderBottomWidth
+            },
+                        {
+                "border-color",
+                StylePropertyId.BorderColor
+            },
+                        {
+                "border-left-color",
+                StylePropertyId.BorderLeftColor
+            },
+                        {
+                "border-left-width",
+                StylePropertyId.BorderLeftWidth
+            },
+                        {
+                "border-radius",
+                StylePropertyId.BorderRadius
+            },
+                        {
+                "border-right-color",
+                StylePropertyId.BorderRightColor
+            },
+                        {
+                "border-right-width",
+                StylePropertyId.BorderRightWidth
+            },
+                        {
+                "border-top-color",
+                StylePropertyId.BorderTopColor
+            },
+                        {
+                "border-top-left-radius",
+                StylePropertyId.BorderTopLeftRadius
+            },
+                        {
+                "border-top-right-radius",
+                StylePropertyId.BorderTopRightRadius
+            },
+                        {
+                "border-top-width",
+                StylePropertyId.BorderTopWidth
+            },
+                        {
+                "border-width",
+                StylePropertyId.BorderWidth
+            },
+                        {
+                "bottom",
+                StylePropertyId.Bottom
+            },
+                        {
+                "color",
+                StylePropertyId.Color
+            },
+                        {
+                "cursor",
+                StylePropertyId.Cursor
+            },
+                        {
+                "display",
+                StylePropertyId.Display
+            },
+                        {
+                "filter",
+                StylePropertyId.Filter
+            },
+                        {
+                "flex",
+                StylePropertyId.Flex
+            },
+                        {
+                "flex-basis",
+                StylePropertyId.FlexBasis
+            },
+                        {
+                "flex-direction",
+                StylePropertyId.FlexDirection
+            },
+                        {
+                "flex-grow",
+                StylePropertyId.FlexGrow
+            },
+                        {
+                "flex-shrink",
+                StylePropertyId.FlexShrink
+            },
+                        {
+                "flex-wrap",
+                StylePropertyId.FlexWrap
+            },
+                        {
+                "font-size",
+                StylePropertyId.FontSize
+            },
+                        {
+                "height",
+                StylePropertyId.Height
+            },
+                        {
+                "justify-content",
+                StylePropertyId.JustifyContent
+            },
+                        {
+                "left",
+                StylePropertyId.Left
+            },
+                        {
+                "letter-spacing",
+                StylePropertyId.LetterSpacing
+            },
+                        {
+                "margin",
+                StylePropertyId.Margin
+            },
+                        {
+                "margin-bottom",
+                StylePropertyId.MarginBottom
+            },
+                        {
+                "margin-left",
+                StylePropertyId.MarginLeft
+            },
+                        {
+                "margin-right",
+                StylePropertyId.MarginRight
+            },
+                        {
+                "margin-top",
+                StylePropertyId.MarginTop
+            },
+                        {
+                "max-height",
+                StylePropertyId.MaxHeight
+            },
+                        {
+                "max-width",
+                StylePropertyId.MaxWidth
+            },
+                        {
+                "min-height",
+                StylePropertyId.MinHeight
+            },
+                        {
+                "min-width",
+                StylePropertyId.MinWidth
+            },
+                        {
+                "opacity",
+                StylePropertyId.Opacity
+            },
+                        {
+                "overflow",
+                StylePropertyId.Overflow
+            },
+                        {
+                "padding",
+                StylePropertyId.Padding
+            },
+                        {
+                "padding-bottom",
+                StylePropertyId.PaddingBottom
+            },
+                        {
+                "padding-left",
+                StylePropertyId.PaddingLeft
+            },
+                        {
+                "padding-right",
+                StylePropertyId.PaddingRight
+            },
+                        {
+                "padding-top",
+                StylePropertyId.PaddingTop
+            },
+                        {
+                "position",
+                StylePropertyId.Position
+            },
+                        {
+                "right",
+                StylePropertyId.Right
+            },
+                        {
+                "rotate",
+                StylePropertyId.Rotate
+            },
+                        {
+                "scale",
+                StylePropertyId.Scale
+            },
+                        {
+                "text-overflow",
+                StylePropertyId.TextOverflow
+            },
+                        {
+                "text-shadow",
+                StylePropertyId.TextShadow
+            },
+                        {
+                "top",
+                StylePropertyId.Top
+            },
+                        {
+                "transform-origin",
+                StylePropertyId.TransformOrigin
+            },
+                        {
+                "transition",
+                StylePropertyId.Transition
+            },
+                        {
+                "transition-delay",
+                StylePropertyId.TransitionDelay
+            },
+                        {
+                "transition-duration",
+                StylePropertyId.TransitionDuration
+            },
+                        {
+                "transition-property",
+                StylePropertyId.TransitionProperty
+            },
+                        {
+                "transition-timing-function",
+                StylePropertyId.TransitionTimingFunction
+            },
+                        {
+                "translate",
+                StylePropertyId.Translate
+            },
+                        {
+                "-unity-background-image-tint-color",
+                StylePropertyId.UnityBackgroundImageTintColor
+            },
+                        {
+                "-unity-background-scale-mode",
+                StylePropertyId.UnityBackgroundScaleMode
+            },
+                        {
+                "-unity-editor-text-rendering-mode",
+                StylePropertyId.UnityEditorTextRenderingMode
+            },
+                        {
+                "-unity-font",
+                StylePropertyId.UnityFont
+            },
+                        {
+                "-unity-font-definition",
+                StylePropertyId.UnityFontDefinition
+            },
+                        {
+                "-unity-font-style",
+                StylePropertyId.UnityFontStyleAndWeight
+            },
+                        {
+                "-unity-material",
+                StylePropertyId.UnityMaterial
+            },
+                        {
+                "-unity-overflow-clip-box",
+                StylePropertyId.UnityOverflowClipBox
+            },
+                        {
+                "-unity-paragraph-spacing",
+                StylePropertyId.UnityParagraphSpacing
+            },
+                        {
+                "-unity-slice-bottom",
+                StylePropertyId.UnitySliceBottom
+            },
+                        {
+                "-unity-slice-left",
+                StylePropertyId.UnitySliceLeft
+            },
+                        {
+                "-unity-slice-right",
+                StylePropertyId.UnitySliceRight
+            },
+                        {
+                "-unity-slice-scale",
+                StylePropertyId.UnitySliceScale
+            },
+                        {
+                "-unity-slice-top",
+                StylePropertyId.UnitySliceTop
+            },
+                        {
+                "-unity-slice-type",
+                StylePropertyId.UnitySliceType
+            },
+                        {
+                "-unity-text-align",
+                StylePropertyId.UnityTextAlign
+            },
+                        {
+                "-unity-text-auto-size",
+                StylePropertyId.UnityTextAutoSize
+            },
+                        {
+                "-unity-text-generator",
+                StylePropertyId.UnityTextGenerator
+            },
+                        {
+                "-unity-text-outline",
+                StylePropertyId.UnityTextOutline
+            },
+                        {
+                "-unity-text-outline-color",
+                StylePropertyId.UnityTextOutlineColor
+            },
+                        {
+                "-unity-text-outline-width",
+                StylePropertyId.UnityTextOutlineWidth
+            },
+                        {
+                "-unity-text-overflow-position",
+                StylePropertyId.UnityTextOverflowPosition
+            },
+                        {
+                "visibility",
+                StylePropertyId.Visibility
+            },
+                        {
+                "white-space",
+                StylePropertyId.WhiteSpace
+            },
+                        {
+                "width",
+                StylePropertyId.Width
+            },
+                        {
+                "word-spacing",
+                StylePropertyId.WordSpacing
+            }
+                };
 
         internal static readonly Dictionary<StylePropertyId, string> s_IdToName = new Dictionary<StylePropertyId, string>()
         {
-            {StylePropertyId.AlignContent, "align-content"},
-            {StylePropertyId.AlignItems, "align-items"},
-            {StylePropertyId.AlignSelf, "align-self"},
-            {StylePropertyId.All, "all"},
-            {StylePropertyId.AspectRatio, "aspect-ratio"},
-            {StylePropertyId.BackgroundColor, "background-color"},
-            {StylePropertyId.BackgroundImage, "background-image"},
-            {StylePropertyId.BackgroundPosition, "background-position"},
-            {StylePropertyId.BackgroundPositionX, "background-position-x"},
-            {StylePropertyId.BackgroundPositionY, "background-position-y"},
-            {StylePropertyId.BackgroundRepeat, "background-repeat"},
-            {StylePropertyId.BackgroundSize, "background-size"},
-            {StylePropertyId.BorderBottomColor, "border-bottom-color"},
-            {StylePropertyId.BorderBottomLeftRadius, "border-bottom-left-radius"},
-            {StylePropertyId.BorderBottomRightRadius, "border-bottom-right-radius"},
-            {StylePropertyId.BorderBottomWidth, "border-bottom-width"},
-            {StylePropertyId.BorderColor, "border-color"},
-            {StylePropertyId.BorderLeftColor, "border-left-color"},
-            {StylePropertyId.BorderLeftWidth, "border-left-width"},
-            {StylePropertyId.BorderRadius, "border-radius"},
-            {StylePropertyId.BorderRightColor, "border-right-color"},
-            {StylePropertyId.BorderRightWidth, "border-right-width"},
-            {StylePropertyId.BorderTopColor, "border-top-color"},
-            {StylePropertyId.BorderTopLeftRadius, "border-top-left-radius"},
-            {StylePropertyId.BorderTopRightRadius, "border-top-right-radius"},
-            {StylePropertyId.BorderTopWidth, "border-top-width"},
-            {StylePropertyId.BorderWidth, "border-width"},
-            {StylePropertyId.Bottom, "bottom"},
-            {StylePropertyId.Color, "color"},
-            {StylePropertyId.Cursor, "cursor"},
-            {StylePropertyId.Display, "display"},
-            {StylePropertyId.Filter, "filter"},
-            {StylePropertyId.Flex, "flex"},
-            {StylePropertyId.FlexBasis, "flex-basis"},
-            {StylePropertyId.FlexDirection, "flex-direction"},
-            {StylePropertyId.FlexGrow, "flex-grow"},
-            {StylePropertyId.FlexShrink, "flex-shrink"},
-            {StylePropertyId.FlexWrap, "flex-wrap"},
-            {StylePropertyId.FontSize, "font-size"},
-            {StylePropertyId.Height, "height"},
-            {StylePropertyId.JustifyContent, "justify-content"},
-            {StylePropertyId.Left, "left"},
-            {StylePropertyId.LetterSpacing, "letter-spacing"},
-            {StylePropertyId.Margin, "margin"},
-            {StylePropertyId.MarginBottom, "margin-bottom"},
-            {StylePropertyId.MarginLeft, "margin-left"},
-            {StylePropertyId.MarginRight, "margin-right"},
-            {StylePropertyId.MarginTop, "margin-top"},
-            {StylePropertyId.MaxHeight, "max-height"},
-            {StylePropertyId.MaxWidth, "max-width"},
-            {StylePropertyId.MinHeight, "min-height"},
-            {StylePropertyId.MinWidth, "min-width"},
-            {StylePropertyId.Opacity, "opacity"},
-            {StylePropertyId.Overflow, "overflow"},
-            {StylePropertyId.Padding, "padding"},
-            {StylePropertyId.PaddingBottom, "padding-bottom"},
-            {StylePropertyId.PaddingLeft, "padding-left"},
-            {StylePropertyId.PaddingRight, "padding-right"},
-            {StylePropertyId.PaddingTop, "padding-top"},
-            {StylePropertyId.Position, "position"},
-            {StylePropertyId.Right, "right"},
-            {StylePropertyId.Rotate, "rotate"},
-            {StylePropertyId.Scale, "scale"},
-            {StylePropertyId.TextOverflow, "text-overflow"},
-            {StylePropertyId.TextShadow, "text-shadow"},
-            {StylePropertyId.Top, "top"},
-            {StylePropertyId.TransformOrigin, "transform-origin"},
-            {StylePropertyId.Transition, "transition"},
-            {StylePropertyId.TransitionDelay, "transition-delay"},
-            {StylePropertyId.TransitionDuration, "transition-duration"},
-            {StylePropertyId.TransitionProperty, "transition-property"},
-            {StylePropertyId.TransitionTimingFunction, "transition-timing-function"},
-            {StylePropertyId.Translate, "translate"},
-            {StylePropertyId.UnityBackgroundImageTintColor, "-unity-background-image-tint-color"},
-            {StylePropertyId.UnityBackgroundScaleMode, "-unity-background-scale-mode"},
-            {StylePropertyId.UnityEditorTextRenderingMode, "-unity-editor-text-rendering-mode"},
-            {StylePropertyId.UnityFont, "-unity-font"},
-            {StylePropertyId.UnityFontDefinition, "-unity-font-definition"},
-            {StylePropertyId.UnityFontStyleAndWeight, "-unity-font-style"},
-            {StylePropertyId.UnityMaterial, "-unity-material"},
-            {StylePropertyId.UnityOverflowClipBox, "-unity-overflow-clip-box"},
-            {StylePropertyId.UnityParagraphSpacing, "-unity-paragraph-spacing"},
-            {StylePropertyId.UnitySliceBottom, "-unity-slice-bottom"},
-            {StylePropertyId.UnitySliceLeft, "-unity-slice-left"},
-            {StylePropertyId.UnitySliceRight, "-unity-slice-right"},
-            {StylePropertyId.UnitySliceScale, "-unity-slice-scale"},
-            {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
-            {StylePropertyId.UnitySliceType, "-unity-slice-type"},
-            {StylePropertyId.UnityTextAlign, "-unity-text-align"},
-            {StylePropertyId.UnityTextAutoSize, "-unity-text-auto-size"},
-            {StylePropertyId.UnityTextGenerator, "-unity-text-generator"},
-            {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
-            {StylePropertyId.UnityTextOutlineColor, "-unity-text-outline-color"},
-            {StylePropertyId.UnityTextOutlineWidth, "-unity-text-outline-width"},
-            {StylePropertyId.UnityTextOverflowPosition, "-unity-text-overflow-position"},
-            {StylePropertyId.Visibility, "visibility"},
-            {StylePropertyId.WhiteSpace, "white-space"},
-            {StylePropertyId.Width, "width"},
-            {StylePropertyId.WordSpacing, "word-spacing"}
-        };
+
+                        {
+                StylePropertyId.AlignContent,
+                "align-content"
+            },
+                        {
+                StylePropertyId.AlignItems,
+                "align-items"
+            },
+                        {
+                StylePropertyId.AlignSelf,
+                "align-self"
+            },
+                        {
+                StylePropertyId.All,
+                "all"
+            },
+                        {
+                StylePropertyId.AspectRatio,
+                "aspect-ratio"
+            },
+                        {
+                StylePropertyId.BackgroundColor,
+                "background-color"
+            },
+                        {
+                StylePropertyId.BackgroundImage,
+                "background-image"
+            },
+                        {
+                StylePropertyId.BackgroundPosition,
+                "background-position"
+            },
+                        {
+                StylePropertyId.BackgroundPositionX,
+                "background-position-x"
+            },
+                        {
+                StylePropertyId.BackgroundPositionY,
+                "background-position-y"
+            },
+                        {
+                StylePropertyId.BackgroundRepeat,
+                "background-repeat"
+            },
+                        {
+                StylePropertyId.BackgroundSize,
+                "background-size"
+            },
+                        {
+                StylePropertyId.BorderBottomColor,
+                "border-bottom-color"
+            },
+                        {
+                StylePropertyId.BorderBottomLeftRadius,
+                "border-bottom-left-radius"
+            },
+                        {
+                StylePropertyId.BorderBottomRightRadius,
+                "border-bottom-right-radius"
+            },
+                        {
+                StylePropertyId.BorderBottomWidth,
+                "border-bottom-width"
+            },
+                        {
+                StylePropertyId.BorderColor,
+                "border-color"
+            },
+                        {
+                StylePropertyId.BorderLeftColor,
+                "border-left-color"
+            },
+                        {
+                StylePropertyId.BorderLeftWidth,
+                "border-left-width"
+            },
+                        {
+                StylePropertyId.BorderRadius,
+                "border-radius"
+            },
+                        {
+                StylePropertyId.BorderRightColor,
+                "border-right-color"
+            },
+                        {
+                StylePropertyId.BorderRightWidth,
+                "border-right-width"
+            },
+                        {
+                StylePropertyId.BorderTopColor,
+                "border-top-color"
+            },
+                        {
+                StylePropertyId.BorderTopLeftRadius,
+                "border-top-left-radius"
+            },
+                        {
+                StylePropertyId.BorderTopRightRadius,
+                "border-top-right-radius"
+            },
+                        {
+                StylePropertyId.BorderTopWidth,
+                "border-top-width"
+            },
+                        {
+                StylePropertyId.BorderWidth,
+                "border-width"
+            },
+                        {
+                StylePropertyId.Bottom,
+                "bottom"
+            },
+                        {
+                StylePropertyId.Color,
+                "color"
+            },
+                        {
+                StylePropertyId.Cursor,
+                "cursor"
+            },
+                        {
+                StylePropertyId.Display,
+                "display"
+            },
+                        {
+                StylePropertyId.Filter,
+                "filter"
+            },
+                        {
+                StylePropertyId.Flex,
+                "flex"
+            },
+                        {
+                StylePropertyId.FlexBasis,
+                "flex-basis"
+            },
+                        {
+                StylePropertyId.FlexDirection,
+                "flex-direction"
+            },
+                        {
+                StylePropertyId.FlexGrow,
+                "flex-grow"
+            },
+                        {
+                StylePropertyId.FlexShrink,
+                "flex-shrink"
+            },
+                        {
+                StylePropertyId.FlexWrap,
+                "flex-wrap"
+            },
+                        {
+                StylePropertyId.FontSize,
+                "font-size"
+            },
+                        {
+                StylePropertyId.Height,
+                "height"
+            },
+                        {
+                StylePropertyId.JustifyContent,
+                "justify-content"
+            },
+                        {
+                StylePropertyId.Left,
+                "left"
+            },
+                        {
+                StylePropertyId.LetterSpacing,
+                "letter-spacing"
+            },
+                        {
+                StylePropertyId.Margin,
+                "margin"
+            },
+                        {
+                StylePropertyId.MarginBottom,
+                "margin-bottom"
+            },
+                        {
+                StylePropertyId.MarginLeft,
+                "margin-left"
+            },
+                        {
+                StylePropertyId.MarginRight,
+                "margin-right"
+            },
+                        {
+                StylePropertyId.MarginTop,
+                "margin-top"
+            },
+                        {
+                StylePropertyId.MaxHeight,
+                "max-height"
+            },
+                        {
+                StylePropertyId.MaxWidth,
+                "max-width"
+            },
+                        {
+                StylePropertyId.MinHeight,
+                "min-height"
+            },
+                        {
+                StylePropertyId.MinWidth,
+                "min-width"
+            },
+                        {
+                StylePropertyId.Opacity,
+                "opacity"
+            },
+                        {
+                StylePropertyId.Overflow,
+                "overflow"
+            },
+                        {
+                StylePropertyId.Padding,
+                "padding"
+            },
+                        {
+                StylePropertyId.PaddingBottom,
+                "padding-bottom"
+            },
+                        {
+                StylePropertyId.PaddingLeft,
+                "padding-left"
+            },
+                        {
+                StylePropertyId.PaddingRight,
+                "padding-right"
+            },
+                        {
+                StylePropertyId.PaddingTop,
+                "padding-top"
+            },
+                        {
+                StylePropertyId.Position,
+                "position"
+            },
+                        {
+                StylePropertyId.Right,
+                "right"
+            },
+                        {
+                StylePropertyId.Rotate,
+                "rotate"
+            },
+                        {
+                StylePropertyId.Scale,
+                "scale"
+            },
+                        {
+                StylePropertyId.TextOverflow,
+                "text-overflow"
+            },
+                        {
+                StylePropertyId.TextShadow,
+                "text-shadow"
+            },
+                        {
+                StylePropertyId.Top,
+                "top"
+            },
+                        {
+                StylePropertyId.TransformOrigin,
+                "transform-origin"
+            },
+                        {
+                StylePropertyId.Transition,
+                "transition"
+            },
+                        {
+                StylePropertyId.TransitionDelay,
+                "transition-delay"
+            },
+                        {
+                StylePropertyId.TransitionDuration,
+                "transition-duration"
+            },
+                        {
+                StylePropertyId.TransitionProperty,
+                "transition-property"
+            },
+                        {
+                StylePropertyId.TransitionTimingFunction,
+                "transition-timing-function"
+            },
+                        {
+                StylePropertyId.Translate,
+                "translate"
+            },
+                        {
+                StylePropertyId.UnityBackgroundImageTintColor,
+                "-unity-background-image-tint-color"
+            },
+                        {
+                StylePropertyId.UnityBackgroundScaleMode,
+                "-unity-background-scale-mode"
+            },
+                        {
+                StylePropertyId.UnityEditorTextRenderingMode,
+                "-unity-editor-text-rendering-mode"
+            },
+                        {
+                StylePropertyId.UnityFont,
+                "-unity-font"
+            },
+                        {
+                StylePropertyId.UnityFontDefinition,
+                "-unity-font-definition"
+            },
+                        {
+                StylePropertyId.UnityFontStyleAndWeight,
+                "-unity-font-style"
+            },
+                        {
+                StylePropertyId.UnityMaterial,
+                "-unity-material"
+            },
+                        {
+                StylePropertyId.UnityOverflowClipBox,
+                "-unity-overflow-clip-box"
+            },
+                        {
+                StylePropertyId.UnityParagraphSpacing,
+                "-unity-paragraph-spacing"
+            },
+                        {
+                StylePropertyId.UnitySliceBottom,
+                "-unity-slice-bottom"
+            },
+                        {
+                StylePropertyId.UnitySliceLeft,
+                "-unity-slice-left"
+            },
+                        {
+                StylePropertyId.UnitySliceRight,
+                "-unity-slice-right"
+            },
+                        {
+                StylePropertyId.UnitySliceScale,
+                "-unity-slice-scale"
+            },
+                        {
+                StylePropertyId.UnitySliceTop,
+                "-unity-slice-top"
+            },
+                        {
+                StylePropertyId.UnitySliceType,
+                "-unity-slice-type"
+            },
+                        {
+                StylePropertyId.UnityTextAlign,
+                "-unity-text-align"
+            },
+                        {
+                StylePropertyId.UnityTextAutoSize,
+                "-unity-text-auto-size"
+            },
+                        {
+                StylePropertyId.UnityTextGenerator,
+                "-unity-text-generator"
+            },
+                        {
+                StylePropertyId.UnityTextOutline,
+                "-unity-text-outline"
+            },
+                        {
+                StylePropertyId.UnityTextOutlineColor,
+                "-unity-text-outline-color"
+            },
+                        {
+                StylePropertyId.UnityTextOutlineWidth,
+                "-unity-text-outline-width"
+            },
+                        {
+                StylePropertyId.UnityTextOverflowPosition,
+                "-unity-text-overflow-position"
+            },
+                        {
+                StylePropertyId.Visibility,
+                "visibility"
+            },
+                        {
+                StylePropertyId.WhiteSpace,
+                "white-space"
+            },
+                        {
+                StylePropertyId.Width,
+                "width"
+            },
+                        {
+                StylePropertyId.WordSpacing,
+                "word-spacing"
+            }
+                };
 
         internal static readonly Dictionary<string, string> s_UssNameToCSharpName = new Dictionary<string, string>()
         {
-            {"align-content", "alignContent"},
-            {"align-items", "alignItems"},
-            {"align-self", "alignSelf"},
-            {"all", "all"},
-            {"aspect-ratio", "aspectRatio"},
-            {"background-color", "backgroundColor"},
-            {"background-image", "backgroundImage"},
-            {"background-position", "backgroundPosition"},
-            {"background-position-x", "backgroundPositionX"},
-            {"background-position-y", "backgroundPositionY"},
-            {"background-repeat", "backgroundRepeat"},
-            {"background-size", "backgroundSize"},
-            {"border-bottom-color", "borderBottomColor"},
-            {"border-bottom-left-radius", "borderBottomLeftRadius"},
-            {"border-bottom-right-radius", "borderBottomRightRadius"},
-            {"border-bottom-width", "borderBottomWidth"},
-            {"border-color", "borderColor"},
-            {"border-left-color", "borderLeftColor"},
-            {"border-left-width", "borderLeftWidth"},
-            {"border-radius", "borderRadius"},
-            {"border-right-color", "borderRightColor"},
-            {"border-right-width", "borderRightWidth"},
-            {"border-top-color", "borderTopColor"},
-            {"border-top-left-radius", "borderTopLeftRadius"},
-            {"border-top-right-radius", "borderTopRightRadius"},
-            {"border-top-width", "borderTopWidth"},
-            {"border-width", "borderWidth"},
-            {"bottom", "bottom"},
-            {"color", "color"},
-            {"cursor", "cursor"},
-            {"display", "display"},
-            {"filter", "filter"},
-            {"flex", "flex"},
-            {"flex-basis", "flexBasis"},
-            {"flex-direction", "flexDirection"},
-            {"flex-grow", "flexGrow"},
-            {"flex-shrink", "flexShrink"},
-            {"flex-wrap", "flexWrap"},
-            {"font-size", "fontSize"},
-            {"height", "height"},
-            {"justify-content", "justifyContent"},
-            {"left", "left"},
-            {"letter-spacing", "letterSpacing"},
-            {"margin", "margin"},
-            {"margin-bottom", "marginBottom"},
-            {"margin-left", "marginLeft"},
-            {"margin-right", "marginRight"},
-            {"margin-top", "marginTop"},
-            {"max-height", "maxHeight"},
-            {"max-width", "maxWidth"},
-            {"min-height", "minHeight"},
-            {"min-width", "minWidth"},
-            {"opacity", "opacity"},
-            {"overflow", "overflow"},
-            {"padding", "padding"},
-            {"padding-bottom", "paddingBottom"},
-            {"padding-left", "paddingLeft"},
-            {"padding-right", "paddingRight"},
-            {"padding-top", "paddingTop"},
-            {"position", "position"},
-            {"right", "right"},
-            {"rotate", "rotate"},
-            {"scale", "scale"},
-            {"text-overflow", "textOverflow"},
-            {"text-shadow", "textShadow"},
-            {"top", "top"},
-            {"transform-origin", "transformOrigin"},
-            {"transition", "transition"},
-            {"transition-delay", "transitionDelay"},
-            {"transition-duration", "transitionDuration"},
-            {"transition-property", "transitionProperty"},
-            {"transition-timing-function", "transitionTimingFunction"},
-            {"translate", "translate"},
-            {"-unity-background-image-tint-color", "unityBackgroundImageTintColor"},
-            {"-unity-background-scale-mode", "unityBackgroundScaleMode"},
-            {"-unity-editor-text-rendering-mode", "unityEditorTextRenderingMode"},
-            {"-unity-font", "unityFont"},
-            {"-unity-font-definition", "unityFontDefinition"},
-            {"-unity-font-style", "unityFontStyleAndWeight"},
-            {"-unity-material", "unityMaterial"},
-            {"-unity-overflow-clip-box", "unityOverflowClipBox"},
-            {"-unity-paragraph-spacing", "unityParagraphSpacing"},
-            {"-unity-slice-bottom", "unitySliceBottom"},
-            {"-unity-slice-left", "unitySliceLeft"},
-            {"-unity-slice-right", "unitySliceRight"},
-            {"-unity-slice-scale", "unitySliceScale"},
-            {"-unity-slice-top", "unitySliceTop"},
-            {"-unity-slice-type", "unitySliceType"},
-            {"-unity-text-align", "unityTextAlign"},
-            {"-unity-text-auto-size", "unityTextAutoSize"},
-            {"-unity-text-generator", "unityTextGenerator"},
-            {"-unity-text-outline", "unityTextOutline"},
-            {"-unity-text-outline-color", "unityTextOutlineColor"},
-            {"-unity-text-outline-width", "unityTextOutlineWidth"},
-            {"-unity-text-overflow-position", "unityTextOverflowPosition"},
-            {"visibility", "visibility"},
-            {"white-space", "whiteSpace"},
-            {"width", "width"},
-            {"word-spacing", "wordSpacing"}
-        };
+
+                        {
+                "align-content",
+                "alignContent"
+            },
+                        {
+                "align-items",
+                "alignItems"
+            },
+                        {
+                "align-self",
+                "alignSelf"
+            },
+                        {
+                "all",
+                "all"
+            },
+                        {
+                "aspect-ratio",
+                "aspectRatio"
+            },
+                        {
+                "background-color",
+                "backgroundColor"
+            },
+                        {
+                "background-image",
+                "backgroundImage"
+            },
+                        {
+                "background-position",
+                "backgroundPosition"
+            },
+                        {
+                "background-position-x",
+                "backgroundPositionX"
+            },
+                        {
+                "background-position-y",
+                "backgroundPositionY"
+            },
+                        {
+                "background-repeat",
+                "backgroundRepeat"
+            },
+                        {
+                "background-size",
+                "backgroundSize"
+            },
+                        {
+                "border-bottom-color",
+                "borderBottomColor"
+            },
+                        {
+                "border-bottom-left-radius",
+                "borderBottomLeftRadius"
+            },
+                        {
+                "border-bottom-right-radius",
+                "borderBottomRightRadius"
+            },
+                        {
+                "border-bottom-width",
+                "borderBottomWidth"
+            },
+                        {
+                "border-color",
+                "borderColor"
+            },
+                        {
+                "border-left-color",
+                "borderLeftColor"
+            },
+                        {
+                "border-left-width",
+                "borderLeftWidth"
+            },
+                        {
+                "border-radius",
+                "borderRadius"
+            },
+                        {
+                "border-right-color",
+                "borderRightColor"
+            },
+                        {
+                "border-right-width",
+                "borderRightWidth"
+            },
+                        {
+                "border-top-color",
+                "borderTopColor"
+            },
+                        {
+                "border-top-left-radius",
+                "borderTopLeftRadius"
+            },
+                        {
+                "border-top-right-radius",
+                "borderTopRightRadius"
+            },
+                        {
+                "border-top-width",
+                "borderTopWidth"
+            },
+                        {
+                "border-width",
+                "borderWidth"
+            },
+                        {
+                "bottom",
+                "bottom"
+            },
+                        {
+                "color",
+                "color"
+            },
+                        {
+                "cursor",
+                "cursor"
+            },
+                        {
+                "display",
+                "display"
+            },
+                        {
+                "filter",
+                "filter"
+            },
+                        {
+                "flex",
+                "flex"
+            },
+                        {
+                "flex-basis",
+                "flexBasis"
+            },
+                        {
+                "flex-direction",
+                "flexDirection"
+            },
+                        {
+                "flex-grow",
+                "flexGrow"
+            },
+                        {
+                "flex-shrink",
+                "flexShrink"
+            },
+                        {
+                "flex-wrap",
+                "flexWrap"
+            },
+                        {
+                "font-size",
+                "fontSize"
+            },
+                        {
+                "height",
+                "height"
+            },
+                        {
+                "justify-content",
+                "justifyContent"
+            },
+                        {
+                "left",
+                "left"
+            },
+                        {
+                "letter-spacing",
+                "letterSpacing"
+            },
+                        {
+                "margin",
+                "margin"
+            },
+                        {
+                "margin-bottom",
+                "marginBottom"
+            },
+                        {
+                "margin-left",
+                "marginLeft"
+            },
+                        {
+                "margin-right",
+                "marginRight"
+            },
+                        {
+                "margin-top",
+                "marginTop"
+            },
+                        {
+                "max-height",
+                "maxHeight"
+            },
+                        {
+                "max-width",
+                "maxWidth"
+            },
+                        {
+                "min-height",
+                "minHeight"
+            },
+                        {
+                "min-width",
+                "minWidth"
+            },
+                        {
+                "opacity",
+                "opacity"
+            },
+                        {
+                "overflow",
+                "overflow"
+            },
+                        {
+                "padding",
+                "padding"
+            },
+                        {
+                "padding-bottom",
+                "paddingBottom"
+            },
+                        {
+                "padding-left",
+                "paddingLeft"
+            },
+                        {
+                "padding-right",
+                "paddingRight"
+            },
+                        {
+                "padding-top",
+                "paddingTop"
+            },
+                        {
+                "position",
+                "position"
+            },
+                        {
+                "right",
+                "right"
+            },
+                        {
+                "rotate",
+                "rotate"
+            },
+                        {
+                "scale",
+                "scale"
+            },
+                        {
+                "text-overflow",
+                "textOverflow"
+            },
+                        {
+                "text-shadow",
+                "textShadow"
+            },
+                        {
+                "top",
+                "top"
+            },
+                        {
+                "transform-origin",
+                "transformOrigin"
+            },
+                        {
+                "transition",
+                "transition"
+            },
+                        {
+                "transition-delay",
+                "transitionDelay"
+            },
+                        {
+                "transition-duration",
+                "transitionDuration"
+            },
+                        {
+                "transition-property",
+                "transitionProperty"
+            },
+                        {
+                "transition-timing-function",
+                "transitionTimingFunction"
+            },
+                        {
+                "translate",
+                "translate"
+            },
+                        {
+                "-unity-background-image-tint-color",
+                "unityBackgroundImageTintColor"
+            },
+                        {
+                "-unity-background-scale-mode",
+                "unityBackgroundScaleMode"
+            },
+                        {
+                "-unity-editor-text-rendering-mode",
+                "unityEditorTextRenderingMode"
+            },
+                        {
+                "-unity-font",
+                "unityFont"
+            },
+                        {
+                "-unity-font-definition",
+                "unityFontDefinition"
+            },
+                        {
+                "-unity-font-style",
+                "unityFontStyleAndWeight"
+            },
+                        {
+                "-unity-material",
+                "unityMaterial"
+            },
+                        {
+                "-unity-overflow-clip-box",
+                "unityOverflowClipBox"
+            },
+                        {
+                "-unity-paragraph-spacing",
+                "unityParagraphSpacing"
+            },
+                        {
+                "-unity-slice-bottom",
+                "unitySliceBottom"
+            },
+                        {
+                "-unity-slice-left",
+                "unitySliceLeft"
+            },
+                        {
+                "-unity-slice-right",
+                "unitySliceRight"
+            },
+                        {
+                "-unity-slice-scale",
+                "unitySliceScale"
+            },
+                        {
+                "-unity-slice-top",
+                "unitySliceTop"
+            },
+                        {
+                "-unity-slice-type",
+                "unitySliceType"
+            },
+                        {
+                "-unity-text-align",
+                "unityTextAlign"
+            },
+                        {
+                "-unity-text-auto-size",
+                "unityTextAutoSize"
+            },
+                        {
+                "-unity-text-generator",
+                "unityTextGenerator"
+            },
+                        {
+                "-unity-text-outline",
+                "unityTextOutline"
+            },
+                        {
+                "-unity-text-outline-color",
+                "unityTextOutlineColor"
+            },
+                        {
+                "-unity-text-outline-width",
+                "unityTextOutlineWidth"
+            },
+                        {
+                "-unity-text-overflow-position",
+                "unityTextOverflowPosition"
+            },
+                        {
+                "visibility",
+                "visibility"
+            },
+                        {
+                "white-space",
+                "whiteSpace"
+            },
+                        {
+                "width",
+                "width"
+            },
+                        {
+                "word-spacing",
+                "wordSpacing"
+            }
+                };
 
         internal static readonly Dictionary<string, string> s_CSharpNameToUssName = new Dictionary<string, string>()
         {
-            {"alignContent", "align-content"},
-            {"alignItems", "align-items"},
-            {"alignSelf", "align-self"},
-            {"all", "all"},
-            {"aspectRatio", "aspect-ratio"},
-            {"backgroundColor", "background-color"},
-            {"backgroundImage", "background-image"},
-            {"backgroundPosition", "background-position"},
-            {"backgroundPositionX", "background-position-x"},
-            {"backgroundPositionY", "background-position-y"},
-            {"backgroundRepeat", "background-repeat"},
-            {"backgroundSize", "background-size"},
-            {"borderBottomColor", "border-bottom-color"},
-            {"borderBottomLeftRadius", "border-bottom-left-radius"},
-            {"borderBottomRightRadius", "border-bottom-right-radius"},
-            {"borderBottomWidth", "border-bottom-width"},
-            {"borderColor", "border-color"},
-            {"borderLeftColor", "border-left-color"},
-            {"borderLeftWidth", "border-left-width"},
-            {"borderRadius", "border-radius"},
-            {"borderRightColor", "border-right-color"},
-            {"borderRightWidth", "border-right-width"},
-            {"borderTopColor", "border-top-color"},
-            {"borderTopLeftRadius", "border-top-left-radius"},
-            {"borderTopRightRadius", "border-top-right-radius"},
-            {"borderTopWidth", "border-top-width"},
-            {"borderWidth", "border-width"},
-            {"bottom", "bottom"},
-            {"color", "color"},
-            {"cursor", "cursor"},
-            {"display", "display"},
-            {"filter", "filter"},
-            {"flex", "flex"},
-            {"flexBasis", "flex-basis"},
-            {"flexDirection", "flex-direction"},
-            {"flexGrow", "flex-grow"},
-            {"flexShrink", "flex-shrink"},
-            {"flexWrap", "flex-wrap"},
-            {"fontSize", "font-size"},
-            {"height", "height"},
-            {"justifyContent", "justify-content"},
-            {"left", "left"},
-            {"letterSpacing", "letter-spacing"},
-            {"margin", "margin"},
-            {"marginBottom", "margin-bottom"},
-            {"marginLeft", "margin-left"},
-            {"marginRight", "margin-right"},
-            {"marginTop", "margin-top"},
-            {"maxHeight", "max-height"},
-            {"maxWidth", "max-width"},
-            {"minHeight", "min-height"},
-            {"minWidth", "min-width"},
-            {"opacity", "opacity"},
-            {"overflow", "overflow"},
-            {"padding", "padding"},
-            {"paddingBottom", "padding-bottom"},
-            {"paddingLeft", "padding-left"},
-            {"paddingRight", "padding-right"},
-            {"paddingTop", "padding-top"},
-            {"position", "position"},
-            {"right", "right"},
-            {"rotate", "rotate"},
-            {"scale", "scale"},
-            {"textOverflow", "text-overflow"},
-            {"textShadow", "text-shadow"},
-            {"top", "top"},
-            {"transformOrigin", "transform-origin"},
-            {"transition", "transition"},
-            {"transitionDelay", "transition-delay"},
-            {"transitionDuration", "transition-duration"},
-            {"transitionProperty", "transition-property"},
-            {"transitionTimingFunction", "transition-timing-function"},
-            {"translate", "translate"},
-            {"unityBackgroundImageTintColor", "-unity-background-image-tint-color"},
-            {"unityBackgroundScaleMode", "-unity-background-scale-mode"},
-            {"unityEditorTextRenderingMode", "-unity-editor-text-rendering-mode"},
-            {"unityFont", "-unity-font"},
-            {"unityFontDefinition", "-unity-font-definition"},
-            {"unityFontStyleAndWeight", "-unity-font-style"},
-            {"unityMaterial", "-unity-material"},
-            {"unityOverflowClipBox", "-unity-overflow-clip-box"},
-            {"unityParagraphSpacing", "-unity-paragraph-spacing"},
-            {"unitySliceBottom", "-unity-slice-bottom"},
-            {"unitySliceLeft", "-unity-slice-left"},
-            {"unitySliceRight", "-unity-slice-right"},
-            {"unitySliceScale", "-unity-slice-scale"},
-            {"unitySliceTop", "-unity-slice-top"},
-            {"unitySliceType", "-unity-slice-type"},
-            {"unityTextAlign", "-unity-text-align"},
-            {"unityTextAutoSize", "-unity-text-auto-size"},
-            {"unityTextGenerator", "-unity-text-generator"},
-            {"unityTextOutline", "-unity-text-outline"},
-            {"unityTextOutlineColor", "-unity-text-outline-color"},
-            {"unityTextOutlineWidth", "-unity-text-outline-width"},
-            {"unityTextOverflowPosition", "-unity-text-overflow-position"},
-            {"visibility", "visibility"},
-            {"whiteSpace", "white-space"},
-            {"width", "width"},
-            {"wordSpacing", "word-spacing"}
-        };
+
+                        {
+                "alignContent",
+                "align-content"
+            },
+                        {
+                "alignItems",
+                "align-items"
+            },
+                        {
+                "alignSelf",
+                "align-self"
+            },
+                        {
+                "all",
+                "all"
+            },
+                        {
+                "aspectRatio",
+                "aspect-ratio"
+            },
+                        {
+                "backgroundColor",
+                "background-color"
+            },
+                        {
+                "backgroundImage",
+                "background-image"
+            },
+                        {
+                "backgroundPosition",
+                "background-position"
+            },
+                        {
+                "backgroundPositionX",
+                "background-position-x"
+            },
+                        {
+                "backgroundPositionY",
+                "background-position-y"
+            },
+                        {
+                "backgroundRepeat",
+                "background-repeat"
+            },
+                        {
+                "backgroundSize",
+                "background-size"
+            },
+                        {
+                "borderBottomColor",
+                "border-bottom-color"
+            },
+                        {
+                "borderBottomLeftRadius",
+                "border-bottom-left-radius"
+            },
+                        {
+                "borderBottomRightRadius",
+                "border-bottom-right-radius"
+            },
+                        {
+                "borderBottomWidth",
+                "border-bottom-width"
+            },
+                        {
+                "borderColor",
+                "border-color"
+            },
+                        {
+                "borderLeftColor",
+                "border-left-color"
+            },
+                        {
+                "borderLeftWidth",
+                "border-left-width"
+            },
+                        {
+                "borderRadius",
+                "border-radius"
+            },
+                        {
+                "borderRightColor",
+                "border-right-color"
+            },
+                        {
+                "borderRightWidth",
+                "border-right-width"
+            },
+                        {
+                "borderTopColor",
+                "border-top-color"
+            },
+                        {
+                "borderTopLeftRadius",
+                "border-top-left-radius"
+            },
+                        {
+                "borderTopRightRadius",
+                "border-top-right-radius"
+            },
+                        {
+                "borderTopWidth",
+                "border-top-width"
+            },
+                        {
+                "borderWidth",
+                "border-width"
+            },
+                        {
+                "bottom",
+                "bottom"
+            },
+                        {
+                "color",
+                "color"
+            },
+                        {
+                "cursor",
+                "cursor"
+            },
+                        {
+                "display",
+                "display"
+            },
+                        {
+                "filter",
+                "filter"
+            },
+                        {
+                "flex",
+                "flex"
+            },
+                        {
+                "flexBasis",
+                "flex-basis"
+            },
+                        {
+                "flexDirection",
+                "flex-direction"
+            },
+                        {
+                "flexGrow",
+                "flex-grow"
+            },
+                        {
+                "flexShrink",
+                "flex-shrink"
+            },
+                        {
+                "flexWrap",
+                "flex-wrap"
+            },
+                        {
+                "fontSize",
+                "font-size"
+            },
+                        {
+                "height",
+                "height"
+            },
+                        {
+                "justifyContent",
+                "justify-content"
+            },
+                        {
+                "left",
+                "left"
+            },
+                        {
+                "letterSpacing",
+                "letter-spacing"
+            },
+                        {
+                "margin",
+                "margin"
+            },
+                        {
+                "marginBottom",
+                "margin-bottom"
+            },
+                        {
+                "marginLeft",
+                "margin-left"
+            },
+                        {
+                "marginRight",
+                "margin-right"
+            },
+                        {
+                "marginTop",
+                "margin-top"
+            },
+                        {
+                "maxHeight",
+                "max-height"
+            },
+                        {
+                "maxWidth",
+                "max-width"
+            },
+                        {
+                "minHeight",
+                "min-height"
+            },
+                        {
+                "minWidth",
+                "min-width"
+            },
+                        {
+                "opacity",
+                "opacity"
+            },
+                        {
+                "overflow",
+                "overflow"
+            },
+                        {
+                "padding",
+                "padding"
+            },
+                        {
+                "paddingBottom",
+                "padding-bottom"
+            },
+                        {
+                "paddingLeft",
+                "padding-left"
+            },
+                        {
+                "paddingRight",
+                "padding-right"
+            },
+                        {
+                "paddingTop",
+                "padding-top"
+            },
+                        {
+                "position",
+                "position"
+            },
+                        {
+                "right",
+                "right"
+            },
+                        {
+                "rotate",
+                "rotate"
+            },
+                        {
+                "scale",
+                "scale"
+            },
+                        {
+                "textOverflow",
+                "text-overflow"
+            },
+                        {
+                "textShadow",
+                "text-shadow"
+            },
+                        {
+                "top",
+                "top"
+            },
+                        {
+                "transformOrigin",
+                "transform-origin"
+            },
+                        {
+                "transition",
+                "transition"
+            },
+                        {
+                "transitionDelay",
+                "transition-delay"
+            },
+                        {
+                "transitionDuration",
+                "transition-duration"
+            },
+                        {
+                "transitionProperty",
+                "transition-property"
+            },
+                        {
+                "transitionTimingFunction",
+                "transition-timing-function"
+            },
+                        {
+                "translate",
+                "translate"
+            },
+                        {
+                "unityBackgroundImageTintColor",
+                "-unity-background-image-tint-color"
+            },
+                        {
+                "unityBackgroundScaleMode",
+                "-unity-background-scale-mode"
+            },
+                        {
+                "unityEditorTextRenderingMode",
+                "-unity-editor-text-rendering-mode"
+            },
+                        {
+                "unityFont",
+                "-unity-font"
+            },
+                        {
+                "unityFontDefinition",
+                "-unity-font-definition"
+            },
+                        {
+                "unityFontStyleAndWeight",
+                "-unity-font-style"
+            },
+                        {
+                "unityMaterial",
+                "-unity-material"
+            },
+                        {
+                "unityOverflowClipBox",
+                "-unity-overflow-clip-box"
+            },
+                        {
+                "unityParagraphSpacing",
+                "-unity-paragraph-spacing"
+            },
+                        {
+                "unitySliceBottom",
+                "-unity-slice-bottom"
+            },
+                        {
+                "unitySliceLeft",
+                "-unity-slice-left"
+            },
+                        {
+                "unitySliceRight",
+                "-unity-slice-right"
+            },
+                        {
+                "unitySliceScale",
+                "-unity-slice-scale"
+            },
+                        {
+                "unitySliceTop",
+                "-unity-slice-top"
+            },
+                        {
+                "unitySliceType",
+                "-unity-slice-type"
+            },
+                        {
+                "unityTextAlign",
+                "-unity-text-align"
+            },
+                        {
+                "unityTextAutoSize",
+                "-unity-text-auto-size"
+            },
+                        {
+                "unityTextGenerator",
+                "-unity-text-generator"
+            },
+                        {
+                "unityTextOutline",
+                "-unity-text-outline"
+            },
+                        {
+                "unityTextOutlineColor",
+                "-unity-text-outline-color"
+            },
+                        {
+                "unityTextOutlineWidth",
+                "-unity-text-outline-width"
+            },
+                        {
+                "unityTextOverflowPosition",
+                "-unity-text-overflow-position"
+            },
+                        {
+                "visibility",
+                "visibility"
+            },
+                        {
+                "whiteSpace",
+                "white-space"
+            },
+                        {
+                "width",
+                "width"
+            },
+                        {
+                "wordSpacing",
+                "word-spacing"
+            }
+                };
 
         internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>()
-        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.AspectRatio, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+        {
+            StylePropertyId.AlignContent,
+            StylePropertyId.AlignItems,
+            StylePropertyId.AlignSelf,
+            StylePropertyId.All,
+            StylePropertyId.AspectRatio,
+            StylePropertyId.BackgroundColor,
+            StylePropertyId.BackgroundImage,
+            StylePropertyId.BackgroundPosition,
+            StylePropertyId.BackgroundPositionX,
+            StylePropertyId.BackgroundPositionY,
+            StylePropertyId.BackgroundRepeat,
+            StylePropertyId.BackgroundSize,
+            StylePropertyId.BorderBottomColor,
+            StylePropertyId.BorderBottomLeftRadius,
+            StylePropertyId.BorderBottomRightRadius,
+            StylePropertyId.BorderBottomWidth,
+            StylePropertyId.BorderColor,
+            StylePropertyId.BorderLeftColor,
+            StylePropertyId.BorderLeftWidth,
+            StylePropertyId.BorderRadius,
+            StylePropertyId.BorderRightColor,
+            StylePropertyId.BorderRightWidth,
+            StylePropertyId.BorderTopColor,
+            StylePropertyId.BorderTopLeftRadius,
+            StylePropertyId.BorderTopRightRadius,
+            StylePropertyId.BorderTopWidth,
+            StylePropertyId.BorderWidth,
+            StylePropertyId.Bottom,
+            StylePropertyId.Color,
+            StylePropertyId.Filter,
+            StylePropertyId.Flex,
+            StylePropertyId.FlexBasis,
+            StylePropertyId.FlexDirection,
+            StylePropertyId.FlexGrow,
+            StylePropertyId.FlexShrink,
+            StylePropertyId.FlexWrap,
+            StylePropertyId.FontSize,
+            StylePropertyId.Height,
+            StylePropertyId.JustifyContent,
+            StylePropertyId.Left,
+            StylePropertyId.LetterSpacing,
+            StylePropertyId.Margin,
+            StylePropertyId.MarginBottom,
+            StylePropertyId.MarginLeft,
+            StylePropertyId.MarginRight,
+            StylePropertyId.MarginTop,
+            StylePropertyId.MaxHeight,
+            StylePropertyId.MaxWidth,
+            StylePropertyId.MinHeight,
+            StylePropertyId.MinWidth,
+            StylePropertyId.Opacity,
+            StylePropertyId.Overflow,
+            StylePropertyId.Padding,
+            StylePropertyId.PaddingBottom,
+            StylePropertyId.PaddingLeft,
+            StylePropertyId.PaddingRight,
+            StylePropertyId.PaddingTop,
+            StylePropertyId.Position,
+            StylePropertyId.Right,
+            StylePropertyId.Rotate,
+            StylePropertyId.Scale,
+            StylePropertyId.TextOverflow,
+            StylePropertyId.TextShadow,
+            StylePropertyId.Top,
+            StylePropertyId.TransformOrigin,
+            StylePropertyId.Translate,
+            StylePropertyId.UnityBackgroundImageTintColor,
+            StylePropertyId.UnityBackgroundScaleMode,
+            StylePropertyId.UnityFont,
+            StylePropertyId.UnityFontDefinition,
+            StylePropertyId.UnityFontStyleAndWeight,
+            StylePropertyId.UnityMaterial,
+            StylePropertyId.UnityOverflowClipBox,
+            StylePropertyId.UnityParagraphSpacing,
+            StylePropertyId.UnitySliceBottom,
+            StylePropertyId.UnitySliceLeft,
+            StylePropertyId.UnitySliceRight,
+            StylePropertyId.UnitySliceScale,
+            StylePropertyId.UnitySliceTop,
+            StylePropertyId.UnitySliceType,
+            StylePropertyId.UnityTextAlign,
+            StylePropertyId.UnityTextOutline,
+            StylePropertyId.UnityTextOutlineColor,
+            StylePropertyId.UnityTextOutlineWidth,
+            StylePropertyId.UnityTextOverflowPosition,
+            StylePropertyId.Visibility,
+            StylePropertyId.WhiteSpace,
+            StylePropertyId.Width,
+            StylePropertyId.WordSpacing
+        };
 
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
         {
-            {StylePropertyId.BackgroundColor, UsageHints.DynamicColor},
-            {StylePropertyId.BorderBottomColor, UsageHints.DynamicColor},
-            {StylePropertyId.BorderColor, UsageHints.DynamicColor},
-            {StylePropertyId.BorderLeftColor, UsageHints.DynamicColor},
-            {StylePropertyId.BorderRightColor, UsageHints.DynamicColor},
-            {StylePropertyId.BorderTopColor, UsageHints.DynamicColor},
-            {StylePropertyId.Color, UsageHints.DynamicColor},
-            {StylePropertyId.Rotate, UsageHints.DynamicTransform},
-            {StylePropertyId.Scale, UsageHints.DynamicTransform},
-            {StylePropertyId.TransformOrigin, UsageHints.DynamicTransform},
-            {StylePropertyId.Translate, UsageHints.DynamicTransform},
-            {StylePropertyId.UnityBackgroundImageTintColor, UsageHints.DynamicColor}
-        };
+
+                        {
+                StylePropertyId.BackgroundColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.BorderBottomColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.BorderColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.BorderLeftColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.BorderRightColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.BorderTopColor,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.Color,
+                UsageHints.DynamicColor
+            },
+                        {
+                StylePropertyId.Rotate,
+                UsageHints.DynamicTransform
+            },
+                        {
+                StylePropertyId.Scale,
+                UsageHints.DynamicTransform
+            },
+                        {
+                StylePropertyId.TransformOrigin,
+                UsageHints.DynamicTransform
+            },
+                        {
+                StylePropertyId.Translate,
+                UsageHints.DynamicTransform
+            },
+                        {
+                StylePropertyId.UnityBackgroundImageTintColor,
+                UsageHints.DynamicColor
+            }
+                };
 
         public static bool TryGetEnumIntValue(StyleEnumType enumType, string value, out int intValue)
         {
@@ -1199,13 +2518,19 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyId.Cursor:
                     return Cursor.allowedAssetTypes;
                 case StylePropertyId.UnityFont:
-                    return new[]{typeof(Font)};
+                    return new[]
+                    {
+                        typeof(Font)
+                    };
                 case StylePropertyId.UnityFontDefinition:
                     return FontDefinition.allowedAssetTypes;
                 case StylePropertyId.UnityMaterial:
                     return MaterialDefinition.allowedAssetTypes;
                 case StylePropertyId.Custom:
-                    return new[]{typeof(UnityEngine.Object)};
+                    return new[]
+                    {
+                        typeof(UnityEngine.Object)
+                    };
                 default:
                     return System.Linq.Enumerable.Empty<Type>();
             }

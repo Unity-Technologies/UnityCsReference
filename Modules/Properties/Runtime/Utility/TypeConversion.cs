@@ -11,45 +11,56 @@ using UnityEngine.Bindings;
 namespace Unity.Properties
 {
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    readonly record struct ConverterKey
+    {
+        public readonly Type SourceType;
+        public readonly Type DestinationType;
+
+        public ConverterKey(Type source, Type destination)
+        {
+            SourceType = source;
+            DestinationType = destination;
+        }
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    sealed class ConverterKeyComparer : IEqualityComparer<ConverterKey>
+    {
+        public static readonly ConverterKeyComparer Instance = new ();
+
+        public bool Equals(ConverterKey x, ConverterKey y)
+        {
+            return x.SourceType == y.SourceType && x.DestinationType == y.DestinationType;
+        }
+
+        public int GetHashCode(ConverterKey obj)
+        {
+            unchecked
+            {
+                var hash = obj.SourceType?.TypeHandle.Value.GetHashCode() ?? 0;
+                hash = hash * -1521134295 + obj.DestinationType?.TypeHandle.Value.GetHashCode() ?? 0;
+                return hash;
+            }
+        }
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     readonly struct ConversionRegistry : IEqualityComparer<ConversionRegistry>
     {
-        class ConverterKeyComparer : IEqualityComparer<ConverterKey>
-        {
-            public bool Equals(ConverterKey x, ConverterKey y)
-            {
-                return x.SourceType == y.SourceType && x.DestinationType == y.DestinationType;
-            }
-
-            public int GetHashCode(ConverterKey obj)
-            {
-                return ((obj.SourceType != null ? obj.SourceType.GetHashCode() : 0) * 397) ^ (obj.DestinationType != null ? obj.DestinationType.GetHashCode() : 0);
-            }
-        }
-
-        static readonly ConverterKeyComparer Comparer = new ConverterKeyComparer();
-
-        readonly struct ConverterKey
-        {
-            public readonly Type SourceType;
-            public readonly Type DestinationType;
-
-            public ConverterKey(Type source, Type destination)
-            {
-                SourceType = source;
-                DestinationType = destination;
-            }
-        }
-
         readonly Dictionary<ConverterKey, Delegate> m_Converters;
+        readonly Dictionary<ConverterKey, Func<Delegate>> m_LazyConverters;
 
         ConversionRegistry(Dictionary<ConverterKey, Delegate> storage)
         {
             m_Converters = storage;
+            m_LazyConverters = new Dictionary<ConverterKey, Func<Delegate>>(256, ConverterKeyComparer.Instance);
         }
+
+        public int ConverterCount => m_Converters?.Count ?? 0;
 
         public static ConversionRegistry Create()
         {
-            return new ConversionRegistry(new Dictionary<ConverterKey, Delegate>(Comparer));
+            return new ConversionRegistry(new Dictionary<ConverterKey, Delegate>(256, ConverterKeyComparer.Instance));
         }
 
         public void Register(Type source, Type destination, Delegate converter)
@@ -57,18 +68,79 @@ namespace Unity.Properties
             m_Converters[new ConverterKey(source, destination)] = converter ?? throw new ArgumentException(nameof(converter));
         }
 
+        public void LazyRegister(Type source, Type destination, Func<Delegate> converter)
+        {
+            m_LazyConverters[new ConverterKey(source, destination)] = converter ?? throw new ArgumentException(nameof(converter));
+        }
+
+        public void Unregister(Type source, Type destination)
+        {
+            m_Converters.Remove(new ConverterKey(source, destination));
+        }
+
+        public void Apply(ConversionRegistry registry)
+        {
+            foreach (var c in registry.m_Converters)
+            {
+                Register(c.Key.SourceType, c.Key.DestinationType, c.Value);
+            }
+        }
+
         public Delegate GetConverter(Type source, Type destination)
         {
             var key = new ConverterKey(source, destination);
-            return m_Converters.TryGetValue(key, out var converter)
-                ? converter
-                : null;
+            if (!m_Converters.TryGetValue(key, out var converter) && m_LazyConverters.TryGetValue(key, out var func))
+            {
+                converter = func();
+                if (converter != null)
+                {
+                    Register(source, destination, converter);
+                    m_LazyConverters.Remove(key);
+                }
+            }
+
+            return converter;
         }
 
         public bool TryGetConverter(Type source, Type destination, out Delegate converter)
         {
             converter = GetConverter(source, destination);
             return null != converter;
+        }
+
+        public void GetAllTypesConvertingToType(Type type, List<Type> result)
+        {
+            if (m_Converters == null)
+                return;
+
+            foreach (var key in m_Converters.Keys)
+            {
+                if (key.DestinationType == type)
+                    result.Add(key.SourceType);
+            }
+        }
+
+        public void GetAllTypesConvertingFromType(Type type, List<Type> result)
+        {
+            if (m_Converters == null)
+                return;
+
+            foreach (var key in m_Converters.Keys)
+            {
+                if (key.SourceType == type)
+                    result.Add(key.DestinationType);
+            }
+        }
+
+        public void GetAllConversions(List<(Type, Type)> result)
+        {
+            if (m_Converters == null)
+                return;
+
+            foreach (var key in m_Converters.Keys)
+            {
+                result.Add((key.SourceType, key.DestinationType));
+            }
         }
 
         public bool Equals(ConversionRegistry x, ConversionRegistry y)
@@ -95,6 +167,20 @@ namespace Unity.Properties
     /// </summary>
     public static class TypeConversion
     {
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal struct Unsafe
+        {
+            public static void Register(Type source, Type destination, Delegate converter)
+            {
+                s_GlobalConverters.Register(source, destination, converter);
+            }
+
+            public static void LazyRegister(Type source, Type destination, Func<Delegate> getConverterDelegate)
+            {
+                s_GlobalConverters.LazyRegister(source, destination, getConverterDelegate);
+            }
+        }
+
         static readonly ConversionRegistry s_GlobalConverters = ConversionRegistry.Create();
 
         static TypeConversion()
@@ -143,21 +229,25 @@ namespace Unity.Properties
         {
             if (s_GlobalConverters.TryGetConverter(typeof(TSource), typeof(TDestination), out var converter))
             {
-                destination = ((TypeConverter<TSource, TDestination>) converter)(ref source);
+                var typedConverter = (TypeConverter<TSource, TDestination>)converter;
+                destination = typedConverter(ref source);
                 return true;
             }
 
-            if (typeof(TSource).IsValueType && typeof(TSource) == typeof(TDestination))
+            if (typeof(TSource) == typeof(TDestination))
             {
                 destination = UnsafeUtility.As<TSource, TDestination>(ref source);
                 return true;
             }
 
-            if (TypeTraits<TDestination>.IsNullable)
+            if (PrimitivesConverters.TryConvertPrimitiveOrString(ref source, out destination))
+                return true;
+
+            if (TypeTraits.IsNullable(typeof(TDestination)))
             {
                 // Both types are nullable types, but the underlying types don't match. In some cases, this is supported in C# (int? => float?),
                 // but we don't support this case.
-                if (TypeTraits<TSource>.IsNullable && Nullable.GetUnderlyingType(typeof(TDestination)) != Nullable.GetUnderlyingType(typeof(TSource)))
+                if (TypeTraits.IsNullable(typeof(TSource)) && Nullable.GetUnderlyingType(typeof(TDestination)) != Nullable.GetUnderlyingType(typeof(TSource)))
                 {
                     destination = default;
                     return false;
@@ -168,7 +258,7 @@ namespace Unity.Properties
                 {
                     var enumUnderlyingType = Enum.GetUnderlyingType(underlyingType);
                     var value = System.Convert.ChangeType(source, enumUnderlyingType);
-                    destination = (TDestination) Enum.ToObject(underlyingType, value);
+                    destination = (TDestination)Enum.ToObject(underlyingType, value);
                     return true;
                 }
 
@@ -178,12 +268,12 @@ namespace Unity.Properties
                     return true;
                 }
 
-                destination = (TDestination) System.Convert.ChangeType(source, underlyingType);
+                destination = (TDestination)System.Convert.ChangeType(source, underlyingType);
                 return true;
             }
 
             // Conversion from T? => T.
-            if (TypeTraits<TSource>.IsNullable && typeof(TDestination) == Nullable.GetUnderlyingType(typeof(TSource)))
+            if (TypeTraits.IsNullable(typeof(TSource)) && typeof(TDestination) == Nullable.GetUnderlyingType(typeof(TSource)))
             {
                 // This conversion would result in an InvalidOperationException.
                 // i.e. int v = (int)(default(int?));
@@ -192,11 +282,11 @@ namespace Unity.Properties
                     destination = default;
                     return false;
                 }
-                destination = (TDestination) (object) source;
+                destination = (TDestination)(object)source;
                 return true;
             }
 
-            if (TypeTraits<TDestination>.IsUnityObject)
+            if (TypeTraits.IsUnityObject(typeof(TDestination)))
             {
                 if (TryConvertToUnityEngineObject(source, out destination))
                 {
@@ -204,13 +294,13 @@ namespace Unity.Properties
                 }
             }
 
-            if (TypeTraits<TDestination>.IsEnum)
+            if (typeof(TDestination).IsEnum)
             {
                 if (typeof(TSource) == typeof(string))
                 {
                     try
                     {
-                        destination = (TDestination) Enum.Parse(typeof(TDestination), (string) (object) source);
+                        destination = (TDestination)Enum.Parse(typeof(TDestination), (string)(object)source);
                     }
                     catch (ArgumentException)
                     {
@@ -237,7 +327,7 @@ namespace Unity.Properties
 
             if (typeof(TDestination).IsAssignableFrom(typeof(TSource)))
             {
-                destination = (TDestination) (object) source;
+                destination = (TDestination)(object)source;
                 return true;
             }
 
@@ -271,7 +361,7 @@ namespace Unity.Properties
 
             if (s_GlobalConverters.TryGetConverter(typeof(TSource), typeof(UnityEngine.Object), out var converter))
             {
-                var unityObject = ((TypeConverter<TSource, UnityEngine.Object>) converter)(ref source);
+                var unityObject = ((TypeConverter<TSource, UnityEngine.Object>)converter)(ref source);
                 destination = (TDestination)(object)unityObject;
                 return unityObject;
             }
@@ -305,362 +395,1216 @@ namespace Unity.Properties
         {
             public static void Register()
             {
-                // signed integral types
-                RegisterInt8Converters();
-                RegisterInt16Converters();
-                RegisterInt32Converters();
-                RegisterInt64Converters();
-
-                // unsigned integral types
-                RegisterUInt8Converters();
-                RegisterUInt16Converters();
-                RegisterUInt32Converters();
-                RegisterUInt64Converters();
-
-                // floating point types
-                RegisterFloat32Converters();
-                RegisterFloat64Converters();
-
-                // .net types
-                RegisterBooleanConverters();
-                RegisterCharConverters();
-                RegisterStringConverters();
-                RegisterObjectConverters();
-
                 // support System.Guid by default
                 s_GlobalConverters.Register(typeof(string), typeof(Guid), (TypeConverter<string, Guid>)((ref string g) => new Guid(g)));
             }
+        }
 
-            static void RegisterInt8Converters()
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static class PrimitivesConverters
+        {
+            public static bool TryConvertPrimitiveOrString<TSource, TDestination>(ref TSource source, out TDestination destination)
             {
-                s_GlobalConverters.Register(typeof(sbyte), typeof(char), (TypeConverter<sbyte, char>)((ref sbyte v) => (char) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(bool), (TypeConverter<sbyte, bool>)((ref sbyte v) => v != 0));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(short), (TypeConverter<sbyte, short>)((ref sbyte v) => (short) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(int), (TypeConverter<sbyte, int>)((ref sbyte v) => (int) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(long), (TypeConverter<sbyte, long>)((ref sbyte v) => (long) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(byte), (TypeConverter<sbyte, byte>)((ref sbyte v) => (byte) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(ushort), (TypeConverter<sbyte, ushort>)((ref sbyte v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(uint), (TypeConverter<sbyte, uint>)((ref sbyte v) => (uint) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(ulong), (TypeConverter<sbyte, ulong>)((ref sbyte v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(float), (TypeConverter<sbyte, float>)((ref sbyte v) => (float) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(double), (TypeConverter<sbyte, double>)((ref sbyte v) => (double) v));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(object), (TypeConverter<sbyte, object>)((ref sbyte v) => (object) v));
-            }
+                var stringType = typeof(string);
+                var tSource = typeof(TSource);
 
-            static void RegisterInt16Converters()
-            {
-                s_GlobalConverters.Register(typeof(short), typeof(sbyte), (TypeConverter<short, sbyte>)((ref short v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(short), typeof(char), (TypeConverter<short, char>)((ref short v) => (char) v));
-                s_GlobalConverters.Register(typeof(short), typeof(bool), (TypeConverter<short, bool>)((ref short v) => v != 0));
-                s_GlobalConverters.Register(typeof(short), typeof(int), (TypeConverter<short, int>)((ref short v) => (int) v));
-                s_GlobalConverters.Register(typeof(short), typeof(long), (TypeConverter<short, long>)((ref short v) => (long) v));
-                s_GlobalConverters.Register(typeof(short), typeof(byte), (TypeConverter<short, byte>)((ref short v) => (byte) v));
-                s_GlobalConverters.Register(typeof(short), typeof(ushort), (TypeConverter<short, ushort>)((ref short v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(short), typeof(uint), (TypeConverter<short, uint>)((ref short v) => (uint) v));
-                s_GlobalConverters.Register(typeof(short), typeof(ulong), (TypeConverter<short, ulong>)((ref short v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(short), typeof(float), (TypeConverter<short, float>)((ref short v) => (float) v));
-                s_GlobalConverters.Register(typeof(short), typeof(double), (TypeConverter<short, double>)((ref short v) => (double) v));
-                s_GlobalConverters.Register(typeof(short), typeof(object), (TypeConverter<short, object>)((ref short v) => (object) v));
-            }
-
-            static void RegisterInt32Converters()
-            {
-                s_GlobalConverters.Register(typeof(int), typeof(sbyte), (TypeConverter<int, sbyte>)((ref int v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(int), typeof(char), (TypeConverter<int, char>)((ref int v) => (char) v));
-                s_GlobalConverters.Register(typeof(int), typeof(bool), (TypeConverter<int, bool>)((ref int v) => v != 0));
-                s_GlobalConverters.Register(typeof(int), typeof(short), (TypeConverter<int, short>)((ref int v) => (short) v));
-                s_GlobalConverters.Register(typeof(int), typeof(long), (TypeConverter<int, long>)((ref int v) => (long) v));
-                s_GlobalConverters.Register(typeof(int), typeof(byte), (TypeConverter<int, byte>)((ref int v) => (byte) v));
-                s_GlobalConverters.Register(typeof(int), typeof(ushort), (TypeConverter<int, ushort>)((ref int v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(int), typeof(uint), (TypeConverter<int, uint>)((ref int v) => (uint) v));
-                s_GlobalConverters.Register(typeof(int), typeof(ulong), (TypeConverter<int, ulong>)((ref int v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(int), typeof(float), (TypeConverter<int, float>)((ref int v) => (float) v));
-                s_GlobalConverters.Register(typeof(int), typeof(double), (TypeConverter<int, double>)((ref int v) => (double) v));
-                s_GlobalConverters.Register(typeof(int), typeof(object), (TypeConverter<int, object>)((ref int v) => (object) v));
-            }
-
-            static void RegisterInt64Converters()
-            {
-                s_GlobalConverters.Register(typeof(long), typeof(sbyte), (TypeConverter<long, sbyte>)((ref long v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(long), typeof(char), (TypeConverter<long, char>)((ref long v) => (char) v));
-                s_GlobalConverters.Register(typeof(long), typeof(bool), (TypeConverter<long, bool>)((ref long v) => v != 0));
-                s_GlobalConverters.Register(typeof(long), typeof(short), (TypeConverter<long, short>)((ref long v) => (short) v));
-                s_GlobalConverters.Register(typeof(long), typeof(int), (TypeConverter<long, int>)((ref long v) => (int) v));
-                s_GlobalConverters.Register(typeof(long), typeof(byte), (TypeConverter<long, byte>)((ref long v) => (byte) v));
-                s_GlobalConverters.Register(typeof(long), typeof(ushort), (TypeConverter<long, ushort>)((ref long v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(long), typeof(uint), (TypeConverter<long, uint>)((ref long v) => (uint) v));
-                s_GlobalConverters.Register(typeof(long), typeof(ulong), (TypeConverter<long, ulong>)((ref long v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(long), typeof(float), (TypeConverter<long, float>)((ref long v) => (float) v));
-                s_GlobalConverters.Register(typeof(long), typeof(double), (TypeConverter<long, double>)((ref long v) => (double) v));
-                s_GlobalConverters.Register(typeof(long), typeof(object), (TypeConverter<long, object>)((ref long v) => (object) v));
-            }
-
-            static void RegisterUInt8Converters()
-            {
-                s_GlobalConverters.Register(typeof(byte), typeof(sbyte), (TypeConverter<byte, sbyte>)((ref byte v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(char), (TypeConverter<byte, char>)((ref byte v) => (char) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(bool), (TypeConverter<byte, bool>)((ref byte v) => v != 0));
-                s_GlobalConverters.Register(typeof(byte), typeof(short), (TypeConverter<byte, short>)((ref byte v) => (short) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(int), (TypeConverter<byte, int>)((ref byte v) => (int) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(long), (TypeConverter<byte, long>)((ref byte v) => (long) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(ushort), (TypeConverter<byte, ushort>)((ref byte v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(uint), (TypeConverter<byte, uint>)((ref byte v) => (uint) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(ulong), (TypeConverter<byte, ulong>)((ref byte v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(float), (TypeConverter<byte, float>)((ref byte v) => (float) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(double), (TypeConverter<byte, double>)((ref byte v) => (double) v));
-                s_GlobalConverters.Register(typeof(byte), typeof(object), (TypeConverter<byte, object>)((ref byte v) => (object) v));
-            }
-
-            static void RegisterUInt16Converters()
-            {
-                s_GlobalConverters.Register(typeof(ushort), typeof(sbyte), (TypeConverter<ushort, sbyte>)((ref ushort v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(char), (TypeConverter<ushort, char>)((ref ushort v) => (char) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(bool), (TypeConverter<ushort, bool>)((ref ushort v) => v != 0));
-                s_GlobalConverters.Register(typeof(ushort), typeof(short), (TypeConverter<ushort, short>)((ref ushort v) => (short) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(int), (TypeConverter<ushort, int>)((ref ushort v) => (int) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(long), (TypeConverter<ushort, long>)((ref ushort v) => (long) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(byte), (TypeConverter<ushort, byte>)((ref ushort v) => (byte) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(uint), (TypeConverter<ushort, uint>)((ref ushort v) => (uint) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(ulong), (TypeConverter<ushort, ulong>)((ref ushort v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(float), (TypeConverter<ushort, float>)((ref ushort v) => (float) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(double), (TypeConverter<ushort, double>)((ref ushort v) => (double) v));
-                s_GlobalConverters.Register(typeof(ushort), typeof(object), (TypeConverter<ushort, object>)((ref ushort v) => (object) v));
-            }
-
-            static void RegisterUInt32Converters()
-            {
-                s_GlobalConverters.Register(typeof(uint), typeof(sbyte), (TypeConverter<uint, sbyte>)((ref uint v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(char), (TypeConverter<uint, char>)((ref uint v) => (char) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(bool), (TypeConverter<uint, bool>)((ref uint v) => v != 0));
-                s_GlobalConverters.Register(typeof(uint), typeof(short), (TypeConverter<uint, short>)((ref uint v) => (short) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(int), (TypeConverter<uint, int>)((ref uint v) => (int) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(long), (TypeConverter<uint, long>)((ref uint v) => (long) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(byte), (TypeConverter<uint, byte>)((ref uint v) => (byte) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(ushort), (TypeConverter<uint, ushort>)((ref uint v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(ulong), (TypeConverter<uint, ulong>)((ref uint v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(float), (TypeConverter<uint, float>)((ref uint v) => (float) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(double), (TypeConverter<uint, double>)((ref uint v) => (double) v));
-                s_GlobalConverters.Register(typeof(uint), typeof(object), (TypeConverter<uint, object>)((ref uint v) => (object) v));
-            }
-
-            static void RegisterUInt64Converters()
-            {
-                s_GlobalConverters.Register(typeof(ulong), typeof(sbyte), (TypeConverter<ulong, sbyte>)((ref ulong v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(char), (TypeConverter<ulong, char>)((ref ulong v) => (char) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(bool), (TypeConverter<ulong, bool>)((ref ulong v) => v != 0));
-                s_GlobalConverters.Register(typeof(ulong), typeof(short), (TypeConverter<ulong, short>)((ref ulong v) => (short) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(int), (TypeConverter<ulong, int>)((ref ulong v) => (int) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(long), (TypeConverter<ulong, long>)((ref ulong v) => (long) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(byte), (TypeConverter<ulong, byte>)((ref ulong v) => (byte) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(ushort), (TypeConverter<ulong, ushort>)((ref ulong v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(uint), (TypeConverter<ulong, uint>)((ref ulong v) => (uint) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(float), (TypeConverter<ulong, float>)((ref ulong v) => (float) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(double), (TypeConverter<ulong, double>)((ref ulong v) => (double) v));
-                s_GlobalConverters.Register(typeof(ulong), typeof(object), (TypeConverter<ulong, object>)((ref ulong v) => (object) v));
-            }
-
-            static void RegisterFloat32Converters()
-            {
-                s_GlobalConverters.Register(typeof(float), typeof(sbyte), (TypeConverter<float, sbyte>)((ref float v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(float), typeof(char), (TypeConverter<float, char>)((ref float v) => (char) v));
-                s_GlobalConverters.Register(typeof(float), typeof(bool), (TypeConverter<float, bool>)((ref float v) => Math.Abs(v) > float.Epsilon));
-                s_GlobalConverters.Register(typeof(float), typeof(short), (TypeConverter<float, short>)((ref float v) => (short) v));
-                s_GlobalConverters.Register(typeof(float), typeof(int), (TypeConverter<float, int>)((ref float v) => (int) v));
-                s_GlobalConverters.Register(typeof(float), typeof(long), (TypeConverter<float, long>)((ref float v) => (long) v));
-                s_GlobalConverters.Register(typeof(float), typeof(byte), (TypeConverter<float, byte>)((ref float v) => (byte) v));
-                s_GlobalConverters.Register(typeof(float), typeof(ushort), (TypeConverter<float, ushort>)((ref float v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(float), typeof(uint), (TypeConverter<float, uint>)((ref float v) => (uint) v));
-                s_GlobalConverters.Register(typeof(float), typeof(ulong), (TypeConverter<float, ulong>)((ref float v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(float), typeof(double), (TypeConverter<float, double>)((ref float v) => (double) v));
-                s_GlobalConverters.Register(typeof(float), typeof(object), (TypeConverter<float, object>)((ref float v) => (object) v));
-            }
-
-            static void RegisterFloat64Converters()
-            {
-                s_GlobalConverters.Register(typeof(double), typeof(sbyte), (TypeConverter<double, sbyte>)((ref double v) => (sbyte) v));
-                s_GlobalConverters.Register(typeof(double), typeof(char), (TypeConverter<double, char>)((ref double v) => (char) v));
-                s_GlobalConverters.Register(typeof(double), typeof(bool), (TypeConverter<double, bool>)((ref double v) => Math.Abs(v) > double.Epsilon));
-                s_GlobalConverters.Register(typeof(double), typeof(short), (TypeConverter<double, short>)((ref double v) => (short) v));
-                s_GlobalConverters.Register(typeof(double), typeof(int), (TypeConverter<double, int>)((ref double v) => (int) v));
-                s_GlobalConverters.Register(typeof(double), typeof(long), (TypeConverter<double, long>)((ref double v) => (long) v));
-                s_GlobalConverters.Register(typeof(double), typeof(byte), (TypeConverter<double, byte>)((ref double v) => (byte) v));
-                s_GlobalConverters.Register(typeof(double), typeof(ushort), (TypeConverter<double, ushort>)((ref double v) => (ushort) v));
-                s_GlobalConverters.Register(typeof(double), typeof(uint), (TypeConverter<double, uint>)((ref double v) => (uint) v));
-                s_GlobalConverters.Register(typeof(double), typeof(ulong), (TypeConverter<double, ulong>)((ref double v) => (ulong) v));
-                s_GlobalConverters.Register(typeof(double), typeof(float), (TypeConverter<double, float>)((ref double v) => (float) v));
-                s_GlobalConverters.Register(typeof(double), typeof(object), (TypeConverter<double, object>)((ref double v) => (object) v));
-            }
-
-            static void RegisterBooleanConverters()
-            {
-                s_GlobalConverters.Register(typeof(bool), typeof(char), (TypeConverter<bool, char>)((ref bool v) => v ? (char) 1 : (char) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(sbyte), (TypeConverter<bool, sbyte>)((ref bool v) => v ? (sbyte) 1 : (sbyte) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(short), (TypeConverter<bool, short>)((ref bool v) => v ? (short) 1 : (short) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(int), (TypeConverter<bool, int>)((ref bool v) => v ? 1 : 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(long), (TypeConverter<bool, long>)((ref bool v) => v ? (long) 1 : (long) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(byte), (TypeConverter<bool, byte>)((ref bool v) => v ? (byte) 1 : (byte) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(ushort), (TypeConverter<bool, ushort>)((ref bool v) => v ? (ushort) 1 : (ushort) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(uint), (TypeConverter<bool, uint>)((ref bool v) => v ? (uint) 1 : (uint) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(ulong), (TypeConverter<bool, ulong>)((ref bool v) => v ? (ulong) 1 : (ulong) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(float), (TypeConverter<bool, float>)((ref bool v) => v ? (float) 1 : (float) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(double), (TypeConverter<bool, double>)((ref bool v) => v ? (double) 1 : (double) 0));
-                s_GlobalConverters.Register(typeof(bool), typeof(object), (TypeConverter<bool, object>)((ref bool v) => (object)v));
-            }
-
-            static void RegisterCharConverters()
-            {
-                s_GlobalConverters.Register(typeof(string), typeof(char), (TypeConverter<string, char>) ((ref string v) =>
+                if (!tSource.IsPrimitive && tSource != stringType)
                 {
-                    if (v.Length != 1)
-                    {
-                        throw new Exception("Not a valid char");
-                    }
+                    destination = default;
+                    return false;
+                }
 
-                    return v[0];
-                }));
-                s_GlobalConverters.Register(typeof(char), typeof(bool), (TypeConverter<char, bool>)((ref char v) => v != (char) 0));
-                s_GlobalConverters.Register(typeof(char), typeof(sbyte), (TypeConverter<char, sbyte>)((ref char v) => (sbyte)v));
-                s_GlobalConverters.Register(typeof(char), typeof(short), (TypeConverter<char, short>)((ref char v) => (short)v));
-                s_GlobalConverters.Register(typeof(char), typeof(int), (TypeConverter<char, int>)((ref char v) => (int)v));
-                s_GlobalConverters.Register(typeof(char), typeof(long), (TypeConverter<char, long>)((ref char v) => (long)v));
-                s_GlobalConverters.Register(typeof(char), typeof(byte), (TypeConverter<char, byte>)((ref char v) => (byte)v));
-                s_GlobalConverters.Register(typeof(char), typeof(ushort), (TypeConverter<char, ushort>)((ref char v) => (ushort)v));
-                s_GlobalConverters.Register(typeof(char), typeof(uint), (TypeConverter<char, uint>)((ref char v) => (uint)v));
-                s_GlobalConverters.Register(typeof(char), typeof(ulong), (TypeConverter<char, ulong>)((ref char v) => (ulong)v));
-                s_GlobalConverters.Register(typeof(char), typeof(float), (TypeConverter<char, float>)((ref char v) => (float)v));
-                s_GlobalConverters.Register(typeof(char), typeof(double), (TypeConverter<char, double>)((ref char v) => (double)v));
-                s_GlobalConverters.Register(typeof(char), typeof(object), (TypeConverter<char, object>)((ref char v) => (object)v));
-                s_GlobalConverters.Register(typeof(char), typeof(string), (TypeConverter<char, string>)((ref char v) => v.ToString()));
+                var tDestination = typeof(TDestination);
+                if (!tDestination.IsPrimitive && tDestination != stringType)
+                {
+                    destination = default;
+                    return false;
+                }
+
+                var tSourceTypeCode = Type.GetTypeCode(tSource);
+
+                switch (tSourceTypeCode)
+                {
+                    case TypeCode.Boolean:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, bool>(ref source));
+                        return true;
+                    case TypeCode.Byte:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, byte>(ref source));
+                        return true;
+                    case TypeCode.Char:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, char>(ref source));
+                        return true;
+                    case TypeCode.Double:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, double>(ref source));
+                        return true;
+                    case TypeCode.Int16:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, short>(ref source));
+                        return true;
+                    case TypeCode.Int32:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, int>(ref source));
+                    return true;
+                    case TypeCode.Int64:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, long>(ref source));
+                        return true;
+                    case TypeCode.SByte:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, sbyte>(ref source));
+                        return true;
+                    case TypeCode.Single:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, float>(ref source));
+                        return true;
+                    case TypeCode.String:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, string>(ref source));
+                        return true;
+                    case TypeCode.UInt16:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, ushort>(ref source));
+                        return true;
+                    case TypeCode.UInt32:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, uint>(ref source));
+                        return true;
+                    case TypeCode.UInt64:
+                        destination = DoConvert<TDestination>(ref UnsafeUtility.As<TSource, ulong>(ref source));
+                        return true;
+                    default:
+                        destination = default;
+                        return false;
+                }
             }
 
-            static void RegisterStringConverters()
+            private static TDestination DoConvert<TDestination>(ref bool source)
             {
-                s_GlobalConverters.Register(typeof(string), typeof(char), (TypeConverter<string, char>) ((ref string v) => !string.IsNullOrEmpty(v) ? v[0] : '\0'));
-                s_GlobalConverters.Register(typeof(char), typeof(string), (TypeConverter<char, string>)((ref char v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(bool), (TypeConverter<string, bool>)((ref string v) =>
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
                 {
-                    if (bool.TryParse(v, out var r))
-                        return r;
+                    return UnsafeUtility.As<bool, TDestination>(ref source);
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, bool>(ref fromDouble)
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = source ? (byte)1 : (byte)0;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = source ? (char)1 : (char)0;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = source ? 1.0 : 0.0;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = source ? (short)1 : (short)0;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = source ? 1 : 0;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = source ? 1L : 0L;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = source ? (sbyte)1 : (sbyte)0;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = source ? (float)1 : (float)0;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source ? "true" : "false";
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = source ? (ushort)1 : (ushort)0;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = source ? 1U : 0U;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = source ? 1UL : 0UL;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref byte source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    return UnsafeUtility.As<byte, TDestination>(ref source);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref char source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    return UnsafeUtility.As<char, TDestination>(ref source);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref double source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0.0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    return UnsafeUtility.As<double, TDestination>(ref source);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref short source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    return UnsafeUtility.As<short, TDestination>(ref source);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref int source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref long source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref sbyte source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref float source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref string source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    if (bool.TryParse(source, out var v))
+                        return UnsafeUtility.As<bool, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out bool result)
+                        ? UnsafeUtility.As<bool, TDestination>(ref result)
                         : default;
-                }));
-                s_GlobalConverters.Register(typeof(bool), typeof(string), (TypeConverter<bool, string>)((ref bool v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(sbyte), (TypeConverter<string, sbyte>) ((ref string v) =>
-                {
-                    if (sbyte.TryParse(v, out var r))
-                        return r;
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, sbyte>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(sbyte), typeof(string), (TypeConverter<sbyte, string>)((ref sbyte v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(short), (TypeConverter<string, short>) ((ref string v) =>
+                if (typeof(TDestination) == typeof(byte))
                 {
-                    if (short.TryParse(v, out var r))
-                        return r;
+                    if (byte.TryParse(source, out var v))
+                        return UnsafeUtility.As<byte, TDestination>(ref v);
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, short>(ref fromDouble)
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out byte result)
+                        ? UnsafeUtility.As<byte, TDestination>(ref result)
                         : default;
-                }));
-                s_GlobalConverters.Register(typeof(short), typeof(string), (TypeConverter<short, string>)((ref short v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(int), (TypeConverter<string, int>) ((ref string v) =>
-                {
-                    if (int.TryParse(v, out var r))
-                        return r;
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, int>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(int), typeof(string), (TypeConverter<int, string>)((ref int v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(long), (TypeConverter<string, long>)((ref string v) =>
+                if (typeof(TDestination) == typeof(char))
                 {
-                    if (long.TryParse(v, out var r))
-                        return r;
+                    var v = !string.IsNullOrEmpty(source) ? source[0] : '\0';
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, long>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(long), typeof(string), (TypeConverter<long, string>)((ref long v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(byte), (TypeConverter<string, byte>) ((ref string v) =>
+                if (typeof(TDestination) == typeof(double))
                 {
-                    if (byte.TryParse(v, out var r))
-                        return r;
+                    return double.TryParse(source, out var v)
+                        ? UnsafeUtility.As<double, TDestination>(ref v)
+                        : default;
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, byte>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(byte), typeof(string), (TypeConverter<byte, string>) ((ref byte v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(ushort), (TypeConverter<string, ushort>) ((ref string v) =>
+                if (typeof(TDestination) == typeof(short))
                 {
-                    if (ushort.TryParse(v, out var r))
-                        return r;
+                    if (short.TryParse(source, out var v))
+                        return UnsafeUtility.As<short, TDestination>(ref v);
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, ushort>(ref fromDouble)
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out short result)
+                        ? UnsafeUtility.As<short, TDestination>(ref result)
                         : default;
-                }));
-                s_GlobalConverters.Register(typeof(ushort), typeof(string), (TypeConverter<ushort, string>)((ref ushort v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(uint), (TypeConverter<string, uint>) ((ref string v) =>
-                {
-                    if (uint.TryParse(v, out var r))
-                        return r;
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, uint>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(uint), typeof(string), (TypeConverter<uint, string>)((ref uint v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(ulong), (TypeConverter<string, ulong>)((ref string v) =>
+                if (typeof(TDestination) == typeof(int))
                 {
-                    if (ulong.TryParse(v, out var r))
-                    {
-                        return r;
-                    }
+                    if (int.TryParse(source, out var v))
+                        return UnsafeUtility.As<int, TDestination>(ref v);
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, ulong>(ref fromDouble)
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out int result)
+                        ? UnsafeUtility.As<int, TDestination>(ref result)
                         : default;
-                }));
-                s_GlobalConverters.Register(typeof(ulong), typeof(string), (TypeConverter<ulong, string>)((ref ulong v) => v.ToString()));
-                s_GlobalConverters.Register(typeof(string), typeof(float), (TypeConverter<string, float>)((ref string v) =>
-                {
-                    if (float.TryParse(v, out var r))
-                        return r;
+                }
 
-                    return double.TryParse(v, out var fromDouble)
-                        ? Convert<double, float>(ref fromDouble)
-                        : default;
-                }));
-                s_GlobalConverters.Register(typeof(float), typeof(string), (TypeConverter<float, string>)((ref float v) => v.ToString(CultureInfo.InvariantCulture)));
-                s_GlobalConverters.Register(typeof(string), typeof(double), (TypeConverter<string, double>)((ref string v) =>
+                if (typeof(TDestination) == typeof(long))
                 {
-                    double.TryParse(v, out var r);
-                    return r;
-                }));
-                s_GlobalConverters.Register(typeof(double), typeof(string), (TypeConverter<double, string>)((ref double v) => v.ToString(CultureInfo.InvariantCulture)));
+                    if (long.TryParse(source, out var v))
+                        return UnsafeUtility.As<long, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out long result)
+                        ? UnsafeUtility.As<long, TDestination>(ref result)
+                        : default;
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    if (sbyte.TryParse(source, out var v))
+                        return UnsafeUtility.As<sbyte, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out sbyte result)
+                        ? UnsafeUtility.As<sbyte, TDestination>(ref result)
+                        : default;
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    if (float.TryParse(source, out var v))
+                        return UnsafeUtility.As<float, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out float result)
+                        ? UnsafeUtility.As<float, TDestination>(ref result)
+                        : default;
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    return UnsafeUtility.As<string, TDestination>(ref source);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    if (ushort.TryParse(source, out var v))
+                        return UnsafeUtility.As<ushort, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out ushort result)
+                        ? UnsafeUtility.As<ushort, TDestination>(ref result)
+                        : default;
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    if (uint.TryParse(source, out var v))
+                        return UnsafeUtility.As<uint, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out uint result)
+                        ? UnsafeUtility.As<uint, TDestination>(ref result)
+                        : default;
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    if (ulong.TryParse(source, out var v))
+                        return UnsafeUtility.As<ulong, TDestination>(ref v);
+
+                    return double.TryParse(source, out var fromDouble) &&
+                           TryConvertPrimitiveOrString(ref fromDouble, out ulong result)
+                        ? UnsafeUtility.As<ulong, TDestination>(ref result)
+                        : default;
+                }
+
+                throw new ArgumentOutOfRangeException();
             }
 
-            static void RegisterObjectConverters()
+            private static TDestination DoConvert<TDestination>(ref ushort source)
             {
-                s_GlobalConverters.Register(typeof(object), typeof(char), (TypeConverter<object, char>)((ref object v) => v is char value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(bool), (TypeConverter<object, bool>)((ref object v) => v is bool value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(sbyte), (TypeConverter<object, sbyte>)((ref object v) => v is sbyte value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(short), (TypeConverter<object, short>)((ref object v) => v is short value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(int), (TypeConverter<object, int>)((ref object v) => v is int value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(long), (TypeConverter<object, long>)((ref object v) => v is long value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(byte), (TypeConverter<object, byte>)((ref object v) => v is byte value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(ushort), (TypeConverter<object, ushort>)((ref object v) => v is ushort value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(uint), (TypeConverter<object, uint>)((ref object v) => v is uint value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(ulong), (TypeConverter<object, ulong>)((ref object v) => v is ulong value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(float), (TypeConverter<object, float>)((ref object v) => v is float value ? value : default));
-                s_GlobalConverters.Register(typeof(object), typeof(double), (TypeConverter<object, double>)((ref object v) => v is double value ? value : default));
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref uint source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = (ulong)source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref v);
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+
+            private static TDestination DoConvert<TDestination>(ref ulong source)
+            {
+                // Use type checks that JIT can optimize into direct branches
+                if (typeof(TDestination) == typeof(bool))
+                {
+                    var v = source != 0;
+                    return UnsafeUtility.As<bool, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(byte))
+                {
+                    var v = (byte)source;
+                    return UnsafeUtility.As<byte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(char))
+                {
+                    var v = (char)source;
+                    return UnsafeUtility.As<char, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(double))
+                {
+                    var v = (double)source;
+                    return UnsafeUtility.As<double, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(short))
+                {
+                    var v = (short)source;
+                    return UnsafeUtility.As<short, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(int))
+                {
+                    var v = (int)source;
+                    return UnsafeUtility.As<int, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(long))
+                {
+                    var v = (long)source;
+                    return UnsafeUtility.As<long, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(sbyte))
+                {
+                    var v = (sbyte)source;
+                    return UnsafeUtility.As<sbyte, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(float))
+                {
+                    var v = (float)source;
+                    return UnsafeUtility.As<float, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(string))
+                {
+                    var v = source.ToString(CultureInfo.InvariantCulture);
+                    return UnsafeUtility.As<string, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ushort))
+                {
+                    var v = (ushort)source;
+                    return UnsafeUtility.As<ushort, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(uint))
+                {
+                    var v = (uint)source;
+                    return UnsafeUtility.As<uint, TDestination>(ref v);
+                }
+
+                if (typeof(TDestination) == typeof(ulong))
+                {
+                    var v = source;
+                    return UnsafeUtility.As<ulong, TDestination>(ref source);
+                }
+
+                throw new ArgumentOutOfRangeException();
             }
         }
     }

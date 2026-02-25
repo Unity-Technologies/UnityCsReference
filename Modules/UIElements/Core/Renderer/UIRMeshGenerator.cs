@@ -841,13 +841,22 @@ namespace UnityEngine.UIElements.UIR
         internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false)
         {
             float dilate = 0.0f;
+
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
-            if (vertex.uv2.y < 0.0f) dilate = 1.0f;
+            if (vertex.uv2.y < 0.0f)
+                dilate = 1.0f;
+
+            var tint = vertex.color;
+            if (isColorGlyph)
+                tint = new Color32(255, 255, 255, tint.a);
+            if (isDynamicColor)
+                tint = new Color32(255, 255, 255, 255);
+
             return new Vertex
             {
                 position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
-                tint = isColorGlyph ? new Color32(255, 255, 255, vertex.color.a) : vertex.color,
+                tint = tint,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
                 flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
             };
@@ -1815,7 +1824,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 }
 
-void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
+            void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
             {
                 if (rectParams.spriteTexture == IntPtr.Zero)
                     return; // Textureless sprites not supported, should use VectorImage instead

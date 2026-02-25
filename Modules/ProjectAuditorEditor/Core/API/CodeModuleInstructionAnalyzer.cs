@@ -11,25 +11,25 @@ namespace Unity.ProjectAuditor.Editor.Core
     /// <summary>
     /// A context object passed by CodeModule to a CodeModuleInstructionAnalyzer's Analyze() method.
     /// </summary>
-    public class InstructionAnalysisContext : AnalysisContext
+    internal class InstructionAnalysisContext : AnalysisContext
     {
-        // TODO: thesse 2 fields used to be public, but we can't leak the Cecil implementation out in the public API, as we might move away from using Cecil in the future.
+        // TODO: these 2 fields used to be public, but we can't leak the Cecil implementation out in the public API, as we might move away from using Cecil in the future.
 
         /// <summary>
         /// A Mono.Cecil Method Definition containing information about the current method being analyzed.
         /// </summary>
-        internal MethodDefinition MethodDefinition;
+        public MethodDefinition MethodDefinition;
 
         /// <summary>
         /// A Mono.Cecil Instruction containing information about the current code instruction being analyzed.
         /// </summary>
-        internal Instruction Instruction;
+        public Instruction Instruction;
     }
 
     /// <summary>
     /// Abstract base class for an Analyzer to be invoked by CodeModule
     /// </summary>
-    public abstract class CodeModuleInstructionAnalyzer : ModuleAnalyzer
+    internal abstract class CodeModuleInstructionAnalyzer : ModuleAnalyzer
     {
         /// <summary>
         /// A collection of Mono.Cecil OpCodes which are used by this analyzer.
@@ -40,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// OpCode of the Instruction currently under analysis matches one of the OpCodes in this list. For more
         /// details, refer to the [Mono.Cecil Github page](https://github.com/jbevain/cecil/blob/master/Mono.Cecil.Cil/OpCodes.cs).
         /// </remarks>
-        public abstract IReadOnlyCollection<OpCode> opCodes { get; }
+        public abstract IReadOnlyList<OpCode> opCodes { get; }
 
         /// <summary>
         /// Implement this method to detect Issues in a code instruction, and construct a ReportItemBuilder object with

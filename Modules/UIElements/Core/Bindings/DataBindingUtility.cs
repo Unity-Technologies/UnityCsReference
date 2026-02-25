@@ -197,6 +197,15 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        public static bool HasActiveBinding(in BindingId bindingId, VisualElement element)
+        {
+            // Check against a pending removal request
+            if (DataBindingManager.TryGetBindingRequest(element, bindingId, out var binding))
+                return binding != null;
+
+            return element.elementPanel.dataBindingManager.TryGetBindingData(element, bindingId, out var bindingData);
+        }
+
         /// <summary>
         /// Finds the closest unresolved data source object or the data source type and the chain of binding paths inherited from the hierarchy of the specified visual element.
         /// </summary>
@@ -441,7 +450,8 @@ namespace UnityEngine.UIElements
             result.Add(destinationType);
             binding?.sourceToUiConverters.registry.GetAllTypesConvertingToType(destinationType, result);
             ConverterGroups.globalConverters.registry.GetAllTypesConvertingToType(destinationType, result);
-            ConverterGroups.primitivesConverters.registry.GetAllTypesConvertingToType(destinationType, result);
+            if (destinationType.IsPrimitive)
+                AppendPrimitiveTypes(result);
         }
 
         /// <summary>
@@ -456,7 +466,8 @@ namespace UnityEngine.UIElements
             result.Add(sourceType);
             binding?.uiToSourceConverters.registry.GetAllTypesConvertingToType(sourceType, result);
             ConverterGroups.globalConverters.registry.GetAllTypesConvertingToType(sourceType, result);
-            ConverterGroups.primitivesConverters.registry.GetAllTypesConvertingToType(sourceType, result);
+            if (sourceType.IsPrimitive)
+                AppendPrimitiveTypes(result);
         }
 
         /// <summary>
@@ -582,6 +593,23 @@ namespace UnityEngine.UIElements
                 return activeBinding;
 
             return default;
+        }
+
+        private static void AppendPrimitiveTypes(List<Type> result)
+        {
+            result.Add(typeof(bool));
+            result.Add(typeof(byte));
+            result.Add(typeof(char));
+            result.Add(typeof(double));
+            result.Add(typeof(short));
+            result.Add(typeof(int));
+            result.Add(typeof(long));
+            result.Add(typeof(sbyte));
+            result.Add(typeof(float));
+            result.Add(typeof(string));
+            result.Add(typeof(ushort));
+            result.Add(typeof(uint));
+            result.Add(typeof(ulong));
         }
     }
 }

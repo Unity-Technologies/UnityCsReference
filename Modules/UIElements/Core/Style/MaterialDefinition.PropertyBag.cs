@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(1)
             {
                 AddProperty(new MaterialProperty());
             }

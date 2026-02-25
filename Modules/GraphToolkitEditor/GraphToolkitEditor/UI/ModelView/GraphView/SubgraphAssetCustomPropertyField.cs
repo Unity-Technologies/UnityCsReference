@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Unity.GraphToolkit.CSO;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -33,9 +34,12 @@ namespace Unity.GraphToolkit.Editor
         Button m_SelectButton;
         Button m_OpenButton;
 
+        Object m_LoadedObject; // for tests
+
         public void SetMixed()
         {
-            m_ObjectField.showMixedValue = true;
+            if (m_ObjectField != null)
+                m_ObjectField.showMixedValue = true;
         }
 
         public bool UpdateDisplayedValue(SubgraphAssetProperty value)
@@ -83,9 +87,12 @@ namespace Unity.GraphToolkit.Editor
         void SelectInProjectWindow()
         {
             EditorUtility.FocusProjectWindow();
-            var obj = m_GraphModel.ResolveGraphModelFromReference(m_SubgraphAssetProperty.SubgraphReference).GraphObject;
-            if (obj != null)
+            var graphObject = m_GraphModel.ResolveGraphModelFromReference(m_SubgraphAssetProperty.SubgraphReference).GraphObject;
+            if (graphObject != null)
             {
+                EditorUtility.FocusProjectWindow();
+                var obj = AssetDatabase.LoadMainAssetAtPath(graphObject.FilePath);
+                m_LoadedObject = obj;
                 Selection.activeObject = obj;
                 EditorGUIUtility.PingObject(obj);
             }
@@ -94,19 +101,44 @@ namespace Unity.GraphToolkit.Editor
         void OpenGraph()
         {
             var supportsMultipleWindows = (m_CommandTarget as RootView)?.GraphTool?.SupportsMultipleWindows ?? true;
-            var graphModel = m_GraphModel.ResolveGraphModelFromReference(m_SubgraphAssetProperty.SubgraphReference);
+            var subgraph = m_GraphModel.ResolveGraphModelFromReference(m_SubgraphAssetProperty.SubgraphReference);
             if (supportsMultipleWindows)
             {
-
-                if (graphModel.IsLocalSubgraph)
-                    m_CommandTarget.Dispatch(new LoadGraphCommand(graphModel, LoadGraphCommand.LoadStrategies.PushOnStack));
-                else if (graphModel.GraphObject != null)
-                    AssetDatabase.OpenAsset(graphModel.GraphObject);
+                if (subgraph.IsLocalSubgraph)
+                    m_CommandTarget.Dispatch(new LoadGraphCommand(subgraph, LoadGraphCommand.LoadStrategies.PushOnStack));
+                else if (subgraph.GraphObject != null)
+                {
+                    if (ReferenceEquals(m_GraphModel, subgraph))
+                    {
+                        Debug.LogWarning($"The graph '{subgraph.Name}' is already open in the current window.");
+                    }
+                    else
+                    {
+                        var obj = AssetDatabase.LoadMainAssetAtPath(subgraph.GraphObject.FilePath);
+                        m_LoadedObject = obj;
+                        AssetDatabase.OpenAsset(obj);
+                    }
+                }
             }
             else
             {
-                m_CommandTarget.Dispatch(new LoadGraphCommand(graphModel));
+                m_CommandTarget.Dispatch(new LoadGraphCommand(subgraph));
             }
+        }
+
+        internal class TestAccess
+        {
+            readonly SubgraphAssetCustomPropertyField m_SubgraphAssetCustomPropertyField;
+
+            public TestAccess(SubgraphAssetCustomPropertyField subgraphAssetCustomPropertyField)
+            {
+                m_SubgraphAssetCustomPropertyField = subgraphAssetCustomPropertyField;
+            }
+
+            public void CallOpenGraph() => m_SubgraphAssetCustomPropertyField.OpenGraph();
+            public void CallSelectInProjectWindow() => m_SubgraphAssetCustomPropertyField.SelectInProjectWindow();
+
+            public Object LoadedObject => m_SubgraphAssetCustomPropertyField.m_LoadedObject;
         }
     }
 }

@@ -112,7 +112,7 @@ namespace Unity.Profiling.Editor.UI
             var gcCollectTimesArray = gcCollectTimes.ToArray();
             Array.Sort(gcCollectTimesArray, (a, b) => { return a.Item1.CompareTo(b.Item1); });
 
-            return BoxPlotModelExtensions.BoxPlotModelFromSortedData(gcCollectTimesArray);
+            return BoxPlotModelExtensions.BoxPlotModelFromSortedData(gcCollectTimesArray, false);
         }
     }
 }

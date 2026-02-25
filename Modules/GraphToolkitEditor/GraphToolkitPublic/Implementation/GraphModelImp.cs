@@ -291,9 +291,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return SupportedTypes.Contains(constantNodeModel.Type);
 
                 case SubgraphNodeModel subgraphNodeModel:
-                    var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph;
-                    if (subgraph == null )
+                    var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph ??
+                                   (GraphReference.ResolveGraphModel(subgraphNodeModel.SubgraphReference) as GraphModelImp)?.Graph;
+
+                    if (subgraph == null)
+                    {
+                        Debug.LogWarning("Cannot paste subgraph node because the referenced subgraph could not be resolved.");
                         return false;
+                    }
 
                     var subgraphTypes = PublicGraphFactory.GetSubGraphTypes(Graph.GetType());
 
@@ -303,7 +308,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                             return true;
                     }
 
-                    return false;
+                    break;
             }
 
             return false;
@@ -556,6 +561,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
             public static void GetPortTypesForNode(INode node, HashSet<Type> hashSet) => GraphModelImp.GetPortTypesForNode(node, hashSet);
             public static void InitializeSupportedTypesFromContextNodeType(Type graphType, IGraphNodeCreationData nodeCreationData, Type type, HashSet<Type> supportedTypes)
                 => GraphModelImp.InitializeSupportedTypesFromContextNodeType(graphType, nodeCreationData, type, supportedTypes);
+        }
+
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+            m_Graph?.SetImplementation(this);
         }
     }
 }

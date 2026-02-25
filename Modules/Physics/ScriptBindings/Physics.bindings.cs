@@ -90,6 +90,14 @@ namespace UnityEngine
             }
         }
 
+        internal ushort sDKMajorVersion => m_SdkVersion[0];
+        internal ushort sDKMinorVersion => m_SdkVersion[1];
+        internal ushort sDKPatchVersion => m_SdkVersion[2];
+
+        internal ushort majorVersion => m_IntegrationVersion[0];
+        internal ushort minorVersion => m_IntegrationVersion[1];
+        internal ushort patchVersion => m_IntegrationVersion[2];
+
         public bool isFallback => id == k_FallbackIntegrationId;
 
         internal bool isExperimental => m_IntegrationVersion[0] < 1;

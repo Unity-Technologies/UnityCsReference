@@ -9,7 +9,7 @@ namespace Unity.Profiling.Editor.UI
         public static FrameGCAllocationsModel Empty = default;
 
         public FrameGCAllocationsModel(int frameIndex, ulong totalCount, long totalSize)
-        {                                              
+        {
             FrameIndex = frameIndex;
             TotalCount = totalCount;
             TotalSize = totalSize;

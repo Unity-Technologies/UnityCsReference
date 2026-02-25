@@ -192,7 +192,7 @@ namespace UnityEditor.Search
 
         TreeView m_TreeView;
 
-        internal Dictionary<string,ISearchQueryNodeHandler> Handlers { get; }
+        internal Dictionary<string, ISearchQueryNodeHandler> Handlers;
         internal Dictionary<int, SearchQueryTreeViewItem> TreeViewItems { get; } = new ();
         List<TreeViewItemData<SearchQueryNodeData>> TreeRoots
         {
@@ -218,30 +218,6 @@ namespace UnityEditor.Search
 
             m_TreeView = CreateSearchQueryTreeView();
             Add(m_TreeView);
-
-            Handlers = new Dictionary<string, ISearchQueryNodeHandler>();
-
-            var queryTreeConfig = viewModel.state.queryTreeConfig;
-            if (queryTreeConfig == null || queryTreeConfig.NodeSources == null || queryTreeConfig.NodeSources.Length == 0)
-            {
-                queryTreeConfig = SearchQueryTreeConfig.CreateDefault();
-            }
-
-            foreach (var nodeSource in queryTreeConfig.NodeSources)
-            {
-                if (nodeSource == null || nodeSource.handler == null)
-                    continue;
-                var handler = nodeSource.handler.Invoke();
-                if (handler == null)
-                    continue;
-                Handlers.Add(handler.Name, handler);
-                handler.queryListChanged -= OnQueryListChanged;
-                handler.queryListChanged += OnQueryListChanged;
-            }
-
-            RebuildTreeViewFromAllSources();
-
-            UpdateQueriesFilterState(false, false);
         }
 
         public static TreeViewItemData<SearchQueryNodeData> CreateItemData(int itemId, SearchQueryNodeData data, List<TreeViewItemData<SearchQueryNodeData>> children = null)
@@ -267,6 +243,30 @@ namespace UnityEditor.Search
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {
             base.OnAttachToPanel(evt);
+
+            Handlers = new();
+
+            var queryTreeConfig = m_ViewModel.state.queryTreeConfig;
+            if (queryTreeConfig == null || queryTreeConfig.NodeSources == null || queryTreeConfig.NodeSources.Length == 0)
+            {
+                queryTreeConfig = SearchQueryTreeConfig.CreateDefault();
+            }
+
+            foreach (var nodeSource in queryTreeConfig.NodeSources)
+            {
+                if (nodeSource == null || nodeSource.handler == null)
+                    continue;
+                var handler = nodeSource.handler.Invoke();
+                if (handler == null)
+                    continue;
+                Handlers.Add(handler.Name, handler);
+                handler.queryListChanged -= OnQueryListChanged;
+                handler.queryListChanged += OnQueryListChanged;
+            }
+
+            RebuildTreeViewFromAllSources();
+
+            UpdateQueriesFilterState(false, false);
 
             UpdateExpandedState();
             SetActiveQuery(viewState.activeQuery);

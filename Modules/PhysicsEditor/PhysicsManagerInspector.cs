@@ -59,6 +59,8 @@ namespace UnityEditor
             public static readonly string entitiesDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's Entities API. {dropDownTooltipBase}").text;
             
             const string dropDownTooltipBase = "Changing this value to another SDK integration has the potential to change the behavior of your physics Components. \nTweaking your physics simulation might be necessary due to behavior differences between different physics SDKs.";
+
+            public static string backendInfo = EditorGUIUtility.TrTempContent("Description: {0}\nSDK version: {1}.{2}.{3}\n Integration version: {4}.{5}.{6}").text; 
         }
 
         static SerializedObject LoadGameManagerAssetAtPath(string path)
@@ -99,12 +101,12 @@ namespace UnityEditor
                     ReadOnlySpan<IntegrationInfo> infos = Physics.GetIntegrationInfos();
 
                     var classicEngineDropdown = rootElement.Q<DropdownField>(name: "classic-dropdown");
+                    var classicEngineHelpboxInfo = rootElement.Q<HelpBox>(name: "classic-helpbox-info");
                     var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
 
                     int currentChoiceIndex = 0;
                     int choiceCount = 0;
                     uint currentSerializedId = serializedObject.FindProperty("m_CurrentBackendId").uintValue;
-                    uint currentId = Physics.GetCurrentIntegrationInfo().id;
 
                     Dictionary<string, uint> choiceToId = new Dictionary<string, uint>();
                     classicEngineDropdown.userData = choiceToId;
@@ -126,8 +128,24 @@ namespace UnityEditor
                     classicEngineDropdown.value = classicEngineDropdown.choices[currentChoiceIndex];
                     classicEngineDropdown.tooltip = Content.classicDropDownTooltip;
 
+                    var currentIntegration = Physics.GetCurrentIntegrationInfo();
+                    classicEngineHelpboxInfo.text = string.Format(Content.backendInfo, currentIntegration.description,
+                        currentIntegration.sDKMajorVersion, currentIntegration.sDKMinorVersion, currentIntegration.sDKPatchVersion,
+                        currentIntegration.majorVersion, currentIntegration.minorVersion, currentIntegration.patchVersion);
+
                     classicEngineHelpboxWarning.text = currentSerializedId == IntegrationInfo.k_FallbackIntegrationId ? Content.classicFallbackWarning : Content.classicWarning;
-                    classicEngineHelpboxWarning.visible = currentId != currentSerializedId;
+
+
+                    if (currentIntegration.id == currentSerializedId)
+                    {
+                        classicEngineHelpboxInfo.style.display = DisplayStyle.Flex;
+                        classicEngineHelpboxWarning.style.display = DisplayStyle.None;
+                    }
+                    else
+                    {
+                        classicEngineHelpboxWarning.style.display = DisplayStyle.Flex;
+                        classicEngineHelpboxInfo.style.display = DisplayStyle.None;
+                    }
 
                     classicEngineDropdown.RegisterValueChangedCallback((evt) =>
                     {
@@ -145,7 +163,18 @@ namespace UnityEditor
 
                         //enable warning box if we are swapping and set the correct text depending on integration
                         classicEngineHelpboxWarning.text = newIntegrationId == IntegrationInfo.k_FallbackIntegrationId? Content.classicFallbackWarning : Content.classicWarning;
-                        classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationInfo().id;
+
+
+                        if (newIntegrationId == Physics.GetCurrentIntegrationInfo().id)
+                        {
+                            classicEngineHelpboxInfo.style.display = DisplayStyle.Flex;
+                            classicEngineHelpboxWarning.style.display = DisplayStyle.None;
+                        }
+                        else
+                        {
+                            classicEngineHelpboxWarning.style.display = DisplayStyle.Flex;
+                            classicEngineHelpboxInfo.style.display = DisplayStyle.None;
+                        }
                     });
 
                     var ecsEngineDropdown = rootElement.Q<DropdownField>(name: "ecs-dropdown");

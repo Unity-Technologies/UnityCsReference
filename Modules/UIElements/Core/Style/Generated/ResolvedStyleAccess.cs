@@ -103,87 +103,169 @@ namespace UnityEngine.UIElements
     public partial class VisualElement : IResolvedStyle
     {
         Align IResolvedStyle.alignContent => resolvedStyle.alignContent;
+
         Align IResolvedStyle.alignItems => resolvedStyle.alignItems;
+
         Align IResolvedStyle.alignSelf => resolvedStyle.alignSelf;
+
         Ratio IResolvedStyle.aspectRatio => resolvedStyle.aspectRatio;
+
         Color IResolvedStyle.backgroundColor => resolvedStyle.backgroundColor;
+
         Background IResolvedStyle.backgroundImage => resolvedStyle.backgroundImage;
+
         BackgroundPosition IResolvedStyle.backgroundPositionX => resolvedStyle.backgroundPositionX;
+
         BackgroundPosition IResolvedStyle.backgroundPositionY => resolvedStyle.backgroundPositionY;
+
         BackgroundRepeat IResolvedStyle.backgroundRepeat => resolvedStyle.backgroundRepeat;
+
         BackgroundSize IResolvedStyle.backgroundSize => resolvedStyle.backgroundSize;
+
         Color IResolvedStyle.borderBottomColor => resolvedStyle.borderBottomColor;
+
         float IResolvedStyle.borderBottomLeftRadius => resolvedStyle.borderBottomLeftRadius;
+
         float IResolvedStyle.borderBottomRightRadius => resolvedStyle.borderBottomRightRadius;
+
         float IResolvedStyle.borderBottomWidth => resolvedStyle.borderBottomWidth;
+
         Color IResolvedStyle.borderLeftColor => resolvedStyle.borderLeftColor;
+
         float IResolvedStyle.borderLeftWidth => resolvedStyle.borderLeftWidth;
+
         Color IResolvedStyle.borderRightColor => resolvedStyle.borderRightColor;
+
         float IResolvedStyle.borderRightWidth => resolvedStyle.borderRightWidth;
+
         Color IResolvedStyle.borderTopColor => resolvedStyle.borderTopColor;
+
         float IResolvedStyle.borderTopLeftRadius => resolvedStyle.borderTopLeftRadius;
+
         float IResolvedStyle.borderTopRightRadius => resolvedStyle.borderTopRightRadius;
+
         float IResolvedStyle.borderTopWidth => resolvedStyle.borderTopWidth;
+
         float IResolvedStyle.bottom => resolvedStyle.bottom;
+
         Color IResolvedStyle.color => resolvedStyle.color;
+
         DisplayStyle IResolvedStyle.display => resolvedStyle.display;
+
         IEnumerable<FilterFunction> IResolvedStyle.filter => resolvedStyle.filter;
+
         StyleFloat IResolvedStyle.flexBasis => resolvedStyle.flexBasis;
+
         FlexDirection IResolvedStyle.flexDirection => resolvedStyle.flexDirection;
+
         float IResolvedStyle.flexGrow => resolvedStyle.flexGrow;
+
         float IResolvedStyle.flexShrink => resolvedStyle.flexShrink;
+
         Wrap IResolvedStyle.flexWrap => resolvedStyle.flexWrap;
+
         float IResolvedStyle.fontSize => resolvedStyle.fontSize;
+
         float IResolvedStyle.height => resolvedStyle.height;
+
         Justify IResolvedStyle.justifyContent => resolvedStyle.justifyContent;
+
         float IResolvedStyle.left => resolvedStyle.left;
+
         float IResolvedStyle.letterSpacing => resolvedStyle.letterSpacing;
+
         float IResolvedStyle.marginBottom => resolvedStyle.marginBottom;
+
         float IResolvedStyle.marginLeft => resolvedStyle.marginLeft;
+
         float IResolvedStyle.marginRight => resolvedStyle.marginRight;
+
         float IResolvedStyle.marginTop => resolvedStyle.marginTop;
+
         StyleFloat IResolvedStyle.maxHeight => resolvedStyle.maxHeight;
+
         StyleFloat IResolvedStyle.maxWidth => resolvedStyle.maxWidth;
+
         StyleFloat IResolvedStyle.minHeight => resolvedStyle.minHeight;
+
         StyleFloat IResolvedStyle.minWidth => resolvedStyle.minWidth;
+
         float IResolvedStyle.opacity => resolvedStyle.opacity;
+
         float IResolvedStyle.paddingBottom => resolvedStyle.paddingBottom;
+
         float IResolvedStyle.paddingLeft => resolvedStyle.paddingLeft;
+
         float IResolvedStyle.paddingRight => resolvedStyle.paddingRight;
+
         float IResolvedStyle.paddingTop => resolvedStyle.paddingTop;
+
         Position IResolvedStyle.position => resolvedStyle.position;
+
         float IResolvedStyle.right => resolvedStyle.right;
+
         Rotate IResolvedStyle.rotate => resolvedStyle.rotate;
+
         Scale IResolvedStyle.scale => resolvedStyle.scale;
+
         TextOverflow IResolvedStyle.textOverflow => resolvedStyle.textOverflow;
+
         float IResolvedStyle.top => resolvedStyle.top;
+
         Vector3 IResolvedStyle.transformOrigin => resolvedStyle.transformOrigin;
+
         IEnumerable<TimeValue> IResolvedStyle.transitionDelay => resolvedStyle.transitionDelay;
+
         IEnumerable<TimeValue> IResolvedStyle.transitionDuration => resolvedStyle.transitionDuration;
+
         IEnumerable<StylePropertyName> IResolvedStyle.transitionProperty => resolvedStyle.transitionProperty;
+
         IEnumerable<EasingFunction> IResolvedStyle.transitionTimingFunction => resolvedStyle.transitionTimingFunction;
+
         Vector3 IResolvedStyle.translate => resolvedStyle.translate;
+
         Color IResolvedStyle.unityBackgroundImageTintColor => resolvedStyle.unityBackgroundImageTintColor;
+
         EditorTextRenderingMode IResolvedStyle.unityEditorTextRenderingMode => resolvedStyle.unityEditorTextRenderingMode;
+
         Font IResolvedStyle.unityFont => resolvedStyle.unityFont;
+
         FontDefinition IResolvedStyle.unityFontDefinition => resolvedStyle.unityFontDefinition;
+
         FontStyle IResolvedStyle.unityFontStyleAndWeight => resolvedStyle.unityFontStyleAndWeight;
+
         MaterialDefinition IResolvedStyle.unityMaterial => resolvedStyle.unityMaterial;
+
         float IResolvedStyle.unityParagraphSpacing => resolvedStyle.unityParagraphSpacing;
+
         int IResolvedStyle.unitySliceBottom => resolvedStyle.unitySliceBottom;
+
         int IResolvedStyle.unitySliceLeft => resolvedStyle.unitySliceLeft;
+
         int IResolvedStyle.unitySliceRight => resolvedStyle.unitySliceRight;
+
         float IResolvedStyle.unitySliceScale => resolvedStyle.unitySliceScale;
+
         int IResolvedStyle.unitySliceTop => resolvedStyle.unitySliceTop;
+
         SliceType IResolvedStyle.unitySliceType => resolvedStyle.unitySliceType;
+
         TextAnchor IResolvedStyle.unityTextAlign => resolvedStyle.unityTextAlign;
+
         TextGeneratorType IResolvedStyle.unityTextGenerator => resolvedStyle.unityTextGenerator;
+
         Color IResolvedStyle.unityTextOutlineColor => resolvedStyle.unityTextOutlineColor;
+
         float IResolvedStyle.unityTextOutlineWidth => resolvedStyle.unityTextOutlineWidth;
+
         TextOverflowPosition IResolvedStyle.unityTextOverflowPosition => resolvedStyle.unityTextOverflowPosition;
+
         Visibility IResolvedStyle.visibility => resolvedStyle.visibility;
+
         WhiteSpace IResolvedStyle.whiteSpace => resolvedStyle.whiteSpace;
+
         float IResolvedStyle.width => resolvedStyle.width;
+
         float IResolvedStyle.wordSpacing => resolvedStyle.wordSpacing;
     }
 }

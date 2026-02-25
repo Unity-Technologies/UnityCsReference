@@ -176,7 +176,7 @@ namespace Unity.Properties
         {
             Name = name;
             m_Info = info;
-            m_IsStructContainerType = TypeTraits<TContainer>.IsValueType;
+            m_IsStructContainerType = typeof(TContainer).IsValueType;
 
             AddAttributes(info.GetCustomAttributes());
             var isReadOnly = m_Info.IsReadOnly;

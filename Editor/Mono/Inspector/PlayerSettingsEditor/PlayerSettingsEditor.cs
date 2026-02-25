@@ -510,7 +510,7 @@ namespace UnityEditor
         string[] serializedAdditionalCompilerArguments;
         bool serializedSuppressCommonWarnings = true;
         bool serializedAllowUnsafeCode = false;
-        string serializedScriptingDefines;
+        string[] m_SerializedScriptingDefinesArray;
         bool serializedUseDeterministicCompilation;
 
         List<string> scriptingDefinesList;
@@ -773,7 +773,8 @@ namespace UnityEditor
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
             serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
-            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+            var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+            m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
             InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
@@ -3612,7 +3613,7 @@ namespace UnityEditor
             {
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
+                    if (m_SerializedScriptingDefinesArray == null || scriptingDefineSymbolsList == null)
                     {
                         InitReorderableScriptingDefineSymbolsList(platform.namedBuildTarget);
                     }
@@ -3624,7 +3625,8 @@ namespace UnityEditor
                     else
                     {
                         // If platform changes, update define symbols
-                        serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                        var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                        m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
                         UpdateScriptingDefineSymbolsLists();
                     }
 
@@ -3634,8 +3636,7 @@ namespace UnityEditor
 
                         var GUIState = GUI.enabled;
 
-
-                        GUI.enabled = serializedScriptingDefines.Count() > 0;
+                        GUI.enabled = m_SerializedScriptingDefinesArray.Length > 0;
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
@@ -3660,7 +3661,8 @@ namespace UnityEditor
                             SetScriptingDefineSymbolsForGroup(platform.namedBuildTarget, scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
-                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                            var serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                            m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines);
                             UpdateScriptingDefineSymbolsLists();
 
                             if (platform.IsActive())
@@ -3815,7 +3817,23 @@ namespace UnityEditor
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
-            hasScriptingDefinesBeenModified = true;
+            if (m_SerializedScriptingDefinesArray == null ||
+                scriptingDefinesList.Count != m_SerializedScriptingDefinesArray.Length)
+            {
+                hasScriptingDefinesBeenModified = true;
+                return;
+            }
+
+            for (int i = 0; i < m_SerializedScriptingDefinesArray.Length; i++)
+            {
+                if (scriptingDefinesList[i] != m_SerializedScriptingDefinesArray[i])
+                {
+                    hasScriptingDefinesBeenModified = true;
+                    return;
+                }
+            }
+
+            hasScriptingDefinesBeenModified = false;
         }
 
         void AddAdditionalCompilerArgumentCallback(ReorderableList list)
@@ -3832,7 +3850,23 @@ namespace UnityEditor
 
         void SetAdditionalCompilerArgumentListDirty(ReorderableList list = null)
         {
-            hasAdditionalCompilerArgumentsBeenModified = true;
+            if (serializedAdditionalCompilerArguments == null ||
+                additionalCompilerArgumentsList.Count != serializedAdditionalCompilerArguments.Length)
+            {
+                hasAdditionalCompilerArgumentsBeenModified = true;
+                return;
+            }
+
+            for (int i = 0; i < additionalCompilerArgumentsList.Count; i++)
+            {
+                if (additionalCompilerArgumentsList[i] != serializedAdditionalCompilerArguments[i])
+                {
+                    hasAdditionalCompilerArgumentsBeenModified = true;
+                    return;
+                }
+            }
+
+            hasAdditionalCompilerArgumentsBeenModified = false;
         }
 
         private void OtherSectionOptimizationGUI(BuildPlatform platform)
@@ -4272,9 +4306,13 @@ namespace UnityEditor
 
         void InitReorderableScriptingDefineSymbolsList(NamedBuildTarget namedBuildTarget)
         {
-            // Get Scripting Define Symbols data
-            string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
-            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            if (m_SerializedScriptingDefinesArray == null)
+            {
+                // Get Scripting Define Symbols data
+                string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+                m_SerializedScriptingDefinesArray = ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(defines);
+            }
+            scriptingDefinesList = new List<string>(m_SerializedScriptingDefinesArray);
 
             // Initialize Reorderable List
             scriptingDefineSymbolsList = new ReorderableList(scriptingDefinesList, typeof(string), true, true, true, true);
@@ -4287,7 +4325,7 @@ namespace UnityEditor
 
         void UpdateScriptingDefineSymbolsLists()
         {
-            scriptingDefinesList = new List<string>(ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
+            scriptingDefinesList = new List<string>(m_SerializedScriptingDefinesArray);
             scriptingDefineSymbolsList.list = scriptingDefinesList;
             scriptingDefineSymbolsList.DoLayoutList();
             hasScriptingDefinesBeenModified = false;
@@ -4296,7 +4334,7 @@ namespace UnityEditor
         void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
             var additionalCompilerArgumentsArray = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
-            additionalCompilerArgumentsList = additionalCompilerArgumentsArray.ToList();
+            additionalCompilerArgumentsList = new List<string>(additionalCompilerArgumentsArray);
 
             additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
             additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);

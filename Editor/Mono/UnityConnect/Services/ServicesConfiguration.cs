@@ -249,7 +249,7 @@ namespace UnityEditor.Connect
                 ""asset_store_api"":""https://packages.unity.com"",
                 ""asset_store_url"":""https://assetstore.unity.com"",
                 ""packman_key"":""6357C523886E813D1500408F05B0D7A6"",
-                ""services-gateway"":""https://serivices.unity.com""}";
+                ""services-gateway"":""https://services.unity.com""}";
             LoadJsonConfiguration(hardCodedConfigs);
         }
 

@@ -31,7 +31,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             OpCodes.Ret
         };
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {

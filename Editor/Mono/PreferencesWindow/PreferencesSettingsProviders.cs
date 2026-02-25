@@ -888,8 +888,9 @@ By default, Windows will combine these under a single taskbar item.");
                 GUILayout.Label(category.Key, EditorStyles.boldLabel);
                 foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
                 {
+                    var displayName = ObjectNames.NicifyVariableName(kvp.Key);
                     EditorGUI.BeginChangeCheck();
-                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(kvp.Key, kvp.Key), kvp.Value.Color);
+                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
                     if (EditorGUI.EndChangeCheck())
                     {
                         ccolor = kvp.Value;

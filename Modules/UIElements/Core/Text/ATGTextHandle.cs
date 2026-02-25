@@ -386,6 +386,15 @@ namespace UnityEngine.UIElements
         {
             s_TextLib ??= new TextLib(GetICUAsset().bytes);
         }
+
+        public override void RemoveFromPermanentCacheATG()
+        {
+            if (IsCachedPermanentATG)
+            {
+                m_ATGTextEventHandler?.UnRegisterHyperlinkCallbacks();
+            }
+            base.RemoveFromPermanentCacheATG();
+        }
     }
 
 

@@ -50,7 +50,7 @@ namespace Unity.Properties.Internal
 
         public IPropertyBag<TContainer> CreatePropertyBag<TContainer>()
         {
-            if (!TypeTraits<TContainer>.IsContainer || TypeTraits<TContainer>.IsObject)
+            if (!TypeTraits.IsContainer(typeof(TContainer)) || TypeTraits.IsObject(typeof(TContainer)))
             {
                 throw new InvalidOperationException("Invalid container type.");
             }
