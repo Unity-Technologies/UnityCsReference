@@ -4,14 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Networking.PlayerConnection;
-
+using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEditorInternal.FrameDebuggerInternal;
-
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Rendering.Analytics;
@@ -38,6 +36,40 @@ namespace UnityEditor
         private FrameDebuggerTreeView m_TreeView;
         private FrameDebuggerEventDetailsView m_EventDetailsView;
         private FrameDebuggerToolbarView m_Toolbar;
+
+        private static Lazy<GraphicsBuffer> m_ShadingRateLut =
+                    new Lazy<GraphicsBuffer>(CreateShadingRateLutGraphicsBuffer);
+        internal static GraphicsBuffer shadingRateLut => m_ShadingRateLut.Value;
+
+        static GraphicsBuffer CreateShadingRateLutGraphicsBuffer()
+        {
+            Color[] bufferData =
+            {
+                (new Color(0.785f, 0.23f, 0.20f, 1)).linear, (new Color(1.00f, 0.80f, 0.80f, 1)).linear,
+                (new Color(0.60f, 0.80f, 1.00f, 1)).linear, Color.black.linear,
+                (new Color(0.40f, 0.20f, 0.20f, 1)).linear, (new Color(0.51f, 0.80f, 0.60f, 1)).linear,
+                (new Color(0.80f, 1.00f, 0.80f, 1)).linear, Color.black.linear,
+                (new Color(0.20f, 0.40f, 0.60f, 1)).linear, (new Color(0.20f, 0.40f, 0.20f, 1)).linear,
+                (new Color(0.125f, 0.22f, 0.36f, 1)).linear
+            };
+
+            var stride = Marshal.SizeOf(typeof(Color));
+            var buf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, bufferData.Length, stride);
+            buf.SetData(bufferData);
+            return buf;
+        }
+
+        private static void ReleaseGraphicsBuffers()
+        {
+            if (m_ShadingRateLut is { IsValueCreated: true })
+            {
+                m_ShadingRateLut.Value.Dispose();
+            }
+
+            m_ShadingRateLut = null;
+            m_ShadingRateLut =
+                new Lazy<GraphicsBuffer>(CreateShadingRateLutGraphicsBuffer);
+        }
 
         // Statics
         private static List<FrameDebuggerWindow> s_FrameDebuggers = new List<FrameDebuggerWindow>();
@@ -369,6 +401,7 @@ namespace UnityEditor
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             RepaintOnLimitChange();
+            ReleaseGraphicsBuffers();
         }
 
         private void OnEnable()
@@ -381,6 +414,7 @@ namespace UnityEditor
             s_FrameDebuggers.Add(this);
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
             m_RepaintFrames = k_NeedToRepaintFrames;
 
             GraphicsToolLifetimeAnalytic.WindowOpened<FrameDebuggerWindow>();
@@ -399,6 +433,12 @@ namespace UnityEditor
 
             GraphicsToolLifetimeAnalytic.WindowClosed<FrameDebuggerWindow>();
         }
+
+        private void OnDestroy()
+        {
+            ReleaseGraphicsBuffers();
+        }
+
 
         private void EnableFrameDebugger()
         {

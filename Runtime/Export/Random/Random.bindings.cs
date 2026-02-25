@@ -66,6 +66,13 @@ namespace UnityEngine
         // Returns a random point inside a circle with radius 1 (RO).
         public static Vector2 insideUnitCircle { get { Vector2 r; GetRandomUnitCircle(out r); return r; } }
 
+        // Returns a random point on the circumference of a circle with radius 1 (RO).
+        extern public static Vector2 onUnitCircle
+        {
+            [FreeFunction]
+            get;
+        }
+
         // Returns a random point on the surface of a sphere with radius 1 (RO).
         extern public static Vector3 onUnitSphere
         {

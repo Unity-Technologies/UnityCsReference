@@ -60,5 +60,10 @@ namespace UnityEngine.UIElements
             // Update the integer field when the value changes
             m_IntegerField.SetValueWithoutNotify(newValue.GetRawData());
         }
+
+        protected override void UpdateMixedValueContent()
+        {
+            m_IntegerField.showMixedValue = showMixedValue;
+        }
     }
 }

@@ -197,6 +197,15 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        public static bool HasActiveBinding(in BindingId bindingId, VisualElement element)
+        {
+            // Check against a pending removal request
+            if (DataBindingManager.TryGetBindingRequest(element, bindingId, out var binding))
+                return binding != null;
+
+            return element.elementPanel.dataBindingManager.TryGetBindingData(element, bindingId, out var bindingData);
+        }
+
         /// <summary>
         /// Finds the closest unresolved data source object or the data source type and the chain of binding paths inherited from the hierarchy of the specified visual element.
         /// </summary>

@@ -493,7 +493,7 @@ namespace UnityEditor
             var rect = GUILayoutUtility.GetRect(0.0f, 0.0f, GUILayout.ExpandWidth(true));
             rect.x += EditorGUI.kIndentPerLevel;
             rect.width -= EditorGUI.kIndentPerLevel;
-            var height = EditorStyles.helpBox.CalcHeight(content, rect.width) + (D3D12DeviceFilterUI.Styles.kElementHeighWithSpace * 2);
+            var height = EditorStyles.helpBox.CalcHeight(content, rect.width);
 
             rect = GUILayoutUtility.GetRect(0.0f, height, GUILayout.ExpandWidth(true));
             rect.x += EditorGUI.kIndentPerLevel;

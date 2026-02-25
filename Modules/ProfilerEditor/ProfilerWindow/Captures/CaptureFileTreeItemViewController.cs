@@ -32,6 +32,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_DeleteCaptureDialogCancel = "Cancel";
 
         const string k_TargetFPSMenu = "Target Frame Time/";
+        const int k_MinTimeBetweenClicksMs = 100;
 
         readonly int m_StrLenMaxFPS;
 
@@ -42,6 +43,7 @@ namespace Unity.Profiling.Editor.UI
         // State
         readonly CaptureDataService m_CaptureDataService;
         readonly ProfilerWindow m_ProfilerWindow;
+        long m_LastClickTimestamp;
         bool m_IsLoaded;
 
         // View
@@ -130,11 +132,19 @@ namespace Unity.Profiling.Editor.UI
             m_Container.AddManipulator(new ContextualMenuManipulator(PopulateOpenCaptureOptionMenu));
             m_Container.RegisterCallback<MouseUpEvent>(evt =>
             {
-                if ((MouseButton)evt.button == MouseButton.LeftMouse)
-                {
-                    OpenCapture();
-                    evt.StopPropagation();
-                }
+                if ((MouseButton)evt.button != MouseButton.LeftMouse)
+                    return;
+
+                var msSinceLastClick = Math.Abs(m_LastClickTimestamp - evt.timestamp);
+                m_LastClickTimestamp = evt.timestamp;
+
+                // Do nothing if we're mid-load, or if it's likely a double input happened, else we can buffer multiple
+                // load commands that will then run sequentially (UUM-133429)
+                if (m_ProfilerWindow.IsCurrentlyLoadingFile || msSinceLastClick < k_MinTimeBetweenClicksMs)
+                    return;
+
+                OpenCapture();
+                evt.StopPropagation();
             });
 
             m_Name.AddManipulator(new Clickable(RenameCapture));
