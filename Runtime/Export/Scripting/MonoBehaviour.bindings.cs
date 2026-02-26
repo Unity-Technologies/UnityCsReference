@@ -65,6 +65,12 @@ namespace UnityEngine
         }
 
         // Invokes the method /methodName/ in /time/ seconds.
+        public void InvokeRepeating(string methodName, float repeatRate)
+        {
+            InvokeDelayed(this, methodName, repeatRate, repeatRate);
+        }
+
+        // Invokes the method /methodName/ in /time/ seconds.
         public void InvokeRepeating(string methodName, float time, float repeatRate)
         {
             if (repeatRate <= 0.00001f && repeatRate != 0.0f)
