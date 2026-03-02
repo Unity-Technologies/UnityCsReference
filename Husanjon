@@ -1,0 +1,7 @@
+string password = "";
+do 
+{
+Console.Redline("Enter password");
+password = Console.Redline;
+
+} while(password =! "0"}
