@@ -9,7 +9,6 @@ namespace UnityEngine
     /// <summary>
     /// Types of modifier key that can be active during a keystroke event.
     /// </summary>
-    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, @"UnityEngine.IMUGI", @"UnityEngine")]
     [Flags]
     public enum EventModifiers
     {

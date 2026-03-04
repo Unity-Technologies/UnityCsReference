@@ -7745,15 +7745,6 @@
     <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs">
       <Link>Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\AssemblyInfo.cs">
       <Link>Modules\InsightsEditor\AssemblyInfo.cs</Link>
     </Compile>
@@ -7783,15 +7774,6 @@
     </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstaller.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayMenuItem.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayMenuItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
@@ -11378,6 +11360,27 @@
     <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs">
       <Link>Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\InAppPurchasing.cs">
+      <Link>Modules\QuickInstall\Editor\InAppPurchasing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\LevelPlay.cs">
+      <Link>Modules\QuickInstall\Editor\LevelPlay.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
     </Compile>
@@ -12877,9 +12880,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs</Link>
@@ -14641,6 +14641,12 @@
     </Compile>
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\AssemblyInfo.cs">
+      <Link>Runtime\Export\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
+      <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_ca6f/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />

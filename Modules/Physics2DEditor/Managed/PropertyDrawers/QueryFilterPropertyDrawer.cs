@@ -18,7 +18,7 @@ namespace UnityEditor.LowLevelPhysics2D
         {
             var root = new VisualElement();
 
-            var foldout = new Foldout { text = property.displayName, viewDataKey = typeof(QueryFilterPropertyDrawer).ToString() };
+            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(QueryFilterPropertyDrawer).ToString() };
             root.Add(foldout);            
 
             const string categoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_Categories);

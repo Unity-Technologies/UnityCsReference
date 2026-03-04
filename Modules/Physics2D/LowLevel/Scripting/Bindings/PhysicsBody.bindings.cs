@@ -95,6 +95,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsBody_GetCallbackTarget(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetUserData(PhysicsBody body, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsBody::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetUserData(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetOwnerUserData(PhysicsBody body, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsBody::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetOwnerUserData(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformObject", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformObject(PhysicsBody body, Transform transform);
         [NativeMethod(Name = "PhysicsBody::GetTransformObject", IsThreadSafe = true)] extern internal static Transform PhysicsBody_GetTransformObject(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformWriteMode", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformWriteMode(PhysicsBody body, PhysicsBody.TransformWriteMode writeMode);

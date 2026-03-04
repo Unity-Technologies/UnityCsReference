@@ -164,7 +164,7 @@ namespace Unity.VectorGraphics
         }
 
         [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
-        internal static Texture2D RenderVectorImageToTexture2D(VectorImage vi, int width, int height, Material mat, int antiAliasing = 1)
+        internal static Texture2D RenderVectorImageToTexture2D(VectorImage vi, int width, int height, int antiAliasing = 1)
         {
             if (vi == null)
                 return null;

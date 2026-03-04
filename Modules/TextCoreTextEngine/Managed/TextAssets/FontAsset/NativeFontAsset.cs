@@ -219,10 +219,6 @@ namespace UnityEngine.TextCore.Text
             return (regularTypefaces, italicTypefaces);
         }
 
-
-        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern void CreateHbFaceIfNeeded();
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
@@ -234,6 +230,11 @@ namespace UnityEngine.TextCore.Text
 
         [FreeFunction("FontAsset::Destroy")]
         static extern void Destroy(IntPtr ptr, IntPtr managedObject);
+
+        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [FreeFunction("FontAsset::CreateHbFaceIfNeeded")]
+        internal static extern void CreateHbFaceIfNeeded();
 
         internal static class BindingsMarshaller
         {

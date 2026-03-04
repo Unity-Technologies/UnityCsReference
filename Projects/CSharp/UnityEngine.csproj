@@ -17,6 +17,12 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
+      <Link>External\AMDUnityPlugin\Scripts\AMDCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDDevice.cs">
+      <Link>External\AMDUnityPlugin\Scripts\AMDDevice.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\ClipperManaged\C#\clipper_library\clipper.cs">
       <Link>External\ClipperManaged\C#\clipper_library\clipper.cs</Link>
     </Compile>
@@ -173,6 +179,12 @@
     <Compile Include="..\..\External\LibTessDotNet\Tess.cs">
       <Link>External\LibTessDotNet\Tess.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\NVUnityPlugin\Scripts\NVCommands.cs">
+      <Link>External\NVUnityPlugin\Scripts\NVCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\NVUnityPlugin\Scripts\NVDevice.cs">
+      <Link>External\NVUnityPlugin\Scripts\NVDevice.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\baselib\baselib\CSharp\BaselibNativeLibrary.cs">
       <Link>External\baselib\baselib\CSharp\BaselibNativeLibrary.cs</Link>
     </Compile>
@@ -271,6 +283,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AI\Public\NavMeshBuildSettings.bindings.cs">
       <Link>Modules\AI\Public\NavMeshBuildSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AMD\ScriptBindings\Plugin.bindings.cs">
+      <Link>Modules\AMD\ScriptBindings\Plugin.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs">
       <Link>Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs</Link>
@@ -1333,6 +1348,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs">
       <Link>Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\NVIDIA\ScriptBindings\Plugin.bindings.cs">
+      <Link>Modules\NVIDIA\ScriptBindings\Plugin.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ParticleSystem\Managed\IJobParticleSystem.cs">
       <Link>Modules\ParticleSystem\Managed\IJobParticleSystem.cs</Link>
@@ -5770,6 +5788,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
+      <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_0.cs">
       <Link>artifacts\generated\UnityEvent\UnityEvent_0.cs</Link>

@@ -1470,6 +1470,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly PhysicsUserData userData { get => PhysicsShape_GetUserData(this); set => PhysicsShape_SetUserData(this, value); }
 
         /// <summary>
+        /// Get <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsShape_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsShape_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
         /// Create a shape proxy from the shape.
         /// </summary>
         /// <exception cref="System.ArgumentException">Thrown if the shape is not valid or is a Chain.</exception>

@@ -54,7 +54,7 @@ namespace UnityEditor
             public static readonly GUIContent editorTextRenderingMode = EditorGUIUtility.TrTextContent("Editor Default Text Rendering Mode");
             public static readonly GUIContent editorTextSharpness = EditorGUIUtility.TrTextContent("Editor Text Sharpness");
             public static readonly GUIContent editorTextGeneration = EditorGUIUtility.TrTextContent("Editor Text Generator Type");
-            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
+            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme","Choose between light and dark themes for the Editor.\nThe Editor theme cannot be changed while in Play mode.");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent useNewHierarchy = EditorGUIUtility.TrTextContent("Use new Hierarchy window");
             public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
@@ -529,9 +529,13 @@ By default, Windows will combine these under a single taskbar item.");
             CodeOptimization codeOptimization = (CodeOptimization)EditorGUILayout.EnumPopup(ExternalProperties.codeOptimizationOnStartup, m_ScriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
             m_ScriptDebugInfoEnabled = (codeOptimization == CodeOptimization.Debug ? true : false);
 
-            int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
-            if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
-                InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1,
+                    GeneralProperties.editorSkinOptions);
+                if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
+                    InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+            }
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {

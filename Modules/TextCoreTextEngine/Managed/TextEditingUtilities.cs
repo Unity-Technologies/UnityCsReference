@@ -608,23 +608,16 @@ namespace UnityEngine
             m_TextSelectingUtility.SelectNone();
         }
 
-        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
-        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool TouchScreenKeyboardShouldBeUsed()
+        internal bool TouchScreenKeyboardCanBeUsed()
         {
-            RuntimePlatform platform = Application.platform;
-            switch (platform)
-            {
-                case RuntimePlatform.Android:
-                case RuntimePlatform.WebGLPlayer:
-                case RuntimePlatform.WSAPlayerX64:
-                case RuntimePlatform.WSAPlayerX86:
-                case RuntimePlatform.WSAPlayerARM:
-                    return !TouchScreenKeyboard.isInPlaceEditingAllowed;
-                default:
-                    return TouchScreenKeyboard.isSupported;
-            }
+            return TouchScreenKeyboard.isSupported;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool PhysicalKeyboardCanBeUsed()
+        {
+            return TouchScreenKeyboard.isSupported ? TouchScreenKeyboard.isInPlaceEditingAllowed : true;
         }
     }
 }

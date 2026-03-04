@@ -38,5 +38,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsChain_GetCallbackTarget(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetUserData(PhysicsChain chain, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsChain::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetUserData(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetOwnerUserData(PhysicsChain chain, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsChain::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetOwnerUserData(PhysicsChain chain);
     }
 }

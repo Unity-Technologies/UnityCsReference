@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
@@ -26,18 +24,6 @@ namespace UnityEngine
 
                 return s_DefaultTextSettings;
             }
-        }
-
-        static List<FontAsset> s_FallbackOSFontAssetIMGUIInternal;
-
-        internal override List<FontAsset> GetStaticFallbackOSFontAsset()
-        {
-            return s_FallbackOSFontAssetIMGUIInternal;
-        }
-
-        internal override void SetStaticFallbackOSFontAsset(List<FontAsset> fontAssets)
-        {
-            s_FallbackOSFontAssetIMGUIInternal = fontAssets;
         }
     }
 }

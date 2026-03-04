@@ -46,6 +46,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserData(PhysicsJoint joint, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsJoint::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetUserData(PhysicsJoint joint);
+        [NativeMethod(Name = "PhysicsJoint::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwnerUserData(PhysicsJoint joint, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsJoint::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetOwnerUserData(PhysicsJoint joint);
 
         // PhysicsDistanceJoint.
         [NativeMethod(Name = "PhysicsDistanceJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsDistanceJointDefinition DistanceJoint_GetDefaultDefinition(bool useSettings);

@@ -15,7 +15,9 @@ namespace UnityEngine.LowLevelPhysics2D
     {
         [NativeMethod(Name = "Create", IsThreadSafe = true)] extern internal static PhysicsComposer PhysicsComposer_Create(Allocator allocator);
         [NativeMethod(Name = "Destroy", IsThreadSafe = true)] extern internal static bool PhysicsComposer_Destroy(PhysicsComposer composer);
+        [NativeMethod(Name = "DestroyAll", IsThreadSafe = true)] extern internal static void PhysicsComposer_DestroyAll();
         [NativeMethod(Name = "IsValid", IsThreadSafe = true)] extern internal static bool Composer_IsValid(PhysicsComposer composer);
+        [NativeMethod(Name = "GetComposers", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_GetComposers(Allocator allocator);
         [NativeMethod(Name = "AddLayer", IsThreadSafe = true)] extern internal static PhysicsComposer.LayerHandle PhysicsComposer_AddLayer(PhysicsComposer composer, PhysicsComposer.Layer layer);
         [NativeMethod(Name = "RemoveLayer", IsThreadSafe = true)] extern internal static void PhysicsComposer_RemoveLayer(PhysicsComposer composer, PhysicsComposer.LayerHandle layerHandle);
         [NativeMethod(Name = "ClearLayers", IsThreadSafe = true)] extern internal static void PhysicsComposer_ClearLayers(PhysicsComposer composer);

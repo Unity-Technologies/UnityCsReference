@@ -1012,6 +1012,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly PhysicsUserData userData { get => PhysicsBody_GetUserData(this); set => PhysicsBody_SetUserData(this, value); }
 
         /// <summary>
+        /// Get <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsBody_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsBody_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
         /// Get/Set the transform object associated with the body.
         /// This can be used as a write transform and/or as a hint for debug drawing.
         /// See <see cref="LowLevelPhysics2D.PhysicsBody.transformWriteMode"/>.

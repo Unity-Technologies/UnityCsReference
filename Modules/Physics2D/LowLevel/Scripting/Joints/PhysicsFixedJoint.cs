@@ -222,6 +222,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly PhysicsUserData userData { get => m_Id.userData; set => m_Id.userData = value; }
 
         /// <summary>
+        /// Get <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => m_Id.ownerUserData; }
+
+        /// <summary>
+        /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => m_Id.SetOwnerUserData(physicsUserData, ownerKey);
+
+        /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.
         /// This is only used in the Unity Editor or in a Development Player.
         /// </summary>

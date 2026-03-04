@@ -2452,7 +2452,9 @@ namespace UnityEditor
                         api == GraphicsDeviceType.Metal ||
                         api == GraphicsDeviceType.Vulkan ||
                         api == GraphicsDeviceType.OpenGLES3 ||
-                        api == GraphicsDeviceType.Direct3D12)
+                        api == GraphicsDeviceType.Direct3D12 ||
+                        api == GraphicsDeviceType.GameCoreXboxOne ||
+                        api == GraphicsDeviceType.GameCoreXboxSeries )
                     {
                         platformSupportsBatching = true;
                         break;
