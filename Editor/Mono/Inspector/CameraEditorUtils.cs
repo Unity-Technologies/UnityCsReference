@@ -385,6 +385,19 @@ namespace UnityEditor
             }
         }
 
+        [InitializeOnLoadMethod]
+        static void ReleasePreviewTexture()
+        {
+            RenderPipelineManager.activeRenderPipelineAssetChanged += (_, __) =>
+            {
+                if (s_PreviewTexture != null)
+                {
+                    s_PreviewTexture.Release();
+                    s_PreviewTexture = null;
+                }
+            };
+        }
+
         static RenderTexture GetPreviewTexture(int width,  int height, bool hdr)
         {
             if (s_PreviewTexture != null
@@ -412,7 +425,6 @@ namespace UnityEditor
                 // SRPs
                 s_PreviewTexture.enableRandomWrite = true;
             }
-
             return s_PreviewTexture;
         }
 

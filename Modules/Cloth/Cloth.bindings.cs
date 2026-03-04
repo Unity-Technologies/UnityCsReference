@@ -5,11 +5,8 @@
 using System;
 
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.Internal;
-using System.Runtime.InteropServices;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 namespace UnityEngine
@@ -142,7 +139,5 @@ namespace UnityEngine
         {
             SetEnabledFading(enabled, 0.5f);
         }
-
-        extern internal RaycastHit Raycast(Ray ray, float maxDistance, ref bool hasHit);
     }
 }

@@ -1242,12 +1242,7 @@ namespace UnityEditor
             var win = mouseOverWindow;
             var ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
 
-            if (ret)
-            {
-                // In case the window under the mouse handle the Focus event, it should be focused on.
-                win.Focus();
-            }
-            else
+            if (!ret)
             {
                 // Otherwise get the current focused window to handle that event.
                 win = focusedWindow;

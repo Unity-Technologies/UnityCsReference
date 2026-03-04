@@ -291,32 +291,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RemoveFromClassList(k_SelectedInInspectorClassName);
         }
 
-        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string technicalName, string version, EditorWindow anchorWindow)
         {
             var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_ApplicationProxy, anchorWindow);
-
-            var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
-            var packageName = string.Empty;
-            var packageVersion = string.Empty;
-
-            if (packageNameAndVersion.Contains("@"))
-            {
-                var values = packageNameAndVersion.Split('@');
-                if (values.Count() > 1)
-                {
-                    packageName = values[0];
-                    packageVersion = values[1];
-                }
-            }
-            else
-                packageName = packageNameAndVersion;
-
             DropdownElement.ShowDropdown(this, dropdown);
 
             // We need to set the name and version after the dropdown is shown,
             // so that the OnTextFieldChange of placeholder gets called
-            dropdown.packageNameField.value = packageName;
-            dropdown.packageVersionField.value = packageVersion;
+            dropdown.packageNameField.value = technicalName;
+            dropdown.packageVersionField.value = version;
             return dropdown;
         }
 

@@ -34,6 +34,7 @@ namespace UnityEditor
         [SerializeField] public float ConstraintSize = 0.05f;
         [SerializeField] public float GradientStartValue = 0.0f;
         [SerializeField] public float GradientEndValue = 1.0f;
+        [SerializeField] public MeshCollider meshCollider = null;
     }
 
     [CustomEditor(typeof(Cloth))]
@@ -339,8 +340,7 @@ namespace UnityEditor
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
-            bool hasHit = false;
-            RaycastHit hit = cloth.Raycast(mouseRay, Mathf.Infinity, ref hasHit);
+            bool hasHit = state.meshCollider.Raycast(mouseRay, out RaycastHit hit, Mathf.Infinity);
 
             if (!hasHit)
             {
@@ -512,6 +512,15 @@ namespace UnityEditor
 
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
+        }
+
+        void OnDisable()
+        {
+            if (state.meshCollider != null)
+            {
+                DestroyImmediate(state.meshCollider);
+                state.meshCollider = null;
+            }
         }
 
         float GetCoefficient(ClothSkinningCoefficient coefficient)
@@ -1602,9 +1611,31 @@ namespace UnityEditor
         public void OnSceneGUI()
         {
             if (!editingConstraints && !editingSelfAndInterCollisionParticles)
+            {
+                //we are no longer editing constraints dispose of the support mesh collider
+                if (state.meshCollider != null)
+                {
+                    DestroyImmediate(state.meshCollider);
+                    state.meshCollider = null;
+                }
                 return;
+            }
 
             DoOnPreSceneGUI();
+
+            //ensure we have a mesh collider for painting logic to properly execute from c# api
+            if (state.meshCollider == null)
+            {
+                state.meshCollider = cloth.gameObject.AddComponent<MeshCollider>();
+                state.meshCollider.excludeLayers = Physics.AllLayers;
+                state.meshCollider.hideFlags = HideFlags.DontSaveInEditor | HideFlags.HideInInspector;
+
+                //get the mesh from the associated renderer. if by some sort of scene corruption we don't have a renderer (very unlikely simply leave the shared mesh as null)
+                //this is a very infrequent operation and as such we can spend time here to fetch the smr
+                var smr = cloth.GetComponent<SkinnedMeshRenderer>();
+                if (smr != null)
+                    state.meshCollider.sharedMesh = smr.sharedMesh;
+            }
 
             if (editingConstraints)
                 OnSceneEditConstraintsGUI();

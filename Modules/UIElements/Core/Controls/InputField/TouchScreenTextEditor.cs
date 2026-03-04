@@ -76,14 +76,7 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
-                // Stop processing if nothing has changed - UpdateText affects performance, even if we have not
-                // modified the string therefore we try to use it sparingly
-                if (editingUtilities.text == touchKeyboardText)
-                    return;
-
-                // When we are utilizing our own input field, we need to do some extra work such as making
-                // sure the caret is at the right position, characters being entered are valid, any extra
-                // validation should be in place, etc.
+                // Note: When HideMobileInput is true, we display caret in input field, also caret can be moved by TouchScreenKeybard
                 if (edition.hideMobileInput)
                 {
                     if (editingUtilities.text != touchKeyboardText)
@@ -121,6 +114,11 @@ namespace UnityEngine.UIElements
                 // soft keyboard's value with our text value.
                 else
                 {
+                    // Stop processing if nothing has changed - UpdateText affects performance, even if we have not
+                    // modified the string therefore we try to use it sparingly
+                    if (editingUtilities.text == touchKeyboardText)
+                        return;
+
                     edition.UpdateText(touchKeyboardText);
 
                     // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.

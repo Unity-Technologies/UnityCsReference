@@ -4974,15 +4974,6 @@
     <Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs">
       <Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\DisablementPopup.cs">
       <Link>Modules\InsightsEditor\DisablementPopup.cs</Link>
     </Compile>
@@ -4991,15 +4982,6 @@
     </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstaller.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayMenuItem.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayMenuItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
@@ -7043,6 +7025,27 @@
     </Compile>
     <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs">
       <Link>Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\InAppPurchasing.cs">
+      <Link>Modules\QuickInstall\Editor\InAppPurchasing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\LevelPlay.cs">
+      <Link>Modules\QuickInstall\Editor\LevelPlay.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
