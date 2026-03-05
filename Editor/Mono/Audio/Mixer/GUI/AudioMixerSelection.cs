@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEditor.Audio;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -69,9 +69,7 @@ namespace UnityEditor
             List<AudioMixerGroupController> allGroups = m_Controller.GetAllAudioGroupsSlow();
 
             foreach (var g in allGroups)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selected.Contains(g))
-#pragma warning restore UA2001
                     ChannelStripSelection.Add(g);
         }
 

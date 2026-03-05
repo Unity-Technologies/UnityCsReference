@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -114,7 +115,7 @@ namespace UnityEditor
             return ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
         }
 
-        private static Dictionary<Type, ObsoleteAttribute> s_ObsoleteTypes;
+        private static Dictionary<Type, (string, MessageType)> s_ObsoleteTypeMessages;
 
         public static void DisplayDeprecationMessageIfNecessary(Editor editor)
         {
@@ -123,24 +124,24 @@ namespace UnityEditor
                 return;
             }
 
-            if (s_ObsoleteTypes == null)
+            if (s_ObsoleteTypeMessages == null)
             {
                 var obsoleteTypes = TypeCache.GetTypesWithAttribute<ObsoleteAttribute>();
-                s_ObsoleteTypes = new Dictionary<Type, ObsoleteAttribute>(obsoleteTypes.Count);
+                s_ObsoleteTypeMessages = new Dictionary<Type, (string, MessageType)>(obsoleteTypes.Count);
                 foreach (var type in obsoleteTypes)
                 {
-                    var attr = (ObsoleteAttribute)Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute));
-                    s_ObsoleteTypes[type] = attr;
+                    var attr = type.GetCustomAttribute<ObsoleteAttribute>();
+                    var message = string.IsNullOrEmpty(attr.Message) ? "This component has been marked as obsolete." : attr.Message;
+                    message = ObsoleteMessageHelper.StripVersionTags(message);
+                    var messageType = attr.IsError ? MessageType.Error : MessageType.Warning;
+                    s_ObsoleteTypeMessages[type] = (message, messageType);
                 }
             }
 
-            if (!s_ObsoleteTypes.TryGetValue(editor.target.GetType(), out var obsoleteAttribute))
-            {
+            if (!s_ObsoleteTypeMessages.TryGetValue(editor.target.GetType(), out var obsoleteMessage))
                 return;
-            }
 
-            var message = string.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
-            EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
+            EditorGUILayout.HelpBox(obsoleteMessage.Item1, obsoleteMessage.Item2);
         }
 
         public static void DrawAddedComponentBackground(Rect position, Object[] targets, float adjust = 0)

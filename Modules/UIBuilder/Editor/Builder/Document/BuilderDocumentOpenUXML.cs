@@ -965,8 +965,8 @@ namespace Unity.UI.Builder
 
                 if (hasUnsavedChanges && !isAnonymousDocument)
                 {
-                    BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy |
-                                                     BuilderAssetUtilities.LiveReloadChanges.Styles);
+                    UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
+                    UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAssetBackup);
                 }
 
                 ClearVisualTreeAssetDirtyFlags();

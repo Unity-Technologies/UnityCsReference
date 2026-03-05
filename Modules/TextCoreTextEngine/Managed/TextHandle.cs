@@ -931,6 +931,17 @@ namespace UnityEngine.TextCore.Text
             IsCachedPermanentATG = true;
             textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
         }
+
+        internal bool IsMainDirectionRTL()
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("IsMainDirectionRTL should only be called for ATG.");
+                return false;
+            }
+
+            return TextLib.IsMainDirectionRTL(textGenerationInfo);
+        }
     }
 }
 

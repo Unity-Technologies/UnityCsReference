@@ -436,7 +436,7 @@ namespace UnityEngine.UIElements
 
         void CycleItems(int firstIndex)
         {
-            if (firstIndex == firstVisibleIndex)
+            if (firstIndex == firstVisibleIndex || firstVisibleIndex < 0)
                 return;
 
             var currentFirstVisibleItem = firstVisibleItem;

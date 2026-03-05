@@ -9,31 +9,29 @@ using UnityEngine;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Container holding the data needed to start a drag and drop operation.
+    /// Contains the data needed to start a drag and drop operation.
     /// </summary>
-    /// <remarks>Do not keep a reference to this class or any of its data past the scope of <see cref="IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/>.</remarks>
     public readonly ref struct HierarchyViewDragAndDropSetupData
     {
         readonly Dictionary<string, object> m_GenericData;
 
         /// <summary>
-        /// The <see cref="HierarchyNode"/>s that are being dragged. These nodes need to be converted into the proper
-        /// drag and drop data by the <see cref="IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/> method.
+        /// Gets the <see cref="HierarchyNode"/> instances involved in the drag and drop operation.
         /// </summary>
         public ReadOnlySpan<HierarchyNode> Nodes { get; }
 
         /// <summary>
-        /// <see cref="UnityEngine.Object"/> references being dragged. <see cref="HierarchyNodeTypeHandler"/>s can populate this member.
+        /// Gets the <see cref="UnityEngine.Object"/> references that are dragged. <see cref="HierarchyNodeTypeHandler"/> instances can populate this list.
         /// </summary>
         public List<EntityId> EntityIds { get; }
 
         /// <summary>
-        /// Paths of assets being dragged. <see cref="HierarchyNodeTypeHandler"/>s can populate this member.
+        /// Gets the paths of assets involved in the drag and drop operation. <see cref="HierarchyNodeTypeHandler"/> instances can populate this list.
         /// </summary>
         public List<string> Paths { get; }
 
         /// <summary>
-        /// The <see cref="HierarchyView"/> where the drag and drop operation is happening.
+        /// Gets the <see cref="HierarchyView"/> where the drag and drop operation occurs.
         /// </summary>
         public HierarchyView View { get; }
 

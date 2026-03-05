@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -284,9 +285,7 @@ namespace UnityEditor.Search
                     m_ListView.selectedIndex = nextSelectedIndex;
                 else
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_ListView.selectedIndicesList.Contains(nextSelectedIndex))
-#pragma warning restore UA2001
                     {
                         using var pool = ListPool<int>.Get(out var newSelection);
                         if (nextSelectedIndex > currentIndex)

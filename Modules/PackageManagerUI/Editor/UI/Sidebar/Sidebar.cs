@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
@@ -18,72 +16,39 @@ internal class Sidebar : ScrollView
         public override object CreateInstance()
         {
             var container = ServicesContainer.instance;
-            return new Sidebar(
-                container.Resolve<IUpmRegistryClient>(),
-                container.Resolve<IProjectSettingsProxy>(),
-                container.Resolve<IPageManager>(),
-                container.Resolve<IPackageDatabase>(),
+            return new Sidebar(container.Resolve<PageManager>(),
                 container.Resolve<IPackageManagerPrefs>());
         }
     }
 
-    private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
+    private Foldout m_CloudFoldout;
     private Foldout m_RegistriesFoldout;
+
+    private bool m_FoldoutsCreated = false;
 
     private readonly string k_FoldoutClassName = "sidebarFoldout";
 
-    private readonly IUpmRegistryClient m_UpmRegistryClient;
-    private readonly IProjectSettingsProxy m_SettingsProxy;
     private readonly IPageManager m_PageManager;
-    private readonly IPackageDatabase m_PackageDatabase;
     private readonly IPackageManagerPrefs m_PackageManagerPrefs;
-
-    public Sidebar(
-        IUpmRegistryClient upmRegistryClient,
-        IProjectSettingsProxy settingsProxy,
-        IPageManager pageManager,
-        IPackageDatabase packageDatabase,
-        IPackageManagerPrefs packageManagerPrefs)
+    public Sidebar(IPageManager pageManager, IPackageManagerPrefs packageManagerPrefs)
     {
-        m_UpmRegistryClient = upmRegistryClient;
-        m_SettingsProxy = settingsProxy;
         m_PageManager = pageManager;
-        m_PackageDatabase = packageDatabase;
         m_PackageManagerPrefs = packageManagerPrefs;
-    }
 
-    public void OnEnable()
-    {
-        m_UpmRegistryClient.onRegistriesModified += UpdateScopedRegistryRelatedRows;
-        m_UpmRegistryClient.onRegistriesModified += UpdateComplianceRelatedRow;
-        m_PageManager.onActivePageChanged += OnActivePageChanged;
-        m_PackageDatabase.onPackagesChanged += OnPackageChanged;
-    }
-
-    public void OnCreateGUI()
-    {
-        CreateRowsAndFoldouts();
-        OnActivePageChanged(m_PageManager.activePage);
-    }
-
-    public void OnDisable()
-    {
-        m_UpmRegistryClient.onRegistriesModified -= UpdateScopedRegistryRelatedRows;
-        m_UpmRegistryClient.onRegistriesModified -= UpdateComplianceRelatedRow;
-        m_PageManager.onActivePageChanged -= OnActivePageChanged;
-        m_PackageDatabase.onPackagesChanged -= OnPackageChanged;
-
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().FilterByType<Foldout>().Select(i => i.value).ToArray();
-#pragma warning restore UA2001
+        RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
     }
 
     private void CreateRowsAndFoldouts()
     {
+        if (m_FoldoutsCreated)
+            return;
+
         var projectFoldout = CreateAndAddFoldout(L10n.Tr("Project"));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id)));
+        projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(SamplesPage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id)));
 
@@ -92,22 +57,40 @@ internal class Sidebar : ScrollView
         sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id)));
         sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(BuiltInPage.k_Id)));
 
-        var cloudFoldout = CreateAndAddFoldout(L10n.Tr("Cloud"));
-        foreach (var page in m_PageManager.orderedExtensionPages)
-            cloudFoldout.Add(CreateSidebarRow(page));
-
+        m_CloudFoldout = CreateAndAddFoldout(L10n.Tr("Cloud"));
         m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries"));
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var foldouts = Children().FilterByType<Foldout>().ToArray();
-#pragma warning restore UA2001
+        m_FoldoutsCreated = true;
+    }
+
+    private void OnAttachToPanel(AttachToPanelEvent evt)
+    {
+        CreateRowsAndFoldouts();
+
+        m_PageManager.onActivePageChanged += OnActivePageChanged;
+        m_PageManager.onExtensionPagesChanged += UpdateExtensionPageRelatedRows;
+        m_PageManager.onScopedRegistryPagesChanged += UpdateScopedRegistryRelatedRows;
+        m_PageManager.onStateChanged += OnStateChanged;
+
+        UpdateExtensionPageRelatedRows();
+        UpdateScopedRegistryRelatedRows();
+
+        var foldouts = Children().FilterByType<Foldout>().ToNewArray(childCount);
         if (m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus?.Length == foldouts.Length)
             for (var i = 0; i < foldouts.Length; i++)
                 foldouts[i].value = m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus[i];
 
-        UpdateComplianceRelatedRow();
-        UpdateErrorsAndWarningsRelatedRow();
-        UpdateScopedRegistryRelatedRows();
+        OnActivePageChanged(m_PageManager.activePage);
+    }
+
+    private void OnDetachFromPanel(DetachFromPanelEvent evt)
+    {
+        m_PageManager.onActivePageChanged -= OnActivePageChanged;
+        m_PageManager.onExtensionPagesChanged -= UpdateExtensionPageRelatedRows;
+        m_PageManager.onScopedRegistryPagesChanged -= UpdateScopedRegistryRelatedRows;
+        m_PageManager.onStateChanged -= OnStateChanged;
+
+        m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().FilterByType<Foldout>().SelectAsEnumerable(i => i.value).ToNewArray(childCount);
     }
 
     private Foldout CreateAndAddFoldout(string foldoutName)
@@ -124,12 +107,8 @@ internal class Sidebar : ScrollView
         var pageId = page.id;
         var sidebarRow = new SidebarRow(page.id, page.displayName, page.icon);
         sidebarRow.OnLeftClick(() => OnRowClick(pageId));
+        UIUtils.SetElementDisplay(sidebarRow, page.visible);
         return sidebarRow;
-    }
-
-    private void CreateAndAddSeparator()
-    {
-        Add(new VisualElement { classList = { "sidebarSeparator" } });
     }
 
     private void OnRowClick(string pageId)
@@ -148,75 +127,44 @@ internal class Sidebar : ScrollView
         m_CurrentlySelectedRow?.SetSelected(true);
     }
 
-    private void UpdateComplianceRelatedRow()
+    private void OnStateChanged(PageStateChangeArgs args)
     {
-        var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
-        var showNonCompliantPage = m_PackageDatabase.allPackages.Exists(nonCompliancePage.ShouldInclude);
+        var row = GetRow(args.page.id);
+        if (row == null)
+            return;
 
-        UIUtils.SetElementDisplay(GetRow(InProjectNonCompliancePage.k_Id), showNonCompliantPage);
-
-        if (!showNonCompliantPage && m_PageManager.activePage == nonCompliancePage)
-            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
+        if (args.visible)
+            row.UpdateIcon(args.icon);
+        UIUtils.SetElementDisplay(row, args.visible);
     }
 
-    private void UpdateErrorsAndWarningsRelatedRow()
+    private void SyncFoldoutWithPages(Foldout foldout, IEnumerable<IPage> pages)
     {
-        var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
-        var showErrorsAndWarningsPage = m_PackageDatabase.allPackages.AnyMatches(errorsAndWarningsPage.ShouldInclude);
-        var errorsAndWarningsRow = GetRow(InProjectErrorsAndWarningsPage.k_Id);
+        var oldRows = foldout.Children().FilterByType<SidebarRow>().ToNewDictionary(r => r.pageId);
 
-        UIUtils.SetElementDisplay(errorsAndWarningsRow, showErrorsAndWarningsPage);
+        foldout.Clear();
+        foreach (var page in pages)
+            foldout.Add(oldRows.GetValueOrDefault(page.id) ?? CreateSidebarRow(page));
 
-        if (showErrorsAndWarningsPage)
-            errorsAndWarningsRow?.UpdateIcon(errorsAndWarningsPage.icon);
-        else if (m_PageManager.activePage == errorsAndWarningsPage)
-            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
+        UIUtils.SetElementDisplay(foldout, foldout.childCount > 0);
     }
 
-    private void OnPackageChanged(PackagesChangeArgs args)
+    private void UpdateExtensionPageRelatedRows()
     {
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var changedPackages = args.added.Join(args.removed).Join(args.updated).Join(args.preUpdate).Join(args.progressUpdated);
-#pragma warning restore UA2001
-
-        var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
-        if (changedPackages.AnyMatches(p => errorsAndWarningsPage.ShouldInclude(p)))
-            UpdateErrorsAndWarningsRelatedRow();
-
-        var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
-        if (changedPackages.AnyMatches(p => nonCompliancePage.ShouldInclude(p)))
-            UpdateComplianceRelatedRow();
+        SyncFoldoutWithPages(m_CloudFoldout, m_PageManager.orderedExtensionPages);
     }
 
     private void UpdateScopedRegistryRelatedRows()
     {
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var scopedRegistries = m_SettingsProxy.scopedRegistries.ToArray();
-#pragma warning restore UA2001
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var newPages = scopedRegistries.Length > 0 ? new []{ m_PageManager.GetPage(MyRegistriesPage.k_Id) }.Join(scopedRegistries.Select(r => m_PageManager.GetPage(r))).ToArray() : Array.Empty<IPage>();
-#pragma warning restore UA2001
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var oldRows = m_RegistriesFoldout.Children().FilterByType<SidebarRow>().ToDictionary(r => r.pageId);
-#pragma warning restore UA2001
-
-        m_RegistriesFoldout.Clear();
-        foreach (var page in newPages)
-            m_RegistriesFoldout.Add(oldRows.GetValueOrDefault(page.id) ?? CreateSidebarRow(page));
-
-        UIUtils.SetElementDisplay(m_RegistriesFoldout, newPages.Length > 0);
-
-        var activePageId = m_PageManager.activePage.id;
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        if (oldRows.ContainsKey(activePageId) && newPages.All(p => p.id != activePageId))
-#pragma warning restore UA2001
-            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
+        SyncFoldoutWithPages(m_RegistriesFoldout, m_PageManager.orderedScopedRegistryPages);
     }
 
     public SidebarRow GetRow(string pageId)
     {
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return Children().FilterByType<Foldout>().SelectMany(f => f.Children().FilterByType<SidebarRow>()).FirstOrDefault(i => i.pageId == pageId);
-#pragma warning restore UA2001
+        foreach (var foldout in Children())
+            foreach (var item in foldout.Children())
+                if (item is SidebarRow row && row.pageId == pageId)
+                    return row;
+        return null;
     }
 }

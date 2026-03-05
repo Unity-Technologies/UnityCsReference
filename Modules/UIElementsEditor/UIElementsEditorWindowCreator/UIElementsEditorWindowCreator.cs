@@ -51,7 +51,6 @@ namespace UnityEditor.UIElements
 
         bool m_IsUssEnable = true;
         bool m_IsUxmlEnable = true;
-        bool m_WaitingForSecondImport = false;
 
         private string cSharpPath
         {
@@ -108,44 +107,10 @@ namespace UnityEditor.UIElements
         public void CreateGUI()
         {
             // After the c# file has been created and the domain.reload executed, we want to close the creator window and open the new editor window
-            if (m_CSharpName != "" && ClassExists() && !m_WaitingForSecondImport)
+            if (m_CSharpName != "" && ClassExists())
             {
-                EditorApplication.delayCall += () =>
-                {
-                    var defaultReferenceNames = new List<string>();
-                    var defaultReferenceObjects = new List<UnityEngine.Object>();
-
-                    // Add serialized references
-                    if (m_IsUxmlEnable)
-                    {
-                        var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
-
-                        defaultReferenceNames.Add("m_VisualTreeAsset");
-                        defaultReferenceObjects.Add(vta);
-                    }
-                    else if (!m_IsUxmlEnable && m_IsUssEnable)
-                    {
-                        // If there is no uxml file, the stylesheet will be added to an element in the C# script
-                        var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
-
-                        defaultReferenceNames.Add("m_StyleSheet");
-                        defaultReferenceObjects.Add(styleSheet);
-                    }
-
-                    if (defaultReferenceNames.Count > 0)
-                    {
-                        m_WaitingForSecondImport = true;
-                        RestoreWindowState();
-
-                        var importer = AssetImporter.GetAtPath(cSharpPath) as MonoImporter;
-                        importer.SetDefaultReferences(defaultReferenceNames.ToArray(), defaultReferenceObjects.ToArray());
-                        AssetDatabase.ImportAsset(cSharpPath);
-                    }
-                    else
-                    {
-                        OnAfterScriptCreation();
-                    }
-                };
+                RestoreWindowState();
+                OnAfterScriptCreation();
             }
             else
             {
@@ -211,15 +176,6 @@ namespace UnityEditor.UIElements
 
             // Close current window
             Close();
-        }
-
-        void OnGUI()
-        {
-            if (m_WaitingForSecondImport && !EditorApplication.isCompiling)
-            {
-                OnAfterScriptCreation();
-                m_WaitingForSecondImport = false;
-            }
         }
 
         void SetupLayout()
@@ -377,8 +333,7 @@ namespace UnityEditor.UIElements
                 if (m_IsUssEnable)
                 {
                     File.WriteAllText(ussPath, GetUssTemplateContent());
-                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-
+                    AssetDatabase.ImportAsset(ussPath, ImportAssetOptions.ForceSynchronousImport);
                     styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
                 }
 
@@ -407,8 +362,28 @@ namespace UnityEditor.UIElements
                     visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
                 }
 
+                var defaultReferenceNames = new List<string>();
+                var defaultReferenceObjects = new List<UnityEngine.Object>();
+                if (visualTreeAsset != null)
+                {
+                    defaultReferenceNames.Add("m_VisualTreeAsset");
+                    defaultReferenceObjects.Add(visualTreeAsset);
+                }
+                if (styleSheet != null)
+                {
+                    defaultReferenceNames.Add("m_StyleSheet");
+                    defaultReferenceObjects.Add(styleSheet);
+                }
+
                 File.WriteAllText(cSharpPath, UIElementsTemplate.CreateCSharpTemplate(m_CSharpName, m_IsUxmlEnable, m_IsUssEnable && !m_IsUxmlEnable));
-                AssetDatabase.Refresh();
+                AssetDatabase.ImportAsset(cSharpPath, ImportAssetOptions.ForceSynchronousImport);
+
+                if (defaultReferenceNames.Count > 0)
+                {
+                    var importer = AssetImporter.GetAtPath(cSharpPath) as MonoImporter;
+                    importer.SetDefaultReferences(defaultReferenceNames.ToArray(), defaultReferenceObjects.ToArray());
+                    importer.SaveAndReimport();
+                }
             }
             else
             {

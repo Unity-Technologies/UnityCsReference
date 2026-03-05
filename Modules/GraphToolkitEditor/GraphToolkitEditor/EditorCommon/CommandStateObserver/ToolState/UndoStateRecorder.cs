@@ -375,6 +375,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         static HashSet<UndoStateRecorder> s_UndoStateModified = new HashSet<UndoStateRecorder>();
+        static bool s_CompleteRestore;
 
         internal static void ClearNeedToRestore()
         {
@@ -384,6 +385,12 @@ namespace Unity.GraphToolkit.Editor
             }
 
             s_UndoStateModified.Clear();
+            s_CompleteRestore = false;
+        }
+
+        internal static void PerformCompleteRestore()
+        {
+            s_CompleteRestore = true;
         }
 
         /// <summary>
@@ -432,6 +439,22 @@ namespace Unity.GraphToolkit.Editor
                             stateComponent.ApplyUndoData(newStateComponent, changeset);
                             modifiedStateComponents.Add(stateComponent);
                         }
+                    }
+                }
+            }
+            else if (s_CompleteRestore) // Handle undo operations for modifications performed outside the context of the graph window
+            {
+                foreach (var component in state.AllStateComponents)
+                {
+                    if (component is GraphModelStateComponent graphModelState && graphModelState.GraphModel != null)
+                    {
+                        graphModelState.GraphModel.UndoRedoPerformed();
+                        using (var graphModelStateUpdater = graphModelState.UpdateScope)
+                        {
+                            graphModelStateUpdater.AssetChangedOnDisk();
+                        }
+
+                        break;
                     }
                 }
             }

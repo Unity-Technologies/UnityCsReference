@@ -179,6 +179,10 @@ namespace Unity.GraphToolkit.Editor
                     AssetDatabase.DeleteAsset(path);
 
                 DoCreateAssetFile(path);
+
+                var extension = Path.GetExtension(path);
+                if (!string.IsNullOrEmpty(extension) && GraphObjectFactory.KnowsExtension(extension))
+                    GraphToolkitAnalytics.SendGraphToolCreatedEvent(extension);
             }
 
             return path;
@@ -414,6 +418,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual void OnAfterDeserialize()
         {
             m_GraphModel?.SetGraphObject(this);
+            UndoStateRecorder.PerformCompleteRestore();
         }
 
         /// <summary>

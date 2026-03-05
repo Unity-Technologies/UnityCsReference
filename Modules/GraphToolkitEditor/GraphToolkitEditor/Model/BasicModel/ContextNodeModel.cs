@@ -96,12 +96,12 @@ namespace Unity.GraphToolkit.Editor
 
                 if ((spawnFlags & SpawnFlags.Orphan) == 0)
                 {
-                    GraphModel.RegisterBlockNode(blockModel);
+                    GraphModel?.RegisterBlockNode(blockModel);
 
                     // RemoveElements potentially removed the block from the graph. Since we are inserting it inside this context node
                     // instead, it is not technically removed.
                     if (wasRemoved)
-                        GraphModel.CurrentGraphChangeDescription.RemoveDeletedModel(blockModel);
+                        GraphModel?.CurrentGraphChangeDescription.RemoveDeletedModel(blockModel);
                 }
 
                 if (index > m_Blocks.Count)
@@ -125,7 +125,20 @@ namespace Unity.GraphToolkit.Editor
             blockModel.GraphModel = GraphModel;
             blockModel.ContextNodeModel = this;
             blockModel.OnCreateNode(); // Needs to be after setting the ContextNodeModel so that the block can access it during OnCreateNode and DefineNode.
-            GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
+
+            GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
+        }
+
+        public override void OnCreateNode()
+        {
+            base.OnCreateNode();
+
+            // When a context node is created, it may already have blocks. In that case, we need to set the GraphModel of the blocks and register them.
+            foreach (var block in m_Blocks)
+            {
+                block.GraphModel = GraphModel;
+                GraphModel.RegisterBlockNode(block);
+            }
         }
 
         /// <inheritdoc />

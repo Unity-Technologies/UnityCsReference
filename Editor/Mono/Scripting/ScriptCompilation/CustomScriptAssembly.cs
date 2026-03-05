@@ -6,11 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEditor.Build;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
-using UnityEditor.Scripting.Compilers;
-using UnityEditorInternal;
+using Unity.Collections;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -390,9 +388,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isTestAssembly = DefineConstraints != null && DefineConstraints.Contains("UNITY_INCLUDE_TESTS");
-#pragma warning restore UA2001
             var isTestFrameworkAssembly = DefineConstraints != null && Array.Exists(DefineConstraints, x => x == "UNITY_TESTS_FRAMEWORK");
             if (!buildingForEditor && (isTestAssembly || isTestFrameworkAssembly) && !isBuildingWithTestAssemblies)
             {

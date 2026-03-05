@@ -9,36 +9,17 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class MultiSelectDetails : VisualElement
+    internal class MultiSelectDetails : BaseDetailsView
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new MultiSelectDetails(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageOperationDispatcher>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IPackageManagerPrefs>(),
-                    container.Resolve<IAssetStoreClient>(),
-                    container.Resolve<IAssetStoreDownloadManager>(),
-                    container.Resolve<IAssetStoreCache>(),
-                    container.Resolve<IBackgroundFetchHandler>(),
-                    container.Resolve<IUnityConnectProxy>());
-            }
-        }
-
-
-
         private UnlockFoldout m_UnlockFoldout;
-        private NoActionsFoldout m_NoActionFoldout;
+        private NoActionsOnPackagesFoldout m_NoActionOnPackagesFoldout;
         private CheckUpdateFoldout m_CheckUpdateFoldout;
 
-        private MultiSelectFoldout[] m_StandaloneFoldouts;
+        private PackageMultiSelectFoldout[] m_PackageStandaloneFoldouts;
+
+        private NoActionsOnSamplesFoldout m_NoActionOnSamplesFoldout;
+
+        private SampleMultiSelectFoldout[] m_SampleStandaloneFoldouts;
 
         private InstallFoldoutGroup m_InstallFoldoutGroup;
         private UpdateFoldoutGroup m_UpdateFoldoutGroup;
@@ -49,15 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private DownloadUpdateFoldoutGroup m_DownloadUpdateFoldoutGroup;
         private RemoveImportedFoldoutGroup m_RemoveImportedFoldoutGroup;
 
-        private MultiSelectFoldoutGroup[] m_FoldoutGroups;
-
-        private IEnumerable<IMultiSelectFoldoutElement> EnumerateAllFoldoutElements()
-        {
-            foreach (var element in m_StandaloneFoldouts ?? Array.Empty<IMultiSelectFoldoutElement>())
-                yield return element;
-            foreach (var element in m_FoldoutGroups  ?? Array.Empty<IMultiSelectFoldoutElement>())
-                yield return element;
-        }
+        private PackageMultiSelectFoldoutGroup[] m_FoldoutGroups;
 
         private readonly IApplicationProxy m_Application;
         private readonly IPackageDatabase m_PackageDatabase;
@@ -69,9 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetStoreCache m_AssetStoreCache;
         private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
         private readonly IUnityConnectProxy m_UnityConnect;
-
-        public MultiSelectDetails(
-            IResourceLoader resourceLoader,
+        public MultiSelectDetails(IResourceLoader resourceLoader,
             IApplicationProxy application,
             IPackageDatabase packageDatabase,
             IPackageOperationDispatcher operationDispatcher,
@@ -102,27 +73,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             lockedPackagesInfoBox.onButtonClicked += OnDeselectLockedSelectionsClicked;
 
             InitializeFoldouts();
-        }
 
-        public void OnEnable()
-        {
-            m_AssetStoreClient.onUpdateChecked += OnUpdateChecked;
-        }
-
-        public void OnDisable()
-        {
-            m_AssetStoreClient.onUpdateChecked -= OnUpdateChecked;
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         private void InitializeFoldouts()
         {
-            // Standalone foldouts
+            // Package Standalone foldouts
             m_UnlockFoldout = new UnlockFoldout(m_PageManager);
-            m_UnlockFoldout.action.onActionTriggered += Refresh;
 
-            m_NoActionFoldout = new NoActionsFoldout(m_PageManager);
+            m_NoActionOnPackagesFoldout = new NoActionsOnPackagesFoldout(m_PageManager);
             m_CheckUpdateFoldout = new CheckUpdateFoldout(m_PageManager, m_AssetStoreCache, m_BackgroundFetchHandler);
-            m_StandaloneFoldouts = new MultiSelectFoldout[] { m_UnlockFoldout, m_NoActionFoldout, m_CheckUpdateFoldout };
+            m_PackageStandaloneFoldouts = new PackageMultiSelectFoldout[] { m_UnlockFoldout, m_NoActionOnPackagesFoldout, m_CheckUpdateFoldout };
+
+            // Sample Standalone foldouts
+            m_NoActionOnSamplesFoldout = new NoActionsOnSamplesFoldout(m_PageManager);
+            m_SampleStandaloneFoldouts = new SampleMultiSelectFoldout[] { m_NoActionOnSamplesFoldout };
 
             // Foldout groups
             m_InstallFoldoutGroup = new InstallFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher);
@@ -133,7 +100,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
             m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup();
 
-            m_FoldoutGroups = new MultiSelectFoldoutGroup[]
+            m_FoldoutGroups = new PackageMultiSelectFoldoutGroup[]
             {
                 m_DownloadFoldoutGroup,
                 m_DownloadUpdateFoldoutGroup,
@@ -166,7 +133,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_RemoveImportedFoldoutGroup.inProgressFoldout);
 
             foldoutsContainer.Add(m_CheckUpdateFoldout);
-            foldoutsContainer.Add(m_NoActionFoldout);
+            foldoutsContainer.Add(m_NoActionOnPackagesFoldout);
+
+            foldoutsContainer.Add(m_NoActionOnSamplesFoldout);
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            m_AssetStoreClient.onUpdateChecked += OnUpdateChecked;
+
+            m_PageManager.onListRebuild += OnListRebuild;
+            m_PageManager.onListUpdate += OnListUpdate;
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            m_AssetStoreClient.onUpdateChecked -= OnUpdateChecked;
+
+            m_PageManager.onListRebuild -= OnListRebuild;
+            m_PageManager.onListUpdate -= OnListUpdate;
+        }
+
+        private void OnListRebuild(IPage page)
+        {
+            if (page.isActive)
+                Refresh(m_PageManager.activePage.GetSelection());
+        }
+
+        private void OnListUpdate(ListUpdateArgs args)
+        {
+            if (args.page.isActive)
+                Refresh(m_PageManager.activePage.GetSelection());
         }
 
         private void OnUpdateChecked(IReadOnlyCollection<long> productIds)
@@ -176,53 +173,91 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Refresh(selection);
         }
 
-        public bool Refresh(PageSelection selections)
+        public override void Refresh(PageSelection selections)
         {
-            if (selections.Count <= 1)
-                return false;
-
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
-            foreach (var foldoutElement in EnumerateAllFoldoutElements())
-                foldoutElement.ClearPackages();
+            ClearAllFoldouts();
 
+            if (m_PageManager.activePage.id == SamplesPage.k_Id)
+                RefreshSampleFoldoutElements(selections);
+            else
+                RefreshPackageFoldoutElements(selections);
+
+            RefreshAllFoldouts();
+
+            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.items.Count > 0);
+        }
+
+        private void ClearAllFoldouts()
+        {
+            foreach (var foldout in m_SampleStandaloneFoldouts)
+                foldout.ClearItems();
+
+            foreach (var foldout in m_PackageStandaloneFoldouts)
+                foldout.ClearItems();
+
+            foreach (var foldout in m_FoldoutGroups)
+                foldout.ClearItems();
+        }
+
+        private void RefreshAllFoldouts()
+        {
+            foreach (var foldout in m_SampleStandaloneFoldouts)
+                foldout.Refresh();
+
+            foreach (var foldout in m_PackageStandaloneFoldouts)
+                foldout.Refresh();
+
+            foreach (var foldout in m_FoldoutGroups)
+                foldout.Refresh();
+        }
+
+        private void RefreshPackageFoldoutElements(PageSelection selections)
+        {
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
             foreach (var visualState in m_PageManager.activePage.visualStates)
             {
-                if (!selections.Contains(visualState.packageUniqueId))
+                if (!selections.Contains(visualState.itemUniqueId))
                     continue;
 
-                var package = m_PackageDatabase.GetPackage(visualState.packageUniqueId);
-                if (m_UnlockFoldout.AddPackage(package))
+                var package = m_PackageDatabase.GetPackage(visualState.itemUniqueId);
+
+                if (package == null)
                     continue;
 
-                if (m_CheckUpdateFoldout.AddPackage(package))
+                if (m_UnlockFoldout.AddItem(package))
+                    continue;
+
+                if (m_CheckUpdateFoldout.AddItem(package))
                     continue;
 
                 var isActionable = false;
                 foreach (var foldoutGroup in m_FoldoutGroups)
-                    isActionable |= foldoutGroup.AddPackage(package);
+                    isActionable |= foldoutGroup.AddItem(package);
 
                 if (!isActionable)
-                    m_NoActionFoldout.AddPackage(package);
+                    m_NoActionOnPackagesFoldout.AddItem(package);
             }
-
-            foreach (var foldoutElement in EnumerateAllFoldoutElements())
-                foldoutElement.Refresh();
-
-            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.packages.Count > 0);
-            return true;
         }
 
-        private void Refresh()
+        private void RefreshSampleFoldoutElements(PageSelection selections)
         {
-            Refresh(m_PageManager.activePage.GetSelection());
+            foreach (var visualState in m_PageManager.activePage.visualStates)
+            {
+                if (!selections.Contains(visualState.itemUniqueId))
+                    continue;
+
+                var sample = m_PackageDatabase.GetSample(visualState.itemUniqueId);
+                if (!sample.isDefault)
+                    m_NoActionOnSamplesFoldout.AddItem(sample);
+            }
         }
 
         private void OnDeselectLockedSelectionsClicked()
         {
-            var packageUniqueIds = m_UnlockFoldout.packages.SelectToNewArray(p => p.uniqueId);
-            m_PageManager.activePage.RemoveSelection(packageUniqueIds);
+            var packageUniqueIds = m_UnlockFoldout.items.SelectToNewArray(p => p.uniqueId);
+            m_PageManager.activePage.RemoveSelection(packageUniqueIds, false);
             PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: packageUniqueIds);
         }
 

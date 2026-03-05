@@ -444,13 +444,22 @@ namespace UnityEngine
                 DeleteSelection();
                 return true;
             }
+            else if (textHandle.useAdvancedText && stringCursorIndex < text.Length)
+            {
+                int startIndex = 0;
+
+                if (cursorIndex == 0 && textHandle.IsMainDirectionRTL())
+                    startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
+                else
+                    startIndex = m_TextSelectingUtility.NextCodePointIndex(cursorIndex);
+
+                int count = Mathf.Abs(startIndex - cursorIndex);
+                text = text.Remove(stringCursorIndex, count);
+                return true;
+            }
             else if (stringCursorIndex < text.Length)
             {
-                int count;
-                if (textHandle.useAdvancedText)
-                    count = Mathf.Abs(textHandle.NextCodePointIndex(cursorIndex) - cursorIndex);
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
                 text = text.Remove(stringCursorIndex, count);
                 return true;
             }
@@ -469,20 +478,30 @@ namespace UnityEngine
                 DeleteSelection();
                 return true;
             }
+            else if (textHandle.useAdvancedText && cursorIndex > 0)
+            {
+                int startIndex = 0;
+
+                if (cursorIndex == text.Length && textHandle.IsMainDirectionRTL())
+                    startIndex = m_TextSelectingUtility.NextCodePointIndex(cursorIndex);
+                else
+                    startIndex  = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
+
+                int count = Mathf.Abs(cursorIndex - startIndex);
+                text = text.Remove(stringCursorIndex - count, count);
+                cursorIndex = Math.Max(0, prevCursorIndex - count) ;
+                selectIndex = Math.Max(0, prevSelectIndex - count);
+                m_TextSelectingUtility.ClearCursorPos();
+                return true;
+            }
             else if (cursorIndex > 0)
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
-                int count;
-                if (textHandle.useAdvancedText)
-                {
-                    count = Mathf.Abs(cursorIndex - startIndex);
-                }
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
 
                 text = text.Remove(stringCursorIndex - count, count);
-                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, prevCursorIndex - count) : startIndex;
-                selectIndex = textHandle.useAdvancedText ? Math.Max(0, prevSelectIndex - count) : startIndex;
+                cursorIndex = startIndex;
+                selectIndex = startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }
@@ -610,23 +629,16 @@ namespace UnityEngine
             m_TextSelectingUtility.SelectNone();
         }
 
-        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
-        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool TouchScreenKeyboardShouldBeUsed()
+        internal bool TouchScreenKeyboardCanBeUsed()
         {
-            RuntimePlatform platform = Application.platform;
-            switch (platform)
-            {
-                case RuntimePlatform.Android:
-                case RuntimePlatform.WebGLPlayer:
-                case RuntimePlatform.WSAPlayerX64:
-                case RuntimePlatform.WSAPlayerX86:
-                case RuntimePlatform.WSAPlayerARM:
-                    return !TouchScreenKeyboard.isInPlaceEditingAllowed;
-                default:
-                    return TouchScreenKeyboard.isSupported;
-            }
+            return TouchScreenKeyboard.isSupported;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool PhysicalKeyboardCanBeUsed()
+        {
+            return TouchScreenKeyboard.isSupported ? TouchScreenKeyboard.isInPlaceEditingAllowed : true;
         }
     }
 }

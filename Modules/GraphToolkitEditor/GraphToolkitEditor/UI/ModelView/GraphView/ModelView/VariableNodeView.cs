@@ -85,25 +85,18 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            SinglePortContainerPart portContainer;
-
             if (NodeModel is VariableNodeModel variableNodeModel)
             {
                 var variableDeclarationModel = variableNodeModel.VariableDeclarationModel;
                 if (variableDeclarationModel == null)
                     return;
 
-                if (variableNodeModel.OutputPort != null)
-                    portContainer = PartList.GetPart(outputPortContainerPartName) as SinglePortContainerPart;
-                else
-                    portContainer = PartList.GetPart(inputPortContainerPartName) as SinglePortContainerPart;
-
                 m_ScopeImage.Scope = variableDeclarationModel.Scope;
                 m_ScopeImage.ReadWriteModifiers = variableDeclarationModel.Modifiers;
 
                 schedule.Execute(_ =>
                 {
-                    m_ScopeImage.Color = portContainer?.Port?.PortColor ?? Port.DefaultPortColor;
+                    m_ScopeImage.Color = m_CapsuleNodePortContainerPart?.FirstPort?.PortColor ?? Port.DefaultPortColor;
                 }).ExecuteLater(0);
             }
         }

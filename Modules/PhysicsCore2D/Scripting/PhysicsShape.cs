@@ -142,12 +142,18 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Create a default surface material.
             /// </summary>
-            public SurfaceMaterial() { this = Default; }
+            public SurfaceMaterial() { this = defaultMaterial; }
+
+            /// <summary>
+            /// Create a default surface material.
+            /// </summary>
+            /// <param name="useSettings">Controls whether the default come settings from the physics settings or not.</param>
+            public SurfaceMaterial(bool useSettings) { this = PhysicsShape_GetDefaultSurfaceMaterial(useSettings); }
 
             /// <summary>
             /// Get the default surface material.
             /// </summary>
-            public static SurfaceMaterial Default => PhysicsShape_GetDefaultSurfaceMaterial();
+            public static SurfaceMaterial defaultMaterial => PhysicsShape_GetDefaultSurfaceMaterial(true);
 
             /// <summary>
             /// The Coulomb (dry) friction coefficient, usually in the range [0, 1].
@@ -201,7 +207,7 @@ namespace Unity.U2D.Physics
             public Color32 customColor { readonly get => m_CustomColor; set => m_CustomColor = value; }
 
             #region Internal
-            
+
             [SerializeField] [Min(0.0f)] float m_Friction;
             [SerializeField] [Min(0.0f)] float m_Bounciness;
             [FormerlySerializedAs("m_FrictionCombine")][SerializeField] MixingMode m_FrictionMixing;
@@ -1667,6 +1673,18 @@ namespace Unity.U2D.Physics
         public readonly PhysicsUserData userData { get => PhysicsShape_GetUserData(this); set => PhysicsShape_SetUserData(this, value); }
 
         /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsShape_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsShape_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
         /// Create a shape proxy from the shape.
         /// </summary>
         /// <param name="useWorldSpace">Whether to create the shape proxy in world-space or not. World-space will transform by the body origin the shape is attached to.</param>
@@ -1690,6 +1708,11 @@ namespace Unity.U2D.Physics
         }
 
         #region Debugging
+
+        /// <summary>
+        /// Controls whether this shape is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsShape_GetWorldDrawing(this); set => PhysicsShape_SetWorldDrawing(this, value); }
 
         /// <summary>
         /// Draw the PhysicsShape that visually represents its current state in the world.

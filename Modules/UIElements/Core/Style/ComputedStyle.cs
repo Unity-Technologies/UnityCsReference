@@ -14,8 +14,8 @@ namespace UnityEngine.UIElements
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct ComputedStyle
     {
-        public Dictionary<string, StylePropertyValue> customProperties => customData.Read().customProperties;
-        public int customPropertiesCount => customProperties?.Count ?? 0;
+        public CustomPropertyListRef customProperties => m_CustomProperties;
+        public int customPropertiesCount => customProperties.Count;
 
         public static ComputedStyle Create()
         {
@@ -66,7 +66,7 @@ namespace UnityEngine.UIElements
         private void RemoveCustomStyleProperty(StylePropertyReader reader)
         {
             var name = reader.property.name;
-            if (customProperties?.ContainsKey(name) != true)
+            if (customProperties.ContainsKey(name) != true)
                 return;
 
             customProperties.Remove(name);
@@ -75,13 +75,14 @@ namespace UnityEngine.UIElements
         private void ApplyCustomStyleProperty(StylePropertyReader reader)
         {
             dpiScaling = reader.dpiScaling;
-            customData.Write().customProperties ??= new();
+            if (!m_CustomProperties.IsCreated())
+                m_CustomProperties = CustomPropertyList.Create();
 
             var styleProperty = reader.property;
 
             // Custom property only support one value
             StylePropertyValue customProp = reader.GetValue(0);
-            customProperties[styleProperty.name] = customProp;
+            m_CustomProperties[styleProperty.name] = customProp;
         }
 
         private static bool AreListPropertiesEqual<T>(List<T> a, List<T> b)

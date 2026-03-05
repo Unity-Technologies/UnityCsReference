@@ -9,6 +9,7 @@ using Bee.Serialization;
 using NiceIO;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {

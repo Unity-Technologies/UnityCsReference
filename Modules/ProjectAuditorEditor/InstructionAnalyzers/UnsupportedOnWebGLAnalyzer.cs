@@ -66,7 +66,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
         bool descriptorSystemThreadingSupported;
         bool descriptorMicrophoneSupported;
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {

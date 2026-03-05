@@ -10,6 +10,9 @@ namespace Unity.Mathematics
     // SVD algorithm as described in:
     // Computing the singular value decomposition of 3x3 matrices with minimal branching and elementary floating point operations,
     // A.McAdams, A.Selle, R.Tamstorf, J.Teran and E.Sifakis, University of Wisconsin - Madison technical report TR1690, May 2011
+    /// <summary>
+    /// Class with methods for computing the Singular Value Decomposition (SVD) of 3x3 matrices.
+    /// </summary>
     [Il2CppEagerStaticClassConstruction]
     static public class svd
     {
@@ -144,16 +147,32 @@ namespace Unity.Mathematics
 
             return math.float3(e.c0.x, e.c1.y, e.c2.z);
         }
-
+        /// <summary>
+        /// Floating point epsilon value used to determine if the determinant is too close to zero.
+        /// </summary>
         public const float k_EpsilonDeterminant = 1e-6f;
+        /// <summary>
+        /// Floating point epsilon value used to avoid division by zero in reciprocal calculations.
+        /// </summary>
         public const float k_EpsilonRCP = 1e-9f;
+        /// <summary>
+        /// Floating point epsilon value used to avoid instability in normal calculations.
+        /// </summary>
         public const float k_EpsilonNormalSqrt = 1e-15f;
+        /// <summary>
+        /// Floating point epsilon value used to avoid instability in normal calculations.
+        /// </summary>
         public const float k_EpsilonNormal = 1e-30f;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float3 rcpsafe(float3 x, float epsilon = k_EpsilonRCP) =>
             math.select(math.rcp(x), float3.zero, math.abs(x) < epsilon);
 
+        /// <summary>
+        /// Calculates the inverse of a 3x3 matrix using Singular Value Decomposition (SVD).
+        /// </summary>
+        /// <param name="a">The 3x3 matrix to calculate the inverse of.</param>
+        /// <returns>The inverse of the 3x3 matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3x3 svdInverse(float3x3 a)
         {
@@ -163,7 +182,11 @@ namespace Unity.Mathematics
 
             return math.mul(vm, math.scaleMul(rcpsafe(e, k_EpsilonDeterminant), math.transpose(um)));
         }
-
+        /// <summary>
+        /// Calculates the rotation component of a 3x3 matrix using Singular Value Decomposition (SVD).
+        /// </summary>
+        /// <param name="a">The 3x3 matrix to calculate the rotation component of.</param>
+        /// <returns>The calculated rotation component as a quaternion.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion svdRotation(float3x3 a)
         {

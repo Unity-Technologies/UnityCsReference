@@ -792,6 +792,18 @@ namespace Unity.U2D.Physics
         public readonly PhysicsUserData userData { get => PhysicsWorld_GetUserData(this); set => PhysicsWorld_SetUserData(this, value); }
 
         /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsWorld_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsWorld_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
         /// Reset the world to a canonical state so that it will reproduce identical results each time. The world must be empty for this to be called otherwise a warning is produced.
         /// </summary>
         public readonly void Reset() => PhysicsWorld_Reset(this);
@@ -1096,13 +1108,22 @@ namespace Unity.U2D.Physics
         #region PhysicsEvents
 
         /// <summary>
-        /// Get all <see cref="PhysicsUserData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// Get all <see cref="PhysicsBody.userData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
         /// The Native Array returned will be of the same length and be ordered the same as the <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
         /// Any <see cref="PhysicsBody"/> that are not valid will return a default <see cref="PhysicsUserData"/>.
         /// </summary>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A Native Array containing all <see cref="PhysicsUserData"/> for each <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.</returns>
-        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, allocator).ToNativeArray<PhysicsUserData>();
+        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, false, allocator).ToNativeArray<PhysicsUserData>();
+
+        /// <summary>
+        /// Get all <see cref="PhysicsBody.ownerUserData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// The Native Array returned will be of the same length and be ordered the same as the <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// Any <see cref="PhysicsBody"/> that are not valid will return a default <see cref="PhysicsUserData"/>.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A Native Array containing all <see cref="PhysicsUserData"/> for each <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.</returns>
+        public NativeArray<PhysicsUserData> GetBodyUpdateOwnerUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, true, allocator).ToNativeArray<PhysicsUserData>();
 
         /// <summary>
         /// Get the body events from the last simulation.

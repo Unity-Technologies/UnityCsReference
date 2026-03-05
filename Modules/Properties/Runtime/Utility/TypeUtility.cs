@@ -419,9 +419,7 @@ namespace Unity.Properties
         /// </remarks>
         /// <param name="type">The type to create a constructor for.</param>
         /// <returns>A <see cref="TypeConstructor{TType}"/> for the specified type.</returns>
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         static ITypeConstructor CreateTypeConstructor(Type type)
         {
             var properties = Internal.PropertyBagStore.GetPropertyBag(type);

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -50,14 +49,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_RegistryInfo.IsEquivalentTo(registryInfo))
                 return;
             m_RegistryInfo = registryInfo;
-            RebuildVisualStatesAndUpdateVisibilityWithSearchText();
+            Rebuild(true);
         }
 
         public override bool ShouldInclude(IPackage package)
         {
-            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return base.ShouldInclude(package) && package.versions.Any(v =>
-#pragma warning restore UA2006
+            return base.ShouldInclude(package) && package.versions.AnyMatches(v =>
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(v.name, v.package.product?.id ?? 0, v.isInstalled);
                 return packageInfo?.registry != null && m_RegistryInfo.IsEquivalentTo(packageInfo.registry);

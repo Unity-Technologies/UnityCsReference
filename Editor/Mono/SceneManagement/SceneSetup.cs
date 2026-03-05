@@ -5,6 +5,8 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 // The setup information for a scene in the SceneManager.
 
@@ -12,15 +14,22 @@ namespace UnityEditor.SceneManagement
 {
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [RequiredByNativeCode]
+    [NativeHeader("Editor/Src/SceneManager/SceneManagerSetup.h")]
+    [NativeAsStruct]
     public class SceneSetup
     {
         [SerializeField]
+        [NativeName("path")]
         private string m_Path = null;
         [SerializeField]
+        [NativeName("isLoaded")]
         private bool m_IsLoaded = false;
         [SerializeField]
+        [NativeName("isActive")]
         private bool m_IsActive = false;
         [SerializeField]
+        [NativeName("isSubScene")]
         private bool m_IsSubScene = false;
 
         public string path

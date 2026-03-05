@@ -22,8 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void AddToFetchPurchaseInfoQueue(long productId);
         void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false);
         void ForceCheckUpdateAllCachedAndImportedPackages();
-        void CancelCheckUpdates();
-        void CheckUpdateForUncheckedLocalInfos();
     }
 
     [Serializable]
@@ -129,6 +127,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onLocalInfosChanged += OnLocalInfosChanged;
             m_Application.update += ProcessFetchQueue;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+
+            m_PageManager.onFiltersChange += OnFiltersChange;
         }
 
         public override void OnDisable()
@@ -138,6 +138,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onLocalInfosChanged -= OnLocalInfosChanged;
             m_Application.update -= ProcessFetchQueue;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+
+            m_PageManager.onFiltersChange -= OnFiltersChange;
         }
 
         public void OnBeforeSerialize()
@@ -186,12 +188,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var activePage = m_PageManager.activePage;
-            if (activePage.id == MyAssetsPage.k_Id && activePage.filters.status == PageFilters.Status.UpdateAvailable)
+            if (activePage.id == MyAssetsPage.k_Id && activePage.filters.status == PageFilterStatus.UpdateAvailable)
                 CheckUpdateForUncheckedLocalInfos();
 
             foreach (var fetchStatus in m_FetchStatusTracker.fetchStatuses)
                 if (fetchStatus.GetFetchError(FetchType.ProductInfo)?.error.errorCode == UIErrorCode.UserNotSignedIn)
                     AddToFetchProductInfoQueue(fetchStatus.productId);
+        }
+
+        private void OnFiltersChange(PageFiltersChangeArgs args)
+        {
+            if (args.page.id != MyAssetsPage.k_Id)
+                return;
+
+            var oldStatus = args.previousFilters.status;
+            var newStatus = args.page.filters.status;
+            if (oldStatus == newStatus)
+                return;
+
+            if (newStatus == PageFilterStatus.UpdateAvailable)
+                CheckUpdateForUncheckedLocalInfos();
+            else if (oldStatus == PageFilterStatus.UpdateAvailable)
+                CancelCheckUpdates();
         }
 
         private void OnInternetReachabilityChange(bool isInternetReachable)
@@ -326,7 +344,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (m_RefreshAfterCheckUpdates && m_CheckUpdateStack.Count == 0)
                     {
                         var page = m_PageManager.activePage;
-                        if (page.filters.status == PageFilters.Status.UpdateAvailable)
+                        if (page.filters.status == PageFilterStatus.UpdateAvailable)
                             m_PageRefreshHandler.Refresh(page);
                         m_RefreshAfterCheckUpdates = false;
                     }

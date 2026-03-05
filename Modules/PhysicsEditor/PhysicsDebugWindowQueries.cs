@@ -18,7 +18,7 @@ namespace UnityEditor
         private const float c_ConeSize = 0.5f;
         private const float c_MaxDistanceFallback = 500f;
 
-        [SerializeField] Dictionary<Query, ShapeDraw> m_ShapesToDraw = new Dictionary<Query, ShapeDraw>();
+        private Dictionary<Query, ShapeDraw> m_ShapesToDraw = new Dictionary<Query, ShapeDraw>();
 
         #region Query shape definitions
         private abstract class ShapeDraw

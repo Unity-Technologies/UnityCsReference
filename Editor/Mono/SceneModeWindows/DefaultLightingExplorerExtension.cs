@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine.Rendering;
 using UnityEngine.U2D;
 using UnityEditor.SceneManagement;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -298,9 +299,7 @@ namespace UnityEditor
 
                     int selectedLightType = prop.intValue;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!Styles.LightTypeValues.Contains(prop.intValue))
-#pragma warning restore UA2001
                     {
                         if (prop.intValue == (int)LightType.Disc)
                         {
@@ -325,9 +324,7 @@ namespace UnityEditor
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Enum, Styles.Shape, "m_Type", 120, (r, prop, dep) =>
                 {
                     // This is only appliable to the Area lights that have a shape. For the other lights, nothing will be shown
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (Styles.LightShapeValues.Contains(prop.intValue))
-#pragma warning restore UA2001
                     {
                         EditorGUI.BeginProperty(r, GUIContent.none, prop);
                         EditorGUI.BeginChangeCheck();

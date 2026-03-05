@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 
 namespace UnityEngine.UIElements
 {
@@ -103,15 +103,11 @@ namespace UnityEngine.UIElements
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var ids = targetView.selectedIds.Any() ? targetView.selectedIds : new[] { recycledItem.id };
-#pragma warning restore UA2002
+                var ids = (targetView.HasAnySelectedIds()) ? targetView.selectedIds : new[] { recycledItem.id };
                 return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (targetView.selectedIds.Any())
-#pragma warning restore UA2002
+            if (targetView.HasAnySelectedIds())
             {
                 return dragAndDropController.CanStartDrag(targetView.selectedIds);
             }
@@ -131,9 +127,7 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!targetView.selectedIndicesList.Contains(recycledItem.index))
-#pragma warning restore UA2001
                     {
                         targetView.SetSelection(recycledItem.index);
                     }
@@ -143,9 +137,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ids = targetView.selectedIds.Any() ? targetView.selectedIds : Array.Empty<int>();
-#pragma warning restore UA2002
+                ids = targetView.HasAnySelectedIds() ? targetView.selectedIds : Array.Empty<int>();
             }
 
             var startDragArgs = dragAndDropController.SetupDragAndDrop(ids);
@@ -541,9 +533,7 @@ namespace UnityEngine.UIElements
             while (previousItemIndex >= 0)
             {
                 var id = targetView.viewController.GetIdForIndex(previousItemIndex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!dragAndDropController.GetSortedSelectedIds().Contains(id))
-#pragma warning restore UA2001
                 {
                     previousItemId = id;
                     break;
@@ -555,9 +545,7 @@ namespace UnityEngine.UIElements
             while (nextItemIndex < targetView.itemsSource.Count)
             {
                 var id = targetView.viewController.GetIdForIndex(nextItemIndex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!dragAndDropController.GetSortedSelectedIds().Contains(id))
-#pragma warning restore UA2001
                 {
                     nextItemId = id;
                     break;

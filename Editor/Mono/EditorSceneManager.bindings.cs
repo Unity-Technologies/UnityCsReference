@@ -230,12 +230,11 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetSceneManagerSetup", ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static SceneSetup[] GetSceneManagerSetup();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("RestoreSceneManagerSetup", ThrowsException = true)]
-        public extern static void RestoreSceneManagerSetup([UnityMarshalAs(NativeType.ScriptingObjectPtr)] SceneSetup[] value);
+        public extern static void RestoreSceneManagerSetup(SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("LoadSceneManagerSetup")]

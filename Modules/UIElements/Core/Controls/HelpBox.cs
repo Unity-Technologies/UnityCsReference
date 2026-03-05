@@ -347,6 +347,7 @@ namespace UnityEngine.UIElements
 
             m_Label = new Label(text);
             m_Label.AddToClassList(labelUssClassName);
+            m_Label.selection.isSelectable = true;
             m_TopContainer.Add(m_Label);
 
             m_Icon = new VisualElement();

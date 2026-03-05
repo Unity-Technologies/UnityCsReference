@@ -321,7 +321,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             if (string.IsNullOrEmpty(fieldUxmlName))
@@ -544,7 +544,7 @@ namespace UnityEngine.UIElements
         /// <param name="target"></param>
         /// <param name="referenceTable">A table to use to resolve references.</param>
         /// <example>
-        /// This example shows how to use the <see cref="VisualElementAssetReferenceTable"/> to resolve references to VisualElements after calling CloneTree.
+        /// This example shows how to use the `VisualElementAssetReferenceTable` to resolve references to VisualElements after calling CloneTree.
         /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementAssetReferenceTable_CloneTreeExample.cs"/>
         /// </example>
         public void CloneTree(VisualElement target, out VisualElementAssetReferenceTable referenceTable) => CloneTree(target, out _, out _, out referenceTable);
@@ -1087,20 +1087,6 @@ namespace UnityEngine.UIElements
         {
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
-        }
-
-        // Used for Live Reload.
-        internal int GetAttributePropertiesDirtyCount()
-        {
-            var dirtyCount = 0;
-            using var _ = ListPool<UxmlAsset>.Get(out var list);
-            list.AddRange(DepthFirstTraversal());
-            foreach (var vea in list)
-            {
-                dirtyCount += vea.GetPropertiesDirtyCount();
-            }
-
-            return dirtyCount;
         }
 
         internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)

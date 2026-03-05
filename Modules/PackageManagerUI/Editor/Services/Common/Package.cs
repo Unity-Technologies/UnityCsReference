@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionList = versionList;
             m_Product = product;
 
-            m_UniqueId = m_Product?.id > 0 ? product.id.ToString() : name;
+            m_UniqueId = m_Product?.id > 0 ? m_Product.id.ToString() : name;
 
             m_IsDiscoverable = isDiscoverable;
             m_Errors = new List<UIError>();
@@ -177,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             LinkPackageAndVersions();
         }
 
-        // We are making package factories inherit from a sub class of Package to make sure that we can keep all the package modifying code
+        // We are making package factories inherit from a subclass of Package to make sure that we can keep all the package modifying code
         // private and that only Packages themselves and factories can actually modify packages. This way there won't be any accidental
         // package modifications that's not caught by the package change events.
         internal class Factory : BaseService

@@ -744,28 +744,24 @@ namespace UnityEditorInternal
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultScreenWidth", TargetType.Field)]
         extern public static float defaultScreenWidth
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultScreenHeight", TargetType.Field)]
         extern public static float defaultScreenHeight
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultWebScreenWidth", TargetType.Field)]
         extern public static float defaultWebScreenWidth
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultWebScreenHeight", TargetType.Field)]
         extern public static float defaultWebScreenHeight
         {
             get;

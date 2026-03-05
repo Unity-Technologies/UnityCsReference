@@ -50,6 +50,10 @@ namespace UnityEditor.Build.Profile
         Button m_PackageSelectAll;
         Button m_PackageDeselectAll;
 
+        VisualElement m_KeyFeaturesContainer;
+        Label m_KeyFeaturesContentLabel;
+        VisualElement m_ResourcesContainer;
+        Label m_ResourcesContentLabel;
         VisualElement m_PlatformConfigs;
         VisualElement m_NameLinks;
 
@@ -147,6 +151,8 @@ namespace UnityEditor.Build.Profile
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     platformId = platformId,
                     description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    keyFeatures = BuildProfileModuleUtil.BuildPlatformKeyFeatures(platformId),
+                    resources = BuildProfileModuleUtil.BuildPlatformResources(platformId),
                     platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(platformId),
                     internalPackages = internalPackages,
                     partnerPackages = partnerPackages,
@@ -198,6 +204,16 @@ namespace UnityEditor.Build.Profile
 
             m_BuildProfileNameLabel = rootVisualElement.Q<Label>("build-profile-name-label");
             m_BuildProfileNameLabel.text = TrText.buildProfileNameLabel;
+
+            m_KeyFeaturesContainer = rootVisualElement.Q<VisualElement>("platform-key-features-container");
+            m_KeyFeaturesContentLabel = rootVisualElement.Q<Label>("platform-key-features-content");
+            var keyFeaturesTitle =  m_KeyFeaturesContainer.Q<Label>("platform-key-features-title");
+            keyFeaturesTitle.text = TrText.keyFeaturesTitle;
+
+            m_ResourcesContainer = rootVisualElement.Q<VisualElement>("platform-resources-container");
+            m_ResourcesContentLabel = rootVisualElement.Q<Label>("platform-resources-content");
+            var resourcesTitle =  m_ResourcesContainer.Q<Label>("platform-resources-title");
+            resourcesTitle.text = TrText.resourcesTitle;
 
             m_RenameOverlay = new BuildProfileRenameOverlay(m_BuildProfileNameTextField);
 
@@ -438,6 +454,22 @@ namespace UnityEditor.Build.Profile
             }
             else
                 m_SelectedDescription.Hide();
+
+            if (card.keyFeatures.Length > 0)
+            {
+                m_KeyFeaturesContentLabel.text = card.keyFeatures;
+                m_KeyFeaturesContainer.Show();
+            }
+            else
+                m_KeyFeaturesContainer.Hide();
+
+            if (card.resources.Length > 0)
+            {
+                m_ResourcesContentLabel.text = card.resources;
+                m_ResourcesContainer.Show();
+            }
+            else
+                m_ResourcesContainer.Hide();
 
             if (card.preconfiguredSettingsVariants.Length > 0)
             {

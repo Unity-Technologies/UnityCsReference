@@ -48,7 +48,7 @@ namespace Unity.GraphToolkit.Editor
                 string m_DisplayName;
                 string m_Tooltip;
                 PortOrientation m_Orientation;
-                PortConnectorUI m_ConnectorUI;
+                PortConnectorUI? m_ConnectorUI;
                 List<Attribute> m_Attributes = new();
 
                 internal Type m_PortType;
@@ -66,7 +66,7 @@ namespace Unity.GraphToolkit.Editor
                     m_PortType = null;
                     m_DefaultValue = null;
                     m_Orientation = PortOrientation.Horizontal;
-                    m_ConnectorUI = PortConnectorUI.Circle;
+                    m_ConnectorUI = null;
                     m_Attributes.Clear();
                     m_TypedBuilder = null;
                 }
@@ -197,7 +197,11 @@ namespace Unity.GraphToolkit.Editor
                         if (m_Tooltip != null)
                             portModel.ToolTip = m_Tooltip;
 
-                        portModel.ConnectorUI = m_ConnectorUI;
+                        // Use the arrowhead UI for untyped ports by default
+                        if (m_ConnectorUI != null)
+                            portModel.ConnectorUI = m_ConnectorUI.Value;
+                        else
+                            portModel.ConnectorUI = m_PortType == null ? PortConnectorUI.Arrowhead : PortConnectorUI.Circle;
                     }
                     m_PortsDefinitionContext.ReleaseBuilder(this);
 

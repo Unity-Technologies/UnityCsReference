@@ -12,6 +12,7 @@ using UnityEditor.Profiling;
 using UnityEngine.Pool;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Search

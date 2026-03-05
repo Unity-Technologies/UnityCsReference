@@ -23,7 +23,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             OpCodes.Callvirt
         };
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {

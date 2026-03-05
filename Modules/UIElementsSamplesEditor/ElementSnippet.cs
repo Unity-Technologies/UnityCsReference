@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.UIElements.Samples
 {
@@ -312,9 +313,7 @@ namespace UnityEditor.UIElements.Samples
             code = Regex.Replace(code, @"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()", m =>
             {
                 var name = m.Groups[1].Value;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!types.Contains(name) && !keywords.Contains(name))
-#pragma warning restore UA2001
                     return $"<color={methodColor}>{name}</color>";
                 else
                     return name;

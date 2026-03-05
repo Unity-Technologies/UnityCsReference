@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace Unity.UI.Builder
 {
@@ -66,9 +67,7 @@ namespace Unity.UI.Builder
 
             var selectedElements = selection.selection;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!selectedElements.Contains(clickedElement))
-#pragma warning restore UA2001
             {
                 // Removed just clicked element
                 var clickedStyleSheetIndex = (int)clickedElement.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName);

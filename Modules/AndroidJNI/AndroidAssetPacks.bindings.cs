@@ -96,6 +96,16 @@ namespace UnityEngine.Android
         public bool allowed { get; }
     }
 
+    public class AndroidAssetPackConfirmationDialogResult
+    {
+        internal AndroidAssetPackConfirmationDialogResult(bool consentGiven)
+        {
+            this.consentGiven = consentGiven;
+        }
+
+        public bool consentGiven { get; }
+    }
+
     public class DownloadAssetPackAsyncOperation : CustomYieldInstruction
     {
         Dictionary<string, AndroidAssetPackInfo> m_AssetPackInfos;
@@ -322,6 +332,49 @@ namespace UnityEngine.Android
         }
     }
 
+    public class ConfirmationDialogAsyncOperation : CustomYieldInstruction
+    {
+        AndroidAssetPackConfirmationDialogResult m_ConfirmationDialogResult;
+        readonly object m_OperationLock;
+
+        public override bool keepWaiting
+        {
+            get
+            {
+                lock (m_OperationLock)
+                {
+                    return m_ConfirmationDialogResult == null;
+                }
+            }
+        }
+
+        public bool isDone => !keepWaiting;
+
+        public AndroidAssetPackConfirmationDialogResult result
+        {
+            get
+            {
+                lock (m_OperationLock)
+                {
+                    return m_ConfirmationDialogResult;
+                }
+            }
+        }
+
+        internal ConfirmationDialogAsyncOperation()
+        {
+            m_OperationLock = new object();
+        }
+
+        internal void OnResult(AndroidAssetPackConfirmationDialogResult result)
+        {
+            lock (m_OperationLock)
+            {
+                m_ConfirmationDialogResult = result;
+            }
+        }
+    }
+
     [NativeHeader("Modules/AndroidJNI/Public/AndroidAssetPacksBindingsHelpers.h")]
     [StaticAccessor("AndroidAssetPacksBindingsHelpers", StaticAccessorType.DoubleColon)]
     public static class AndroidAssetPacks
@@ -340,8 +393,12 @@ namespace UnityEngine.Android
         public static GetAssetPackStateAsyncOperation GetAssetPackStateAsync(string[] assetPackNames) { return null; }
         public static void DownloadAssetPackAsync(string[] assetPackNames, Action<AndroidAssetPackInfo> callback) {}
         public static DownloadAssetPackAsyncOperation DownloadAssetPackAsync(string[] assetPackNames) { return null; }
+        [Obsolete("RequestToUseMobileDataAsync is deprecated. Use ShowConfirmationDialogAsync instead.", false)]
         public static void RequestToUseMobileDataAsync(Action<AndroidAssetPackUseMobileDataRequestResult> callback) {}
+        [Obsolete("RequestToUseMobileDataAsync is deprecated. Use ShowConfirmationDialogAsync instead.", false)]
         public static RequestToUseMobileDataAsyncOperation RequestToUseMobileDataAsync() { return null; }
+        public static void ShowConfirmationDialogAsync(Action<AndroidAssetPackConfirmationDialogResult> callback) {}
+        public static ConfirmationDialogAsyncOperation ShowConfirmationDialogAsync() { return null; }
         public static string GetAssetPackPath(string assetPackName) { return ""; }
         public static void CancelAssetPackDownload(string[] assetPackNames) {}
         public static void RemoveAssetPack(string assetPackName) {}

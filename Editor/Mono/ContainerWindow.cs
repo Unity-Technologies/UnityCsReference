@@ -19,7 +19,7 @@ namespace UnityEditor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     internal partial class ContainerWindow : ScriptableObject
     {
-        [SerializeField] MonoReloadableIntPtr m_WindowPtr;
+        MonoReloadableIntPtr m_WindowPtr;
         [SerializeField] Rect m_PixelRect;
         [SerializeField] int m_ShowMode;
         [SerializeField] string m_Title = "";

@@ -35,13 +35,21 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         bool m_DSPGraphHorizontalLayout = false;
 
+#pragma warning disable UAC1010
+        // This field is not serializable so SerializeField does not make sense
+        // https://jira.unity3d.com/browse/UUM-132549
         [SerializeField]
         private AudioProfilerGroupTreeViewState m_AudioProfilerGroupTreeViewState;
+#pragma warning restore UAC1010
         private AudioProfilerGroupView m_AudioProfilerGroupView = null;
         private AudioProfilerGroupViewBackend m_AudioProfilerGroupViewBackend;
 
+#pragma warning disable UAC1010
+        // This field is not serializable so SerializeField does not make sense
+        // https://jira.unity3d.com/browse/UUM-132549
         [SerializeField]
         private AudioProfilerClipTreeViewState m_AudioProfilerClipTreeViewState;
+#pragma warning restore UAC1010
         private AudioProfilerClipView m_AudioProfilerClipView = null;
         private AudioProfilerClipViewBackend m_AudioProfilerClipViewBackend;
 

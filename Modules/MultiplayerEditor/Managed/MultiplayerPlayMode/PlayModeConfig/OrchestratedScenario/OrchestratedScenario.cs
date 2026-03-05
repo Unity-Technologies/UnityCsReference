@@ -19,7 +19,7 @@ using UnityEngine.Assertions;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
-    partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackReceiver
+    sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackReceiver
     {
         const string k_ValidationDialogTitle = "Play Mode Scenario - Validation Failed";
         const string k_ValidationDialogScenarioMessage = "The scenario cannot be started because validation failed with the following message:";
@@ -98,7 +98,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsInstanceEnabled(IInstanceItem instance)
         {
-            return m_EnableEditors || !instance.IsInstanceType(typeof(EditorController<,>));
+            return m_EnableEditors || !instance.IsInstanceType(typeof(EditorController<>));
         }
 
         private static void SendEnterPlayModeOnTagsAppliedEvent(PlayModeStateChange state)
@@ -241,6 +241,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         void OnEnable()
         {
+            // The settings internal hash comparison should take care of most common cases of it needing a refresh,
+            // but to cover potential external edits to the scenario asset (e.g. git merges)
+            // we force a refresh when the object is loaded (OnEnable), which happens less often.
+            m_Settings.RefreshDecorators(force: true);
+
             if (m_Scenario != null)
                 SetupEvents();
         }
@@ -271,13 +276,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        protected virtual Scenario CreateScenario()
+        Scenario CreateScenario()
         {
-            return ScenarioFactory.CreateScenario(name, GetAllInstances());
+            return ScenarioFactory.CreateScenario(this, GetAllInstances());
         }
 
         private void OnValidate()
         {
+            // Validation happens very often, so we don't want to force a refresh of the decorators every time.
+            // As long as the file is not externally edited, the hash comparison inside RefreshDecorators will prevent unnecessary refreshes,
+            // still, for potential external edits, we force a refresh when the object is loaded (OnEnable), which happens less often.
+            m_Settings.RefreshDecorators(force: false);
+
             // Avoid re-creating the scenario if the scenario is running
             if (ScenarioRunner.GetScenarioStatus().OverallStatus.State == ExecutionState.Running)
                 return;
@@ -302,7 +312,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             for (var i = 0; i < m_Settings.InstanceCount; i++)
             {
                 var instanceItem = m_Settings[i];
-                var isEditorInstance = instanceItem.IsInstanceType(typeof(EditorController<,>));
+                var isEditorInstance = instanceItem.IsInstanceType(typeof(EditorController<>));
 
                 if (instanceItem.IsInstanceType(typeof(MainEditorController)))
                 {
@@ -456,7 +466,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             var localMobileDevicesSelected = IsConditionMetForAll(
-                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(instance.GetSettings<LocalPlayerController.InstanceSettings>().DeviceID),
+                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID),
                 localMobileInstances);
             if (!localMobileDevicesSelected)
                 reasonForInvalidConfiguration += "\nLocal mobile device instance(s) must have a device selected.";
@@ -465,13 +475,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             bool containsTakenDeviceID = false;
             foreach (var instance in localMobileInstances)
             {
-                if (takenIDs.Contains(instance.GetSettings<LocalPlayerController.InstanceSettings>().DeviceID))
+                if (takenIDs.Contains(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID))
                 {
                     reasonForInvalidConfiguration = "Device must be associated with only a single instance.";
                     containsTakenDeviceID = true;
                     break;
                 }
-                takenIDs.Add(instance.GetSettings<LocalPlayerController.InstanceSettings>().DeviceID);
+                takenIDs.Add(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID);
             }
 
             // Check if local build targets are supported for building
@@ -558,7 +568,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 k_ValidationDialogOKLabel);
         }
 
-        static string GetValidationMessage(string prefix, IEnumerable<Node> nodes)
+        static string GetValidationMessage(string prefix, IEnumerable<ExecutionNode> nodes)
         {
             var message = $"{prefix}\n";
             var failedNodesCount = 0;

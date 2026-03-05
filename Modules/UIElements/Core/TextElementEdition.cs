@@ -93,6 +93,19 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Should hide soft / virtual keyboard.
+        /// </summary>
+        public bool hideSoftKeyboard
+        {
+            get
+            {
+                Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(hideSoftKeyboard)}. Calling {nameof(ITextEdition)}.{nameof(hideSoftKeyboard)} of this type will always return false.");
+                return false;
+            }
+            set => Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(hideSoftKeyboard)}. Assigning a value to {nameof(ITextEdition)}.{nameof(hideSoftKeyboard)} will not update its value.");
+        }
+
+        /// <summary>
         /// Hides or shows the mobile input field.
         /// </summary>
         public bool hideMobileInput
@@ -135,6 +148,7 @@ namespace UnityEngine.UIElements
     public partial class TextElement : ITextEdition
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
+        internal static readonly BindingId hideSoftKeyboardProperty = nameof(hideSoftKeyboard);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
         internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
         internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
@@ -192,6 +206,27 @@ namespace UnityEngine.UIElements
         {
             get => edition.keyboardType;
             set => edition.keyboardType = value;
+        }
+
+        bool m_HideSoftKeyboard;
+
+        bool ITextEdition.hideSoftKeyboard
+        {
+            get => m_HideSoftKeyboard;
+            set
+            {
+                if (m_HideSoftKeyboard == value)
+                    return;
+                m_HideSoftKeyboard = value;
+                NotifyPropertyChanged(hideSoftKeyboardProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool hideSoftKeyboard
+        {
+            get => edition.hideSoftKeyboard;
+            set => edition.hideSoftKeyboard = value;
         }
 
         bool m_HideMobileInput;
@@ -319,9 +354,9 @@ namespace UnityEngine.UIElements
 
         void EditionHandleEvent(EventBase evt)
         {
-            var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
+            var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardCanBeUsed() ?? false;
 
-            if (!useTouchScreenKeyboard || edition.hideMobileInput)
+            if (!useTouchScreenKeyboard || edition.hideMobileInput || edition.hideSoftKeyboard)
                 selectingManipulator?.HandleEventBubbleUp(evt);
             if (!edition.isReadOnly)
                 editingManipulator?.HandleEventBubbleUp(evt);

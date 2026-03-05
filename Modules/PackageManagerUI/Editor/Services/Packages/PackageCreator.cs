@@ -82,10 +82,9 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
                 IOUtils.PathsCombine(EditorApplication.applicationContentsPath, k_DefaultTemplateFolder);
             m_IOProxy.DirectoryCopy(templateFolderPath, tempFolder);
 
-            var templateFiles = m_IOProxy.GetFiles(tempFolder, "*.*", true);
-            foreach (var file in templateFiles)
+            var templateFiles = m_IOProxy.GetFiles(tempFolder, "*.*", SearchOption.AllDirectories);
+            foreach (var filePath in templateFiles)
             {
-                var filePath = file.ToString();
                 var fileAttributes = m_IOProxy.GetFileAttributes(filePath);
                 if ((fileAttributes & (FileAttributes.Hidden | FileAttributes.ReadOnly)) == 0)
                     m_IOProxy.SetFileAttributes(filePath,
@@ -146,7 +145,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
 
         var newSuffix = 0;
-        while (m_UpmCache.GetInstalledPackageInfo(packageName) != null)
+        while (m_UpmCache.GetInstalledPackageInfoByName(packageName) != null)
         {
             newSuffix++;
             packageName = $"{packageNameWithoutSuffixNumber}{newSuffix}";

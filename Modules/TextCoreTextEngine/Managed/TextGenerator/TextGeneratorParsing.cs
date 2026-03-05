@@ -6,6 +6,8 @@ using System;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
 
@@ -1433,7 +1435,7 @@ namespace UnityEngine.TextCore.Text
 
                 #endregion Carriage Return
 
-               
+
 
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
@@ -1759,3 +1761,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

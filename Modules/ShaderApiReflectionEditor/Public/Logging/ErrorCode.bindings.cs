@@ -15,6 +15,7 @@ namespace UnityEditor.ShaderApiReflection
         UnexpectedEndOfFile = 0x200,
         UnexpectedToken,
         UnmatchedScopeDelimiter,
+        UnsupportedShaderSyntax,
         XMLSyntaxError = 0x300,
         NestedHintContainer,
         DeepHint,

@@ -17,6 +17,7 @@ namespace UnityEditor.UIElements
         public int m_LastElementCount;
         public int m_LastInlinePropertiesCount;
         public int m_LastAttributePropertiesDirtyCount;
+        public int m_LastStyleSheetCount;
         public int m_ReferenceCount;
     }
 
@@ -86,43 +87,6 @@ namespace UnityEditor.UIElements
         public bool IsTrackingAssets()
         {
             return m_TrackedAssets.Count > 0;
-        }
-
-        public bool CheckTrackedAssetsDirty()
-        {
-            // Early out: no assets being tracked.
-            if (m_TrackedAssets.Count == 0)
-            {
-                return false;
-            }
-
-            bool isTrackedAssetDirty = false;
-
-            foreach (var styleSheetAssetEntry in m_TrackedAssets)
-            {
-                var tracking = styleSheetAssetEntry.Value;
-                int currentDirtyCount = EditorUtility.GetDirtyCount(tracking.m_Asset);
-
-                if (tracking.m_LastDirtyCount != currentDirtyCount)
-                {
-                    tracking.m_LastDirtyCount = currentDirtyCount;
-                    isTrackedAssetDirty = true;
-                }
-            }
-
-            return isTrackedAssetDirty;
-        }
-
-        public void UpdateAssetTrackerCounts(T asset, int newDirtyCount, int newElementCount, int newInlinePropertiesCount, int newAttributePropertiesDirtyCount)
-        {
-            if (m_TrackedAssets.TryGetValue(asset.GetEntityId(), out var assetTracking))
-            {
-                assetTracking.m_LastDirtyCount = newDirtyCount;
-                assetTracking.m_LastElementCount = newElementCount;
-                assetTracking.m_LastInlinePropertiesCount = newInlinePropertiesCount;
-                assetTracking.m_LastAttributePropertiesDirtyCount = newAttributePropertiesDirtyCount;
-                assetTracking.m_LastDirtyCount = newDirtyCount;
-            }
         }
 
         public abstract bool OnAssetsImported(HashSet<T> changedAssets, HashSet<string> deletedAssets);

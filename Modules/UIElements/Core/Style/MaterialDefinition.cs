@@ -124,7 +124,6 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        [SerializeField]
         internal List<MaterialPropertyValue> propertyValues = null;
 
         /// <summary>

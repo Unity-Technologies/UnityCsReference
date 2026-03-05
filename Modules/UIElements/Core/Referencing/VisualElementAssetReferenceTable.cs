@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements;
 /// A reference table to map authoring id paths to VisualElements.
 /// </summary>
 /// <example>
-/// This example shows how to use the <see cref="VisualElementAssetReferenceTable"/> to resolve references to VisualElements after calling CloneTree./>.
+/// This example shows how to use the `VisualElementAssetReferenceTable` to resolve references to VisualElements after calling CloneTree.
 /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementAssetReferenceTable_CloneTreeExample.cs"/>
 /// </example>
 public sealed class VisualElementAssetReferenceTable : IDisposable

@@ -14,13 +14,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     internal class NodeOutput<T> : NodeOutput
     {
-        [SerializeReference] private Node m_Node;
+        [SerializeReference] private ExecutionNode m_Node;
         [SerializeField] private T m_Value;
 
         // These properties and methods are not supposed to be used by the nodes themselves, but by the graph.
         // Because nodes code have internal access we hide them with the EditorBrowsable attribute.
 
-        [EditorBrowsable(EditorBrowsableState.Never)] internal override Node GetNode() => m_Node;
+        [EditorBrowsable(EditorBrowsableState.Never)] internal override ExecutionNode GetNode() => m_Node;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal override S GetValue<S>()
@@ -49,7 +49,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_Value = castedValue;
         }
 
-        internal NodeOutput(Node node)
+        internal NodeOutput(ExecutionNode node)
         {
             m_Node = node;
         }

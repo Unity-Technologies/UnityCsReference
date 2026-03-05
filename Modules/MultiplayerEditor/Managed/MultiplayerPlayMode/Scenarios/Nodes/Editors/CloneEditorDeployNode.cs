@@ -12,7 +12,7 @@ using UnityEngine.Multiplayer.Internal;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class CloneEditorDeployNode : Node
+    class CloneEditorDeployNode : ExecutionNode
     {
         bool m_HasConnected;
 

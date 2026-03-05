@@ -10,6 +10,8 @@ using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -53,9 +55,29 @@ namespace UnityEngine.UIElements
         Expand
     }
 
-    internal enum PanelRenderMode
+    /// <summary>
+    /// Determines how a panel is rendered.
+    /// </summary>
+    public enum PanelRenderMode
     {
+        /// <summary>
+        /// Renders the panel as a 2D overlay on top of the screen, independent of any camera or world geometry.
+        /// </summary>
+        /// <remarks>
+        /// The panel is drawn last in the rendering order and always appears on top of the scene.
+        /// This mode is suitable for HUDs and other UI that should always be visible to the player.
+        /// </remarks>
         ScreenSpaceOverlay,
+        /// <summary>
+        /// Renders the panel as an object within the 3D world.
+        /// </summary>
+        /// <remarks>
+        /// The panel is rendered by one or more cameras at a specified world-space position and can be
+        /// occluded by other objects in the scene. This mode is suitable for in-world UI such as
+        /// interactive screens, billboards, or diegetic interfaces. Depending on camera order, it can
+        /// also be used as an overlay if, for example, you only want to add the ability to have a 3D
+        /// rotation to the UI.
+        /// </remarks>
         WorldSpace
     }
 
@@ -292,8 +314,9 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Determines how the panel is rendered.
+        /// Defaults to <see cref="PanelRenderMode.ScreenSpaceOverlay"/>.
         /// </summary>
-        internal PanelRenderMode renderMode
+        public PanelRenderMode renderMode
         {
             get => m_RenderMode;
             set => m_RenderMode = value;
@@ -1171,3 +1194,5 @@ namespace UnityEngine.UIElements
 
     }
 }
+
+#pragma warning restore CS0618

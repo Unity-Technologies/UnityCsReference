@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class AdbInstallNode : Node
+    class AdbInstallNode : ExecutionNode
     {
         IAdbService m_AdbService;
 

@@ -27,15 +27,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsAnyExperimentalPackagesInUse();
         bool IsRemoveInProgress(string packageName);
         bool IsAddInProgress(string packageId);
-        void AddById(string packageId, bool isUnlisted);
-        bool AddByPath(string path, out string tempPackageId);
-        void AddByUrl(string url);
-        void AddByIds(string[] versionIds);
-        void RemoveByNames(string[] packagesNames);
-        void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames);
-        void ResetDependencies(string packageId, string[] dependencyPackagesNames);
+        void AddById(string packageId, bool isUnlisted, OperationType operationType);
+        bool AddByPath(string path, OperationType operationType, out string tempPackageId);
+        void AddByUrl(string url, OperationType operationType);
+        void AddByIds(string[] versionIds, OperationType operationType);
+        void RemoveByNames(string[] packagesNames, OperationType operationType);
+        void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType);
+        void ResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType);
         void List(bool offlineMode = false);
-        void RemoveByName(string packageName);
+        void RemoveByName(string packageName, OperationType operationType);
         void RemoveEmbeddedByName(string packageName);
         void Embed(string packageName);
         void SearchAll(bool offlineMode = false);
@@ -145,16 +145,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.ContainsMatches(packageId);
         }
 
-        public void AddById(string packageId, bool isUnlisted)
+        public void AddById(string packageId, bool isUnlisted, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.AddById(packageId, isUnlisted);
+            addAndRemoveOperation.AddById(packageId, isUnlisted, operationType);
             SetupAddAndRemoveOperation();
         }
 
-        public bool AddByPath(string path, out string tempPackageId)
+        public bool AddByPath(string path, OperationType operationType, out string tempPackageId)
         {
             tempPackageId = string.Empty;
             if (isAddOrRemoveInProgress)
@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 tempPackageId = GetTempPackageIdFromPath(path);
-                addAndRemoveOperation.AddByPathOrUrl(tempPackageId);
+                addAndRemoveOperation.AddByPathOrUrl(tempPackageId, operationType);
                 SetupAddAndRemoveOperation();
 
                 return true;
@@ -190,45 +190,45 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"file:../{relativePathToProjectRoot}";
         }
 
-        public void AddByUrl(string url)
+        public void AddByUrl(string url, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.AddByPathOrUrl(url);
+            addAndRemoveOperation.AddByPathOrUrl(url, operationType);
             SetupAddAndRemoveOperation();
         }
 
-        public void AddByIds(string[] versionIds)
+        public void AddByIds(string[] versionIds, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.AddByIds(versionIds);
+            addAndRemoveOperation.AddByIds(versionIds, operationType);
             SetupAddAndRemoveOperation();
         }
 
-        public void RemoveByNames(string[] packagesNames)
+        public void RemoveByNames(string[] packagesNames, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
-            addAndRemoveOperation.RemoveByNames(packagesNames);
+            addAndRemoveOperation.RemoveByNames(packagesNames, operationType);
             SetupAddAndRemoveOperation();
         }
 
-        public void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames)
+        public void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
-            addAndRemoveOperation.AddAndResetDependencies(packageId, dependencyPackagesNames);
+            addAndRemoveOperation.AddAndResetDependencies(packageId, dependencyPackagesNames, operationType);
             SetupAddAndRemoveOperation();
         }
 
-        public void ResetDependencies(string packageId, string[] dependencyPackagesNames)
+        public void ResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
-            addAndRemoveOperation.ResetDependencies(packageId, dependencyPackagesNames);
+            addAndRemoveOperation.ResetDependencies(packageId, dependencyPackagesNames, operationType);
             SetupAddAndRemoveOperation();
         }
 
@@ -280,7 +280,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
 
                 var trustAndSignature = UpmPackageVersion.GetTrustAndSignature(info, true);
-                var currentlyInstalled = m_UpmCache.GetInstalledPackageInfo(info.name);
+                var currentlyInstalled = m_UpmCache.GetInstalledPackageInfoByName(info.name);
                 if (currentlyInstalled?.packageId == info.packageId && UpmPackageVersion.GetTrustAndSignature(currentlyInstalled, true) == trustAndSignature)
                     continue;
                 switch (trustAndSignature)
@@ -300,7 +300,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (invalidSignaturePackages.Count == 0 && missingSignaturePackages.Count == 0 && limitedTrustPackages.Count == 0)
                 return true;
 
-            return ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages) == ActiveTrustReturnValue.InstallAnyway;
+            return ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages, addAndRemoveOperation.operationType) == ActiveTrustReturnValue.ProceedAnyway;
         }
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
@@ -348,15 +348,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (offlineMode && listOfflineOperation.dataTimestamp < listOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetInstalledPackageInfos(request.Result, listOfflineOperation.dataTimestamp);
+            m_UpmCache.SetInstalledPackageInfos(request.Result, listOfflineOperation.dataTimestamp, PackagesChangedSource.UpmList);
         }
 
-        public void RemoveByName(string packageName)
+        public void RemoveByName(string packageName, OperationType operationType)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.RemoveByNames(new [] {packageName});
+            addAndRemoveOperation.RemoveByNames(new [] {packageName}, operationType);
             SetupAddAndRemoveOperation();
         }
 
@@ -365,7 +365,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isAddOrRemoveInProgress)
                 return;
 
-            var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
+            var packageInfo = m_UpmCache.GetInstalledPackageInfoByName(packageName);
             var resolvedPath = packageInfo?.resolvedPath;
             if (string.IsNullOrEmpty(resolvedPath))
                 return;
@@ -373,7 +373,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 // Fix case 1237777, make files writable first
-                foreach (var file in m_IOProxy.DirectoryGetFiles(resolvedPath, "*", System.IO.SearchOption.AllDirectories))
+                foreach (var file in m_IOProxy.GetFiles(resolvedPath, "*", System.IO.SearchOption.AllDirectories))
                     m_IOProxy.MakeFileWritable(file, true);
                 m_IOProxy.DeleteDirectory(resolvedPath);
                 Resolve();

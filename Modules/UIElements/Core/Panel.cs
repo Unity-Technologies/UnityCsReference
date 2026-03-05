@@ -1345,13 +1345,13 @@ namespace UnityEngine.UIElements
         private static unsafe VisualElement PerformPickNative(VisualElement root, Vector2 point,
             List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
-            using var buffer = new UnmanagedHandleBuffer();
+            using var buffer = picked != null ? UnmanagedHandleBuffer.CreateTemporary() : UnmanagedHandleBuffer.None();
 
             // It's not impossible to have transforms directly on the panel.visualTree
             // See for instance VisualContainerTests.ElementUnderPointWithScrolledElementUnderReturnsTrue
             var localPoint = root.WorldToLocal3D(point);
 
-            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, picked != null ? &buffer : null);
+            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, &buffer);
             if (handle.IsUndefined)
                 return null;
 

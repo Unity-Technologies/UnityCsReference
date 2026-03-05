@@ -262,6 +262,24 @@ namespace UnityEngine.Audio
             /// </summary>
             /// <seealso cref="ICapabilities.length"/>
             public DiscreteTime? length => HasKnownLength ? ReportedLength : null;
+
+            static internal Int64 FramesAndSampleRateToDiscreteTimeTicks(Int64 lengthFrames, UInt32 sampleRate)
+            {
+                switch (sampleRate)
+                {
+                    case 8000: return lengthFrames * DiscreteTime.Tick8Khz;
+                    case 16000: return lengthFrames * DiscreteTime.Tick16Khz;
+                    case 22050: return lengthFrames * DiscreteTime.Tick22Khz;
+                    case 44100: return lengthFrames * DiscreteTime.Tick44Khz;
+                    case 48000: return lengthFrames * DiscreteTime.Tick48Khz;
+                    case 88200: return lengthFrames * DiscreteTime.Tick88Khz;
+                    case 96000: return lengthFrames * DiscreteTime.Tick96Khz;
+                    case 192000: return lengthFrames * DiscreteTime.Tick192Khz;
+                    default:
+                        // For non-standard sample rates, we can still calculate the ticks by using the ratio of ticks per second to the sample rate.
+                        return (lengthFrames * DiscreteTime.TicksPerSecond) / sampleRate;
+                }
+            }
         }
 
         /// <summary>

@@ -42,7 +42,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The USS class name for an empty subtitle.
         /// </summary>
-        public static readonly string emptySubtitleUssClassName = ussClassName.WithUssModifier(GraphElementHelper.emptyUssModifier);
+        public static readonly string emptyUssClassName = ussClassName.WithUssModifier(GraphElementHelper.emptyUssModifier);
 
         /// <summary>
         /// The name of the <see cref="VisualElement"/> of the colored line.
@@ -323,8 +323,7 @@ namespace Unity.GraphToolkit.Editor
                         m_Icon.image = iconTexture;
                     }
                 }
-
-                if (m_Icon.image == null && !string.IsNullOrEmpty(nodeModel.IconTypeString))
+                else if (!string.IsNullOrEmpty(iconTypeString))
                 {
                     m_PreviousIconClasses.Add(ussClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(iconTypeString));
                     m_PreviousIconClasses.Add(m_ParentClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(iconTypeString));
@@ -361,7 +360,7 @@ namespace Unity.GraphToolkit.Editor
                 var subTitle = (m_Model as AbstractNodeModel)?.Subtitle;
 
                 m_SubTitle.text = subTitle;
-                m_OwnerElement.EnableInClassList(emptySubtitleUssClassName, string.IsNullOrEmpty(subTitle));
+                m_Root.EnableInClassList(emptyUssClassName, string.IsNullOrEmpty(subTitle));
             }
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Style))

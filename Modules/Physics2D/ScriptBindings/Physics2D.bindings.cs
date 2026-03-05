@@ -3793,16 +3793,15 @@ namespace UnityEngine
             public void SetStartPosition(Vector2 position) { startPosition = position; useStartPosition = true; }
         }
 
-        [Serializable]
         [StructLayout(LayoutKind.Sequential)]
         [NativeHeader("Modules/Physics2D/Public/Rigidbody2D.h")]
         public struct SlideResults
         {
-            [field: SerializeField] public Vector2 remainingVelocity { get; set; }
-            [field: SerializeField] public Vector2 position { get; set; }
-            [field: SerializeField] public int iterationsUsed { get; set; }
-            [field: SerializeField] public RaycastHit2D slideHit { get; set; }
-            [field: SerializeField] public RaycastHit2D surfaceHit { get; set; }
+            public Vector2 remainingVelocity { get; set; }
+            public Vector2 position { get; set; }
+            public int iterationsUsed { get; set; }
+            public RaycastHit2D slideHit { get; set; }
+            public RaycastHit2D surfaceHit { get; set; }
         }
 
         public SlideResults Slide(Vector2 velocity, float deltaTime, SlideMovement slideMovement)

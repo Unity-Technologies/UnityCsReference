@@ -3,12 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class BuiltInPage : SimplePage
+    internal class BuiltInPage : SimplePageWithPackages
     {
         public const string k_Id = "BuiltIn";
 
@@ -22,10 +21,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Using UpmSearchOffline here will cause scoped registry packages to disappear when user refreshes the built in page.
         public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearch;
 
-        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => Array.Empty<PageFilters.Status>();
-        public override IReadOnlyList<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
-
-        public BuiltInPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
+        public BuiltInPage(IPackageDatabase packageDatabase) : base(packageDatabase)
+        {
+            UpdateSupportedSortOptions(k_SupportedSortOptions, false);
+            UpdateSupportedStatuses(Array.Empty<PageFilterStatus>(), false);
+        }
 
         public override bool ShouldInclude(IPackage package)
         {

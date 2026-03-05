@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 using Random = System.Random;
 

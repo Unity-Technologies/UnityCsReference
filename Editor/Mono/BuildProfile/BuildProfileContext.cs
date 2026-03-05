@@ -13,6 +13,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
@@ -69,10 +70,10 @@ namespace UnityEditor.Build.Profile
             get
             {
                 var profile = EditorUserBuildSettings.activeBuildProfile;
-                
+
                 if (profile == null || !profile)
                     return null;
-                    
+
                 return profile;
             }
 
@@ -118,7 +119,7 @@ namespace UnityEditor.Build.Profile
                 activeProfileChanged?.Invoke(prev, value);
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
-                
+
                 if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines))
                     BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
@@ -127,7 +128,6 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal static PlatformPackageServiceInfoProvider packageServiceInfoProvider = new();
 
-        [SerializeField]
         List<BuildProfilePackageAddInfo> m_PackageAddInfos = new();
 
         [VisibleToOtherModules]
@@ -837,6 +837,42 @@ namespace UnityEditor.Build.Profile
                 return null;
 
             return activeProfile.graphicsSettings.alwaysIncludedShaders;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static GraphicsStateCollection GetActiveGraphicsStateCollection()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return null;
+
+            return activeProfile?.graphicsSettings.graphicsStateCollection;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string GetActiveTraceSavePath()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return string.Empty;
+
+            return activeProfile?.graphicsSettings.traceSavePath;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static GraphicsStateCollection[] GetActiveAdditionalWarmupCollections()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return null;
+
+            return activeProfile?.graphicsSettings.additionalWarmupCollections;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string GetActiveCacheMissCollectionPath()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return string.Empty;
+
+            return activeProfile?.graphicsSettings.cacheMissCollectionPath;
         }
 
         [RequiredByNativeCode, UsedImplicitly]

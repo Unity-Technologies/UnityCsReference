@@ -121,6 +121,13 @@ namespace Unity.U2D.Physics
         /// </summary>
         public bool enabled { readonly get => m_Enabled; set => m_Enabled = value; }
 
+        /// <summary>
+        /// Controls whether this body is automatically drawn when the world is drawn.
+        ///
+        /// See <see cref="PhysicsBody.worldDrawing"/>.
+        /// </summary>
+        public bool worldDrawing { readonly get => m_WorldDrawing; set => m_WorldDrawing = value; }
+
         #region Internal
 
         [SerializeField] PhysicsBody.BodyType m_BodyType;
@@ -139,6 +146,7 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_SleepingAllowed;
         [SerializeField] bool m_Awake;
         [SerializeField] bool m_Enabled;
+        [SerializeField] bool m_WorldDrawing;
 
         #endregion
     }

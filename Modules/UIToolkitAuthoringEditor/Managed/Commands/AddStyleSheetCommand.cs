@@ -55,6 +55,7 @@ internal readonly record struct AddStyleSheetCommand
         }
 
         EditorUtility.SetDirty(VisualTreeAsset);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
         return true;
     }
 }

@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-class MainEditorController : EditorController<MainEditorController, MainEditorController.InstanceSettings>
+class MainEditorController : EditorController<MainEditorController.InstanceSettings>
 {
     [Serializable]
     public struct InstanceSettings

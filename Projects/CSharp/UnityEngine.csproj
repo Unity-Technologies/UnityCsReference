@@ -18,6 +18,7 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+    <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
@@ -794,6 +795,9 @@
     <Compile Include="..\..\Modules\Audio\Public\Managed\IValidatable.cs">
       <Link>Modules\Audio\Public\Managed\IValidatable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\SampleProvider\ScriptBindings\SampleProvider.bindings.cs">
+      <Link>Modules\Audio\Public\SampleProvider\ScriptBindings\SampleProvider.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\Audio.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\Audio.bindings.cs</Link>
     </Compile>
@@ -911,20 +915,23 @@
     <Compile Include="..\..\Modules\ContentLoad\Managed\BuildManifest.cs">
       <Link>Modules\ContentLoad\Managed\BuildManifest.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentDirectoryCatalog.bindings.cs">
-      <Link>Modules\ContentLoad\Managed\ContentDirectoryCatalog.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoad.bindings.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoad.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentManifest.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\ContentManifest.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\L1LoadingSystem.bindings.cs">
       <Link>Modules\ContentLoad\Managed\L1LoadingSystem.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\Loadable.cs">
       <Link>Modules\ContentLoad\Managed\Loadable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\NativeLoadingSystem.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\NativeLoadingSystem.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
       <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
@@ -1363,6 +1370,12 @@
     </Compile>
     <Compile Include="..\..\Modules\Input\Private\InputModule.bindings.cs">
       <Link>Modules\Input\Private\InputModule.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\InputCommonTypes.cs">
+      <Link>Modules\Input\Private\Managed\InputCommonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\InputFocusEvent.cs">
+      <Link>Modules\Input\Private\Managed\InputFocusEvent.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\JSONSerialize\Public\JsonUtility.bindings.cs">
       <Link>Modules\JSONSerialize\Public\JsonUtility.bindings.cs</Link>
@@ -2351,6 +2364,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAssetUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAsset.Deprecated.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAsset.Deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\FontAsset\FontAssetAtlasPopulation.cs</Link>
     </Compile>
@@ -2377,6 +2393,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextColorGradient.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextColorGradient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.Deprecated.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.Deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextAssets\TextSettings.cs</Link>
@@ -2477,8 +2496,8 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextSelectingUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextSelectingUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextShaderUtilities.Deprecated.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextShaderUtilities.Deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextUtilities.cs</Link>
@@ -3230,9 +3249,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs">
       <Link>Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\GpuUpdateMode.cs">
-      <Link>Modules\UIElements\Core\GpuUpdateMode.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GroupBoxUtility.cs">
       <Link>Modules\UIElements\Core\GroupBoxUtility.cs</Link>
     </Compile>
@@ -3515,6 +3531,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryRecorder.cs">
       <Link>Modules\UIElements\Core\Renderer\UIREntryRecorder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGpuUpdater.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRGpuUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGpuUpdaterMapped.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRGpuUpdaterMapped.cs</Link>
     </Compile>
@@ -3551,11 +3570,11 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRMeshManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerMapped.cs">
-      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerMapped.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerBasic.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerBasic.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerStaged.cs">
-      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerStaged.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerTracked.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerTracked.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativeList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRNativeList.cs</Link>
@@ -3803,6 +3822,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedTransitions.cs">
       <Link>Modules\UIElements\Core\Style\ComputedTransitions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\CustomPropertyList.cs">
+      <Link>Modules\UIElements\Core\Style\CustomPropertyList.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\CustomStyle.cs">
       <Link>Modules\UIElements\Core\Style\CustomStyle.cs</Link>
     </Compile>
@@ -3854,6 +3876,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\ShorthandApplicator.gen.cs">
       <Link>Modules\UIElements\Core\Style\Generated\ShorthandApplicator.gen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDataAllocator.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDataAllocator.gen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDataStructs.gen.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StyleDataStructs.gen.cs</Link>
     </Compile>
@@ -3877,6 +3902,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIAnimationBinder.gen.cs">
       <Link>Modules\UIElements\Core\Style\Generated\UIAnimationBinder.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIToolkitConverters.gen.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\UIToolkitConverters.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
@@ -4039,6 +4067,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Translate.cs">
       <Link>Modules\UIElements\Core\Style\Translate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\UIToolkitConverters.cs">
+      <Link>Modules\UIElements\Core\Style\UIToolkitConverters.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TemplateContainer.cs">
       <Link>Modules\UIElements\Core\TemplateContainer.cs</Link>
@@ -4618,9 +4649,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRendererGroup.bindings.cs">
-      <Link>Runtime\2D\Common\ScriptBindings\SpriteRendererGroup.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
@@ -5618,9 +5646,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\BindingsLoader.cs">
       <Link>Runtime\Export\Scripting\BindingsLoader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\CastHelper.cs">
-      <Link>Runtime\Export\Scripting\CastHelper.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Categorize.cs">
       <Link>Runtime\Export\Scripting\Categorize.cs</Link>
     </Compile>
@@ -6158,9 +6183,6 @@
     <Compile Include="..\..\Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedObjectMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\ManagedObjectMarshalling.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
       <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
     </Compile>
@@ -6190,6 +6212,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformHierarchy.bindings.cs">
+      <Link>Runtime\Transform\ScriptBindings\TransformHierarchy.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs">
       <Link>Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs</Link>
@@ -6221,6 +6246,9 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
+  </ItemGroup>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="UnityEnableAutoStaticsCleanupCodeGen" />
   </ItemGroup>
   <PropertyGroup>
   </PropertyGroup>

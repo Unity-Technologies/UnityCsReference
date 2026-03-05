@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using System.Linq;
 using UnityEditor.AnimatedValues;
-using System.Globalization;
 using Unity.Collections;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -218,9 +218,7 @@ namespace UnityEditor
             if (!sceneView.drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(target))
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SceneView.activeEditors.Contains(this) || SceneView.activeEditors.Contains(target))
-#pragma warning restore UA2001
                 return;
 
             RectTransform gui = target as RectTransform;

@@ -8,6 +8,7 @@ using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 
+#pragma warning disable CS0618 // TextShaderUtilities is obsolete; internal usage
 
 namespace UnityEditor.TextCore.Text
 {
@@ -167,3 +168,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

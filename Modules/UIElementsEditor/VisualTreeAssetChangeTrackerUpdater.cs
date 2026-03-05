@@ -17,12 +17,9 @@ namespace UnityEditor.UIElements
 {
     internal class VisualTreeAssetChangeTrackerUpdater : BaseVisualTreeUpdater, ILiveReloadSystem
     {
-        internal struct VisualTreeAssetToTrackMappingEntry
+        internal class VisualTreeAssetToTrackMappingEntry
         {
             public int m_LastDirtyCount;
-            public int m_LastElementCount;
-            public int m_LastInlinePropertiesCount;
-            public int m_LastAttributePropertiesDirtyCount;
             public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
         }
 
@@ -50,8 +47,6 @@ namespace UnityEditor.UIElements
             TextEventManager.FONT_PROPERTY_EVENT.Add(m_TextAssetChange);
             TextEventManager.SPRITE_ASSET_PROPERTY_EVENT.Add(m_TextAssetChange);
             TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Add(m_ColorGradientChange);
-
-            m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
         }
 
         protected override void Dispose(bool disposing)
@@ -66,8 +61,8 @@ namespace UnityEditor.UIElements
                 m_RuntimeVisualTreeAssetTrackers.Clear();
                 m_AssetToTrackerMap.Clear();
                 m_StyleSheetToTrackerMap.Clear();
-                m_VisualTreeAssetTrackers.Clear();
-                m_StyleSheetTrackers.Clear();
+                m_VisualTreeAssetAuthoringTrackers.Clear();
+                m_StyleSheetAuthoringTrackers.Clear();
             }
         }
 
@@ -97,8 +92,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private int m_PreviousInMemoryAssetsHierarchyVersion = 0;
-
         private const int kMinUpdateDelayMs = 1000; // TODO this should probably be a setting at some point
         private long m_LastUpdateTimeMs = 0;
 
@@ -115,12 +108,13 @@ namespace UnityEditor.UIElements
         private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_TrackersToRefresh = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
         private HashSet<ILiveReloadAssetTracker<StyleSheet>> m_StyleSheetTrackersToRefresh = new HashSet<ILiveReloadAssetTracker<StyleSheet>>();
 
-        // Contains style sheets that were changed through code.
+        // Contains assets that were changed through code.
+        private readonly HashSet<VisualTreeAsset> m_ChangedVisualTreeAssets = new HashSet<VisualTreeAsset>();
         private readonly HashSet<StyleSheet> m_ChangedStyleSheets = new HashSet<StyleSheet>();
 
         // Registered trackers for each type
-        private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_VisualTreeAssetTrackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
-        private HashSet<ILiveReloadAssetTracker<StyleSheet>> m_StyleSheetTrackers = new HashSet<ILiveReloadAssetTracker<StyleSheet>>();
+        private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_VisualTreeAssetAuthoringTrackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
+        private HashSet<ILiveReloadAssetTracker<StyleSheet>> m_StyleSheetAuthoringTrackers = new HashSet<ILiveReloadAssetTracker<StyleSheet>>();
 
         private ILiveReloadAssetTracker<StyleSheet> m_LiveReloadStyleSheetAssetTracker;
 
@@ -176,19 +170,19 @@ namespace UnityEditor.UIElements
         /// Registers a tracker for a specific VisualTreeAsset.
         /// Multiple trackers can be registered for the same asset.
         /// </summary>
-        public void RegisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
+        public void RegisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
         {
             if (tracker == null || asset == null)
                 return;
 
-            m_VisualTreeAssetTrackers.Add(tracker);
+            m_VisualTreeAssetAuthoringTrackers.Add(tracker);
             StartVisualTreeAssetTracking(tracker, asset);
         }
 
         /// <summary>
         /// Unregisters a tracker from a specific VisualTreeAsset.
         /// </summary>
-        public void UnregisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
+        public void UnregisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
         {
             if (tracker == null || asset == null)
                 return;
@@ -197,26 +191,26 @@ namespace UnityEditor.UIElements
 
             // Only remove from registered trackers if it's not tracking any other assets
             if (!IsTrackerActive(tracker))
-                m_VisualTreeAssetTrackers.Remove(tracker);
+                m_VisualTreeAssetAuthoringTrackers.Remove(tracker);
         }
 
         /// <summary>
         /// Registers a tracker for a specific StyleSheet.
         /// Multiple trackers can be registered for the same asset.
         /// </summary>
-        public void RegisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        public void RegisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
         {
             if (tracker == null || asset == null)
                 return;
 
-            m_StyleSheetTrackers.Add(tracker);
+            m_StyleSheetAuthoringTrackers.Add(tracker);
             StartStyleSheetAssetTracking(tracker, asset);
         }
 
         /// <summary>
         /// Unregisters a tracker from a specific StyleSheet.
         /// </summary>
-        public void UnregisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        public void UnregisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
         {
             if (tracker == null || asset == null)
                 return;
@@ -225,7 +219,7 @@ namespace UnityEditor.UIElements
 
             // Only remove from registered trackers if it's not tracking any other assets
             if (!IsTrackerActive(tracker))
-                m_StyleSheetTrackers.Remove(tracker);
+                m_StyleSheetAuthoringTrackers.Remove(tracker);
         }
 
         private bool IsTrackerActive(ILiveReloadAssetTracker<VisualTreeAsset> tracker)
@@ -276,12 +270,15 @@ namespace UnityEditor.UIElements
                 {
                     foreach (var styleSheet in ve.styleSheetList)
                     {
-                        m_LiveReloadStyleSheetAssetTracker.StartTrackingAsset(styleSheet);
+                        StartStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
                     }
                 }
 
                 if (ve.hasInlineStyle && ve.inlineStyleAccess.inlineRule.rule != null)
-                    m_LiveReloadStyleSheetAssetTracker.StartTrackingAsset(ve.inlineStyleAccess.inlineRule.sheet);
+                {
+                    var styleSheet = ve.inlineStyleAccess.inlineRule.sheet;
+                    StartStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
+                }
             }
         }
 
@@ -313,22 +310,35 @@ namespace UnityEditor.UIElements
                     foreach (var styleSheet in ve.styleSheetList)
                     {
                         m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(styleSheet);
+                        StopStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
                     }
                 }
 
                 if (ve.hasInlineStyle && ve.inlineStyleAccess.inlineRule.rule != null)
-                    m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(ve.inlineStyleAccess.inlineRule.sheet);
+                {
+                    var styleSheet = ve.inlineStyleAccess.inlineRule.sheet;
+                    m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(styleSheet);
+                    StopStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
+                }
             }
         }
 
         public void StartStyleSheetAssetTracking(StyleSheet styleSheet)
         {
-            m_LiveReloadStyleSheetAssetTracker.StartTrackingAsset(styleSheet);
+            StartStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
         }
 
         public void StopStyleSheetAssetTracking(StyleSheet styleSheet)
         {
-            m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(styleSheet);
+            StopStyleSheetAssetTracking(m_LiveReloadStyleSheetAssetTracker, styleSheet);
+        }
+
+        public void OnVisualTreeAssetChanged(VisualTreeAsset visualTreeAsset)
+        {
+            if (m_AssetToTrackerMap.ContainsKey(visualTreeAsset))
+            {
+                m_ChangedVisualTreeAssets.Add(visualTreeAsset);
+            }
         }
 
         public void OnStyleSheetChanged(List<StyleSheet> styleSheets)
@@ -360,7 +370,7 @@ namespace UnityEditor.UIElements
                 else
                 {
                     // Check if any registered trackers are tracking this StyleSheet by path
-                    foreach (var tracker in m_StyleSheetTrackers)
+                    foreach (var tracker in m_StyleSheetAuthoringTrackers)
                     {
                         if (tracker.IsTrackingAsset(styleSheetPath))
                         {
@@ -381,7 +391,7 @@ namespace UnityEditor.UIElements
             }
 
             // Notify all registered StyleSheet trackers
-            foreach (var tracker in m_StyleSheetTrackers)
+            foreach (var tracker in m_StyleSheetAuthoringTrackers)
             {
                 if (tracker.OnAssetsImported(changedAssets, deletedAssets))
                     m_StyleSheetTrackersToRefresh.Add(tracker);
@@ -413,11 +423,6 @@ namespace UnityEditor.UIElements
                 trackers = new VisualTreeAssetToTrackMappingEntry()
                 {
                     m_LastDirtyCount = dirtyCount,
-                    m_LastElementCount = list.Count,
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Sum(r => r.properties.Length) ?? 0,
-#pragma warning restore UA2001
-                    m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
                 m_AssetToTrackerMap[asset] = trackers;
@@ -497,8 +502,8 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            // Also notify all registered VisualTreeAsset trackers
-            foreach (var tracker in m_VisualTreeAssetTrackers)
+            // Also notify all authoring VisualTreeAsset trackers
+            foreach (var tracker in m_VisualTreeAssetAuthoringTrackers)
             {
                 if (tracker.OnAssetsImported(changedAssets, deletedAssets))
                     m_TrackersToRefresh.Add(tracker);
@@ -507,10 +512,12 @@ namespace UnityEditor.UIElements
             if (m_TrackersToRefresh.Count == 0)
                 return;
 
-            UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
             if (changedAssets != null)
                 foreach (var visualTreeAsset in changedAssets)
+                {
+                    UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
                     UIElementsUtility.MarkStyleSheetAsChanged(visualTreeAsset.inlineSheet);
+                }
 
             // Player panel require an update here or else it will only update when Unity is focused
             if (panel.contextType == ContextType.Player)
@@ -588,26 +595,28 @@ namespace UnityEditor.UIElements
 
         private void UpdateDocuments()
         {
-            // Windows can also decide to skip document live reload, and only do text elements.
-            // The UI Builder will skip the live reload of hierarchy and styles, because it is already editing them.
-            if (!enable ||
-                (enabledTrackers & LiveReloadTrackers.Document) == 0)
+            // Individual windows can enable/disable live reload of the VisualTreeAsset documents tracked by the window.
+            var shouldLiveReloadWindow = enable && (enabledTrackers & LiveReloadTrackers.Document) != 0;
+
+            // Authoring tool can also opt-in to receive live reload events for VisualTreeAssets that are not specifically
+            // tracked by the window.
+            var shouldLiveReloadAuthoring = m_VisualTreeAssetAuthoringTrackers.Count > 0;
+
+            if (!shouldLiveReloadWindow && !shouldLiveReloadAuthoring)
                 return;
 
             // InMemoryAssets versions are split into two categories to help track what needs recreating.
-            var shouldRecreateUI = m_PreviousInMemoryAssetsHierarchyVersion != UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
+            var shouldRecreateUI = m_ChangedVisualTreeAssets.Count > 0;
 
             // Early out: no tracker found for panel.
-            if (m_EditorVisualTreeAssetTracker == null && m_RuntimeVisualTreeAssetTrackers.Count == 0 &&
+            if (m_EditorVisualTreeAssetTracker == null &&
+                m_RuntimeVisualTreeAssetTrackers.Count == 0 &&
+                m_VisualTreeAssetAuthoringTrackers.Count == 0 &&
                 // There's no need to reload anything if there are no changes.
                 !shouldRecreateUI)
             {
                 return;
             }
-
-            // This value is updated by the UI Builder whenever an asset is changed.
-            // We update here to prevent unnecessary checking of asset changes.
-            m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
 
             // We iterate on the assets to avoid calling GetDirtyCount for the same asset more than once.
             // In Editor this seems very likely and in Runtime we're assuming there are not multiple panels going
@@ -618,44 +627,28 @@ namespace UnityEditor.UIElements
                 var trackedAsset = trackedAssetEntry.Key;
                 var trackersEntry = trackedAssetEntry.Value;
                 var dirtyCount = EditorUtility.GetDirtyCount(trackedAsset);
-
-                // We keep a trace of the number of elements to minimize the cost of LiveReload on Layout/Style changes.
-                // We also keep a trace of the number of inline rules, we need to recreate UI when they are added/removed.
-                // Same goes for attribute changes, we need to re-Init elements that changed, so we recreate UI to simplify things.
-                using var _ = ListPool<UxmlAsset>.Get(out var list);
-                list.AddRange(trackedAsset.DepthFirstTraversal());
-                var elementCount = list.Count;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
-#pragma warning restore UA2001
-                var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
+                var assetDeemedChanged = false;
 
                 if (dirtyCount != trackersEntry.m_LastDirtyCount)
                 {
+                    assetDeemedChanged = true;
                     trackersEntry.m_LastDirtyCount = dirtyCount;
-
-                    if (elementCount != trackersEntry.m_LastElementCount ||
-                        inlinePropertiesCount != trackersEntry.m_LastInlinePropertiesCount ||
-                        attributePropertiesDirtyCount != trackersEntry.m_LastAttributePropertiesDirtyCount)
-                    {
-                        trackersEntry.m_LastElementCount = elementCount;
-                        trackersEntry.m_LastInlinePropertiesCount = inlinePropertiesCount;
-                        trackersEntry.m_LastAttributePropertiesDirtyCount = attributePropertiesDirtyCount;
-
-                        shouldRecreateUI = true;
-                    }
                 }
+
+                if (m_ChangedVisualTreeAssets.Contains(trackedAsset))
+                    assetDeemedChanged = true;
+
+                if (!assetDeemedChanged)
+                    continue;
 
                 foreach (var tracker in trackersEntry.m_Trackers)
                 {
-                    // Update the dirty count on the tracker to keep the information correct everywhere.
-                    tracker.UpdateAssetTrackerCounts(trackedAsset, dirtyCount, elementCount, inlinePropertiesCount, attributePropertiesDirtyCount);
-
-                    // Add to list to make sure we only call each tracker only once.
-                    if (shouldRecreateUI)
-                    {
+                    var isAuthoringTracker = tracker is IAuthoringLiveReloadAssetTracker;
+                    if (shouldLiveReloadWindow && !isAuthoringTracker)
                         m_TrackersToRefresh.Add(tracker);
-                    }
+
+                    if (shouldLiveReloadAuthoring && isAuthoringTracker)
+                        m_TrackersToRefresh.Add(tracker);
                 }
             }
 
@@ -665,20 +658,18 @@ namespace UnityEditor.UIElements
             }
 
             m_TrackersToRefresh.Clear();
+            m_ChangedVisualTreeAssets.Clear();
         }
 
         private void UpdateStyleSheets()
         {
-            if ((enabledTrackers & LiveReloadTrackers.StyleSheet) == 0)
+            var shouldLiveReloadWindow = (enabledTrackers & LiveReloadTrackers.StyleSheet) != 0;
+            var shouldLiveReloadAuthoring = m_StyleSheetAuthoringTrackers.Count > 0;
+
+            if (!shouldLiveReloadWindow && !shouldLiveReloadAuthoring)
                 return;
 
             var shouldRefreshStyles = m_ChangedStyleSheets.Count > 0;
-
-            // Check the legacy tracker if it's being used
-            if (m_LiveReloadStyleSheetAssetTracker != null)
-            {
-                shouldRefreshStyles |= m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty();
-            }
 
             // Check all registered StyleSheet trackers
             foreach (var trackedStyleSheetEntry in m_StyleSheetToTrackerMap)
@@ -694,8 +685,12 @@ namespace UnityEditor.UIElements
 
                     foreach (var tracker in trackersEntry.m_Trackers)
                     {
-                        // Add to list to make sure we only call each tracker only once.
-                        m_StyleSheetTrackersToRefresh.Add(tracker);
+                        var isAuthoringTracker = tracker is IAuthoringLiveReloadAssetTracker;
+                        if (shouldLiveReloadWindow && !isAuthoringTracker)
+                            m_StyleSheetTrackersToRefresh.Add(tracker);
+
+                        if (shouldLiveReloadAuthoring && isAuthoringTracker)
+                            m_StyleSheetTrackersToRefresh.Add(tracker);
                     }
                 }
             }
@@ -714,6 +709,29 @@ namespace UnityEditor.UIElements
             }
 
             m_ChangedStyleSheets.Clear();
+        }
+
+
+        public bool AnyStyleSheetMarkedDirtyAfterUndo()
+        {
+            var any = false;
+
+            foreach (var (styleSheet, tracker) in m_StyleSheetToTrackerMap)
+            {
+                if (EditorUtility.GetDirtyCount(styleSheet) != tracker.m_LastDirtyCount)
+                {
+                    any = true;
+                    styleSheet.RequestRebuild();
+                }
+            }
+
+            if (any)
+            {
+                panel.DirtyStyleSheets();
+                panel.UpdateInlineStylesRecursively();
+            }
+
+            return any;
         }
     }
 }

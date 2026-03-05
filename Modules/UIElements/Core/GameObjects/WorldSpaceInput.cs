@@ -328,10 +328,10 @@ internal static class WorldSpaceInput
 
         root.IntersectLocalRay(ray, out var point);
 
-        using var buffer = new UnmanagedHandleBuffer();
+        using var buffer = outResults != null ? UnmanagedHandleBuffer.CreateTemporary() : UnmanagedHandleBuffer.None();
 
         // Native implementation is 2-3 times faster, so we use it if we can.
-        var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, point, false, outResults != null ? &buffer : null);
+        var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, point, false, &buffer);
         if (handle.IsUndefined)
             return null;
 

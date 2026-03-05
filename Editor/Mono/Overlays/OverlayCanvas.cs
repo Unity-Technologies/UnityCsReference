@@ -593,12 +593,10 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the vertical overlay container group.
                 // If they are, the layout is already correct.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (displaceContainer.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && displaceContainer.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore UA2001
+#pragma warning restore UA2007
                     return;
 
                 displaceContainer.Add(leftDynamicPanelOverlayContainer);
@@ -611,12 +609,10 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the overlay scene container.
                 // If they are, the layout is already correct.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (sceneContainers.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && sceneContainers.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore UA2001
+#pragma warning restore UA2007
                     return;
 
                 var anchoredContainer = sceneContainers.Q<VisualElement>(k_AnchoredContainerName);

@@ -6,6 +6,8 @@ using System;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
+#pragma warning disable CS0618 // TextSettings.defaultFontAsset is obsolete
+
 namespace UnityEngine.UIElements
 {
     internal static class TextUtilities
@@ -119,7 +121,7 @@ namespace UnityEngine.UIElements
 
             return null;
         }
-     
+
         internal static FontAsset GetFontAssetFromStyle_MainThreadOnly(VisualElement ve)
         {
             var fontDefinition = FontDefinition.From(ve.computedStyle.unityFontDefinition);

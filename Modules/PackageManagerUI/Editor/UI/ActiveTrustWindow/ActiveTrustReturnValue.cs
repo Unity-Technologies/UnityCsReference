@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal enum ActiveTrustReturnValue
     {
-        InstallAnyway,
+        ProceedAnyway,
         Cancel,
         Error
     }

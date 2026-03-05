@@ -458,6 +458,9 @@ internal class SerializedObjectBindingContext
             case SerializedPropertyType.EntityId:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetEntityIdPropertyValue, SerializedPropertyHelper.SetEntityIdPropertyValue, SerializedPropertyHelper.ValueEquals);
                 break;
+            case SerializedPropertyType.LoadableReference:
+                DefaultBind(element, prop, SerializedPropertyHelper.GetLoadableReferencePropertyValue, SerializedPropertyHelper.SetLoadableReferencePropertyValue, SerializedPropertyHelper.ValueEquals);
+                break;
             case SerializedPropertyType.ExposedReference:
                 // nothing to bind here
                 break;

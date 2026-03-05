@@ -42,5 +42,16 @@ namespace UnityEditor
         [NativeMethod("ApplyPropertyModificationsToObject", IsFreeFunction = true)]
         [NativeHeader("Editor/Src/Prefabs/PropertyModification.h")]
         extern internal static void ApplyPropertyModificationsToObject([NotNull] Object target, PropertyModification[] value);
+
+        [RequiredByNativeCode]
+        internal static PropertyModification CreateNew(Object target, string propertyPath, string value, Object objectReference)
+        {
+            var ret = new PropertyModification();
+            ret.target = target;
+            ret.propertyPath = propertyPath;
+            ret.value = value;
+            ret.objectReference = objectReference;
+            return ret;
+        }
     }
 }

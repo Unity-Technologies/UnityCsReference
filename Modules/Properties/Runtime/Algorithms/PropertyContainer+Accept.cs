@@ -155,14 +155,14 @@ namespace Unity.Properties
         /// <returns><see langword="true"/> if the visitation succeeded; <see langword="false"/> otherwise.</returns>
         public static bool TryAccept<TContainer>(IPropertyBagVisitor visitor, ref TContainer container, out VisitReturnCode returnCode, VisitParameters parameters = default)
         {
-            if (!TypeTraits<TContainer>.IsContainer)
+            if (!TypeTraits.IsContainer(typeof(TContainer)))
             {
                 returnCode = VisitReturnCode.InvalidContainerType;
                 return false;
             }
 
             // Can not visit a null container.
-            if (TypeTraits<TContainer>.CanBeNull)
+            if (TypeTraits.CanBeNull(typeof(TContainer)))
             {
                 if (EqualityComparer<TContainer>.Default.Equals(container, default))
                 {
@@ -171,7 +171,7 @@ namespace Unity.Properties
                 }
             }
 
-            if (!TypeTraits<TContainer>.IsValueType && typeof(TContainer) != container.GetType())
+            if (!typeof(TContainer).IsValueType && typeof(TContainer) != container.GetType())
             {
                 if (!TypeTraits.IsContainer(container.GetType()))
                 {

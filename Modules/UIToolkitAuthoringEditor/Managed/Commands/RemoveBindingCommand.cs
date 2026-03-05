@@ -60,6 +60,7 @@ internal readonly record struct RemoveBindingCommand
 
             Element.IncrementVersion(VersionChangeType.Bindings);
             EditorUtility.SetDirty(visualTreeAsset);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
         }
     }
 

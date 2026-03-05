@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Serialization;
 
+#pragma warning disable CS0618 // TextSettings.missingSpriteCharacterUnicode is obsolete
 
 namespace UnityEngine.TextCore.Text
 {
@@ -99,35 +101,6 @@ namespace UnityEngine.TextCore.Text
         public List<SpriteAsset> fallbackSpriteAssets;
 
         internal bool m_IsSpriteAssetLookupTablesDirty = false;
-
-
-        void Awake() {}
-
-
-        /// <summary>
-        /// Create a material for the sprite asset.
-        /// </summary>
-        /// <returns></returns>
-        /*Material GetDefaultSpriteMaterial()
-        {
-            //isEditingAsset = true;
-            TextShaderUtilities.GetShaderPropertyIDs();
-
-            // Add a new material
-            Shader shader = Shader.Find("TextMeshPro/Sprite");
-            Material tempMaterial = new Material(shader);
-            tempMaterial.SetTexture(TextShaderUtilities.ID_MainTex, spriteSheet);
-            tempMaterial.hideFlags = HideFlags.HideInHierarchy;
-
-            #if UNITY_EDITOR
-            UnityEditor.AssetDatabase.AddObjectToAsset(tempMaterial, this);
-            UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GetAssetPath(this));
-            #endif
-            //isEditingAsset = false;
-
-            return tempMaterial;
-        }*/
-
 
         /// <summary>
         /// Function to update the sprite name and unicode lookup tables.

@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
-using UnityEngine;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
@@ -20,6 +18,27 @@ namespace UnityEngine.UIElements.StyleSheets
     {
         public StyleSheet sheet;
         public StyleValueHandle handle;
+    }
+
+    [NativeHeader("Modules/UIElements/Core/Native/Style/StylePropertyValue.h")]
+    [NativeClass("UnmanagedStylePropertyValue")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UnmanagedStylePropertyValue
+    {
+        public EntityId sheet;
+        public StyleValueHandle handle;
+
+        public static implicit operator StylePropertyValue(UnmanagedStylePropertyValue value)
+        {
+            return new() { sheet = (StyleSheet)Resources.EntityIdToObject(value.sheet), handle = value.handle };
+        }
+        public static implicit operator UnmanagedStylePropertyValue(StylePropertyValue value)
+        {
+            return new()
+            {
+                sheet = value.sheet != null ? value.sheet.GetEntityId() : EntityId.None, handle = value.handle
+            };
+        }
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

@@ -11,13 +11,13 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditor.UIElements.Debugger;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Collections;
 using Unity.Properties;
 using Unity.UIToolkit.Editor;
 using Button = UnityEngine.UIElements.Button;
@@ -537,9 +537,7 @@ namespace Unity.UI.Builder
                     uiField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
 
                     // We store the ToggleButtonGroup that needs to be updated when the Flex Direction value changes
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_FlexDirectionDependentStyleNames.Contains(styleName))
-#pragma warning restore UA2001
                         m_FlexAlignmentToggleButtonGroups.Add(uiField);
                 }
                 else

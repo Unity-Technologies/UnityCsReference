@@ -29,9 +29,12 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe T GetComponent<T>()
         {
-            var h = new CastHelper<T>();
-            GetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
-            return h.t;
+            var component = GetComponentFastPath(typeof(T));
+            // Because there is no constraint on T, a user could pass a value type that is larger than a reference
+            // If so we need to ensure that the ref we pass to UnsafeUtility.As is larger enough so we don't read
+            // random stack data. In that case we can assume that component will null, so we will return a zero'd T
+            var tuple = (component, default(T));
+            return UnsafeUtility.As<Component, T>(ref tuple.component);
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
@@ -39,7 +42,8 @@ namespace UnityEngine
         public extern Component GetComponent(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        internal extern void GetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern Component GetComponentFastPath(Type type);
 
         [FreeFunction(Name = "Scripting::GetScriptingWrapperOfComponentOfGameObject", HasExplicitThis = true)]
         internal extern Component GetComponentByName(string type);
@@ -188,10 +192,14 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe bool TryGetComponent<T>(out T component)
         {
-            var h = new CastHelper<T>();
-            TryGetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
-            component = h.t;
-            return h.t != null;
+            var componentFound = TryGetComponentFastPath(typeof(T));
+            // Because there is no constraint on T, a user could pass a value type that is larger than a reference
+            // If so we need to ensure that the ref we pass to UnsafeUtility.As is larger enough so we don't read
+            // random stack data. In that case we can assume that component will null, so we will return a zero'd T
+            var tuple = (componentFound, default(T));
+            component = UnsafeUtility.As<Component, T>(ref tuple.componentFound);
+            return component != null;
+
         }
 
         public bool TryGetComponent(Type type, out Component component)
@@ -205,7 +213,8 @@ namespace UnityEngine
         internal extern Component TryGetComponentInternal(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::TryGetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        internal extern void TryGetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern Component TryGetComponentFastPath(Type type);
 
         public static GameObject FindWithTag(string tag)
         {

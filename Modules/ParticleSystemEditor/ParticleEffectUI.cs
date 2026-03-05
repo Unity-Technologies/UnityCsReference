@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
@@ -399,7 +400,7 @@ namespace UnityEditor
                         Stop();
                         break;
                     case PlayState.Playing:
-                        Play();
+                        Play(true);
                         break;
                     case PlayState.Paused:
                         Pause();
@@ -868,14 +869,14 @@ namespace UnityEditor
             return ParticleSystemEditorUtils.playbackIsPlaying;
         }
 
-        internal void Play()
+        internal void Play(bool skipIfPlaying = false)
         {
             bool anyPlayed = false;
 
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
             {
                 ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
-                if (root)
+                if (root && (!skipIfPlaying || !root.isPlaying))
                 {
                     root.Play();
                     anyPlayed = true;
@@ -1024,9 +1025,7 @@ namespace UnityEditor
             EntityId[] selectedEntityIds = Selection.entityIds;
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selectedEntityIds.Contains(psUI.m_ParticleSystems[0].gameObject.GetEntityId()))
-#pragma warning restore UA2001
                     result.Add(psUI);
             }
             return result;
@@ -1325,9 +1324,7 @@ namespace UnityEditor
                             if (psRenderer != null)
                             {
                                 if (enabled)
-                                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     psRenderer.editorEnabled = selectedEntityIds.Contains(psRenderer.gameObject.GetEntityId());
-#pragma warning restore UA2001
                                 else
                                     psRenderer.editorEnabled = true;
                             }

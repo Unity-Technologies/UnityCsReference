@@ -16,6 +16,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    #pragma warning disable CS0618  // Type or member is obsolete
     [CustomEditor(typeof(LightProbeProxyVolume))]
     [CanEditMultipleObjects]
     internal class LightProbeProxyVolumeEditor : Editor

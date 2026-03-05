@@ -4,12 +4,12 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using JetBrains.Annotations;
 using UnityEditorInternal;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEditor.MPE;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -135,9 +135,7 @@ namespace UnityEditor
 
             static void SetupProfiledConnection(int connId)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (ProfilerDriver.GetAvailableProfilers().Contains(connId))
-#pragma warning restore UA2001
                 {
                     ProfilerDriver.SetRemoteEditorConnection(connId);
                     Menu.SetChecked("Edit/Record", s_OOPProfilerWindow.IsSetToRecord());

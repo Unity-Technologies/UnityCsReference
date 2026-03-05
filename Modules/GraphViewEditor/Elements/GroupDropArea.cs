@@ -50,7 +50,7 @@ namespace UnityEditor.Experimental.GraphView
 #pragma warning restore UA2001
                     .Cast<GraphElement>()
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group) && e.IsGroupable())
+                    .Where(e => e != group && !group.ContainsElement(e) && !(e.GetContainingScope() is Group) && e.IsGroupable())
 #pragma warning restore UA2001
                     .ToList(); // ToList required here as the enumeration might be done again *after* the elements are added to the group
 
@@ -75,9 +75,7 @@ namespace UnityEditor.Experimental.GraphView
 
                 var selectedGraphElement = selectedElement as GraphElement;
                 bool dropCondition = selectedGraphElement != null
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    && !group.containedElements.Contains(selectedGraphElement)
-#pragma warning restore UA2001
+                    && !group.ContainsElement(selectedGraphElement)
                     && !(selectedGraphElement.GetContainingScope() is Group)
                     && selectedGraphElement.IsGroupable();
 
@@ -85,11 +83,9 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     canDrop = true;
                 }
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                else if (evt.modifiers == EventModifiers.Shift && group.containedElements.Contains(selectedElement))
-#pragma warning restore UA2001
+                else if (evt.modifiers == EventModifiers.Shift && selectedGraphElement != null)
                 {
-                    group.RemoveElement(selectedGraphElement);
+                    group.TryRemoveElement(selectedGraphElement);
                 }
             }
 

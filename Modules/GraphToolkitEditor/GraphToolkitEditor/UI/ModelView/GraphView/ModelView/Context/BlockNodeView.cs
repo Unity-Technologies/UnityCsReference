@@ -42,6 +42,7 @@ namespace Unity.GraphToolkit.Editor
         internal static readonly CustomStyleProperty<Color> DisabledBackgroundColorStyle = new CustomStyleProperty<Color>("--disabled-background-color");
         internal static readonly CustomStyleProperty<float> BlockBorderStyle = new CustomStyleProperty<float>("--block--border");
         internal static readonly CustomStyleProperty<Color> NodeOutputBackgroundColorStyle = new CustomStyleProperty<Color>("--block-output--background-color");
+        internal static readonly CustomStyleProperty<Color> BlocksOptionsBackgroundColorStyle = new CustomStyleProperty<Color>("--block-option--background-color");
 
         /// <summary>
         /// The <see cref="BlockNodeModel"/> this <see cref="BlockNodeView"/> displays.
@@ -53,6 +54,7 @@ namespace Unity.GraphToolkit.Editor
         Color m_BkgndColor;
         Color m_OutputBkgndColor;
         Color m_DisabledColor;
+        Color m_OptionsBkgndColor;
         bool m_Attached;
 
         /// <summary>
@@ -103,6 +105,12 @@ namespace Unity.GraphToolkit.Editor
             if (e.customStyle.TryGetValue(BlocksBackgroundColorStyle, out Color bkgndColor))
             {
                 m_BkgndColor = bkgndColor;
+                changed = true;
+            }
+
+            if (e.customStyle.TryGetValue(BlocksOptionsBackgroundColorStyle, out Color optColor))
+            {
+                m_OptionsBkgndColor = optColor;
                 changed = true;
             }
 
@@ -487,35 +495,85 @@ namespace Unity.GraphToolkit.Editor
             var p2d = mgc.painter2D;
             var isFirst = BlockNodeModel == BlockNodeModel?.ContextNodeModel?.FirstBlock;
 
+            // Draw Standard Body (Light Grey)
             p2d.fillColor = m_BkgndColor;
-            DrawBlock(ref bounds, p2d, m_DisplayEtch, false, isFirst, false, ref actualParams);
+            DrawBlock(ref bounds, p2d, m_DisplayEtch, m_DisplayEtch, isFirst, false, ref actualParams);
             p2d.Fill(FillRule.OddEven);
 
-            bool isOutputOnlyState = m_DisplayEtch &&
-                                     ClassListContains(CollapsibleInOutNodeView.collapsedUssClassName) &&
-                                     ClassListContains(CollapsibleInOutNodeView.hasConnectedOutputUssClassName) &&
-                                     !ClassListContains(CollapsibleInOutNodeView.hasConnectedInputUssClassName);
+            // Detection of block color override
+            Color? patchColor = null;
+            
+            // Connection States (Used when Collapsed)
+            bool isCollapsed = ClassListContains(CollapsibleInOutNodeView.collapsedUssClassName);
+            bool hasConnectedOutput = ClassListContains(CollapsibleInOutNodeView.hasConnectedOutputUssClassName);
+            bool hasConnectedInput = ClassListContains(CollapsibleInOutNodeView.hasConnectedInputUssClassName);
 
-            // if the block is collapsed, and only output connected, we want the bottom etch to be the color of the
-            // output port background.
-            if (isOutputOnlyState)
+            // Structural States (Used when Expanded)
+            var portContainer = this.Q(portContainerPartName);
+            bool hasStructInput = true;
+            bool hasStructOutput = true;
+            if (portContainer != null)
+            {
+                if (portContainer.ClassListContains("ge-in-out-port-container-part--no-input"))
+                    hasStructInput = false;
+                if (portContainer.ClassListContains("ge-in-out-port-container-part--no-output"))
+                    hasStructOutput = false;
+            }
+
+            if (isCollapsed)
+            {
+                // When collapsed, we ignore structural ports (they are hidden).
+                // We ONLY care if there is a CONNECTED Output bar visible.
+                if (hasConnectedOutput && !hasConnectedInput)
+                {
+                    patchColor = m_OutputBkgndColor;
+                }
+            }
+            else
+            {
+                // When expanded, we look at the layout structure.
+                
+                // Case A: Expanded + Output Only
+                // The output container stretches to fill the block.
+                if (hasStructOutput && !hasStructInput)
+                {
+                    patchColor = m_OutputBkgndColor;
+                }
+                // Case B: Expanded + Options Only
+                // The options container covers the body.
+                else if (!hasStructOutput && !hasStructInput)
+                {
+                    var optionsPart = this.Q(nodeOptionsContainerPartName);
+                    if (optionsPart != null && optionsPart.childCount > 0)
+                    {
+                        if (optionsPart.resolvedStyle.display != DisplayStyle.None && 
+                            optionsPart.resolvedStyle.visibility != Visibility.Hidden)
+                        {
+                            patchColor = m_OptionsBkgndColor;
+                        }
+                    }
+                }
+            }
+
+            // Apply the color override if needed
+            if (patchColor.HasValue && patchColor.Value.a > 0)
             {
                 p2d.BeginPath();
-                p2d.fillColor = m_OutputBkgndColor;
+                p2d.fillColor = patchColor.Value;
 
                 float startX = bounds.xMin + actualParams.bottomEtchMargin + actualParams.bottomEtchWidth + actualParams.etchInnerRadius;
                 p2d.MoveTo(new Vector2(startX, bounds.yMax));
 
                 AppendBottomEtchGeometry(p2d, ref bounds, ref actualParams, 0, 0);
 
-                // Close it to fill
                 p2d.ClosePath();
                 p2d.Fill(FillRule.OddEven);
             }
 
+            // Draw Stroke
             p2d.lineWidth = m_Border;
             p2d.strokeColor = resolvedStyle.borderLeftColor;
-            DrawBlock(ref bounds, p2d, m_DisplayEtch, false, isFirst, false, ref actualParams);
+            DrawBlock(ref bounds, p2d, m_DisplayEtch, m_DisplayEtch, isFirst, false, ref actualParams);
             p2d.Stroke();
         }
 

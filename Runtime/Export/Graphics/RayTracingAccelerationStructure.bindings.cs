@@ -197,7 +197,9 @@ namespace UnityEngine.Rendering
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
+#pragma warning disable CS0618 // Type or member is obsolete
             lightProbeProxyVolume = null;
+#pragma warning restore CS0618
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
             meshLod = 0;
@@ -210,7 +212,9 @@ namespace UnityEngine.Rendering
             this.material = material;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
             rayTracingMode = RayTracingMode.Static;
+#pragma warning disable CS0618 // Type or member is obsolete
             dynamicGeometry = false;
+#pragma warning restore CS0618
             materialProperties = null;
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
@@ -219,7 +223,9 @@ namespace UnityEngine.Rendering
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
+#pragma warning disable CS0618 // Type or member is obsolete
             lightProbeProxyVolume = null;
+#pragma warning restore CS0618
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
             meshLod = 0;
@@ -239,6 +245,7 @@ namespace UnityEngine.Rendering
         public uint mask;
         public MotionVectorGenerationMode motionVectorMode;
         public LightProbeUsage lightProbeUsage;
+        [Obsolete("This field is obsolete. #from(6000.5)", false)]
         public LightProbeProxyVolume lightProbeProxyVolume;
         public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
         public bool accelerationStructureBuildFlagsOverride { get; set; }
@@ -303,7 +310,9 @@ namespace UnityEngine.Rendering
             indexCount = -1;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
             rayTracingMode = RayTracingMode.Static;
+#pragma warning disable CS0618 // Type or member is obsolete
             dynamicGeometry = false;
+#pragma warning restore CS0618
             materialProperties = null;
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
@@ -312,7 +321,9 @@ namespace UnityEngine.Rendering
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
+#pragma warning disable CS0618 // Type or member is obsolete
             lightProbeProxyVolume = null;
+#pragma warning restore CS0618
             accelerationStructureBuildFlagsOverride = false;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
         }
@@ -329,7 +340,9 @@ namespace UnityEngine.Rendering
             indexCount = -1;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
             rayTracingMode = RayTracingMode.Static;
+#pragma warning disable CS0618 // Type or member is obsolete
             dynamicGeometry = false;
+#pragma warning restore CS0618
             materialProperties = null;
             enableTriangleCulling = true;
             frontTriangleCounterClockwise = false;
@@ -338,7 +351,9 @@ namespace UnityEngine.Rendering
             mask = 0xFF;
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
+#pragma warning disable CS0618 // Type or member is obsolete
             lightProbeProxyVolume = null;
+#pragma warning restore CS0618
             accelerationStructureBuildFlagsOverride = false;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
         }
@@ -362,6 +377,7 @@ namespace UnityEngine.Rendering
         public uint mask { get; set; }
         public MotionVectorGenerationMode motionVectorMode { get; set; }
         public LightProbeUsage lightProbeUsage { get; set; }
+        [Obsolete("This field is obsolete. #from(6000.5)", false)]
         public LightProbeProxyVolume lightProbeProxyVolume { get; set; }
         public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
         public bool accelerationStructureBuildFlagsOverride { get; set; }
@@ -593,10 +609,10 @@ namespace UnityEngine.Rendering
 
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
-
+#pragma warning restore CS0618
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
@@ -645,9 +661,10 @@ namespace UnityEngine.Rendering
                 if (vertexCount % 3 != 0)
                     throw new ArgumentOutOfRangeException("config.vertexBuffer", $"When config.indexBuffer is null, the amount of vertices used must be a multiple of 3. Only triangle geometries are supported. Currently using {vertexCount} vertices.");
             }
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+#pragma warning restore CS0618
 
             if (config.vertexAttributes == null)
                 throw new ArgumentNullException("config.vertexAttributes");
@@ -677,10 +694,10 @@ namespace UnityEngine.Rendering
 
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
-
+#pragma warning restore CS0618
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
@@ -709,10 +726,10 @@ namespace UnityEngine.Rendering
 
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
-
+#pragma warning restore CS0618
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
@@ -738,10 +755,10 @@ namespace UnityEngine.Rendering
 
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
-
+#pragma warning restore CS0618
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
@@ -776,10 +793,10 @@ namespace UnityEngine.Rendering
 
             if (config.lightProbeUsage != LightProbeUsage.Off)
                 throw new ArgumentException($"{nameof(config)}.{nameof(config.lightProbeUsage)} must be LightProbeUsage.Off. This method doesn't support light probe setup.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeProxyVolume != null)
                 throw new ArgumentException($"{nameof(config)}.{nameof(config.lightProbeProxyVolume)} must be null. This method doesn't support Light Probe Proxy Volume.");
-
+#pragma warning restore CS0618
             if (instanceMatrices.stride != sizeof(float) * 4 * 4)
                 throw new ArgumentException($"{nameof(instanceMatrices.stride)} ({instanceMatrices.stride}) must be 64 bytes.");
 
@@ -861,9 +878,10 @@ namespace UnityEngine.Rendering
 
             if (config.lightProbeUsage != LightProbeUsage.Off)
                 throw new ArgumentException($"{nameof(config)}.{nameof(config.lightProbeUsage)} must be LightProbeUsage.Off. This method doesn't support light probe setup.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeProxyVolume != null)
                 throw new ArgumentException($"{nameof(config)}.{nameof(config.lightProbeProxyVolume)} must be null. This method doesn't support Light Probe Proxy Volume.");
+#pragma warning restore CS0618
 
             if (config.vertexAttributes == null)
                 throw new ArgumentNullException($"{nameof(config)}.{nameof(config.vertexAttributes)}");
@@ -1057,10 +1075,10 @@ namespace UnityEngine.Rendering
 
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
-
+#pragma warning disable CS0618 // Type or member is obsolete
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
-
+#pragma warning restore CS0618
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 

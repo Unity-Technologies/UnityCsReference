@@ -31,14 +31,16 @@ namespace UnityEngine.UIElements
         void RegisterVisualTreeAssetTracker(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualElement owner);
         void UnregisterVisualTreeAssetTracker(VisualElement owner);
 
-        void RegisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
-        void UnregisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
+        void RegisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
+        void UnregisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
 
-        void RegisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
-        void UnregisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
+        void RegisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
+        void UnregisterAuthoringTrackerForAsset(IAuthoringLiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
 
         void StartTracking(List<VisualElement> elements);
         void StopTracking(List<VisualElement> elements);
+
+        void OnVisualTreeAssetChanged(VisualTreeAsset visualTreeAsset);
 
         void StartStyleSheetAssetTracking(StyleSheet styleSheet);
         void StopStyleSheetAssetTracking(StyleSheet styleSheet);
@@ -47,5 +49,7 @@ namespace UnityEngine.UIElements
         void OnStyleSheetAssetsImported(HashSet<StyleSheet> changedAssets, HashSet<string> deletedAssets);
 
         void OnVisualTreeAssetsImported(HashSet<VisualTreeAsset> changedAssets, HashSet<string> deletedAssets);
+
+        bool AnyStyleSheetMarkedDirtyAfterUndo();
     }
 }

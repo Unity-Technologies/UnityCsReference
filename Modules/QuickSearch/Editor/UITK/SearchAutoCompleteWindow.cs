@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Search
 {
@@ -268,17 +267,16 @@ namespace UnityEditor.Search
 
         bool InitializeCustomStyleValues()
         {
-            if (!TryReadStyleDimension(m_AttachedRoot?.computedStyle.customProperties, k_MetricsLineHeightName, out m_ItemHeight, EditorGUIUtility.singleLineHeight))
+            if (!TryReadStyleDimension(m_AttachedRoot, k_MetricsLineHeightName, out m_ItemHeight, EditorGUIUtility.singleLineHeight))
                 return false;
 
             return true;
         }
 
-        static bool TryReadStyleDimension(Dictionary<string, StylePropertyValue> customProperties, string propertyName, out float value, float defaultValue = 0.0f)
+        static bool TryReadStyleDimension(VisualElement element, string propertyName, out float value, float defaultValue = 0.0f)
         {
             value = defaultValue;
-            if (customProperties != null &&
-                customProperties.TryGetValue(propertyName, out var customProp))
+            if (element != null && element.computedStyle.customProperties.TryGetValue(propertyName, out var customProp))
             {
                 if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
                 {

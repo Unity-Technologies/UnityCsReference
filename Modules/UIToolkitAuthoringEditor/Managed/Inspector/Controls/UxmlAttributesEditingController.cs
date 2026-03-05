@@ -28,6 +28,11 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     public LiveAttributePropertyController liveAttributePropertyController { get; } = new LiveAttributePropertyController();
 
     /// <summary>
+    /// Handles changes to UXML attributes.
+    /// </summary>
+    public UxmlAttributeChangeHandler attributeChangeHandler { get; } = new UxmlAttributeChangeHandler();
+
+    /// <summary>
     /// The authoring context this controller is operating on.
     /// </summary>
     public UxmlAttributesEditingContext context
@@ -40,6 +45,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
             m_Context = value;
             liveAttributePropertyController.context = m_Context;
+            attributeChangeHandler.Context = m_Context;
 
             if (m_Context != null)
                 m_Context.contextChanged += OnContextChanged;
@@ -81,13 +87,16 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
                 // Deserialize the element to ensure it has the latest data
                 DeserializeElement();
+
+                attributeChangeHandler.StartTrackingChanges();
             }
 
             // Ensure the serialized object is up to date
             context.rootSerializedObject.UpdateIfRequiredOrScript();
 
             // We need to sync the serialized data from the element
-            liveAttributePropertyController.SyncLiveProperties();
+            if (context.isReadOnly || context.tempSerializedData != null)
+                liveAttributePropertyController.SyncLiveProperties();
 
             if (context.element?.panel is Panel targetPanel)
             {
@@ -101,6 +110,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         if (m_HasPendingSync)
             EditorApplication.delayCall -= Sync;
         liveAttributePropertyController.RemoveLiveProperties();
+        attributeChangeHandler.StopTrackingChanges();
     }
 
     // Called when a property has changed
@@ -191,7 +201,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     void UpdateDecoratorsForBoundProperties()
     {
         using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
-        context.element.GetBindingInfos(bindingInfos);
+        context.element?.GetBindingInfos(bindingInfos);
 
         foreach (var info in bindingInfos)
         {

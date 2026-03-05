@@ -12,6 +12,7 @@ namespace Unity.GraphToolkit.Editor
     /// A model that represents the content of the blackboard for a graph.
     /// </summary>
     [UnityRestricted]
+    [Serializable]
     internal class BlackboardContentModel : Model
     {
         /// <summary>

@@ -409,6 +409,11 @@ namespace UnityEditor.Search
                     return new SearchValue(sp.guidValue.ToString());
                 case SerializedPropertyType.EntityId:
                     return new SearchValue(sp.entityIdValue.ToString());
+                case SerializedPropertyType.LoadableReference:
+                    {
+                        var obj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(sp.loadableReferenceValue);
+                        return new SearchValue(obj);
+                    }
             }
 
             if (sp.isArray)

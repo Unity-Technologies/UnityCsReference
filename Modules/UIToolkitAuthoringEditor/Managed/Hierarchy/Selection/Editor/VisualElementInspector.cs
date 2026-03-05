@@ -39,6 +39,8 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
     public const string StyleInspectorClass = UssClass + "__style-inspector";
     public const string ReadOnlyStyleInspectorClass = StyleInspectorClass + "--readonly";
+    public const string AttributesInspectorClass = UssClass + "__attributes-inspector";
+    public const string ReadonlyAttributesInspectorClass = AttributesInspectorClass + "--readonly";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualElementInspector.uxml";
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
@@ -93,45 +95,7 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
         {
             if (m_EditFlags == value)
                 return;
-            m_EditFlags = value;
-
-            switch (m_EditFlags)
-            {
-                // Complete read-only.
-                case VisualElementEditFlags.None:
-                    m_Header.SetEnabled(false);
-                    m_AttributesInspector.IsReadOnly = true;
-                    m_OpenInBuilder.style.display = DisplayStyle.Flex;
-                    m_StyleInspector.IsReadOnly = true;
-                    m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
-                    break;
-                // Attribute overrides
-                case VisualElementEditFlags.Attributes:
-                    m_Header.SetEnabled(false);
-                    m_AttributesInspector.IsReadOnly = false;
-                    m_OpenInBuilder.style.display = DisplayStyle.None;
-                    m_StyleInspector.IsReadOnly = true;
-                    m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
-                    break;
-                // Should almost never get here.
-                case VisualElementEditFlags.Styles:
-                    m_Header.SetEnabled(false);
-                    m_OpenInBuilder.style.display = DisplayStyle.None;
-                    m_StyleInspector.IsReadOnly = false;
-                    m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, false);
-                    break;
-                // Full editing
-                case VisualElementEditFlags.Attributes | VisualElementEditFlags.Styles:
-                    m_Header.SetEnabled(true);
-                    m_AttributesInspector.IsReadOnly = false;
-                    m_OpenInBuilder.style.display = DisplayStyle.None;
-                    m_StyleInspector.IsReadOnly = false;
-                    m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, false);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
+            SetEditFlags(value);
             NotifyPropertyChanged(EditFlagsProperty);
         }
     }
@@ -148,7 +112,6 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
         styleSheets.Add(styleSheet);
 
         m_Header = this.Q<VisualElementHeader>(className:HeaderUssClass);
-        m_Header.SetEnabled(false);
         m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
 
         // Attributes
@@ -163,6 +126,55 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
 
         // Styles
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
+
+        SetEditFlags(VisualElementEditFlags.None);
+    }
+
+    void SetEditFlags(VisualElementEditFlags editFlags)
+    {
+        m_EditFlags = editFlags;
+
+        switch (m_EditFlags)
+        {
+            // Complete read-only.
+            case VisualElementEditFlags.None:
+                m_Header.SetEnabled(false);
+                m_AttributesInspector.IsReadOnly = true;
+                m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_OpenInBuilder.style.display = DisplayStyle.Flex;
+                m_StyleInspector.IsReadOnly = true;
+                m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
+                break;
+            // Attribute overrides
+            case VisualElementEditFlags.Attributes:
+                m_Header.SetEnabled(false);
+                m_AttributesInspector.IsReadOnly = false;
+                m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_OpenInBuilder.style.display = DisplayStyle.None;
+                m_StyleInspector.IsReadOnly = true;
+                m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, true);
+                break;
+            // Should almost never get here.
+            case VisualElementEditFlags.Styles:
+                m_Header.SetEnabled(false);
+                m_AttributesInspector.IsReadOnly = true;
+                m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_OpenInBuilder.style.display = DisplayStyle.None;
+                m_StyleInspector.IsReadOnly = false;
+                m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, false);
+                break;
+            // Full editing
+            case VisualElementEditFlags.Attributes | VisualElementEditFlags.Styles:
+                m_Header.SetEnabled(true);
+                m_AttributesInspector.IsReadOnly = false;
+                m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_OpenInBuilder.style.display = DisplayStyle.None;
+                m_StyleInspector.IsReadOnly = false;
+                m_StyleInspector.EnableInClassList(ReadOnlyStyleInspectorClass, false);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)

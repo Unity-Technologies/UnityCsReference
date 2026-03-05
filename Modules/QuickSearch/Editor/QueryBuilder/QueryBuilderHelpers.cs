@@ -52,7 +52,6 @@ namespace UnityEditor.Search
         }
     }
 
-    [Serializable]
     class QueryHelperSearchGroup
     {
         public static readonly Texture2D templateIcon = Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon");

@@ -116,6 +116,10 @@ namespace Unity.U2D.Physics
             [Obsolete("PhysicsShape.SurfaceMaterial.bouncinessCombine is obsolete. Please use PhysicsShape.bouncinessMixing instead.", true)]
             public PhysicsMaterialCombine2D bouncinessCombine { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsShape.SurfaceMaterial.Default is deprecated. Please use PhysicsShape.SurfaceMaterial.defaultMaterial instead. (UnityUpgradable) -> defaultMaterial", false)]
+            public static SurfaceMaterial Default => defaultMaterial;
         }
     }
 

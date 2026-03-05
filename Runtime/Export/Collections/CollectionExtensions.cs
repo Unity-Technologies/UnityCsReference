@@ -286,8 +286,24 @@ namespace Unity.Collections
         /// <param name="array">The array.</param>
         /// <param name="item">The item to locate in the array.</param>
         public static bool Contains<T>([DisallowNull]this T[] array, T item) => Array.IndexOf(array, item) != -1;
+
+        /// <summary>
+        /// Returns whether the list contains the specified item.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="item">The item to locate in the list.</param>
+        public static bool Contains<T>([DisallowNull]this IReadOnlyList<T> list, T item)
+        {
+            if (list is List<T> l)
+                return l.Contains(item);
+
+#pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return System.Linq.Enumerable.Contains(list, item);
+#pragma warning restore UA2007
+        }
 		
-		    /// <summary>
+		/// <summary>
         /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
         /// </summary>
         /// <param name="collection">Collection to inspect</param>

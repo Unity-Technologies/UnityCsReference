@@ -85,7 +85,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::SetTransformAccess", IsThreadSafe = true, ThrowsException = true)] extern internal static void PhysicsWorld_SetTransformAccess(ref TransformAccess access, ref Vector3 position, ref Quaternion rotation, bool transformChangedEvent);
         [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static void PhysicsWorld_Simulate(ReadOnlySpan<PhysicsWorld> worlds, float timeStep);
         [NativeMethod(Name = "PhysicsWorld::Explode", IsThreadSafe = true)] extern internal static void PhysicsWorld_Explode(PhysicsWorld world, PhysicsWorld.ExplosionDefinition definition);
-        [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, bool ownerUserData, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerBeginEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerBeginEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerEndEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerEndEvents(PhysicsWorld world);
@@ -175,6 +175,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsOwned(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetUserData(PhysicsWorld world, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsWorld::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetUserData(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwnerUserData(PhysicsWorld world, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsWorld::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetOwnerUserData(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsDefaultWorld", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsDefaultWorld(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB);
     }

@@ -319,12 +319,8 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (m_StateTransitionsInspector != null)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (Enumerable.Contains(m_StateTransitionsInspector.Models, TransitionSupportModel.FromPort.NodeModel))
-#pragma warning restore UA2001
-                    {
+                    if (m_StateTransitionsInspector.Models.Contains(TransitionSupportModel.FromPort.NodeModel))
                         iconUssClassName = k_IconUssName.WithUssModifier("from-state");
-                    }
                 }
             }
 

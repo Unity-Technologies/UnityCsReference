@@ -19,10 +19,14 @@ namespace UnityEditor
 {
     internal class BuildReportRestService : ScriptableSingleton<BuildReportRestService>
     {
+        [NonSerialized]
         public CancellationTokenSource m_cts;
 
+        [NonSerialized]
         public HttpListener m_listener;
+        [NonSerialized]
         public TaskScheduler m_mainThreadScheduler;
+        [NonSerialized]
         public Thread m_listenerThread;
 
         public static Regex regex = new Regex(@"/unity/build-report/(?<reportid>\w+?)/(?<request>\w+)(?<args>(?:/\w*)+/?)?$");

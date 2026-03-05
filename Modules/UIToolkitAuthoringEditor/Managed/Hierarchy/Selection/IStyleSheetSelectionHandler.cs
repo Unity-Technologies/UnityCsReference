@@ -14,5 +14,6 @@ internal interface IStyleSheetSelectionHandler
     void ReleaseInstanceId(StyleSheet styleSheet);
 
     void Remap(List<StyleSheetRemap> candidates);
+    public void Clear();
 }
 

@@ -14,6 +14,7 @@ using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using Component = UnityEngine.Component;
 using UnityObject = UnityEngine.Object;
 
@@ -844,9 +845,7 @@ namespace UnityEditor
             {
                 expanded = false;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (propertyToExclude.Contains(property.name))
-#pragma warning restore UA2001
                     continue;
 
                 EditorGUILayout.PropertyField(property, true);

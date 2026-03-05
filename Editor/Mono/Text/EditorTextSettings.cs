@@ -12,6 +12,8 @@ using UnityEngine.UIElements;
 using TextGenerationSettings = UnityEngine.TextCore.Text.TextGenerationSettings;
 using UnityEngine.Bindings;
 
+#pragma warning disable CS0618 // emojiFallbackTextAssets is obsolete; internal usage
+
 namespace UnityEditor
 {
     /// <summary>
@@ -328,3 +330,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618

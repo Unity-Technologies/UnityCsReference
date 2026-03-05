@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
+using Unity.Collections;
 
 namespace UnityEditor
 {

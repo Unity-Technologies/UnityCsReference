@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class LocalPlayerController : PlayerController<LocalPlayerController, LocalPlayerController.InstanceSettings>
+    class LocalPlayerController : PlayerController<LocalPlayerController.InstanceSettings>
     {
         const string k_TempLogsPath = Constants.k_TempRootPath + "ScenariosLogs/";
 
@@ -26,14 +26,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             public Color LogsColor = new(0.3643f, 0.581f, 0.8679f);
             public string Arguments = "-screen-fullscreen 0 -screen-width 1024 -screen-height 720";
 
-            // TODO: These values shouldn't be stored here.
-            // They are a per-user configuration and should be stored in EditorPrefs or similar.
-            public string DeviceID;
-            public string DeviceName;
-
             public InstanceSettings()
             {
             }
+        }
+
+        [Serializable]
+        internal struct UserSettings
+        {
+            public string DeviceID;
+            public string DeviceName;
         }
 
         internal override string GetTypeNameForAnalytics() => "Local";
@@ -63,25 +65,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var installAdbNode = new AdbInstallNode($"LocalPlayer_Install");
             executionGraph.AddNode(installAdbNode, ExecutionStage.Deploy);
             executionGraph.Connect(buildNode.ExecutablePath, installAdbNode.ApkPath);
-            executionGraph.ConnectConstant(installAdbNode.DeviceName, Settings.DeviceID);
+            executionGraph.ConnectConstant(installAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
 
             var packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
             var startAdbNode = new AdbStartProcessNode("LocalPlayer_Start");
             executionGraph.AddNode(startAdbNode, ExecutionStage.Start);
-            executionGraph.ConnectConstant(startAdbNode.DeviceName, Settings.DeviceID);
+            executionGraph.ConnectConstant(startAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
             executionGraph.ConnectConstant(startAdbNode.PackageName, packageName);
             executionGraph.ConnectConstant(startAdbNode.ActivityName, AdbUtilities.GetActivityName());
 
             var monitorAdbNode = new AdbMonitorProcessNode("LocalPlayer_Run");
             executionGraph.AddNode(monitorAdbNode, ExecutionStage.Run);
             executionGraph.Connect(startAdbNode.ProcessId, monitorAdbNode.ProcessId);
-            executionGraph.ConnectConstant(monitorAdbNode.DeviceName,  Settings.DeviceID);
+            executionGraph.ConnectConstant(monitorAdbNode.DeviceName,  GetUserSettings<UserSettings>().DeviceID);
             executionGraph.ConnectConstant(monitorAdbNode.PackageName, packageName);
 
             var stopAdbNode = new AdbStopProcessNode("LocalPlayer_Stop");
             executionGraph.AddNode(stopAdbNode, ExecutionStage.Cleanup);
             executionGraph.ConnectConstant(stopAdbNode.PackageName, packageName);
-            executionGraph.ConnectConstant(stopAdbNode.DeviceName, Settings.DeviceID);
+            executionGraph.ConnectConstant(stopAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
 
             if (Settings.StreamLogsToMainEditor)
             {
@@ -93,7 +95,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var logcatNode = new AdbLogcatNode("LocalPlayer_AdbLogcat");
                 executionGraph.AddNode(logcatNode, ExecutionStage.Run);
                 executionGraph.ConnectConstant(logcatNode.LogPath, logsFilePath);
-                executionGraph.ConnectConstant(logcatNode.DeviceName, Settings.DeviceID);
+                executionGraph.ConnectConstant(logcatNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
                 executionGraph.Connect(startAdbNode.ProcessId, logcatNode.DeviceProcessId);
 
                 var streamLogsNode = new StreamLogsFromFileNode("LocalPlayer_StreamLogs");
@@ -195,7 +197,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected internal override VisualElement CreateControllerUI(Instance instance)
         {
-            return new LocalPlayerInstanceStatusElement(instance, Settings);
+            return new LocalPlayerInstanceStatusElement(instance, Settings, GetUserSettings<UserSettings>());
         }
     }
 }

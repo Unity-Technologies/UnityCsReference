@@ -275,9 +275,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     supportedCategories.AddRange(GetTabCategories(tab));
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var categories = supportedCategories.Distinct();
-#pragma warning restore UA2001
+                var categories = new HashSet<IssueCategory>(supportedCategories);
 
                 // Get all the ViewDescriptors that match the supported categories, and sort them by MenuOrder
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

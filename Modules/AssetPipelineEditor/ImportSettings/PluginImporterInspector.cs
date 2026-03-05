@@ -11,10 +11,9 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.Modules;
 using UnityEditor.Build;
-using UnityEditor.Callbacks;
-using UnityEditor.Compilation;
 using UnityEditor.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -174,9 +173,7 @@ namespace UnityEditor
 
         private static bool IsStandaloneTarget(BuildTarget buildTarget)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return BuildTargetDiscovery.StandaloneBuildTargets.Contains(buildTarget);
-#pragma warning restore UA2001
         }
 
         private Compatibility compatibleWithStandalone
@@ -314,7 +311,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
+        [Obsolete("Please use DiscardChanges.")]
         protected override void ResetValues()
         {
             DiscardChanges();

@@ -91,9 +91,9 @@ namespace UnityEditor.DeviceSimulation
             {
                 var operatingSystemElement = systemInfoElement.Element("operatingSystem");
                 if (operatingSystemElement == null)
-                    errorList.Add("Mandatory field [systemInfo -> operatingSystem] is missing. [operatingSystem] must be set to a string containing either <android> or <ios>");
-                else if (!operatingSystemElement.Value.ToLower().Contains("android") && !operatingSystemElement.Value.ToLower().Contains("ios"))
-                    errorList.Add("[systemInfo -> operatingSystem] field must be set to a string containing either <android> or <ios>, other platforms are not supported at the moment");
+                    errorList.Add("Mandatory field [systemInfo -> operatingSystem] is missing. [operatingSystem] must be set to a string containing either <android>, <ios>, or <ipados>");
+                else if (!operatingSystemElement.Value.ToLower().Contains("android") && !operatingSystemElement.Value.ToLower().Contains("ios") && !operatingSystemElement.Value.ToLower().Contains("ipados"))
+                    errorList.Add("[systemInfo -> operatingSystem] field must be set to a string containing either <android>, <ios>, or <ipados>, other platforms are not supported at the moment");
 
                 var graphicsSystemInfoArray = systemInfoElement.Element("graphicsDependentData");
                 if (graphicsSystemInfoArray != null)

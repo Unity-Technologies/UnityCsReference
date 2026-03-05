@@ -20,7 +20,7 @@ namespace UnityEditor
         [SerializeReference] private AnimationWindowState m_State;
         [SerializeReference] private DopeSheetEditor m_DopeSheet;
         [SerializeReference] private CurveEditor m_CurveEditor;
-        [SerializeField] private AnimationWindowHierarchy m_Hierarchy;
+        private AnimationWindowHierarchy m_Hierarchy;
         [SerializeField] private UnityEditor.AnimationWindowBuiltin.AnimationEventTimeLine m_Events;
         [SerializeField] private EditorWindow m_OwnerWindow;
 

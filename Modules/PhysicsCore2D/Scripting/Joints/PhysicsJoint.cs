@@ -90,6 +90,15 @@ namespace Unity.U2D.Physics
         PhysicsUserData userData { get; set; }
 
         /// <undoc/>
+        PhysicsUserData ownerUserData { get; }
+
+        /// <undoc/>
+        void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0);
+
+        /// <undoc/>
+        bool worldDrawing { get; set; }
+
+        /// <undoc/>
         void Draw();
     }
 
@@ -276,6 +285,23 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsJoint_GetUserData(this); set => PhysicsJoint_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsJoint_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsJoint_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Controls whether this joint is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsJoint_GetWorldDrawing(this); set => PhysicsJoint_SetWorldDrawing(this, value); }
 
         /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.

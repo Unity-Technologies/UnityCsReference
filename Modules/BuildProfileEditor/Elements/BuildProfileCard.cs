@@ -21,8 +21,24 @@ namespace UnityEditor.Build.Profile.Elements
         /// </summary>
         public GUID platformId { get; set; }
 
+        /// <summary>
+        /// Description of a platform.
+        /// </summary>
         public string description { get; set; }
 
+        /// <summary>
+        /// Key features of a platform.
+        /// </summary>
+        public string keyFeatures { get; set; }
+
+        /// <summary>
+        /// Resources and links related to a platform.
+        /// </summary>
+        public string resources { get; set; }
+
+        /// <summary>
+        /// Hex string for the background color of the platform banner.
+        /// </summary>
         public string platformBannerBgColorHex { get; set; }
 
         /// <summary>
@@ -35,6 +51,9 @@ namespace UnityEditor.Build.Profile.Elements
         /// </summary>
         public PlatformPackageList partnerPackages { get; set; }
 
+        /// <summary>
+        /// Preconfigured settings variants for a platform.
+        /// </summary>
         public PreconfiguredSettingsVariant[] preconfiguredSettingsVariants { get; set; }
 
         public BuildProfileCard()
@@ -45,6 +64,8 @@ namespace UnityEditor.Build.Profile.Elements
             partnerPackages = new PlatformPackageList();
             preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
             description = string.Empty;
+            keyFeatures = string.Empty;
+            resources = string.Empty;
             platformBannerBgColorHex = "#00000000";
         }
     }

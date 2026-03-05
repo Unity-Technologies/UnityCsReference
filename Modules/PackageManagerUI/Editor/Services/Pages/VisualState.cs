@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class VisualState : IEquatable<VisualState>
     {
-        public string packageUniqueId;
+        public string itemUniqueId;
         public string groupName;
         public bool visible;
         public bool lockedByDefault;
@@ -17,9 +17,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isLocked => lockedByDefault && !userUnlocked;
 
-        public VisualState(string packageUniqueId, string groupName = "", bool lockedByDefault = false)
+        public VisualState(string itemUniqueId, string groupName = "", bool lockedByDefault = false)
         {
-            this.packageUniqueId = packageUniqueId;
+            this.itemUniqueId = itemUniqueId;
             this.groupName = groupName;
             this.lockedByDefault = lockedByDefault;
             visible = true;
@@ -29,8 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool Equals(VisualState other)
         {
             return other != null
-                   && packageUniqueId == other.packageUniqueId
-                   && groupName == other.groupName
+                   && (itemUniqueId ?? string.Empty) == (other.itemUniqueId ?? string.Empty)
+                   && (groupName ?? string.Empty) == (other.groupName ?? string.Empty)
                    && visible == other.visible
                    && lockedByDefault == other.lockedByDefault
                    && userUnlocked == other.userUnlocked;

@@ -171,6 +171,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Hash128: return p.hash128Value.ToString();
                 case SerializedPropertyType.GUID: return p.guidValue.ToString();
                 case SerializedPropertyType.EntityId: return p.entityIdValue.ToString();
+                case SerializedPropertyType.LoadableReference: return UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(p.loadableReferenceValue);
 
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.Generic:

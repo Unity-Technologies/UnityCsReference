@@ -68,10 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var package = m_PackageDatabase.GetPackageByIdOrName(packageToSelect) ?? m_PackageDatabase.GetPackageByDisplayName(packageToSelect);
-            var page = m_PageManager.GetPage(pageId);
-            if (package != null && page?.ShouldInclude(package) != true)
-                page = m_PageManager.FindPage(package);
-
+            var page = package != null ? m_PageManager.FindPage(package, pageId) : m_PageManager.GetPage(pageId);
             if (page is { id: MyAssetsPage.k_Id })
             {
                 m_PageManager.activePage = page;
@@ -79,10 +76,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (package != null && page != null && page.ShouldInclude(package))
+            if (package != null && page != null)
             {
                 m_PageManager.activePage = page;
-                page.SetNewSelection(package);
+                page.SetNewSelection(package.uniqueId, false);
                 return;
             }
 
@@ -99,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             page ??= m_PageManager.activePage;
-            if (!m_PageRefreshHandler.IsInitialFetchingDone(page) || m_PackageDatabase.allPackages.Count == 0)
+            if (m_PackageDatabase.allPackages.Count == 0 || !m_PageRefreshHandler.IsInitialFetchingDone(page))
                 m_PageRefreshHandler.Refresh(page);
 
             if (m_PageRefreshHandler.IsRefreshInProgress(RefreshOptions.UpmSearch | RefreshOptions.UpmSearchOffline | RefreshOptions.UpmList | RefreshOptions.UpmListOffline))

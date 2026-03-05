@@ -4,12 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Unity.Hierarchy;
-using Unity.Hierarchy.Editor;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -31,6 +29,8 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyEntityIdConverter
 {
+    const string DraggedSelectorsKey = "StyleSheetNodeTypeHandler.DraggedSelectors";
+
     internal class StyleSheetEditorExporter : StyleSheetExporter
     {
         public string ToUssString(StyleSheet styleSheet, StyleComplexSelector[] selectors, UssExportOptions options = null)
@@ -73,6 +73,8 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
 
     internal class NodeMappings
     {
+        private readonly Dictionary<HierarchyNode, StyleSheet> m_Map = new();
+        private readonly Dictionary<StyleSheet, HierarchyNode> m_ReversedMap = new();
         readonly Dictionary<HierarchyNode, Node> m_HierarchyNodeToNode = new();
         readonly Dictionary<HierarchyNode, EntityId> m_SelectionHandles = new();
         readonly Dictionary<EntityId, HierarchyNode> m_ReversedSelectionHandles = new();
@@ -82,9 +84,27 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             if (hierarchyNode == HierarchyNode.Null)
                 return false;
 
-            return m_HierarchyNodeToNode.TryAdd(hierarchyNode, node) &&
-                   m_SelectionHandles.TryAdd(hierarchyNode, selectionHandle) &&
-                   m_ReversedSelectionHandles.TryAdd(selectionHandle, hierarchyNode);
+            var success = m_HierarchyNodeToNode.TryAdd(hierarchyNode, node) &&
+                          m_SelectionHandles.TryAdd(hierarchyNode, selectionHandle) &&
+                          m_ReversedSelectionHandles.TryAdd(selectionHandle, hierarchyNode);
+
+            // Also maintain StyleSheet mappings for the root node
+            if (success && node.Rule == null && node.StyleSheet != null)
+            {
+                m_Map.TryAdd(hierarchyNode, node.StyleSheet);
+                m_ReversedMap.TryAdd(node.StyleSheet, hierarchyNode);
+            }
+
+            return success;
+        }
+
+        public bool TryGetValue(StyleSheet styleSheet, out HierarchyNode node)
+        {
+            if (styleSheet != null)
+                return m_ReversedMap.TryGetValue(styleSheet, out node);
+
+            node = HierarchyNode.Null;
+            return false;
         }
 
         public bool TryGetValue(HierarchyNode hierarchyNode, out Node node)
@@ -119,6 +139,12 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             if (hierarchyNode == HierarchyNode.Null)
                 return false;
 
+            // Remove StyleSheet mappings if this is a root node
+            if (m_Map.Remove(hierarchyNode, out var stylesheet))
+            {
+                m_ReversedMap.Remove(stylesheet);
+            }
+
             return m_HierarchyNodeToNode.Remove(hierarchyNode) &&
                    m_SelectionHandles.Remove(hierarchyNode, out var selectionHandle) &&
                    m_ReversedSelectionHandles.Remove(selectionHandle);
@@ -139,13 +165,30 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         {
             return m_ReversedSelectionHandles.TryGetValue(entityId, out node);
         }
+
+        public void Remap(List<StyleSheetRemap> remappings)
+        {
+            foreach (var remap in remappings)
+            {
+                if (TryGetValue(remap.Previous, out var hierarchyNode))
+                {
+                    m_Map[hierarchyNode] = remap.Remapped;
+                    m_ReversedMap[remap.Remapped] = hierarchyNode;
+                    m_ReversedMap.Remove(remap.Previous);
+                    if (TryGetValue(hierarchyNode, out var node)) {
+                        m_HierarchyNodeToNode[hierarchyNode] = node;
+                    }
+                    // Intentionally not remapping selection, because it's based on the node.
+                }
+            }
+        }
     }
 
     readonly NodeMappings m_Mappings = new();
     readonly StyleSheetEditorExporter m_Exporter = new();
     readonly StyleSheetExporter.UssExportOptions m_ExportOptions = new()
     {
-        ignoreSelectorPrefixList = new[] { "__unity-selector" }
+        ignoreSelectorPrefixList = new[] { "__unity" }
     };
 
     readonly IStyleSheetSelectionHandler m_StyleSheetSelectionHandler;
@@ -211,6 +254,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             return HierarchyNode.Null;
 
         CommandList.Add(Hierarchy.Root, 1, out var root);
+
         CommandList.SetName(root[0], styleSheet.name);
 
         var styleSheetEntityId = m_StyleSheetSelectionHandler.AcquireInstanceId(styleSheet);
@@ -265,5 +309,152 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         m_Mappings.TryRemove(rootNode);
         if (Hierarchy.IsCreated && Hierarchy.Exists(rootNode))
             CommandList.Remove(rootNode);
+    }
+
+    public void Sort(HierarchyNode rootNode, List<StyleSheet> styleSheets)
+    {
+        // Update sort order for all stylesheets to match UXML order
+        for (var i = 0; i < styleSheets.Count; i++)
+        {
+            if (m_Mappings.TryGetValue(styleSheets[i], out var node))
+            {
+                CommandList.SetSortIndex(node, i);
+            }
+        }
+        CommandList.SortChildren(rootNode);
+    }
+
+    public void RefreshStyleSheetRules(HierarchyNode rootNode, StyleSheet styleSheet)
+    {
+        if (rootNode == HierarchyNode.Null || styleSheet == null)
+            return;
+
+        if (!Hierarchy.IsCreated || !Hierarchy.Exists(rootNode))
+            return;
+
+        using var ruleRemappingsHandle = ListPool<StyleRuleRemap>.Get(out var ruleRemappings);
+        using var addedRulesHandle = HashSetPool<StyleRule>.Get(out var addedRules);
+        using var removedRulesHandle = HashSetPool<StyleRule>.Get(out var removedRules);
+
+        // Build new rules from the stylesheet
+        using var _ = HashSetPool<StyleRule>.Get(out var newRules);
+        for (var i = 0; i < styleSheet.rules.Length; i++)
+        {
+            var rule = styleSheet.rules[i];
+            if (rule.complexSelectors.Length > 0)
+            {
+                newRules.Add(rule);
+            }
+        }
+
+        // Get existing child nodes and extract their rules
+        var childCount = Hierarchy.GetChildrenCount(rootNode);
+        var existingRuleNodes = new Dictionary<StyleRule, HierarchyNode>();
+
+        for (var i = 0; i < childCount; i++)
+        {
+            var childNode = Hierarchy.GetChild(rootNode, i);
+            if (m_Mappings.TryGetValue(childNode, out var node) && node.Rule != null)
+            {
+                existingRuleNodes[node.Rule] = childNode;
+
+                if (!newRules.Contains(node.Rule))
+                {
+                    removedRules.Add(node.Rule);
+                }
+            }
+        }
+
+        // Find newly added rules
+        foreach (var rule in newRules)
+        {
+            if (!existingRuleNodes.ContainsKey(rule))
+            {
+                addedRules.Add(rule);
+            }
+        }
+
+        // Check for remappings (rules that moved positions due to reload)
+        if (addedRules.Count > 0 && removedRules.Count > 0)
+        {
+            StyleRuleRemapper.Remap(addedRules, removedRules, ruleRemappings);
+        }
+
+        // Handle remapped rules
+        if (ruleRemappings.Count > 0)
+        {
+            foreach (var remap in ruleRemappings)
+            {
+                if (existingRuleNodes.TryGetValue(remap.Previous, out var node))
+                {
+                    // Release the old rule first, then acquire the new one
+                    // This keeps ref count correct if called multiple times
+                    m_StyleRuleSelectionHandler.ReleaseInstanceId(remap.Previous);
+                    var ruleEntityId = m_StyleRuleSelectionHandler.AcquireInstanceId(remap.Remapped);
+
+                    // Update the mapping to point to new rule
+                    m_Mappings.TryRemove(node);
+                    m_Mappings.TryAdd(node, new Node(styleSheet, remap.Remapped), ruleEntityId);
+
+                    // Update display name
+                    var displayString = m_Exporter.ToUssString(styleSheet, remap.Remapped.complexSelectors, m_ExportOptions);
+                    CommandList.SetName(node, displayString);
+
+                    // Remove from sets since they're handled
+                    addedRules.Remove(remap.Remapped);
+                    removedRules.Remove(remap.Previous);
+                }
+            }
+        }
+
+        // Add truly new rules
+        foreach (var rule in addedRules)
+        {
+            var displayString = m_Exporter.ToUssString(styleSheet, rule.complexSelectors, m_ExportOptions);
+            var ruleEntityId = m_StyleRuleSelectionHandler.AcquireInstanceId(rule);
+
+            CommandList.Add(rootNode, 1, out var ruleNode);
+            m_Mappings.TryAdd(ruleNode[0], new Node(styleSheet, rule), ruleEntityId);
+            CommandList.SetName(ruleNode[0], displayString);
+
+            // Add to existingRuleNodes so it gets sorted properly
+            existingRuleNodes[rule] = ruleNode[0];
+        }
+
+        // Remove truly removed rules
+        foreach (var rule in removedRules)
+        {
+            if (existingRuleNodes.TryGetValue(rule, out var node))
+            {
+                m_StyleRuleSelectionHandler.ReleaseInstanceId(rule);
+                m_Mappings.TryRemove(node);
+                CommandList.Remove(node);
+            }
+        }
+
+        // Update sort order for all rules to match stylesheet order
+        for (var i = 0; i < styleSheet.rules.Length; i++)
+        {
+            var rule = styleSheet.rules[i];
+            if (existingRuleNodes.TryGetValue(rule, out var node))
+            {
+                CommandList.SetSortIndex(node, i);
+            }
+        }
+        CommandList.SortChildren(rootNode);
+    }
+
+    public void Remap(List<StyleSheetRemap> remappings)
+    {
+        m_StyleSheetSelectionHandler.Remap(remappings);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        // Clear selection handlers directly since hierarchy is already emptied at this point
+        m_StyleSheetSelectionHandler.Clear();
+        m_StyleRuleSelectionHandler.Clear();
     }
 }

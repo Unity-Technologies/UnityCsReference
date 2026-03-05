@@ -10,6 +10,7 @@ using UnityEditor.UIElements.Bindings;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.Presets
@@ -672,24 +673,18 @@ namespace UnityEditor.Presets
 
                 var count = excluded.Length;
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var removed = excluded.Except(childrenAndSelf);
+                var removed = excluded.Except(childrenAndSelf).ToArray();
 #pragma warning restore UA2001
-                #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (removed.Count() != count)
-#pragma warning restore UA2005
+                if (removed.Length != count)
                 {
                     // we found something to remove for exclusion, lets stop here.
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    preset.excludedProperties = removed.ToArray();
-#pragma warning restore UA2001
+                    preset.excludedProperties = removed;
                 }
                 else
                 {
                     // we need the first excluded parent and then exclude all its direct children expect the selected path.
                     string propPath = propertyPath;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     while (!removed.Contains(propPath))
-#pragma warning restore UA2001
                     {
                         var index = propPath.LastIndexOf('.');
                         if (index == -1)
@@ -699,9 +694,7 @@ namespace UnityEditor.Presets
                         propPath = propPath.Remove(index);
                     }
                     // in the case of multi selection, we may have nothing to do on this specific Preset.
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!removed.Contains(propPath))
-#pragma warning restore UA2001
                         continue;
 
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

@@ -12,7 +12,7 @@ namespace Unity.Multiplayer.PlayMode.Editor;
 
 [Serializable]
 [CanRequestDomainReload]
-class MainEditorStartNode : Node
+class MainEditorStartNode : ExecutionNode
 {
     // Note that this timeout doesn't account for the time spent in domain reloads
     const float k_PlayModeStateChangeTimeoutSeconds = 5f;

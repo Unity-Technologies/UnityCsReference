@@ -217,7 +217,7 @@ namespace UnityEngine.UIElements
         public static ToggleButtonGroupState FromEnumFlags<T>(T options, int length = -1)
             where T : Enum
         {
-            if (!TypeTraits<T>.IsEnumFlags)
+            if (!TypeTraits.IsEnumFlags(typeof(T)))
                 throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var underlyingType = Enum.GetUnderlyingType(typeof(T));
@@ -254,7 +254,7 @@ namespace UnityEngine.UIElements
         public static T ToEnumFlags<T>(ToggleButtonGroupState options, bool acceptsLengthMismatch = true)
             where T : Enum
         {
-            if (!TypeTraits<T>.IsEnumFlags)
+            if (!TypeTraits.IsEnumFlags(typeof(T)))
                 throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var underlyingType = Enum.GetUnderlyingType(typeof(T));
@@ -298,7 +298,7 @@ namespace UnityEngine.UIElements
         public static bool Compare<T>(ToggleButtonGroupState options, T value)
             where T : Enum
         {
-            if (!TypeTraits<T>.IsEnumFlags)
+            if (!TypeTraits.IsEnumFlags(typeof(T)))
                 throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var v = (ulong) UnsafeUtility.As<T, int>(ref value);

@@ -7,9 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using UIToolkitListView = UnityEngine.UIElements.ListView;
 
 namespace UnityEditor.Search
@@ -1456,9 +1456,7 @@ namespace UnityEditor.Search
                 hasPackagesRoot = false;
                 if (searchDatabaseSettings.roots != null)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     hasPackagesRoot = searchDatabaseSettings.roots.Contains("Packages");
-#pragma warning restore UA2001
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     roots.AddRange(searchDatabaseSettings.roots.Where(r => r != "Packages"));
 #pragma warning restore UA2001

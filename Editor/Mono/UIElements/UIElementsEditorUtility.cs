@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -13,13 +14,25 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal static class UIElementsEditorUtility
+    internal static partial class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
         internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/Generated/DefaultCommonLight.uss.asset";
 
         static StyleSheet s_DefaultCommonDarkStyleSheet;
         static StyleSheet s_DefaultCommonLightStyleSheet;
+
+        [OnCodeLoaded]
+        static void RegisterUndoHandler()
+        {
+            Undo.undoRedoEvent += ClearStyleCacheAfterUndoIfTracked;
+        }
+
+        [OnCodeUnloading]
+        static void UnregisterUndoHandler()
+        {
+            Undo.undoRedoEvent -= ClearStyleCacheAfterUndoIfTracked;
+        }
 
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
@@ -279,6 +292,19 @@ namespace UnityEditor.UIElements
             };
             updateCallback?.Invoke();
             return updateCallback;
+        }
+
+        static void ClearStyleCacheAfterUndoIfTracked(in UndoRedoInfo undo)
+        {
+            var iterator = UIElementsUtility.GetPanelsIterator();
+            var shouldClearCache = false;
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+                shouldClearCache |= panel.liveReloadSystem.AnyStyleSheetMarkedDirtyAfterUndo();
+            }
+            if (shouldClearCache)
+                StyleCache.ClearStyleCache();
         }
     }
 }

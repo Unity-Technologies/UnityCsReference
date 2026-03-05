@@ -20,6 +20,7 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 sealed class VisualElementBindingsInspectorElement : UxmlAttributesView
 {
+    [Serializable]
     public new class UxmlSerializedData : VisualElement.UxmlSerializedData
     {
         /// <summary>

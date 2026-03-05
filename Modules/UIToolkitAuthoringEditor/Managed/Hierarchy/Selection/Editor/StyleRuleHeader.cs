@@ -91,19 +91,16 @@ partial class StyleRuleHeader : UISelectionObjectHeader
 
             m_RuleName.dataSource = Rule;
 
+            TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
+            TypeName = "Rule";
+
             if (m_Rule == null)
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
                 RuleName = null;
-                TypeName = nameof(StyleSheet);
-
-                m_RuleName.ClearBinding(TextField.valueProperty);
                 m_RuleName.value = null;
             }
             else
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
-                TypeName = TypeUtility.GetTypeDisplayName(m_Rule.GetType());
                 RuleName = s_Exporter.ToUssString(m_Rule.styleSheet, m_Rule.complexSelectors);
             }
             NotifyPropertyChanged(ElementProperty);
@@ -114,7 +111,7 @@ partial class StyleRuleHeader : UISelectionObjectHeader
     {
         AddToClassList(UssClass);
 
-        TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
+        TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
         TypeName = "Rule";
 
         m_RuleName = this.Q<TextField>(className: RuleNameUssClass);

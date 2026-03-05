@@ -150,16 +150,16 @@ namespace Unity.UIToolkit.Editor
                 return null;
 
             // Look for existing libraryPath value, this means they have opt-in for their control to appear in the menu.
-            if (!string.IsNullOrEmpty(uxmlAttr?.libraryPath))
+            if (uxmlAttr is { libraryPath: not null })
             {
-                // Check if it's a Unity control with explicit path
+                // Unity core controls with explicit libraryPath are excluded
                 if (type.Namespace == "UnityEngine.UIElements")
                 {
-                    return $"{k_StandardElementsPath}/{uxmlAttr.libraryPath}";
+                    return null;
                 }
 
                 // "Non-Core" controls
-                return $"{k_ProjectElementsPath}/{uxmlAttr.libraryPath}";
+                return uxmlAttr.libraryPath == "" ? k_ProjectElementsPath : $"{k_ProjectElementsPath}/{uxmlAttr.libraryPath}";
             }
 
             if (type.Namespace == "UnityEngine.UIElements")
@@ -167,7 +167,7 @@ namespace Unity.UIToolkit.Editor
                 if (!s_StandardElementControls.Contains(type.Name))
                     return null;
 
-                var category= GetCategoryForType(type.Name);
+                var category = GetCategoryForType(type.Name);
                 return category != null ? $"{k_StandardElementsPath}/{category}" : k_StandardElementsPath;
             }
 

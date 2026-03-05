@@ -6,6 +6,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Shared")]
+
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/OcclusionPortal.h")]
@@ -30,7 +32,7 @@ namespace UnityEngine
         }
 
         extern static void Internal_Create([Writable] Flare self);
-        
+
         [System.Serializable]
         [UsedByNativeCode]
         internal partial struct FlareElement
@@ -52,7 +54,7 @@ namespace UnityEngine
             [NativeName("m_Fade")]
             public bool fade;
         };
-        
+
         [System.Serializable]
         internal enum FlareLayout
         {
@@ -63,7 +65,7 @@ namespace UnityEngine
             Layout3x3,
             Layout4x4,
         };
-        
+
         extern internal Texture texture { get; set; }
         extern internal FlareElement[] elements { get; set; }
         extern internal bool useFog { get; set; }
@@ -71,6 +73,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Camera/Flare.h")]
+    [System.Obsolete("The Lens Flare component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
     public sealed partial class LensFlare : Behaviour
     {
         extern public float brightness    { get; set; }
@@ -82,6 +85,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Camera/Projector.h")]
+    [System.Obsolete("The Projector component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
     public sealed partial class Projector : Behaviour
     {
         extern public float nearClipPlane    { get; set; }
@@ -114,6 +118,7 @@ namespace UnityEngine
 
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Camera/HaloManager.h")]
+    [System.Obsolete("The Halo component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
     internal sealed partial class Halo : Behaviour
     {
         extern public float size { get; set; }

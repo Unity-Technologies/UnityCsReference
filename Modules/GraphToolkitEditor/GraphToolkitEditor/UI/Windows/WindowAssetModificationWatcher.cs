@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 
@@ -9,30 +10,54 @@ namespace Unity.GraphToolkit.Editor
 {
     class WindowAssetModificationWatcher : AssetModificationProcessor
     {
-        static bool AssetAtPathHasGraphObject(string path)
+        static bool TryGetGraphAssetPathsAtPath(string path, out List<string> graphAssetPaths)
         {
-            return GraphObjectFactory.KnowsExtension(Path.GetExtension(path))
-                || AssetDatabase.LoadAssetAtPath<GraphObject>(path) != null;
+            graphAssetPaths = [];
+
+            if (AssetDatabase.IsValidFolder(path))
+            {
+                var assetGUIDs = AssetDatabase.FindAssets("", [path]);
+
+                foreach (var assetGUID in assetGUIDs)
+                {
+                    var assetPath = AssetDatabase.GUIDToAssetPath(assetGUID);
+
+                    if (GraphObjectFactory.KnowsExtension(Path.GetExtension(assetPath))
+                        || AssetDatabase.LoadAssetAtPath<GraphObject>(assetPath) != null)
+                        graphAssetPaths.Add(assetPath);
+                }
+            }
+            else
+            {
+                if (GraphObjectFactory.KnowsExtension(Path.GetExtension(path))
+                    || AssetDatabase.LoadAssetAtPath<GraphObject>(path) != null)
+                    graphAssetPaths.Add(path);
+            }
+
+            return graphAssetPaths.Count > 0;
         }
 
-        static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
+        static AssetDeleteResult OnWillDeleteAsset(string path, RemoveAssetOptions options)
         {
             // Avoid calling FindObjectsOfTypeAll if the deleted asset does not contain a graph object.
             if (GraphViewEditorWindow.OpenedWindows.Count == 0
-                || !AssetAtPathHasGraphObject(assetPath))
+                || !TryGetGraphAssetPathsAtPath(path, out var graphAssetPaths))
                 return AssetDeleteResult.DidNotDelete;
 
-            GraphObjectFactory.OnAssetDeleted(assetPath);
-            var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
-            foreach (var window in GraphViewEditorWindow.OpenedWindows)
+            foreach (var graphAssetPath in graphAssetPaths)
             {
-                if (WindowAssetPostprocessingWatcher.IsWindowDisplayingGraphAsset(window, guid))
+                GraphObjectFactory.OnAssetDeleted(graphAssetPath);
+                var guid = AssetDatabase.GUIDFromAssetPath(graphAssetPath);
+                foreach (var window in GraphViewEditorWindow.OpenedWindows)
                 {
-                    // Unload graph *before* it is deleted.
-                    window.GraphTool.Dispatch(new UnloadGraphCommand());
+                    if (WindowAssetPostprocessingWatcher.IsWindowDisplayingGraphAsset(window, guid))
+                    {
+                        // Unload graph *before* it is deleted.
+                        window.GraphTool.Dispatch(new UnloadGraphCommand());
 
-                    // Remove log entries in the console related to that asset.
-                    ConsoleWindowHelper.RemoveLogEntries(window.WindowID.ToString());
+                        // Remove log entries in the console related to that asset.
+                        ConsoleWindowHelper.RemoveLogEntries(window.WindowID.ToString());
+                    }
                 }
             }
 

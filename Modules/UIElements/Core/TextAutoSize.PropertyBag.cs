@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(3)
             {
                 AddProperty(new ModeProperty());
                 AddProperty(new MinSizeProperty());

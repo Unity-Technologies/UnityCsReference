@@ -393,7 +393,7 @@ namespace UnityEditor.Toolbars
             Add(m_GridSizeField);
 
             m_GridSettingsDropdown = new GridSettingsElement(sceneView);
-            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap settings");
+            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap Settings");
             Add(m_GridSettingsDropdown);
             
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);

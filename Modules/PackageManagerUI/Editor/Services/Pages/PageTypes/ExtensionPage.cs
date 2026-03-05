@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -17,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public int priority;
         public RefreshOptions refreshOptions;
         public PageCapability capability;
-        public PageFilters.Status[] supportedStatusFilters;
+        public PageFilterStatus[] supportedStatusFilters;
         public PageSortOption[] supportedSortOptions;
         public Func<IPackage, bool> filter;
         public Func<IPackage, string> getGroupName;
@@ -26,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     }
 
     [Serializable]
-    internal class ExtensionPage : SimplePage
+    internal class ExtensionPage : SimplePageWithPackages
     {
         public const string k_IdPrefix = "Extension";
 
@@ -40,12 +39,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override Icon icon => m_Args.icon;
         public override RefreshOptions refreshOptions => m_Args.refreshOptions;
 
-        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Array.Empty<PageFilters.Status>();
-        public override IReadOnlyList<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Array.Empty<PageSortOption>();
         public override PageCapability capability => m_Args.capability;
 
-        public ExtensionPage(IPackageDatabase packageDatabase, ExtensionPageArgs args)
-            : base(packageDatabase)
+        public ExtensionPage(IPackageDatabase packageDatabase, ExtensionPageArgs args) : base(packageDatabase)
         {
             UpdateArgs(args);
         }
@@ -53,6 +49,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void UpdateArgs(ExtensionPageArgs args)
         {
             m_Args = args;
+            UpdateSupportedSortOptions(args.supportedSortOptions ?? Array.Empty<PageSortOption>(), false);
+            UpdateSupportedStatuses(args.supportedStatusFilters ?? Array.Empty<PageFilterStatus>(), false);
         }
 
         public override bool ShouldInclude(IPackage package)
@@ -65,12 +63,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_Args.getGroupName?.Invoke(package) ?? string.Empty;
         }
 
-        protected override void SortGroupNames(List<string> groupNames)
-        {
-            if (m_Args.compareGroup != null)
-                groupNames.Sort((x, y) => m_Args.compareGroup.Invoke(x, y));
-            else
-                base.SortGroupNames(groupNames);
-        }
+        protected override int CompareGroupName(string x, string y) => m_Args?.compareGroup?.Invoke(x, y) ?? base.CompareGroupName(x, y);
     }
 }

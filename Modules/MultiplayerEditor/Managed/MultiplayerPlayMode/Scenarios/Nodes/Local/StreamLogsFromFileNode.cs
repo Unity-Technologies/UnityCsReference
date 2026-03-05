@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class StreamLogsFromFileNode : Node
+    class StreamLogsFromFileNode : ExecutionNode
     {
         const int k_LogMonitorIntervalMS = 120;
 

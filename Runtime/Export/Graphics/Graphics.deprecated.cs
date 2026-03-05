@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 using LightProbeUsage   = UnityEngine.Rendering.LightProbeUsage;
+using uei               = UnityEngine.Internal;
 using UnityEngine.Rendering;
 
 namespace UnityEngine

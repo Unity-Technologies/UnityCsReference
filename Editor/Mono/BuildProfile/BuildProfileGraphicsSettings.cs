@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using UnityEditor.Rendering;
 using UnityEditor.Shaders;
 using System.Runtime.CompilerServices;
+using UnityEngine.Experimental.Rendering;
 
 [assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile
@@ -37,6 +38,15 @@ namespace UnityEditor.Build.Profile
         [SerializeField] VideoShadersIncludeMode m_VideoShadersIncludeMode = VideoShadersIncludeMode.Always;
         [SerializeField] Shader[] m_AlwaysIncludedShaders = Array.Empty<Shader>();
         [SerializeField] LightProbeOutsideHullStrategy m_LightProbeOutsideHullStrategy = LightProbeOutsideHullStrategy.kLightProbeSearchTetrahedralHull;
+        [SerializeField] GraphicsStateCollection m_GraphicsStateCollection = null;
+        [SerializeField] GraphicsStateCollectionStartupAction m_CollectionStartupAction = GraphicsStateCollectionStartupAction.None;
+        [SerializeField] string m_TraceSavePath = "TracedCollection";
+        [SerializeField] bool m_TraceSendToEditor = true;
+        [SerializeField] GraphicsStateCollection[] m_AdditionalWarmupCollections = Array.Empty<GraphicsStateCollection>();
+        [SerializeField] bool m_WarmupAsync = true;
+        [SerializeField] int m_WarmupProgressivelyLimit = -1;
+        [SerializeField] bool m_EnableCacheMissTracing = false;
+        [SerializeField] string m_CacheMissCollectionPath = "CacheMissCollection";
         [SerializeField] ShaderVariantCollection[] m_PreloadedShaders = Array.Empty<ShaderVariantCollection>();
         [SerializeField] int m_PreloadShadersBatchTimeLimit = -1;
         [SerializeField] ShaderBuildSettings m_ShaderBuildSettings;
@@ -155,6 +165,59 @@ namespace UnityEditor.Build.Profile
             set => m_LightProbeOutsideHullStrategy = value;
         }
 
+        internal GraphicsStateCollection graphicsStateCollection
+        {
+            get => m_GraphicsStateCollection;
+            set => m_GraphicsStateCollection = value;
+        }
+
+        internal GraphicsStateCollectionStartupAction collectionStartupAction
+        {
+            get => m_CollectionStartupAction;
+            set => m_CollectionStartupAction = value;
+        }
+
+        internal string traceSavePath
+        {
+            get => m_TraceSavePath;
+            set => m_TraceSavePath = value;
+        }
+
+        internal bool traceSendToEditor
+        {
+            get => m_TraceSendToEditor;
+            set => m_TraceSendToEditor = value;
+        }
+
+        internal GraphicsStateCollection[] additionalWarmupCollections
+        {
+            get => m_AdditionalWarmupCollections;
+            set => m_AdditionalWarmupCollections = value;
+        }
+
+        internal bool warmupAsync
+        {
+            get => m_WarmupAsync;
+            set => m_WarmupAsync = value;
+        }
+
+        internal int warmupProgressivelyLimit
+        {
+            get => m_WarmupProgressivelyLimit;
+            set => m_WarmupProgressivelyLimit = value;
+        }
+
+        internal bool enableCacheMissTracing
+        {
+            get => m_EnableCacheMissTracing;
+            set => m_EnableCacheMissTracing = value;
+        }
+        internal string cacheMissCollectionPath
+        {
+            get => m_CacheMissCollectionPath;
+            set => m_CacheMissCollectionPath = value;
+        }
+
         internal ShaderVariantCollection[] preloadedShaders
         {
             get => m_PreloadedShaders;
@@ -237,6 +300,21 @@ namespace UnityEditor.Build.Profile
                 case "LightProbeOutsideHullStrategy":
                     lightProbeOutsideHullStrategy = (LightProbeOutsideHullStrategy)value;
                     break;
+                case "CollectionStartupAction":
+                    collectionStartupAction = (GraphicsStateCollectionStartupAction)value;
+                    break;
+                case "TraceSendToEditor":
+                    traceSendToEditor = IntegerToBoolean(value);
+                    break;
+                case "WarmupAsync":
+                    warmupAsync = IntegerToBoolean(value);
+                    break;
+                case "WarmupProgressivelyLimit":
+                    warmupProgressivelyLimit = value;
+                    break;
+                case "EnableCacheMissTracing":
+                    enableCacheMissTracing = IntegerToBoolean(value);
+                    break;
                 case "PreloadShadersBatchTimeLimit":
                     preloadShadersBatchTimeLimit = value;
                     break;
@@ -267,6 +345,11 @@ namespace UnityEditor.Build.Profile
                 "CameraRelativeShadowCulling" => BooleanToInteger(cameraRelativeShadowCulling),
                 "VideoShadersIncludeMode" => (int)videoShadersIncludeMode,
                 "LightProbeOutsideHullStrategy" => (int)lightProbeOutsideHullStrategy,
+                "CollectionStartupAction" => (int)collectionStartupAction,
+                "TraceSendToEditor" => BooleanToInteger(traceSendToEditor),
+                "WarmupAsync" => BooleanToInteger(warmupAsync),
+                "WarmupProgressivelyLimit" => warmupProgressivelyLimit,
+                "EnableCacheMissTracing" => BooleanToInteger(enableCacheMissTracing),
                 "PreloadShadersBatchTimeLimit" => preloadShadersBatchTimeLimit,
                 _ => k_InvalidGraphicsSetting,
             };

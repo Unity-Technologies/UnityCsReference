@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
         // Element has capture on one or more pointerIds
         PointerCapture = 1 << 19,
         // Element is a root UIDocument
-        IsWorldSpaceRootUIDocument = 1 << 20,
+        IsWorldSpaceRootPanelComponent = 1 << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
         // Element has released the LayoutNode create in its constructor and can't be used anymore
@@ -1281,12 +1281,12 @@ namespace UnityEngine.UIElements
         }
 
 
-        internal bool isWorldSpaceRootUIDocument
+        internal bool isWorldSpaceRootPanelComponent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_Flags & VisualElementFlags.IsWorldSpaceRootUIDocument) == VisualElementFlags.IsWorldSpaceRootUIDocument;
+            get => (m_Flags & VisualElementFlags.IsWorldSpaceRootPanelComponent) == VisualElementFlags.IsWorldSpaceRootPanelComponent;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => m_Flags = value ? m_Flags | VisualElementFlags.IsWorldSpaceRootUIDocument : m_Flags & ~VisualElementFlags.IsWorldSpaceRootUIDocument;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.IsWorldSpaceRootPanelComponent : m_Flags & ~VisualElementFlags.IsWorldSpaceRootPanelComponent;
         }
 
         internal bool isWorldTransformDirty
@@ -1857,7 +1857,7 @@ namespace UnityEngine.UIElements
         {
             try
             {
-                if (!resourcesReleased)
+                if (!resourcesReleased && LayoutManager.IsSharedManagerCreated)
                 {
                     LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
                 }
@@ -1894,6 +1894,10 @@ namespace UnityEngine.UIElements
         /// In most cases, it is more convenient to use <see cref="VisualElement.Clear(VisualElementClearOptions)"/> on a root element
         /// which will recursively remove all its descendants and call <code>ReleaseResources</code> on each of them.
         /// </remarks>
+        /// <example>
+        /// The following example shows how to release elements when implementing object pooling:
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+        /// </example>
         public void ReleaseResources()
         {
             if (parent != null)

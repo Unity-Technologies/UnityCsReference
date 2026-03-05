@@ -132,6 +132,11 @@ namespace Unity.U2D.Physics
         public readonly PhysicsQuery.CastResult CastShape(PhysicsQuery.CastShapeInput input, out PhysicsShape chainSegmentShape) => PhysicsChain_CastShape(this, input, out chainSegmentShape);
 
         /// <summary>
+        /// Controls whether this chain is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsChain_GetWorldDrawing(this); set => PhysicsChain_SetWorldDrawing(this, value); }
+
+        /// <summary>
         /// The friction of the owned chain shapes.
         /// Usually this is within the range [0, 1]. Values higher than 1 will result in energy being added which can lead to an unstable simulation.
         /// </summary>
@@ -226,5 +231,17 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsChain_GetUserData(this); set => PhysicsChain_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsChain_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsChain.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsChain_SetOwnerUserData(this, physicsUserData, ownerKey);
     }
 }

@@ -244,6 +244,9 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextLib::GetHyperlinkRects")]
         static public extern Rect[] GetHyperlinkRects(IntPtr textGenerationInfo);
 
+        [NativeMethod(Name = "TextLib::IsMainDirectionRTL")]
+        static public extern bool IsMainDirectionRTL(IntPtr textGenerationInfo);
+
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(TextLib textLib) => textLib.m_Ptr;

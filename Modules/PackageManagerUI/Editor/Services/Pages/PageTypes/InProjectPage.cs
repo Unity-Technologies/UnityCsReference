@@ -4,13 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
 [Serializable]
-internal class InProjectPage : SimplePage
+internal class InProjectPage : SimplePageWithPackages
 {
     public const string k_Id = "InProject";
 
@@ -18,14 +17,12 @@ internal class InProjectPage : SimplePage
     public override string displayName => L10n.Tr("All Packages");
     public override Icon icon => Icon.InProjectPage;
 
-    [SerializeField]
-    private PageFilters.Status[] m_SupportedStatusFilters = Array.Empty<PageFilters.Status>();
-    public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
+    public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo | RefreshOptions.ImportedSamples;
 
-    public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
-    public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
-
-    public InProjectPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
+    public InProjectPage(IPackageDatabase packageDatabase) : base(packageDatabase)
+    {
+        UpdateSupportedStatuses(Array.Empty<PageFilterStatus>(), false);
+    }
 
     public override bool ShouldInclude(IPackage package)
     {
@@ -44,13 +41,14 @@ internal class InProjectPage : SimplePage
         return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Packages - Other") : string.Format(L10n.Tr("Packages - {0}"), version.author.name);
     }
 
-    public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
+    protected override void RebuildVisualStateList()
     {
-        var oldSupportedStatusFilters = m_SupportedStatusFilters;
-        m_SupportedStatusFilters = m_PackageDatabase.allPackages.AnyMatches(p => ShouldInclude(p) && p.hasEntitlements)
-            ? new[] { PageFilters.Status.SubscriptionBased }
-            : Array.Empty<PageFilters.Status>();
+        base.RebuildVisualStateList();
 
-        return !m_SupportedStatusFilters.IsSequenceEqual(oldSupportedStatusFilters);
+        var hasEntitlementPackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.hasEntitlements == true);
+        var newSupportedStatusFilters = hasEntitlementPackagesInPage
+            ? new[] { PageFilterStatus.SubscriptionBased }
+            : Array.Empty<PageFilterStatus>();
+        UpdateSupportedStatuses(newSupportedStatusFilters, true);
     }
 }

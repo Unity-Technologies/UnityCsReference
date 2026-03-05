@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
     public class StyleSheet : ScriptableObject
     {
         [Flags]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal enum RebuildOptions
         {
             None,
@@ -243,13 +243,13 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRule() => AddRuleAtIndex(-1);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRuleAtIndex(int index) => AddRuleAtIndex(index, null);
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleRule AddRule(string selector) => AddRuleAtIndex(-1, selector);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRuleAtIndex(int index, string selector)
         {
             if (index == -1)

@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// A read-only collection of hierarchy node type handler.
+    /// A read-only collection of <see cref="HierarchyNodeTypeHandler"/> instances.
     /// </summary>
     public readonly struct HierarchyNodeTypeHandlerEnumerable
     {
@@ -21,13 +21,13 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Gets an enumerator for the node type handlers.
+        /// Gets an enumerator for the <see cref="HierarchyNodeTypeHandler"/>.
         /// </summary>
         /// <returns>An enumerator.</returns>
         public Enumerator GetEnumerator() => new Enumerator(m_Hierarchy);
 
         /// <summary>
-        /// An enumerator for hierarchy node type handlers.
+        /// An enumerator for <see cref="HierarchyNodeTypeHandler"/> instances.
         /// </summary>
         public struct Enumerator : IDisposable
         {
@@ -44,7 +44,7 @@ namespace Unity.Hierarchy
             }
 
             /// <summary>
-            /// Dispose of the enumerator.
+            /// Releases the resources used by the enumerator.
             /// </summary>
             public void Dispose()
             {
@@ -52,7 +52,7 @@ namespace Unity.Hierarchy
             }
 
             /// <summary>
-            /// Get the current item being enumerated.
+            /// Gets the current <see cref="HierarchyNodeTypeHandler"/> being enumerated.
             /// </summary>
             public HierarchyNodeTypeHandler Current
             {
@@ -61,9 +61,9 @@ namespace Unity.Hierarchy
             }
 
             /// <summary>
-            /// Move to next iterable value.
+            /// Moves to the next iterable value in the enumerator.
             /// </summary>
-            /// <returns><see langword="true"/> if Current item is valid, <see langword="false"/> otherwise.</returns>
+            /// <returns><see langword="true"/> if the current item is valid, <see langword="false"/> otherwise.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {

@@ -143,6 +143,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.entityIdValue;
         }
 
+        public static LoadableReference GetLoadableReferencePropertyValue(SerializedProperty p)
+        {
+            return p.loadableReferenceValue;
+        }
+
         public static Gradient GetGradientPropertyValue(SerializedProperty p)
         {
             return p.gradientValue;
@@ -377,6 +382,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetEntityIdPropertyValue(SerializedProperty p, EntityId v)
         {
             p.entityIdValue = v;
+        }
+
+        public static void SetLoadableReferencePropertyValue(SerializedProperty p, LoadableReference v)
+        {
+            p.loadableReferenceValue = v;
         }
 
         public static void SetGradientPropertyValue(SerializedProperty p, Gradient v)

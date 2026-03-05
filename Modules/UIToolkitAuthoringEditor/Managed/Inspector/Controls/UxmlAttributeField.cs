@@ -280,6 +280,11 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
             m_BoundField.RegisterCallback<DetachFromPanelEvent>(OnFieldDetachedFromPanel);
 
             m_BoundField.TrackPropertyValue(boundProperty, OnPropertyChanged);
+            var attributeFlagsProperty = boundProperty.serializedObject.FindProperty(boundProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+            if (attributeFlagsProperty != null)
+            {
+                m_BoundField.TrackPropertyValue(attributeFlagsProperty, OnPropertyChanged);
+            }
         }
     }
 

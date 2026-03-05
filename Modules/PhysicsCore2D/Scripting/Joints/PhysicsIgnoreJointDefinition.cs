@@ -38,10 +38,18 @@ namespace Unity.U2D.Physics
         /// </summary>
         public PhysicsBody bodyB { readonly get => m_BodyB; set => m_BodyB = value; }
 
+        /// <summary>
+        /// Controls whether this joint is automatically drawn when the world is drawn.
+        ///
+        /// See <see cref="PhysicsJoint.worldDrawing"/>.
+        /// </summary>
+        public bool worldDrawing { readonly get => m_WorldDrawing; set => m_WorldDrawing = value; }
+
         #region Internal
 
-        [SerializeField] PhysicsBody m_BodyA;
-        [SerializeField] PhysicsBody m_BodyB;
+        PhysicsBody m_BodyA;
+        PhysicsBody m_BodyB;
+        [SerializeField] bool m_WorldDrawing;
 
         #endregion
     }

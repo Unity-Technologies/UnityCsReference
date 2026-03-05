@@ -165,6 +165,7 @@ namespace UnityEngine
         extern static internal bool isBuildingEditorResources
         {
             [FreeFunction("::IsBuildingEditorResources")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
         }
 

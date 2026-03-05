@@ -110,8 +110,10 @@ namespace UnityEditor
 
 
         [RequiredByNativeCode]
-        static public string PrepareForBuild(BuildPlayerOptions buildOptions)
+        static public string PrepareForBuild(IntPtr buildOptionsPtr)
         {
+            var buildOptions = BuildPlayerOptions.GetBuildPlayerOptions(buildOptionsPtr);
+
             var postprocessor = ModuleManager.GetBuildPostProcessor(buildOptions.target);
             if (postprocessor == null)
                 return null;

@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
+using Unity.Collections;
 using System.Linq;
 using System;
 

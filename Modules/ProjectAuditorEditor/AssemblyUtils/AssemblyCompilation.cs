@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEditor.Compilation;

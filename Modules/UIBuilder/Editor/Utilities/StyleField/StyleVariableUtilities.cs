@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Collections;
 
 namespace Unity.UI.Builder
 {
@@ -102,9 +102,7 @@ namespace Unity.UI.Builder
                         }
                     }
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return (compatibleTypes == null || compatibleTypes.Contains(valueType)) && !variable.name.StartsWith("--unity-theme");
-#pragma warning restore UA2001
                 })
                 .Distinct()
                 .Select(variable =>

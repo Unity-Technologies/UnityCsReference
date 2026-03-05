@@ -499,6 +499,7 @@ namespace UnityEngine.UIElements
         public IEnumerable<int> selectedIds => m_Selection.selectedIds;
 
         internal ReadOnlySpan<int> selectedIndicesSpan => NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
+        internal bool HasAnySelectedIds() => m_Selection.selectedIds.Count > 0;
 
         internal IReadOnlyList<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? Array.Empty<ReusableCollectionItem>();
 

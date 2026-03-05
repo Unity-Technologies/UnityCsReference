@@ -20,11 +20,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         void ListPurchases(PurchasesQueryArgs queryArgs);
         void CancelListPurchases();
         void FetchProductInfo(long productId, Action doneCallback = null);
-        void RefreshLocal();
+        void FullScanLocalInfos();
         void FetchUpdateInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null);
-        IEnumerable<Asset> ListImportedAssets();
-        void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths);
-        void RefreshImportedAssets();
+        void FullScanImportedAssets();
+        void UpdateImportedAssetsOnAssetsChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths);
     }
 
     [Serializable]
@@ -104,7 +103,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In the case where a package not purchased, `purchaseInfo` will still be null,
             // but the generated `Package` in the end will not contain an error.
             var fetchOperation = m_OperationFactory.CreateAssetStoreListOperation();
-            var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo.ToArray(), status = checkHiddenPurchases ? PageFilters.Status.Hidden : PageFilters.Status.None };
+            var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo.ToArray()};
+            queryArgs.UpdateStatus(checkHiddenPurchases ? PageFilterStatus.Hidden : PageFilterStatus.None);
             var fetchHiddenProductsRequired = false;
             fetchOperation.onOperationSuccess += _ =>
             {
@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public void RefreshLocal()
+        public void FullScanLocalInfos()
         {
             m_AssetStoreCache.SetLocalInfos(m_LocalInfoHandler.GetParsedLocalInfos());
         }
@@ -197,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public IEnumerable<Asset> ListImportedAssets()
+        public void FullScanImportedAssets()
         {
             var filter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
             filter.ClearSearch();
@@ -205,7 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             filter.anyWithAssetOrigin = true;
 
             var guidsWithOrigin = m_AssetDatabase.FindAssets(filter);
-            return guidsWithOrigin.SelectAsEnumerable(guid =>
+            var importedAssets = guidsWithOrigin.SelectAsEnumerable(guid =>
             {
                 var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
                 var assetPath = m_AssetDatabase.GUIDToAssetPath(guid);
@@ -216,13 +216,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     origin = assetOrigin
                 };
             });
+            m_AssetStoreCache.UpdateImportedAssets(importedAssets, m_AssetStoreCache.importedAssets.SelectAsEnumerable(a => a.importedPath));
         }
 
-        public void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
+        public void UpdateImportedAssetsOnAssetsChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
             var addedOrUpdatedAssets = new List<Asset>();
-            var removedAssetPaths = new HashSet<string>(deletedAssetPaths.Join(movedFromAssetPaths));
-            foreach (var path in importedAssetPaths.Join(movedAssetPaths).EnumerateDistinct())
+            var removedAssetPaths = new HashSet<string>(deletedAssets.Join(movedFromAssetPaths));
+            foreach (var path in importedAssets.Join(movedAssets).EnumerateDistinct())
             {
                 var guid = m_AssetDatabase.AssetPathToGUID(path);
                 var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
@@ -236,13 +237,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     removedAssetPaths.Add(path);
             }
-
             m_AssetStoreCache.UpdateImportedAssets(addedOrUpdatedAssets, removedAssetPaths);
-        }
-
-        public void RefreshImportedAssets()
-        {
-            m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.SelectAsEnumerable(a => a.importedPath));
         }
 
         public void OnBeforeSerialize()

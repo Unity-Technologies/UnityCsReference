@@ -42,6 +42,18 @@ namespace UnityEditor
                 m_HasEntityId = ClipboardParser.ParseEntityId(m_RawContents, out m_ValueEntityId);
         }
 
+        internal bool? m_HasLoadableReference;
+        internal LoadableReference m_ValueLoadableReference;
+        internal void FetchLoadableReference()
+        {
+            if (!m_HasLoadableReference.HasValue)
+            {
+                var ok = ClipboardParser.ParseCustom<LoadableReferenceWrapper>(m_RawContents, out var wrapper);
+                m_HasLoadableReference = ok;
+                m_ValueLoadableReference = ok ? wrapper.ToLoadableReference() : default;
+            }
+        }
+
         internal bool? m_HasBool;
         internal bool m_ValueBool;
         internal void FetchBool()

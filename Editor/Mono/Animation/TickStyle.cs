@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    [System.Serializable]
     internal class TickStyle
     {
         public EditorGUIUtility.SkinnedColor tickColor = new EditorGUIUtility.SkinnedColor(new Color(0.0f, 0.0f, 0.0f, 0.2f), new Color(.45f, .45f, .45f, 0.2f)); // color and opacity of ticks

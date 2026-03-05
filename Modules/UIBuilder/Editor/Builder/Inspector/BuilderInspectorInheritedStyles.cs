@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
-using System.Linq;
+using Unity.Collections;
 using Unity.UIToolkit.Editor;
 
 namespace Unity.UI.Builder
@@ -256,9 +256,7 @@ namespace Unity.UI.Builder
         bool IsClassInUXMLDoc(string className)
         {
             var vea = currentVisualElement?.GetVisualElementAsset();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return vea != null && vea.classes != null && vea.classes.Contains(className);
-#pragma warning restore UA2001
+            return vea?.classes?.Contains(className) ?? false;
         }
 
         void RefreshClassListContainer()

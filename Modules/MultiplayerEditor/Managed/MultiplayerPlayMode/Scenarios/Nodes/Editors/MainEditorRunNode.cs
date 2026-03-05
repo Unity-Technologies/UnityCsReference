@@ -10,7 +10,7 @@ using UnityEditor;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class MainEditorRunNode : Node
+    class MainEditorRunNode : ExecutionNode
     {
         public MainEditorRunNode(string name) : base(name) { }
 

@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using UnityEngine.Bindings;
 
 namespace Unity.Properties
 {
@@ -28,8 +30,21 @@ namespace Unity.Properties
             }
         }
 
-        readonly List<IProperty<TContainer>> m_PropertiesList = new List<IProperty<TContainer>>();
-        readonly Dictionary<string, IProperty<TContainer>> m_PropertiesHash = new Dictionary<string, IProperty<TContainer>>();
+        readonly List<IProperty<TContainer>> m_PropertiesList;
+        readonly Dictionary<string, IProperty<TContainer>> m_PropertiesHash;
+
+        protected ContainerPropertyBag()
+            :this(0)
+        {
+
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal ContainerPropertyBag(int initialCapacity)
+        {
+            m_PropertiesList = new List<IProperty<TContainer>>(initialCapacity);
+            m_PropertiesHash = new Dictionary<string, IProperty<TContainer>>(initialCapacity * 2);
+        }
 
         /// <summary>
         /// Adds a <see cref="Property{TContainer,TValue}"/> to the property bag.

@@ -431,9 +431,9 @@ namespace UnityEditor.Experimental.GraphView
         internal bool WillDragNode(Node node)
         {
             if (Collapsed)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return AllCollapsedElements.Contains(node);
-#pragma warning restore UA2001
+#pragma warning restore UA2007
 
             return ActOnGraphElementsOver(t => node == t, true);
         }

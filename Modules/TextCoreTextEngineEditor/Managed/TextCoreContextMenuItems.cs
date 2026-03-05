@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEditor.TextCore.Text
 {
     internal class TextCoreContextMenuItems : Editor
@@ -484,3 +486,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

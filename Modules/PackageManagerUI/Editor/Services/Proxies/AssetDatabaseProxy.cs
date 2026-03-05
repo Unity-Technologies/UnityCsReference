@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         string GUIDToAssetPath(string guid);
         string AssetPathToGUID(string path);
         string[] FindAssets(SearchFilter filter);
+        string[] GetSubFolders(string path);
     }
 
     [ExcludeFromCodeCoverage]
@@ -91,6 +92,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string[] FindAssets(SearchFilter filter)
         {
             return AssetDatabase.FindAssets(filter);
+        }
+
+        public string[] GetSubFolders(string path)
+        {
+            return AssetDatabase.GetSubFolders(path);
         }
     }
 }

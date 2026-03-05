@@ -157,7 +157,7 @@ internal sealed class StyleRuleInspector : VisualElement
 
     void SetSelectorElementInlineStyles()
     {
-        if (m_StyleRule == null || m_Element == null)
+        if (m_StyleRule == null || m_StyleRule.styleSheet == null || m_Element == null)
             return;
 
         m_Element.styleSheets.Clear();

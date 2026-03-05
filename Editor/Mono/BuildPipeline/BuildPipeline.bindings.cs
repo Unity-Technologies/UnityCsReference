@@ -102,8 +102,9 @@ namespace UnityEditor
         public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
 
         [RequiredByNativeCode]
-        internal static BuildPlayerContext PreparePlayerBuild(BuildPlayerOptions buildPlayerOptions)
+        internal static BuildPlayerContext PreparePlayerBuild(IntPtr buildPlayerOptionsPtr)
         {
+            var buildPlayerOptions = BuildPlayerOptions.GetBuildPlayerOptions(buildPlayerOptionsPtr);
             var buildPlayerContext = new BuildPlayerContext(buildPlayerOptions);
             BuildPipelineInterfaces.PreparePlayerBuild(buildPlayerContext);
             return buildPlayerContext;

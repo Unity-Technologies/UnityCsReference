@@ -70,7 +70,7 @@ struct ExecutionStatusData
         failedNodesCount: other.FailedNodesCount,
         abortedNodesCount: other.AbortedNodesCount);
 
-    public void Aggregate(IEnumerable<Node> nodes)
+    public void Aggregate(IEnumerable<ExecutionNode> nodes)
     {
         foreach (var node in nodes)
         {

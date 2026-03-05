@@ -160,6 +160,7 @@ namespace UnityEditor.PackageManager.Requests
     /// <summary>
     /// Tracks the state of an asynchronous Upm server operation that returns a non-empty response
     /// </summary>
+    [Serializable]
     public abstract class Request<T> : Request
     {
         /// <summary>

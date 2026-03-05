@@ -12,13 +12,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     internal class NodeStatusElement : VisualElement
     {
-        private Node m_Node;
+        private ExecutionNode m_Node;
         private Label m_StateLabel;
         private Label m_MessageLabel;
         private Label m_InputsLabel;
         private Label m_OutputsLabel;
 
-        public NodeStatusElement(Node node)
+        public NodeStatusElement(ExecutionNode node)
         {
             m_Node = node;
             BuildUI();
@@ -90,7 +90,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
 
-        private static string DumpNodeParameters(Node node, List<FieldInfo> parameterFields)
+        private static string DumpNodeParameters(ExecutionNode node, List<FieldInfo> parameterFields)
         {
             if (parameterFields.Count == 0)
                 return "\t<None>";

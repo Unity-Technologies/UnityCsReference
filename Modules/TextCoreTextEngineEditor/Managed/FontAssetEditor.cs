@@ -14,6 +14,7 @@ using Glyph = UnityEngine.TextCore.Glyph;
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
 
 namespace UnityEditor.TextCore.Text
 {
@@ -244,6 +245,8 @@ namespace UnityEditor.TextCore.Text
         private SerializedProperty m_MarkToBaseAdjustmentRecords_prop;
         private SerializedProperty m_MarkToMarkAdjustmentRecords_prop;
 
+        private SerializedProperty m_ShowObsoleteProperties_prop;
+
         private SerializedPropertyHolder m_SerializedPropertyHolder;
         private SerializedProperty m_EmptyGlyphPairAdjustmentRecord_prop;
         private SerializedProperty m_FirstCharacterUnicode_prop;
@@ -281,6 +284,7 @@ namespace UnityEditor.TextCore.Text
             m_IsMultiAtlasTexturesEnabled_prop = serializedObject.FindProperty("m_IsMultiAtlasTexturesEnabled");
             m_ClearDynamicDataOnBuild_prop = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
             m_GetFontFeatures_prop = serializedObject.FindProperty("m_GetFontFeatures");
+            m_ShowObsoleteProperties_prop = serializedObject.FindProperty("m_ShowObsoleteProperties");
 
             fontWeights_prop = serializedObject.FindProperty("m_FontWeightTable");
 
@@ -374,15 +378,19 @@ namespace UnityEditor.TextCore.Text
 
         public override void OnInspectorGUI()
         {
-            //Debug.Log("OnInspectorGUI Called.");
-            if (IsAdvancedTextEnabled.Invoke())
-            {
-                EditorGUILayout.HelpBox("Enabling the Advanced Text Generator restricts customization of font metrics and static font assets. Additionally, some properties are still in development and may not be available.", MessageType.Warning, true);
-            }
-
             Event currentEvent = Event.current;
 
             serializedObject.Update();
+
+            if (m_ShowObsoleteProperties_prop.boolValue)
+            {
+                EditorGUILayout.HelpBox(
+                    "These properties are only available in TextCore and will be removed in a future version. " +
+                    "It is highly recommended to upgrade to ATG (Advanced Text Generator) and disable this option.",
+                    MessageType.Warning, true);
+            }
+
+            EditorGUILayout.Space();
 
             Rect rect = EditorGUILayout.GetControlRect(false, 24);
             float labelWidth = EditorGUIUtility.labelWidth;
@@ -391,6 +399,15 @@ namespace UnityEditor.TextCore.Text
             // FACE INFO PANEL
             #region Face info
             GUI.Label(rect, new GUIContent("<b>Face Info</b> - v" + m_fontAsset.version), TM_EditorStyles.sectionHeader);
+
+            // Show/Hide Obsolete Properties button
+            string obsoleteButtonText = m_ShowObsoleteProperties_prop.boolValue ? "Hide Obsolete Properties" : "Show Obsolete Properties";
+            Rect obsoleteButtonRect = new Rect(rect.x + rect.width - 300f, rect.y + 2, 160f, 18f);
+            if (GUI.Button(obsoleteButtonRect, new GUIContent(obsoleteButtonText)))
+            {
+                m_ShowObsoleteProperties_prop.boolValue = !m_ShowObsoleteProperties_prop.boolValue;
+                serializedObject.ApplyModifiedProperties();
+            }
 
             rect.x += rect.width - 132f;
             rect.y += 2;
@@ -427,7 +444,10 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.PropertyField(m_FaceInfo_prop.FindPropertyRelative("m_SuperscriptSize"));
             EditorGUILayout.PropertyField(m_FaceInfo_prop.FindPropertyRelative("m_SubscriptOffset"));
             EditorGUILayout.PropertyField(m_FaceInfo_prop.FindPropertyRelative("m_SubscriptSize"));
-            EditorGUILayout.PropertyField(m_FaceInfo_prop.FindPropertyRelative("m_TabWidth"));
+
+            if (m_ShowObsoleteProperties_prop.boolValue)
+                EditorGUILayout.PropertyField(m_FaceInfo_prop.FindPropertyRelative("m_TabWidth"));
+
             // TODO : Add clamping for some of these values.
             //subSize_prop.floatValue = Mathf.Clamp(subSize_prop.floatValue, 0.25f, 1f);
 
@@ -464,7 +484,13 @@ namespace UnityEditor.TextCore.Text
                     }
 
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(m_AtlasPopulationMode_prop, new GUIContent("Atlas Population Mode"));
+
+                    m_AtlasPopulationMode_prop.intValue = EditorGUILayout.IntPopup(
+                        new GUIContent("Atlas Population Mode"),
+                        m_AtlasPopulationMode_prop.intValue,
+                        new[] { new GUIContent("Static (Obsolete)"), new GUIContent("Dynamic"), new GUIContent("Dynamic OS") },
+                        new[] { (int)AtlasPopulationMode.Static, (int)AtlasPopulationMode.Dynamic, (int)AtlasPopulationMode.DynamicOS });
+
                     if (EditorGUI.EndChangeCheck())
                     {
                         UpdateAtlasPopulationMode(m_AtlasPopulationMode_prop.intValue);
@@ -517,7 +543,11 @@ namespace UnityEditor.TextCore.Text
                             m_DisplayDestructiveChangeWarning = true;
                         }
                         EditorGUILayout.PropertyField(m_ClearDynamicDataOnBuild_prop, new GUIContent("Clear Dynamic Data On Build", "Clears all dynamic data restoring the font asset back to its default creation and empty state."));
-                        EditorGUILayout.PropertyField(m_GetFontFeatures_prop, getFontFeaturesLabel);
+
+                        if (m_ShowObsoleteProperties_prop.boolValue)
+                        {
+                            EditorGUILayout.PropertyField(m_GetFontFeatures_prop, getFontFeaturesLabel);
+                        }
 
                         EditorGUILayout.Space();
 
@@ -660,7 +690,11 @@ namespace UnityEditor.TextCore.Text
                 EditorGUILayout.PropertyField(font_italicStyle_prop, new GUIContent("Italic Slant"));
                 font_italicStyle_prop.intValue = Mathf.Clamp(font_italicStyle_prop.intValue, 15, 60);
 
-                EditorGUILayout.PropertyField(font_tabSize_prop, new GUIContent("Tab Multiple"));
+                if (m_ShowObsoleteProperties_prop.boolValue)
+                    EditorGUILayout.PropertyField(font_tabSize_prop, new GUIContent("Tab Multiple"));
+                else
+                    EditorGUILayout.LabelField("");
+
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.Space();
@@ -694,6 +728,8 @@ namespace UnityEditor.TextCore.Text
             #endregion
 
             // CHARACTER TABLE TABLE
+            if (m_ShowObsoleteProperties_prop.boolValue)
+            {
             #region Character Table
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -891,8 +927,11 @@ namespace UnityEditor.TextCore.Text
                 EditorGUILayout.Space();
             }
             #endregion
+            }
 
             // GLYPH TABLE
+            if (m_ShowObsoleteProperties_prop.boolValue)
+            {
             #region Glyph Table
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -1094,10 +1133,13 @@ namespace UnityEditor.TextCore.Text
                 EditorGUILayout.Space();
             }
             #endregion
+            }
 
             // FONT FEATURE TABLES
 
             // LIGATURE SUBSTITUTION TABLE
+            if (m_ShowObsoleteProperties_prop.boolValue)
+            {
             #region LIGATURE
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -1272,8 +1314,11 @@ namespace UnityEditor.TextCore.Text
                 GUILayout.Space(5);
             }
             #endregion
+            }
 
             // PAIR ADJUSTMENT TABLE
+            if (m_ShowObsoleteProperties_prop.boolValue)
+            {
             #region Pair Adjustment Table
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -1740,9 +1785,7 @@ namespace UnityEditor.TextCore.Text
                         if (DoSelectionCheck(selectionArea))
                         {
                             if (m_SelectedMarkToMarkRecord == i)
-                            {
                                 m_SelectedMarkToMarkRecord = -1;
-                            }
                             else
                             {
                                 m_SelectedMarkToMarkRecord = i;
@@ -1789,6 +1832,7 @@ namespace UnityEditor.TextCore.Text
                 GUILayout.Space(5);
             }
             #endregion
+            }
 
             if (serializedObject.ApplyModifiedProperties() || evt_cmd == k_UndoRedo || isAssetDirty || m_IsFallbackGlyphCacheDirty)
             {
@@ -3006,3 +3050,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

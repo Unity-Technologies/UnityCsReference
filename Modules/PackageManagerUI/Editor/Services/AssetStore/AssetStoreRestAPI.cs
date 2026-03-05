@@ -10,9 +10,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IAssetStoreRestAPI : IService
     {
-        string assetStoreUrl { get; }
-
-        string[] GetCategories();
         void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback);
         void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback);
         void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null);
@@ -55,19 +52,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             [k_GeneralServerError] = "Server Error"
         };
 
-        private static readonly string[] k_Categories =
-        {
-            "3D",
-            "Add-Ons",
-            "2D",
-            "Audio",
-            "Essentials",
-            "Templates",
-            "Tools",
-            "VFX",
-            "Decentralization"
-        };
-
         private string m_Host;
         private string host
         {
@@ -104,8 +88,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_JsonParser = RegisterDependency(jsonParser);
             m_HttpClientFactory = RegisterDependency(httpClientFactory);
         }
-
-        public string[] GetCategories() => k_Categories;
 
         public void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
         {

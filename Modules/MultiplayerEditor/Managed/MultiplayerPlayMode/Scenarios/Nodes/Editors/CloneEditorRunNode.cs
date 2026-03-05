@@ -13,7 +13,7 @@ using System;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class CloneEditorRunNode : Node
+    class CloneEditorRunNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;
         [SerializeReference] public NodeInput<bool> StreamLogs;

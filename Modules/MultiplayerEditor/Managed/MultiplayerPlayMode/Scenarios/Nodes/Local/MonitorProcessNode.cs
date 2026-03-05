@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class MonitorProcessNode : Node
+    class MonitorProcessNode : ExecutionNode
     {
         const int k_ProcessCheckIntervalMS = 120;
         const float k_ProcessFindTimeoutSeconds = 3f;

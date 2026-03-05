@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
+using Unity.Collections;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -493,13 +494,9 @@ namespace UnityEditor.UIElements.Debugger
             if (checkIsParameter)
             {
                 var parameter = filter.Substring(k_IsKeyword.Length);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_OnKeywords.Contains(parameter))
-#pragma warning restore UA2001
                     isOn = true;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (k_OffKeywords.Contains(parameter))
-#pragma warning restore UA2001
                     isOn = false;
             }
 

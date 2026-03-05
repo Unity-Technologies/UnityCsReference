@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 
 namespace UnityEditor
@@ -46,6 +47,7 @@ namespace UnityEditor
         // Offset to move the labels along the horizontal axis to make room for the overlaid scrollbar in the
         // curve editor popup.
         public float hTickLabelOffset = 0;
+        [NonSerialized]
         public EditorGUIUtility.SkinnedColor wrapColor = new EditorGUIUtility.SkinnedColor(new Color(1.0f, 1.0f, 1.0f, 0.5f), new Color(.65f, .65f, .65f, 0.5f));
         public bool useFocusColors = false;
         public bool showAxisLabels = true;

@@ -132,9 +132,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filter = FilterServicesPackage,
                 getGroupName = GetServicesPackageGroupName,
                 compareGroup = CompareGroup,
-                supportedSortOptions = SimplePage.k_DefaultSupportedSortOptions,
-                supportedStatusFilters = SimplePage.k_DefaultSupportedStatusFilters,
-                capability = PageCapability.SupportLocalReordering,
+                supportedSortOptions = SimplePageWithPackages.k_DefaultSupportedSortOptions,
+                supportedStatusFilters = SimplePageWithPackages.k_DefaultSupportedStatusFilters,
+                capability = PageCapability.None,
                 refreshOptions = RefreshOptions.UpmList | RefreshOptions.UpmSearch
             });
             m_ConfigureButton = args.window.AddPackageActionButton();

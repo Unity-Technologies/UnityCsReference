@@ -27,6 +27,7 @@ namespace UnityEditor.Search
         public int length => m_EndIndex - m_StartIndex;
 
         public char this[int index] => m_BaseString[m_StartIndex + index];
+        public char this[Index index] => m_BaseString[index.IsFromEnd ? (m_EndIndex - index.Value) : (m_StartIndex + index.Value)];
 
         public StringView(string baseString)
         {

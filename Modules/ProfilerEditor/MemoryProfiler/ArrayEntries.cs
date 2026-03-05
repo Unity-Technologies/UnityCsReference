@@ -69,18 +69,22 @@ namespace UnityEditor.Profiling.Memory.Experimental
     [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class ConnectionEntries
     {
-        public ArrayEntries<int> from { get; }
-        public ArrayEntries<int> to { get; }
+        [Obsolete("ConnectionEntries.from is obsolete. Use ConnectionEntries.fromEntityId instead, this will be removed in a future version.", true)]
+        public ArrayEntries<int> from { get => throw new InvalidOperationException("ConnectionEntries.from is obsolete. Use ConnectionEntries.fromEntityId instead."); }
+        public ArrayEntries<EntityId> fromEntityId { get; }
+        [Obsolete("ConnectionEntries.to is obsolete. Use ConnectionEntries.toEntityId instead, this will be removed in a future version.", true)]
+        public ArrayEntries<int> to { get => throw new InvalidOperationException("ConnectionEntries.to is obsolete. Use ConnectionEntries.toEntityId instead."); }
+        public ArrayEntries<EntityId> toEntityId { get; }
 
         internal ConnectionEntries(MemorySnapshotFileReader reader)
         {
-            from = new ArrayEntries<int>(reader, EntryType.Connections_From, ConversionFunctions.ToInt32);
-            to = new ArrayEntries<int>(reader, EntryType.Connections_To, ConversionFunctions.ToInt32);
+            fromEntityId = new ArrayEntries<EntityId>(reader, EntryType.Connections_From, ConversionFunctions.ToEntityId);
+            toEntityId = new ArrayEntries<EntityId>(reader, EntryType.Connections_To, ConversionFunctions.ToEntityId);
         }
 
         public uint GetNumEntries()
         {
-            return from.GetNumEntries();
+            return fromEntityId.GetNumEntries();
         }
     }
 
@@ -130,7 +134,10 @@ namespace UnityEditor.Profiling.Memory.Experimental
     public class NativeObjectEntries
     {
         public ArrayEntries<string> objectName { get; }
-        public ArrayEntries<int> instanceId { get; }
+        [Obsolete("Use entityId instead, this will be removed in a future version", true)]
+        public ArrayEntries<int> instanceId { get => throw new InvalidOperationException("instanceId is obsolete, use entityId instead."); }
+
+        public ArrayEntries<EntityId> entityId { get; }
         public ArrayEntries<ulong> size { get; }
         public ArrayEntries<int> nativeTypeArrayIndex { get; }
         public ArrayEntries<HideFlags> hideFlags { get; }
@@ -142,7 +149,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         internal NativeObjectEntries(MemorySnapshotFileReader reader, bool hasGcHandleIndex)
         {
             objectName = new ArrayEntries<string>(reader, EntryType.NativeObjects_Name, ConversionFunctions.ToString);
-            instanceId = new ArrayEntries<int>(reader, EntryType.NativeObjects_EntityId, ConversionFunctions.ToInt32);
+            entityId = new ArrayEntries<EntityId>(reader, EntryType.NativeObjects_EntityId, ConversionFunctions.ToEntityId);
             size = new ArrayEntries<ulong>(reader, EntryType.NativeObjects_Size, ConversionFunctions.ToUInt64);
             nativeTypeArrayIndex = new ArrayEntries<int>(reader, EntryType.NativeObjects_NativeTypeArrayIndex, ConversionFunctions.ToInt32);
             hideFlags = new ArrayEntries<HideFlags>(reader, EntryType.NativeObjects_HideFlags, ConversionFunctions.ToHideFlags);
@@ -550,6 +557,22 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 }
             }
             return result;
+        }
+
+        public unsafe static EntityId ToEntityId(byte[] data, uint startIndex, uint numBytes)
+        {
+            if (numBytes != sizeof(EntityId))
+            {
+                throw new IOException("Invalid data entry");
+            }
+
+            EntityId entityIdOut;
+            fixed (byte* dataPtr = data)
+            {
+                UnsafeUtility.MemCpy(&entityIdOut, dataPtr + startIndex, sizeof(EntityId));
+            }
+
+            return entityIdOut;
         }
     }
 }

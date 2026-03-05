@@ -46,8 +46,5 @@ namespace UnityEditor.Lighting.LightingSearch
         internal const string k_ReflectionProbeResolutionPath = k_ReflectionProbePath + "Resolution";
         internal const string k_LightPath = "Light/";
         internal const string k_LightTypePath = k_LightPath + "Type";
-        internal const string k_ScenePath = "Scene/";
-        internal const string k_SceneLightingSettingsPath = k_ScenePath + "LightingSettings";
-        internal const string k_SceneLightingGeneratedPath = k_ScenePath + "LightingGenerated";
     }
 }

@@ -56,10 +56,14 @@ class ScopedMenuItemGenerator : IDisposable
 internal static class MenuItemGenerator
 {
     static readonly List<ControlTypeInfo> s_AvailableControlTypes;
+    static int s_HighestItemPriority;
+
     // The current value represents the first item of the "GameObject/UI Toolkit" menu item. Update this value to change the position within the menu item.
-    internal const int k_DefaultPriority = 7;
+    internal const int k_DefaultStandardElementsPriority = 6;
+    internal const int k_DefaultProjectElementsPriority = 7;
     internal const int k_LibraryMenuItemPriorityOffset = 20;
     internal const string k_MenuPrefix = "GameObject";
+    internal static readonly string k_GameObjectMenuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}";
 
     static MenuItemGenerator()
     {
@@ -95,25 +99,37 @@ internal static class MenuItemGenerator
             );
         }
 
-        var maxPriority = s_AvailableControlTypes.Count > 0
-            ? s_AvailableControlTypes[^1].priority
-            : k_DefaultPriority;
+        // Add "Project Elements" menu item and disable it if there's no items
+        if (!HasControlsUnderBasePath(LibraryContent.k_BaseLibraryPaths[1]))
+        {
+            Menu.AddMenuItem(
+                $"{k_GameObjectMenuPath}/{LibraryContent.k_BaseLibraryPaths[1]}",
+                "",
+                false,
+                k_DefaultProjectElementsPriority,
+                () => { },
+                () => false
+            );
+        }
 
         foreach (var basePath in LibraryContent.k_BaseLibraryPaths)
         {
             if (HasControlsUnderBasePath(basePath))
             {
-                var menuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/{basePath}/UI Library...";
+                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
                 Menu.AddMenuItem(
                     menuPath,
                     "",
                     false,
-                    maxPriority + k_LibraryMenuItemPriorityOffset,
+                    s_HighestItemPriority + k_LibraryMenuItemPriorityOffset,
                     UIElementsProvider.OpenUIElementsPicker,
                     null
                 );
             }
         }
+
+        // Add separator after the "Project Elements" subgroup
+        Menu.AddSeparator($"{k_GameObjectMenuPath}/", k_DefaultProjectElementsPriority);
     }
 
     public static void UnregisterMenuItems()
@@ -123,11 +139,17 @@ internal static class MenuItemGenerator
             Menu.RemoveMenuItem($"{k_MenuPrefix}/{control.GetMenuPath()}");
         }
 
+        // Remove the Disabled "Project Elements" item
+        if (!HasControlsUnderBasePath(LibraryContent.k_BaseLibraryPaths[1]))
+        {
+            Menu.RemoveMenuItem($"{k_GameObjectMenuPath}/{LibraryContent.k_BaseLibraryPaths[1]}");
+        }
+
         foreach (var basePath in LibraryContent.k_BaseLibraryPaths)
         {
             if (HasControlsUnderBasePath(basePath))
             {
-                var menuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/{basePath}/UI Library...";
+                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
                 Menu.RemoveMenuItem(menuPath);
             }
         }
@@ -147,7 +169,10 @@ internal static class MenuItemGenerator
 
     static List<ControlTypeInfo> GetControlElements()
     {
-        var elements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
+        s_HighestItemPriority = k_DefaultStandardElementsPriority;
+
+        var standardElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
+        var projectElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
         var libraryTypeKeys = LibraryContent.GetAllLibraryTypes();
 
         foreach (var (key, item) in libraryTypeKeys)
@@ -155,28 +180,40 @@ internal static class MenuItemGenerator
             if (string.IsNullOrEmpty(item.libraryPath))
                 continue;
 
-            elements.Add((key, item.libraryPath));
+            if (item.libraryPath.StartsWith(LibraryContent.k_BaseLibraryPaths[0]))
+                standardElements.Add((key, item.libraryPath));
+            else if (item.libraryPath.StartsWith(LibraryContent.k_BaseLibraryPaths[1]))
+                projectElements.Add((key, item.libraryPath));
         }
 
-        // Sort by type name and assign priorities
-        elements.Sort(CompareControlElements);
+        standardElements.Sort(CompareControlElements);
+        projectElements.Sort(CompareControlElements);
 
         var result = new List<ControlTypeInfo>();
-        var priority = k_DefaultPriority;
+
+        AddControlTypesWithPriority(result, standardElements, k_DefaultStandardElementsPriority);
+        AddControlTypesWithPriority(result, projectElements, k_DefaultProjectElementsPriority);
+
+        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(standardElements);
+        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(projectElements);
+        return result;
+    }
+
+    static void AddControlTypesWithPriority(List<ControlTypeInfo> result, List<(LibraryTypeKey libraryType, string libraryPath)> elements, int priority)
+    {
         for (var i = 0; i < elements.Count; i++)
         {
-            // Niche request: Only want the top container type items to have a separator
-            if (i > 0 && LibraryContent.IsContainer(elements[i - 1].libraryType.type.Name) && !LibraryContent.IsContainer(elements[i].libraryType.type.Name))
-            {
-                // Gap > 10 creates separator
-                priority += 11;
-            }
+            result.Add(new ControlTypeInfo(elements[i].libraryType, elements[i].libraryPath, priority));
+            priority++;
 
-            result.Add(new ControlTypeInfo(elements[i].libraryType, elements[i].libraryPath, priority: priority++));
+            // Niche request: Only want the top container type items to have a separator
+            if (LibraryContent.IsContainer(elements[i].libraryType.type.Name) && i + 1 < elements.Count && !LibraryContent.IsContainer(elements[i + 1].libraryType.type.Name))
+            {
+                priority += 10;
+            }
         }
 
-        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(elements);
-        return result;
+        s_HighestItemPriority = Math.Max(s_HighestItemPriority, priority);
     }
 
     /// <summary>

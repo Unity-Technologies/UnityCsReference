@@ -162,6 +162,12 @@ namespace UnityEditor
                         p => Clipboard.hasEntityId,
                         p => p.entityIdValue = Clipboard.entityIdValue);
                     break;
+                case SerializedPropertyType.LoadableReference:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.loadableReferenceValue = p.loadableReferenceValue,
+                        p => Clipboard.hasLoadableReference,
+                        p => p.loadableReferenceValue = Clipboard.loadableReferenceValue);
+                    break;
                 case SerializedPropertyType.Generic:
                     if (property.type == "MinMaxGradient")
                     {

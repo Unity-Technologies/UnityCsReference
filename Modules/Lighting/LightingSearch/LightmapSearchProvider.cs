@@ -9,19 +9,17 @@ using UnityEditor.Experimental;
 using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.UIElements;
-// error CS8785, when using System.Text.Json 8.0.x (curent version in BCL Extensions) fixed in 9.0.x and up.
-// using Object = object;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
-        /// <summary>
-        /// Data container for baked lightmap preview column, containing the lightmap index and exposed texture.
-        /// </summary>
-        internal struct BakedLightmapPreviewData
-        {
-            public int index;
-            public Texture2D lightmapColor;
-        }
+    /// <summary>
+    /// Data container for baked lightmap preview column, containing the lightmap index and exposed texture.
+    /// </summary>
+    internal struct BakedLightmapPreviewData
+    {
+        public int index;
+        public Texture2D lightmapColor;
+    }
 
     class LightmapSearchProvider : SearchProvider
     {
@@ -46,7 +44,7 @@ namespace UnityEditor.Lighting.LightingSearch
             public const string k_SizeSelector = k_LightmapSelectorPath + "/Size";
             public const string k_FormatSelector = k_LightmapSelectorPath + "/Format";
             public const string k_CompressionSelector = k_LightmapSelectorPath + "/Compression";
-            public const string k_WidthSelector =  k_LightmapSelectorPath + "/Width";
+            public const string k_WidthSelector = k_LightmapSelectorPath + "/Width";
             public const string k_HeightSelector = k_LightmapSelectorPath + "/Height";
             public const string k_LightingDataAssetSelector = k_LightmapSelectorPath + "/Lighting Data Asset";
         }
@@ -136,18 +134,26 @@ namespace UnityEditor.Lighting.LightingSearch
                 yield break;
 
             LightmapData[] lightmaps = LightmapSettings.lightmaps;
+
+            // Initialize exposure when lightmaps are first displayed
+            if (lightmaps.Length > 0 && !LightingSearchExposureSettings.IsInitialized)
+            {
+                LightingSearchExposureSettings.ResetToDefault();
+            }
+            
             for (var i = 0; i < lightmaps.Length; ++i)
             {
                 var lm = lightmaps[i];
                 var currentIndex = i; // Capture the index to avoid closure issues
+                var lightmapEntityId = lm.lightmapColor != null ? lm.lightmapColor.GetEntityId() : EntityId.None;
                 var data = new LightmapDataWrapper { index = currentIndex, data = lm };
 
                 if (!isEmptyQuery && !query.Test(data))
                     continue;
 
                 yield return provider.CreateItem(context,
-                    lm.lightmapColor.GetEntityId().ToString(), 0,
-                    lm.lightmapColor.name,
+                    lightmapEntityId.ToString(), 0,
+                    lm.lightmapColor != null ? lm.lightmapColor.name : string.Empty,
                     "",
                     thumbnail: null, data);
             }
@@ -168,7 +174,8 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             // Recalculate a new auto exposure value
             LightingSearchExposureSettings.ResetToDefault();
-            LightmapTextureCache.InvalidateCache();
+            // Ensure cache is cleared even if exposure didn't change
+            LightmapTextureCache.Clear();
             RefreshAllLightmapSearchWindowResultViews();
         }
 
@@ -225,15 +232,17 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             if (args.current.data is LightmapDataWrapper wrapper)
             {
+                var lightmapColor = wrapper.data.lightmapColor;
+
                 switch (args.path)
                 {
-                    case QuerySelectors.k_BakedLightmapPreviewSelector: return new BakedLightmapPreviewData { index = wrapper.index, lightmapColor = wrapper.data.lightmapColor };
-                    case QuerySelectors.k_ColorSelector: return wrapper.data.lightmapColor;
+                    case QuerySelectors.k_BakedLightmapPreviewSelector: return new BakedLightmapPreviewData { index = wrapper.index, lightmapColor = lightmapColor };
+                    case QuerySelectors.k_ColorSelector: return lightmapColor;
                     case QuerySelectors.k_DirectionalitySelector: return wrapper.data.lightmapDir;
                     case QuerySelectors.k_ShadowMaskSelector: return wrapper.data.shadowMask;
                     case QuerySelectors.k_IndexSelector: return wrapper.index;
-                    case QuerySelectors.k_SizeSelector: return $"{wrapper.data.lightmapColor.width}x{wrapper.data.lightmapColor.height}";
-                    case QuerySelectors.k_FormatSelector: return wrapper.data.lightmapColor.format.ToString();
+                    case QuerySelectors.k_SizeSelector: return lightmapColor != null ? $"{lightmapColor.width}x{lightmapColor.height}" : null;
+                    case QuerySelectors.k_FormatSelector: return lightmapColor != null ? lightmapColor.format.ToString() : null;
                     case QuerySelectors.k_CompressionSelector: return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapCompression == LightmapCompression.None ? " Uncompressed" : "Compressed";
                     case QuerySelectors.k_LightingDataAssetSelector: return Lightmapping.lightingDataAsset;
                 }
@@ -286,9 +295,8 @@ namespace UnityEditor.Lighting.LightingSearch
         [SearchSelector(QuerySelectors.k_CompressionSelector, cacheable = false)]
         static object GetCompression(SearchSelectorArgs args) => GetLightmapData(args);
 
-        // Non-cacheable to always return current asset reference, especially after rebaking
         [SearchSelector(QuerySelectors.k_LightingDataAssetSelector, cacheable = false)]
-        static object GetLightingDataAsset(SearchSelectorArgs args)  => GetLightmapData(args);
+        static object GetLightingDataAsset(SearchSelectorArgs args) => GetLightmapData(args);
 
         static IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)
         {
@@ -305,17 +313,10 @@ namespace UnityEditor.Lighting.LightingSearch
 
         internal static SearchTable GetDefaultTableConfig(SearchContext context)
         {
-            var columns = new[]
-            {
-                new SearchColumn($"{k_ProviderDisplayName}/Index", QuerySelectors.k_IndexSelector),
-                new SearchColumn($"{k_ProviderDisplayName}/{k_BakedLightmapPreviewColumnProvider}", QuerySelectors.k_BakedLightmapPreviewSelector, $"{k_ProviderDisplayName}/{k_BakedLightmapPreviewColumnProvider}"),
-                new SearchColumn($"{k_ProviderDisplayName}/Size", QuerySelectors.k_SizeSelector),
-                new SearchColumn($"{k_ProviderDisplayName}/Format", QuerySelectors.k_FormatSelector),
-                new SearchColumn($"{k_ProviderDisplayName}/Compression", QuerySelectors.k_CompressionSelector),
-                new SearchColumn($"{k_ProviderDisplayName}/Lighting Data Asset", QuerySelectors.k_LightingDataAssetSelector),
-            };
+            var defaultQuery = EditorResources.Load<UnityEngine.Object>("SearchQueries/LightingSearch/Lightmaps/All Lightmaps.asset") as SearchQueryAsset;
 
-            return new SearchTable("Lightmaps", columns) { itemHeight = k_ItemHeight };
+            // Clone the table config from the asset to avoid modifying the original asset data
+            return defaultQuery != null ? new SearchTable(defaultQuery.viewState.tableConfig.id, defaultQuery.viewState.tableConfig.columns) { itemHeight = k_ItemHeight } : null;
         }
 
         static List<SearchAction> GetActions()
@@ -403,7 +404,7 @@ namespace UnityEditor.Lighting.LightingSearch
             foreach (var searchItem in items)
             {
                 var data = GetLightmapData(searchItem);
-                LightmapPreviewWindow.CreateLightmapPreviewWindow(data.index, false, true, false, LightingSearchExposureSettings.CurrentExposure);
+                LightmapPreviewWindow.CreateLightmapPreviewWindowIndexedWithExposure(data.index, false, false, LightingSearchExposureSettings.CurrentExposure);
             }
         }
 

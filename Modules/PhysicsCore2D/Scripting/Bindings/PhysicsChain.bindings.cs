@@ -31,6 +31,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsChain::ClosestPoint", IsThreadSafe = true)] extern internal static Vector2 PhysicsChain_ClosestPoint(PhysicsChain chain, Vector2 point, out PhysicsShape chainSegmentShape);
         [NativeMethod(Name = "PhysicsChain::CastRay", IsThreadSafe = true)] extern internal static PhysicsQuery.CastResult PhysicsChain_CastRay(PhysicsChain chain, PhysicsQuery.CastRayInput input, out PhysicsShape chainSegmentShape);
         [NativeMethod(Name = "PhysicsChain::CastShape", IsThreadSafe = true)] extern internal static PhysicsQuery.CastResult PhysicsChain_CastShape(PhysicsChain chain, PhysicsQuery.CastShapeInput input, out PhysicsShape chainSegmentShape);
+        [NativeMethod(Name = "PhysicsChain::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsChain_SetWorldDrawing(PhysicsChain chain, bool flag);
+        [NativeMethod(Name = "PhysicsChain::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsChain_GetWorldDrawing(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsChain_SetOwner(PhysicsChain chain, UnityEngine.Object ownerObject);
         [NativeMethod(Name = "PhysicsChain::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsChain_GetOwner(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsOwned(PhysicsChain chain);
@@ -38,5 +40,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsChain_GetCallbackTarget(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetUserData(PhysicsChain chain, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsChain::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetUserData(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetOwnerUserData(PhysicsChain chain, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsChain::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetOwnerUserData(PhysicsChain chain);
     }
 }

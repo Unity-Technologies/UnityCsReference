@@ -117,7 +117,7 @@ namespace Unity.UI.Builder
 
         public int selectionCount => m_Selection.Count;
 
-        public IEnumerable<VisualElement> selection => m_Selection;
+        public IReadOnlyList<VisualElement> selection => m_Selection;
 
         public VisualElement documentRootElement
         {
@@ -278,14 +278,7 @@ namespace Unity.UI.Builder
             if (Builder.ActiveWindow.hierarchy.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
                 EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
-
-                var liveReloadChanges = ((changeType & BuilderHierarchyChangeType.InlineStyle) != 0
-                                            ? BuilderAssetUtilities.LiveReloadChanges.Styles
-                                            : 0) |
-                                        ((changeType & ~BuilderHierarchyChangeType.InlineStyle) != 0
-                                            ? BuilderAssetUtilities.LiveReloadChanges.Hierarchy
-                                            : 0);
-                BuilderAssetUtilities.LiveReload(liveReloadChanges);
+                UIElementsUtility.MarkVisualTreeAssetAsChanged(m_PaneWindow.document.visualTreeAsset);
             }
         }
 
@@ -421,9 +414,8 @@ namespace Unity.UI.Builder
             // the latest (unsaved to disk) changes.
             if (Builder.ActiveWindow.styleSheets.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
-                //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
                 m_PaneWindow.document.MarkStyleSheetsDirty();
-                BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
+                UIElementsUtility.MarkVisualTreeAssetAsChanged(m_PaneWindow.document.visualTreeAsset);
             }
         }
 

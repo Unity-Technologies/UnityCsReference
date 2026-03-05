@@ -7,6 +7,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -1093,3 +1095,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

@@ -11,12 +11,11 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.Profiling;
 using UnityEditor.Rendering;
 using UnityEngine.Scripting;
-using UnityEditor.AssetImporters;
-using UnityEngine.SceneManagement;
 using UnityEditor.Build.Profile;
 using UnityEditor.Build.Content;
 using UnityEngine.Rendering;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor.Build
 {
@@ -1393,9 +1392,7 @@ namespace UnityEditor.Build
                 }
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!filteredAssemblies.All(x => startAssemblies.Contains(x)))
-#pragma warning restore UA2001
+            if (!Array.TrueForAll(filteredAssemblies, x => startAssemblies.Contains(x)))
             {
                 throw new Exception("New Assembly names are in the list. Only filtering are allowed");
             }

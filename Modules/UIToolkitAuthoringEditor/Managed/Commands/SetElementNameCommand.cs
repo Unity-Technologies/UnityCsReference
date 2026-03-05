@@ -40,5 +40,6 @@ internal readonly record struct SetElementNameCommand
 
         ElementAsset.SetAttribute(nameof(VisualElement.name), Name);
         EditorUtility.SetDirty(visualTreeAsset);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
     }
 }

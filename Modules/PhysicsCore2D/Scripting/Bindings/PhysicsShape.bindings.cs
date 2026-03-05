@@ -12,7 +12,7 @@ namespace Unity.U2D.Physics
     internal static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsShape::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsShapeDefinition PhysicsShape_GetDefaultDefinition(bool useSettings);
-        [NativeMethod(Name = "PhysicsShape::GetDefaultSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetDefaultSurfaceMaterial();
+        [NativeMethod(Name = "PhysicsShape::GetDefaultSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetDefaultSurfaceMaterial(bool useSettings);
         [NativeMethod(Name = "PhysicsShape::CreateCircleShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateCircleShape(PhysicsBody body, CircleGeometry geometry, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::CreatePolygonShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreatePolygonShape(PhysicsBody body, PolygonGeometry geometry, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::CreateCapsuleShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateCapsuleShape(PhysicsBody body, CapsuleGeometry geometry, PhysicsShapeDefinition definition);
@@ -50,6 +50,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetTangentSpeed", IsThreadSafe = true)] extern internal static float PhysicsShape_GetTangentSpeed(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetCustomColor", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCustomColor(PhysicsShape shape, Color32 customColor);
         [NativeMethod(Name = "PhysicsShape::GetCustomColor", IsThreadSafe = true)] extern internal static Color32 PhysicsShape_GetCustomColor(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetWorldDrawing(PhysicsShape shape, bool flag);
+        [NativeMethod(Name = "PhysicsShape::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetWorldDrawing(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetSurfaceMaterial", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSurfaceMaterial(PhysicsShape shape, PhysicsShape.SurfaceMaterial surfaceMateria);
         [NativeMethod(Name = "PhysicsShape::GetSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetSurfaceMaterial(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactFilter", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilter(PhysicsShape shape, PhysicsShape.ContactFilter filter);
@@ -98,6 +100,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserData(PhysicsShape shape, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsShape::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetOwnerUserData(PhysicsShape shape);
 
         [NativeMethod(Name = "PhysicsCore2D::PhysicsContactId::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsContactId_IsValid(PhysicsShape.ContactId contactId);
         [NativeMethod(Name = "PhysicsCore2D::PhysicsContactId::GetContact", IsThreadSafe = true)] extern internal static PhysicsShape.Contact PhysicsContactId_GetContact(PhysicsShape.ContactId contactId);

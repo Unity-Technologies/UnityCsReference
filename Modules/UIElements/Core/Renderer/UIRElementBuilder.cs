@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
-            if (ve.isWorldSpaceRootUIDocument)
+            if (ve.isWorldSpaceRootPanelComponent)
                 mgc.entryRecorder.CutRenderChain(mgc.parentEntry);
 
             bool isGroupTransform = renderData.isGroupTransform;

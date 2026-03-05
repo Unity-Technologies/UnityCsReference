@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class AdbStopProcessNode : Node
+    class AdbStopProcessNode : ExecutionNode
     {
         IAdbService m_AdbService;
 

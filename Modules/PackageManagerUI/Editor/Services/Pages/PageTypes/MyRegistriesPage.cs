@@ -7,7 +7,7 @@ using System;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class MyRegistriesPage : SimplePage
+    internal class MyRegistriesPage : SimplePageWithPackages
     {
         public const string k_Id = "MyRegistries";
 

@@ -2,17 +2,46 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using UnityEditor.Experimental;
 using UnityEditor.Search;
 using UnityEditor.Search.Providers;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
     class LightingSearchWindow
     {
-        const string k_MenuItemPath = "Window/Rendering/Lighting Search (new Light Explorer)";
+        const string k_MenuItemPath = "Window/Rendering/Lighting Search";
         const string k_WindowTitle = "Lighting Search";
+        const string k_LightingSearchQueriesFolder = "LightingSearch";
+        const string k_QueryTreeRootName = "Scene Lighting Data";
+
+        internal const string k_HDRPAssetTypeName = "HDRenderPipelineAsset";
+        internal const string k_URPAssetTypeName = "UniversalRenderPipelineAsset";
+
+        const string k_HDRPLightsQueryPath = "SearchQueries/LightingSearch/HDRP Lights/All Lights.asset";
+        const string k_BuiltInLightsQueryPath = "SearchQueries/LightingSearch/Lights/All Lights.asset";
+
+        internal static string GetDefaultQueryPath(string renderPipelineAssetTypeName)
+        {
+            return renderPipelineAssetTypeName == k_HDRPAssetTypeName
+                ? k_HDRPLightsQueryPath
+                : k_BuiltInLightsQueryPath;
+        }
+
+        static SearchQueryAsset GetDefaultQuery()
+        {
+            var currentRenderPipeline = GraphicsSettings.currentRenderPipeline;
+            var renderPipelineTypeName = currentRenderPipeline?.GetType().Name;
+            var queryPath = GetDefaultQueryPath(renderPipelineTypeName);
+
+            var query = EditorResources.Load<Object>(queryPath) as SearchQueryAsset;
+
+            return query;
+        }
 
         internal static SearchViewState CreateSearchViewState()
         {
@@ -65,14 +94,23 @@ namespace UnityEditor.Lighting.LightingSearch
             }
         }
 
+        static ISearchQueryNodeHandler LightingQueryTreeNodeHandlerCreator()
+        {
+            return new LightingSearchQueryTreeNodeHandler(k_LightingSearchQueriesFolder, k_QueryTreeRootName);
+        }
+
+        static SearchQueryTreeConfig LightingSearchQueryTreeConfig()
+        {
+            return new SearchQueryTreeConfig(
+                SearchQueryTreeConfig.DefaultUserQueryTreeNodeHandlerCreator,
+                SearchQueryTreeConfig.DefaultProjectQueryTreeNodeHandlerCreator,
+                LightingQueryTreeNodeHandlerCreator);
+        }
+
         static class LightingCustomPanelSetup
         {
-            static ISearchWindow s_Window;
-
             static void BindCustomPanel(SearchWindowCustomPanelConfig config, ISearchWindow window, ISearchView view, SearchElement rootElement)
             {
-                s_Window = window;
-
                 var lightmapExposureSlider = CreateExposureSlider(window);
                 // This serves as contextual data for the custom panel, used in the global SearchQueryExecuted event to show/hide the panel.
                 config.bindUserData = lightmapExposureSlider;
@@ -121,8 +159,6 @@ namespace UnityEditor.Lighting.LightingSearch
 
             static void UnbindCustomPanel(SearchWindowCustomPanelConfig config, ISearchWindow window, ISearchView view, SearchElement rootElement)
             {
-                s_Window = null;
-
                 // Unsubscribe from exposure changed event
                 if (config.bindUserData is ExposureSlider slider && slider.userData is System.Action callback)
                 {
@@ -170,16 +206,7 @@ namespace UnityEditor.Lighting.LightingSearch
 
                 bool wasVisible = slider.style.display == DisplayStyle.Flex;
                 bool shouldBeVisible = hasActiveLightmapSearchProvider;
-                slider.style.display = shouldBeVisible  ? DisplayStyle.Flex : DisplayStyle.None;
-
-                // Repaint the window if the visibility of the panel changed.
-                if (wasVisible != shouldBeVisible)
-                {
-                    if (s_Window is EditorWindow editorWindow)
-                    {
-                        editorWindow.Repaint();
-                    }
-                }
+                slider.style.display = shouldBeVisible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             public static SearchWindowCustomPanelConfig CreateLightingCustomPanel()
@@ -200,6 +227,25 @@ namespace UnityEditor.Lighting.LightingSearch
         internal static ISearchView ShowLightingSearchWindow()
         {
             var viewState = CreateSearchViewState();
+
+            viewState.queryTreeConfig = LightingSearchQueryTreeConfig();
+
+            SceneProvider sceneProvider = null;
+            foreach (var provider in viewState.context.GetProviders())
+            {
+                if (provider is SceneProvider sp)
+                {
+                    sceneProvider = sp;
+                    break;
+                }
+            }
+
+            var defaultQuery = GetDefaultQuery();
+            if (sceneProvider != null && defaultQuery != null)
+            {
+                viewState.tableConfig = new SearchTable(defaultQuery.viewState.tableConfig.id, defaultQuery.viewState.tableConfig.columns);
+                viewState.text = defaultQuery.searchText;
+            }
 
             viewState.itemSize = (float)DisplayMode.Table;
             viewState.windowTitle = new GUIContent(k_WindowTitle);

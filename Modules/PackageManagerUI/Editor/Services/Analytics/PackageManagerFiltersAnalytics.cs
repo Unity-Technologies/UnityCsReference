@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Data m_Data;
-        private PackageManagerFiltersAnalytics(PageFilters filters)
+        private PackageManagerFiltersAnalytics(IPageFilters filters)
         {
             var servicesContainer = ServicesContainer.instance;
             var filterTab = servicesContainer.Resolve<IPageManager>().activePage.id;
@@ -33,8 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filter_tab = filterTab,
                 order_by = filters.sortOption.ToString(),
                 status = filters.status.ToString(),
-                categories = filters.categories.ToArray(),
-                labels = filters.labels.ToArray()
+                categories = filters.categories.ToNewArray(),
+                labels = filters.labels.ToNewArray()
             };
         }
 
@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return data != null;
         }
 
-        public static void SendEvent(PageFilters filters)
+        public static void SendEvent(IPageFilters filters)
         {
             var editorAnalyticsProxy = ServicesContainer.instance.Resolve<IEditorAnalyticsProxy>();
             editorAnalyticsProxy.SendAnalytic(new PackageManagerFiltersAnalytics(filters));

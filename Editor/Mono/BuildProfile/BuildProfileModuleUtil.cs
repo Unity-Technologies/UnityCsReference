@@ -161,12 +161,6 @@ namespace UnityEditor.Build.Profile
             GetModuleDisplayName(platformId);
 
         /// <summary>
-        /// Platform description.
-        /// </summary>
-        public static string GetPlatformDescription(GUID platformGuid) =>
-            BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
-
-        /// <summary>
         /// Get Platform list of name and link url pair.
         /// </summary>
         public static List<BuildTargetDiscovery.NameAndLink> GetPlatformNameLinkList(GUID platformGuid) =>
@@ -903,6 +897,18 @@ namespace UnityEditor.Build.Profile
         {
             return BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
         }
+
+        /// <summary>
+        /// Get platform key features text.
+        /// </summary>
+        public static string BuildPlatformKeyFeatures(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformKeyFeatures(platformGuid);
+
+        /// <summary>
+        /// Get platform resources text.
+        /// </summary>
+        public static string BuildPlatformResources(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformResources(platformGuid);
 
         public static string GetPlatformColorString(GUID platformGuid)
         {

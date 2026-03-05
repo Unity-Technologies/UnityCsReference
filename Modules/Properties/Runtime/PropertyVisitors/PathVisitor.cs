@@ -147,7 +147,7 @@ namespace Unity.Properties
             }
             else if (PropertyBag.TryGetPropertyBagForValue(ref value, out _))
             {
-                if (TypeTraits<TValue>.CanBeNull && EqualityComparer<TValue>.Default.Equals(value, default))
+                if (TypeTraits.CanBeNull(typeof(TValue)) && EqualityComparer<TValue>.Default.Equals(value, default))
                 {
                     ReturnCode = VisitReturnCode.InvalidPath;
                     return;

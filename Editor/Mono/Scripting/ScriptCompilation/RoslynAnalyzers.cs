@@ -45,9 +45,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
                         .Where(a => a.scriptAssemblyFileName == null ||
                                     a.scriptAssemblyFileName == scriptAssembly.Filename ||
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                    scanPrecompiledReferences && scriptAssembly.References.Select(Path.GetFileName).Contains(a.scriptAssemblyFileName))
-#pragma warning restore UA2001
+                                    scanPrecompiledReferences && Array.Exists(scriptAssembly.References, b => Path.GetFileName(b) == a.scriptAssemblyFileName))
                         .Select(a => a.analyzerDll))
                     .Distinct()
                     .ToArray();

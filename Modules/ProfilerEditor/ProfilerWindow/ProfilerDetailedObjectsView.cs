@@ -42,8 +42,12 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         SplitterState m_VertSplit;
 
+#pragma warning disable UAC1010
+        // This field is not serializable so SerializeField does not make sense
+        // https://jira.unity3d.com/browse/UUM-132549
         [SerializeField]
         ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
+#pragma warning restore UAC1010
         ObjectsTreeView m_TreeView;
         Vector2 m_CallstackScrollViewPos;
 

@@ -101,9 +101,7 @@ namespace UnityEditor.EditorTools
                 // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
                 // apples to oranges. Ie, the transform tools will be different despite being the same `Tool` enum value.
                 var tool = Tools.current;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var wasAdditionalContextTool = tool == Tool.Custom && additionalContextToolTypesCache.Contains(activeTool.GetType());
-#pragma warning restore UA2001
                 var prev = instance.m_ActiveToolContext;
 
                 if (prev != null)
@@ -140,9 +138,9 @@ namespace UnityEditor.EditorTools
                 // when moving to that new context
                 else if(wasAdditionalContextTool)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var isAdditionalContextTool = instance.m_ActiveToolContext.GetAdditionalToolTypes().Contains(activeTool.GetType());
-#pragma warning restore UA2001
+#pragma warning restore UA2007
 
                     if(!isAdditionalContextTool)
                         RestorePreviousPersistentTool();
@@ -245,8 +243,11 @@ namespace UnityEditor.EditorTools
             [SerializeField]
             string m_ContextType;
 
+            [NonSerialized]
             public Type contextType;
+            [NonSerialized]
             public Type toolType;
+
             public UnityObject targetObject;
             public UnityObject[] targetObjects;
 

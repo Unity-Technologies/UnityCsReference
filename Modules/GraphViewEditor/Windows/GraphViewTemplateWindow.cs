@@ -476,19 +476,18 @@ namespace UnityEditor.Experimental.GraphView
         private void HideInstallButton()
         {
             m_InstallButton.parent.style.display = DisplayStyle.None;
-            // Todo: replace assetType by toolKey when the search PR has landed
             s_HideInstallSampleButtonByTool.Add(m_TemplateHelper.toolKey);
         }
 
         private void OnCreate()
         {
-            if (m_ListOfTemplates.selectedItem is GraphViewTemplateDescriptor template)
+            if (!string.IsNullOrEmpty(m_SelectedTemplate.assetGuid))
             {
-                m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(template.assetGuid);
+                m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(m_SelectedTemplate.assetGuid);
                 m_AssetCreationCallback?.Invoke(m_LastSelectedTemplatePath);
-                m_TemplateHelper.RaiseTemplateUsed(template);
+                m_TemplateHelper.RaiseTemplateUsed(m_SelectedTemplate);
                 m_AssetCreationCallback = null;
-                this.m_templateWindowPrefs.AddHistoryItem(this.m_TemplateHelper.toolKey, template.assetGuid);
+                this.m_templateWindowPrefs.AddHistoryItem(this.m_TemplateHelper.toolKey, m_SelectedTemplate.assetGuid);
                 Close();
             }
         }
@@ -585,14 +584,6 @@ namespace UnityEditor.Experimental.GraphView
                 // We expect only one item to be selected
                 return;
             }
-
-            // Empty selection, disable the create button and empty the details panel
-            m_SelectedTemplate = default;
-            m_DetailsTitle.text = null;
-            m_DetailsDescription.text = null;
-            m_DetailsScreenshot.style.backgroundImage = null;
-            m_TitleAndDoc.style.display = DisplayStyle.None;
-            m_CreateButton.SetEnabled(false);
         }
 
         private void BindTemplateItem(VisualElement item, int index)
@@ -846,6 +837,8 @@ namespace UnityEditor.Experimental.GraphView
                     {
                         lastSelectedTemplateFound = true;
                         indexToSelect = id;
+                        // Force the category containing the last used template to be expanded
+                        m_templateWindowPrefs.SetCategoryCollapsedState(m_TemplateHelper.toolKey, group[0].category, false);
                     }
                     children.Add(new TreeViewItemData<ITemplateDescriptor>(id++, child));
                 }
@@ -854,28 +847,32 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             m_ListOfTemplates.SetRootItems(m_TemplatesTree);
-            if (!lastSelectedTemplateFound)
-                m_ListOfTemplates.ScrollToItem(indexToSelect);
-            if (!lastSelectedTemplateFound)
+            if (isSearchCompleted)
+            {
+                if (!lastSelectedTemplateFound)
+                {
+                    m_templateWindowPrefs.LastUsedTemplateGuid = fallBackTemplateAssetGuid;
+                }
                 m_ListOfTemplates.RefreshItems();
-            if (isSearchCompleted && !lastSelectedTemplateFound)
-            {
-                m_templateWindowPrefs.LastUsedTemplateGuid = fallBackTemplateAssetGuid;
-            }
-            if (allTemplates.Count > 0)
-            {
-                rootVisualElement.RemoveFromClassList("no-result");
-            }
-            else
-            {
-                rootVisualElement.AddToClassList("no-result");
-            }
 
-            m_ListOfTemplates.ExpandAll();
-            // Only collapse categories when there are more than one
-            if (templatesGroupedByCategory.Count > 1)
-            {
-                SynchronizeExpandState();
+                if (allTemplates.Count > 0)
+                {
+                    rootVisualElement.RemoveFromClassList("no-result");
+                }
+                else
+                {
+                    rootVisualElement.AddToClassList("no-result");
+                }
+
+                m_ListOfTemplates.ExpandAll();
+                // Only collapse categories when there are more than one
+                if (templatesGroupedByCategory.Count > 1)
+                {
+                    SynchronizeExpandState();
+                }
+
+                // Let the layout pass complete before trying to scroll to freshly filled treeview
+                EditorApplication.delayCall += () => m_ListOfTemplates.ScrollToItem(indexToSelect);
             }
         }
 

@@ -40,76 +40,52 @@ namespace UnityEditor.PackageManager.UI.Internal
                 lastItem.element.tooltip = tooltip;
         }
 
-        public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder, Func<VisualElement, bool> matchFunc = null)
-        {
-            if (element == null)
-                return null;
-
-            var parent = element.parent;
-            var index = parent.IndexOf(element);
-            if (reverseOrder)
-            {
-                for (var i = index - 1; i >= 0; i--)
-                {
-                    var nextElement = parent.ElementAt(i);
-                    if (matchFunc == null || matchFunc(nextElement))
-                        return nextElement;
-                }
-            }
-            else
-            {
-                for (var i = index + 1; i < parent.childCount; i++)
-                {
-                    var nextElement = parent.ElementAt(i);
-                    if (matchFunc == null || matchFunc(nextElement))
-                        return nextElement;
-                }
-            }
-            return null;
-        }
-
-        public static void ScrollIfNeeded(ScrollView container, VisualElement target)
+        public static void ScrollIfNeeded(VisualElement container, VisualElement target)
         {
             if (target == null || container == null)
                 return;
 
-            var containerWorldBound = container.worldBound;
-            var targetWorldBound = target.worldBound;
-
-            var minY = containerWorldBound.yMin;
-            var maxY = containerWorldBound.yMax;
-            var itemMinY = targetWorldBound.yMin;
-            var itemMaxY = targetWorldBound.yMax;
-
-            var scroll = container.scrollOffset;
-
-            if (itemMinY < minY)
+            if (float.IsNaN(container.layout.height) || container.layout.height == 0 || float.IsNaN(target.layout.height))
             {
-                scroll.y -= Math.Max(0, minY - itemMinY);
-                container.scrollOffset = scroll;
+                EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
+                return;
             }
-            else if (itemMaxY > maxY)
+
+            var scrollViews = GetParentsOfType<ScrollView>(target);
+            foreach (var scrollView in scrollViews)
             {
-                scroll.y += itemMaxY - maxY;
-                container.scrollOffset = scroll;
+                var scrollViewWorldBound = scrollView.worldBound;
+                var targetWorldBound = target.worldBound;
+
+                var minY = scrollViewWorldBound.yMin;
+                var maxY = scrollViewWorldBound.yMax;
+                var itemMinY = targetWorldBound.yMin;
+                var itemMaxY = targetWorldBound.yMax;
+
+                var scroll = scrollView.scrollOffset;
+
+                if (itemMinY < minY)
+                {
+                    scroll.y -= Math.Max(0, minY - itemMinY);
+                    scrollView.scrollOffset = scroll;
+                }
+                else if (itemMaxY > maxY)
+                {
+                    scroll.y += itemMaxY - maxY;
+                    scrollView.scrollOffset = scroll;
+                }
             }
         }
 
         public static IEnumerable<T> GetParentsOfType<T>(VisualElement element) where T : VisualElement
         {
-            var result = new List<T>();
-
-            var parent = element;
+            var parent = element?.parent;
             while (parent != null)
             {
-                var selected = parent as T;
-                if (selected != null)
-                    result.Add(selected);
-
+                if (parent is T selected)
+                    yield return selected;
                 parent = parent.parent;
             }
-
-            return result;
         }
 
         public static T GetParentOfType<T>(VisualElement element) where T : VisualElement

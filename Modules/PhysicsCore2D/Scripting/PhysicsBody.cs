@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// A body is contained within a world and has 3 degrees-of-freedom, two for position and one for rotation.
     /// A body can have forces, torques and impulses applied to it.
     /// A body has three distinct types:
-    /// 
+    ///
     ///- Static: This type of body does not move under simulation and behaves as if it has infinite mass, essentially an immovable object. Static bodies never interact with other Static or Kinematic bodies.
     ///- Dynamic: This type of body is fully simulated and moves according to forces and torques applied to its linear/angular velocities. It can interact with all other body types. It always has finite, non-zero mass.
     ///- Kinematic: This type of body moves under simulation and moves according to its linear/angular velocities and never uses forces or torques. It only interacts with Dynamic body types. It behaves as if it has infinite mass.
@@ -1120,7 +1120,7 @@ namespace Unity.U2D.Physics
         public readonly void SetHitEvents(bool hitEvents) => PhysicsBody_SetHitEvents(this, hitEvents);
 
         /// <summary>
-        /// Set the (optional) owner object associated with this body and return an owner key that must be specified when destroying the body with <see cref="PhysicsBody.Destroy(int)"/>.   
+        /// Set the (optional) owner object associated with this body and return an owner key that must be specified when destroying the body with <see cref="PhysicsBody.Destroy(int)"/>.
         /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
         /// You can only set the owner once, multiple attempts will produce a warning.
         /// The lifetime of the specified owner object is not linked to this body i.e. this body will still be owned by the owner object, even if it is destroyed.
@@ -1147,9 +1147,9 @@ namespace Unity.U2D.Physics
         /// Care should be taken with any <see cref="System.Object"/> assigned as a callback target that isn't a <see cref="UnityEngine.Object"/> as this assignment will not in itself keep the object alive and can be garbage collected.
         /// To avoid this, you should have at least a single reference to the object in your code.
         /// To remove the object assigned here, set the callback target to NULL.
-        /// 
+        ///
         /// This includes the following events:
-        /// 
+        ///
         ///- A <see cref="PhysicsEvents.BodyUpdateEvent"/> with call <see cref="PhysicsCallbacks.IBodyUpdateCallback"/>.
         /// </summary>
         public readonly System.Object callbackTarget { get => PhysicsBody_GetCallbackTarget(this); set => PhysicsBody_SetCallbackTarget(this, value); }
@@ -1159,6 +1159,18 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsBody_GetUserData(this); set => PhysicsBody_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsBody_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsBody_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
         /// Get/Set the transform object associated with the body.
@@ -1354,6 +1366,11 @@ namespace Unity.U2D.Physics
         #endregion
 
         #region Debugging
+
+        /// <summary>
+        /// Controls whether this body is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsBody_GetWorldDrawing(this); set => PhysicsBody_SetWorldDrawing(this, value); }
 
         /// <summary>
         /// Draw a body that visually represents its current state in the world.

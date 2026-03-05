@@ -52,7 +52,7 @@ namespace Unity.Properties.Internal
 
         public IPropertyBag<TContainer> CreatePropertyBag<TContainer>()
         {
-            if (!TypeTraits<TContainer>.IsContainer || TypeTraits<TContainer>.IsObject)
+            if (!TypeTraits.IsContainer(typeof(TContainer)) || TypeTraits.IsObject(typeof(TContainer)))
             {
                 throw new InvalidOperationException("Invalid container type.");
             }
@@ -141,9 +141,7 @@ namespace Unity.Properties.Internal
             return propertyBag;
         }
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         void CreateProperty<TContainer, TValue>(IMemberInfo member, ReflectedPropertyBag<TContainer> propertyBag)
         {
             if (typeof(TValue).IsPointer)
@@ -154,54 +152,38 @@ namespace Unity.Properties.Internal
             propertyBag.AddProperty(new ReflectedMemberProperty<TContainer, TValue>(member, member.Name));
         }
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TList> CreateIndexedCollectionPropertyBag<TList, TElement>() where TList : IList<TElement>
             => new IndexedCollectionPropertyBag<TList, TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TSet> CreateSetPropertyBag<TSet, TValue>() where TSet : ISet<TValue>
             => new SetPropertyBagBase<TSet, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TDictionary> CreateKeyValueCollectionPropertyBag<TDictionary, TKey, TValue>() where TDictionary : IDictionary<TKey, TValue>
             => new KeyValueCollectionPropertyBag<TDictionary, TKey, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<KeyValuePair<TKey, TValue>> CreateKeyValuePairPropertyBag<TKey, TValue>()
             => new KeyValuePairPropertyBag<TKey, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TElement[]> CreateArrayPropertyBag<TElement>()
             => new ArrayPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<List<TElement>> CreateListPropertyBag<TElement>()
             => new ListPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<HashSet<TElement>> CreateHashSetPropertyBag<TElement>()
             => new HashSetPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<Dictionary<TKey, TValue>> CreateDictionaryPropertyBag<TKey, TValue>()
             => new DictionaryPropertyBag<TKey, TValue>();
-    
+
         static IEnumerable<MemberInfo> GetPropertyMembers(Type type)
         {
             do

@@ -40,6 +40,9 @@ namespace Unity.GraphToolkit.Editor
         TypeHandle m_TypeHandle;
 
         /// <inheritdoc />
+        public override bool CanHaveExpandablePorts => false;
+
+        /// <inheritdoc />
         public DeclarationModel DeclarationModel
         {
             get

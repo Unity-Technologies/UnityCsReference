@@ -9,7 +9,7 @@ using UnityEngine;
 namespace UnityEditor
 {
     [EditorTool("Edit Hinge Joint 2D", typeof(HingeJoint2D))]
-    class HingeJoint2DTool : EditorTool, IDrawSelectedHandles
+    class HingeJoint2DTool : EditorTool
     {
         protected static class Styles
         {
@@ -47,8 +47,6 @@ namespace UnityEditor
         void OnEnable()
         {
             m_AngularLimitHandle.handleColor = Color.white;
-
-            // +/-PHYSICS_2D_LARGE_RANGE_CLAMP, which is currently used in JointAngleLimits2D.CheckConsistency().
             m_AngularLimitHandle.range = new Vector2(-1e+6f, 1e+6f);
         }
 
@@ -61,35 +59,17 @@ namespace UnityEditor
         {
             foreach (var obj in targets)
             {
-                if (obj is HingeJoint2D)
-                {
-                    // Ignore disabled joint.
-                    var hingeJoint2D = obj as HingeJoint2D;
-                    if (hingeJoint2D.enabled)
-                    {
-                        DrawHandle(true, hingeJoint2D, m_AngularLimitHandle);
-                    }
-                }
+                if (obj is HingeJoint2D hinge)
+                    if (hinge.isActiveAndEnabled)
+                        DrawHandle(true, hinge, m_AngularLimitHandle);
             }
         }
 
-        public void OnDrawHandles()
-        {
-            foreach (var obj in targets)
-            {
-                if (obj is HingeJoint2D)
-                {
-                    // Ignore disabled joint.
-                    var hingeJoint2D = obj as HingeJoint2D;
-                    if (hingeJoint2D.enabled)
-                    {
-                        DrawHandle(false, hingeJoint2D, m_AngularLimitHandle);
-                    }
-                }
-            }        }
-
         public static void DrawHandle(bool editMode, HingeJoint2D hingeJoint2D, JointAngularLimitHandle2D angularLimitHandle)
         {
+            if (hingeJoint2D == null || angularLimitHandle == null)
+                return;
+
             // Only display control handles on manipulator if in edit mode.
             if (editMode)
                 angularLimitHandle.angleHandleDrawFunction = ArcHandle.DefaultAngleHandleDrawFunction;

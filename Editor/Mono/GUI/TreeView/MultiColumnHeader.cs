@@ -540,9 +540,7 @@ namespace UnityEditor.IMGUI.Controls
                 var column = state.columns[i];
                 var menuText = !string.IsNullOrEmpty(column.contextMenuText) ? column.contextMenuText : column.headerContent.text;
                 if (column.allowToggleVisibility)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     menu.AddItem(new GUIContent(menuText), state.visibleColumns.Contains(i), ToggleVisibility, i);
-#pragma warning restore UA2001
                 else
                     menu.AddDisabledItem(new GUIContent(menuText));
             }

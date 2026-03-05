@@ -123,4 +123,17 @@ internal sealed class StyleSheetSelectionHandler : IStyleSheetSelectionHandler
             }
         }
     }
+
+    public void Clear()
+    {
+        foreach (var kvp in SelectionMapping)
+        {
+            if (kvp.Value.Alive)
+            {
+                Undo.ClearUndo(kvp.Value.SelectionObject);
+                Object.DestroyImmediate(kvp.Value.SelectionObject);
+            }
+        }
+        SelectionMapping.Clear();
+    }
 }

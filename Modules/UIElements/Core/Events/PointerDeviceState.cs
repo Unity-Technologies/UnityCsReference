@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
         // that is, unless an element has an actual pointer capture, pointer move events should stay inside this panel until
         // all pointer buttons are released again. This is used by runtime panels to mimic GUIView.cpp window capture behavior.
         private static readonly RuntimePanel[] s_PlayerPanelWithSoftPointerCapture = new RuntimePanel[PointerId.maxPointers];
-        private static readonly UIDocument[] s_WorldSpaceDocumentWithSoftPointerCapture = new UIDocument[PointerId.maxPointers];
+        private static readonly IPanelComponent[] s_WorldSpacePanelComponentWithSoftPointerCapture = new IPanelComponent[PointerId.maxPointers];
         private static readonly Camera[] s_CameraWithSoftPointerCapture = new Camera[PointerId.maxPointers];
 
         // For test usage
@@ -117,10 +117,10 @@ namespace UnityEngine.UIElements
                 s_PressedButtons[i] = 0;
                 s_PlayerPanelWithSoftPointerCapture[i] = null;
 
-                if (s_WorldSpaceDocumentWithSoftPointerCapture[i] != null)
+                if (s_WorldSpacePanelComponentWithSoftPointerCapture[i] != null)
                 {
-                    s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
-                    s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                    s_WorldSpacePanelComponentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                    s_WorldSpacePanelComponentWithSoftPointerCapture[i] = null;
                 }
             }
 
@@ -143,25 +143,25 @@ namespace UnityEngine.UIElements
                 {
                     s_PlayerPanelWithSoftPointerCapture[i] = null;
 
-                    if (s_WorldSpaceDocumentWithSoftPointerCapture[i] != null)
+                    if (s_WorldSpacePanelComponentWithSoftPointerCapture[i] != null)
                     {
-                        s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
-                        s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                        s_WorldSpacePanelComponentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                        s_WorldSpacePanelComponentWithSoftPointerCapture[i] = null;
                     }
                 }
             }
         }
 
-        internal static void RemoveDocumentData(UIDocument document)
+        internal static void RemovePanelComponentData(IPanelComponent panelComponent)
         {
-            if (document.softPointerCaptures == 0) return;
+            if (panelComponent.softPointerCaptures == 0) return;
 
             for (var i = 0; i < PointerId.maxPointers; i++)
             {
-                if (s_WorldSpaceDocumentWithSoftPointerCapture[i] == document)
+                if (s_WorldSpacePanelComponentWithSoftPointerCapture[i] == panelComponent)
                 {
-                    s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
-                    s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                    s_WorldSpacePanelComponentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                    s_WorldSpacePanelComponentWithSoftPointerCapture[i] = null;
                 }
             }
         }
@@ -277,9 +277,9 @@ namespace UnityEngine.UIElements
             return s_PlayerPanelWithSoftPointerCapture[pointerId];
         }
 
-        internal static UIDocument GetWorldSpaceDocumentWithSoftPointerCapture(int pointerId)
+        internal static IPanelComponent GetWorldSpacePanelComponentWithSoftPointerCapture(int pointerId)
         {
-            return s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
+            return s_WorldSpacePanelComponentWithSoftPointerCapture[pointerId];
         }
 
         internal static Camera GetCameraWithSoftPointerCapture(int pointerId)
@@ -293,15 +293,14 @@ namespace UnityEngine.UIElements
             s_PlayerPanelWithSoftPointerCapture[pointerId] = runtimePanel;
             s_CameraWithSoftPointerCapture[pointerId] = camera;
 
-            ref var document = ref s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
-            if (document != null)
-                document.softPointerCaptures &= ~(1 << pointerId);
+            ref var panelComponent = ref s_WorldSpacePanelComponentWithSoftPointerCapture[pointerId];
+            if (panelComponent != null)
+                panelComponent.softPointerCaptures &= ~(1 << pointerId);
 
-            // TODO: IPanelComponent
-            document = runtimePanel?.drawsInCameras == true ? (element.FindRootPanelComponent() as UIDocument) : null;
+            panelComponent = runtimePanel?.drawsInCameras == true ? (element.FindRootPanelComponent() as IPanelComponent) : null;
 
-            if (document != null)
-                document.softPointerCaptures |= 1 << pointerId;
+            if (panelComponent != null)
+                panelComponent.softPointerCaptures |= 1 << pointerId;
         }
 
         internal static TrackedPointerState GetTrackedState(int pointerId, bool createIfNull = false)

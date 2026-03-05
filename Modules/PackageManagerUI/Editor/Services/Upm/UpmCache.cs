@@ -22,7 +22,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SetLoadAllVersions(string packageUniqueId, bool value);
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
-        PackageInfo GetInstalledPackageInfo(string packageName);
+        PackageInfo GetInstalledPackageInfoByName(string packageName);
+        PackageInfo GetInstalledPackageInfoByUniqueId(string packageUniqueId);
         IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         PackageInfo GetSearchPackageInfo(string packageName);
         PackageInfo GetBestMatchPackageInfo(string packageName, long productId, bool isInstalled, string version = null);
@@ -42,7 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private Dictionary<string, PackageInfo> m_SearchPackageInfos = new();
         private Dictionary<string, PackageInfo> m_PackageNameToInstalledPackageInfosMap = new();
-        private Dictionary<long, PackageInfo> m_ProductIdToInstalledPackageInfosMap = new();
+        private readonly Dictionary<long, PackageInfo> m_ProductIdToInstalledPackageInfosMap = new();
 
         private Dictionary<long, (PackageInfo info, long timestamp)> m_ProductIdToProductSearchInfosMap = new();
 
@@ -174,11 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnAfterDeserialize()
         {
             m_SerializedInstalledPackageInfos.ToDictionary(p => p.name, ref m_PackageNameToInstalledPackageInfosMap);
-            foreach (var info in m_SerializedInstalledPackageInfos)
-            {
-                m_PackageNameToInstalledPackageInfosMap[info.name] = info;
-                UpdateProductIdToInstalledPackageInfoMap(null, info);
-            }
+            UpdateProductIdToInstalledPackageInfoMap();
 
             m_SerializedSearchPackageInfos.ToDictionary(p => p.name, ref m_SearchPackageInfos);
 
@@ -220,20 +217,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public bool IsPackageInstalled(string packageName) => m_PackageNameToInstalledPackageInfosMap.ContainsKey(packageName);
-
-        public PackageInfo GetInstalledPackageInfo(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
+        public PackageInfo GetInstalledPackageInfoByName(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
+        public PackageInfo GetInstalledPackageInfoByUniqueId(string packageUniqueId)
+        {
+            return long.TryParse(packageUniqueId, out var productId) ? GetProductInstalledPackageInfo(productId) : GetInstalledPackageInfoByName(packageUniqueId);
+        }
 
         public PackageInfo GetProductInstalledPackageInfo(long productId) => m_ProductIdToInstalledPackageInfosMap.GetValueOrDefault(productId);
 
-        private void UpdateProductIdToInstalledPackageInfoMap(PackageInfo oldInfo, PackageInfo newInfo)
+        private void UpdateProductIdToInstalledPackageInfoMap()
         {
-            var oldProductId = oldInfo?.ParseProductId() ?? 0;
-            var newProductId = newInfo?.ParseProductId() ?? 0;
-            if (oldProductId != newProductId && oldProductId > 0)
-                m_ProductIdToInstalledPackageInfosMap.Remove(oldProductId);
-            if (newProductId > 0)
-                m_ProductIdToInstalledPackageInfosMap[newProductId] = newInfo;
+            m_ProductIdToInstalledPackageInfosMap.Clear();
+            foreach (var packageInfo in m_PackageNameToInstalledPackageInfosMap.Values)
+            {
+                var productId = packageInfo.ParseProductId();
+                if (productId > 0)
+                    m_ProductIdToInstalledPackageInfosMap[productId] = packageInfo;
+            }
         }
 
         public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
@@ -244,12 +244,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageNameToInstalledPackageInfosMap = newPackageInfos;
             m_InstalledPackageInfosTimestamp = timestamp;
 
-            m_ProductIdToInstalledPackageInfosMap.Clear();
-            foreach (var info in newPackageInfos.Values)
-                UpdateProductIdToInstalledPackageInfoMap(null, info);
+            UpdateProductIdToInstalledPackageInfoMap();
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
-
             if (updatedInfos.Count > 0)
             {
                 TriggerOnPackageInfosUpdated(updatedInfos, changedSource);
@@ -265,10 +262,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(packageName) && productId == 0)
                 return null;
             if (isInstalled)
-                return GetInstalledPackageInfo(packageName);
+                return GetInstalledPackageInfoByName(packageName);
             if (productId > 0)
                 return GetProductSearchPackageInfo(productId);
-            var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
+            var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfoByName(packageName);
             if (string.IsNullOrEmpty(version) || searchInfo?.version == version)
                 return searchInfo;
             return GetExtraPackageInfos(packageName)?.Get(version) ?? searchInfo;
@@ -276,7 +273,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IUpmPackageData GetPackageData(string packageName)
         {
-            var installedInfo = GetInstalledPackageInfo(packageName);
+            var installedInfo = GetInstalledPackageInfoByName(packageName);
             var searchInfo = GetSearchPackageInfo(packageName);
             if (installedInfo == null && searchInfo == null)
                 return null;

@@ -12,6 +12,7 @@ using UnityEditorInternal;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.AssetImporters
 {
@@ -561,7 +562,7 @@ namespace UnityEditor.AssetImporters
             }
         }
 
-        [Obsolete("UnityUpgradeable () -> SaveChanges")]
+        [Obsolete("Please use SaveChanges.")]
         protected internal void ApplyAndImport()
         {
             SaveChanges();
@@ -579,7 +580,7 @@ namespace UnityEditor.AssetImporters
             serializedObject.Update();
         }
 
-        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
+        [Obsolete("Please use DiscardChanges.")]
         protected virtual void ResetValues()
         {
             DiscardChanges();

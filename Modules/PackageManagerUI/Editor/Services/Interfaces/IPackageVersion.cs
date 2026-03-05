@@ -109,6 +109,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 
-        bool MatchesSearchText(string searchText);
+        bool MatchesSearchText(string searchText, SearchTextParams searchParams = SearchTextParams.All);
     }
 }

@@ -50,6 +50,7 @@ namespace UnityEditor
         ///* UserSettings/
         ///
         ///**Note:** Paths pointing directly to the user desktop are not allowed.</remarks>
+        [NativeName("path")]
         public string locationPathName { get; set; }
         ///<summary>The path to an manifest file describing all of the asset bundles used in the build (optional).</summary>
         ///<remarks>When you call <see cref="BuildPipeline.BuildAssetBundles" /> to create your AssetBundles, Unity will also generate a manifest file with a filename matching the parent directory name and ".manifest" as its extension.
@@ -60,9 +61,11 @@ namespace UnityEditor
         ///See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.</remarks>
         public string assetBundleManifestPath { get; set; }
         ///<summary>The <see cref="BuildTargetGroup" /> to build.</summary>
+        [NativeName("platformGroup")]
         public BuildTargetGroup targetGroup { get; set; }
         ///<summary>The <see cref="BuildTarget" /> to build.</summary>
         ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
+        [NativeName("platform")]
         public BuildTarget target { get; set; }
         ///<summary>The Subtarget to build.</summary>
         ///<remarks>For certain platforms, setting a non-zero value for this property can modify the build behaviour.
@@ -86,5 +89,9 @@ namespace UnityEditor
         ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }
         /*UCBP-PUBLIC*/ internal string[] previousBuildMetadataLocations { get; set; }
+
+        [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerOptions.h")]
+        [FreeFunction("BuildPipeline::GetBuildPlayerSetup")]
+        internal static extern BuildPlayerOptions GetBuildPlayerOptions(IntPtr dataPtr);
     }
 }

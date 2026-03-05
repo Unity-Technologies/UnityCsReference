@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using static UnityEditor.AnimationUtility;
@@ -609,9 +609,7 @@ namespace UnityEditorInternal
                     Transform t = activeRootGameObject.transform.Find(curve.path);
                     if (t != null)
                     {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (!m_SelectionFilter.Contains(t.gameObject.GetEntityId()))
-#pragma warning restore UA2001
                             return false;
                     }
                     else

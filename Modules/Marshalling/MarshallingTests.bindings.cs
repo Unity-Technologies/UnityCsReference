@@ -1430,6 +1430,38 @@ namespace UnityEngine
         [NativeMethod("BlittableStructTests::ParameterStructIntVector", IsFreeFunction = true, ThrowsException = true)]
         public extern static void PassClassWithPinnableInnerData_AsArray(ClassWithPinnableInnerData[] arr);
     }
+
+    internal class CustomNativeMarshallingTests
+    {
+        [NativeType(CodegenOptions.Custom, "CustomNativeMarshallingManagedStruct")]
+        public struct NonBlittableCustomStruct
+        {
+            [NativeName("stringValue")]
+            public string StringValue;
+            [NativeName("intValue")]
+            public int IntValue;
+        }
+
+        [NativeAsStruct]
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "CustomNativeMarshallingManagedClassNativeAsStruct")]
+        public class NonBlittableCustomClassNativeAsStruct
+        {
+            [NativeName("stringValue")]
+            public string StringValue;
+            [NativeName("intValue")]
+            public int IntValue;
+        }
+
+        [NativeMethod(ThrowsException = true)]
+        public static extern void ParameterNonBlittableCustomStruct(NonBlittableCustomStruct param, string expectedString, int expectedInt);
+        public static extern NonBlittableCustomStruct ReturnNonBlittableCustomStruct(string expectedString, int expectedInt);
+
+        [NativeMethod(ThrowsException = true)]
+        public static extern void ParameterNonBlittableCustomClassNativeAsStruct(NonBlittableCustomClassNativeAsStruct param, string expectedString, int expectedInt);
+        public static extern NonBlittableCustomClassNativeAsStruct ReturnNonBlittableCustomClassNativeAsStruct(string expectedString, int expectedInt);
+    }
+
     internal class BlittableNestedCollectionMarshallerTests
     {
         [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection", ThrowsException = true)]
@@ -1508,5 +1540,18 @@ namespace UnityEngine
     internal class CustomNativeMarshalingTests
     {
         public static extern void CallWithCustomNativeMarshallerAlwaysThrows(CustomNativeMarshallerAlwaysThrows param);
+    }
+
+    internal class NativeTypeSmallerThanManagedTypeTests
+    {
+        // Tests cases were the native type is smaller than the managed type.
+        // These tests ensure that when out marshalling an array we don't incorrect re-use the same buffer for the native & managed data
+
+
+        // In release mode PPtr is integer sized and the marshalled size is a pointer
+        public static extern void PPtrOutMarshalledBufferReuse([Out] MarshallingTestObject[] param);
+        public static extern void PPtrInOutMarshalledBufferReuse([In, Out] MarshallingTestObject[] param);
+
+
     }
 }

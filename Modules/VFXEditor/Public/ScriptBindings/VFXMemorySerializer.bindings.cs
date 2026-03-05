@@ -25,15 +25,12 @@ namespace UnityEditor.VFX
         extern public static byte[] StoreObjectsToByteArray(ScriptableObject[] objects, CompressionLevel compressionLevel = CompressionLevel.None);
 
         [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromString", ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static ScriptableObject[] ExtractObjects_FromString(string data, bool asACopy);
 
         [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_ExtractObjects_FromByteArray", ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static ScriptableObject[] ExtractObjects_FromByteArray(byte[] data, bool asACopy);
 
         [FreeFunction(Name = "VFXMemorySerializerBindings::Internal_DuplicateObjects", ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static ScriptableObject[] DuplicateObjects(ScriptableObject[] objects);
 
         public static ScriptableObject[] ExtractObjects(string data, bool asACopy)

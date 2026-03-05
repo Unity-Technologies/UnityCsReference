@@ -416,7 +416,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             m_TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, iconElement, type);
 
-            if (type == TypeHandle.ExecutionFlow)
+            if (type == TypeHandle.Untyped)
             {
                 var direction = PortDirection.Input;
                 if (portModel != null)
@@ -431,11 +431,23 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             var resolvedType = type.Resolve();
             if (resolvedType != null)
             {
-                var typeStyle = graphModel != null ? graphModel.GetDataTypeStyle(resolvedType) : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
+                bool overrideIcon = true;
+                (Texture2D icon, Color color)? typeStyle = graphModel != null ?
+                    graphModel.GetDataTypeStyle(resolvedType)
+                    : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
+
+                if (!typeStyle.HasValue && resolvedType.IsListOrArray())
+                {
+                    Type elementStyle = resolvedType.GetCollectionElementType();
+                    typeStyle = graphModel != null ? graphModel.GetDataTypeStyle(elementStyle)
+                        : BaseDataTypeStyleMapper.GetDataTypeStyle(elementStyle);
+                    overrideIcon = false;
+                }
+
                 if (typeStyle.HasValue)
                 {
                     iconElement.tintColor = typeStyle.Value.color;
-                    if (typeStyle.Value.icon != null)
+                    if (overrideIcon && typeStyle.Value.icon != null)
                         iconElement.image = typeStyle.Value.icon;
                 }
             }

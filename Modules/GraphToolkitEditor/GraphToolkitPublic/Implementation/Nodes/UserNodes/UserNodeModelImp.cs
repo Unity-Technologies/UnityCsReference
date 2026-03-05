@@ -11,9 +11,8 @@ using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-
     [Serializable]
-    class UserNodeModelImp : NodeModel, IUserNodeModelImp
+    partial class UserNodeModelImp : NodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         Node m_Node;
@@ -131,10 +130,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
 			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
 
-    partial class UserBlockNodeModelImp
+    [Serializable]
+    partial class UserBlockNodeModelImp : BlockNodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         BlockNode m_Node;
@@ -254,10 +253,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
 				Debug.LogWarning($"The {(direction == PortDirection.Input ? "input" : "output")} port {portId} in {m_Node.GetType()} is configured as a vertical port. Vertical ports are not supported on block nodes.");
 			return new PortModelImp(this, direction, PortOrientation.Horizontal, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
 
-    partial class UserContextNodeModelImp
+    [Serializable]
+    partial class UserContextNodeModelImp : ContextNodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         ContextNode m_Node;
@@ -376,6 +375,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
 			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
+
 }

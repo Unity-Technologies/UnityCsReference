@@ -12,7 +12,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine.U2D;
-using UnityEngine.Experimental.U2D;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEditor.AssetImporters;

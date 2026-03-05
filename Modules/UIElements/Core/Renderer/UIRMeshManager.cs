@@ -28,9 +28,37 @@ namespace UnityEngine.UIElements.UIR
         {
             ++m_FrameIndex;
             PruneUnusedPages();
+            m_VertexUpdater.AdvanceFrame();
+            m_IndexUpdater.AdvanceFrame();
         }
 
-        public abstract void OnFrameRenderingBegin();
+        public void OnFrameRenderingBegin()
+        {
+            if (disposed)
+                throw new ObjectDisposedException(nameof(MeshManager));
+
+            // Update vertex buffers
+            {
+                Page page = m_FirstPage;
+                while (page != null)
+                {
+                    m_VertexUpdater.ProcessDataSet(page.vertices);
+                    page = page.next;
+                }
+                m_VertexUpdater.CompleteUpdate();
+            }
+
+            // Update index buffers
+            {
+                Page page = m_FirstPage;
+                while (page != null)
+                {
+                    m_IndexUpdater.ProcessDataSet(page.indices);
+                    page = page.next;
+                }
+                m_IndexUpdater.CompleteUpdate();
+            }
+        }
 
         protected uint m_NextPageVertexCount;
         protected readonly uint m_LargeMeshVertexCount;
@@ -40,11 +68,34 @@ namespace UnityEngine.UIElements.UIR
         protected uint m_FrameIndex;
         protected Page m_FirstPage;
 
+        protected GpuUpdater<Vertex> m_VertexUpdater;
+        protected GpuUpdater<UInt16> m_IndexUpdater;
+
         static ProfilerMarker s_MarkerAllocate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Allocate");
 
-        protected MeshManager(uint initialVertexCapacity, uint initialIndexCapacity, bool pagesGpuDataIsMapped)
+        protected MeshManager(uint initialVertexCapacity, uint initialIndexCapacity, GpuUpdaterType gpuUpdaterType)
         {
-            m_PagesGpuDataIsMapped = pagesGpuDataIsMapped;
+            switch (gpuUpdaterType)
+            {
+                case GpuUpdaterType.Mapped:
+                    m_PagesGpuDataIsMapped = true;
+                    m_VertexUpdater = new GpuUpdaterMapped<Vertex>();
+                    m_IndexUpdater = new GpuUpdaterMapped<ushort>();
+                    break;
+                case GpuUpdaterType.StagedGpuOnly:
+                    m_PagesGpuDataIsMapped = false;
+                    m_VertexUpdater = new GpuUpdaterStaged<Vertex>(Utility.GPUBufferType.Vertex, StagingMode.GpuOnly);
+                    m_IndexUpdater = new GpuUpdaterStaged<ushort>(Utility.GPUBufferType.Index, StagingMode.GpuOnly);
+                    break;
+                case GpuUpdaterType.StagedCpuGpu:
+                    m_PagesGpuDataIsMapped = false;
+                    m_VertexUpdater = new GpuUpdaterStaged<Vertex>(Utility.GPUBufferType.Vertex, StagingMode.CpuGpu);
+                    m_IndexUpdater = new GpuUpdaterStaged<ushort>(Utility.GPUBufferType.Index, StagingMode.CpuGpu);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
             m_NextPageVertexCount = Math.Max(initialVertexCapacity / 2, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
             m_LargeMeshVertexCount = m_NextPageVertexCount;
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
@@ -88,7 +139,7 @@ namespace UnityEngine.UIElements.UIR
                     uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
                     newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
                     Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
-                    page = new Page(m_NextPageVertexCount, newPageIndexCount, UIRenderDevice.k_MaxQueuedFrameCount, m_PagesGpuDataIsMapped);
+                    page = new Page(m_NextPageVertexCount, newPageIndexCount, m_PagesGpuDataIsMapped);
                     // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
                     page.next = m_FirstPage;
                     m_FirstPage = page;
@@ -129,7 +180,7 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(vertexCount <= UIRenderDevice.maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
 
                     // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
-                    page = new Page((uint)pageVertexCount, (uint)indexCount, UIRenderDevice.k_MaxQueuedFrameCount, m_PagesGpuDataIsMapped);
+                    page = new Page((uint)pageVertexCount, (uint)indexCount, m_PagesGpuDataIsMapped);
                     if (lastPage != null)
                         lastPage.next = page;
                     else m_FirstPage = page;
@@ -277,7 +328,11 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                m_VertexUpdater?.Dispose();
+                m_VertexUpdater = null;
 
+                m_IndexUpdater?.Dispose();
+                m_IndexUpdater = null;
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

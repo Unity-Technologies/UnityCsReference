@@ -4,8 +4,7 @@
 
 using System;
 using JetBrains.Annotations;
-using Unity.Jobs;
-using Unity.Properties.Internal;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -13,28 +12,21 @@ namespace UnityEditor.UIElements
 {
     static class UIElementsEditorInitialization
     {
+
+
         [UsedImplicitly]
         [RequiredByNativeCode(optional:false)]
         public static void InitializeUIElementsEditorManaged()
         {
-            var jobHandle = PropertiesEditorInitialization.GetInitializationJobHandle();
-            new InitializeUIElementsJob().Schedule(jobHandle);
             try
             {
                 UxmlSerializedDataRegistry.RegisterUxmlSerializedDataTypes();
                 UxmlSerializedDataRegistry.RegisterCustomDependencies();
+                UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
-            }
-        }
-
-        struct InitializeUIElementsJob : IJob
-        {
-            public void Execute()
-            {
-                UnityEngine.UIElements.UIElementsInitialization.RegisterBuiltInPropertyBags();
             }
         }
     }

@@ -24,9 +24,9 @@ namespace Unity.GraphToolkit.Editor
         List<(PortModel output, PortModel input)> m_WiresToReconnect;
 
         /// <summary>
-        /// Function to determine if a port is a flow port. Defaults to checking if the port's data type is ExecutionFlow.
+        /// Function to determine if a port is an untyped port. Defaults to checking if the port's data type is Untyped.
         /// </summary>
-        public Func<PortModel, bool> IsFlowPort = p => p.DataTypeHandle == TypeHandle.ExecutionFlow;
+        public Func<PortModel, bool> IsUntypedPort = p => p.DataTypeHandle == TypeHandle.Untyped;
 
         /// <summary>
         /// Resets the state of the action.
@@ -52,7 +52,7 @@ namespace Unity.GraphToolkit.Editor
         /// Validates the action based on the selection passed.
         ///
         /// this action is valid if there is a path between output ports of unselected nodes and input ports of selected nodes,
-        /// through the first connected input port of the selected nodes and the first connected output port of the selected nodes, considering flow ports and non flow ports separately, as defined by <see cref="IsFlowPort"/>.
+        /// through the first connected input port of the selected nodes and the first connected output port of the selected nodes, considering flow ports and non flow ports separately, as defined by <see cref="IsUntypedPort"/>.
         /// And that there is either only one wire on the input side our on the output side of the selected nodes as we don't want cartesian products of wires.
         /// </summary>
         public bool ValidateAction(GraphModel graphModel, IReadOnlyList<GraphElementModel> selection)
@@ -119,7 +119,7 @@ namespace Unity.GraphToolkit.Editor
 
                     foreach (var inputPort in nodeModel.InputPorts)
                     {
-                        if (IsFlowPort(inputPort) != useFlowPorts)
+                        if (IsUntypedPort(inputPort) != useFlowPorts)
                             continue;
                         if (inputPort.IsConnected())
                         {
@@ -134,7 +134,7 @@ namespace Unity.GraphToolkit.Editor
                     PortModel firstOutputPortWithWires = null;
                     foreach (var outputPort in nodeModel.OutputPorts)
                     {
-                        if (IsFlowPort(outputPort) != useFlowPorts)
+                        if (IsUntypedPort(outputPort) != useFlowPorts)
                             continue;
                         if (outputPort.IsConnected())
                         {

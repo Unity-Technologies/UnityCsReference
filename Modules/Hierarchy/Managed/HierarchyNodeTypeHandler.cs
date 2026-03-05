@@ -6,68 +6,67 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using HierarchyViewItemPool = UnityEngine.Pool.ObjectPool<Unity.Hierarchy.HierarchyViewItem>;
 
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Base class for hierarchy node type handlers.
+    /// Provides a base class for hierarchy node type handlers that manage how specific node types are displayed and interact with <see cref="HierarchyView"/> instances.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     public abstract class HierarchyNodeTypeHandler : HierarchyNodeTypeHandlerBase
     {
-        readonly Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>> m_ViewItemPool;
+        readonly HierarchyViewItemPool m_ViewItemPool = new(() => new HierarchyViewItem(), defaultCapacity: 0, maxSize: 512);
 
         /// <summary>
         /// The object pool used to store <see cref="HierarchyViewItem"/> instances specific to this handler.
         /// </summary>
-        internal UnityEngine.Pool.ObjectPool<HierarchyViewItem> ViewItemPool => m_ViewItemPool.Value;
+        internal HierarchyViewItemPool ViewItemPool => m_ViewItemPool;
 
         /// <summary>
-        /// Construct a new <see cref="HierarchyNodeTypeHandler"/>.
+        /// Creates a new <see cref="HierarchyNodeTypeHandler"/>.
         /// </summary>
         protected HierarchyNodeTypeHandler()
         {
-            m_ViewItemPool = new Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>>(() =>
-                new UnityEngine.Pool.ObjectPool<HierarchyViewItem>(() => new HierarchyViewItem(), defaultCapacity: 0));
         }
 
         /// <summary>
-        /// Construct a new <see cref="HierarchyNodeTypeHandler"/> from a pointer.
+        /// Creates a new <see cref="HierarchyNodeTypeHandler"/> from a pointer.
         /// </summary>
-        /// <param name="nativePtr">The native pointer.</param>
-        /// <param name="hierarchy">The hierarchy.</param>
-        /// <param name="cmdList">The command list.</param>
+        /// <param name="nativePtr">The pointer to the native <see cref="HierarchyNodeTypeHandler"/>.</param>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> this <see cref="HierarchyNodeTypeHandler"/> is associated with.</param>
+        /// <param name="cmdList">The command list used for <see cref="Hierarchy"/> operations.</param>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal HierarchyNodeTypeHandler(IntPtr nativePtr, Hierarchy hierarchy, HierarchyCommandList cmdList) : base(nativePtr, hierarchy, cmdList)
         {
-            m_ViewItemPool = new Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>>(() =>
-                new UnityEngine.Pool.ObjectPool<HierarchyViewItem>(() => new HierarchyViewItem(), defaultCapacity: 0));
         }
 
         /// <summary>
-        /// Called when the hierarchy node type handler is bound to a hierarchy view.
-        /// Typically used to add stylesheets or classes to the <see cref="HierarchyView.StyleContainer"/>.
+        /// Called when the <see cref="HierarchyNodeTypeHandler"/> is bound to a <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="view">The hierarchy view.</param>
+        /// <remarks>
+        /// Typically used to add stylesheets or classes to the <see cref="HierarchyView.StyleContainer"/>.
+        /// </remarks>
+        /// <param name="view">The <see cref="HierarchyView"/> being bound to.</param>
         protected virtual void OnBindView(HierarchyView view) { }
 
         /// <summary>
-        /// Called when the hierarchy node type handler is unbound from a hierarchy view.
+        /// Called when the <see cref="HierarchyNodeTypeHandler"/> is unbound from a <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="view">The hierarchy view.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> being unbound from.</param>
         protected virtual void OnUnbindView(HierarchyView view) { }
 
         /// <summary>
-        /// Called whenever a hierarchy view item is bound to a hierarchy view.
+        /// Called whenever a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>.
         /// Typically used to set up the item with the necessary data and styles.
         /// </summary>
-        /// <param name="item">The hierarchy view item.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being bound.</param>
         protected virtual void OnBindItem(HierarchyViewItem item) { }
 
         /// <summary>
-        /// Called whenever a hierarchy view item is unbound from a hierarchy view.
+        /// Called whenever a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="item">The hierarchy view item.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being unbound.</param>
         protected virtual void OnUnbindItem(HierarchyViewItem item) { }
 
         #region Expose protected methods to internal

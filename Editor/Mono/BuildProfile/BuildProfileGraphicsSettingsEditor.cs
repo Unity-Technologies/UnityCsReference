@@ -39,6 +39,7 @@ namespace UnityEditor.Build.Profile
             BindEnumFieldWithFadeGroup(root, "Lightmap", CalculateLightmapStrippingFromCurrentScene);
             BindEnumFieldWithFadeGroup(root, "Fog", CalculateFogStrippingFromCurrentScene);
 
+            GraphicsStateCollectionSettingsUI.BindGraphicsStateCollection(root, serializedObject);
             BindShaderPreload(root);
 
             m_ShaderBuildSettingsUI.Initialize(root, serializedObject, true);
@@ -71,9 +72,15 @@ namespace UnityEditor.Build.Profile
 
         void BindShaderPreload(VisualElement root)
         {
+            var shaderPreloadElements = root.MandatoryQ<PropertyField>("PreloadedShaders");
             var shaderPreloadProperty = serializedObject.FindProperty("m_PreloadedShaders");
             shaderPreloadProperty.isExpanded = false;
-            
+            shaderPreloadElements.RegisterValueChangeCallback(evt =>
+            {
+                UIElementsEditorUtility.SetVisibility(root.MandatoryQ<HelpBox>("RecommendGSCInfoBox"), shaderPreloadProperty.arraySize > 0);
+                shaderPreloadProperty.serializedObject.ApplyModifiedProperties();
+            });
+
             var delayedShaderTimeLimitProperty = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");
             var shaderPreloadToggle = root.MandatoryQ<Toggle>("ShaderPreloadToggle");
             var delayedShaderTimeLimitGroup = root.MandatoryQ<VisualElement>("DelayedShaderTimeLimitGroup");

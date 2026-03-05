@@ -428,7 +428,7 @@ namespace UnityEditor.Overlays
         {
             var label = new Label(isVerticalToolbar ? "None" : "No Overlays");
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
-            label.tooltip = $"No overlays in the current {canvas.containerWindow.name}";
+            label.tooltip = $"No overlays to show in the {(String.IsNullOrEmpty(canvas.containerWindow.name) ? "current" : canvas.containerWindow.name)} menu.";
 
             return label;
         }

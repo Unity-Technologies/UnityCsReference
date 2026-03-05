@@ -63,29 +63,44 @@ internal static class StageContextMenuUtility
 
     static void PopulateElementOperations(DropdownMenu menu)
     {
-        var itemPath = $"{MenuItemGenerator.k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/Standard Elements";
-        var menuItems = Menu.GetMenuItems(itemPath, includeSeparators: false, localized: true);
-        var previousPriority = MenuItemGenerator.k_DefaultPriority;
-
-        foreach (var menuItem in menuItems)
+        // Use the top most group priority value as default
+        var previousPriority = MenuItemGenerator.k_DefaultStandardElementsPriority;
+        foreach (var basePath in LibraryContent.k_BaseLibraryPaths)
         {
-            // Trim out the whole prefix string and append a new one. The +1 for the substring is for the end "/".
-            var contextMenuPath = $"{ControlTypeInfo.k_ContextMenuPrefix}/{menuItem.path.Substring(itemPath.Length + 1)}";
-            var hotkey = Menu.GetHotkey(menuItem.path);
-            if (!string.IsNullOrEmpty(hotkey))
-                contextMenuPath += " " + hotkey;
+            var itemPath = $"{MenuItemGenerator.k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/{basePath}";
+            var menuItems = Menu.GetMenuItems(itemPath, includeSeparators: false, localized: true);
 
-            // Append a separator based on the menu item's separator
-            if (menuItem.priority - previousPriority >= 10)
-                menu.AppendSeparator(ControlTypeInfo.k_ContextMenuPrefix + "/");
+            if (menuItems.Length == 0)
+            {
+                menu.AppendAction(
+                    $"{basePath}",
+                    null,
+                    _ => DropdownMenuAction.Status.Disabled
+                );
 
-            previousPriority = menuItem.priority;
+                continue;
+            }
 
-            menu.AppendAction(
-                contextMenuPath,
-                _ => EditorApplication.ExecuteMenuItem(menuItem.path),
-                _ => DropdownMenuAction.Status.Normal
-            );
+            foreach (var menuItem in menuItems)
+            {
+                // Trim out the whole prefix string and append a new one. The +1 for the substring is for the end "/".
+                var contextMenuPath = $"{basePath}/{menuItem.path.Substring(itemPath.Length + 1)}";
+                var hotkey = Menu.GetHotkey(menuItem.path);
+                if (!string.IsNullOrEmpty(hotkey))
+                    contextMenuPath += " " + hotkey;
+
+                // Append a separator based on the menu item's priority gap (10 is the minimum range required)
+                if (menuItem.priority - previousPriority >= 10)
+                    menu.AppendSeparator(basePath + "/");
+
+                previousPriority = menuItem.priority;
+
+                menu.AppendAction(
+                    contextMenuPath,
+                    _ => EditorApplication.ExecuteMenuItem(menuItem.path),
+                    _ => DropdownMenuAction.Status.Normal
+                );
+            }
         }
     }
 

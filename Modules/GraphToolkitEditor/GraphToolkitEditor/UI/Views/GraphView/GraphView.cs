@@ -3384,9 +3384,9 @@ namespace Unity.GraphToolkit.Editor
                 guid.AppendAllViews(this, null, k_UpdateAllUIs);
                 foreach (var ui in k_UpdateAllUIs)
                 {
-                    if( ui is GraphElement ge)
+                    if (ui is GraphElement ge)
                         RemoveElement(ge);
-                    else if( ui is ModelView mv) // Port are not graph elements and will be removed by their node PortContainer, however,
+                    else if (ui is ModelView mv) // Port are not graph elements and will be removed by their node PortContainer, however,
                                                  // we need to clear their dependencies as they could be otherwise updated before the node containing
                                                  // (and potentially deleting) them is removed as the order in the changed models is not controlled.
                         mv.ClearDependencies();

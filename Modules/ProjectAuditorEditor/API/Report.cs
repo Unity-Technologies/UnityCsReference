@@ -120,6 +120,7 @@ namespace Unity.ProjectAuditor.Editor
 
             // this is used by HasCategory
             public SerializableEnum<IssueCategory>[] categories;
+            [NonSerialized]  // See comment for PostSerializeLayoutUpdate
             public IssueLayout[] layouts;
 
             public long durationMs;

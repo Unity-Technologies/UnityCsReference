@@ -27,7 +27,7 @@ internal class AddAction : PackageAction
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         var primaryVersions = packages.SelectToNewArray(p => p.versions.primary);
-        if(!m_OperationDispatcher.Install(primaryVersions))
+        if(!m_OperationDispatcher.Install(primaryVersions, OperationType.Install))
             return false;
         // The current multi-select UI does not allow users to install non-recommended versions
         // Should this change in the future, we'll need to update the analytics event accordingly.
@@ -76,7 +76,7 @@ internal class AddAction : PackageAction
             if (version.package.isDeprecated && !m_Application.DisplayDialog("installDeprecatedPackage", L10n.Tr("Deprecated package installation"), L10n.Tr("Are you sure you want to install this deprecated package?"), L10n.Tr("Install"), L10n.Tr("Cancel")))
                 return false;
 
-            if (!m_OperationDispatcher.Install(version))
+            if (!m_OperationDispatcher.Install(version, OperationType.Install))
                 return false;
 
             PackageManagerWindowAnalytics.SendEvent(eventName, version);

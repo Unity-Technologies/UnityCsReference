@@ -18,7 +18,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmSearch        = 1 << 3,
         Purchased        = 1 << 4,
         LocalInfo        = 1 << 5,
-        ImportedAssets   = 1 << 6
+        ImportedAssets   = 1 << 6,
+        ImportedSamples  = 1 << 7,
     }
 
     internal static class RefreshOptionsExtension

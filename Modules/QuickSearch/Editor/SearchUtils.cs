@@ -15,6 +15,7 @@ using UnityEngine.Pool;
 using UnityEditor.Search.Providers;
 using UnityEditor.Utils;
 using UnityEngine.Search;
+using Unity.Collections;
 
 using UnityEditor.SceneManagement;
 
@@ -629,9 +630,7 @@ namespace UnityEditor.Search
         static bool TypePredicate(Type t)
         {
             return !t.IsGenericType &&
-                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                      !s_IgnoredAssemblies.Contains(t.Assembly) &&
-#pragma warning restore UA2001
                      !typeof(Editor).IsAssignableFrom(t) &&
                      !typeof(EditorWindow).IsAssignableFrom(t) &&
                      t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
@@ -1597,6 +1596,14 @@ namespace UnityEditor.Search
                             return "none";
 
                         var path = GetObjectPath(value as UnityEngine.Object, subAssetUseGlobalObjectId: true);
+                        return EscapeLiteralString(path);
+                    }
+                case SerializedPropertyType.LoadableReference:
+                    {
+                        var loadableObj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(prop.loadableReferenceValue);
+                        if (loadableObj == null)
+                            return "none";
+                        var path = GetObjectPath(loadableObj, subAssetUseGlobalObjectId: true);
                         return EscapeLiteralString(path);
                     }
                 case SerializedPropertyType.String:

@@ -11,6 +11,8 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // glyphLookupTable is obsolete; used for internal glyph caching
+
 namespace UnityEngine.TextCore.Text
 {
     // ================================================================================
@@ -114,6 +116,256 @@ namespace UnityEngine.TextCore.Text
         {
             UpdateAtlasTexturesInQueue();
             UpdateFontFeaturesForFontAssetsInQueue();
+        }
+
+                /// <summary>
+        /// Function to check if a certain character exists in the font asset.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <returns></returns>
+        public bool HasCharacter(int character)
+        {
+            if (characterLookupTable == null)
+                return false;
+
+            return m_CharacterLookupDictionary.ContainsKey((uint)character);
+        }
+
+        /// <summary>
+        /// Function to check if a character is contained in the font asset with the option to also check potential local fallbacks.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="searchFallbacks"></param>
+        /// <param name="tryAddCharacter"></param>
+        /// <returns></returns>
+        public bool HasCharacter(char character, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
+            return HasCharacter((uint)character, searchFallbacks, tryAddCharacter);
+        }
+
+        /// <summary>
+        /// Function to check if a character is contained in the font asset with the option to also check potential local fallbacks.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="searchFallbacks"></param>
+        /// <param name="tryAddCharacter"></param>
+        /// <returns></returns>
+        public bool HasCharacter(uint character, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
+            // Read font asset definition if it hasn't already been done.
+            if (characterLookupTable == null)
+                return false;
+
+            // Check font asset
+            if (m_CharacterLookupDictionary.ContainsKey(character))
+                return true;
+
+            // Check if font asset is dynamic and if so try to add the requested character to it.
+            if (tryAddCharacter && (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS))
+            {
+                Character returnedCharacter;
+
+                if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
+                    return true;
+            }
+
+            if (searchFallbacks)
+            {
+                // Initialize or clear font asset lookup
+                if (k_SearchedFontAssetLookup == null)
+                    k_SearchedFontAssetLookup = new HashSet<EntityId>();
+                else
+                    k_SearchedFontAssetLookup.Clear();
+
+                // Add current font asset to lookup
+                k_SearchedFontAssetLookup.Add(GetEntityId());
+
+                // Check font asset fallbacks
+                if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
+                {
+                    for (int i = 0; i < fallbackFontAssetTable.Count && fallbackFontAssetTable[i] != null; i++)
+                    {
+                        FontAsset fallback = fallbackFontAssetTable[i];
+                        EntityId fallbackID = fallback.GetEntityId();
+
+                        // Search fallback if not already contained in lookup
+                        if (k_SearchedFontAssetLookup.Add(fallbackID))
+                        {
+                            if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter))
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Function to check if certain characters exists in the font asset. Function returns a list of missing characters.
+        /// </summary>
+        /// <param name="text">String containing the characters to check.</param>
+        /// <param name="missingCharacters">List of missing characters.</param>
+        /// <returns></returns>
+        public bool HasCharacters(string text, out List<char> missingCharacters)
+        {
+            if (characterLookupTable == null)
+            {
+                missingCharacters = null;
+                return false;
+            }
+
+            missingCharacters = new List<char>();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
+                    missingCharacters.Add((char)character);
+            }
+
+            if (missingCharacters.Count == 0)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Function to check if the characters in the given string are contained in the font asset with the option to also check its potential local fallbacks.
+        /// </summary>
+        /// <param name="text">String containing the characters to check.</param>
+        /// <param name="missingCharacters">Array containing the unicode values of the missing characters.</param>
+        /// <param name="searchFallbacks">Determines if fallback font assets assigned to this font asset should be searched.</param>
+        /// <param name="tryAddCharacter"></param>
+        /// <returns>Returns true if all requested characters are available in the font asset and potential fallbacks.</returns>
+        public bool HasCharacters(string text, out uint[] missingCharacters, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
+            missingCharacters = null;
+
+            // Read font asset definition if it hasn't already been done.
+            if (characterLookupTable == null)
+                return false;
+
+            // Clear internal list of
+            s_MissingCharacterList.Clear();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                bool isMissingCharacter = true;
+
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (m_CharacterLookupDictionary.ContainsKey(character))
+                    continue;
+
+                // Check if fallback is dynamic and if so try to add the requested character to it.
+                if (tryAddCharacter && (atlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS))
+                {
+                    Character returnedCharacter;
+
+                    if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
+                        continue;
+                }
+
+                if (searchFallbacks)
+                {
+                    // Initialize or clear font asset lookup
+                    if (k_SearchedFontAssetLookup == null)
+                        k_SearchedFontAssetLookup = new HashSet<EntityId>();
+                    else
+                        k_SearchedFontAssetLookup.Clear();
+
+                    // Add current font asset to lookup
+                    k_SearchedFontAssetLookup.Add(GetEntityId());
+
+                    // Check font asset fallbacks
+                    if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
+                    {
+                        for (int j = 0; j < fallbackFontAssetTable.Count && fallbackFontAssetTable[j] != null; j++)
+                        {
+                            FontAsset fallback = fallbackFontAssetTable[j];
+                            EntityId fallbackID = fallback.GetEntityId();
+
+                            // Search fallback if it has not already been searched
+                            if (k_SearchedFontAssetLookup.Add(fallbackID))
+                            {
+                                if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter) == false)
+                                    continue;
+
+                                isMissingCharacter = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (isMissingCharacter)
+                    s_MissingCharacterList.Add(character);
+            }
+
+            if (s_MissingCharacterList.Count > 0)
+            {
+                missingCharacters = s_MissingCharacterList.ToArray();
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function to check if certain characters exists in the font asset. Function returns false if any characters are missing.
+        /// </summary>
+        /// <param name="text">String containing the characters to check</param>
+        /// <returns></returns>
+        public bool HasCharacters(string text)
+        {
+            if (characterLookupTable == null)
+                return false;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function to extract all the characters from a font asset.
+        /// </summary>
+        /// <param name="fontAsset"></param>
+        /// <returns></returns>
+        public static string GetCharacters(FontAsset fontAsset)
+        {
+            string characters = string.Empty;
+
+            for (int i = 0; i < fontAsset.characterTable.Count; i++)
+            {
+                characters += (char)fontAsset.characterTable[i].unicode;
+            }
+
+            return characters;
+        }
+
+        /// <summary>
+        /// Function which returns an array that contains all the characters from a font asset.
+        /// </summary>
+        /// <param name="fontAsset"></param>
+        /// <returns></returns>
+        public static int[] GetCharactersArray(FontAsset fontAsset)
+        {
+            int[] characters = new int[fontAsset.characterTable.Count];
+
+            for (int i = 0; i < fontAsset.characterTable.Count; i++)
+            {
+                characters[i] = (int)fontAsset.characterTable[i].unicode;
+            }
+
+            return characters;
         }
 
         /// <summary>
@@ -782,3 +1034,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

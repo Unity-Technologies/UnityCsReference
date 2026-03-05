@@ -104,6 +104,7 @@ namespace UnityEditor
         /// "c.nested" on a MonoBehaviour (declared in that order), then calling this method with
         /// "managedReferences[1].x" would return the SerializedProperty with property path "a.x".
         /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal SerializedProperty FindFirstPropertyFromManagedReferencePath(string propertyPath)
         {
             SerializedProperty i = GetIterator_Internal();

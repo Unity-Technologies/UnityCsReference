@@ -523,7 +523,7 @@ namespace Unity.U2D.Physics
             {
                 vertex0 = Vector2.down,
                 vertex1 = Vector2.right,
-                vertex2 = Vector2.right,
+                vertex2 = Vector2.up,
                 vertex3 = Vector2.left
             };
 

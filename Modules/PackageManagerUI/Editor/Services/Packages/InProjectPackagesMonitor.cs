@@ -81,7 +81,6 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
     {
         if (m_Application.isBatchMode || !m_Application.isUpmRunning)
             return;
-        m_PackageDatabase.ClearSamplesCache();
         m_UpmRegistryClient.CheckRegistriesChanged();
         m_PageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
     }

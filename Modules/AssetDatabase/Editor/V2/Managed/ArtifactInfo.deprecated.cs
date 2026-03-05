@@ -8,7 +8,7 @@ namespace UnityEditor
 {
     internal partial class ArtifactInfo : IDisposable
     {
-        [Obsolete("artifactID is deprecated. Use importResultID instead (UnityUpgradeable) -> importResultID", true)]
+        [Obsolete("artifactID is deprecated. Use importResultID instead.", true)]
         internal string artifactID => m_ImportResultID;
     }
 }

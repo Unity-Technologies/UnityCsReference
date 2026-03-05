@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -21,44 +20,60 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NumTotalItems = total;
         }
 
-        public override long countLoaded => m_OrderedVisualStates.Count + m_ExtraVisualStates.Count;
+        public override long countLoaded => m_OrderedVisualStates.Length + m_ExtraVisualStates.Count;
 
         // in the case where the user wants to check a package that is not in the current list (but will be if user keep loading more packages)
         // we handle it by allowing to show some `extra` packages in the list. we don't want to add it directly to the ordered list because
         // these extra items are out of order
         [SerializeField]
         private List<VisualState> m_ExtraVisualStates = new();
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        protected override IEnumerable<VisualState> orderedListBeforeGrouping => m_OrderedVisualStates.Join(m_ExtraVisualStates);
-#pragma warning restore UA2001
+        protected override IEnumerable<VisualState> orderedList => m_OrderedVisualStates.Join(m_ExtraVisualStates);
 
         public PaginatedVisualStateList() {}
 
-        public PaginatedVisualStateList(IEnumerable<string> packageUniqueIds) : base(packageUniqueIds) {}
+        public PaginatedVisualStateList(IReadOnlyCollection<string> itemUniqueIds) : base(itemUniqueIds) {}
 
-        public override bool Contains(string packageUniqueId)
+        public override bool Contains(string itemUniqueId)
         {
-            return base.Contains(packageUniqueId) || m_ExtraVisualStates.Exists(v => v.packageUniqueId == packageUniqueId);
+            return base.Contains(itemUniqueId) || m_ExtraVisualStates.Exists(v => v.itemUniqueId == itemUniqueId);
         }
 
-        public override VisualState Get(string packageUniqueId)
+        public override VisualState Get(string itemUniqueId)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return base.Get(packageUniqueId) ?? m_ExtraVisualStates.FirstOrDefault(v => v.packageUniqueId == packageUniqueId);
-#pragma warning restore UA2001
+            return base.Get(itemUniqueId) ?? m_ExtraVisualStates.FirstMatch(v => v.itemUniqueId == itemUniqueId);
         }
 
-        public void AddRange(IEnumerable<string> packageUniqueIds)
+        public override VisualState GetNext(string itemUniqueId, bool reverseOrder = false)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_OrderedVisualStates.AddRange(packageUniqueIds.Select(id => Get(id) ?? new VisualState(id, string.Empty, false)));
-#pragma warning restore UA2001
+            if (string.IsNullOrEmpty(itemUniqueId) || m_ExtraVisualStates.Count == 0)
+                return base.GetNext(itemUniqueId, reverseOrder);
+
+            if (m_UniqueIdToIndexLookup.TryGetValue(itemUniqueId, out var index))
+            {
+                if (index == m_OrderedVisualStates.Length && !reverseOrder)
+                    return m_ExtraVisualStates[0];
+                return base.GetNext(itemUniqueId, reverseOrder);
+            }
+
+            var extraIndex = m_ExtraVisualStates.FindIndex(v => v.itemUniqueId == itemUniqueId);
+            if (extraIndex < 0)
+                return null;
+
+            var nextIndex = reverseOrder ? extraIndex - 1 : extraIndex + 1;
+            if (nextIndex == -1)
+                return m_OrderedVisualStates.Length == 0  ? null : m_OrderedVisualStates[m_OrderedVisualStates.Length - 1];
+            return nextIndex == m_ExtraVisualStates.Count ? null : m_ExtraVisualStates[nextIndex];
+        }
+
+        public void AddRange(IReadOnlyList<string> itemUniqueIds)
+        {
+            m_OrderedVisualStates = m_OrderedVisualStates.Join(itemUniqueIds.SelectAsEnumerable(id => Get(id) ?? new VisualState(id, string.Empty, false))).ToNewArray(m_OrderedVisualStates.Length + itemUniqueIds.Count);
             SetupLookupTable();
         }
 
-        public void AddExtraItem(string packageUniqueId)
+        public void AddExtraItem(string itemUniqueId)
         {
-            m_ExtraVisualStates.Add(new VisualState(packageUniqueId, string.Empty, false));
+            m_ExtraVisualStates.Add(new VisualState(itemUniqueId, string.Empty, false));
         }
 
         public void ClearExtraItems()
@@ -68,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearAll()
         {
-            m_OrderedVisualStates.Clear();
+            m_OrderedVisualStates = Array.Empty<VisualState>();
             m_UniqueIdToIndexLookup.Clear();
             ClearExtraItems();
         }

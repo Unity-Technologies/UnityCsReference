@@ -69,9 +69,9 @@ namespace Unity.GraphToolkit.Editor
                     return "Unknown";
                 }
 
-                if (typeName == TypeHandle.ExecutionFlow.Identification)
+                if (typeName == TypeHandle.Untyped.Identification)
                 {
-                    return "ExecutionFlow";
+                    return "Untyped";
                 }
 
                 if (typeName == TypeHandle.Subgraph.Identification)

@@ -90,8 +90,18 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string Subtitle => m_Subtitle;
 
+        /// <summary>
+        /// The icon type string for subgraph nodes referencing a local subgraph.
+        /// </summary>
+        public static readonly string k_LocalSubgraphIconTypeString = "subgraph";
+
+        /// <summary>
+        /// The icon type string for subgraph nodes referencing an asset subgraph.
+        /// </summary>
+        public static readonly string k_AssetSubgraphIconTypeString = "graph-object";
+
         /// <inheritdoc />
-        public override string IconTypeString => IsReferencingLocalSubgraph ? "subgraph" : "graph-object";
+        public override string IconTypeString => IsReferencingLocalSubgraph ? k_LocalSubgraphIconTypeString : k_AssetSubgraphIconTypeString;
 
         /// <inheritdoc />
         public override bool UseColorAlpha => false;

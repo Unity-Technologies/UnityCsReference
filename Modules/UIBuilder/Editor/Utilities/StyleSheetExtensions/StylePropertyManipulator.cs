@@ -1060,7 +1060,7 @@ namespace Unity.UI.Builder
             bool editorExtensionMode)
         {
             var customStyles = currentVisualElement.computedStyle.customProperties;
-            if (customStyles != null && customStyles.TryGetValue(variableName, out var stylePropertyValue))
+            if (customStyles.TryGetValue(variableName, out var stylePropertyValue))
             {
                 var propValue = stylePropertyValue;
                 if (!editorExtensionMode && propValue.sheet.isDefaultStyleSheet)

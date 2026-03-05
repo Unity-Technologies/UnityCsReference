@@ -210,6 +210,7 @@ namespace UnityEditor
         TwoPaneSplitView m_CapturesListSplitView;
         CaptureDataService m_CaptureDataService;
         ScreenshotsManager m_ScreenshotsManager;
+        internal bool IsCurrentlyLoadingFile { get; private set; }
         string m_CurrentLoadedCaptureFile;
         internal string CurrentLoadedCaptureFile
         {
@@ -1297,8 +1298,19 @@ namespace UnityEditor
                     "Loading Capture will clear currently loaded data. Continue?", "OK", "Cancel"))
                 return;
 
-            if (!ProfilerDriver.LoadProfile(path, keepExistingData))
-                return;
+            // Wrap in a try-finally block in case LoadProfile somehow throws an exception
+            IsCurrentlyLoadingFile = true;
+            try
+            {
+                if (!ProfilerDriver.LoadProfile(path, keepExistingData))
+                {
+                    return;
+                }
+            }
+            finally
+            {
+                IsCurrentlyLoadingFile = false;
+            }
 
             // If we're appending, don't mark the newly loaded file as being the sole opened data.
             if (keepExistingData && profilerHasFrames)

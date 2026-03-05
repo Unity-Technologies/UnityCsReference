@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// UI element control that displays a hierarchy item.
+    /// Represents a UI element that displays a hierarchy item in a <see cref="HierarchyView"/>.
     /// </summary>
     public sealed class HierarchyViewItem : VisualElement
     {
@@ -57,59 +57,59 @@ namespace Unity.Hierarchy
         internal event ExpandedStateChangedEventHandler ExpandedStateChanged;
 
         /// <summary>
-        /// The <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
+        /// Gets the <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public HierarchyNodeType NodeType => m_Handler?.GetNodeType() ?? HierarchyNodeType.Null;
 
         /// <summary>
-        /// The <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
-        /// This is going to be <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.OnUnbindItem(HierarchyViewItem)"/> is called.
+        /// Gets the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
+        /// This value is <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.OnUnbindItem(HierarchyViewItem)"/> executes.
         /// </summary>
         public ref readonly HierarchyNode Node => ref m_Node;
 
         /// <summary>
-        /// The <see cref="Label"/> representing the name of the item.
+        /// Gets the <see cref="Label"/> that displays the name of the item.
         /// </summary>
         public Label Name => m_Name.Label;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the icon of the item.
-        /// This is typically used to display a custom icon for the item's type by adding a uss class on it.
+        /// Gets the <see cref="VisualElement"/> that displays the icon of the item.
+        /// Add a USS class to this element to display a custom icon for the item type.
         /// </summary>
         public VisualElement Icon => m_Icon;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the overlay icon of the item. Hidden by default.
+        /// Gets the <see cref="VisualElement"/> that represents the overlay icon of the item. This element is hidden by default.
         /// </summary>
         public VisualElement OverlayIcon => m_OverlayIcon;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing a left-aligned container on the right of the <see cref="Name"/>.
+        /// Gets the left-aligned <see cref="VisualElement"/> container to the right of the <see cref="Name"/>.
         /// </summary>
         public VisualElement LeftCustomContainer => m_LeftCustomContainer;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing a right-aligned container on the right side of the <see cref="HierarchyViewItem"/>.
+        /// Gets the right-aligned <see cref="VisualElement"/> container on the right side of this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public VisualElement RightCustomContainer => m_RightCustomContainer;
 
         /// <summary>
-        /// The <see cref="Button"/> typically represented by an arrow button and used to navigate into a node.
+        /// Gets the <see cref="Button"/> used to navigate into a node. This button is typically displayed as an arrow button.
         /// </summary>
         public Button NavigateIntoButton => m_NavigateIntoButton.Value;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the override bar at the very left of the item.
+        /// Gets the <see cref="VisualElement"/> that represents the override bar at the left of the item.
         /// </summary>
         public VisualElement OverrideBarContainer => m_OverrideBarContainer;
 
         /// <summary>
-        /// The <see cref="UnityEngine.UIElements.Toggle"/> used to expand/collapse the item.
+        /// Gets the <see cref="UnityEngine.UIElements.Toggle"/> used to expand or collapse the item.
         /// </summary>
         public Toggle Toggle => m_Toggle;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the entire row container of this <see cref="HierarchyViewItem"/>."/>
+        /// Gets the <see cref="VisualElement"/> that represents the entire row container of this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public VisualElement RowContainer
         {
@@ -299,7 +299,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Starts the rename operation on the <see cref="Name"/> of this <see cref="HierarchyViewItem"/>, if possible.
+        /// Starts the rename operation on the <see cref="Name"/> of this <see cref="HierarchyViewItem"/>, if the node supports renaming.
         /// </summary>
         public void BeginRename()
         {

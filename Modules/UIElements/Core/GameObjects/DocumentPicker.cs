@@ -61,7 +61,7 @@ internal class PhysicsDocumentPicker
         {
             if (!capturingPanel.isFlat)
             {
-                capturingComponent = PointerDeviceState.GetWorldSpaceDocumentWithSoftPointerCapture(pointerId);
+                capturingComponent = PointerDeviceState.GetWorldSpacePanelComponentWithSoftPointerCapture(pointerId);
                 if (capturingComponent != null) // UUM-117081: don't hang on to an invalid capture
                     return true;
             }

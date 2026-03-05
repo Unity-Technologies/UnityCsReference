@@ -13,6 +13,8 @@ namespace UnityEngine.UIElements.Unmanaged;
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct UnmanagedHandleBuffer : IDisposable
 {
+    private static readonly UnmanagedHandleBuffer k_Uncreated = new();
+
     [NativeName("data")]
     private IntPtr m_Data;
 
@@ -21,7 +23,24 @@ internal unsafe struct UnmanagedHandleBuffer : IDisposable
 
     public ReadOnlySpan<UnmanagedDataHandle> ReadOnlySpan => Count == 0 ? default : new ReadOnlySpan<UnmanagedDataHandle>((UnmanagedDataHandle*)GetPtr(0), Count);
 
-    public extern void Create();
+    [NativeName("Create")]
+    private extern void _Create();
+    [NativeName("CreateTemporary")]
+    private extern void _CreateTemporary();
+
+    public static UnmanagedHandleBuffer None() => k_Uncreated;
+    public static UnmanagedHandleBuffer Create()
+    {
+        UnmanagedHandleBuffer b = new();
+        b._Create();
+        return b;
+    }
+    public static UnmanagedHandleBuffer CreateTemporary()
+    {
+        UnmanagedHandleBuffer b = new();
+        b._CreateTemporary();
+        return b;
+    }
     public extern void Dispose();
 
     [NativeName("Count")]

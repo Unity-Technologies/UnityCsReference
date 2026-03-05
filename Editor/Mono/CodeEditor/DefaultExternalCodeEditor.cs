@@ -6,9 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Unity.CodeEditor;
+using Unity.Collections;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Assertions;
 using NiceIO;
 
 namespace UnityEditor
@@ -128,9 +128,7 @@ namespace UnityEditor
             var extension = Path.GetExtension(path);
             if (string.IsNullOrEmpty(extension))
                 return false;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return DefaultExtensions.Contains(extension.TrimStart('.'));
-#pragma warning restore UA2001
         }
 
         public bool OpenProject(string path, int line, int column)

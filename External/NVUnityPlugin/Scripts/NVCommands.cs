@@ -44,7 +44,9 @@ namespace UnityEngine.NVIDIA
         Preset_Default = 0,
         Preset_F = 1 << 0,
         Preset_J = 1 << 1,
-        Preset_K = 1 << 2
+        Preset_K = 1 << 2,
+        Preset_L = 1 << 3,
+        Preset_M = 1 << 4
     }
 
     /////////////////////////////////////////////////////////////////////////////////////

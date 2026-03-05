@@ -329,9 +329,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return success;
         }
 
-        internal ReadOnlyCollection<Node> GetNodes(ExecutionStage executionStage)
+        internal ReadOnlyCollection<ExecutionNode> GetNodes(ExecutionStage executionStage)
         {
-            var nodes = new List<Node>();
+            var nodes = new List<ExecutionNode>();
             foreach (var instance in m_Instances)
             {
                 var graph = instance.GetExecutionGraph();
@@ -342,7 +342,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return nodes.AsReadOnly();
         }
 
-        IEnumerable<Node> GetNonFreeRunNodes(IEnumerable<ExecutionStage> executionStages)
+        IEnumerable<ExecutionNode> GetNonFreeRunNodes(IEnumerable<ExecutionStage> executionStages)
         {
             foreach (var instance in m_Instances)
             {
@@ -391,7 +391,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal IEnumerable<Node.Error> GetAllNonFreeRunNodeErrors()
+        internal IEnumerable<ExecutionNode.Error> GetAllNonFreeRunNodeErrors()
         {
             foreach (var instance in m_Instances)
             {
@@ -408,7 +408,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void SendPlayModeCompletedEvent()
         {
-            var launchingDuration = Node.ComputeExecutionDuration(GetNonFreeRunNodes(ExecutionGraph.k_LaunchingStages));
+            var launchingDuration = ExecutionNode.ComputeExecutionDuration(GetNonFreeRunNodes(ExecutionGraph.k_LaunchingStages));
             var instances = GetAnalyticsInstancesData();
             var errors = GetErrorInfoData();
             var state = m_StatusData.OverallStatus.State;

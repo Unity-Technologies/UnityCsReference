@@ -4,10 +4,10 @@
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal interface IMultiSelectFoldoutElement
+    internal interface IMultiSelectFoldoutElement<T>
     {
         void Refresh();
-        bool AddPackage(IPackage package);
-        void ClearPackages();
+        bool AddItem(T item);
+        void ClearItems();
     }
 }

@@ -19,14 +19,14 @@ namespace UnityEngine.UIElements
 {
     internal partial struct ComputedStyle
     {
-        public StyleDataRef<CustomData> customData;
-        public StyleDataRefUnmanaged<InheritedData> inheritedData;
-        public StyleDataRefUnmanaged<LayoutData> layoutData;
-        public StyleDataRefUnmanaged<RareData> rareData;
-        public StyleDataRefUnmanaged<TransformData> transformData;
-        public StyleDataRefUnmanaged<TransitionData> transitionData;
-        public StyleDataRefUnmanaged<VisualData> visualData;
+        public StyleDataRef<InheritedData> inheritedData;
+        public StyleDataRef<LayoutData> layoutData;
+        public StyleDataRef<RareData> rareData;
+        public StyleDataRef<TransformData> transformData;
+        public StyleDataRef<TransitionData> transitionData;
+        public StyleDataRef<VisualData> visualData;
 
+        private CustomPropertyList m_CustomProperties;
         public Int64 matchingRulesHash;
         public float dpiScaling;
 
@@ -127,13 +127,13 @@ namespace UnityEngine.UIElements
             {
                 dpiScaling = 1f
             };
-            cs.customData = initialStyle.customData.Acquire();
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
             cs.transformData = initialStyle.transformData.Acquire();
             cs.transitionData = initialStyle.transitionData.Acquire();
             cs.visualData = initialStyle.visualData.Acquire();
+            // No need to acquire other fields here because their initial values are all default (for ex. custom properties).
             return cs;
         }
 
@@ -143,53 +143,52 @@ namespace UnityEngine.UIElements
             {
                 dpiScaling = 1f
             };
-            cs.customData = StyleDataRef<CustomData>.Create();
-            cs.inheritedData = StyleDataRefUnmanaged<InheritedData>.Create();
-            cs.layoutData = StyleDataRefUnmanaged<LayoutData>.Create();
-            cs.rareData = StyleDataRefUnmanaged<RareData>.Create();
-            cs.transformData = StyleDataRefUnmanaged<TransformData>.Create();
-            cs.transitionData = StyleDataRefUnmanaged<TransitionData>.Create();
-            cs.visualData = StyleDataRefUnmanaged<VisualData>.Create();
+            cs.inheritedData = StyleDataRef<InheritedData>.Create();
+            cs.layoutData = StyleDataRef<LayoutData>.Create();
+            cs.rareData = StyleDataRef<RareData>.Create();
+            cs.transformData = StyleDataRef<TransformData>.Create();
+            cs.transitionData = StyleDataRef<TransitionData>.Create();
+            cs.visualData = StyleDataRef<VisualData>.Create();
+            // No need to create values for other fields here because their initial values are all default (for ex. custom properties).
             return cs;
         }
 
         public ComputedStyle Acquire()
         {
-            customData.Acquire();
             inheritedData.Acquire();
             layoutData.Acquire();
             rareData.Acquire();
             transformData.Acquire();
             transitionData.Acquire();
             visualData.Acquire();
+            m_CustomProperties.Acquire();
             return this;
         }
 
         public void Release()
         {
-            customData.Release();
             inheritedData.Release();
             layoutData.Release();
             rareData.Release();
             transformData.Release();
             transitionData.Release();
             visualData.Release();
+            m_CustomProperties.Release();
         }
 
         public void SafeRelease()
         {
-            customData.SafeRelease();
             inheritedData.SafeRelease();
             layoutData.SafeRelease();
             rareData.SafeRelease();
             transformData.SafeRelease();
             transitionData.SafeRelease();
             visualData.SafeRelease();
+            m_CustomProperties.SafeRelease();
         }
 
         public void CopyFrom(ref ComputedStyle other)
         {
-            customData.CopyFrom(other.customData);
             inheritedData.CopyFrom(other.inheritedData);
             layoutData.CopyFrom(other.layoutData);
             rareData.CopyFrom(other.rareData);
@@ -197,6 +196,7 @@ namespace UnityEngine.UIElements
             transitionData.CopyFrom(other.transitionData);
             visualData.CopyFrom(other.visualData);
 
+            m_CustomProperties.CopyFrom(other.m_CustomProperties);
             matchingRulesHash = other.matchingRulesHash;
             dpiScaling = other.dpiScaling;
         }
@@ -4263,10 +4263,6 @@ namespace UnityEngine.UIElements
                 {
                     changes |= VersionChangeType.Color;
                 }
-            }
-
-            if (!x.customData.ReferenceEquals(y.customData))
-            {
             }
 
             return changes;

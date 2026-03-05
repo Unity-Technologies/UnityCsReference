@@ -232,7 +232,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 switch (runMode)
                 {
                     case RunModeState.ScenarioControl:
-                        if (m_Instance.Controller.GetType().IsSubclassOf(typeof(EditorController<,>)))
+                        if (m_Instance.Controller.GetType().IsSubclassOf(typeof(EditorController<>)))
                             return "This instance is controlled by the main editor process.\n" +
                                    "It will be activated when entering play mode.";
                         if (m_Instance.Controller is LocalPlayerController)

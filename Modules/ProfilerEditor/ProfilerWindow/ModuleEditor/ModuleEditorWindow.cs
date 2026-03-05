@@ -147,9 +147,9 @@ namespace UnityEditor.Profiling.ModuleEditor
             for (; m_LastModuleNameIndex < kMaxModuleIndex; m_LastModuleNameIndex++)
             {
                 var newModuleName = String.Format(k_NewProfilerModuleDefaultName, m_LastModuleNameIndex);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (namesList.Contains(newModuleName))
-#pragma warning restore UA2001
+#pragma warning restore UA2007
                     continue;
 
                 moduleName = newModuleName;

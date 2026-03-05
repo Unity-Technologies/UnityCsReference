@@ -3,13 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class UnityRegistryPage : SimplePage
+    internal class UnityRegistryPage : SimplePageWithPackages
     {
         public const string k_Id = "UnityRegistry";
 
@@ -17,13 +15,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string displayName => L10n.Tr("Unity Registry");
         public override Icon icon => Icon.UnityRegistryPage;
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
-        public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
 
-        [SerializeField]
-        private PageFilters.Status[] m_SupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
-        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
-
-        public UnityRegistryPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
+        public UnityRegistryPage(IPackageDatabase packageDatabase) : base(packageDatabase)
+        {
+            UpdateSupportedStatuses(new [] { PageFilterStatus.UpdateAvailable }, false);
+        }
 
         public override bool ShouldInclude(IPackage package)
         {
@@ -37,14 +33,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             return package.versions.AllMatches(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features") : L10n.Tr("Packages");
         }
 
-        public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
+        protected override void RebuildVisualStateList()
         {
-            var oldSupportedStatusFilters = m_SupportedStatusFilters;
-            m_SupportedStatusFilters = m_PackageDatabase.allPackages.AnyMatches(p => ShouldInclude(p) && p.hasEntitlements)
-                ? new[] { PageFilters.Status.UpdateAvailable, PageFilters.Status.SubscriptionBased }
-                : new[] { PageFilters.Status.UpdateAvailable };
+            base.RebuildVisualStateList();
 
-            return !m_SupportedStatusFilters.IsSequenceEqual(oldSupportedStatusFilters);
+            var hasEntitlementPackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.hasEntitlements == true);
+            var newSupportedStatusFilters = hasEntitlementPackagesInPage
+                ? new[] { PageFilterStatus.UpdateAvailable, PageFilterStatus.SubscriptionBased }
+                : new[] { PageFilterStatus.UpdateAvailable };
+            UpdateSupportedStatuses(newSupportedStatusFilters, true);
         }
     }
 }

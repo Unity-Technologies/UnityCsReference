@@ -93,7 +93,9 @@ namespace UnityEditor.SpeedTree.Importer
     internal class LODMaterials
     {
         public List<MaterialInfo> materials = new List<MaterialInfo>();
+        [System.NonSerialized]
         public Dictionary<int, List<int>> lodToMaterials = new Dictionary<int, List<int>>();
+        [System.NonSerialized]
         public Dictionary<string, int> matNameToIndex = new Dictionary<string, int>();
 
         public void AddLodMaterialIndex(int lod, int matIndex)

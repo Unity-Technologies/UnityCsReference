@@ -23,8 +23,11 @@ namespace UnityEngine.TestTools
     public struct CoveredSequencePoint
     {
         public MethodBase method;
+        [NativeName("il_offset")]
         public UInt32 ilOffset;
+        [NativeName("counter")]
         public UInt32 hitCount;
+        [NativeName("file_name")]
         public string filename;
         public UInt32 line;
         public UInt32 column;

@@ -53,7 +53,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             public Dictionary<object, CacheData> Cache = new Dictionary<object, CacheData>(512);
         }
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {

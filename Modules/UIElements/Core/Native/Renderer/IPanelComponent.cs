@@ -85,6 +85,10 @@ namespace UnityEngine.UIElements
 
         internal void SetComponentEnabled(bool enabled);
 
+        internal int softPointerCaptures { get; set; }
+
+        internal VisualElementFocusRing focusRing { get; set; }
+
         /// <summary>
         /// Handles live reload of the visual tree asset.
         /// </summary>

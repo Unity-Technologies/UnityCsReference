@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
 
             rootVisualElement.RegisterAnimation(this);
 
-            ClearElementNames();
+            ClearElementCaches();
         }
 
         void OnEnable()
@@ -59,6 +59,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        void ClearElementCaches()
+        {
+            ClearElementNames();
+            m_Elements?.Clear();
+            m_ElementsMap?.Clear();
+        }
+
         [RequiredByNativeCode]
         void UnregisterRootElement()
         {
@@ -66,6 +73,7 @@ namespace UnityEngine.UIElements
             {
                 rootVisualElement.UnregisterAnimation(this);
                 rootVisualElement= null;
+                ClearElementCaches();
             }
         }
 

@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-class CloneEditorController : EditorController<CloneEditorController, CloneEditorController.InstanceSettings>
+class CloneEditorController : EditorController<CloneEditorController.InstanceSettings>
 {
     [Serializable]
     public struct InstanceSettings

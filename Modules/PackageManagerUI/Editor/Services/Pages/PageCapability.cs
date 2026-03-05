@@ -11,8 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         None                          = 0,
         RequireUserLoggedIn           = 1 << 0,
-        RequireNetwork                = 1 << 1,
-        SupportLocalReordering        = 1 << 2,
-        DynamicEntitlementStatus      = 1 << 3
+        RequireNetwork                = 1 << 1
     }
 }

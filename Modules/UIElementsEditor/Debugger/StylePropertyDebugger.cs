@@ -156,7 +156,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_CustomPropertyFieldsContainer.Clear();
             var customProperties = m_SelectedElement.computedStyle.customProperties;
-            if (customProperties?.Count > 0)
+            if (customProperties.Count > 0)
             {
                 foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
                 {

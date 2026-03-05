@@ -468,7 +468,7 @@ namespace UnityEditor.UIElements
         public string rootName { get; set; }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlSerializer
     {
         public static bool TryParseSerializedAttribute(string name, string value, UxmlSerializedData uxmlSerializedData, CreationContext cc)

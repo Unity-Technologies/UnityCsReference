@@ -5,6 +5,8 @@
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 
+#pragma warning disable CS0618 // UnicodeLineBreakingRules is obsolete; handled natively by ATG
+
 namespace UnityEditor.TextCore.Text
 {
     [CustomPropertyDrawer(typeof(UnicodeLineBreakingRules))]
@@ -38,3 +40,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

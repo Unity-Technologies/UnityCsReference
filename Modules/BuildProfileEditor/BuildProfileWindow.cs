@@ -19,6 +19,7 @@ namespace UnityEditor.Build.Profile
     /// Build Settings window in 'File > Build Settings'.
     /// Handles creating and editing of <see cref="BuildProfile"/> assets.
     /// </summary>
+    [EditorWindowTitle(title = "Build Profiles", icon = "BuildProfileWindow")]
     internal class BuildProfileWindow : EditorWindow
     {
         const string k_DevOpsUrl = "https://unity.com/products/unity-devops?utm_medium=desktop-app&utm_source=unity-editor-window-menu&utm_content=buildsettings";
@@ -69,14 +70,14 @@ namespace UnityEditor.Build.Profile
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
         {
-            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            var window = GetWindow<BuildProfileWindow>();
             window.minSize = new Vector2(725, 400);
         }
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindowAndRequireActiveProfile()
         {
-            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            var window = GetWindow<BuildProfileWindow>();
             window.minSize = new Vector2(725, 400);
 
             // Activate the first buildable profile if none is active.

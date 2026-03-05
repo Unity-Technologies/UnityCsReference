@@ -45,34 +45,38 @@ namespace UnityEditor.SceneTemplate
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
             description = L10n.Tr("Just an empty scene - no Game Objects."),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive)
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive),
+            isDeprecated = false,
         };
         internal static SceneTemplateInfo default2DSceneTemplateInfo = new SceneTemplateInfo
         {
-            name = "Basic 2D (Built-in)",
+            name = "Basic 2D (Built-in / Deprecated)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-2d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}2d-badge-scene-template.png",
             description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer."),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive)
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive),
+            isDeprecated = true,
         };
         internal static SceneTemplateInfo default2DMode3DSceneTemplateInfo = new SceneTemplateInfo
         {
-            name = "Basic 3D (Built-in)",
+            name = "Basic 3D (Built-in / Deprecated)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
             description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer."),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive)
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive),
+            isDeprecated = true,
         };
         internal static SceneTemplateInfo default3DSceneTemplateInfo = new SceneTemplateInfo
         {
-            name = "Basic (Built-in)",
+            name = "Basic (Built-in / Deprecated)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
             description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
-            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive)
+            onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive),
+            isDeprecated = true,
         };
         internal static SceneTemplateInfo[] builtinTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo, default3DSceneTemplateInfo };
         internal static SceneTemplateInfo[] builtin2DTemplateInfos = new[] { emptySceneTemplateInfo, default2DSceneTemplateInfo, default2DMode3DSceneTemplateInfo };
@@ -183,6 +187,11 @@ namespace UnityEditor.SceneTemplate
         internal static void OpenDocumentationUrl()
         {
             Help.BrowseURL(Help.FindHelpNamed("scene-templates"));
+        }
+
+        internal static void OpenDeprecationDocumentationUrl()
+        {
+            Help.BrowseURL(Help.FindHelpNamed("render-pipelines-feature-comparison"));
         }
 
         internal static List<SceneTemplateInfo> GetSceneTemplateInfos()

@@ -50,7 +50,6 @@ namespace UnityEditor
         }
 
         // Can be used by concrete subclasses to store C++ objects
-        [SerializeField]
         MonoReloadableIntPtr   m_ViewPtr;
         [SerializeField]
         View[] m_Children = Array.Empty<View>();

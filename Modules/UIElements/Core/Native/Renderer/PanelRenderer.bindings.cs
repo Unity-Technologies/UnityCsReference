@@ -54,7 +54,10 @@ namespace UnityEngine.UIElements
                 if (nativePanelSettings != value)
                 {
                     if (nativePanelSettings != null)
+                    {
                         RemoveVisualTreeAssetTracker();
+                        RemoveFromHierarchy();
+                    }
 
                     nativePanelSettings = value;
                     isAssetDirty = true;
@@ -204,6 +207,15 @@ namespace UnityEngine.UIElements
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
+        private int m_SoftPointerCaptures = 0;
+        int IPanelComponent.softPointerCaptures
+        {
+            get => m_SoftPointerCaptures;
+            set => m_SoftPointerCaptures = value;
+        }
+
+        VisualElementFocusRing IPanelComponent.focusRing { get; set; }
+
         /// <summary>
         /// Defines how the size of the root element is calculated for world space.
         /// </summary>
@@ -352,12 +364,20 @@ namespace UnityEngine.UIElements
                 m_ReferenceProvider.UnloadReferences();
                 m_ReferenceProvider.Dispose();
             }
+            if (rootVisualElement != null)
+            {
+                rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+                rootVisualElement.ReleaseResources();
+                rootVisualElement = null;
+            }
         }
 
         [RequiredByNativeCode(Optional = true)]
         [RequiredMember]
         void OnPanelRendererDeactivated()
         {
+            PointerDeviceState.RemovePanelComponentData(this);
+
             if (rootVisualElement != null)
             {
                 RemoveVisualTreeAssetTracker();
@@ -408,6 +428,8 @@ namespace UnityEngine.UIElements
                 {
                     RemoveVisualTreeAssetTracker();
                     referenceProvider.UnloadReferences();
+                    rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+                    rootVisualElement.ReleaseResources();
                 }
 
                 if (visualTreeAsset == null)
@@ -423,6 +445,8 @@ namespace UnityEngine.UIElements
                     visualTreeAsset.CloneTree(rootVisualElement, out var referenceTable);
                     referenceProvider.ResolveReferences(referenceTable);
                 }
+
+                (this as IPanelComponent).focusRing = rootVisualElement != null ? new(rootVisualElement) : null;
 
                 SetupFromHierarchy();
 
@@ -642,9 +666,9 @@ namespace UnityEngine.UIElements
             m_RootHasWorldTransform = false;
         }
 
-        float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
+        internal float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        Vector2 PivotOffset()
+        internal Vector2 PivotOffset()
         {
             var pc = (IPanelComponent)this;
 
@@ -742,9 +766,9 @@ namespace UnityEngine.UIElements
                 isWorldSpaceRootUIDocument = false;
             }
 
-            if (rootVisualElement.isWorldSpaceRootUIDocument != isWorldSpaceRootUIDocument)
+            if (rootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
-                rootVisualElement.isWorldSpaceRootUIDocument = isWorldSpaceRootUIDocument;
+                rootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
                 rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
             }
         }
@@ -816,7 +840,7 @@ namespace UnityEngine.UIElements
 
             if(binder != null)
             {
-                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false)); 
+                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false));
             }
         }
 

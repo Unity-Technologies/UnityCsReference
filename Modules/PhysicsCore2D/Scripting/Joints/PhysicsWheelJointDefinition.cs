@@ -131,14 +131,21 @@ namespace Unity.U2D.Physics
         public float drawScale { readonly get => m_DrawScale; set => m_DrawScale = Mathf.Clamp(value, 0.001f, 10f); }
 
         /// <summary>
+        /// Controls whether this joint is automatically drawn when the world is drawn.
+        ///
+        /// See <see cref="PhysicsJoint.worldDrawing"/>.
+        /// </summary>
+        public bool worldDrawing { readonly get => m_WorldDrawing; set => m_WorldDrawing = value; }
+
+        /// <summary>
         /// Whether the shapes on the pair of bodies can come into contact.
         /// </summary>
         public bool collideConnected { readonly get => m_CollideConnected; set => m_CollideConnected = value; }
 
         #region Internal
 
-        [SerializeField] PhysicsBody m_BodyA;
-        [SerializeField] PhysicsBody m_BodyB;
+        PhysicsBody m_BodyA;
+        PhysicsBody m_BodyB;
         [SerializeField] PhysicsTransform m_LocalAnchorA;
         [SerializeField] PhysicsTransform m_LocalAnchorB;
         [SerializeField] bool m_EnableSpring;
@@ -155,6 +162,7 @@ namespace Unity.U2D.Physics
         [SerializeField] [Range(0.0f, 1000.0f)] float m_TuningFrequency;
         [SerializeField] [Range(0.0f, 10.0f)] float m_TuningDamping;
         [SerializeField] [Range(0.0001f, 10.0f)] float m_DrawScale;
+        [SerializeField] bool m_WorldDrawing;
         [SerializeField] bool m_CollideConnected;
 
         #endregion

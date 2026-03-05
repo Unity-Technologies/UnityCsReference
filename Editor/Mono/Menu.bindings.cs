@@ -84,6 +84,7 @@ namespace UnityEditor
         internal static extern void RemoveMenuItem(string name);
 
         [FreeFunction("MenuController::AddSeparator")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static extern void AddSeparator(string name, int priority);
 
         [FreeFunction("MenuController::RebuildAllMenus")]

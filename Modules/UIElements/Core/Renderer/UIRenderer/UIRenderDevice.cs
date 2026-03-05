@@ -84,11 +84,9 @@ namespace UnityEngine.UIElements.UIR
         static ProfilerMarker s_MarkerFence = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.WaitOnFence");
         static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.BeforeDraw");
 
-        internal bool breakBatches { get; set; }
-        internal bool isFlat { get; }
-        internal bool forceGammaRendering { get; }
-
-        public GpuUpdateMode gpuUpdateMode { get; }
+        public bool breakBatches { get; set; }
+        public bool isFlat { get; }
+        public bool forceGammaRendering { get; }
 
         // TODO: It is now an insufficient condition to determine if we use command lists or not
         // (nested render trees do not use command lists)
@@ -100,7 +98,7 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false, GpuUpdateMode gpuUpdateMode = GpuUpdateMode.Default)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false)
         {
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
@@ -116,15 +114,22 @@ namespace UnityEngine.UIElements.UIR
             this.isFlat = isFlat;
             this.forceGammaRendering = forceGammaRendering;
 
-            if (!Utility.HasMappedBufferRange() || gpuUpdateMode == GpuUpdateMode.StagingBuffer)
+            if (!Utility.HasMappedBufferRange())
             {
-                this.gpuUpdateMode = GpuUpdateMode.StagingBuffer;
-                m_MeshManager = new MeshManagerStaged(initialVertexCapacity, initialIndexCapacity);
+                // Not optimal for WebGPU (double staging since the GfxDevice already has a staging CPU buffer).
+                // Typically only for WebGL
+                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, GpuUpdaterType.StagedCpuGpu);
+            }
+            else if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.WebGPU)
+            {
+                // Not supported on WebGL because it doesn't support partial buffer updates (it re-creates the buffer).
+                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, GpuUpdaterType.StagedGpuOnly);
             }
             else
             {
-                this.gpuUpdateMode = GpuUpdateMode.MappedSubUpdates;
-                m_MeshManager = new MeshManagerMapped(initialVertexCapacity, initialIndexCapacity);
+                // Not supported on WebGL because it doesn't support partial buffer updates (it re-creates the buffer).
+                // Not optimal on WebGPU because tracking is not required (buffer access is exclusive).
+                m_MeshManager = new MeshManagerTracked(initialVertexCapacity, initialIndexCapacity);
             }
 
             m_MeshesPendingFree = new();
@@ -771,6 +776,7 @@ namespace UnityEngine.UIElements.UIR
 
                     if (mustApplyCmdState)
                         ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
+
                     head = head.next;
                     continue;
                 }
@@ -788,8 +794,20 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (head.type == CommandType.CutRenderChain)
                         {
+                            var visualElementOwner = head.owner.owner;
+
+                            if (IsComponentDisabledForCommandListOwner(visualElementOwner))
+                            {
+                                // The component is disabled, no need to evaluate its chain.
+                                // We can skip to the next CutRenderChain.
+                                head = head.next;
+                                while (head != null && head.type != CommandType.CutRenderChain)
+                                    head = head.next;
+                                continue;
+                            }
+
                             st.material = null; // Force command list to be created on next draw command
-                            st.commandListOwner = head.owner.owner;
+                            st.commandListOwner = visualElementOwner;
                         }
 
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
@@ -851,6 +869,19 @@ namespace UnityEngine.UIElements.UIR
                 m_CommandListManager.EndSerialize();
 
             ResetScreenSpaceMaterials();
+        }
+
+        bool IsComponentDisabledForCommandListOwner(VisualElement owner)
+        {
+            var uiRenderer = (owner as UIDocumentRootElement)?.uiRenderer;
+            if (uiRenderer != null)
+                return !uiRenderer.enabled || !uiRenderer.gameObject.activeInHierarchy;
+
+            var panelRenderer = (owner as PanelRendererRootElement)?.panelRenderer;
+            if (panelRenderer != null)
+                return !panelRenderer.enabled || !panelRenderer.gameObject.activeInHierarchy;
+
+            return false;
         }
 
         void ResetScreenSpaceMaterials()

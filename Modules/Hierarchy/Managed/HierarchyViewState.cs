@@ -9,28 +9,28 @@ using UnityEngine.Bindings;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Class containing all the overridable columns properties.
+    /// Contains the overridable column properties for a <see cref="HierarchyViewColumn"/>.
     /// </summary>
     [Serializable]
     public sealed class HierarchyViewColumnState
     {
         /// <summary>
-        /// ColumnId of the column.
+        /// The column identifier.
         /// </summary>
         public string ColumnId;
 
         /// <summary>
-        /// Is the column visible
+        /// Whether the column is visible.
         /// </summary>
         public bool Visible;
 
         /// <summary>
-        /// Width of the column
+        /// The width of the column.
         /// </summary>
         public float Width;
 
         /// <summary>
-        /// Which index was the column positioned in the HierarchyView.
+        /// The position index of the column in the <see cref="HierarchyView"/>.
         /// </summary>
         public int Index = -1;
 
@@ -41,7 +41,7 @@ namespace Unity.Hierarchy
     }
 
     /// <summary>
-    /// Class containing all persistable configuration for a HierarchyView.
+    /// Contains the persistable configuration for a <see cref="HierarchyView"/>.
     /// </summary>
     [Serializable]
     public sealed class HierarchyViewState
@@ -127,38 +127,38 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Valid Content in the HierarchyViewState
+        /// Specifies which content is valid in a <see cref="HierarchyViewState"/>.
         /// </summary>
         [Flags]
         public enum Content
         {
             /// <summary>
-            /// Initialized content
+            /// The initialized content.
             /// </summary>
             Invalid = 0,
 
             /// <summary>
-            /// Persist SelectedIds
+            /// Persists the selected identifiers.
             /// </summary>
             ViewModelState = 1 << 1,
 
             /// <summary>
-            /// Persist search text
+            /// Persists the search text.
             /// </summary>
             SearchText = 1 << 2,
 
             /// <summary>
-            /// Persist Column configuration
+            /// Persists the column configuration.
             /// </summary>
             Columns = 1 << 3,
 
             /// <summary>
-            /// Persist Scroll Position
+            /// Persists the scroll position.
             /// </summary>
             ScrollPosition = 1 << 4,
 
             /// <summary>
-            /// Persist all content
+            /// Persists all content.
             /// </summary>
             All = ViewModelState | SearchText | Columns | ScrollPosition,
 
@@ -173,7 +173,7 @@ namespace Unity.Hierarchy
             Settings = Content.Columns,
 
             /// <summary>
-            /// Content to persist when before a domain reload and to restore after domain reload.
+            /// Content to persist before a domain reload and restore after a domain reload.
             /// </summary>
             DomainReload = Content.Columns | Content.ViewModelState | Content.SearchText | Content.ScrollPosition,
 
@@ -188,13 +188,13 @@ namespace Unity.Hierarchy
             ExitPlayMode = Content.ViewModelState | Content.SearchText | Content.ScrollPosition,
 
             /// <summary>
-            /// Content to persist when changing stage (ex: digging into Prefab).
+            /// Content to persist when changing stage. For example, when entering a Prefab.
             /// </summary>
             Stage = Content.ViewModelState | Content.ScrollPosition
         }
 
         /// <summary>
-        /// Create a new HierarchyViewState
+        /// Creates a new <see cref="HierarchyViewState"/>.
         /// </summary>
         public HierarchyViewState()
         {
@@ -202,48 +202,48 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a new HierarchyViewState
+        /// Creates a new <see cref="HierarchyViewState"/>.
         /// </summary>
-        /// <param name="content">Content we want to actually persist in the HierarchyViewState.</param>
+        /// <param name="content">The <see cref="Content"/> flags that specify which content to persist.</param>
         public HierarchyViewState(Content content)
         {
             ValidContent = content;
         }
 
         /// <summary>
-        /// Valid Content in the HierarchyViewState.
+        /// The valid <see cref="Content"/> flags in this <see cref="HierarchyViewState"/>.
         /// </summary>
         public Content ValidContent;
 
         /// <summary>
-        /// HierarchyViewModelState encoded as a compressed stream.
+        /// The view model state encoded as a compressed byte stream.
         /// </summary>
         public byte[] ViewModelState;
 
         /// <summary>
-        /// Current search text in the HierarchyView searchfield.
+        /// The search text in the <see cref="HierarchyView"/> search field.
         /// </summary>
         public string SearchText;
 
         /// <summary>
-        /// Current column preferences
+        /// The column layout and visibility preferences.
         /// </summary>
         public HierarchyViewColumnState[] Columns = Array.Empty<HierarchyViewColumnState>();
 
         /// <summary>
-        /// Current View scroll position.
+        /// The horizontal scroll position of the <see cref="HierarchyView"/>.
         /// </summary>
         public double ScrollPositionX = -1;
 
         /// <summary>
-        /// Current View scroll position.
+        /// The vertical scroll position of the <see cref="HierarchyView"/>.
         /// </summary>
         public double ScrollPositionY = -1;
 
         /// <summary>
-        /// Convert a HierarchyViewState to a string.
+        /// Converts this <see cref="HierarchyViewState"/> to a string.
         /// </summary>
-        /// <returns>return the string representation of a HierarchyViewState</returns>
+        /// <returns>A string representation of this <see cref="HierarchyViewState"/>.</returns>
         public override string ToString()
         {
             var str = $"Content: {ValidContent}";

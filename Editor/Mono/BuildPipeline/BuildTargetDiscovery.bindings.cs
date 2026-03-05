@@ -74,6 +74,8 @@ namespace UnityEditor
             public bool HasFlag(TargetAttributes flag) { return (flags & flag) == flag; }
         }
 
+        internal static string k_ResourcesSDKPlatformInfoPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/SDKPlatformInfo");
+
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
         public static extern bool PlatformGroupHasFlag(BuildTargetGroup group, TargetAttributes flag);
@@ -250,6 +252,8 @@ namespace UnityEditor
             IsLinuxServerBuildTarget = (1 << 11),
             IsVisibleInPlatformBrowserOnly = (1 << 12),
             IsDerivedBuildTarget = (1 << 13),
+            IsMultiTargetPlatform = (1 << 14),
+            IsSDKPlatform = (1 << 15)
         }
         public record struct NameAndLink(string name, string linkUrl);
 
@@ -259,6 +263,7 @@ namespace UnityEditor
             public string downloadLinkName = String.Empty;
             public BuildTarget buildTarget = BuildTarget.NoTarget;
             public StandaloneBuildSubtarget subtarget = StandaloneBuildSubtarget.Default;
+            public GUID[] supportedPlatformGuids = Array.Empty<GUID>();
             public PlatformAttributes flags = PlatformAttributes.None;
 
             /// <summary>
@@ -276,12 +281,14 @@ namespace UnityEditor
             /// </summary>
             public PlatformPackageList partnerPackages = new PlatformPackageList();
 
-            public string description = L10n.Tr("");
+            public string description = string.Empty;
             public string instructions = L10n.Tr("*standard install form hub");
             public string iconName = "BuildSettings.Editor";
             public string subtitle = string.Empty;
             public string settingsDocsLink = string.Empty;
             public List<NameAndLink> nameAndLinkToShowUnderTitle = null;
+            public string keyFeatures = string.Empty;
+            public string resources = string.Empty;
 
             // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
             // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
@@ -292,6 +299,7 @@ namespace UnityEditor
             public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
         }
 
+        [Serializable]
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal class PlatformPackageList
         {
@@ -300,14 +308,15 @@ namespace UnityEditor
             public PlatformPackageInfo[] recommendedPackages = Array.Empty<PlatformPackageInfo>();
         }
 
+        [Serializable]
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal class PlatformPackageInfo
         {
-            public string displayName { get; }
-            public string qualifiedName { get; }
-            public string description { get; }
-            public string publisher { get; }
-            public bool hasThumbnail { get; }
+            public string displayName;
+            public string qualifiedName;
+            public string description;
+            public string publisher;
+            public bool hasThumbnail;
 
             public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "", bool hasThumbnail = false)
             {
@@ -874,6 +883,7 @@ namespace UnityEditor
 
         static BuildTargetDiscovery()
         {
+            LoadSDKPlatforms();
             PreloadBuildPlatformInstalledData();
         }
         public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
@@ -972,6 +982,81 @@ namespace UnityEditor
             return (BuildTarget.NoTarget, StandaloneBuildSubtarget.Default);
         }
 
+        static void LoadSDKPlatforms()
+        {
+            if (!Directory.Exists(k_ResourcesSDKPlatformInfoPath))
+                return;
+
+            var sdkPlatformFiles = Directory.GetFiles(k_ResourcesSDKPlatformInfoPath, "*.SDKPlatform.json");
+            foreach (var sdkPlatformFile in sdkPlatformFiles)
+            {
+                var text = File.ReadAllText(sdkPlatformFile);
+                SDKPlatformInfo sdkPlatformInfo;
+                try
+                {
+                    sdkPlatformInfo = JsonUtility.FromJson(text, typeof(SDKPlatformInfo)) as SDKPlatformInfo;
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (sdkPlatformInfo == null || string.IsNullOrEmpty(sdkPlatformInfo.guid))
+                    continue;
+
+                var sdkPlatformGuid = new GUID(sdkPlatformInfo.guid);
+                if (allPlatforms.ContainsKey(sdkPlatformGuid))
+                    continue;
+
+                var flags = PlatformAttributes.None;
+                switch (sdkPlatformInfo.flags.platformType)
+                {
+                    case SDKPlatformType.Derived:
+                        flags |= PlatformAttributes.IsDerivedBuildTarget;
+                        if (sdkPlatformInfo.baseBuildTarget <= 0)
+                            continue;
+                        break;
+                    case SDKPlatformType.MultiTarget:
+                        flags |= PlatformAttributes.IsMultiTargetPlatform;
+                        if (sdkPlatformInfo.supportedPlatformGuids == null || sdkPlatformInfo.supportedPlatformGuids.Length <= 0)
+                            continue;
+                        break;
+                }
+
+                PlatformInfo platformInfo = new()
+                {
+                    supportedPlatformGuids = sdkPlatformInfo.flags.platformType == SDKPlatformType.MultiTarget ? 
+                        Array.ConvertAll(sdkPlatformInfo.supportedPlatformGuids, s => new GUID(s)) : Array.Empty<GUID>(),
+                    buildTarget = sdkPlatformInfo.baseBuildTarget,
+                    displayName = sdkPlatformInfo.displayName ?? string.Empty,
+                    description = sdkPlatformInfo.description ?? string.Empty,
+                    instructions = sdkPlatformInfo.instructions ?? string.Empty,
+                    keyFeatures = sdkPlatformInfo.keyFeatures ?? string.Empty,
+                    resources = sdkPlatformInfo.resources ?? string.Empty,
+                    iconName = sdkPlatformInfo.iconName,
+                    buildProfilePlatformBannerBgColorHex = sdkPlatformInfo.bannerBackgroundColorHex ?? "#00000000",
+                    internalPackages = sdkPlatformInfo.internalPackages,
+                    partnerPackages = sdkPlatformInfo.partnerPackages,
+                    flags = flags | PlatformAttributes.IsSDKPlatform | PlatformAttributes.IsVisibleInPlatformBrowserOnly |
+                        PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget |
+                        PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
+                };
+                allPlatforms.Add(sdkPlatformGuid, platformInfo);
+
+                if (string.IsNullOrEmpty(sdkPlatformInfo.platformGroupName))
+                    continue;
+
+                var targetGroupName = L10n.Tr(sdkPlatformInfo.platformGroupName);                                                            
+                var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName);
+                if (groupIndex < 0)
+                    continue;
+
+                var platformsList = new List<GUID>(allPlatformGroups[groupIndex].platforms);
+                platformsList.Add(sdkPlatformGuid);
+                allPlatformGroups[groupIndex].platforms = platformsList.ToArray();
+            }
+        }
+
         static void PreloadBuildPlatformInstalledData()
         {
             foreach (var platform in allPlatforms)
@@ -980,7 +1065,8 @@ namespace UnityEditor
                 // Considers that StandaloneWindows and StandaloneWindows64 are the same platform.
                 if (platform.Value.buildTarget != BuildTarget.StandaloneWindows
                     && platform.Value.subtarget != StandaloneBuildSubtarget.Server
-                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
+                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
+                    && !platform.Value.HasFlag(PlatformAttributes.IsMultiTargetPlatform))
                 {
                     s_BuildTargetToPlatformGUID.Add(platform.Value.buildTarget, platform.Key);
                     if (platform.Value.buildTarget == BuildTarget.StandaloneWindows64)
@@ -1159,6 +1245,22 @@ namespace UnityEditor
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
                 return platformInfo.description;
+
+            return string.Empty;
+        }
+
+        public static string BuildPlatformKeyFeatures(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.keyFeatures;
+
+            return string.Empty;
+        }
+
+        public static string BuildPlatformResources(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.resources;
 
             return string.Empty;
         }

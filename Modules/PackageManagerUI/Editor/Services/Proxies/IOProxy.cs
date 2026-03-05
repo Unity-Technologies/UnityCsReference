@@ -21,8 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool IsDirectoryEmpty(string directoryPath);
         bool DirectoryExists(string directoryPath);
-        string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
-        string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
+        string[] GetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
         void CreateDirectory(string directoryPath);
         void DeleteDirectory(string directoryPath);
         string GetProjectDirectory();
@@ -37,7 +36,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void FileWriteAllBytes(string filePath, byte[] bytes);
         void FileWriteAllText(string filePath, string contents);
         string GetUniqueTempPathInProject();
-        NPath[] GetFiles(string tempFolder, string searchPattern, bool recurse);
         void SetFileAttributes(string file, FileAttributes attributes);
         FileAttributes GetFileAttributes(string file);
         void Move(string sourceDirName, string destinationDirName);
@@ -55,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 CreateDirectory(destinationPath);
 
             // Now Create all the directories
-            foreach (var dir in DirectoryGetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            foreach (var dir in GetSubDirectories(sourcePath, "*", SearchOption.AllDirectories))
             {
                 var path = dir.Replace(sourcePath, destinationPath);
                 if (!DirectoryExists(path))
@@ -63,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // Copy all the files & Replaces any files with the same name
-            var files = DirectoryGetFiles(sourcePath, "*", SearchOption.AllDirectories);
+            var files = GetFiles(sourcePath, "*", SearchOption.AllDirectories);
             float count = 0;
             foreach (var source in files)
             {
@@ -79,7 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public ulong DirectorySizeInBytes(string path)
         {
             ulong size = 0;
-            foreach (var file in DirectoryGetFiles(path, "*", SearchOption.AllDirectories))
+            foreach (var file in GetFiles(path, "*", SearchOption.AllDirectories))
                 size += GetFileSize(file);
             return size;
         }
@@ -112,10 +110,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
 
-        public string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        public string[] GetSubDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
             => new NPath(directoryPath).Directories(searchPattern, searchOption == SearchOption.AllDirectories).SelectToNewArray(p => p.ToString(SlashMode.Native));
 
-        public string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        public string[] GetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
             => new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories).SelectToNewArray(p => p.ToString(SlashMode.Native));
 
         public void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
@@ -135,23 +133,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void MakeFileWritable(string filePath, bool writable)
         {
-            var npath = new NPath(filePath);
-            var attributes = npath.Attributes;
+            var path = new NPath(filePath);
+            var attributes = path.Attributes;
 
             if (writable && (attributes & FileAttributes.ReadOnly) != 0)
-                npath.Attributes &= ~FileAttributes.ReadOnly;
+                path.Attributes &= ~FileAttributes.ReadOnly;
 
             if (!writable && (attributes & FileAttributes.ReadOnly) == 0)
-                npath.Attributes |= FileAttributes.ReadOnly;
+                path.Attributes |= FileAttributes.ReadOnly;
         }
 
         public void CopyFile(string sourceFileName, string destFileName, bool overwrite)
         {
-            var npath = new NPath(destFileName);
-            if (!overwrite && npath.FileExists())
+            var path = new NPath(destFileName);
+            if (!overwrite && path.FileExists())
                 return;
-
-            new NPath(sourceFileName).Copy(npath);
+            new NPath(sourceFileName).Copy(path);
         }
 
         public ulong GetFileSize(string filePath)
@@ -180,7 +177,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void FileWriteAllText(string filePath, string contents) => new NPath(filePath).WriteAllText(contents);
         public string GetUniqueTempPathInProject() => FileUtil.GetUniqueTempPathInProject();
 
-        public NPath[] GetFiles(string path, string searchPattern, bool recurse) => new NPath(path).Files(searchPattern, recurse);
         public void SetFileAttributes(string file, FileAttributes attributes) => new NPath(file).Attributes = attributes;
         public FileAttributes GetFileAttributes(string file) => new NPath(file).Attributes;
         public void Move(string sourceDirName, string destinationDirName) => new NPath(sourceDirName).Move(destinationDirName);

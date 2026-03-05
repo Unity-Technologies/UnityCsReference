@@ -223,6 +223,23 @@ namespace Unity.U2D.Physics
         public readonly PhysicsUserData userData { get => m_Id.userData; set => m_Id.userData = value; }
 
         /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => m_Id.ownerUserData; }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => m_Id.SetOwnerUserData(physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Controls whether this joint is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => m_Id.worldDrawing; set => m_Id.worldDrawing = value; }
+
+        /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.
         /// </summary>
         public readonly void Draw() => m_Id.Draw();

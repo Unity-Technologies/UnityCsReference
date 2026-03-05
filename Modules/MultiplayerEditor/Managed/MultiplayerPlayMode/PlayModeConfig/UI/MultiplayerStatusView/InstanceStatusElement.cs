@@ -174,6 +174,12 @@ internal class InstanceStatusElement : VisualElement
 
     VisualElement CreateContent(Instance instance)
     {
-        return instance.Controller.CreateControllerUI(instance);
+        var container = new VisualElement();
+        container.Add(instance.Controller.CreateControllerUI(instance));
+        foreach (var decorator in instance.DecoratorsControllers)
+        {
+            container.Add(decorator.CreateControllerUI(instance));
+        }
+        return container;
     }
 }

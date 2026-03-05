@@ -88,6 +88,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsBody::GetJoints", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsBody_GetJoints(PhysicsBody body, Allocator allocator);
         [NativeMethod(Name = "PhysicsBody::GetContacts", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsBody_GetContacts(PhysicsBody body, Allocator allocator);
         [NativeMethod(Name = "PhysicsBody::CalculateAABB", IsThreadSafe = true)] extern internal static PhysicsAABB PhysicsBody_CalculateAABB(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsBody_SetWorldDrawing(PhysicsBody body, bool flag);
+        [NativeMethod(Name = "PhysicsBody::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetWorldDrawing(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::Draw", IsThreadSafe = true)] extern internal static void PhysicsBody_Draw(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsBody_SetOwner(PhysicsBody body, UnityEngine.Object ownerObject);
         [NativeMethod(Name = "PhysicsBody::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsBody_GetOwner(PhysicsBody body);
@@ -96,6 +98,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsBody_GetCallbackTarget(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetUserData(PhysicsBody body, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsBody::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetUserData(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetOwnerUserData(PhysicsBody body, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsBody::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetOwnerUserData(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformObject", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformObject(PhysicsBody body, Transform transform);
         [NativeMethod(Name = "PhysicsBody::GetTransformObject", IsThreadSafe = true)] extern internal static Transform PhysicsBody_GetTransformObject(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformWriteMode", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformWriteMode(PhysicsBody body, PhysicsBody.TransformWriteMode writeMode);

@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace Unity.UI.Builder
 {
@@ -163,13 +161,10 @@ namespace Unity.UI.Builder
 
         protected override IEnumerable<VisualElement> GetSelectedElements()
         {
-            var selectedElements = selection.selection;
+            var selectedElements = new HashSet<VisualElement>(selection.selection);
             var sortedSelectedElementsInAsset = documentRootElement.FindSelectedElements();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             sortedSelectedElementsInAsset.RemoveAll(x => !selectedElements.Contains(x));
-#pragma warning restore UA2001
-
             return sortedSelectedElementsInAsset;
         }
     }

@@ -10,6 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.TextCore.Text
 {
     [Serializable]
+    [Obsolete("Unicode line breaking rules are now handled natively by Advanced Text Generator (ATG). This type is no longer required.", false)]
     public class UnicodeLineBreakingRules
     {
         /// <summary>

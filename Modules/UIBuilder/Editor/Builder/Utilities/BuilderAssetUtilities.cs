@@ -20,35 +20,15 @@ using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
-    struct SynchronizePathResult
-    {
-        public bool success { get; set; }
-        public UxmlAsset uxmlAsset { get; set; }
-        public object serializedData { get; set; }
-        public UxmlSerializedDataDescription dataDescription { get; set; }
-        public UxmlSerializedAttributeDescription attributeDescription { get; set; }
-        public object attributeOwner { get; set; }
-        public string propertyPath { get; set; }
-    }
-
     internal static class BuilderAssetUtilities
     {
         public static string assetsPath { get; } = Application.dataPath;
         public static string projectPath { get; } = assetsPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
         public static string packagesPath { get; } = projectPath + "/Packages";
 
-        static readonly Dictionary<string, string[]> s_PathPartsCache = new();
         static bool s_DocumentUndoRecorded;
 
         internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
-
-        const string k_ArraySizePart = "size";
-
-        // UxmlTraits
-
-        // Sync path
-        static readonly List<UxmlObjectAsset> s_TempUxmlAssets = new();
-        static readonly object[] s_SingleUxmlSerializedData = new object[1];
 
         static string GetFullPath(string path)
         {
@@ -546,26 +526,7 @@ namespace Unity.UI.Builder
 
         public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement)
         {
-            TemplateContainer templateContainerParent = null;
-            var parent = visualElement.parent;
-
-            while (parent != null)
-            {
-                if (parent is TemplateContainer templateContainer && templateContainer.GetVisualElementAsset() != null)
-                {
-                    templateContainerParent = templateContainer;
-                    break;
-                }
-
-                if (BuilderSharedStyles.IsDocumentElement(parent))
-                {
-                    break;
-                }
-
-                parent = parent.parent;
-            }
-
-            return templateContainerParent;
+            return UxmlAssetUtilities.GetVisualElementRootTemplate(visualElement, VisualElementExtensions.GetVisualElementAsset);
         }
 
         public static bool HasDynamicallyCreatedTemplateAncestor(VisualElement visualElement)
@@ -673,11 +634,6 @@ namespace Unity.UI.Builder
             Hierarchy = 1,
             Styles = 2
         }
-        public static void LiveReload(LiveReloadChanges changes)
-        {
-            if ((changes & LiveReloadChanges.Hierarchy) != 0)
-                UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
-        }
 
         // Check if VisualElement will support type as a child. Assume true by default, unless explicitly false.
         public static bool IsSupportedChildType(VisualElement visualElement, Type type)
@@ -760,341 +716,35 @@ namespace Unity.UI.Builder
         /// <returns></returns>
         public static SynchronizePathResult SynchronizePath(BuilderUxmlAttributesEditingContext context, string propertyPath, bool changeUxmlAssets)
         {
-            SynchronizePathResult result = default;
-
-            if (string.IsNullOrEmpty(propertyPath))
-                return result;
-
-            // Cache the split so we don't have to do it every time.
-            if (!s_PathPartsCache.TryGetValue(propertyPath, out var pathParts))
-            {
-                if (context.serializedBasePath == propertyPath)
-                {
-                    pathParts = Array.Empty<string>();
-                }
-                else
-                {
-                    pathParts = propertyPath[(context.serializedBasePath.Length + 1)..].Split('.');
-                }
-
-                s_PathPartsCache[propertyPath] = pathParts;
-            }
-
             s_DocumentUndoRecorded = false;
-            object currentUxmlSerializedData = context.uxmlSerializedData;
-            UxmlAsset currentAttributesUxmlOwner = context.elementAsset;
-            result.attributeOwner = context.element;
-            result.propertyPath = propertyPath;
 
-            for (int i = 0; i < pathParts.Length; ++i)
+            Action<VisualTreeAsset, VisualElement> handleTemplateOverride = null;
+            if (context.isInTemplateInstance)
             {
-                if (currentUxmlSerializedData == null)
+                handleTemplateOverride = (vta, element) =>
                 {
-                    continue;
-                }
-
-                // Is the current value a list?
-                if (currentUxmlSerializedData is IList serializedDataList)
-                {
-                    // Find the item index from the path and extract it.
-                    var dataPath = pathParts[i + 1];
-
-                    // Targeting the Array.size, nothing more to sync. The array size was synchronized in the previous
-                    // loop and we don't want to return anything here because the result at this path is not part of UxmlSerializedData.
-                    if (dataPath == k_ArraySizePart)
-                    {
-                        result.success = false;
-                        return result;
-                    }
-
-                    var arrayItemIndexStart = dataPath.IndexOf('[') + 1;
-                    var arrayItemIndexEnd = dataPath.IndexOf(']');
-                    var indexString = dataPath.Substring(arrayItemIndexStart, arrayItemIndexEnd - arrayItemIndexStart);
-                    var listIndex = int.Parse(indexString);
-
-                    currentAttributesUxmlOwner = s_TempUxmlAssets[listIndex];
-                    currentUxmlSerializedData = serializedDataList[listIndex];
-
-                    if (result.attributeOwner is IList attributeOwnerList && listIndex < attributeOwnerList.Count)
-                    {
-                        result.attributeOwner = attributeOwnerList[listIndex];
-                    }
-                    else
-                    {
-                        result.attributeOwner = null; // We could not extract the value
-                    }
-
-                    i += 1;
-                    continue;
-                }
-
-                result.dataDescription = UxmlSerializedDataRegistry.GetDescription(currentUxmlSerializedData.GetType().DeclaringType.FullName);
-
-                var name = pathParts[i];
-                result.attributeDescription = result.dataDescription.FindAttributeWithPropertyName(name);
-                var attributeObjectDescription = result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
-                if (attributeObjectDescription == null)
-                    break;
-
-                result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out var updatedAttributeOwner);
-                result.attributeOwner = updatedAttributeOwner;
-
-                var parentUxmlSerializedData = currentUxmlSerializedData as UxmlSerializedData;
-                currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(parentUxmlSerializedData);
-                var uxmlSerializedDataList = currentUxmlSerializedData as IList;
-
-                // If we are not syncing a list then its a single field but we still treat it as a list.
-                if (uxmlSerializedDataList == null)
-                {
-                    s_SingleUxmlSerializedData[0] = currentUxmlSerializedData;
-                    uxmlSerializedDataList = s_SingleUxmlSerializedData;
-                }
-
-                if (!SyncUxmlAssetsFromSerializedData(context, uxmlSerializedDataList, parentUxmlSerializedData, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets))
-                {
-                    if (!changeUxmlAssets)
-                    {
-                        result.uxmlAsset = currentAttributesUxmlOwner;
-                        result.serializedData = currentUxmlSerializedData;
-                        result.success = false;
-                        return result;
-                    }
-                }
-
-                if (!attributeObjectDescription.isList)
-                    currentAttributesUxmlOwner = currentUxmlSerializedData == null ? null : s_TempUxmlAssets[0];
+                    CallDeserializeOnElement(context, element);
+                };
             }
+
+            var result = UxmlAssetUtilities.SynchronizePath(
+                context.visualTree,
+                context.uxmlSerializedData,
+                context.elementAsset,
+                context.serializedBasePath,
+                propertyPath,
+                changeUxmlAssets,
+                context.element,
+                () => RecordDocumentUndoOnce(context),
+                context.isInTemplateInstance,
+                handleTemplateOverride,
+                VisualElementExtensions.GetVisualElementAsset);
 
             // We need to update the serialized object if we made changes.
             if (changeUxmlAssets)
                 context.rootSerializedObject.UpdateIfRequiredOrScript();
 
-            result.uxmlAsset = currentAttributesUxmlOwner;
-            result.serializedData = currentUxmlSerializedData;
-            result.success = true;
             return result;
-        }
-
-        static bool SyncUxmlAssetsFromSerializedData(BuilderUxmlAttributesEditingContext context, IList uxmlSerializedData, UxmlSerializedData parentUxmlSerialized, UxmlAsset parentAsset,
-            UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges)
-        {
-            bool contentsChanged = false;
-
-            s_TempUxmlAssets.Clear();
-
-            using var listPool = ListPool<UxmlObjectAsset>.Get(out var collectedUxmlAssets);
-            parentAsset?.CollectUxmlObjectAssets(attributeDescription.rootName, collectedUxmlAssets);
-
-            // Sync the list by checking each item is at the expected index and moving/adding items as needed.
-            using var hashSetPool = HashSetPool<int>.Get(out var duplicateIds);
-            for (int j = 0; j < uxmlSerializedData.Count; ++j)
-            {
-                var currentSerializedData = uxmlSerializedData[j] as UxmlSerializedData;
-
-                // Avoid adding null uxml objects when attribute description is not a list
-                if (!attributeDescription.isList && currentSerializedData == null)
-                {
-                    continue;
-                }
-
-                if (currentSerializedData != null && currentSerializedData.uxmlAssetId != 0)
-                {
-                    // When a list element is copied it may also copy the id of the original element.
-                    // If the id has already been used we clear it so a new one can be assigned.
-                    if (duplicateIds.Contains(currentSerializedData.uxmlAssetId))
-                        currentSerializedData.uxmlAssetId = 0;
-                }
-
-                // Find matching UxmlObjectAsset
-                if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(context, currentSerializedData, parentUxmlSerialized, parentAsset,
-                    attributeDescription, canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j))
-                {
-                    if (!canMakeChanges)
-                        return false;
-                    contentsChanged = true;
-                }
-
-                duplicateIds.Add(foundUxmlAsset.id);
-                s_TempUxmlAssets.Add(foundUxmlAsset);
-            }
-
-            var acceptedTypes = attributeDescription.uxmlObjectAcceptedTypes;
-
-            // If we have uxml assets remaining then the serialized data must have been removed and we should do the same.
-            foreach (var collectedUxmlAsset in collectedUxmlAssets)
-            {
-                if (collectedUxmlAsset == null)
-                    continue;
-
-                var isAcceptedType = false;
-                foreach (var acceptedType in acceptedTypes)
-                {
-                    if (acceptedType.DeclaringType?.FullName == collectedUxmlAsset.fullTypeName)
-                    {
-                        isAcceptedType = true;
-                        break;
-                    }
-                }
-
-                // Do not delete the asset if it's not an accepted type.
-                // This avoid deleting other objects of different types when having multiple UxmlObjectReferences with no name like in MultiColumnListView/TreeView
-                if (!isAcceptedType && collectedUxmlAsset.fullTypeName != UxmlAsset.NullNodeType)
-                {
-                    s_TempUxmlAssets.Add(collectedUxmlAsset);
-                    continue;
-                }
-
-                contentsChanged = true;
-                RecordDocumentUndoOnce(context);
-
-                // We need to do this to ensure that any dependencies are also removed.
-                collectedUxmlAsset.RemoveAssetAndFieldParentIfEmpty();
-            }
-
-            if (contentsChanged)
-                parentAsset.SetUxmlObjectAssets(attributeDescription.rootName, s_TempUxmlAssets);
-
-            return true;
-        }
-
-        static bool ExtractOrCreateUxmlSerializedDataUxmlAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedData uxmlSerializedData, UxmlSerializedData parentUxmlSerialized,
-            UxmlAsset parentAsset, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges,
-            List<UxmlObjectAsset> uxmlObjectAssets, out UxmlObjectAsset uxmlAsset, int expectedIndex)
-        {
-            // If the asset id is 0 then we do not currently have a UxmlAsset for this serialized data
-            if (uxmlSerializedData?.uxmlAssetId != 0)
-            {
-                // Check if the data is at the expected index.
-                if (expectedIndex < uxmlObjectAssets.Count)
-                {
-                    if (uxmlObjectAssets[expectedIndex] != null &&
-                        ((uxmlSerializedData == null && uxmlObjectAssets[expectedIndex]?.isNull == true) ||
-                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[expectedIndex]?.id))
-                    {
-                        uxmlAsset = uxmlObjectAssets[expectedIndex];
-
-                        // We dont remove the asset from the list as it will break the expected index but we do set it to null
-                        uxmlObjectAssets[expectedIndex] = null;
-                        return true;
-                    }
-                }
-
-                if (!canMakeChanges)
-                {
-                    uxmlAsset = null;
-                    return false;
-                }
-
-                RecordDocumentUndoOnce(context);
-
-                // See if we can find it at another index
-                for (int i = 0; i < uxmlObjectAssets.Count; ++i)
-                {
-                    if (uxmlObjectAssets[i] == null)
-                        continue;
-
-                    if ((uxmlSerializedData == null && uxmlObjectAssets[i].isNull) ||
-                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[i].id)
-                    {
-                        uxmlAsset = uxmlObjectAssets[i];
-                        uxmlObjectAssets[i] = null;
-                        return false;
-                    }
-                }
-            }
-
-            if (!canMakeChanges)
-            {
-                uxmlAsset = null;
-                return false;
-            }
-
-            RecordDocumentUndoOnce(context);
-
-            attributeDescription.SetSerializedValueAttributeFlags(parentUxmlSerialized, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-
-            // We could not find the asset so we need to create a new one.
-            uxmlAsset = CreateUxmlObjectAsset(context, attributeDescription, uxmlSerializedData, parentAsset);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Checks if any serialized data fields are not set to their default values. If any are not, apply those changes to the UXML asset.
-        /// </summary>
-        /// <param name="uxmlSerializedData">The serialized data to check for non-default values.</param>
-        /// <param name="uxmlAsset">The asset to apply the uxml attributes to.</param>
-        public static void SyncSerializedDataToNewUxmlAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedData uxmlSerializedData, UxmlAsset uxmlAsset)
-        {
-            if (uxmlSerializedData == null)
-                return;
-
-            var description = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
-            bool madeChanges = false;
-            foreach (var attribute in description.serializedAttributes)
-            {
-                if (attribute.isUxmlObject)
-                {
-                    madeChanges = true;
-                    var attributeUxmlObjectDescription = attribute as UxmlSerializedUxmlObjectAttributeDescription;
-                    attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-                    if (attribute.isList)
-                    {
-                        // Extract the serialized data list
-                        var serializedDataList = (IList)attribute.GetSerializedValue(uxmlSerializedData);
-                        foreach (UxmlSerializedData serializedDataItem in serializedDataList)
-                        {
-                            CreateUxmlObjectAsset(context, attributeUxmlObjectDescription, serializedDataItem, uxmlAsset);
-                        }
-                    }
-                    else
-                    {
-                        var serializedData = attribute.GetSerializedValue(uxmlSerializedData) as UxmlSerializedData;
-
-                        // Avoid creating null objects when attribute description is not a list
-                        if (serializedData != null)
-                        {
-                            CreateUxmlObjectAsset(context, attributeUxmlObjectDescription, serializedData, uxmlAsset);
-                        }
-                    }
-                }
-                else
-                {
-                    var attributeValue = attribute.GetSerializedValue(uxmlSerializedData);
-                    if (!UxmlAttributeComparison.ObjectEquals(attributeValue, attribute.defaultValue))
-                    {
-                        madeChanges = true;
-                        attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-
-                        if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, context.visualTree, out var stringValue))
-                            stringValue = attributeValue?.ToString();
-
-                        using (new BuilderUxmlAttributesEditingContext.DisableUndoScope(context))
-                        {
-                            PostAttributeValueChange(context, attribute.name, stringValue, uxmlAsset);
-                        }
-                    }
-                }
-            }
-
-            if (madeChanges)
-                context.rootSerializedObject.UpdateIfRequiredOrScript();
-        }
-
-        static UxmlObjectAsset CreateUxmlObjectAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedUxmlObjectAttributeDescription attribute, UxmlSerializedData serializedData, UxmlAsset parentAsset)
-        {
-            var fullTypeName = serializedData == null ? UxmlAsset.NullNodeType : serializedData.GetType().DeclaringType.FullName;
-            var xmlns = context.visualTree.FindUxmlNamespaceDefinitionForTypeName(parentAsset, fullTypeName);
-            var uxmlAsset = context.visualTree.AddUxmlObject(parentAsset, attribute.rootName, fullTypeName, xmlns);
-
-            // Assign the new asset id to the serialized data
-            if (serializedData != null)
-            {
-                SyncSerializedDataToNewUxmlAsset(context, serializedData, uxmlAsset);
-                serializedData.uxmlAssetId = uxmlAsset.id;
-            }
-
-            return uxmlAsset;
         }
 
         static void RecordDocumentUndoOnce(BuilderUxmlAttributesEditingContext context)
@@ -1104,7 +754,6 @@ namespace Unity.UI.Builder
                 UndoRecordDocument(context,BuilderConstants.ModifyUxmlObject);
                 s_DocumentUndoRecorded = true;
             }
-            UndoRecordDocument(context, BuilderConstants.ModifyUxmlObject);
         }
 
         public static void CallDeserializeOnElement(BuilderUxmlAttributesEditingContext context, VisualElement element = null)
@@ -1117,46 +766,6 @@ namespace Unity.UI.Builder
             // We need to clear bindings before calling Init to avoid corrupting the data source.
             BuilderBindingUtility.ClearUxmlBindings(element);
             context.uxmlSerializedData.Deserialize(element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
-        }
-
-        static void PostAttributeValueChange(BuilderUxmlAttributesEditingContext context, string attributeName, string value, UxmlAsset uxmlAsset = null)
-        {
-            UndoRecordDocument(context, BuilderConstants.ChangeAttributeValueUndoMessage);
-
-            // Set value in asset.
-            if (context.isInTemplateInstance)
-            {
-                TemplateContainer templateContainerParent = GetVisualElementRootTemplate(context.element);
-
-                if (templateContainerParent != null)
-                {
-                    var templateAsset = templateContainerParent.GetVisualElementAsset() as TemplateAsset;
-                    var currentVisualElementName = context.element.name;
-
-                    if (!string.IsNullOrEmpty(currentVisualElementName))
-                    {
-                        var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(context.element);
-                        templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
-
-                        var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
-                        elementsToChange.ForEach(x =>
-                        {
-                            var templateVea = x.GetVisualElementAssetInTemplate();
-
-                            if (templateVea == null)
-                                return;
-
-                            UxmlSerializer.CreateSerializedDataOverrides(context.visualTree);
-                            CallDeserializeOnElement(context, x);
-                        });
-                    }
-                }
-            }
-            else
-            {
-                uxmlAsset ??= context.elementAsset;
-                uxmlAsset.SetAttribute(attributeName, value);
-            }
         }
 
         public static string GetUndoMessage(SerializedProperty prop)

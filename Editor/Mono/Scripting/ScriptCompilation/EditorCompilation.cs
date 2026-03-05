@@ -8,10 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using NiceIO;
 using Bee.BeeDriver;
-using Bee.BinLog;
 using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
 using UnityEditor.Compilation;
@@ -28,6 +26,7 @@ using File = System.IO.File;
 using UnityEditor.Build;
 using UnityEngine.Pool;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {

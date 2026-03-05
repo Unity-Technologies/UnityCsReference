@@ -57,7 +57,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 var nodeModel = graphModel.NodeModels[i];
                 if (nodeModel is VariableNodeModel variableNodeModel && ShouldAddError(variableNodeModel.VariableDeclarationModel, graphModel))
-                    res.AddError("Only one instance of a data output is allowed in the graph.", variableNodeModel);
+                    res.AddError("Only one instance of an output variable is allowed in the graph.", variableNodeModel);
             }
         }
 
@@ -67,7 +67,6 @@ namespace Unity.GraphToolkit.Editor
                 return false;
 
             return graphModel.AllowMultipleDataOutputInstances == AllowMultipleDataOutputInstances.AllowWithWarning
-                && variable.DataType != TypeHandle.ExecutionFlow
                 && variable.Modifiers == ModifierFlags.Write
                 && graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count > 1;
         }

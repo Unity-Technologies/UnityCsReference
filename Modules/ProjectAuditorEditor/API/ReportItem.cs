@@ -28,8 +28,11 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         SerializableEnum<Severity> severity;
 
+#pragma warning disable UAC1010
+        // https://jira.unity3d.com/browse/UUM-132716
         [SerializeField]
         DependencyNode m_Dependencies;
+#pragma warning restore UAC1010
 
         [SerializeField]
         Location location;

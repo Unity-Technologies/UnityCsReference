@@ -33,25 +33,37 @@ namespace Unity.Scripting.LifecycleManagement
     /// On a field, property or event, it will override the default cleanup strategy.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Event, AllowMultiple = true)]
-    internal sealed class AutoStaticsCleanupAttribute : Attribute
+    public sealed class AutoStaticsCleanupAttribute : Attribute
     {
         /// <summary>
         /// Type of the scope that will trigger the cleanup.
         /// Null means inherit defaults or "PlayMode" scope (if no default value set).
         /// </summary>
-        public Type? ScopeType { get; set; } = null;
+        internal Type? ScopeType { get; set; } = null;
 
         /// <summary>
         /// Defines if the cleanup should be performed on entering or exiting the scope.
         /// Null means inherit defaults or "Both" (if no default value set).
         /// </summary>
-        public ScopeTransitionType TransitionType { get; set; }
+        internal ScopeTransitionType TransitionType { get; set; }
 
         /// <summary>
         /// Defines how field or property cleanup should be performed.
         /// Null means inherit defaults or "Auto" (if no default value set).
         /// </summary>
-        public CleanupStrategy CleanupStrategy { get; set; }
+        internal CleanupStrategy CleanupStrategy { get; set; }
+
+        public AutoStaticsCleanupAttribute()
+        {
+
+        }
+
+        internal AutoStaticsCleanupAttribute(Type? scopeType = null, ScopeTransitionType transitionType = ScopeTransitionType.Unset, CleanupStrategy cleanupStrategy = CleanupStrategy.Unset)
+        {
+            ScopeType = scopeType;
+            TransitionType = transitionType;
+            CleanupStrategy = cleanupStrategy;
+        }
     }
 
     /// <summary>
@@ -72,7 +84,7 @@ namespace Unity.Scripting.LifecycleManagement
     /// Applied on a field, property or event, it will override the default rule.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Event, AllowMultiple = false)]
-    internal sealed class NoAutoStaticsCleanupAttribute : Attribute
+    public sealed class NoAutoStaticsCleanupAttribute : Attribute
     {
     }
 

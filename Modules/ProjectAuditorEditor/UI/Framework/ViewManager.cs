@@ -19,8 +19,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
-        [SerializeField] HashSet<IssueCategory> m_PendingCategories;
-        [SerializeField] HashSet<string> m_PendingModuleNames;
+        HashSet<IssueCategory> m_PendingCategories;
+        HashSet<string> m_PendingModuleNames;
 
         public Report Report => m_Report;
 

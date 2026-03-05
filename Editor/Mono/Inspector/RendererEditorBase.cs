@@ -69,6 +69,7 @@ namespace UnityEditor
                 return isUsingLightProbeVolumes;
             }
 
+            #pragma warning disable CS0618  // Type or member is obsolete
             internal void RenderLightProbeProxyVolumeWarningNote(Renderer renderer, int selectionCount)
             {
                 if (IsUsingLightProbeProxyVolume(selectionCount))
@@ -89,6 +90,7 @@ namespace UnityEditor
                     }
                 }
             }
+            #pragma warning restore CS0618
 
             internal void RenderReflectionProbeUsage(bool useMiniStyle, bool isDeferredRenderingPath, bool isDeferredReflections)
             {

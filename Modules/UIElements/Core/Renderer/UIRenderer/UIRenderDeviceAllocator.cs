@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -340,16 +341,20 @@ namespace UnityEngine.UIElements.UIR
 
     class Page : IDisposable
     {
-        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mapped)
+        public Page(uint vertexMaxCount, uint indexMaxCount, bool mapped)
         {
             // The vertexMaxCount imposed here is only because we use UInt16 as the index type.
             // The actual render device may not support 0xFFFF as an index but it is up to the device
             // to limit the allocation size.
             vertexMaxCount = Math.Min(vertexMaxCount, (1 << 16));
 
-            // TODO: Find some way to make the boolean customizable depndending on the type of GpuUpdater used by the mesh manager
-            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, mapped, vertexMaxCount, maxQueuedFrameCount, 32);
-            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, mapped, indexMaxCount, maxQueuedFrameCount, 32);
+            Debug.Assert((Unsafe.SizeOf<Vertex>() & 3) == 0, "Vertex size must be 4-byte aligned");
+
+            // Align index buffer size to 4 bytes (indexMaxCount * sizeof(UInt16) must be 4-byte aligned)
+            indexMaxCount = (indexMaxCount + 1) & ~1u;
+
+            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, mapped, vertexMaxCount);
+            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, mapped, indexMaxCount);
         }
 
         #region Dispose Pattern

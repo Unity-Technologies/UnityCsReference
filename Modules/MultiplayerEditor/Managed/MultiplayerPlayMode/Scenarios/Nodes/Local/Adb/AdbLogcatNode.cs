@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class AdbLogcatNode : Node
+    class AdbLogcatNode : ExecutionNode
     {
         const int k_ProcessCheckIntervalMS = 120;
 

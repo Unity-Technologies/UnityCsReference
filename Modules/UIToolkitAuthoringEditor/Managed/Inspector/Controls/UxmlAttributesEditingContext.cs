@@ -3,11 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using UnityEditor;
-using UnityEditor.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -136,9 +136,12 @@ class UxmlAttributesEditingContext : IDisposable
             if (uxmlSerializedDataDescription == null)
                 return;
 
-            // If the element has a VisualElementAsset, we always use it for displaying in the inspector.
+            var templateAsset = element.templateAsset;
+            bool isTemplateInstance = templateAsset != null;
+
             var elementAsset = element.visualElementAsset;
-            if (elementAsset == null)
+            
+            if (elementAsset == null || isTemplateInstance)
             {
                 tempSerializedData = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData;
 
@@ -149,12 +152,18 @@ class UxmlAttributesEditingContext : IDisposable
                     // We need to keep the serialized data alive so we can undo/redo changes
                     element.SetProperty(k_TempSerializedDataPropertyName, tempSerializedData);
 
-                    // Elements without a VisualElementAsset should not be editable
-                    tempSerializedData.hideFlags = HideFlags.NotEditable;
-
-                    // We use the default serialized data so we can detect what values are different from the defaults when applying driven properties.
                     tempSerializedData.serializedData = uxmlSerializedDataDescription.CreateDefaultSerializedData();
+
+                    // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
+                    // that may be different in the serialized UXML.
+                    // We currently make an exception for templates: rebuilding them solely from serialized data would
+                    // require walking and reassembling the entire asset, which is complex and error‑prone.
+                    // This is a temporary workaround limited to templates and may be removed once we have a better approach.
+                    if (isTemplateInstance)
+                        uxmlSerializedDataDescription.SyncSerializedData(element, tempSerializedData.serializedData);
                 }
+
+                tempSerializedData.hideFlags = isTemplateInstance && !isReadOnly ? HideFlags.None : HideFlags.NotEditable;
 
                 rootSerializedObject = new SerializedObject(tempSerializedData);
                 serializedBasePath = k_TempSerializedRootPath;
@@ -163,6 +172,7 @@ class UxmlAttributesEditingContext : IDisposable
             else
             {
                 var visualTreeAsset = element.visualTreeAssetSource;
+                visualTreeAsset.hideFlags = isReadOnly ? HideFlags.NotEditable : HideFlags.None;
 
                 // If the UXML file has been modified, the element may no longer be in the asset so we will ignore it. (UUM-59305)
                 if (elementAsset.visualTreeAsset != visualTreeAsset)

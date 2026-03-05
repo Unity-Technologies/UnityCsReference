@@ -14,5 +14,6 @@ internal interface IStyleRuleSelectionHandler
     void ReleaseInstanceId(StyleRule rule);
 
     void Remap(List<StyleRuleRemap> candidates);
+    public void Clear();
 }
 

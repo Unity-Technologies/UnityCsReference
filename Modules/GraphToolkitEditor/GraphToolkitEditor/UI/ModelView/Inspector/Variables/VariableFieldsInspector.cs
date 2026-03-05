@@ -202,11 +202,11 @@ namespace Unity.GraphToolkit.Editor
             if (m_DisplayFlags.HasFlagFast(DisplayFlags.TypeProperty))
             {
                 var variableDeclaration = variableModels[0];
-                var allNonTrigger = variableDeclaration.DataType != TypeHandle.ExecutionFlow;
+                var allNonTrigger = variableDeclaration.DataType != TypeHandle.Untyped;
                 for (var i = 1; i < variableModels.Count; ++i)
                 {
                     variableDeclaration = variableModels[i];
-                    if (variableDeclaration.DataType == TypeHandle.ExecutionFlow)
+                    if (variableDeclaration.DataType == TypeHandle.Untyped)
                     {
                         allNonTrigger = false;
                         break;

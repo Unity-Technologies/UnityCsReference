@@ -1978,6 +1978,16 @@ namespace UnityEditor
         [VisibleToOtherModules]
         internal extern bool GetEnableFrameTimingStats_Internal();
 
+        public static extern bool adjustIOSFPSUsingThermalState{ get; set; }
+
+        [NativeMethod("SetAdjustIOSFPSUsingThermalState")]
+        [VisibleToOtherModules]
+        internal extern void SetAdjustIOSFPSUsingThermalState_Internal(bool value);
+
+        [NativeMethod("GetAdjustIOSFPSUsingThermalState")]
+        [VisibleToOtherModules]
+        internal extern bool GetAdjustIOSFPSUsingThermalState_Internal();
+
         public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
     }
 }

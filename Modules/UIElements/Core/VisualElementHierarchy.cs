@@ -279,16 +279,47 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removed all child elements from this element's `contentContainer`.
+        /// Removes all child elements from this element's hierarchy.
         /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="VisualElement.Clear()"/>, this method ignores the element's <see cref="contentContainer"/>.
+        ///
+        /// Only the child elements are removed, not the element itself.
+        ///
+        /// To remove all descendants, use the <see cref="Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
+        /// </remarks>
         public void Clear()
         {
             Clear(VisualElementClearOptions.None);
         }
 
         /// <summary>
-        /// Removes all child elements from this element's `contentContainer`.
+        /// Removes all child elements from this element's hierarchy, using the specified options. Use this method to reduce memory usage.
         /// </summary>
+        /// <param name="options">Allows which actions are performed when clearing the children.</param>
+        /// <remarks>
+        /// Unlike <see cref="VisualElement.Clear(VisualElementClearOptions)"/>, this method ignores the element's <see cref="contentContainer"/>.
+        ///
+        /// Only the child elements are removed, not the element itself.
+        ///
+        /// The default option only removes the immediate children and doesn't perform additional actions.
+        ///
+        /// To remove all descendants from their parent, specify the <see cref="VisualElementClearOptions.Recursive"/> flag.
+        ///
+        /// To invoke the <see cref="VisualElement.ReleaseResources"/> method on all descendants, specify the <see cref="VisualElementClearOptions.RecursiveReleaseResources"/> flag.
+        /// This flag implies that the hierarchy is cleared recursively, because an element must have no children when it is released.
+        ///
+        /// You can use the combination of these flags to clear a large number of elements from the hierarchy and immediately release resources to reduce memory usage. For more information, refer to <see cref="VisualElement.ReleaseResources"/>.
+        /// This method also removes internal parent-child relationships between elements, which can improve garbage collection and troubleshoot memory leaks.
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to use this method to reduce memory usage when a custom EditorWindow is closed.
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementRecursiveReleaseExample.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to release elements when implementing object pooling:
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+        /// </example>
         public void Clear(VisualElementClearOptions options)
         {
             if (contentContainer == this)
@@ -567,7 +598,7 @@ namespace UnityEngine.UIElements
                     throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
 
                 if (m_Owner.resourcesReleased)
-                    throw new InvalidOperationException("Cannot modify an element which has released its resources");
+                    throw new InvalidOperationException("You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
             }
 
             /// <summary>
@@ -598,7 +629,7 @@ namespace UnityEngine.UIElements
                 ValidateElementCanBeModified();
 
                 if (child.resourcesReleased)
-                    throw new InvalidOperationException("Cannot insert an element which has released its resources");
+                    throw new InvalidOperationException("You can't insert a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
 
                 child.RemoveFromHierarchy();
 
@@ -735,6 +766,12 @@ namespace UnityEngine.UIElements
             /// You can use the combination of these flags to clear a large number of elements from the hierarchy and immediately release resources to reduce memory usage. For more information, refer to <see cref="VisualElement.ReleaseResources"/>.
             /// It also removes internal parent and child relationships between elements, which can help with garbage collection speed and troubleshooting memory leaks.
             /// </remarks>
+            /// <example>
+            /// The following example shows how to use this method to reduce memory usage when a custom EditorWindow is closed.
+            /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementRecursiveReleaseExample.cs"/>
+            /// The following example shows how to release elements when implementing object pooling:
+            /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+            /// </example>
             public void Clear(VisualElementClearOptions options)
             {
                 ValidateElementCanBeModified();
@@ -813,10 +850,11 @@ namespace UnityEngine.UIElements
 
                             ClearInternal(descendant.hierarchy, clearNativeData:!releaseResources);
 
-                            var oldParent = descendant.hierarchy.parent;
+                            // Note: we do not invoke any OnChildRemoved() here
+                            // There isn't anything useful to do for implementations of this internal virtual method
+                            // because their entire hierarchy is being cleared
                             descendant.m_PhysicalParent = null;
                             descendant.m_LogicalParent = null;
-                            oldParent?.OnChildRemoved(descendant);
 
                             if (releaseResources)
                             {

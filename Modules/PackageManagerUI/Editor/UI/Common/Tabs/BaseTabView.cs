@@ -108,7 +108,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectTab(tabHeaderId);
 
             var tabIdsAndAssociatedWidths = m_ValidTabIds.SelectToNewArray(t => (t, GetTotalWidthForTabHeader(t)));
-
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
         }

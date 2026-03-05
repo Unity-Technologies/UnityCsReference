@@ -4490,6 +4490,24 @@ namespace UnityEditor
             DoObjectField(position, position, id, objType, property, validator, allowSceneObjects, style);
         }
 
+        private static void LoadableReferenceField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            Object currentObject = LoadableReferenceEditorUtility.LoadableReferenceToObject(property.loadableReferenceValue);
+
+            BeginChangeCheck();
+            Object newObject = ObjectField(position, label, currentObject, typeof(Object), false);
+            if (EndChangeCheck())
+            {
+                LoadableReference newLoadableRef = LoadableReferenceEditorUtility.ObjectToLoadableReference(newObject);
+                if (newObject != null && !newLoadableRef.isValid)
+                {
+                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableReference."));
+                    return;
+                }
+                property.loadableReferenceValue = newLoadableRef;
+            }
+        }
+
         public static Object ObjectField(Rect position, Object obj, Type objType, Object targetBeingEdited)
         {
             int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
@@ -7621,6 +7639,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Hash128:
                 case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
+                case SerializedPropertyType.LoadableReference:
                     return false;
             }
 
@@ -7934,6 +7953,11 @@ namespace UnityEditor
                         {
                             property.entityIdValue = EntityId.Parse(newValue);
                         }
+                        break;
+                    }
+                    case SerializedPropertyType.LoadableReference:
+                    {
+                        LoadableReferenceField(position, property, label);
                         break;
                     }
                     default:

@@ -360,12 +360,15 @@ namespace UnityEngine.UIElements
             return displayValue;
         }
 
-        internal static int m_InMemoryAssetsHierarchyVersion { get; private set; } = 0;
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static void InMemoryAssetsHierarchyHaveBeenChanged()
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static void MarkVisualTreeAssetAsChanged(VisualTreeAsset visualTreeAsset)
         {
-            m_InMemoryAssetsHierarchyVersion++;
+            var iterator = GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+                panel.liveReloadSystem.OnVisualTreeAssetChanged(visualTreeAsset);
+            }
         }
 
 

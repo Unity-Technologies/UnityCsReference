@@ -1945,8 +1945,7 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            if (computedStyle.customProperties != null &&
-                computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            if (computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
             {
                 m_SingleLineHeightDirtyFlag = false;
                 if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
@@ -1966,8 +1965,8 @@ namespace UnityEngine.UIElements
                 m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
             }
             // Check if the property is set on the root visual element.
-            if (m_AttachedRootVisualContainer is { computedStyle.customProperties: not null } &&
-                     m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
+            if (m_AttachedRootVisualContainer != null &&
+                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
             {
 
                 m_SingleLineHeightDirtyFlag = false;

@@ -27,7 +27,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         private void MyToggleVisibility(object userData)
         {
-            this.ToggleVisibility((int)userData);
+            ToggleVisibility((int)userData);
         }
 
         protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)

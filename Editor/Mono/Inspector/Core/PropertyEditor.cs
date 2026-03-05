@@ -21,6 +21,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
+using Unity.Collections;
 using Unity.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
@@ -102,7 +103,7 @@ namespace UnityEditor
         [SerializeField] protected List<Object> m_ObjectsLockedBeforeSerialization = new List<Object>();
         [SerializeField] protected List<EntityId> m_EntityIdsLockedBeforeSerialization = new List<EntityId>();
         [SerializeField] protected PreviewResizer m_PreviewResizer = new PreviewResizer();
-        [SerializeField] protected LabelGUI m_LabelGUI = new LabelGUI();
+                         protected LabelGUI m_LabelGUI = new LabelGUI();
         [SerializeField] protected EntityId m_LastInspectedObjectEntityId = EntityId.None;
         [SerializeField] protected float m_LastVerticalScrollValue = 0;
         [SerializeField] protected string m_GlobalObjectId = "";
@@ -1045,9 +1046,7 @@ namespace UnityEditor
             var removedComponentsList = PrefabOverridesUtility.GetRemovedComponentsForSingleGameObject(go);
             for (int i = 0; i < removedComponentsList.Count; i++)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (actuallyRemovedComponents.Contains(removedComponentsList[i].assetComponent))
-#pragma warning restore UA2001
                     m_RemovedComponents.Add(removedComponentsList[i].assetComponent);
                 else
                     m_SuppressedComponents.Add(removedComponentsList[i].assetComponent);

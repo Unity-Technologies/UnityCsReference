@@ -1875,7 +1875,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var allowMultipleDataOutputInstances = AllowMultipleDataOutputInstances != AllowMultipleDataOutputInstances.Disallow;
             return allowMultipleDataOutputInstances
-                || variable.DataType == TypeHandle.ExecutionFlow
+                || variable.DataType == TypeHandle.Untyped
                 || variable.Modifiers != ModifierFlags.Write
                 || graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count == 0;
         }
@@ -3546,7 +3546,8 @@ namespace Unity.GraphToolkit.Editor
             else
             {
                 portalName = nodeModel.Title ?? "";
-                var portName = outputPortModel.Title ?? "";
+
+                var portName = outputPortModel.ComputePortLabel(true) ?? "";
                 if (!string.IsNullOrEmpty(portName))
                     portalName += " - " + portName;
             }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -40,6 +41,24 @@ namespace Unity.GraphToolkit.Editor
             var colorLine = titlePart.Root.Q<VisualElement>(name: ConstantCollectionNodeTitlePart.colorLineName);
             colorLine.AddToClassList(GraphElementHelper.colorLineDatatTypeClassPrefix + RootView.TypeHandleInfos.GetUssName(Constant.OutputPort.DataTypeHandle));
 
+            bool overrideIcon = true;
+            (Texture2D icon, Color color)? typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type);
+            if (!typeStyle.HasValue)
+            {
+                typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type.GetCollectionElementType());
+                overrideIcon = false;
+            }
+            if (typeStyle.HasValue)
+            {
+                colorLine.style.backgroundColor = typeStyle.Value.color;
+                var icon = (EditableTitlePart as NodeTitlePart).Icon;
+                if (icon != null)
+                {
+                    icon.tintColor = typeStyle.Value.color;
+                    if (typeStyle.Value.icon != null && overrideIcon)
+                        icon.image = typeStyle.Value.icon;
+                }
+            }
             AddToClassList(constantCollectionName);
 
         }

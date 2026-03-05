@@ -94,6 +94,8 @@ namespace UnityEditor.Build.Profile
         public static readonly string notSupportedWarning = L10n.Tr("Target platform does not currently support build profiles.");
         public static readonly string active = L10n.Tr("Active");
         public static readonly string description = L10n.Tr("Description");
+        public static readonly string keyFeaturesTitle = L10n.Tr("Key Features");
+        public static readonly string resourcesTitle = L10n.Tr("Resources & Links");
         public static readonly string packageInstalled = L10n.Tr("Package already installed.");
         public static readonly string packageContainerTitle = L10n.Tr("Packages");
         public static readonly string partnerPackageListTitle = L10n.Tr("Partner Packages");

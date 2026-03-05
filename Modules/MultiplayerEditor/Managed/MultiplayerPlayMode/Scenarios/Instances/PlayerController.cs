@@ -4,8 +4,7 @@
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-class PlayerController<TController, TSettings> : InstanceController<TController, TSettings>
-    where TController : PlayerController<TController, TSettings>
-    where TSettings : new()
+class PlayerController<TSettings> : InstanceController<TSettings>
+    where TSettings : struct
 {
 }

@@ -30,7 +30,7 @@ namespace UnityEditor
         // Return a selection that only contains top level selection of all visible assets
         //TopLevelAssets = 64,
         // Renamed to Editable
-        [Obsolete("'OnlyUserModifiable' is obsolete. Use 'Editable' instead. (UnityUpgradeable) -> Editable", true)]
+        [Obsolete("'OnlyUserModifiable' is obsolete. Use 'Editable' instead. (UnityUpgradable) -> Editable", true)]
         OnlyUserModifiable = 8
     }
 

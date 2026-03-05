@@ -95,8 +95,8 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// If the element delegates its focus, when it becomes focused, one of its child or recursive child
         /// elements is selected to receive focus in its place.
-        /// 
-        ///\\ 
+        ///
+        ///\\
         /// The element that receives the focus cannot be chosen manually.
         /// Instead, it's determined automatically using a set of rules.
         ///
@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements
         ///- does not delegate its own focus,
         ///- is not the child or recursive child of a content container or of another element that delegates focus, and
         ///- is part of the <see cref="IFocusRing">focus ring</see> navigation sequence.
-        /// 
+        ///
         /// For more information, refer to [[wiki:UIE-focus-order|Focus system in UI Toolkit]].
         /// </remarks>
         /// <seealso cref="VisualElement.contentContainer"/>
@@ -422,7 +422,12 @@ namespace UnityEngine.UIElements
                 if (m_SelectedTextElement == value)
                     return;
 
-                m_SelectedTextElement?.selection.SelectNone();
+                // Check resourcesReleased property: unfortunately we do not clear m_SelectedTextElement
+                // if this element is removed from the panel (removing an element is a precondition to releasing)
+                // so if the element is released, we just don't update it to avoid errors/exceptions
+                if (m_SelectedTextElement != null && !m_SelectedTextElement.resourcesReleased)
+                    m_SelectedTextElement.selection.SelectNone();
+
                 m_SelectedTextElement = value;
             }
         }

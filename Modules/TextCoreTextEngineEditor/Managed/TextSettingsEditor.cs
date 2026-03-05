@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEditorInternal;
 
+#pragma warning disable CS0618 // UnicodeLineBreakingRules is obsolete; handled natively by ATG
 
 namespace UnityEditor.TextCore.Text
 {
@@ -114,6 +115,8 @@ namespace UnityEditor.TextCore.Text
         //SerializedProperty m_PropFollowingCharacters;
         //SerializedProperty m_PropUseModernHangulLineBreakingRules;
 
+        SerializedProperty m_ShowObsoleteProperties_prop;
+
         private const string k_UndoRedo = "UndoRedoPerformed";
         private bool m_IsFallbackGlyphCacheDirty;
 
@@ -199,6 +202,8 @@ namespace UnityEditor.TextCore.Text
             //m_PropLeadingCharacters = m_PropUnicodeLineBreakingRules.FindPropertyRelative("m_LeadingCharacters");
             //m_PropFollowingCharacters = m_PropUnicodeLineBreakingRules.FindPropertyRelative("m_FollowingCharacters");
             //m_PropUseModernHangulLineBreakingRules = m_PropUnicodeLineBreakingRules.FindPropertyRelative("m_UseModernHangulLineBreakingRules");
+
+            m_ShowObsoleteProperties_prop = serializedObject.FindProperty("m_ShowObsoleteProperties");
         }
 
         public override void OnInspectorGUI()
@@ -206,6 +211,16 @@ namespace UnityEditor.TextCore.Text
             serializedObject.Update();
             string evt_cmd = Event.current.commandName;
             m_IsFallbackGlyphCacheDirty = false;
+
+            bool showObsolete = m_ShowObsoleteProperties_prop == null || m_ShowObsoleteProperties_prop.boolValue;
+
+            if (showObsolete)
+            {
+                EditorGUILayout.HelpBox(
+                    "These properties are only available in TextCore and will be removed in a future version. " +
+                    "It is highly recommended to upgrade to ATG (Advanced Text Generator) and disable this option.",
+                    MessageType.Warning, true);
+            }
 
             float labelWidth = EditorGUIUtility.labelWidth;
             float fieldWidth = EditorGUIUtility.fieldWidth;
@@ -217,11 +232,13 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label(Styles.defaultFontAssetLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_PropFontAsset, Styles.defaultFontAssetLabel);
-            if (EditorGUI.EndChangeCheck())
-                m_IsFallbackGlyphCacheDirty = true;
-
+            if (showObsolete)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_PropFontAsset, Styles.defaultFontAssetLabel);
+                if (EditorGUI.EndChangeCheck())
+                    m_IsFallbackGlyphCacheDirty = true;
+            }
             EditorGUILayout.PropertyField(m_PropDefaultFontAssetPath, Styles.defaultFontAssetPathLabel);
             EditorGUI.indentLevel = 0;
 
@@ -238,10 +255,13 @@ namespace UnityEditor.TextCore.Text
             if (EditorGUI.EndChangeCheck())
                 m_IsFallbackGlyphCacheDirty = true;
 
-            GUILayout.Label(Styles.fallbackMaterialSettingsLabel, EditorStyles.boldLabel);
-            EditorGUI.indentLevel = 1;
-            EditorGUILayout.PropertyField(m_PropMatchMaterialPreset, Styles.matchMaterialPresetLabel);
-            EditorGUI.indentLevel = 0;
+            if (showObsolete)
+            {
+                GUILayout.Label(Styles.fallbackMaterialSettingsLabel, EditorStyles.boldLabel);
+                EditorGUI.indentLevel = 1;
+                EditorGUILayout.PropertyField(m_PropMatchMaterialPreset, Styles.matchMaterialPresetLabel);
+                EditorGUI.indentLevel = 0;
+            }
 
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
@@ -253,7 +273,8 @@ namespace UnityEditor.TextCore.Text
             GUILayout.Label(Styles.dynamicFontSystemSettingsLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
             //EditorGUILayout.PropertyField(m_GetFontFeaturesAtRuntime, Styles.getFontFeaturesAtRuntime);
-            EditorGUILayout.PropertyField(m_PropMissingGlyphCharacter, Styles.missingGlyphLabel);
+            if (showObsolete)
+                EditorGUILayout.PropertyField(m_PropMissingGlyphCharacter, Styles.missingGlyphLabel);
             EditorGUILayout.PropertyField(m_PropClearDynamicDataOnBuild, Styles.clearDynamicDataOnBuildLabel);
             EditorGUILayout.PropertyField(m_PropDisplayWarnings, Styles.disableWarningsLabel);
             //EditorGUILayout.PropertyField(m_DynamicAtlasTextureManager, Styles.dynamicAtlasTextureManager);
@@ -321,7 +342,8 @@ namespace UnityEditor.TextCore.Text
             if (EditorGUI.EndChangeCheck())
                 m_IsFallbackGlyphCacheDirty = true;
 
-            EditorGUILayout.PropertyField(m_PropMissingSpriteCharacterUnicode, Styles.missingSpriteCharacterUnicodeLabel);
+            if (showObsolete)
+                EditorGUILayout.PropertyField(m_PropMissingSpriteCharacterUnicode, Styles.missingSpriteCharacterUnicodeLabel);
             //EditorGUILayout.PropertyField(m_PropEnableEmojiSupport, Styles.enableEmojiSupportLabel);
             //EditorGUILayout.PropertyField(m_PropSpriteRelativeScaling, Styles.spriteRelativeScale);
             EditorGUILayout.PropertyField(m_PropSpriteAssetPath, Styles.spriteAssetsPathLabel);
@@ -378,18 +400,37 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.Space();
 
             // LINE BREAKING RULE
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label(Styles.lineBreakingLabel, EditorStyles.boldLabel);
-            EditorGUI.indentLevel = 1;
-            EditorGUILayout.PropertyField(m_PropUnicodeLineBreakingRules);
-            //EditorGUILayout.Space();
-            //GUILayout.Label(Styles.koreanSpecificRules, EditorStyles.boldLabel);
-            //EditorGUILayout.PropertyField(m_PropUseModernHangulLineBreakingRules, new GUIContent("Use Modern Line Breaking", "Determines if traditional or modern line breaking rules will be used to control line breaking. Traditional line breaking rules use the Leading and Following Character rules whereas Modern uses spaces for line breaking."));
+            if (showObsolete)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(Styles.lineBreakingLabel, EditorStyles.boldLabel);
+                EditorGUI.indentLevel = 1;
+                EditorGUILayout.PropertyField(m_PropUnicodeLineBreakingRules);
+                //EditorGUILayout.Space();
+                //GUILayout.Label(Styles.koreanSpecificRules, EditorStyles.boldLabel);
+                //EditorGUILayout.PropertyField(m_PropUseModernHangulLineBreakingRules, new GUIContent("Use Modern Line Breaking", "Determines if traditional or modern line breaking rules will be used to control line breaking. Traditional line breaking rules use the Leading and Following Character rules whereas Modern uses spaces for line breaking."));
 
-            EditorGUI.indentLevel = 0;
+                EditorGUI.indentLevel = 0;
 
-            EditorGUILayout.Space();
-            EditorGUILayout.EndVertical();
+                EditorGUILayout.Space();
+                EditorGUILayout.EndVertical();
+
+                EditorGUILayout.Space();
+            }
+
+            // Show/Hide Obsolete Properties button (bottom right)
+            Rect buttonRect = EditorGUILayout.GetControlRect(false, 18f);
+            string obsoleteButtonText = showObsolete ? "Hide Obsolete Properties" : "Show Obsolete Properties";
+            Rect obsoleteButtonRect = new Rect(buttonRect.x + buttonRect.width - 180f, buttonRect.y, 180f, 18f);
+            if (GUI.Button(obsoleteButtonRect, obsoleteButtonText))
+            {
+                if (m_ShowObsoleteProperties_prop != null)
+                {
+                    m_ShowObsoleteProperties_prop.boolValue = !m_ShowObsoleteProperties_prop.boolValue;
+                    serializedObject.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(target);
+                }
+            }
 
             if (m_IsFallbackGlyphCacheDirty || evt_cmd == k_UndoRedo)
             {
@@ -406,3 +447,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

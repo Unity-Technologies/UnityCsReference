@@ -17,7 +17,9 @@ namespace UnityEditor.DeviceSimulation
         [NonSerialized] public bool editorResource;
         public string directory;
 
+        [System.NonSerialized]
         public HashSet<string> availableSystemInfoFields = new HashSet<string>();
+        [System.NonSerialized]
         public Dictionary<GraphicsDeviceType, HashSet<string>> availableGraphicsSystemInfoFields = new Dictionary<GraphicsDeviceType, HashSet<string>>();
 
         [SerializeField] private List<string> m_AvailableSystemInfoFields;

@@ -7,30 +7,16 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-[Flags]
-internal enum PackageActionState : uint
-{
-    None = 0,
-    Visible = 1 << 0,
-    DisabledTemporarily = 1 << 1,
-    DisabledForPackage = 1 << 2,
-    InProgress = 1 << 3,
-
-    Disabled = DisabledTemporarily | DisabledForPackage
-}
-
-internal abstract class PackageAction
+internal abstract class PackageAction: ActionBase<IPackageVersion, IPackage>
 {
     protected static readonly string k_InProgressGenericTooltip = L10n.Tr("This action is currently in progress.");
-
-    public Action onActionTriggered;
 
     // For now, this is only used for LegacyFormat dropdown button.
     public virtual bool isRecommended => false;
 
     public virtual Icon icon => Icon.None;
 
-    public virtual PackageActionState GetActionState(IPackageVersion version, out string text, out string tooltip)
+    public override ActionState GetActionState(IPackageVersion version, out string text, out string tooltip)
     {
         if (!IsVisible(version))
         {
@@ -38,8 +24,8 @@ internal abstract class PackageAction
             tooltip = string.Empty;
 
             if (IsHiddenWhenInProgress(version) && IsInProgress(version))
-                return PackageActionState.InProgress;
-            return PackageActionState.None;
+                return ActionState.InProgress;
+            return ActionState.None;
         }
 
         var isInProgress = IsInProgress(version);
@@ -47,52 +33,35 @@ internal abstract class PackageAction
         if (isInProgress)
         {
             tooltip = GetTooltip(version, true);
-            return PackageActionState.Visible | PackageActionState.DisabledForPackage | PackageActionState.InProgress;
+            return ActionState.Visible | ActionState.DisabledForItem | ActionState.InProgress;
         }
 
         var disableCondition = GetActiveDisableCondition(version);
         if (disableCondition != null)
         {
             tooltip = disableCondition.tooltip;
-            return PackageActionState.Visible | PackageActionState.DisabledForPackage;
+            return ActionState.Visible | ActionState.DisabledForItem;
         }
 
         var temporaryDisableCondition = GetActiveTemporaryDisableCondition();
         if (temporaryDisableCondition != null)
         {
             tooltip = temporaryDisableCondition.tooltip;
-            return PackageActionState.Visible | PackageActionState.DisabledTemporarily;
+            return ActionState.Visible | ActionState.DisabledTemporarily;
         }
 
         tooltip = GetTooltip(version, false);
-        return PackageActionState.Visible;
+        return ActionState.Visible;
     }
 
-    public void TriggerAction(IPackageVersion version)
-    {
-        if (TriggerActionImplementation(version))
-            onActionTriggered?.Invoke();
-    }
-    // Returns true if the action is triggered, false otherwise.
-    protected abstract bool TriggerActionImplementation(IPackageVersion version);
-
-    public void TriggerAction(IReadOnlyCollection<IPackage> packages)
-    {
-        if (TriggerActionImplementation(packages))
-            onActionTriggered?.Invoke();
-    }
     // By default buttons does not support bulk action
-    protected virtual bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages) => false;
+    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages) => false;
 
     public abstract bool IsInProgress(IPackageVersion version);
 
     protected virtual bool IsHiddenWhenInProgress(IPackageVersion version) => false;
 
     public abstract bool IsVisible(IPackageVersion version);
-
-    public abstract string GetTooltip(IPackageVersion version, bool isInProgress);
-
-    public abstract string GetText(IPackageVersion version, bool isInProgress);
 
     public virtual string GetMultiSelectText(IPackageVersion version, bool isInProgress) => GetText(version, isInProgress);
 
@@ -109,5 +78,10 @@ internal abstract class PackageAction
     public virtual DisableCondition GetActiveDisableCondition(IPackageVersion version)
     {
         return GetAllDisableConditions(version).FirstMatch(condition => condition.active);
+    }
+
+    public override ToolbarButtonBase<IPackageVersion, IPackage> CreateToolbarButton()
+    {
+        return new PackageToolBarSimpleButton(this);
     }
 }

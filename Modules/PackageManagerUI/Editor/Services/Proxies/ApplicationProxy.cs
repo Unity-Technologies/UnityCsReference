@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action onFinishCompiling;
         event Action<PlayModeStateChange> onPlayModeStateChanged;
         event Action update;
+        event Action<bool> focusChanged;
 
         string dataPath { get; }
         string userAppDataPath { get; }
@@ -59,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action onFinishCompiling = delegate {};
         public event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
         public event Action update = delegate {};
+        public event Action<bool> focusChanged = delegate {};
 
         public string dataPath => Application.dataPath;
         public string userAppDataPath => InternalEditorUtility.userAppDataFolder;
@@ -111,12 +113,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
             m_LastInternetCheck = EditorApplication.timeSinceStartup;
             EditorApplication.update += OnUpdate;
+            EditorApplication.focusChanged += OnFocusChanged;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
         }
 
         public override void OnDisable()
         {
             EditorApplication.update -= OnUpdate;
+            EditorApplication.focusChanged -= OnFocusChanged;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
@@ -129,6 +133,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             CheckInternetReachability();
             update?.Invoke();
+        }
+
+        private void OnFocusChanged(bool focus)
+        {
+            focusChanged?.Invoke(focus);
         }
 
         private void CheckInternetReachability()

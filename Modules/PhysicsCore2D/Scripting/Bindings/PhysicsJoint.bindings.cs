@@ -38,6 +38,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::GetCurrentConstraintTorque", IsThreadSafe = true)] extern internal static float PhysicsJoint_GetCurrentConstraintTorque(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::GetCurrentLinearSeparation", IsThreadSafe = true)] extern internal static float PhysicsJoint_GetCurrentLinearSeparation(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::GetCurrentAngularSeparation", IsThreadSafe = true)] extern internal static float PhysicsJoint_GetCurrentAngularSeparation(PhysicsJoint joint);
+        [NativeMethod(Name = "PhysicsJoint::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetWorldDrawing(PhysicsJoint joint, bool flag);
+        [NativeMethod(Name = "PhysicsJoint::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsJoint_GetWorldDrawing(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::Draw", IsThreadSafe = true)] extern internal static void PhysicsJoint_Draw(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetOwner(PhysicsJoint joint, UnityEngine.Object ownerObject);
         [NativeMethod(Name = "PhysicsJoint::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsJoint_GetOwner(PhysicsJoint joint);
@@ -46,6 +48,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserData(PhysicsJoint joint, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsJoint::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetUserData(PhysicsJoint joint);
+        [NativeMethod(Name = "PhysicsJoint::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwnerUserData(PhysicsJoint joint, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsJoint::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetOwnerUserData(PhysicsJoint joint);
 
         // PhysicsDistanceJoint.
         [NativeMethod(Name = "PhysicsDistanceJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsDistanceJointDefinition DistanceJoint_GetDefaultDefinition(bool useSettings);

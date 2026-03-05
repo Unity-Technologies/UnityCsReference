@@ -269,6 +269,10 @@ namespace UnityEditor
                 {
                     foreach (var toMovePath in m_Paths)
                     {
+                        // UUM-134783 - If the new folder is being created inside one of the folders being moved, skip. This can occur when the user has nothing selected in a Package or Project root. E.g "Assets/"
+                        if (newFolderPath.Contains(toMovePath))
+                            continue;
+
                         var hasSelectedAncestor = false;
                         var parent = Path.GetDirectoryName(toMovePath).ConvertSeparatorsToUnity();
 

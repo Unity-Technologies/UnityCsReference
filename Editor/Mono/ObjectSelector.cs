@@ -144,6 +144,7 @@ namespace UnityEditor
 
         // Display state
         bool            m_AllowSceneObjects;
+        bool            m_AllowBuiltinResources;
         bool            m_IsShowingAssets;
         bool            m_SkipHiddenPackages;
         SavedInt        m_StartGridSize = new SavedInt("ObjectSelector.GridSize", 64);
@@ -171,7 +172,7 @@ namespace UnityEditor
         Action<UnityObject> m_OnObjectSelectorUpdated;
 
         ObjectListAreaState m_ListAreaState;
-        ObjectListArea  m_ListArea;
+        internal ObjectListArea  m_ListArea;
         ObjectTreeForSelector m_ObjectTreeWithSearch = new ObjectTreeForSelector();
         UnityObject m_ObjectBeingEdited;
         SerializedProperty m_EditedProperty;
@@ -544,12 +545,12 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
-        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true)
         {
-            Show(new [] { requiredType }, property, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated);
+            Show(new [] { requiredType }, property, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, allowBuiltinResources);
         }
 
-        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true)
         {
             if (requiredTypes == null)
             {
@@ -566,15 +567,15 @@ namespace UnityEditor
             UnityObject objectBeingEdited = property.serializedObject.targetObject;
             m_EditedProperty = property;
 
-            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated);
+            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, true, allowBuiltinResources);
         }
 
-        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
         {
-            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem);
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem, allowBuiltinResources);
         }
 
-        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
         {
             SharedShow(
                 obj,
@@ -584,11 +585,12 @@ namespace UnityEditor
                 allowedEntityIds,
                 onObjectSelectorClosed,
                 onObjectSelectedUpdated,
-                showNoneItem
+                showNoneItem,
+                allowBuiltinResources
             );
         }
 
-        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
         {
             // We can't rely on the fact that the window will always be closed when we call Show. For example,
             // if a user clicks on multiple object fields without closing the window first, there is no guarantee
@@ -597,6 +599,7 @@ namespace UnityEditor
             CloseOpenedWindow();
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
+            m_AllowBuiltinResources = allowBuiltinResources;
             m_IsShowingAssets = true;
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedEntityIds;
@@ -818,7 +821,7 @@ namespace UnityEditor
                 m_ListArea.allowFocusRendering = false;
                 m_ListArea.allowMultiSelect = false;
                 m_ListArea.allowRenaming = false;
-                m_ListArea.allowBuiltinResources = true;
+                m_ListArea.allowBuiltinResources = m_AllowBuiltinResources;
                 m_ListArea.repaintCallback += Repaint;
                 m_ListArea.itemSelectedCallback += ListAreaItemSelectedCallback;
                 m_ListArea.gridSize = m_StartGridSize.value;

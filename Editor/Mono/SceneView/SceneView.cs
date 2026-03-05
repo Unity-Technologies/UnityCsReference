@@ -297,7 +297,7 @@ namespace UnityEditor
         static bool s_ActiveEditorsDirty;
         static bool s_SelectionCacheDirty;
 
-        internal static IEnumerable<Editor> activeEditors
+        internal static IReadOnlyList<Editor> activeEditors
         {
             get
             {
@@ -1276,12 +1276,7 @@ namespace UnityEditor
             var win = mouseOverWindow;
             var ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
 
-            if (ret)
-            {
-                // In case the window under the mouse handle the Focus event, it should be focused on.
-                win.Focus();
-            }
-            else
+            if (!ret)
             {
                 // Otherwise get the current focused window to handle that event.
                 win = focusedWindow;
@@ -4094,7 +4089,9 @@ namespace UnityEditor
         void CreateSceneCameraAndLights()
         {
             GameObject cameraGO = EditorUtility.CreateGameObjectWithHideFlags("SceneCamera", HideFlags.HideAndDontSave, typeof(Camera));
+#pragma warning disable CS0618  // Type or member is obsolete
             cameraGO.AddComponent<FlareLayer>();
+#pragma warning restore CS0618
 
             m_Camera = cameraGO.GetComponent<Camera>();
             m_Camera.enabled = false;

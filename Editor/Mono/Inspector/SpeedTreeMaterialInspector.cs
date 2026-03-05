@@ -59,9 +59,7 @@ namespace UnityEditor
                 geomTypes[i] = SpeedTreeGeometryType.Branch;
                 for (int j = 0; j < speedTreeGeometryTypeString.Length; ++j)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (((Material)targets[i]).shaderKeywords.Contains(speedTreeGeometryTypeString[j]))
-#pragma warning restore UA2001
                     {
                         geomTypes[i] = (SpeedTreeGeometryType)j;
                         break;
@@ -128,9 +126,7 @@ namespace UnityEditor
             if (detailTex != null)
             {
                 props.Remove(detailTex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (geomTypes.Contains(SpeedTreeGeometryType.BranchDetail))
-#pragma warning restore UA2001
                     ShaderProperty(detailTex, detailTex.displayName);
             }
 

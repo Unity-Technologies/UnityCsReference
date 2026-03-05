@@ -17,7 +17,7 @@ using UnityEngine.UIElements.HierarchyV2;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// UI element control that displays a hierarchy.
+    /// UI element control that displays a <see cref="Hierarchy"/>.
     /// </summary>
     public sealed class HierarchyView : VisualElement, IDisposable
     {
@@ -103,42 +103,40 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanging"/> event.
         /// </summary>
-        /// <param name="oldHierarchy">The old source hierarchy.</param>
-        /// <param name="newHierarchy">The new source hierarchy.</param>
+        /// <param name="oldHierarchy">The previous source <see cref="Hierarchy"/>.</param>
+        /// <param name="newHierarchy">The current source <see cref="Hierarchy"/>.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public delegate void SourceHierarchyChangingEventHandler(Unity.Hierarchy.Hierarchy oldHierarchy, Unity.Hierarchy.Hierarchy newHierarchy, HierarchyNodeFlags defaultFlags);
 
         /// <summary>
-        /// This event is fired when the source hierarchy is about to change.
+        /// Raised when the source hierarchy is about to change.
         /// </summary>
         public event SourceHierarchyChangingEventHandler SourceHierarchyChanging;
 
         /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanged"/> event.
         /// </summary>
-        /// <param name="hierarchy">The new source hierarchy.</param>
+        /// <param name="hierarchy">The current source <see cref="Hierarchy"/>.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public delegate void SourceHierarchyChangedEventHandler(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags);
 
         /// <summary>
-        /// This event is fired when the source hierarchy has been changed.
+        /// Raised when the source hierarchy has been changed.
         /// </summary>
         public event SourceHierarchyChangedEventHandler SourceHierarchyChanged;
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyViewItem"/> is bound to a hierarchy view, allowing customization of the view item.
+        /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>, allowing customization of the view item.
         /// </summary>
         public event Action<HierarchyViewItem> BindViewItem;
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyViewItem"/> is unbound from a hierarchy view, allowing cleanup of the view item.
-        /// Note that hierarchy view item are recycled by handler, so unbinding does not mean destruction. For this reason, it is preferable
-        /// to not "undo" styles or modifications done during binding in this unbind event, for performance reasons.
+        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>, allowing cleanup of the view item.
         /// </summary>
         public event Action<HierarchyViewItem> UnbindViewItem;
 
         /// <summary>
-        /// Event that is invoked when flags on hierarchy nodes are changed.
+        /// Raised when flags on <see cref="HierarchyNode"/> instances are changed.
         /// </summary>
         public event HierarchyViewModel.FlagsChangedEventHandler FlagsChanged;
 
@@ -150,7 +148,7 @@ namespace Unity.Hierarchy
         public delegate void PopulateContextMenuEventHandler(HierarchyViewItem item, DropdownMenu menu);
 
         /// <summary>
-        /// This event is fired when a right click is handled on a node or on the background of the view.
+        /// Raised when a right click is handled on a <see cref="HierarchyNode"/> or on the background of the view.
         /// </summary>
         /// <remarks>
         /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
@@ -170,34 +168,33 @@ namespace Unity.Hierarchy
         /// Customize the tooltip displayed when the mouse hovers the node name label.
         /// </summary>
         /// <remarks>
-        /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for, the
-        /// StringBuilder to build the tooltip, and whether the HierarchyView is being filtered.
+        /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for the StringBuilder to build the tooltip, and to determine whether the <see cref="HierarchyView"/> is being filtered.
         /// </remarks>
         public event GetTooltipEventHandler GetTooltip;
 
         /// <summary>
-        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically
-        /// allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
+        /// Raised when the <see cref="HierarchyView"/> is initializing, typically allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
+        /// Internal because it is only used by HierarchyWindow to allow to statically customize the <see cref="HierarchyView"/>.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal event Action Bind; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
 
         /// <summary>
-        /// Gets the source hierarchy used to populate the hierarchy view.
+        /// Gets the source hierarchy used to populate the <see cref="HierarchyView"/>.
         /// Use <see cref="SetSourceHierarchy"/> to change it.
         /// </summary>
         /// <remarks>
-        /// The user is responsible for disposing the hierarchy.
+        /// The user is responsible for disposing the <see cref="Hierarchy"/>.
         /// </remarks>
         public Unity.Hierarchy.Hierarchy Source => m_Hierarchy;
 
         /// <summary>
-        /// The underlying <see cref="HierarchyFlattened"/> of this <see cref="HierarchyView"/>.
+        /// Gets the underlying <see cref="HierarchyFlattened"/> of this <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyFlattened Flattened => m_HierarchyFlattened;
 
         /// <summary>
-        /// The underlying <see cref="HierarchyViewModel"/> of this <see cref="HierarchyView"/>.
+        /// Gets the underlying <see cref="HierarchyViewModel"/> of this <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyViewModel ViewModel => m_HierarchyViewModel;
 
@@ -211,12 +208,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Returns the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
+        /// Gets the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
         /// </summary>
         public VisualElement StyleContainer => m_StyleContainer;
 
         /// <summary>
-        /// Get or set the filter used to display the hierarchy.
+        /// Gets or sets the filter used to display the <see cref="Hierarchy"/>.
         /// </summary>
         public string Filter
         {
@@ -225,12 +222,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Whether the hierarchy view is currently filtering nodes.
+        /// Whether the <see cref="HierarchyView"/> is currently filtering nodes.
         /// </summary>
         public bool Filtering => m_HierarchyViewModel.Filtering;
 
         /// <summary>
-        /// Whether the hierarchy view is currently updating.
+        /// Whether the <see cref="HierarchyView"/> is currently updating.
         /// </summary>
         public bool Updating
         {
@@ -244,7 +241,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Whether the hierarchy view requires an update.
+        /// Whether the <see cref="HierarchyView"/> requires an update.
         /// </summary>
         public bool UpdateNeeded
         {
@@ -289,7 +286,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a new instance of the <see cref="HierarchyView"/>.
+        /// Creates a new instance of the <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyView()
         {
@@ -344,7 +341,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Dispose the <see cref="HierarchyView"/> and all its resources.
+        /// Releases the resources used by the <see cref="HierarchyView"/>.
         /// </summary>
         public void Dispose()
         {
@@ -357,9 +354,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Sets the source hierarchy used to populate the hierarchy view.
+        /// Sets the source hierarchy used to populate the <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="hierarchy">The hierarchy.</param>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> to set as the source.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public void SetSourceHierarchy(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
@@ -372,7 +369,7 @@ namespace Unity.Hierarchy
             if (m_Hierarchy != null)
                 m_Hierarchy.HandlerCreated -= OnHandlerCreated;
             if (m_HierarchyViewModel != null)
-                m_HierarchyViewModel.FlagsChanged -= FlagsChanged;
+                m_HierarchyViewModel.FlagsChanged -= OnViewModelFlagsChanged;
             if (m_CollectionView != null)
                 m_CollectionView.BeforeRefreshingItems -= UpdateData;
 
@@ -440,7 +437,7 @@ namespace Unity.Hierarchy
 
             // Register events
             m_Hierarchy.HandlerCreated += OnHandlerCreated;
-            m_HierarchyViewModel.FlagsChanged += FlagsChanged;
+            m_HierarchyViewModel.FlagsChanged += OnViewModelFlagsChanged;
 
             // Subscribe to BeforeRefreshingItems and calling UpdateData to make sure the data
             // of Hierarchy, Flattened and ViewModel, alongside all handlers state are up to date for the collection view
@@ -451,7 +448,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Update the hierarchy view displayed content.
+        /// Updates the <see cref="HierarchyView"/> displayed content.
         /// </summary>
         public void Update()
         {
@@ -460,9 +457,8 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Incrementally update the hierarchy view displayed content.
+        /// Incrementally updates the <see cref="HierarchyView"/> displayed content.
         /// </summary>
-        /// <returns></returns>
         public bool UpdateIncremental()
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UpdateIncremental()");
@@ -470,10 +466,10 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Incrementally update the hierarchy view displayed content until the time limit is reached.
+        /// Incrementally updates the <see cref="HierarchyView"/> displayed content until the time limit is reached.
         /// </summary>
-        /// <param name="milliseconds"></param>
-        /// <returns></returns>
+        /// <param name="milliseconds">The maximum time in milliseconds to spend updating the <see cref="HierarchyView"/>.</param>
+        /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
         public bool UpdateIncrementalTimed(double milliseconds)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UpdateIncrementalTimed(milliseconds={milliseconds})");
@@ -490,9 +486,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Selects the specified node.
+        /// Selects the specified <see cref="HierarchyNode"/>.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to select.</param>
         public void Select(in HierarchyNode node)
         {
             m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Selected);
@@ -500,9 +496,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Selects the specified nodes.
+        /// Selects the specified <see cref="HierarchyNode"/>s.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to select.</param>
         public void Select(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Selected);
@@ -512,7 +508,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Selects the specified node and all ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to select.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void SelectRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -523,7 +519,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Selects the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to select.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void SelectRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -532,7 +528,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Select all nodes in the hierarchy.
+        /// Selects all nodes in the hierarchy.
         /// </summary>
         /// <param name="exposedOnly">
         /// When <see langword="true"/>, selects only exposed nodes (excludes hidden or unreachable nodes).
@@ -551,7 +547,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets the current selection to a single node, making all other nodes unselected.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to set as the selection.</param>
         public void SetSelection(in HierarchyNode node)
         {
             using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
@@ -565,7 +561,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets the current selection to the specified nodes, making all other nodes unselected.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to set as the selection.</param>
         public void SetSelection(ReadOnlySpan<HierarchyNode> nodes)
         {
             using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
@@ -579,7 +575,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Determines if the specified node is selected.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is selected.</param>
         /// <returns><see langword="true"/> if the specified node is selected; <see langword="false"/> otherwise.</returns>
         public bool IsSelected(in HierarchyNode node)
         {
@@ -587,9 +583,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Determine if the specified node, or any of its ancestors, is selected.
+        /// Determines if the specified node, or any of its ancestors, is selected.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is selected or any of its ancestors is selected.</param>
         public bool IsSelectedOrAnyAncestorSelected(in HierarchyNode node)
         {
             // todo: reimplement in native
@@ -609,7 +605,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Toggles the selection state of the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to toggle the selection state of.</param>
         public void ToggleSelected(in HierarchyNode node)
         {
             m_HierarchyViewModel.ToggleFlags(in node, HierarchyNodeFlags.Selected);
@@ -619,7 +615,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Toggles the selection state of the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to toggle the selection state of.</param>
         public void ToggleSelected(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.ToggleFlags(nodes, HierarchyNodeFlags.Selected);
@@ -629,7 +625,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Toggles the selection state of the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to toggle the selection state of.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ToggleSelectedRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -640,7 +636,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Toggles the selection state of the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to toggle the selection state of.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ToggleSelectedRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -660,7 +656,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Clears the selection state of the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to clear the selection state of.</param>
         public void Deselect(in HierarchyNode node)
         {
             m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Selected);
@@ -670,7 +666,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Clears the selection state of the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to clear the selection state of.</param>
         public void Deselect(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Selected);
@@ -680,7 +676,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Clears the selection state of the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to clear the selection state of.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void DeselectRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -691,7 +687,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Clears the selection state of the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to clear the selection state of.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void DeselectRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -711,7 +707,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Expands the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to expand.</param>
         public void Expand(in HierarchyNode node)
         {
             m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
@@ -721,7 +717,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Expands the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to expand.</param>
         public void Expand(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Expanded);
@@ -731,7 +727,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Expands the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to expand.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ExpandRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -742,7 +738,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Expands the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to expand.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ExpandRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -751,7 +747,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Expands all nodes in the hierarchy.
+        /// Expands all <see cref="HierarchyNode"/>s in the <see cref="Hierarchy"/>.
         /// </summary>
         public void ExpandAll()
         {
@@ -762,7 +758,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Determines if the specified node is expanded.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is expanded.</param>
         /// <returns><see langword="true"/> if the specified node is expanded, <see langword="false"/> otherwise.</returns>
         public bool IsExpanded(in HierarchyNode node)
         {
@@ -770,9 +766,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Collapse the specified node.
+        /// Collapses the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to collapse.</param>
         public void Collapse(in HierarchyNode node)
         {
             m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Expanded);
@@ -780,9 +776,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Collapse the specified nodes.
+        /// Collapses the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to collapse.</param>
         public void Collapse(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Expanded);
@@ -790,9 +786,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Collapse the specified node and all its ancestors or descendants recursively.
+        /// Collapses the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to collapse.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void CollapseRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -801,9 +797,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Collapse the specified nodes and all their ancestors or descendants recursively.
+        /// Collapses the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to collapse.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void CollapseRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -812,7 +808,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Collapse all nodes in the hierarchy.
+        /// Collapses all <see cref="HierarchyNode"/>s in the <see cref="Hierarchy"/>.
         /// </summary>
         public void CollapseAll()
         {
@@ -821,9 +817,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Determine if the specified node is collapsed.
+        /// Determines if the specified node is collapsed.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is collapsed.</param>
         /// <returns><see langword="true"/> if the specified node is collapsed, <see langword="false"/> otherwise.</returns>
         public bool IsCollapsed(in HierarchyNode node)
         {
@@ -833,7 +829,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Shows the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to show.</param>
         public void Show(in HierarchyNode node)
         {
             m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Hidden);
@@ -843,7 +839,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Shows the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to show.</param>
         public void Show(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Hidden);
@@ -853,7 +849,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Shows the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to show.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ShowRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -864,7 +860,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Shows the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to show.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void ShowRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -873,7 +869,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Shows all nodes in the hierarchy.
+        /// Shows all <see cref="HierarchyNode"/>s in the <see cref="Hierarchy"/>.
         /// </summary>
         public void ShowAll()
         {
@@ -884,7 +880,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Determines if the specified node is shown.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is shown.</param>
         /// <returns><see langword="true"/> if the specified node is shown, <see langword="false"/> otherwise.</returns>
         public bool IsShown(in HierarchyNode node)
         {
@@ -894,7 +890,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Hides the specified node.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to hide.</param>
         public void Hide(in HierarchyNode node)
         {
             m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Hidden);
@@ -904,7 +900,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Hides the specified nodes.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to hide.</param>
         public void Hide(ReadOnlySpan<HierarchyNode> nodes)
         {
             m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Hidden);
@@ -914,7 +910,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Hides the specified node and all its ancestors or descendants recursively.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to hide.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void HideRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -925,7 +921,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Hides the specified nodes and all their ancestors or descendants recursively.
         /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to hide.</param>
         /// <param name="direction">The direction of traversal.</param>
         public void HideRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
         {
@@ -934,7 +930,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Hides all nodes in the hierarchy.
+        /// Hides all <see cref="HierarchyNode"/>s in the <see cref="Hierarchy"/>.
         /// </summary>
         public void HideAll()
         {
@@ -945,7 +941,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Determines if the specified node is hidden.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to check if it is hidden.</param>
         /// <returns><see langword="true"/> if the specified node is hidden, <see langword="false"/> otherwise.</returns>
         public bool IsHidden(in HierarchyNode node)
         {
@@ -953,9 +949,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Frame the specified node, expanding its ancestors and scrolling to it.
+        /// Frames the specified node, expanding its ancestors and scrolling to it.
         /// </summary>
-        /// <param name="node">Node to frame.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to frame.</param>
         public void Frame(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNode({node})");
@@ -969,9 +965,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Frame the specified nodes, expanding their ancestors and scrolling to the first node.
+        /// Frames the specified nodes, expanding their ancestors and scrolling to the first node.
         /// </summary>
-        /// <param name="nodes">Nodes to frame.</param>
+        /// <param name="nodes">The <see cref="HierarchyNode"/>s to frame.</param>
         public void Frame(ReadOnlySpan<HierarchyNode> nodes)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNodes(nodes={HierarchyLogging.ToString(nodes)})");
@@ -985,10 +981,10 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create Columns according to a list of columns specification and a potential ViewState.
+        /// Creates columns according to a list of columns specification and a potential <see cref="HierarchyViewState"/>.
         /// </summary>
-        /// <param name="columns">List of columns specification. Note that HierarchyViewColumns are supported as first class citizen and their defaults can be overridden with the viewstate.</param>
-        /// <param name="state">Optional HierarchyViewState used to override the default properties of columns (Visibility, width, order...).</param>
+        /// <param name="columns">The list of <see cref="HierarchyViewColumn"/> specifications.</param>
+        /// <param name="state">Optional <see cref="HierarchyViewState"/> used to override the default properties of columns such as visibility, width, and order.</param>
         public void SetColumns(List<Column> columns, HierarchyViewState state = null)
         {
             if (state != null && state.Columns != null && state.Columns.Length > 0)
@@ -1036,12 +1032,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a set of columns from a list of columns and cell descriptors. If a viewState is passed, all the
+        /// Creates a set of columns from a list of columns and cell descriptors. If a <see cref="HierarchyViewState"/> is passed, all the
         /// columns default order, width and visibility will be overridden by the viewState.
         /// </summary>
-        /// <param name="columnDescriptors">Column Descriptors uses to create the HierarchyViewColumn</param>
-        /// <param name="cellDescriptors">Cell Descriptors use to to create the HierarchyViewCell within the HierarchyViewColumn</param>
-        /// <param name="state">Optional HierarchyViewState used to override the default properties of columns (Visibility, width, order...).</param>
+        /// <param name="columnDescriptors">The list of <see cref="HierarchyViewColumnDescriptor"/>s used to create the <see cref="HierarchyViewColumn"/>s.</param>
+        /// <param name="cellDescriptors">The list of <see cref="HierarchyViewCellDescriptor"/>s used to create the <see cref="HierarchyViewCell"/>s within the <see cref="HierarchyViewColumn"/>s.</param>
+        /// <param name="state">Optional <see cref="HierarchyViewState"/> used to override the default properties of columns, such as visibility, width, and order.</param>
         public void SetColumnDescriptors(IEnumerable<HierarchyViewColumnDescriptor> columnDescriptors, IEnumerable<HierarchyViewCellDescriptor> cellDescriptors, HierarchyViewState state = null)
         {
             var columns = new List<Column>
@@ -1073,9 +1069,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Update the HierarchyView with a new ViewState.
+        /// Updates the <see cref="HierarchyView"/> with a new ViewState.
         /// </summary>
-        /// <param name="viewState">ViewState</param>
+        /// <param name="viewState">The <see cref="HierarchyViewState"/> to apply.</param>
         public void SetState(HierarchyViewState viewState)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetState(state=...)");
@@ -1102,10 +1098,10 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Get the current viewstate of the HierarchyView.
+        /// Gets the current viewstate of the <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="content">Flags indicating what HierarchyViewState members you want to extract.</param>
-        /// <returns>Returns the current view state (columns configurations and such) of the HierarchyView.</returns>
+        /// <param name="content">Flags indicating what <see cref="HierarchyViewState"/> members you want to extract.</param>
+        /// <returns>Returns the current view state (columns configurations and such) of the <see cref="HierarchyView"/>.</returns>
         public HierarchyViewState GetState(HierarchyViewState.Content content = HierarchyViewState.Content.All)
         {
             var windowState = new HierarchyViewState(content);
@@ -1619,6 +1615,8 @@ namespace Unity.Hierarchy
             Reset();
             Initialize();
         }
+
+        void OnViewModelFlagsChanged(HierarchyNodeFlags flags) => FlagsChanged?.Invoke(flags);
 
         HierarchyViewItem GetHierarchyViewItemFromIndex(int index)
         {

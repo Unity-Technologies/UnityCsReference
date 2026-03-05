@@ -63,7 +63,11 @@ internal readonly record struct ReparentElementsCommand
         }
 
         EditorUtility.SetDirty(visualTreeAsset);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
         foreach (var vta in set)
+        {
             EditorUtility.SetDirty(vta);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
+        }
     }
 }

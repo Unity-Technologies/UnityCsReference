@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class SetupEditorTagsNode : Node
+    class SetupEditorTagsNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<string[]> Tags;
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;

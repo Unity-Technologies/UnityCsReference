@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor.Utils
 {
@@ -361,9 +362,7 @@ namespace UnityEditor.Utils
             while (charEnum.MoveNext())
             {
                 var c = charEnum.GetTextElement();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (c.Length == 1 && invalidFilenameChars.Contains(c[0]))
-#pragma warning restore UA2001
                     continue;
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c, 0);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)

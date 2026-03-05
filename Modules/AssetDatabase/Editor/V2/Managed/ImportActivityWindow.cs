@@ -145,7 +145,6 @@ namespace UnityEditor
             public (IMGUIContainer container, ArtifactBrowserTreeView<ProjectAnalysisTreeViewItem> treeView) importProcessAnalysis;
         }
 
-        [Serializable]
         internal struct ToolBarContainer
         {
             public (IMGUIContainer container, ArtifactBrowserToolbar toolbar) options;
@@ -1848,7 +1847,7 @@ namespace UnityEditor
                 {
                     headerContent = EditorGUIUtility.TrTextContent(col.Name),
                     headerTextAlignment = TextAlignment.Left,
-                    sortingArrowAlignment = TextAlignment.Right,
+                    sortingArrowAlignment = TextAlignment.Center,
                     autoResize = false,
                     width = col.Width,
                 };

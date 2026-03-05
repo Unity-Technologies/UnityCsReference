@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         PackageExtensionAction CreatePackageActionButton();
         PackageExtensionAction CreatePackageActionMenu();
         void SendPackageSelectionChangedEvent(IPackage package);
-        void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer);
+        void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer, VisualElement legacyExtensionContainer);
         void OnWindowDestroy();
     }
 
@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
         }
 
-        public void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer)
+        public void OnWindowCreated(IWindow window, VisualElement detailsExtensionContainer, VisualElement toolbarExtensionsContainer, VisualElement legacyExtensionContainer)
         {
             m_Window = window;
             m_DetailsExtensionContainer = detailsExtensionContainer;
@@ -182,9 +182,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageActionContainer.style.flexDirection = FlexDirection.Row;
             m_ToolbarExtensionContainer.Add(m_PackageActionContainer);
 
-            m_ToolbarExtensionContainer.RegisterCallback<GeometryChangedEvent>(evt => RefreshPackageActionsBasedOnWidth());
+            m_ToolbarExtensionContainer.RegisterCallback<GeometryChangedEvent>(_ => RefreshPackageActionsBasedOnWidth());
 
             m_EventDispatcher.SendWindowCreatedEvent(window);
+
+            CreateLegacyExtensionUI(legacyExtensionContainer);
+        }
+
+        private void CreateLegacyExtensionUI(VisualElement legacyExtensionContainer)
+        {
+            legacyExtensionContainer.Clear();
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    legacyExtensionContainer.Add(extension.CreateExtensionUI());
+            });
+            PackageManagerExtensions.extensionsGUICreated = true;
         }
 
         public void OnWindowDestroy()
@@ -234,6 +247,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPackageActionsBasedOnWidth()
         {
+            if (m_ToolbarExtensionContainer.panel == null)
+                return;
+
             var childrenWidth = 0.0f;
             foreach (var action in m_PackageExtensionActions.Filter(a => a.visible))
                 childrenWidth += action.dropdownButton.estimatedWidth;

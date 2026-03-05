@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -42,27 +44,37 @@ namespace UnityEditor
                 return null;
         }
 
+        static List<EditorCurveBinding> s_BindingsCache = new ();
+        static readonly Regex s_PropertyWithSuffixRegex = new (@"(?<suffix>\.[xyz])$");
         internal static EditorCurveBinding[] ConvertRotationPropertiesToInterpolationType(ReadOnlySpan<EditorCurveBinding> selection, Mode newInterpolationMode)
         {
-            if (selection.Length != 4)
-                return selection.ToArray();
+            if (s_BindingsCache.Capacity < selection.Length)
+                s_BindingsCache.Capacity = selection.Length;
 
-            if (GetModeFromCurveData(selection[0]) == Mode.RawQuaternions)
+            s_BindingsCache.Clear();
+            for (int i = 0; i < selection.Length; ++i)
             {
-                EditorCurveBinding[] newCurves = new EditorCurveBinding[3];
-                newCurves[0] = selection[0];
-                newCurves[1] = selection[1];
-                newCurves[2] = selection[2];
+                if (GetModeFromCurveData(selection[i]) == Mode.RawQuaternions)
+                {
+                    // Process x, y, z rotation bindings. Drop w channel.
+                    var match = s_PropertyWithSuffixRegex.Match(selection[i].propertyName);
+                    if (match.Success)
+                    {
+                        string prefix = GetPrefixForInterpolation(newInterpolationMode);
 
-                string prefix = GetPrefixForInterpolation(newInterpolationMode);
-                newCurves[0].propertyName = prefix + ".x";
-                newCurves[1].propertyName = prefix + ".y";
-                newCurves[2].propertyName = prefix + ".z";
+                        var newBinding = selection[i];
+                        newBinding.propertyName = prefix + match.Groups["suffix"];
 
-                return newCurves;
+                        s_BindingsCache.Add(newBinding);
+                    }
+                }
+                else
+                {
+                    s_BindingsCache.Add(selection[i]);
+                }
             }
-            else
-                return selection.ToArray();
+
+            return s_BindingsCache.ToArray();
         }
     }
 }

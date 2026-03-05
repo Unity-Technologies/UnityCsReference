@@ -49,5 +49,6 @@ internal readonly record struct UnsetAllInlineStylePropertiesCommand
 
         EditorUtility.SetDirty(visualTreeAsset);
         EditorUtility.SetDirty(inlineStyleSheet);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
     }
 }

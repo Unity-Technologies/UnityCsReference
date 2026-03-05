@@ -120,7 +120,6 @@ namespace Unity.GraphToolkit.Editor
 
         WireConnector m_WireConnector;
         VisualElement m_ConnectorCache;
-        protected Label m_ConnectorLabel;
 
         TypeHandle m_CurrentTypeHandle;
 
@@ -463,7 +462,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The connector visual content generator.</returns>
         protected virtual Action<MeshGenerationContext> GetConnectorVisualContentGenerator()
         {
-            if (PortModel.DataTypeHandle == TypeHandle.ExecutionFlow)
+            if (PortModel.DataTypeHandle.Resolve() == TypeHandle.Untyped.Resolve())
                 return OnGenerateTriangleConnectorVisualContent;
 
             return OnGenerateCircleConnectorVisualContent;
@@ -722,14 +721,18 @@ namespace Unity.GraphToolkit.Editor
                     {
                         if (!port.PortModel.IsPolymorphic)
                         {
-                            var expandToggleX = portConnectorPart.ExpandToggle.worldBound.xMax;
+                            // Adjust the hit box for an output expandable port so it starts at the right edge of the expand toggle and does not overlap it.
+                            var expandToggleX = portConnectorPart.HitBoxLimitElement.worldBound.xMax;
                             var newSize = x + hitBoxSize.x - expandToggleX;
                             x = expandToggleX;
                             hitBoxSize.x = newSize;
                         }
                     }
                     else
+                    {
+                        // Adjust the hit box for an input expandable port so it ends at the left edge of the expand toggle and does not overlap it.
                         hitBoxSize.x = portConnectorPart.ExpandToggle.worldBound.xMin - x;
+                    }
                 }
 
                 return new Rect(new Vector2(x, y), hitBoxSize);
@@ -790,7 +793,12 @@ namespace Unity.GraphToolkit.Editor
 
         PortModel GetPortToConnect(GraphElementModel selectable)
         {
-            return (selectable as PortNodeModel)?.GetPortFitToConnectTo(PortModel);
+            var port =  (selectable as ISingleOutputPortNodeModel)?.OutputPort ?? (selectable as ISingleInputPortNodeModel)?.InputPort;
+
+            if (port?.GraphModel?.IsCompatiblePort(PortModel, port) ?? false)
+                return port;
+
+            return null;
         }
 
         protected void OnGenerateTriangleConnectorVisualContent(MeshGenerationContext mgc)
@@ -899,7 +907,12 @@ namespace Unity.GraphToolkit.Editor
 
         bool TrySetPortColorFromTypeStyle()
         {
-            var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(PortModel.PortDataType);
+            Type elementStyle = PortModel.PortDataType;
+            var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(elementStyle);
+
+            if (!typeStyle.HasValue && PortModel.PortDataType.IsListOrArray())
+                typeStyle = PortModel.GraphModel?.GetDataTypeStyle(PortModel.PortDataType.GetCollectionElementType());
+
             if (!typeStyle.HasValue)
                 return false;
 

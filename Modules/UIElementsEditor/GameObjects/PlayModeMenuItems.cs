@@ -52,17 +52,6 @@ namespace UnityEditor.UIElements.GameObjects
             Selection.activeGameObject = root;
         }
 
-        [MenuItem("GameObject/UI Toolkit/Legacy/UI Document with Asset", false, 11)]
-        public static void AddPreFilledUIDocument(MenuCommand menuCommand)
-        {
-            // Creates new asset and upon successful rename will create the UIDoc & link asset
-            UIElementsTemplate.CreateUXMLAssetWithCallback((instanceID =>
-            {
-                var uiDocument = AddPanelComponentHelper<UIDocument>(menuCommand);
-                uiDocument.visualTreeAsset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
-            }));
-        }
-
         [MenuItem("GameObject/UI Toolkit/Legacy/UI Document", false, 10)]
         public static void AddUIDocument(MenuCommand menuCommand)
         {

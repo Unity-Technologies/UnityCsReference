@@ -138,5 +138,54 @@ namespace UnityEngine.UIElements
             // Rays can intersect a plane or a volume, so we need at least 2 workable dimensions
             return validDimensionCount >= 2;
         }
+
+        public static void DrawGizmoBounds(IPanelComponent panelComponent, Vector2 pivotOffset, float pixelsPerUnit)
+        {
+            var root = panelComponent?.GetRootVisualElement();
+            if (root == null)
+                return;
+
+            var panelSettings = panelComponent.panelSettings;
+            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+                return;
+
+            // Find the first PanelRenderer that's controlled by a GameObject
+            var gameObjectPanelComp = panelComponent;
+            while (gameObjectPanelComp != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectPanelComp)))
+                gameObjectPanelComp = gameObjectPanelComp.parentUI;
+
+            if (gameObjectPanelComp == null)
+                return;
+
+            Bounds bb;
+            if (PanelComponentUtils.IsTransformControlledByGameObject(panelComponent))
+            {
+                bb = PanelComponentUtils.LocalBoundsFromPivotSource(root, panelComponent.pivotReferenceSize);
+            }
+            else
+            {
+                // Relative mode gizmos are drawn relative to the next ancestor that's
+                // controlled by a GameObject transform
+                var bbox = root.boundingBoxWithoutNested;
+                bbox = root.ChangeCoordinatesTo(root, bbox);
+                bb = new Bounds(bbox.center, bbox.size);
+            }
+
+            if (!PanelComponentUtils.IsValidBounds(bb))
+                return;
+
+            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(pivotOffset, pixelsPerUnit);
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
+
+            var matrixBackup = Gizmos.matrix;
+
+            Vector3 center = bb.center;
+            Vector3 size = bb.size;
+            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            Gizmos.matrix = gameObjectPanelComp.gameObject.transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(center, size);
+
+            Gizmos.matrix = matrixBackup;
+        }
     }
 }

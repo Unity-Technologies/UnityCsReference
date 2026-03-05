@@ -11,6 +11,7 @@ using TextAsset = UnityEngine.TextAsset;
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 
+#pragma warning disable CS0618 // TextShaderUtilities is obsolete; internal usage
 
 namespace UnityEditor.TextCore.Text
 {
@@ -280,3 +281,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

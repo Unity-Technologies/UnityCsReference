@@ -39,6 +39,10 @@ namespace UnityEditor.Lighting.LightingSearch
 
                 var simplifiedType = (SimplifiedLightType)args.value;
                 light.type = (LightType)simplifiedType;
+                
+                // Mark the light component as dirty so other columns (Shape, Intensity, Unit) refresh
+                // when the light type changes.
+                EditorUtility.SetDirty(light);
             };
             column.cellCreator = _ => new EnumField(SimplifiedLightType.Spot) { style = { flexGrow = 1 } };
             column.binder = (args, ve) =>

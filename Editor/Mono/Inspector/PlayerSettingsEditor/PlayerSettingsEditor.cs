@@ -11,7 +11,6 @@ using UnityEditor.Presets;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Reflection;
@@ -24,7 +23,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
-using UnityEditor.UIElements;
+using Unity.Collections;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -1750,9 +1749,7 @@ namespace UnityEditor
 
             var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             // only available if we include ES3
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
-#pragma warning restore UA2001
             if (!hasMinES3)
                 return;
 
@@ -2458,7 +2455,9 @@ namespace UnityEditor
                         api == GraphicsDeviceType.Metal ||
                         api == GraphicsDeviceType.Vulkan ||
                         api == GraphicsDeviceType.OpenGLES3 ||
-                        api == GraphicsDeviceType.Direct3D12)
+                        api == GraphicsDeviceType.Direct3D12 ||
+                        api == GraphicsDeviceType.GameCoreXboxOne ||
+                        api == GraphicsDeviceType.GameCoreXboxSeries )
                     {
                         platformSupportsBatching = true;
                         break;
@@ -2967,9 +2966,7 @@ namespace UnityEditor
         {
             foreach (var target in k_WebGPUSupportedBuildTargets)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_CurrentTarget.GetGraphicsAPIs_Internal(target).Contains(GraphicsDeviceType.WebGPU))
-#pragma warning restore UA2001
                 {
                     return true;
                 }
@@ -3660,7 +3657,7 @@ namespace UnityEditor
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
-                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
+                            EditorGUIUtility.systemCopyBuffer = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
                         }
 
                         GUI.enabled = hasScriptingDefinesBeenModified;

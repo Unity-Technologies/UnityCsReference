@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_LocalPath;
         [SerializeField]
         private long m_UploadId;
-        [SerializeField]
+        // This field is recreated from AssetStoreProductInfo.supportedVersions
         private List<SemVersion> m_SupportedUnityVersions;
         [SerializeField]
         private AssetStoreImportedPackage m_ImportedPackage;

@@ -248,18 +248,20 @@ namespace UnityEngine.UIElements
             private set
             {
                 m_RootVisualElement = (UIDocumentRootElement)value;
-                focusRing = value != null ? new(value) : null;
+                (this as IPanelComponent).focusRing = value != null ? new(value) : null;
             }
         }
 
         VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
 
-        internal VisualElementFocusRing focusRing { get; private set; } = null;
+        VisualElementFocusRing IPanelComponent.focusRing { get; set; }
 
-        /// <summary>
-        /// See <see cref="PointerDeviceState.s_WorldSpaceDocumentWithSoftPointerCapture"/>
-        /// </summary>
-        internal int softPointerCaptures = 0;
+        private int m_SoftPointerCaptures = 0;
+        int IPanelComponent.softPointerCaptures
+        {
+            get => m_SoftPointerCaptures;
+            set => m_SoftPointerCaptures = value;
+        }
 
         private int m_FirstChildInsertIndex;
 
@@ -654,9 +656,9 @@ namespace UnityEngine.UIElements
                 isWorldSpaceRootUIDocument = false;
             }
 
-            if (m_RootVisualElement.isWorldSpaceRootUIDocument != isWorldSpaceRootUIDocument)
+            if (m_RootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
-                m_RootVisualElement.isWorldSpaceRootUIDocument = isWorldSpaceRootUIDocument;
+                m_RootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
                 m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
             }
         }
@@ -965,7 +967,7 @@ namespace UnityEngine.UIElements
         private void OnDisable()
         {
             EnabledDocumentCount--;
-            PointerDeviceState.RemoveDocumentData(this);
+            PointerDeviceState.RemovePanelComponentData(this);
             RemoveWorldSpaceCollider();
 
             if (m_RootVisualElement != null)
@@ -1199,50 +1201,10 @@ namespace UnityEngine.UIElements
 
         private void OnDrawGizmosSelected()
         {
-            if (m_RootVisualElement == null)
+            if (rootVisualElement == null)
                 return;
 
-            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                return;
-
-            // Find the first UIDoc that's controlled by a GameObject
-            var gameObjectDoc = this;
-            while (gameObjectDoc != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectDoc)))
-                gameObjectDoc = gameObjectDoc.parentUI;
-
-            if (gameObjectDoc == null)
-                return;
-
-            Bounds bb;
-            if (PanelComponentUtils.IsTransformControlledByGameObject(this))
-            {
-                bb = PanelComponentUtils.LocalBoundsFromPivotSource(m_RootVisualElement, pivotReferenceSize);
-            }
-            else
-            {
-                // Relative mode gizmos are drawn relative to the next ancestor that's
-                // controlled by a GameObject transform
-                var bbox = m_RootVisualElement.boundingBoxWithoutNested;
-                bbox = m_RootVisualElement.ChangeCoordinatesTo(gameObjectDoc.rootVisualElement, bbox);
-                bb = new Bounds(bbox.center, bbox.size);
-            }
-
-            if (!PanelComponentUtils.IsValidBounds(bb))
-                return;
-
-
-            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(gameObjectDoc.PivotOffset(), gameObjectDoc.pixelsPerUnit);
-            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
-
-            var matrixBackup = Gizmos.matrix;
-
-            Vector3 center = bb.center;
-            Vector3 size = bb.size;
-            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
-            Gizmos.matrix = gameObjectDoc.transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(center, size);
-
-            Gizmos.matrix = matrixBackup;
+            PanelComponentUtils.DrawGizmoBounds(this, PivotOffset(), pixelsPerUnit);
         }
 
     }

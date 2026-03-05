@@ -52,5 +52,6 @@ internal readonly record struct PasteElementsCommand
         EditorUtility.SetDirty(CopyIntoAsset.visualTreeAsset.inlineSheet);
 
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(CopyIntoAsset.visualTreeAsset);
     }
 }
