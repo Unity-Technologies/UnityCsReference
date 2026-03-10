@@ -41,7 +41,7 @@ namespace UnityEditor
         private bool m_HasAcceptedWarning;
 
         public DiagnosticSwitchPreferences()
-            : base("Preferences/Diagnostics", SettingsScope.User)
+            : base("Preferences/Editor Diagnostics", SettingsScope.User)
         {
             var switches = Debug.diagnosticSwitches;
             m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);

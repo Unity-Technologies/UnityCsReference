@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
+using UnityEditor.InsightsEditor;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
@@ -309,7 +310,7 @@ namespace UnityEditor.Modules
             var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
 
-            if (CrashReportingSettings.enabled)
+            if (CrashReportingSettings.canUploadReports)
                 additionalArgs.Add("--emit-source-mapping");
 
             var namedBuildTarget = GetNamedBuildTarget(args);
@@ -346,7 +347,7 @@ namespace UnityEditor.Modules
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard),
-                CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.enabled,
+                CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.canUploadReports,
                 AdditionalCppFiles = PluginImporter.GetImporters(args.target)
                     .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
                     .Select(imp => imp.assetPath)
@@ -428,7 +429,8 @@ namespace UnityEditor.Modules
             Services = new ()
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
-                EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.enabled,
+                EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
+                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.enabled,
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },

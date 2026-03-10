@@ -144,6 +144,8 @@ namespace UnityEditor.Build.Profile
             EditorApplication.update += EditorUpdate;
 
             ShowPlatformSettings(profile, platformSettingsBaseRoot, platformBuildWarningsRoot);
+            ShowInsightsSettings(profile, root, isClassic);
+
             root.Bind(serializedObject);
             return root;
         }
@@ -269,6 +271,11 @@ namespace UnityEditor.Build.Profile
             var settings = m_PlatformExtension.CreateSettingsGUI(
                 serializedObject, platformProperties, platformSettingsState);
             platformSettingsBaseRoot.Add(settings);
+        }
+
+        void ShowInsightsSettings(BuildProfile profile, VisualElement rootVisualElement, bool isClassic)
+        {
+            BuildProfileInsightsSettingsView.CreateGUI(profile, rootVisualElement, isClassic);
         }
 
         void AddSceneList(VisualElement root, BuildProfile profile = null)

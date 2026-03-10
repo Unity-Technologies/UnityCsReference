@@ -11,6 +11,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
 {
@@ -691,6 +692,13 @@ namespace UnityEditor.Build.Profile
             profile.SerializePlayerSettings();
         }
 
+        [RequiredByNativeCode]
+        [VisibleToOtherModules]
+        internal static BuildProfileEngineDiagnosticsState GetActiveBuildProfileEngineDiagnosticsState()
+        {
+            var profile = activeProfile ?? instance.GetForClassicPlatform(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
+            return profile?.platformBuildProfile?.insightsSettingsContainer.buildProfileEngineDiagnosticsState ?? BuildProfileEngineDiagnosticsState.ProjectSettings;
+        }
 
         static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget, string sharedSetting = null)
         {
