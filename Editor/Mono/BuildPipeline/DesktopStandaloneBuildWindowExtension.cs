@@ -309,4 +309,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         return true;
     }
 
+    public override bool ShouldShowDiagnosticsDataOption()
+    {
+        BuildTarget selectedTarget = GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
+        NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+
+        if (namedBuildTarget != NamedBuildTarget.Server && (selectedTarget == BuildTarget.StandaloneWindows64
+            || selectedTarget == BuildTarget.StandaloneWindows || selectedTarget == BuildTarget.StandaloneOSX))
+        {
+            return true;
+        }
+
+        return false;
+    }
 }

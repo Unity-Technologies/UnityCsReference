@@ -113,6 +113,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool EnablePerformanceReporting;
         public bool EnableAnalytics;
         public bool EnableCrashReporting;
+        public bool EnableInsights;
     }
 
     public class StreamingAssetsFile

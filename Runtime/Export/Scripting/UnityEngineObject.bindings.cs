@@ -14,6 +14,8 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Threading;
 
+using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+
 namespace UnityEngine
 {
     // Bit mask that controls object destruction and visibility in inspectors

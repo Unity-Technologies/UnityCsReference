@@ -262,9 +262,9 @@ namespace UnityEditor
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     internal enum DiagnosticSetting
     {
-        ProjectSettings = 0,
-        Disabled = 1,
-        Enabled = 2,
+        Disabled = 0,
+        Enabled = 1,
+        ProjectSettings = 2,
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]

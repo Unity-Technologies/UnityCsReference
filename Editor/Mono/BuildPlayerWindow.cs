@@ -1018,6 +1018,7 @@ namespace UnityEditor
                     EditorUserBuildSettings.SetCompressionType(namedBuildTarget.ToBuildTargetGroup(), styles.compressionTypes[cmpIdx]);
                 }
 
+                GUIDiagnosticData(buildWindowExtension, namedBuildTarget);
 
                 canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 

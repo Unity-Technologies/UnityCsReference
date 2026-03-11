@@ -40,7 +40,7 @@ namespace UnityEditor.Connect
         const string k_EditModeClassName = "edit-mode";
 
         const string k_UnlinkProjectDialogTitle = "Unlink Project";
-        const string k_UnlinkProjectDialogMessage = "Are you sure you want to unlink this project?";
+        const string k_UnlinkProjectDialogMessage = "Unlinking is not recommended. Doing so will disable diagnostics and disconnect your project’s services. Products that require Developer Data collection, including those used by other members of your organization, will no longer function.\n\nAre you sure you want to unlink this project?";
         const string k_ProjectUnlinkSuccessMessage = "Project was unlinked successfully.";
         const string k_Yes = "Yes";
         const string k_No = "No";
@@ -85,7 +85,8 @@ namespace UnityEditor.Connect
             Notification.Topic.CrashService,
             Notification.Topic.ProjectBind,
             Notification.Topic.PurchasingService,
-            Notification.Topic.UDPService
+            Notification.Topic.UDPService,
+            Notification.Topic.InsightsService,
         };
 
         protected override SingleService serviceInstance => null;

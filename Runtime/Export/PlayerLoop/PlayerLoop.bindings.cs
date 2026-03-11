@@ -56,6 +56,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct AnalyticsCoreStatsUpdate {}
         [RequiredByNativeCode]
+        public struct InsightsUpdate {}
+        [RequiredByNativeCode]
         public struct UnityWebRequestUpdate {}
         [RequiredByNativeCode]
         public struct UpdateStreamingManager {}

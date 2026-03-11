@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Analytics;
@@ -163,6 +165,87 @@ namespace UnityEditor
         {
             get;
             set;
+        }
+
+        internal static AnalyticsResult TryRegisterAnalytic(Analytic analytic, Assembly assembly)
+        {
+            if (enabled == false) return AnalyticsResult.AnalyticsDisabled;
+
+            AnalyticsResult result = RegisterEventWithLimit(analytic.info.eventName, analytic.info.maxEventsPerHour, analytic.info.maxNumberOfElements, analytic.info.vendorKey, analytic.info.version, "", assembly);
+            if (result != AnalyticsResult.Ok)
+            {
+                Debug.LogWarning($"Unable to register event {analytic.info.eventName} with vendor key: {analytic.info.vendorKey} and error code {result.ToString()}. Editor Analyitics will not be gathered.");
+            }
+
+            return result;
+        }
+
+        internal static AnalyticsResult TrySendAnalytic(Analytic analytic)
+        {
+            if (enabled == false) return AnalyticsResult.AnalyticsDisabled;
+
+            AnalyticsResult result = AnalyticsResult.Ok;
+            try
+            {
+                if (!analytic.instance.TryGatherData(out var data, out Exception error))
+                {
+                    Debug.LogWarning(error);
+                    return AnalyticsResult.InvalidData;
+                }
+
+                if (data is IEnumerable enumerable)
+                {
+                    foreach (var subData in enumerable)
+                    {
+                        result = EditorAnalytics.SendEventWithLimit(analytic.info.eventName, subData, analytic.info.version, "");
+                    }
+                }
+                else
+                {
+                    result = EditorAnalytics.SendEventWithLimit(analytic.info.eventName, data, analytic.info.version, "");
+                }
+            }
+            catch (Exception ex) // We do not want to break the build if any analytic crashes for any reason, Simply we won't send the data to the server
+            {
+                Debug.LogWarning($"Exception {ex} found while sending analytic of {analytic.info.eventName}.");
+                return AnalyticsResult.InvalidData;
+            }
+
+            DebuggerEventListHandler.AddCSharpAnalytic(analytic);
+
+            return result;
+        }
+
+        public static AnalyticsResult SendAnalytic(IAnalytic analytic)
+        {
+            var analyticType = analytic.GetType();
+
+            if (Attribute.IsDefined(analyticType, typeof(AnalyticInfoAttribute)))
+            {
+                AnalyticInfoAttribute info = (AnalyticInfoAttribute)analyticType.GetCustomAttributes(typeof(AnalyticInfoAttribute), true)[0];
+
+                System.Reflection.Assembly assembly = Assembly.GetCallingAssembly();
+                return SendAnalytic(new Analytic(analytic, info), assembly);
+            }
+            else
+            {
+                Debug.LogError($"{analyticType} must contain an attribute of {nameof(AnalyticInfoAttribute)}");
+                return AnalyticsResult.InvalidData;
+            }
+        }
+
+        internal static AnalyticsResult SendAnalytic(Analytic analytic, Assembly assembly)
+        {
+            AnalyticsResult result = AnalyticsResult.Ok;
+            {
+                result = TryRegisterAnalytic(analytic, assembly);
+
+                if (result != AnalyticsResult.Ok)
+                    return result;
+
+                result = TrySendAnalytic(analytic);
+            }
+            return result;
         }
 
         extern private static bool SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
