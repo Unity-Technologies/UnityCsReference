@@ -88,6 +88,12 @@ namespace UnityEngine.LowLevelPhysics2D
         PhysicsUserData userData { get; set; }
 
         /// <undoc/>
+        PhysicsUserData ownerUserData { get; }
+
+        /// <undoc/>
+        void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0);
+
+        /// <undoc/>
         void Draw();
     }
 
@@ -272,6 +278,18 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsJoint_GetUserData(this); set => PhysicsJoint_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsJoint_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsJoint_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.

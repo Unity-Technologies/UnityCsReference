@@ -359,7 +359,15 @@ namespace UnityEngine.TextCore
 
         static bool tagMatch(ReadOnlySpan<char> tagCandidate, string tagName)
         {
-            return tagCandidate.StartsWith(tagName.AsSpan()) && (tagCandidate.Length == tagName.Length || (!char.IsLetter(tagCandidate[tagName.Length]) && tagCandidate[tagName.Length] != '-'));
+            if (!tagCandidate.StartsWith(tagName.AsSpan()))
+                return false;
+
+            if (tagCandidate.Length == tagName.Length)
+                return true; // Exact match, "b" matches <b>
+
+            char next = tagCandidate[tagName.Length]; // UUM-134299
+            return next == '='  // Attribute value, <color=red>, <size=12px>, <font="Arial">
+                || next == ' '; // Space-separated attributes, <a href="url">, <sprite index=1>
         }
 
         //Return true if there is a match

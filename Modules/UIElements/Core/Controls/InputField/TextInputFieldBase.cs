@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly BindingId hideSoftKeyboardProperty = nameof(hideSoftKeyboard);
         internal static readonly BindingId hidePlaceholderOnFocusProperty = nameof(hidePlaceholderOnFocus);
         internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
         internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
@@ -63,6 +64,7 @@ namespace UnityEngine.UIElements
                     new (nameof(doubleClickSelectsWord), "select-word-by-double-click"),
                     new (nameof(tripleClickSelectsLine), "select-line-by-triple-click"),
                     new (nameof(emojiFallbackSupport), "emoji-fallback-support"),
+                    new (nameof(hideSoftKeyboard), "hide-soft-keyboard"),
                     new (nameof(hideMobileInput), "hide-mobile-input"),
                     new (nameof(keyboardType), "keyboard-type"),
                     new (nameof(autoCorrection), "auto-correction"),
@@ -90,6 +92,7 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("select-line-by-triple-click")]
             [SerializeField] bool tripleClickSelectsLine;
             [SerializeField] bool emojiFallbackSupport;
+            [SerializeField] bool hideSoftKeyboard;
             [SerializeField] bool hideMobileInput;
             [SerializeField] bool autoCorrection;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
@@ -105,6 +108,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideSoftKeyboard_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoCorrection_UxmlAttributeFlags;
@@ -143,6 +147,8 @@ namespace UnityEngine.UIElements
                     e.tripleClickSelectsLine = tripleClickSelectsLine;
                 if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
                     e.emojiFallbackSupport = emojiFallbackSupport;
+                if (ShouldWriteAttributeValue(hideSoftKeyboard_UxmlAttributeFlags))
+                    e.hideSoftKeyboard = hideSoftKeyboard;
                 if (ShouldWriteAttributeValue(hideMobileInput_UxmlAttributeFlags))
                     e.hideMobileInput = hideMobileInput;
                 if (ShouldWriteAttributeValue(keyboardType_UxmlAttributeFlags))
@@ -437,7 +443,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Hides or shows the mobile input field.
+        /// Prevents the OS soft keyboard from opening
+        /// </summary>
+        [CreateProperty]
+        public bool hideSoftKeyboard
+        {
+            get => textEdition.hideSoftKeyboard;
+            set
+            {
+                if (textEdition.hideSoftKeyboard == value)
+                    return;
+                textEdition.hideSoftKeyboard = value;
+                NotifyPropertyChanged(hideSoftKeyboardProperty);
+            }
+        }
+
+        /// <summary>
+        /// Hides the mobile input field shown in the OS soft keyboard.
         /// </summary>
         [CreateProperty]
         public bool hideMobileInput

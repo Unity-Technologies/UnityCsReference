@@ -746,7 +746,9 @@ namespace UnityEngine.Events
         // ISerializationCallbackReceiver.OnAfterDeserialize executes before entering playmode
         // thus persistent calls can be cached incorrectly if initially called very early.
         // This callback invalidates caches after actual entering of playmode.
+#pragma warning disable RS0030
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+#pragma warning restore RS0030
         static void OnPlayModeStateChange()
         {
             foreach (var unityEventReference in s_UnityEvents)
@@ -778,7 +780,6 @@ namespace UnityEngine.Events
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             DirtyPersistentCalls();
-            s_UnityEvents.Add(new WeakReference<UnityEventBase>(this));
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()

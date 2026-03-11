@@ -10,12 +10,27 @@ namespace Unity.Profiling.Editor.UI
     {
         // The input is an array of tuples, whereby the first value is the data value,
         // and the second is the frame index on which it occurred.
-        public static BoxPlotModel BoxPlotModelFromSortedData((ulong, int)[] data)
+        public static BoxPlotModel BoxPlotModelFromSortedData((ulong, int)[] data, bool skipEmptyFrames)
         {
-            if (data.Length == 0)
+            var trueLength = data.Length;
+
+            if (trueLength == 0)
                 throw new ArgumentException("Cannot build box plot model from sorted data. Data array is empty.");
 
-            var minimumFrame = data[0];
+            var emptyFrameCount = 0;
+            if (skipEmptyFrames)
+            {
+                while (emptyFrameCount < trueLength && data[emptyFrameCount].Item1 == 0)
+                    emptyFrameCount++;
+            }
+
+            // If we've somehow got all empty frames, return to default behaviour to avoid negative array access
+            if (emptyFrameCount >= trueLength)
+                emptyFrameCount = 0;
+
+            var dataLengthNoEmptyFrames = trueLength - emptyFrameCount;
+
+            var minimumFrame = data[emptyFrameCount];
             var minimumFrameDurationNs = minimumFrame.Item1;
             var minimumFrameIndex = minimumFrame.Item2;
 
@@ -23,15 +38,15 @@ namespace Unity.Profiling.Editor.UI
             var maximumFrameDurationNs = maximumFrame.Item1;
             var maximumFrameIndex = maximumFrame.Item2;
 
-            var medianIndex = (uint)((data.Length - 1) * 0.5f);
+            var medianIndex = emptyFrameCount + (uint)((dataLengthNoEmptyFrames - 1) * 0.5f);
             var medianFrame = data[medianIndex];
             var medianFrameDurationNs = medianFrame.Item1;
             var medianFrameIndex = medianFrame.Item2;
 
-            var lowerQuartileIndex = (uint)((data.Length - 1) * 0.25f);
+            var lowerQuartileIndex = emptyFrameCount + (uint)((dataLengthNoEmptyFrames - 1) * 0.25f);
             var lowerQuartileFrameDurationNs = data[lowerQuartileIndex].Item1;
 
-            var upperQuartileIndex = (uint)((data.Length - 1) * 0.75f);
+            var upperQuartileIndex = emptyFrameCount + (uint)((dataLengthNoEmptyFrames - 1) * 0.75f);
             var upperQuartileFrameDurationNs = data[upperQuartileIndex].Item1;
 
             return new BoxPlotModel(

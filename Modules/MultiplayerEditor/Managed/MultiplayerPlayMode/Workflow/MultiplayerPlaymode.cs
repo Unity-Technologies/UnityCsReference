@@ -149,6 +149,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             args.Add(CommandLineParameters.k_NoUMP);
             args.Add(CommandLineParameters.k_UMPRestorePackages);
             args.Add(CommandLineParameters.BuildEditorDebuggingName(projectName));
+
+            var cloudEnv = CommandLineParameters.ReadCloudEnvironment();
+            if (!string.IsNullOrEmpty(cloudEnv))
+            {
+                args.Add(CommandLineParameters.BuildCloudEnvironmentArgument(cloudEnv));
+            }
+
             return args.ToArray();
         }
     }

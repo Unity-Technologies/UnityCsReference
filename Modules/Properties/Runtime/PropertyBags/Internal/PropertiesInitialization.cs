@@ -32,6 +32,7 @@ namespace Unity.Properties.Internal
     class ColorPropertyBag : ContainerPropertyBag<Color>
     {
         public ColorPropertyBag()
+            :base(4)
         {
             AddProperty(new RProperty());
             AddProperty(new GProperty());
@@ -75,6 +76,7 @@ namespace Unity.Properties.Internal
     class Vector2PropertyBag : ContainerPropertyBag<Vector2>
     {
         public Vector2PropertyBag()
+            :base(2)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -100,6 +102,7 @@ namespace Unity.Properties.Internal
     class Vector3PropertyBag : ContainerPropertyBag<Vector3>
     {
         public Vector3PropertyBag()
+            :base(3)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -134,6 +137,7 @@ namespace Unity.Properties.Internal
     class Vector4PropertyBag : ContainerPropertyBag<Vector4>
     {
         public Vector4PropertyBag()
+            :base(4)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -177,6 +181,7 @@ namespace Unity.Properties.Internal
     class Vector2IntPropertyBag : ContainerPropertyBag<Vector2Int>
     {
         public Vector2IntPropertyBag()
+            :base(2)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -202,6 +207,7 @@ namespace Unity.Properties.Internal
     class Vector3IntPropertyBag : ContainerPropertyBag<Vector3Int>
     {
         public Vector3IntPropertyBag()
+            :base(3)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -236,6 +242,7 @@ namespace Unity.Properties.Internal
     class RectPropertyBag : ContainerPropertyBag<Rect>
     {
         public RectPropertyBag()
+            :base(4)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -279,6 +286,7 @@ namespace Unity.Properties.Internal
     class RectIntPropertyBag : ContainerPropertyBag<RectInt>
     {
         public RectIntPropertyBag()
+            :base(4)
         {
             AddProperty(new XProperty());
             AddProperty(new YProperty());
@@ -322,6 +330,7 @@ namespace Unity.Properties.Internal
     class BoundsPropertyBag : ContainerPropertyBag<Bounds>
     {
         public BoundsPropertyBag()
+            :base(2)
         {
             AddProperty(new CenterProperty());
             AddProperty(new ExtentsProperty());
@@ -347,6 +356,7 @@ namespace Unity.Properties.Internal
     class BoundsIntPropertyBag : ContainerPropertyBag<BoundsInt>
     {
         public BoundsIntPropertyBag()
+            :base(2)
         {
             AddProperty(new PositionProperty());
             AddProperty(new SizeProperty());
@@ -372,6 +382,7 @@ namespace Unity.Properties.Internal
     class SystemVersionPropertyBag : ContainerPropertyBag<System.Version>
     {
         public SystemVersionPropertyBag()
+            :base(4)
         {
             AddProperty(new MajorProperty());
             AddProperty(new MinorProperty());

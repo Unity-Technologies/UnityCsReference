@@ -39,8 +39,10 @@ namespace UnityEngine.UIElements
         public static extern void SetHasFillTexture(IntPtr handle, bool hasFillTexture);
         public static extern bool HasFillTexture(IntPtr handle);
 
+        internal static extern Matrix4x4 GetFillTransform(IntPtr handle);
         internal static extern void SetFillTransform(IntPtr handle, Matrix4x4 fillTransform);
 
+        internal static extern float GetOpacity(IntPtr handle);
         internal static extern void SetOpacity(IntPtr handle, float opacity);
 
         public static extern Color GetFillColor(IntPtr handle);

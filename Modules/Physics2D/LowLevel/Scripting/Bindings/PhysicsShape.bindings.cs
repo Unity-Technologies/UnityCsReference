@@ -99,6 +99,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserData(PhysicsShape shape, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsShape::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetOwnerUserData(PhysicsShape shape);
 
         [NativeMethod(Name = "PhysicsLowLevel2D::PhysicsContactId::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsContactId_IsValid(PhysicsShape.ContactId contactId);
         [NativeMethod(Name = "PhysicsLowLevel2D::PhysicsContactId::GetContact", IsThreadSafe = true)] extern internal static PhysicsShape.Contact PhysicsContactId_GetContact(PhysicsShape.ContactId contactId);

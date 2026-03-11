@@ -149,6 +149,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         Dictionary<string, ScalerProfileSettingInformation> m_ScalerProfiles = new Dictionary<string, ScalerProfileSettingInformation>();
 
         bool m_PreviousHierarchyMode;
+        bool m_HasNonSerializedChanges;
 
         List<bool> m_FoldoutState = new List<bool>();
         private int m_SelectedProfileIndex = -1;
@@ -296,6 +297,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
             {
                 serializedObject.ApplyModifiedProperties();
                 AssetDatabase.SaveAssets();
+            }
+
+            if (m_HasNonSerializedChanges)
+            {
+                EditorUtility.SetDirty(serializedObject.targetObject);
+                m_HasNonSerializedChanges = false;
             }
         }
 
@@ -448,7 +455,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                                     m_scalerList.RemoveAt(index);
                                     m_FieldObjects.RemoveAt(index);
                                     m_IndexLists.RemoveAt(index);
-                                    UpdateAssetOnDiskAndInMemory();
+                                    MarkNonSerializedChange();
                                 }
                             }, i);
                             menu.ShowAsContext();
@@ -482,7 +489,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                         var indexList = GetIndexListForProfile(currentSetting.ScalerProfiles[^1]);
                         m_IndexLists.Add(indexList);
                         AddNewReorderableList(indexList);
-                        UpdateAssetOnDiskAndInMemory();
+                        MarkNonSerializedChange();
                     }));                    }
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
@@ -543,13 +550,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             scalerProfile.AddedScalers[newIndex] = copyObject;
                             scalerProfile.AddedScalers[newIndex].DefaultSetting.name = newObject.name;
                             AssetDatabase.AddObjectToAsset(copyObject, serializedObject.targetObject);
-                            UpdateAssetOnDiskAndInMemory();
+                            MarkNonSerializedChange();
                         }
                         else if(isDuplicate)
                         {
                             EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler named " + newObject.name + " already exists. Please rename and try again."), s_WarningPopupOption);
                             m_FieldObjects[m_SelectedProfileIndex][newIndex] = null;
-                            UpdateAssetOnDiskAndInMemory();
                         }
                     }
                 }
@@ -580,14 +586,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
             m_FieldObjects[m_SelectedProfileIndex].Add(null);
             m_CurrentSettings.ScalerProfiles[m_SelectedProfileIndex].AddedScalers.Add(null);
             m_IndexLists[m_SelectedProfileIndex].Add(m_IndexLists[m_SelectedProfileIndex].Count);
-            UpdateAssetOnDiskAndInMemory();
+            MarkNonSerializedChange();
         }
 
-        void UpdateAssetOnDiskAndInMemory()
+        void MarkNonSerializedChange()
         {
-            EditorUtility.SetDirty(serializedObject.targetObject);
-            AssetDatabase.SaveAssetIfDirty(serializedObject.targetObject);
-            serializedObject.Update();
+            m_HasNonSerializedChanges = true;
         }
 
         void OnRemoveCustomScalerCallback(ReorderableList list)
@@ -611,10 +615,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
             m_CurrentSettings.ScalerProfiles[m_SelectedProfileIndex].AddedScalers.RemoveAt(removeIndex);
             m_FieldObjects[m_SelectedProfileIndex].RemoveAt(removeIndex);
             m_IndexLists[m_SelectedProfileIndex].RemoveAt(removeIndex + defaultScalerCount);
+            MarkNonSerializedChange();
 
             // move pointer in the global index for 1 position up.
             list.index = Math.Clamp(removeIndex + defaultScalerCount - 1, 0, list.count - 1);
-            UpdateAssetOnDiskAndInMemory();
         }
 
         bool OnCanRemoveCustomScalerCallback(ReorderableList list)
@@ -703,6 +707,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         Rect DrawScalerSetting(Rect rect, AdaptivePerformanceScalerSettingsBase scalerSetting, bool renderNotDisabled, ScalerProfileSettingInformation scalerProfileSettingInfo, bool isCustomScaler = false)
         {
+            bool hasChanges = false;
             string scalerName = scalerSetting.name;
             var isEnabled = renderNotDisabled && !EditorApplication.isPlayingOrWillChangePlaymode;
 
@@ -731,6 +736,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 needsFoldout = newValue;
                 if (newValue)
                     scalerSettingInfo.showScalerSettings = newValue;
+                hasChanges = true;
             }
             scalerSetting.enabled = needsFoldout;
             rect.x -= k_TickboxPosition;
@@ -742,7 +748,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 style.clipping = TextClipping.Ellipsis;
                 var newShowScalerSettings = EditorGUI.Foldout(rect, scalerSettingInfo.showScalerSettings, isCustomScaler? new GUIContent("") : ReturnScalerGUIContent(scalerName), true, style);
                 if (EditorGUI.EndChangeCheck())
+                {
                     scalerSettingInfo.showScalerSettings = newShowScalerSettings;
+                }
             }
             else if(!isCustomScaler)
             {
@@ -783,6 +791,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     minBound = Mathf.Clamp(newMinBound, 0, maxBound);
+                    hasChanges = true;
                 }
                 scalerSetting.minBound = minBound;
 
@@ -793,6 +802,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     maxBound = Mathf.Clamp(newMaxBound, minBound, 10000);
+                    hasChanges = true;
                 }
                 scalerSetting.maxBound = maxBound;
 
@@ -804,6 +814,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     maxLevel = Mathf.Clamp(newMaxLevel, 1, 100);
+                    hasChanges = true;
                 }
                 scalerSetting.maxLevel = maxLevel;
 
@@ -815,6 +826,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     visualImpact = (ScalerVisualImpact)Mathf.Clamp((int)newVisualImpact, (int)ScalerVisualImpact.Low, (int)ScalerVisualImpact.High);
+                    hasChanges = true;
                 }
                 scalerSetting.visualImpact= visualImpact;
 
@@ -836,6 +848,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 rect.x -= 10;
             }
             scalerProfileSettingInfo.scalerSettingsInfos[scalerName] = scalerSettingInfo;
+            if (hasChanges)
+            {
+                MarkNonSerializedChange();
+            }
             return rect;
         }
 

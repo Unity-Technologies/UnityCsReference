@@ -5538,15 +5538,6 @@
     <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs">
       <Link>Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs">
-      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\AssemblyInfo.cs">
       <Link>Modules\InsightsEditor\AssemblyInfo.cs</Link>
     </Compile>
@@ -5576,15 +5567,6 @@
     </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstaller.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayInstaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayMenuItem.cs">
-      <Link>Modules\LevelPlay\Editor\LevelPlayMenuItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
@@ -8142,11 +8124,11 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\BottlenecksDetailsViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\BottlenecksDetailsViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Box Plot\BoxPlotModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Box Plot\BoxPlotModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\BoxPlot\BoxPlotModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\BoxPlot\BoxPlotModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Box Plot\BoxPlotViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Box Plot\BoxPlotViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\BoxPlot\BoxPlotViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\BoxPlot\BoxPlotViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ActivityIndicatorOverlay.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ActivityIndicatorOverlay.cs</Link>
@@ -8160,155 +8142,155 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\FoldableSectionViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\FoldableSectionViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\FoldableSectionViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\FoldableSectionViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\AllocationsSectionViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\AllocationsSectionViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\AllocationsSectionViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\AllocationsSectionViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\FrameAllocationsSectionViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\FrameAllocationsSectionViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\FrameAllocationsSectionViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\FrameAllocationsSectionViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\FrameTimesSectionViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\FrameTimesSectionViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\FrameTimesSectionViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\FrameTimesSectionViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\SingleFrameTimesSectionViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\Implementations\SingleFrameTimesSectionViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\SingleFrameTimesSectionViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\Implementations\SingleFrameTimesSectionViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Bottlenecks\FrameBottlenecksModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Bottlenecks\FrameBottlenecksModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameBottlenecks\FrameBottlenecksModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameBottlenecks\FrameBottlenecksModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Bottlenecks\FrameBottlenecksViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Bottlenecks\FrameBottlenecksViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameBottlenecks\FrameBottlenecksViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameBottlenecks\FrameBottlenecksViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Allocations\FrameGCAllocationsModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Allocations\FrameGCAllocationsModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCAllocations\FrameGCAllocationsModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCAllocations\FrameGCAllocationsModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Allocations\FrameGCAllocationsViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Allocations\FrameGCAllocationsViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCAllocations\FrameGCAllocationsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCAllocations\FrameGCAllocationsViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Summary\FrameSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Summary\FrameSummaryViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameSummary\FrameSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameSummary\FrameSummaryViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\BottlenecksModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\BottlenecksModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\BottlenecksModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\BottlenecksModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\FrameBottlenecksModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\FrameBottlenecksModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\FrameBottlenecksModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\FrameBottlenecksModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\RangeBottlenecksModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\RangeBottlenecksModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\RangeBottlenecksModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\RangeBottlenecksModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\BoxPlotModelExtensions.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\BoxPlotModelExtensions.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\BoxPlotModelExtensions.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\BoxPlotModelExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\FrameTimesBoxPlotModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\FrameTimesBoxPlotModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\FrameTimesBoxPlotModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\FrameTimesBoxPlotModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\GCCollectBoxPlotModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Box Plot Builders\GCCollectBoxPlotModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\GCCollectBoxPlotModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BoxPlotBuilders\GCCollectBoxPlotModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\BuilderUtility.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\BuilderUtility.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BuilderUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BuilderUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\FrameGCCollectModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\FrameGCCollectModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\FrameGCCollectModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\FrameGCCollectModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\FrameSummaryModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\FrameSummaryModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\FrameSummaryModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\FrameSummaryModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\GC Allocations Builders\GCAllocationsInFrameModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\GC Allocations Builders\GCAllocationsInFrameModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\GCAllocationsBuilders\GCAllocationsInFrameModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\GCAllocationsBuilders\GCAllocationsInFrameModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\GC Allocations Builders\GCAllocationsInRangeModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\GC Allocations Builders\GCAllocationsInRangeModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\GCAllocationsBuilders\GCAllocationsInRangeModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\GCAllocationsBuilders\GCAllocationsInRangeModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Pie Chart Builders\MainThreadUtilizationPieChartModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Pie Chart Builders\MainThreadUtilizationPieChartModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\PieChartBuilders\MainThreadUtilizationPieChartModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\PieChartBuilders\MainThreadUtilizationPieChartModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\ProfilerFrameIndexOutOfBounds.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\ProfilerFrameIndexOutOfBounds.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\ProfilerFrameIndexOutOfBounds.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\ProfilerFrameIndexOutOfBounds.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\RangeSummaryModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\RangeSummaryModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\RangeSummaryModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\RangeSummaryModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactInFrameModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactInFrameModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactInFrameModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactInFrameModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactInRangeModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactInRangeModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactInRangeModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactInRangeModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Systems Impact Builders\SystemsImpactModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\SystemsImpactBuilders\SystemsImpactModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopFrameMarkersModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopFrameMarkersModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopFrameMarkersModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopFrameMarkersModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopMarkersCollection.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopMarkersCollection.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopMarkersCollection.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopMarkersCollection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopMarkersModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopMarkersModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopMarkersModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopMarkersModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopRangeMarkersModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Top Markers Builders\TopRangeMarkersModelBuilder.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopRangeMarkersModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\TopMarkersBuilders\TopRangeMarkersModelBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartKeyItem.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartKeyItem.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartKeyItem.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartKeyItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Pie Chart\PieChartViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\PieChart\PieChartViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Bottlenecks\RangeBottlenecksModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Bottlenecks\RangeBottlenecksModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeBottlenecks\RangeBottlenecksModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeBottlenecks\RangeBottlenecksModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Bottlenecks\RangeBottlenecksViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Bottlenecks\RangeBottlenecksViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeBottlenecks\RangeBottlenecksViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeBottlenecks\RangeBottlenecksViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Summary\RangeSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Summary\RangeSummaryViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeSummary\RangeSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeSummary\RangeSummaryViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Selection Summary\SelectionSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Selection Summary\SelectionSummaryViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SelectionSummary\SelectionSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SelectionSummary\SelectionSummaryViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemImpactItem.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemImpactItem.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactItem.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerItem.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerItem.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerItem.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersModel.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersModel.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersModelUtility.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersModelUtility.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersModelUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersModelUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkersViewController.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkersViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Utilities\FrameIndexFormatterUtility.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Utilities\FrameIndexFormatterUtility.cs</Link>
@@ -8642,6 +8624,27 @@
     </Compile>
     <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs">
       <Link>Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstallSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs">
+      <Link>Modules\QuickInstall\Editor\Implementation\QuickInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\InAppPurchasing.cs">
+      <Link>Modules\QuickInstall\Editor\InAppPurchasing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickInstall\Editor\LevelPlay.cs">
+      <Link>Modules\QuickInstall\Editor\LevelPlay.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
@@ -9866,9 +9869,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextEditorResourceManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsCreationMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextSettingsEditor.cs</Link>

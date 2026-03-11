@@ -76,24 +76,28 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
-                if (GetStaticFallbackOSFontAsset() == null)
+                if (m_FallbackOSFontAssets == null)
                 {
-                    SetStaticFallbackOSFontAsset(GetOSFontAssetList());
+                    m_FallbackOSFontAssets = GetOSFontAssetList();
                 }
-                return GetStaticFallbackOSFontAsset();
+                return m_FallbackOSFontAssets;
             }
         }
 
-        static List<FontAsset> s_FallbackOSFontAssetInternal;
+        [SerializeField]
+        List<FontAsset> m_FallbackOSFontAssets;
 
-        internal virtual List<FontAsset> GetStaticFallbackOSFontAsset()
-        {
-            return s_FallbackOSFontAssetInternal;
-        }
+        internal bool isFallbackOSFontAssetsInitialized => m_FallbackOSFontAssets != null;
 
-        internal virtual void SetStaticFallbackOSFontAsset(List<FontAsset> fontAssets)
+        static FontAsset s_RuntimeDefault;
+
+        private FontAsset GetDefaultFont()
         {
-            s_FallbackOSFontAssetInternal = fontAssets;
+            if (s_RuntimeDefault == null)
+            {
+                s_RuntimeDefault = GetCachedFontAsset(Font.GetDefault());
+            }
+            return s_RuntimeDefault;
         }
 
         internal virtual List<FontAsset> GetFallbackFontAssets(bool isRaster, int textPixelSize = -1)
@@ -320,7 +324,6 @@ namespace UnityEngine.TextCore.Text
         void OnEnable()
         {
             lineBreakingRules.LoadLineBreakingRules();
-            SetStaticFallbackOSFontAsset(null);
             if (s_GlobalSpriteAsset == null)
                 s_GlobalSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
         }
@@ -371,6 +374,8 @@ namespace UnityEngine.TextCore.Text
 
         // Internal for testing purposes
         internal Dictionary<int, FontAsset> m_FontLookup;
+
+        [SerializeField]
         internal List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

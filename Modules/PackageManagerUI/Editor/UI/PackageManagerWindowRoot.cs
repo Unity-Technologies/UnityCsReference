@@ -295,25 +295,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RemoveFromClassList(k_SelectedInInspectorClassName);
         }
 
-        public void OpenAddPackageByNameDropdown(string url)
+        public void OpenAddPackageByNameDropdown(string technicalName, string version)
         {
-            var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
-            var packageName = string.Empty;
-            var packageVersion = string.Empty;
-
-            if (packageNameAndVersion.Contains("@"))
-            {
-                var values = packageNameAndVersion.Split('@');
-                if (values.Count() > 1)
-                {
-                    packageName = values[0];
-                    packageVersion = values[1];
-                }
-            }
-            else
-                packageName = packageNameAndVersion;
-
-            m_DropdownHandler.ShowAddPackageByNameDropdown(packageManagerToolbar.addMenu, packageName, packageVersion);
+            m_DropdownHandler.ShowAddPackageByNameDropdown(packageManagerToolbar.addMenu, technicalName, version);
         }
 
         public void OpenCreatePackageDropdown()

@@ -17,7 +17,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// Provides the ability to compose geometry using specific operations on layers in a specific order.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct PhysicsComposer : IEquatable<PhysicsComposer>
+    public readonly struct PhysicsComposer : IEquatable<PhysicsComposer>, IDisposable
     {
         #region Id
 
@@ -283,8 +283,11 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Create a Physics Composer.
+        /// 
+        /// NOTE: The composer implements <see cref="System.IDisposable"/> which allows you to use the "using" statement on the returned composer object to ensure it's disposed in the current scope which is only useful when using the <see cref="Unity.Collections.Allocator.Temp"/> allocator.
+        /// However, because the composer is a struct, <see cref="System.IDisposable"/> will not be called automatically so in this case disposing or simply calling <see cref="PhysicsComposer.Destroy"/> must be done explicitly.
         /// </summary>
-        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <param name="allocator">The memory allocator to use when adding layers. It is not used to create the composer itself which must be destroyed. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The new Physics Composer.</returns>
         public static PhysicsComposer Create(Allocator allocator = Allocator.Temp) => PhysicsComposer_Create(allocator);
 
@@ -293,6 +296,58 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         /// <returns>If the composer was destroyed or not.</returns>
         public readonly bool Destroy() => PhysicsComposer_Destroy(this);
+
+        /// <summary>
+        /// Destroy all active Physics Composer.
+        /// </summary>
+        public static void DestroyAll() => PhysicsComposer_DestroyAll();
+
+        /// <summary>
+        /// Get all the currently active composers.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>All the currently active composers.</returns>
+        public static NativeArray<PhysicsComposer> GetComposers(Allocator allocator = Allocator.Temp) => PhysicsComposer_GetComposers(allocator).ToNativeArray<PhysicsComposer>();
+
+        /// <summary>
+        /// Creates multiple <see cref="PolygonGeometry"/> from the specified geometry.
+        /// A limit is imposed on small vertex distances so it is recommended that the geometry is scaled appropriately rather than on the returned geometry so geometry is not discarded due to it being invalid.
+        /// </summary>
+        /// <param name="geometry">The geometry to convert to polygon geometry.</param>
+        /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
+        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public static NativeArray<PolygonGeometry> ToPolygons(CircleGeometry geometry, PhysicsTransform transform, float curveStride = DefaultCurveStride, Allocator allocator = Allocator.Temp)
+        {
+            // Create polygon geometry.
+            var composer = Create(allocator);
+            composer.AddLayer(geometry: geometry, transform: transform, operation: Operation.OR, order: 0, curveStride);
+            var result = composer.CreatePolygonGeometry(Vector2.one, allocator);
+            composer.Destroy();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates multiple <see cref="PolygonGeometry"/> from the specified geometry.
+        /// A limit is imposed on small vertex distances so it is recommended that the geometry is scaled appropriately rather than on the returned geometry so geometry is not discarded due to it being invalid.
+        /// </summary>
+        /// <param name="geometry">The geometry to convert to polygon geometry.</param>
+        /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
+        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public static NativeArray<PolygonGeometry> ToPolygons(CapsuleGeometry geometry, PhysicsTransform transform, float curveStride = DefaultCurveStride, Allocator allocator = Allocator.Temp)
+        {
+            // Create polygon geometry.
+            var composer = Create(allocator);
+            composer.AddLayer(geometry: geometry, transform: transform, operation: Operation.OR, order: 0, curveStride);
+            var result = composer.CreatePolygonGeometry(Vector2.one, allocator);
+            composer.Destroy();
+
+            return result;
+        }
 
         /// <summary>
         /// Check if a Physics Composer is valid.
@@ -308,7 +363,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The minimum curve stride, in radians.
         /// </summary>
         public const float MinCurveStride = 0.01f;
-
+        
         /// <summary>
         /// Add a Circle Geometry layer to the Physics Composer.
         /// </summary>
@@ -507,7 +562,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Polygon Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, allocator).ToNativeArray<PolygonGeometry>();
+        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator = Allocator.Temp) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, allocator).ToNativeArray<PolygonGeometry>();
 
         /// <summary>
         /// Create <see cref="LowLevelPhysics2D.PolygonGeometry.ConvexHull"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
@@ -515,7 +570,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Polygon Geometry convex hull created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreateConvexHulls(this, vertexScale, allocator).ToNativeArray<PolygonGeometry.ConvexHull>();
+        public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Vector2 vertexScale, Allocator allocator = Allocator.Temp) => PhysicsComposer_CreateConvexHulls(this, vertexScale, allocator).ToNativeArray<PolygonGeometry.ConvexHull>();
 
         /// <summary>
         /// Create <see cref="LowLevelPhysics2D.ChainGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
@@ -525,7 +580,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Chain Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<ChainGeometry> CreateChainGeometry(out NativeArray<Vector2> vertices, Vector2 vertexScale, Allocator allocator)
+        public readonly NativeArray<ChainGeometry> CreateChainGeometry(out NativeArray<Vector2> vertices, Vector2 vertexScale, Allocator allocator = Allocator.Temp)
         {
             // Create the chain geometry.
             var resultsBufferPair = PhysicsComposer_CreateChainGeometry(this, vertexScale, allocator);
@@ -554,6 +609,17 @@ namespace UnityEngine.LowLevelPhysics2D
             }
 
             return chainGeometry;
+        }
+
+        /// <summary>
+        /// Dispose of the composer.
+        /// This simply calls <see cref="PhysicsComposer.Destroy"/>.
+        /// </summary>
+        public void Dispose()
+        {
+            // Dispose if valid.
+            if (isValid)
+                Destroy();
         }
     }
 }

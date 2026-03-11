@@ -55,7 +55,7 @@ namespace Unity.Profiling.Editor.UI
 
                 Array.Sort(frameDurations, (a, b) => { return a.Item1.CompareTo(b.Item1); });
 
-                return BoxPlotModelExtensions.BoxPlotModelFromSortedData(frameDurations);
+                return BoxPlotModelExtensions.BoxPlotModelFromSortedData(frameDurations, true);
             });
 
             return await task;

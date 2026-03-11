@@ -37,7 +37,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public string description { get; }
 
-        internal TypeConverterRegistry registry { get; }
+        internal ConversionRegistry registry { get; }
 
         /// <summary>
         /// Creates a ConverterGroup.
@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
             this.id = id;
             this.displayName = displayName;
             this.description = description;
-            registry = TypeConverterRegistry.Create();
+            registry = ConversionRegistry.Create();
         }
 
         /// <summary>
@@ -125,127 +125,6 @@ namespace UnityEngine.UIElements
             }
 
             return returnCode == VisitReturnCode.Ok;
-        }
-    }
-
-    readonly struct TypeConverterRegistry : IEqualityComparer<TypeConverterRegistry>
-    {
-        class ConverterKeyComparer : IEqualityComparer<ConverterKey>
-        {
-            public bool Equals(ConverterKey x, ConverterKey y)
-            {
-                return x.SourceType == y.SourceType && x.DestinationType == y.DestinationType;
-            }
-
-            public int GetHashCode(ConverterKey obj)
-            {
-                return ((obj.SourceType != null ? obj.SourceType.GetHashCode() : 0) * 397) ^ (obj.DestinationType != null ? obj.DestinationType.GetHashCode() : 0);
-            }
-        }
-
-        static readonly ConverterKeyComparer k_Comparer = new ();
-
-        readonly struct ConverterKey
-        {
-            public readonly Type SourceType;
-            public readonly Type DestinationType;
-
-            public ConverterKey(Type source, Type destination)
-            {
-                SourceType = source;
-                DestinationType = destination;
-            }
-        }
-
-        readonly Dictionary<ConverterKey, Delegate> m_Converters;
-
-        TypeConverterRegistry(Dictionary<ConverterKey, Delegate> storage)
-        {
-            m_Converters = storage;
-        }
-
-        public int ConverterCount => m_Converters?.Count ?? 0;
-
-        public static TypeConverterRegistry Create()
-        {
-            return new TypeConverterRegistry(new Dictionary<ConverterKey, Delegate>(k_Comparer));
-        }
-
-        public void Register(Type source, Type destination, Delegate converter)
-        {
-            m_Converters[new ConverterKey(source, destination)] = converter ?? throw new ArgumentException(nameof(converter));
-        }
-
-        public void Unregister(Type source, Type destination)
-        {
-            m_Converters.Remove(new ConverterKey(source, destination));
-        }
-
-        internal void Apply(TypeConverterRegistry registry)
-        {
-            foreach (var c in registry.m_Converters)
-            {
-                Register(c.Key.SourceType, c.Key.DestinationType, c.Value);
-            }
-        }
-
-        public Delegate GetConverter(Type source, Type destination)
-        {
-            var key = new ConverterKey(source, destination);
-            return m_Converters.TryGetValue(key, out var converter)
-                ? converter
-                : null;
-        }
-
-        public bool TryGetConverter(Type source, Type destination, out Delegate converter)
-        {
-            converter = GetConverter(source, destination);
-            return null != converter;
-        }
-
-        public void GetAllTypesConvertingToType(Type type, List<Type> result)
-        {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
-            {
-                if (key.DestinationType == type)
-                    result.Add(key.SourceType);
-            }
-        }
-
-        public void GetAllTypesConvertingFromType(Type type, List<Type> result)
-        {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
-            {
-                if (key.SourceType == type)
-                    result.Add(key.DestinationType);
-            }
-        }
-
-        public void GetAllConversions(List<(Type, Type)> result)
-        {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
-            {
-                result.Add((key.SourceType, key.DestinationType));
-            }
-        }
-
-        public bool Equals(TypeConverterRegistry x, TypeConverterRegistry y)
-        {
-            return x.m_Converters == y.m_Converters;
-        }
-
-        public int GetHashCode(TypeConverterRegistry obj)
-        {
-            return (obj.m_Converters != null ? obj.m_Converters.GetHashCode() : 0);
         }
     }
 }

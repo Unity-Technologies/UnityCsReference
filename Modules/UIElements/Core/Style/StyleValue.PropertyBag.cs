@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements
         }
 
         public StyleValuePropertyBag()
+            :base(2)
         {
             AddProperty(new ValueProperty());
             AddProperty(new KeywordProperty());

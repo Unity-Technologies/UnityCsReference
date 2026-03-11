@@ -26,6 +26,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public const string k_NoMainWindow = "-noMainWindow";
         public const string k_NoLaunchScreen = "-noLaunchScreen";
         public const string k_NoCloudProjectBindPopup = "-no-cloud-project-bind-popup";   // Note: this is for the UGS (Link to project) popup. If this popup changes or if they end up correctly checking for the -editor-mode flag then we can remove this
+        public const string k_CloudEnvironment = "-cloudEnvironment";
 
         // This MUST be a __relative__ path from the virtual project folder to the library folder of the main project
         public const string k_VirtualLibraryFolder = "-library-redirect ../..";
@@ -96,11 +97,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public static string BuildEditorDebuggingName(string projectName)
             => $"{k_EditorDebuggingName} \"{projectName}\"";
 
+        public static string BuildCloudEnvironmentArgument(string cloudEnvironment)
+            => $"{k_CloudEnvironment} {cloudEnvironment}";
+
         public static string ReadCurrentChannelName()
             => GetCommandLineArgumentValue(Environment.GetCommandLineArgs(), k_ChannelName);
 
         public static string ReadMainProcessId()
             => GetCommandLineArgumentValue(Environment.GetCommandLineArgs(), k_MainProcessId);
+
+        public static string ReadCloudEnvironment()
+            => GetCommandLineArgumentValue(Environment.GetCommandLineArgs(), k_CloudEnvironment);
 
         public static VirtualProjectIdentifier ReadVirtualProjectIdentifier()
         {
@@ -123,9 +130,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         static string GetCommandLineArgumentValue(string[] commandLineArgs, string argumentName)
         {
-            foreach (var x in commandLineArgs)
+            for (int i = 0; i < commandLineArgs.Length; i++)
             {
-                if (x.StartsWith(argumentName)) return x.Replace($"{argumentName}=", string.Empty);
+                var s = commandLineArgs[i];
+                var withEqualSign = $"{argumentName}=";
+                if (s.StartsWith(withEqualSign))
+                {
+                    return s.Replace(withEqualSign, string.Empty);
+                }
+                else if (s == argumentName && i + 1 < commandLineArgs.Length)
+                {
+                    return commandLineArgs[i + 1];
+                }
             }
 
             return string.Empty;

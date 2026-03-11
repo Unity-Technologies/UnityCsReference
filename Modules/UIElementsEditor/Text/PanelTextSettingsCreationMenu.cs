@@ -10,12 +10,12 @@ namespace UnityEditor.UIElements
 {
     static class UITKTextSettingsCreationMenu
     {
-        [MenuItem("Assets/Create/UI Toolkit/Text Settings", false)]
+        [MenuItem("Assets/Create/UI Toolkit/Panel Text Settings", false)]
         public static void CreateUITKTextSettingsAsset()
         {
             // Create new TextSettings asset
             PanelTextSettings textSettings = ScriptableObject.CreateInstance<PanelTextSettings>();
-            ProjectWindowUtil.CreateAsset(textSettings, "UITK Text Settings.asset");
+            ProjectWindowUtil.CreateAsset(textSettings, "Panel Text Settings.asset");
         }
     }
 }

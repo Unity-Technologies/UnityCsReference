@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEngine.Events;
@@ -239,7 +240,13 @@ namespace UnityEditor
 
         public static Vector2 PixelsToPoints(Vector2 position)
         {
-            var cachedInvPixelsPerPoint = 1f / pixelsPerPoint;
+            return PixelsToPoints(position, pixelsPerPoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 PixelsToPoints(Vector2 position, float scaling)
+        {
+            var cachedInvPixelsPerPoint = 1f / scaling;
             position.x *= cachedInvPixelsPerPoint;
             position.y *= cachedInvPixelsPerPoint;
             return position;

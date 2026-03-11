@@ -3309,6 +3309,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIToolkitConverters.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\UIToolkitConverters.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
     </Compile>
@@ -3452,6 +3455,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Translate.cs">
       <Link>Modules\UIElements\Core\Style\Translate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\UIToolkitConverters.cs">
+      <Link>Modules\UIElements\Core\Style\UIToolkitConverters.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TemplateContainer.cs">
       <Link>Modules\UIElements\Core\TemplateContainer.cs</Link>

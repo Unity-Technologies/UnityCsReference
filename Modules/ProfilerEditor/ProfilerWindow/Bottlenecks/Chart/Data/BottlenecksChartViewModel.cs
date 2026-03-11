@@ -230,6 +230,11 @@ namespace Unity.Profiling.Editor.UI
                     // In case we care about this value in future, write out
                     // the "full" capacity the user had at the time.
                     bWriter.Write(DataSeriesCapacity);
+                    // Don't save more frames than are available. This can happen if more than the minimum number of
+                    // frames are recorded in the profiler, but then the frame count setting is reduced to below that:
+                    // The profiler driver keeps the frames in memory, but the highlights bar doesn't.
+                    if (numFramesSaved > DataSeriesCapacity)
+                        numFramesSaved = DataSeriesCapacity;
                     var firstElement = DataSeriesCapacity - numFramesSaved;
                     DataSeriesCapacityThumbnail = numFramesSaved;
                     bWriter.Write(DataSeriesCapacityThumbnail);

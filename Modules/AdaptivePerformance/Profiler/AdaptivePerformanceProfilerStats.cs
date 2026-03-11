@@ -29,17 +29,33 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         public readonly struct CustomProfilerMarker<T> where T : unmanaged
         {
+            readonly ProfilerMarker m_Marker;
+            readonly byte m_Type;
+
             /// <summary>
             /// Construct the marker with the name of the marker and the dataUnit the marker is collected on.
             /// </summary>
             public CustomProfilerMarker(string name, ProfilerMarkerDataUnit dataUnit)
             {
+                m_Marker = new ProfilerMarker(AdaptivePerformanceProfilerCategory, name, MarkerFlags.Counter);
+                m_Type = GetProfilerMarkerDataType();
+                ProfilerUnsafeUtility.SetMarkerMetadata(m_Marker.Handle, 0, null, m_Type, (byte)dataUnit);
             }
             /// <summary>
             /// Sample a single data point in the frame.
             /// </summary>
             public void Sample(T value)
             {
+                unsafe
+                {
+                    var data = new ProfilerMarkerData
+                    {
+                        Type = m_Type,
+                        Size = (uint)UnsafeUtility.SizeOf<T>(),
+                        Ptr = UnsafeUtility.AddressOf(ref value)
+                    };
+                    ProfilerUnsafeUtility.SingleSampleWithMetadata(m_Marker.Handle, 1, &data);
+                }
             }
             private static byte GetProfilerMarkerDataType()
             {
@@ -176,7 +192,6 @@ namespace UnityEngine.AdaptivePerformance
         /// <param name="scale">The actual scale of the scaler.</param>
         /// <param name="applied">If the scaler is currently applied.</param>
         /// <param name="maxLevel">The maximum level of the scaler.</param>
-        [Conditional("ENABLE_PROFILER")]
         public static void EmitScalerDataToProfilerStream(string scalerName, bool enabled, int overrideLevel, int currentLevel, float scale, bool applied, int maxLevel)
         {
             if (!Profiler.enabled || scalerName.Length == 0)

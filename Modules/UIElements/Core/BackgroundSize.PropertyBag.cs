@@ -35,6 +35,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(3)
             {
                 AddProperty(new SizeTypeProperty());
                 AddProperty(new XProperty());

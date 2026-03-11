@@ -367,7 +367,7 @@ namespace UnityEngine
             return str.Length * 4 + 4;
         }
 
-        [VisibleToOtherModules("UnityEditor.TextRenderingModule")]
+        [VisibleToOtherModules("UnityEditor.TextRenderingModule", "UnityEngine.TextCoreTextEngineModule")]
         internal static extern Font GetDefault();
 
         public bool HasCharacter(char c)

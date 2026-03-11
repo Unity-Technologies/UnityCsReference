@@ -4,6 +4,8 @@
 
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace Unity.Properties
 {
@@ -23,6 +25,44 @@ namespace Unity.Properties
             if (null == type)
                 throw new ArgumentNullException(nameof(type));
             return !(type.IsPrimitive || type.IsPointer || type.IsEnum || type == typeof(string));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsAbstractOrInterface(Type type)
+        {
+            return type.IsAbstract || type.IsInterface;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNullable(Type type)
+        {
+            return Nullable.GetUnderlyingType(type) != null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool CanBeNull(Type type)
+        {
+            return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsObject(Type type)
+        {
+            return type == typeof(object);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsUnityObject(Type type)
+        {
+            return typeof(UnityEngine.Object).IsAssignableFrom(type);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool IsEnumFlags(Type type)
+        {
+            return type.IsEnum && type.IsDefined(typeof(FlagsAttribute));
         }
     }
 
@@ -128,21 +168,20 @@ namespace Unity.Properties
             IsArray = type.IsArray;
             IsEnum = type.IsEnum;
 
-            IsEnumFlags = IsEnum && null != type.GetCustomAttribute<FlagsAttribute>();
-            IsNullable = Nullable.GetUnderlyingType(typeof(T)) != null;
-            IsMultidimensionalArray = IsArray && typeof(T).GetArrayRank() != 1;
-            IsObject = type == typeof(object);
+            IsEnumFlags = TypeTraits.IsEnumFlags(type);
+            IsNullable = TypeTraits.IsNullable(type);
+            IsMultidimensionalArray = IsArray && type.GetArrayRank() != 1;
+            IsObject = TypeTraits.IsObject(type);
             IsString = type == typeof(string);
             IsContainer = TypeTraits.IsContainer(type);
 
-            CanBeNull = !IsValueType;
             IsPrimitiveOrString = IsPrimitive || IsString;
             IsAbstractOrInterface = IsAbstract || IsInterface;
 
-            CanBeNull |= IsNullable;
+            CanBeNull = TypeTraits.CanBeNull(type);
 
             IsLazyLoadReference = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UnityEngine.LazyLoadReference<>);
-            IsUnityObject = typeof(UnityEngine.Object).IsAssignableFrom(type);
+            IsUnityObject = TypeTraits.IsUnityObject(type);
         }
     }
 }

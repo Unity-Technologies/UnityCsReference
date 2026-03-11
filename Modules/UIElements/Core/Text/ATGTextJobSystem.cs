@@ -354,6 +354,7 @@ internal class ATGTextJobSystem
         }
 
         s_AggregatedMissingGlyphsPool.Release(allUniqueMissingGlyphs);
+        FontAsset.CreateHbFaceIfNeeded();
         FontAsset.UpdateFontAssetsInUpdateQueue();
 
         mgc.GetTempMeshAllocator(out var alloc);

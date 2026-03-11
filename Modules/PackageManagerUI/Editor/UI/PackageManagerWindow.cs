@@ -154,6 +154,27 @@ namespace UnityEditor.PackageManager.UI
             m_Root?.OnLostFocus();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal static bool TryExtractUpmPackageInfoFromUrl(string url, out string technicalName, out string version)
+        {
+            technicalName = string.Empty;
+            version = string.Empty;
+
+            if (url.StartsWith(k_UpmUrl))
+            {
+                var index = url.IndexOf('@', k_UpmUrl.Length);
+                if (index < 0)
+                    technicalName = url.Substring(k_UpmUrl.Length);
+                else
+                {
+                    technicalName = url.Substring(k_UpmUrl.Length, index - k_UpmUrl.Length);
+                    version = url.Substring(index + 1);
+                }
+                return true;
+            }
+            return false;
+        }
+
         [UsedByNativeCode]
         internal static void OpenURL(string url)
         {
@@ -162,10 +183,17 @@ namespace UnityEditor.PackageManager.UI
 
             // com.unity3d.kharma:content/11111                       => AssetStore url
             // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
-            if (url.StartsWith(k_UpmUrl))
+            if (TryExtractUpmPackageInfoFromUrl(url, out var technicalName, out var version))
             {
-                SelectPageStatic(pageId: InProjectPage.k_Id);
-                EditorApplication.delayCall += () => OpenAddPackageByName(url);
+                var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
+                var package = packageDatabase.GetPackageByIdOrName(technicalName);
+                if (package != null)
+                    SelectPackageStatic(technicalName);
+                else
+                    SelectPageStatic(pageId: InProjectPage.k_Id);
+
+                if (!string.IsNullOrEmpty(version) || package == null)
+                    EditorApplication.delayCall += () => OpenAddPackageByName(technicalName, version);
             }
             else
             {
@@ -182,11 +210,11 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static void OpenAddPackageByName(string url)
+        private static void OpenAddPackageByName(string technicalName, string version)
         {
             ShowWindow();
             instance.Focus();
-            instance.m_Root.OpenAddPackageByNameDropdown(url);
+            instance.m_Root.OpenAddPackageByNameDropdown(technicalName, version);
         }
 
         [UsedByNativeCode]

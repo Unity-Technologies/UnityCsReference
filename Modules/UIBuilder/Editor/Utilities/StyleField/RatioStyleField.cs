@@ -103,7 +103,7 @@ namespace Unity.UI.Builder
 
                 }
             }
-            commonField.SetValueWithoutNotify(new("Custorm", 0, 0));
+            commonField.SetValueWithoutNotify(new("Custom", 0, 0));
         }
 
         public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Ratio startValue)

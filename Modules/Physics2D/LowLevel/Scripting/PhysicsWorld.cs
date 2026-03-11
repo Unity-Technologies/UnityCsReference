@@ -319,10 +319,22 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Get/Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose.
-        /// This cannot be set on the <see cref="PhysicsWorld.defaultWorld"/> and will always be at the default.
+        /// This cannot be set on the <see cref="LowLevelPhysics2D.PhysicsWorld.defaultWorld"/> and will always be at the default.
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsWorld_GetUserData(this); set => PhysicsWorld_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsWorld_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="LowLevelPhysics2D.PhysicsWorld.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsWorld_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
         /// Reset the world to a canonical state so that it will reproduce identical results each time. The world must be empty for this to be called otherwise a warning is produced.
@@ -599,13 +611,22 @@ namespace UnityEngine.LowLevelPhysics2D
         #region PhysicsEvents
 
         /// <summary>
-        /// Get all <see cref="LowLevelPhysics2D.PhysicsUserData"/> assigned to each <see cref="LowLevelPhysics2D.PhysicsBody"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
+        /// Get all <see cref="LowLevelPhysics2D.PhysicsBody.userData"/> assigned to each <see cref="LowLevelPhysics2D.PhysicsBody"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
         /// The Native Array returned will be of the same length and be ordered the same as the <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
         /// Any <see cref="LowLevelPhysics2D.PhysicsBody"/> that are not valid will return a default <see cref="LowLevelPhysics2D.PhysicsUserData"/>.
         /// </summary>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>A Native Array containing all <see cref="LowLevelPhysics2D.PhysicsUserData"/> for each <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.</returns>
-        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, allocator).ToNativeArray<PhysicsUserData>();
+        /// <returns>A Native Array containing all <see cref="LowLevelPhysics2D.PhysicsBody.userData"/> for each <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.</returns>
+        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, false, allocator).ToNativeArray<PhysicsUserData>();
+
+        /// <summary>
+        /// Get all <see cref="LowLevelPhysics2D.PhysicsBody.ownerUserData"/> assigned to each <see cref="LowLevelPhysics2D.PhysicsBody"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
+        /// The Native Array returned will be of the same length and be ordered the same as the <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
+        /// Any <see cref="LowLevelPhysics2D.PhysicsBody"/> that are not valid will return a default <see cref="LowLevelPhysics2D.PhysicsUserData"/>.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A Native Array containing all <see cref="LowLevelPhysics2D.PhysicsBody.ownerUserData"/> for each <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.</returns>
+        public NativeArray<PhysicsUserData> GetBodyUpdateOwnerUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, true, allocator).ToNativeArray<PhysicsUserData>();
 
         /// <summary>
         /// Get the body events from the last simulation.

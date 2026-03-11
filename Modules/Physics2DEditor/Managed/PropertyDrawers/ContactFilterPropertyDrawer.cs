@@ -18,7 +18,7 @@ namespace UnityEditor.LowLevelPhysics2D
         {
             var root = new VisualElement();
 
-            var foldout = new Foldout { text = property.displayName, viewDataKey = typeof(ContactFilterPropertyDrawer).ToString() };
+            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(ContactFilterPropertyDrawer).ToString() };
             root.Add(foldout);
 
             const string categoriesTypeName = nameof(PhysicsShape.ContactFilter.m_Categories);

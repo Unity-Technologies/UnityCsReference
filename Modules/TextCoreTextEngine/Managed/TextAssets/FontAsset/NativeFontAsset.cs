@@ -51,7 +51,7 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, MarshalledUnityObject.MarshalNotNull(this));
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, italicStyleSlant, boldStyleWeight, (int)(boldStyleSpacing * 64.0f), MarshalledUnityObject.MarshalNotNull(this));
         }
 
 
@@ -79,6 +79,21 @@ namespace UnityEngine.TextCore.Text
         internal void UpdateRenderMode()
         {
             UpdateRenderMode(nativeFontAsset, m_AtlasRenderMode);
+        }
+
+        internal void UpdateItalicAngle()
+        {
+            UpdateItalicAngle(nativeFontAsset, italicStyleSlant);
+        }
+
+        internal void UpdateBoldWeight()
+        {
+            UpdateBoldWeight(nativeFontAsset, boldStyleWeight);
+        }
+
+        internal void UpdateBoldSpacing()
+        {
+            UpdateBoldSpacing(nativeFontAsset, (int)(boldStyleSpacing * 64.0f));
         }
 
         internal IntPtr[] GetFallbacks()
@@ -219,21 +234,25 @@ namespace UnityEngine.TextCore.Text
             return (regularTypefaces, italicTypefaces);
         }
 
-
-        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern void CreateHbFaceIfNeeded();
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
-        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, IntPtr managedObject);
+        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, IntPtr managedObject);
         static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
         static extern void UpdateRenderMode(IntPtr ptr, GlyphRenderMode renderMode);
+        static extern void UpdateItalicAngle(IntPtr ptr, byte italicAngle);
+        static extern void UpdateBoldWeight(IntPtr ptr, float boldWeight);
+        static extern void UpdateBoldSpacing(IntPtr ptr, int boldSpacing);
 
         [FreeFunction("FontAsset::Destroy")]
         static extern void Destroy(IntPtr ptr, IntPtr managedObject);
+
+        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [FreeFunction("FontAsset::CreateHbFaceIfNeeded")]
+        internal static extern void CreateHbFaceIfNeeded();
 
         internal static class BindingsMarshaller
         {

@@ -896,8 +896,9 @@ namespace UnityEngine.TextCore.Text
             fontAsset.freeGlyphRects = new List<GlyphRect>(8) { new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier) };
             fontAsset.usedGlyphRects = new List<GlyphRect>(8);
 
-            // Set the name of the font asset resources for tracking in the profiler
+            // Set the name of the font asset and its resources for tracking in the profiler
             string fontName = fontAsset.faceInfo.familyName + " - " + fontAsset.faceInfo.styleName;
+            fontAsset.name = fontName + " SDF";
             fontAsset.material.name = fontName + " Material";
             fontAsset.atlasTextures[0].name = fontName + " Atlas";
 
@@ -1011,6 +1012,9 @@ namespace UnityEngine.TextCore.Text
                 UpdateWeightFallbacks();
                 UpdateFaceInfo();
                 UpdateRenderMode();
+                UpdateItalicAngle();
+                UpdateBoldWeight();
+                UpdateBoldSpacing();
             }
         }
 
