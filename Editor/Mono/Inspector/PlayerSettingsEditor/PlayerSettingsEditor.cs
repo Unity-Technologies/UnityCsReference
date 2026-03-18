@@ -2332,7 +2332,8 @@ namespace UnityEditor
                 int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
 
-                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
+                // VisionOS uses completely separate mechanism
+                if (platform.namedBuildTarget != NamedBuildTarget.VisionOS)
                     EditorGUILayout.PropertyField(m_MetalUseMetalDisplayLink, SettingsContent.metalUseMetalDisplayLink);
             }
 

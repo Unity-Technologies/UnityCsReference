@@ -1114,7 +1114,6 @@ namespace UnityEngine.UIElements
             m_ScrollView.viewDataKey = "unity-vertical-collection-scroll-view";
             m_ScrollView.verticalScroller.viewDataKey = null;
             m_ScrollView.horizontalScroller.viewDataKey = null;
-            m_ScrollView.m_TouchDraggingAllowed = false;
 
             focusable = true;
             isCompositeRoot = true;

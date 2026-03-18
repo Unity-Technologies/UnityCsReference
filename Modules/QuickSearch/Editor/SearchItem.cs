@@ -289,7 +289,7 @@ namespace UnityEditor.Search
         {
             if (provider != null && provider.toEntityId != null)
                 return provider.toEntityId(this);
-            return EntityId.None;
+            return EntityId.FromULong((ulong)GetHashCode());
         }
 
         /// <summary>

@@ -1287,7 +1287,6 @@ namespace UnityEngine.UIElements
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
         private bool m_StartedMoving;
-        internal bool m_TouchDraggingAllowed = true;
         private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
@@ -1544,7 +1543,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed)
+            if (evt.pointerType == PointerType.mouse)
                 return;
 
             var isXRPointer = evt.pointerType == PointerType.tracked;
@@ -1576,7 +1575,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed || !m_TouchPointerMoveAllowed)
+            if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
                 return;
 
             var isXRPointer = evt.pointerType == PointerType.tracked;
