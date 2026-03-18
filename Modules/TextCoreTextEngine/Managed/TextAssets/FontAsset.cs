@@ -440,6 +440,9 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         internal GlyphRenderMode m_AtlasRenderMode;
 
+        internal bool IsBitmap() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_BITMAP) && !((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
+
+
         /// <summary>
         /// List of spaces occupied by glyphs in a given texture.
         /// </summary>

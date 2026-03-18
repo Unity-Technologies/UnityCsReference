@@ -81,8 +81,6 @@ namespace UnityEditor
             }
         }
 
-        static string kPlayModeDarkenKey = "Playmode tint";
-        internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
         internal static event Action<GenericMenu, EditorWindow> populateDefaultMenuItems;
 
@@ -228,7 +226,6 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             CreateDelegates();
-            EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
 
             RegisterSelectedPane(sendEvents: true);
@@ -240,7 +237,6 @@ namespace UnityEditor
         protected override void OnDisable()
         {
             ModeService.modeChanged -= OnEditorModeChanged;
-            EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
             // Host views are destroyed in the middle of an OnGUI loop, so we need to ensure that we're not invoking
@@ -978,16 +974,6 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
 
                 menu.AddSeparator("");
-            }
-        }
-
-        Color IEditorWindowModel.playModeTintColor => kPlayModeDarken.Color;
-
-        private void PlayModeTintColorChangedCallback(string key)
-        {
-            if (key == kPlayModeDarkenKey)
-            {
-                editorWindowBackend?.PlayModeTintColorChanged();
             }
         }
     }

@@ -1625,7 +1625,7 @@ namespace UnityEngine.TextCore.Text
                     {
                         uint nextChar = textInfo.textElementInfo[m_CharacterCount + 1].character;
                         bool prevIsLeading = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(charCode);
-                        bool nextIsFollowing = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(nextChar);
+                        bool nextIsFollowing = textSettings.lineBreakingRules.followingCharactersLookup.Contains(nextChar);
                         if (!prevIsLeading && !nextIsFollowing)
                             shouldSaveHardLineBreak = true;
                     }

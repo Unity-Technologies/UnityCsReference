@@ -34,8 +34,6 @@ namespace UnityEditor
         RectOffset viewMargins { get; }
         bool notificationVisible { get; }
 
-        Color playModeTintColor { get; }
-
         Action onSplitterGUIHandler { get; set; }
 
         IEditorWindowBackend editorWindowBackend { get; set; }
@@ -58,7 +56,6 @@ namespace UnityEditor
 
     internal interface IEditorWindowBackend : IWindowBackend
     {
-        void PlayModeTintColorChanged();
         void NotificationVisibilityChanged();
         void Focused();
         void Blurred();

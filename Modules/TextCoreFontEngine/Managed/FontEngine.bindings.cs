@@ -42,6 +42,7 @@ namespace UnityEngine.TextCore.LowLevel
     /// <summary>
     /// Rasterizing modes used by the Font Engine to raster glyphs.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     [Flags]
     internal enum GlyphRasterModes
     {

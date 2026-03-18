@@ -984,7 +984,7 @@ namespace UnityEngine.TextCore.Text
                     else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul((uint)charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK((uint)charCode)))
                     {
                         bool isCurrentLeadingCharacter = textSettings.lineBreakingRules.leadingCharactersLookup.Contains((uint)charCode);
-                        bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.leadingCharactersLookup.Contains(m_InternalTextElementInfo[m_CharacterCount + 1].character);
+                        bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.followingCharactersLookup.Contains(m_InternalTextElementInfo[m_CharacterCount + 1].character);
 
                         if (isCurrentLeadingCharacter == false)
                         {
@@ -1021,7 +1021,7 @@ namespace UnityEngine.TextCore.Text
                     {
                         uint nextChar = textInfo.textElementInfo[m_CharacterCount + 1].character;
                         bool prevIsLeading = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(charCode);
-                        bool nextIsFollowing = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(nextChar);
+                        bool nextIsFollowing = textSettings.lineBreakingRules.followingCharactersLookup.Contains(nextChar);
                         if (!prevIsLeading && !nextIsFollowing)
                             shouldSaveHardLineBreak = true;
                     }

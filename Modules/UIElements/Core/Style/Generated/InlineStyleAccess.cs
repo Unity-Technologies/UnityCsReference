@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.BackgroundImage, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Overflow | VersionChangeType.Repaint);
                 }
             }
         }

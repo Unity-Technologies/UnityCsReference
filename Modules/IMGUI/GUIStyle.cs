@@ -541,4 +541,30 @@ namespace UnityEngine
         // Text gets truncated with dots to show it is too long
         Ellipsis = 2,
     }
+
+    // Helper struct to temporarily enable SDF rendering on GUIStyles with automatic cleanup
+    internal struct SDFStyleScope : System.IDisposable
+    {
+        private GUIStyle[] m_Styles;
+        private bool[] m_OriginalValues;
+
+        public SDFStyleScope(params GUIStyle[] styles)
+        {
+            m_Styles = styles;
+            m_OriginalValues = new bool[styles.Length];
+            for (int i = 0; i < styles.Length; i++)
+            {
+                m_OriginalValues[i] = styles[i].isSDF;
+                styles[i].isSDF = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            for (int i = 0; i < m_Styles.Length; i++)
+            {
+                m_Styles[i].isSDF = m_OriginalValues[i];
+            }
+        }
+    }
 }

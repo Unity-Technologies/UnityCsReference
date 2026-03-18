@@ -81,6 +81,7 @@ namespace UnityEditor.StyleSheets
 
             style.richText = styleBlock.GetBool("-unity-rich-text".GetHashCode(), style.richText);
             style.wordWrap = styleBlock.GetBool("-unity-word-wrap".GetHashCode(), style.wordWrap);
+            style.isSDF = styleBlock.GetBool("-unity-is-sdf".GetHashCode(), style.isSDF);
 
             var defaultStyleState = useExtensionDefaultValues ? new GUIStyleState() { textColor = styleBlock.GetColor(StyleCatalogKeyword.color, rootBlock.GetColor("--unity-text-color")) } : null;
 

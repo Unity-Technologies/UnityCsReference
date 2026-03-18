@@ -1491,7 +1491,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().backgroundImage != newValue)
                     {
                         visualData.Write().backgroundImage = newValue;
-                        ve.IncrementVersion(VersionChangeType.Repaint);
+                        ve.IncrementVersion(VersionChangeType.Overflow | VersionChangeType.Repaint);
                     }
 
                     break;
@@ -3560,8 +3560,12 @@ namespace UnityEngine.UIElements
                     changes |= VersionChangeType.Color;
                 }
 
-                if ((changes & VersionChangeType.Repaint) == 0 && (x.backgroundImage != y.backgroundImage ||
-                    x.backgroundPositionX != y.backgroundPositionX ||
+                if (x.backgroundImage != y.backgroundImage)
+                {
+                    changes |= VersionChangeType.Overflow | VersionChangeType.Repaint;
+                }
+
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.backgroundPositionX != y.backgroundPositionX ||
                     x.backgroundPositionY != y.backgroundPositionY ||
                     x.backgroundRepeat != y.backgroundRepeat ||
                     x.backgroundSize != y.backgroundSize))

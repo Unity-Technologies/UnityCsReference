@@ -175,6 +175,8 @@ namespace UnityEditor
             return false;
         }
 
+        public static Color activePlayModeTint => PlayModeTintResolver.activePlayModeTint;
+
         public static bool GetDialogOptOutDecision(DialogOptOutDecisionType dialogOptOutDecisionType, string dialogOptOutDecisionStorageKey)
         {
             switch (dialogOptOutDecisionType)

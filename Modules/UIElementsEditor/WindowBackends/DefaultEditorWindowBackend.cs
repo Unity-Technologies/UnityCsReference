@@ -56,10 +56,9 @@ namespace UnityEditor.UIElements
                 base.OnCreate(model);
 
                 m_LiveReloadVisualTreeAssetTracker = new EditorWindowVisualTreeAssetTracker(this);
-                m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor =
-                    EditorApplication.isPlayingOrWillChangePlaymode ? editorWindowModel.playModeTintColor : Color.white;
+                m_PlayModeDarkenColor = EditorUtility.activePlayModeTint;
 
-                EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
+                PlayModeTintResolver.activePlayModeTintChanged += ActivePlayModeTintChangedCallback;
                 AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
                 AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
                 AnimationMode.onAnimationSampleEnd += RefreshStylesAfterExternalEvent;
@@ -234,16 +233,9 @@ namespace UnityEditor.UIElements
                 ev.StopPropagation();
         }
 
-        void IEditorWindowBackend.PlayModeTintColorChanged()
-        {
-            UpdatePlayModeColor(EditorApplication.isPlayingOrWillChangePlaymode
-                ? editorWindowModel.playModeTintColor
-                : Color.white);
-        }
-
         public override void OnDestroy(IWindowModel model)
         {
-            EditorApplication.playModeStateChanged -= PlayModeStateChangedCallback;
+            PlayModeTintResolver.activePlayModeTintChanged -= ActivePlayModeTintChangedCallback;
             AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationSampleEnd -= RefreshStylesAfterExternalEvent;
@@ -308,22 +300,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private void PlayModeStateChangedCallback(PlayModeStateChange state)
-        {
-            Color newColorToUse = Color.white;
-            if ((state == PlayModeStateChange.ExitingEditMode) ||
-                (state == PlayModeStateChange.EnteredPlayMode))
-            {
-                newColorToUse = editorWindowModel.playModeTintColor;
-            }
-            else if ((state == PlayModeStateChange.ExitingPlayMode) || (state == PlayModeStateChange.EnteredEditMode))
-            {
-                newColorToUse = Color.white;
-            }
-            UpdatePlayModeColor(newColorToUse);
-        }
-
-        void UpdatePlayModeColor(Color newColorToUse)
+        private void ActivePlayModeTintChangedCallback(Color newColorToUse)
         {
             // Check the cached color to dirty only if needed !
             if (m_PlayModeDarkenColor != newColorToUse)

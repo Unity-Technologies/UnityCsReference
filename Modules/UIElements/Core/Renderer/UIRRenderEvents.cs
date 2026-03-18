@@ -306,6 +306,8 @@ namespace UnityEngine.UIElements.UIR
                 stats.recursiveClipUpdatesExpanded++;
 
             isPendingHierarchicalRepaint |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            isRootOfChange |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Clipping) != 0;
+            hierarchical |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
 
             // Internal operations (done in this call) to do:
             bool mustUpdateClipRectID = hierarchical || isRootOfChange || inheritedClipRectIDChanged;
