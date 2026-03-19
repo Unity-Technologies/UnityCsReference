@@ -110,10 +110,12 @@ namespace UnityEngine.UIElements
         internal DetachedAllocator m_DetachedAllocator;
         internal SafeHandleAccess m_Handle;
 
-        FillGradient m_FillGradient;
-        Texture2D m_FillTexture;
-
-        FillGradient m_StrokeFillGradient;
+        // Cached values mirroring native state. These must be reset in Reset() to stay
+        // in sync with the native side.
+        FillGradient m_CachedFillGradient;
+        Texture2D m_CachedFillTexture;
+        FillGradient m_CachedStrokeFillGradient;
+        List<float> m_CachedDashPattern = new(); // To enable alloc-free getting of the pattern
 
         internal bool isDetached => m_DetachedAllocator != null;
 
@@ -149,6 +151,10 @@ namespace UnityEngine.UIElements
         internal void Reset()
         {
             UIPainter2D.Reset(m_Handle);
+            m_CachedFillGradient = default;
+            m_CachedFillTexture = null;
+            m_CachedStrokeFillGradient = default;
+            m_CachedDashPattern.Clear();
         }
 
         internal MeshWriteData Allocate(int vertexCount, int indexCount)
@@ -257,17 +263,16 @@ namespace UnityEngine.UIElements
 
         internal Matrix4x4 fillTransform
         {
+            get => UIPainter2D.GetFillTransform(m_Handle);
             [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
-            set
-            {
-                UIPainter2D.SetFillTransform(m_Handle, value);
-            }
+            set => UIPainter2D.SetFillTransform(m_Handle, value);
         }
 
         internal float opacity
         {
             [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
             set => UIPainter2D.SetOpacity(m_Handle, value);
+            get => UIPainter2D.GetOpacity(m_Handle);
         }
 
         /// <summary>
@@ -280,9 +285,10 @@ namespace UnityEngine.UIElements
         {
             set
             {
-                m_FillGradient = value;
+                m_CachedFillGradient = value;
                 UIPainter2D.SetFillGradient(m_Handle, value);
             }
+            get => m_CachedFillGradient;
         }
 
         /// <summary>
@@ -295,9 +301,10 @@ namespace UnityEngine.UIElements
         {
             set
             {
-                m_StrokeFillGradient = value;
+                m_CachedStrokeFillGradient = value;
                 UIPainter2D.SetStrokeFillGradient(m_Handle, value);
             }
+            get => m_CachedStrokeFillGradient;
         }
 
         private bool hasStrokeFillGradient
@@ -322,9 +329,10 @@ namespace UnityEngine.UIElements
         {
             set
             {
-                m_FillTexture = value;
+                m_CachedFillTexture = value;
                 UIPainter2D.SetHasFillTexture(m_Handle, value != null);
             }
+            get => m_CachedFillTexture;
         }
 
         /// <summary>
@@ -365,19 +373,63 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The dash pattern to use when drawing paths using <see cref="Stroke"/>.
+        /// Sets the dash pattern to use when drawing paths using <see cref="Stroke"/>.
         /// </summary>
-
+        [Obsolete("Use SetDashPattern(ReadOnlySpan<float>) and GetDashPattern(Span<float>) instead.", false)]
         public ReadOnlySpan<float> dashPattern
         {
-            set => UIPainter2D.SetDashPattern(m_Handle, value);
+            set => SetDashPattern(value);
         }
 
         /// <summary>
-        /// The dash pattern to use when drawing paths using <see cref="Stroke"/>.
+        /// Sets the dash pattern to use when drawing paths using <see cref="Stroke"/>.
+        /// Use <see cref="GetDashPattern"/> to retrieve the current pattern.
+        /// </summary>
+        /// <param name="pattern">The dash pattern values to set.</param>
+        public void SetDashPattern(ReadOnlySpan<float> pattern)
+        {
+            NoAllocHelpers.EnsureListElemCount(m_CachedDashPattern, pattern.Length);
+            pattern.CopyTo(NoAllocHelpers.CreateSpan(m_CachedDashPattern));
+            UIPainter2D.SetDashPattern(m_Handle, pattern);
+        }
+
+        /// <summary>
+        /// Copies the current dash pattern into the provided span.
+        /// </summary>
+        /// <param name="values">
+        /// The destination span. Must have a length greater than or equal to the current dash pattern length.
+        /// Pass an empty span to query the required length without copying.
+        /// </param>
+        /// <returns>
+        /// The number of elements in the dash pattern. If <paramref name="values"/> is too short to hold the
+        /// pattern, returns 0 and no data is copied.
+        /// </returns>
+        public int GetDashPattern(Span<float> values)
+        {
+            int count = m_CachedDashPattern.Count;
+
+            if (values.Length == 0)
+                return count;
+
+            if (values.Length < count)
+            {
+                Debug.LogError($"GetDashPattern: provided span length ({values.Length}) is too small to hold the dash pattern ({count} elements).");
+                return 0;
+            }
+
+            NoAllocHelpers.CreateReadOnlySpan(m_CachedDashPattern).CopyTo(values);
+            return count;
+        }
+
+        /// <summary>
+        /// Sets a simple dash-gap pattern to use when drawing paths using <see cref="Stroke"/>.
         /// </summary>
         public void SetDashPattern(float dash, float gap)
         {
+            NoAllocHelpers.EnsureListElemCount(m_CachedDashPattern, 2);
+            var span = NoAllocHelpers.CreateSpan(m_CachedDashPattern);
+            span[0] = dash;
+            span[1] = gap;
             UIPainter2D.SetDashGapPattern(m_Handle, dash, gap);
         }
 
@@ -526,7 +578,7 @@ namespace UnityEngine.UIElements
 
                     if (hasStrokeFillGradient)
                     {
-                        m_DetachedAllocator.AddGradient(m_StrokeFillGradient);
+                        m_DetachedAllocator.AddGradient(m_CachedStrokeFillGradient);
                     }
 
                     unsafe
@@ -545,7 +597,7 @@ namespace UnityEngine.UIElements
                     {
                         VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
                         m_VectorImageToRelease.Add(vi);
-                        CreateTextureAndGradientSettings(ref m_StrokeFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
+                        CreateTextureAndGradientSettings(ref m_CachedStrokeFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
                         vi.atlas = texture;
                         vi.settings = new GradientSettings[] { gradientSettings };
                         vectorImagePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(vi);
@@ -668,12 +720,12 @@ namespace UnityEngine.UIElements
 
                     if (hasFillGradient)
                     {
-                        m_DetachedAllocator.AddGradient(m_FillGradient);
+                        m_DetachedAllocator.AddGradient(m_CachedFillGradient);
                     }
 
                     if (hasFillTexture)
                     {
-                        m_DetachedAllocator.AddTexture(m_FillTexture);
+                        m_DetachedAllocator.AddTexture(m_CachedFillTexture);
                     }
 
                     unsafe
@@ -693,7 +745,7 @@ namespace UnityEngine.UIElements
                     {
                         VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
                         m_VectorImageToRelease.Add(vi);
-                        CreateTextureAndGradientSettings(ref m_FillGradient, out Texture2D texture, out GradientSettings gradientSettings);
+                        CreateTextureAndGradientSettings(ref m_CachedFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
                         vi.atlas = texture;
                         vi.settings = new GradientSettings[] { gradientSettings };
                         vectorImagePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(vi);
@@ -701,7 +753,7 @@ namespace UnityEngine.UIElements
 
                     if (hasFillTexture)
                     {
-                        texturePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(m_FillTexture);
+                        texturePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(m_CachedFillTexture);
                     }
 
                     // Take a snapshot for the job system

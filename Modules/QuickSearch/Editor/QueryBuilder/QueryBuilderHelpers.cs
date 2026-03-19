@@ -153,7 +153,7 @@ namespace UnityEditor.Search
         internal static ISearchQuery CreateQuery(string queryStr)
         {
             var q = new SearchQuery() { searchText = queryStr };
-            q.viewState.itemSize = SearchSettings.itemIconSize;
+            q.viewState.itemIconSize = SearchSettings.itemIconSize;
             return q;
         }
 

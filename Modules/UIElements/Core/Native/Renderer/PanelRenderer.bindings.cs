@@ -832,8 +832,10 @@ namespace UnityEngine.UIElements
         #region Animation
         internal extern UIAnimationBinder GetAnimationBinder();
 
+        [NativeMethod("RegisterPanelRendererAnimationBinding")]
+        internal static extern void RegisterPanelRendererAnimationBinding();
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
         internal void ConnectToAnimationBinder()
         {
             UIAnimationBinder binder = GetAnimationBinder();

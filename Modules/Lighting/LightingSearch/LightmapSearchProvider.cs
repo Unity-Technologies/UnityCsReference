@@ -47,6 +47,9 @@ namespace UnityEditor.Lighting.LightingSearch
             public const string k_WidthSelector = k_LightmapSelectorPath + "/Width";
             public const string k_HeightSelector = k_LightmapSelectorPath + "/Height";
             public const string k_LightingDataAssetSelector = k_LightmapSelectorPath + "/Lighting Data Asset";
+
+            public const string k_IndexFilter = "lightmaps.index";
+            public const string k_SizeFilter = "lightmaps.size";
         }
 
         readonly QueryEngine<LightmapDataWrapper> m_QueryEngine;
@@ -98,28 +101,26 @@ namespace UnityEditor.Lighting.LightingSearch
 
             var supportedOperators = new[] { "=", "!=", ">", ">=", "<", "<=" };
 
-            qe.SetFilter(QuerySelectors.k_IndexSelector, wrapper => wrapper.index, supportedOperators)
+            qe.SetFilter(QuerySelectors.k_IndexFilter, wrapper => wrapper.index, supportedOperators)
                 .AddOrUpdatePropositionData(
                     category: k_ProviderDisplayName,
                     label: "Index",
-                    replacement: $"{QuerySelectors.k_IndexSelector}>0",
+                    replacement: $"{QuerySelectors.k_IndexFilter}>0",
                     help: "Search by index",
                     color: QueryColors.filter);
 
-            qe.SetFilter(QuerySelectors.k_WidthSelector, wrapper => wrapper.data.lightmapColor.width, supportedOperators)
+            qe.SetFilter(QuerySelectors.k_SizeFilter, wrapper =>
+                {
+                    var texture = wrapper.data.lightmapColor;
+                    if (texture == null)
+                        return 0;
+                    return System.Math.Max(texture.width, texture.height);
+                }, supportedOperators)
                 .AddOrUpdatePropositionData(
                     category: k_ProviderDisplayName,
-                    label: "Width",
-                    replacement: $"{QuerySelectors.k_WidthSelector}>0",
-                    help: "Search by width",
-                    color: QueryColors.filter);
-
-            qe.SetFilter(QuerySelectors.k_HeightSelector, wrapper => wrapper.data.lightmapColor.height, supportedOperators)
-                .AddOrUpdatePropositionData(
-                    category: k_ProviderDisplayName,
-                    label: "Height",
-                    replacement: $"{QuerySelectors.k_HeightSelector}>0",
-                    help: "Search by height",
+                    label: "Size",
+                    replacement: $"{QuerySelectors.k_SizeFilter}>512",
+                    help: "Search by size (max dimension)",
                     color: QueryColors.filter);
 
             return qe;

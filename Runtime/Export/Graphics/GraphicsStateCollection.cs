@@ -4,10 +4,11 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Rendering;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public sealed partial class GraphicsStateCollection : Object
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -57,10 +58,7 @@ namespace UnityEngine.Experimental.Rendering
                 this.keywords = material.enabledKeywords;
             }
         }
-    }
 
-    public sealed partial class GraphicsStateCollection : Object
-    {
         public GraphicsStateCollection() { Internal_Create(this); }
         public GraphicsStateCollection(string filePath) { Internal_Create(this); LoadFromFile(filePath); }
 

@@ -84,13 +84,18 @@ namespace UnityEditor
 
         public static void ToolContextToolbarForTarget(GUIContent content, UObject target)
         {
+            ToolContextToolbarForTarget(content, target, typeof(SceneView));
+        }
+        
+        internal static void ToolContextToolbarForTarget(GUIContent content, UObject target, Type toolOwner)
+        {
             if (target == null)
                 throw new ArgumentNullException("target");
 
             if (target is Editor editor)
-                EditorToolManager.GetComponentContexts(x => x.inspector == editor, s_CustomEditorContexts);
+                EditorToolManager.GetComponentContexts(toolOwner, x => x.inspector == editor, s_CustomEditorContexts);
             else
-                EditorToolManager.GetComponentContexts(x => x.target == target, s_CustomEditorContexts);
+                EditorToolManager.GetComponentContexts(toolOwner, x => x.target == target, s_CustomEditorContexts);
 
             ToolContextToolbar(content, s_CustomEditorContexts);
 
@@ -260,41 +265,6 @@ namespace UnityEditor
                 EditorStyles.label.fontStyle = fontStyle;
             }
             GUILayout.EndHorizontal();
-        }
-
-        internal static void ShowComponentToolsContextMenu()
-        {
-            BuildCustomGlobalToolsContextMenu().ShowAsContext();
-        }
-
-        internal static void ShowCustomGlobalToolsContextMenu(Rect worldBound)
-        {
-            BuildCustomGlobalToolsContextMenu().DropDown(worldBound);
-        }
-
-        static GenericMenu BuildCustomGlobalToolsContextMenu()
-        {
-            var toolHistoryMenu = new GenericMenu() { allowDuplicateNames = true };
-            bool foundGlobalTools = false;
-            var global = EditorToolUtility.GetCustomEditorToolsForType(null);
-
-            foreach (var tool in global)
-            {
-                if (tool.targetContext != null && tool.targetContext != ToolManager.activeContextType)
-                    continue;
-
-                foundGlobalTools = true;
-
-                toolHistoryMenu.AddItem(
-                    new GUIContent(EditorToolUtility.GetToolMenuPath(tool.editor)),
-                    false,
-                    () => { ToolManager.SetActiveTool(tool.editor); });
-            }
-
-            if (!foundGlobalTools)
-                toolHistoryMenu.AddDisabledItem(Styles.noToolsAvailable);
-
-            return toolHistoryMenu;
         }
     }
 }

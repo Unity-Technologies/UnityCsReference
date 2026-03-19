@@ -17,7 +17,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         [SerializeReference] public NodeInput<SceneAsset> Scene;
 
-        public OpenSceneNode(string name) : base(name)
+        public OpenSceneNode()
         {
             Scene = new(this);
         }

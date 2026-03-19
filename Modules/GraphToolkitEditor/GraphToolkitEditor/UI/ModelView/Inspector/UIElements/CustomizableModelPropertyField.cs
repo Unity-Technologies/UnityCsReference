@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +13,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Label = UnityEngine.UIElements.Label;
 using Object = UnityEngine.Object;
 
 namespace Unity.GraphToolkit.Editor
@@ -113,6 +115,8 @@ namespace Unity.GraphToolkit.Editor
         protected CustomizableModelPropertyField(ICommandTarget commandTarget, string label, FieldInfo inspectedField)
             : base(commandTarget)
         {
+            this.AddPackageStylesheet("CustomizableModelPropertyField.uss");
+
             Label = label ?? "";
             InspectedField = inspectedField;
         }
@@ -190,6 +194,38 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        void CreateListEditor(Type type, string fieldTooltip)
+        {
+            var eventType = typeof(ChangeEvent<>).MakeGenericType(type);
+            var getPooledMethod = eventType.GetMethod("GetPooled", BindingFlags.Public | BindingFlags.Static);
+
+            ListPropertyField listPropertyField = null;
+            Action<IList> onListChange = (newList) =>
+            {
+                var evt = (EventBase)getPooledMethod.Invoke(null, new object[] { newList, newList });
+                evt.target = listPropertyField; 
+                listPropertyField.SendEvent(evt);
+            };
+
+            listPropertyField = new ListPropertyField(type, onListChange);
+            
+            var labelElement = new Label(Label);
+            labelElement.tooltip = fieldTooltip;
+            labelElement.AddToClassList(BaseField<object>.labelUssClassName);
+            
+            Setup(labelElement, listPropertyField, fieldTooltip);
+        }
+
+        /// <summary>
+        /// Whether to use the list editor (ListView) for the given type. Override to restrict list UI to specific contexts (e.g. variable/constant node only).
+        /// </summary>
+        /// <param name="type">The constant value type.</param>
+        /// <returns>True to create the list editor for this type; false to fall through to other field types.</returns>
+        protected virtual bool ShouldCreateListEditorForType(Type type)
+        {
+            return TypeExtensions.IsListOrArray(type);
+        }
+
         /// <summary>
         /// Creates a default field for the specified type.
         /// </summary>
@@ -214,11 +250,17 @@ namespace Unity.GraphToolkit.Editor
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isDelayed = attributes?.FirstOrDefault(t => t is DelayedAttribute) != null;
             #pragma warning restore UA2001
-            //if (typeof(IList).IsAssignableFrom(type))
-            //{
-            //    var listField = new ListPropertyField(type);
-            //    SetupList(listField);
-            //}
+
+
+            if (TypeExtensions.IsListOrArray(type))
+            {
+                if (ShouldCreateListEditorForType(type))
+                {
+                    CreateListEditor(type, fieldTooltip);
+                }
+                return;
+            }
+
 
             if (type == typeof(long))
             {

@@ -322,7 +322,7 @@ namespace UnityEditor
             {
                 ManipulationToolUtility.SetMinDragDifferenceForPos(handlePosition);
 
-                if (Tools.vertexDragging)
+                if (HandleUtility.vertexDragging)
                     ManipulationToolUtility.DisableMinDragDifference();
 
                 TransformManipulator.SetPositionDelta(pos2, TransformManipulator.mouseDownHandlePosition);
@@ -555,7 +555,7 @@ namespace UnityEditor
             Vector3 oldPivot = Tools.cachedHandlePosition;
 
             // Pivot handle
-            if (!Tools.vertexDragging)
+            if (!HandleUtility.vertexDragging)
             {
                 RectTransform rectTransform = Selection.activeTransform.GetComponent<RectTransform>();
                 bool groupPivot = Selection.transforms.Length > 1;
@@ -588,7 +588,7 @@ namespace UnityEditor
             }
 
             TransformManipulator.BeginManipulationHandling(true);
-            if (!Tools.vertexDragging)
+            if (!HandleUtility.vertexDragging)
             {
                 // Resize handles
                 EditorGUI.BeginChangeCheck();
@@ -863,7 +863,7 @@ namespace UnityEditor
                 {
                     bool acceptClick = false;
 
-                    if (Tools.vertexDragging)
+                    if (HandleUtility.vertexDragging)
                     {
                         acceptClick = true;
                     }
@@ -920,7 +920,7 @@ namespace UnityEditor
                         }
                         if (s_Moving)
                         {
-                            if (Tools.vertexDragging)
+                            if (HandleUtility.vertexDragging)
                             {
                                 if (HandleUtility.ignoreRaySnapObjects == null)
                                     Handles.SetupIgnoreRaySnapObjects();
@@ -1000,7 +1000,7 @@ namespace UnityEditor
                 }
                 case EventType.Repaint:
                 {
-                    if (Tools.vertexDragging)
+                    if (HandleUtility.vertexDragging)
                     {
                         RectHandles.RectScalingHandleCap(id, pivot, rotation, 1, EventType.Repaint);
                     }

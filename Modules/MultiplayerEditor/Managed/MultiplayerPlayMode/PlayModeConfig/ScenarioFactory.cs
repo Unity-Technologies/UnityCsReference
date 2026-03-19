@@ -103,27 +103,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private static Instance CreateInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
         {
             var controller = instanceItem.CreateController(owner);
-            var instance = Instance.Create(instanceItem, controller, CreateDecoratorsForInstance(instanceItem, owner));
-            var executionGraph = instance.GetExecutionGraph();
+            var decorators = CreateDecoratorsForInstance(instanceItem, owner);
+            var graphBuilder = new ExecutionGraphBuilder();
 
-            controller.SetupExecutionGraph(executionGraph);
-
-            foreach (var decorator in instance.DecoratorsControllers)
+            controller.SetupExecutionGraph(graphBuilder);
+            foreach (var decorator in decorators)
             {
-                decorator.SetupExecutionGraph(executionGraph);
+                decorator.SetupExecutionGraph(graphBuilder);
             }
 
-            return instance;
+            var executionGraph = graphBuilder.Build();
+            return Instance.Create(instanceItem, controller, decorators, executionGraph);
         }
 
-        private static IEnumerable<InstanceControllerDecorator> CreateDecoratorsForInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
+        private static List<InstanceControllerDecorator> CreateDecoratorsForInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
         {
             var decorators = InstanceExtensionManager.GetDecoratorTypes(instanceItem.GetInstanceType());
+            var decoratorList = new List<InstanceControllerDecorator>();
+
             foreach (var decoratorType in decorators)
             {
                 if (!InstanceControllerDecorator.IsDecoratorWithSettings(decoratorType))
                 {
-                    yield return (InstanceControllerDecorator)InstanceController.CreateInstance(decoratorType, instanceItem, owner);
+                    decoratorList.Add((InstanceControllerDecorator)InstanceController.CreateInstance(decoratorType, instanceItem, owner));
                 }
                 else
                 {
@@ -133,9 +135,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         instanceItem.GenerateMissingDecoratorsAndRemoveDuplicates([decoratorType]);
                     }
 
-                    yield return instanceItem.GetDecoratorItem(decoratorType).CreateController(instanceItem, owner);
+                    decoratorList.Add(instanceItem.GetDecoratorItem(decoratorType).CreateController(instanceItem, owner));
                 }
             }
+
+            return decoratorList;
         }
 
         internal static string GenerateBuildPath(BuildProfile profile)

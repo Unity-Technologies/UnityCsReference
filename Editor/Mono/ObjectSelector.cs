@@ -658,6 +658,7 @@ namespace UnityEditor
                         requiredTypes = m_RequiredTypes.types,
                         requiredTypeNames = m_RequiredTypes.typeNames,
                         allowedEntityIds = allowedEntityIds,
+                        allowBuiltinResources = allowBuiltinResources,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
                         searchFilter = GetSearchFilter()
                     };

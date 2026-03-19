@@ -26,12 +26,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_AdbService;
         }
 
-        public AdbStopProcessNode(string name, IAdbService adbService = null) : base(name)
+        public AdbStopProcessNode()
         {
-            m_AdbService = adbService;
-
             m_PackageName = new(this);
             m_DeviceName = new(this);
+        }
+
+        public AdbStopProcessNode(IAdbService adbService) : this()
+        {
+            m_AdbService = adbService;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancellationToken)

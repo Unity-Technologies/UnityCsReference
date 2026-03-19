@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,32 +14,44 @@ namespace UnityEditor.Search
 
         protected readonly Label m_Label;
         protected readonly Image m_Thumbnail;
-        protected readonly Button m_FavoriteButton;
+        protected readonly SearchViewItemButtonWithContext m_FavoriteButton;
 
-        private bool m_InitiateDrag = false;
-        private Vector3 m_InitiateDragPosition;
+        readonly SearchResultViewDragHandler m_DragHandler;
         private Action m_FetchPreviewOff = null;
 
         private SearchPreviewKey m_PreviewKey;
         private IVisualElementScheduledItem m_PreviewRefreshCallback;
         private const int k_PreviewFetchCounter = 100;
 
-        static readonly string searchFavoriteButtonTooltip = L10n.Tr("Mark as Favorite");
-        static readonly string searchFavoriteOnButtonTooltip = L10n.Tr("Remove as Favorite");
+        public static readonly string searchFavoriteButtonTooltip = L10n.Tr("Mark as Favorite");
+        public static readonly string searchFavoriteOnButtonTooltip = L10n.Tr("Remove as Favorite");
+        public static readonly string moreActionsTooltip = L10n.Tr("Open actions menu");
 
         public static readonly string searchFavoriteButtonClassName = "search-view-item".WithUssElement("favorite-button");
+        public static readonly string searchFavoriteButtonName = "SearchFavoriteButton";
+
+        public static readonly string moreActionButtonName = "SearchItemActionsDropdown";
 
         public SearchViewItem(string name, ISearchView viewModel, params string[] classNames)
             : base(name, viewModel, classNames)
         {
             m_Label = new Label() { name = "SearchViewItemLabel" };
             m_Thumbnail = new Image() { name = "SearchViewItemThumbnail" };
-            m_FavoriteButton = CreateButton("SearchFavoriteButton", searchFavoriteButtonTooltip, OnFavoriteButtonClicked, baseIconButtonClassName, searchFavoriteButtonClassName);
+            m_FavoriteButton = new SearchViewItemButtonWithContext(searchFavoriteButtonName,
+                string.Empty,
+                searchFavoriteButtonTooltip,
+                OnFavoriteButtonClicked,
+                baseIconButtonClassName,
+                searchFavoriteButtonClassName);
 
             RegisterCallback<ContextClickEvent>(OnItemContextualClicked);
-            RegisterCallback<PointerDownEvent>(OnItemPointerDown);
-            RegisterCallback<PointerUpEvent>(OnItemPointerUp);
-            RegisterCallback<DragExitedEvent>(OnDragExited);
+            m_DragHandler = new SearchResultViewDragHandler(viewModel, this)
+            {
+                CanStartDrag = CanStartDrag,
+                StartDrag = StartDrag,
+                GetDraggedItem = evt => m_BindedItem
+            };
+            m_DragHandler.RegisterDragCallbacks();
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
@@ -77,11 +88,7 @@ namespace UnityEditor.Search
             CancelFetchPreview();
 
             UnregisterCallback<ContextClickEvent>(OnItemContextualClicked);
-            UnregisterCallback<PointerDownEvent>(OnItemPointerDown);
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerUpEvent>(OnItemPointerUp);
-            UnregisterCallback<DragExitedEvent>(OnDragExited);
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
+            m_DragHandler.UnregisterDragCallbacks();
         }
 
         private void CancelFetchPreview()
@@ -111,6 +118,7 @@ namespace UnityEditor.Search
             name = item.id;
             m_BindedItem = item;
             m_Label.text = item.GetLabel(context);
+            m_FavoriteButton.BoundItem = m_BindedItem;
 
             UpdatePreview();
             if (CanFetchPreview())
@@ -138,11 +146,9 @@ namespace UnityEditor.Search
 
             m_Label.text = null;
             m_Thumbnail.image = null;
+            m_FavoriteButton.BoundItem = null;
             m_FavoriteButton.SetActivePseudoState(false);
-            if (m_BindedItem != null)
-            {
-                m_BindedItem = null;
-            }
+            m_BindedItem = null;
 
             if (m_PreviewRefreshCallback?.isActive == true)
                 m_PreviewRefreshCallback.Pause();
@@ -264,52 +270,18 @@ namespace UnityEditor.Search
             m_ViewModel.ShowItemContextualMenu(m_BindedItem, default);
         }
 
-        private void OnItemPointerDown(PointerDownEvent evt)
+        bool CanStartDrag(PointerDownEvent evt)
         {
-            // dragging is initiated only by left mouse clicks
-            if (evt.button != (int)MouseButton.LeftMouse)
-                return;
-
-            m_InitiateDrag = !m_ViewModel.IsPicker() && m_BindedItem.provider.startDrag != null;
-            m_InitiateDragPosition = evt.localPosition;
-
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            RegisterCallback<PointerMoveEvent>(OnItemPointerMove);
-
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-            RegisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
+            return m_BindedItem != null && m_BindedItem.provider.startDrag != null;
         }
 
-        void OnItemPointerLeave(PointerLeaveEvent evt)
+        void StartDrag(SearchItem _)
         {
-            // If we enter here, it means the mouse left the element before any mouse
-            // move, so the item jumped around to be repositioned in the window.
-            // This will cause an issue with drag and drop
-            m_InitiateDrag = false;
-
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-        }
-
-        private void OnItemPointerMove(PointerMoveEvent evt)
-        {
-            if (!m_InitiateDrag)
-                return;
-
-            if ((evt.localPosition - m_InitiateDragPosition).sqrMagnitude < 5f)
-                return;
-
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-
             DragAndDrop.PrepareStartDrag();
             m_BindedItem.provider.startDrag(m_BindedItem, context);
-            m_InitiateDrag = false;
         }
 
-        private void OnDragExited(DragExitedEvent evt) => ResetDrag();
-        private void OnItemPointerUp(PointerUpEvent evt) => ResetDrag();
-
-        private void OnFavoriteButtonClicked()
+        private void OnFavoriteButtonClicked(SearchViewItemButtonWithContext _, SearchItem _2)
         {
             if (SearchSettings.searchItemFavorites.Contains(m_BindedItem.id))
                 SearchSettings.RemoveItemFavorite(m_BindedItem);
@@ -332,16 +304,9 @@ namespace UnityEditor.Search
             }
         }
 
-        protected void OnActionDropdownClicked()
+        protected void OnActionDropdownClicked(SearchViewItemButtonWithContext _, SearchItem _2)
         {
             m_ViewModel.ShowItemContextualMenu(m_BindedItem, default);
-        }
-
-        private void ResetDrag()
-        {
-            m_InitiateDrag = false;
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
         }
     }
 }

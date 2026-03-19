@@ -784,8 +784,8 @@ namespace UnityEditor
 
             #pragma warning disable 618
             #pragma warning disable 612
-            if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-                EditorApplication.projectWindowItemInstanceOnGUI(entityId, rect);
+            if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
+                EditorApplication.projectWindowItemByEntityIdOnGUI(entityId, rect);
             #pragma warning restore 618
             #pragma warning restore 612
 

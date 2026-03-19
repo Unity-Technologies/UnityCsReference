@@ -729,22 +729,39 @@ namespace UnityEngine.TextCore.Text
                         // Handle Highlight color changes
                         if (highlightState != currentState)
                         {
-                            // Adjust previous highlight section to prevent a gaps between sections.
-                            if (isWhiteSpace)
+                            bool isBitmapFont = currentCharacter.fontAsset.IsBitmap();
+
+                            // Adjust previous highlight section to prevent gaps between sections.
+                            if (isWhiteSpace || isBitmapFont)
                                 highlightEnd.x = (highlightEnd.x - highlightState.padding.right + currentCharacter.origin) / 2;
                             else
                                 highlightEnd.x = (highlightEnd.x - highlightState.padding.right + currentCharacter.bottomLeft.x) / 2;
 
-                            highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.descender);
-                            highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.ascender);
+                            if (isBitmapFont)
+                            {
+                                highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.bottomLeft.y);
+                                highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.topLeft.y);
+                            }
+                            else
+                            {
+                                highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.descender);
+                                highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.ascender);
+                            }
 
                             DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
 
                             beginHighlight = true;
-                            highlightStart = new Vector2(highlightEnd.x, currentCharacter.descender - currentState.padding.bottom);
+                            if (isBitmapFont)
+                            {
+                                highlightStart = new Vector2(highlightEnd.x, currentCharacter.bottomLeft.y - currentState.padding.bottom);
+                            }
+                            else
+                            {
+                                highlightStart = new Vector2(highlightEnd.x, currentCharacter.descender - currentState.padding.bottom);
+                            }
 
-                            if (isWhiteSpace)
-                                highlightEnd = new Vector2(currentCharacter.xAdvance + currentState.padding.right, currentCharacter.ascender + currentState.padding.top);
+                            if (isWhiteSpace || isBitmapFont)
+                                highlightEnd = new Vector2(currentCharacter.xAdvance + currentState.padding.right, isBitmapFont ? currentCharacter.topLeft.y + currentState.padding.top : currentCharacter.ascender + currentState.padding.top);
                             else
                                 highlightEnd = new Vector2(currentCharacter.topRight.x + currentState.padding.right, currentCharacter.ascender + currentState.padding.top);
 
@@ -755,21 +772,30 @@ namespace UnityEngine.TextCore.Text
 
                         if (!isColorTransition)
                         {
-                            if (isWhiteSpace)
+                            bool isBitmapFont = currentCharacter.fontAsset.IsBitmap();
+                            if (isWhiteSpace || isBitmapFont)
                             {
-                                // Use the Min / Max of glyph metrics if white space.
+                                // Use the Min / Max of glyph metrics if white space or bitmap font.
                                 highlightStart.x = Mathf.Min(highlightStart.x, currentCharacter.origin - highlightState.padding.left);
                                 highlightEnd.x = Mathf.Max(highlightEnd.x, currentCharacter.xAdvance + highlightState.padding.right);
                             }
                             else
                             {
-                                // Use the Min / Max of character bounds
+                                // Use the Min / Max of character bounds for SDF fonts
                                 highlightStart.x = Mathf.Min(highlightStart.x, currentCharacter.bottomLeft.x - highlightState.padding.left);
                                 highlightEnd.x = Mathf.Max(highlightEnd.x, currentCharacter.topRight.x + highlightState.padding.right);
                             }
 
-                            highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.descender - highlightState.padding.bottom);
-                            highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.ascender + highlightState.padding.top);
+                            if (isBitmapFont)
+                            {
+                                highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.bottomLeft.y - highlightState.padding.bottom);
+                                highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.topLeft.y + highlightState.padding.top);
+                            }
+                            else
+                            {
+                                highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.descender - highlightState.padding.bottom);
+                                highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.ascender + highlightState.padding.top);
+                            }
                         }
                     }
 

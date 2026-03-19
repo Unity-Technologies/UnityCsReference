@@ -93,15 +93,18 @@ namespace UnityEditor.Build.Profile
             }
 
             m_Profile = profile;
+
+            if (BuildProfileContext.instance.TryGetInitializationInfo(profile, out var initializationInfo)
+                && !initializationInfo.IsDone())
+            {
+                Action callback = parent != null ? parent.RepaintBuildProfileInspector : null;
+                return new BuildProfileBootstrapView(m_Profile, initializationInfo, callback);
+            }
+
             m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
             m_AddSettingsDataSource = new AddSettingsDataProvider(profile);
 
             CleanupEventHandlers();
-
-            if (BuildProfileContext.instance.TryGetPackageAddInfo(profile, out var packageAddInfo))
-            {
-                return CreateBootstrapGUI(packageAddInfo);
-            }
 
             var root = new VisualElement();
             var visualTree = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
@@ -167,18 +170,6 @@ namespace UnityEditor.Build.Profile
 
             root.Bind(serializedObject);
             return root;
-        }
-
-        VisualElement CreateBootstrapGUI(BuildProfilePackageAddInfo packageAddInfo)
-        {
-            var bootstrapView = new BuildProfileBootstrapView();
-            m_Profile.OnPackageAddProgress = () =>
-            {
-                bootstrapView.StartSpinner();
-                bootstrapView.Set(packageAddInfo.GetPackageAddProgressInfo());
-            };
-            m_Profile.OnPackageAddComplete = parent.RepaintBuildProfileInspector;
-            return bootstrapView;
         }
 
         /// <summary>

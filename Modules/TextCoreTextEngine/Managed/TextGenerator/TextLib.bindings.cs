@@ -41,7 +41,7 @@ namespace UnityEngine.TextCore.Text
             bool hasMissingGlyphs = false;
             foreach (ref var meshInfo in meshInfosSpan)
             {
-                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextAsset;
                 HashSet<uint> missingUnicodes = null;
 
                 if (textAsset is SpriteAsset || textAsset == null)
@@ -89,7 +89,7 @@ namespace UnityEngine.TextCore.Text
 
             foreach (ref var meshInfo in meshInfosSpan)
             {
-                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextAsset;
                 if (textAsset == null)
                     continue;
                 float inverseAtlasWidth = 0f;
@@ -217,6 +217,7 @@ namespace UnityEngine.TextCore.Text
                     }
 
                 }
+
                 if (trackColors)
                     hasMultipleColorsByMesh.Add(hasMultipleColors);
                 meshInfoIndex++;

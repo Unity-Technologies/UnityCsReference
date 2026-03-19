@@ -8,68 +8,56 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
-    static class SearchCollectionUtils
-    {
-        public static void NextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = 0;
-            }
-            else if (currentIndex + 1 < itemCount)
-            {
-                nextSelectedIndex = currentIndex + 1;
-            }
-        }
-
-        public static void PreviousSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = itemCount - 1;
-            }
-            else if (itemCount > 0 && currentIndex - 1 >= 0)
-            {
-                nextSelectedIndex = currentIndex - 1;
-            }
-        }
-    }
-
     abstract class SearchBaseCollectionView<T> : SearchElement, IResultView where T : BaseVerticalCollectionView
     {
         const float k_NormalItemHeight = 40f;
 
         private bool m_Disposed;
         private Delayer m_Throttler;
-
         private Action m_UpdateSelectionOffHandler;
+        private SearchResultViewGlobalEventHandler m_GlobalKeyboardHandler;
 
         protected T m_ListView;
 
-        Rect IResultView.rect => worldBound;
-        float IResultView.itemSize => m_ViewModel.itemIconSize;
-        public virtual bool showNoResultMessage => true;
+        public abstract string ViewId { get; }
+        public virtual bool ShowNoResultMessage => true;
+        public virtual bool UpdateNeeded => false;
+        public event IResultView.SelectionChangedEventHandler SelectionChanged;
+
+        // This event is not used in the SearchBaseCollectionView
+        public event IResultView.PopulateItemsContextMenuHandler PopulateItemsContextMenu
+        {
+            add { }
+            remove { }
+        }
 
         public SearchBaseCollectionView(string name, ISearchView viewModel, string className)
             : base(name, viewModel, className)
         {
         }
 
-        int IResultView.ComputeVisibleItemCapacity(float size, float height)
-        {
-            return (int)(height / GetItemHeight()) + 10;
-        }
-
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {
             base.OnAttachToPanel(evt);
+
+            var targetHandler = m_ListView.Q<ScrollView>().contentContainer;
+            m_GlobalKeyboardHandler ??= new SearchResultViewGlobalEventHandler(
+                this,
+                targetHandler,
+                null,
+                GetCurrentIndex,
+                GetItemCount,
+                SetSelectedIndex,
+                SelectionContains,
+                AddToSelection,
+                RemoveFromSelection,
+                Frame,
+                GetVisibleItemCount,
+                null);
 
             m_Throttler = Delayer.Throttle(o =>
             {
@@ -78,23 +66,21 @@ namespace UnityEditor.Search
 
             m_ListView.selectedIndicesChanged += HandleItemsSelected;
             m_ListView.itemsChosen += OnItemsChosen;
-            On(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             On(SearchEvent.DisplayModeChanged, OnDisplayModeChanged);
 
-            RegisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation, 20);
+            m_GlobalKeyboardHandler.RegisterGlobalEventHandlers();
             RegisterCallback<PointerDownEvent>(OnPointerDown);
 
             // Update selection just in case it was already modified
-            UpdateSelection();
+            SetSelectionWithoutNotify(m_ViewModel.selection);
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            UnregisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation);
+            m_GlobalKeyboardHandler.UnregisterGlobalEventHandler();
 
             Off(SearchEvent.DisplayModeChanged, OnDisplayModeChanged);
-            Off(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             m_ListView.itemsChosen -= OnItemsChosen;
             m_ListView.selectedIndicesChanged -= HandleItemsSelected;
 
@@ -118,7 +104,7 @@ namespace UnityEditor.Search
         private void OnDisplayModeChanged(ISearchEvent evt)
         {
             UpdateItemSize();
-            UpdateSelection();
+            SetSelectionWithoutNotify(m_ViewModel.selection);
         }
 
         public virtual void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
@@ -193,6 +179,41 @@ namespace UnityEditor.Search
             UpdateView();
         }
 
+        bool IResultView.UpdateViewIncremental()
+        {
+            return false;
+        }
+
+        bool IResultView.UpdateViewIncrementalTimed(TimeSpan timeLimit)
+        {
+            return false;
+        }
+
+        void IResultView.SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
+        {
+            UpdateView();
+        }
+
+        public virtual void SetSelectionWithoutNotify(SearchSelection selection)
+        {
+            if (selection == null)
+                return;
+
+            var selectedIndexes = selection.indexes;
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (m_ListView.selectedIndicesList.SequenceEqual(selectedIndexes))
+                #pragma warning restore UA2001
+                return;
+
+            var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
+            m_ListView.SetSelectionWithoutNotify(selectedIndexes);
+            if (firstSelection != -1)
+            {
+                m_UpdateSelectionOffHandler?.Invoke();
+                m_UpdateSelectionOffHandler = Utils.CallDelayed(() => m_ListView.ScrollToItem(firstSelection), 0.01d);
+            }
+        }
+
         protected virtual void UpdateItemSize()
         {
             if (m_ListView.fixedItemHeight != GetItemHeight())
@@ -207,182 +228,12 @@ namespace UnityEditor.Search
             return k_NormalItemHeight;
         }
 
-        protected virtual void UpdateSelection()
-        {
-            var selectedIndexes = m_ViewModel.selection.indexes;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_ListView.selectedIndicesList.SequenceEqual(selectedIndexes))
-#pragma warning restore UA2001
-                return;
-
-            var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
-            m_ListView.SetSelectionWithoutNotify(selectedIndexes);
-            if (firstSelection != -1)
-            {
-                m_UpdateSelectionOffHandler?.Invoke();
-                m_UpdateSelectionOffHandler = Utils.CallDelayed(() => m_ListView.ScrollToItem(firstSelection), 0.01d);
-            }
-        }
-
         private void HandleItemsSelected(IEnumerable<int> selection)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selArray = selection.ToArray();
 #pragma warning restore UA2001
-            m_ViewModel.SetSelection(selArray);
-            Dispatcher.Emit(SearchEvent.SelectionHasChanged, new SearchEventPayload(this, selection));
-        }
-
-        private void OnSelectionChanged(ISearchEvent evt)
-        {
-            UpdateSelection();
-        }
-
-        private static bool IsValidKey(IKeyboardEvent evt)
-        {
-            switch (evt.keyCode)
-            {
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                    return !evt.ctrlKey;
-                case KeyCode.DownArrow:
-                case KeyCode.UpArrow:
-                    return true;
-
-                case KeyCode.PageUp:
-                case KeyCode.PageDown:
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void OnNavigationMove(NavigationMoveEvent evt)
-        {
-            var itemCount = m_ListView.itemsSource.Count;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndicesList.Last();
-#pragma warning restore UA2001
-            var nextSelectedIndex = -1;
-            if (evt.direction == NavigationMoveEvent.Direction.Down)
-                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-            else if (evt.direction == NavigationMoveEvent.Direction.Up)
-                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-
-            VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
-
-            m_ListView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            evt.StopImmediatePropagation();
-        }
-
-        private bool VerifySelectionChanged(int currentIndex, int nextSelectedIndex, EventBase evt)
-        {
-            var selectionHasChanged = currentIndex != nextSelectedIndex;
-            if (selectionHasChanged && nextSelectedIndex != -1)
-            {
-                var shiftKey = evt is KeyDownEvent kde && kde.shiftKey || evt is INavigationEvent ne && ne.shiftKey;
-                if (!shiftKey)
-                    m_ListView.selectedIndex = nextSelectedIndex;
-                else
-                {
-                    if (!m_ListView.selectedIndicesList.Contains(nextSelectedIndex))
-                    {
-                        using var pool = ListPool<int>.Get(out var newSelection);
-                        if (nextSelectedIndex > currentIndex)
-                        {
-                            for (int i = currentIndex++; i <= nextSelectedIndex; ++i)
-                                newSelection.Add(i);
-                        }
-                        else
-                        {
-                            for (int i = currentIndex--; i >= nextSelectedIndex; --i)
-                                newSelection.Add(i);
-                        }
-                        m_ListView.AddToSelection(NoAllocHelpers.CreateReadOnlySpan(newSelection));
-                    }
-                    else
-                    {
-                        if (nextSelectedIndex > currentIndex)
-                        {
-                            for (int i = currentIndex; i < nextSelectedIndex; ++i)
-                                m_ListView.RemoveFromSelection(i);
-                        }
-                        else
-                        {
-                            for (int i = currentIndex; i > nextSelectedIndex; --i)
-                                m_ListView.RemoveFromSelection(i);
-                        }
-
-                        m_ListView.RemoveFromSelection(currentIndex);
-                    }
-                }
-
-                m_ListView.ScrollToItem(nextSelectedIndex);
-            }
-
-            return selectionHasChanged;
-        }
-
-        private bool OnKeyNavigation(KeyDownEvent evt)
-        {
-            if (evt.target is not VisualElement ve || !IsValidKey(evt))
-                return false;
-
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndicesList.Last();
-#pragma warning restore UA2001
-            var itemCount = m_ListView.itemsSource.Count;
-            if (m_ListView == ve || m_ListView.Contains(ve))
-            {
-                if ((currentIndex == itemCount - 1 && evt.keyCode == KeyCode.DownArrow) || (currentIndex == 0 && evt.keyCode == KeyCode.UpArrow))
-                    m_ListView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-
-                return false;
-            }
-
-            if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_ListView.selectedIndex != -1)
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var items = m_ListView.selectedItems.Cast<SearchItem>().ToArray();
-#pragma warning restore UA2001
-                var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
-                m_ViewModel.ExecuteAction(action, items, true);
-                return true;
-            }
-
-            var nextSelectedIndex = -1;
-            if (evt.keyCode == KeyCode.DownArrow)
-            {
-                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-            }
-            else if (evt.keyCode == KeyCode.UpArrow)
-            {
-                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-            }
-            else if (evt.keyCode == KeyCode.PageDown)
-            {
-                if (currentIndex == -1)
-                {
-                    if (itemCount > 0)
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        nextSelectedIndex = m_ListView.activeItems.LastOrDefault()?.index ?? -1;
-#pragma warning restore UA2001
-                }
-                else
-                    nextSelectedIndex = Math.Min(currentIndex + m_ListView.activeItems.Count, itemCount - 1);
-            }
-            else if (evt.keyCode == KeyCode.PageUp)
-            {
-                if (currentIndex == -1)
-                {
-                    if (itemCount > 0)
-                        nextSelectedIndex = currentIndex = itemCount - 1;
-                }
-                else if (itemCount > 0)
-                    nextSelectedIndex = Math.Max(currentIndex - m_ListView.activeItems.Count, 0);
-            }
-
-            return VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
+            SelectionChanged?.Invoke(selArray);
         }
 
         protected virtual void OnPointerDown(PointerDownEvent evt)
@@ -396,5 +247,54 @@ namespace UnityEditor.Search
             if (ve is not SearchViewItem && ve.GetFirstAncestorOfType<SearchViewItem>() == null)
                 m_ListView.ClearSelection();
         }
+
+        #region Global Event Handler
+        int GetCurrentIndex()
+        {
+            if (m_ListView.selectedIndex == -1)
+                return -1;
+            return m_ListView.selectedIndicesList[^1];
+        }
+
+        int GetItemCount()
+        {
+            return m_ListView.itemsSource.Count;
+        }
+
+        void SetSelectedIndex(int nextSelectedIndex)
+        {
+            m_ListView.selectedIndex = nextSelectedIndex;
+        }
+
+        int IResultView.ComputeVisibleItemCapacity(float size, float height)
+        {
+            return (int)(height / GetItemHeight()) + 10;
+        }
+
+        bool SelectionContains(int index)
+        {
+            return m_ListView.selectedIndicesList.Contains(index);
+        }
+
+        void AddToSelection(ReadOnlySpan<int> newIndices)
+        {
+            m_ListView.AddToSelection(newIndices);
+        }
+
+        void RemoveFromSelection(int index)
+        {
+            m_ListView.RemoveFromSelection(index);
+        }
+
+        void Frame(int index)
+        {
+            m_ListView.ScrollToItem(index);
+        }
+
+        int GetVisibleItemCount()
+        {
+            return m_ListView.activeItems.Count;
+        }
+        #endregion
     }
 }

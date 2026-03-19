@@ -659,9 +659,7 @@ namespace UnityEngine.TextCore
                 return false;
 
             var sprite = spriteAsset.spriteCharacterTable[spriteIndex];
-#pragma warning disable 618 // Todo (emilie.thaulow): update after #81049 has landed
-            spriteAssetValue = new TagValue(spriteAsset.entityId, TagUnitType.Unknown, ValueID.AssetID);
-#pragma warning restore 618
+            spriteAssetValue = new TagValue(EntityId.ToULong(spriteAsset.entityId), TagUnitType.Unknown, ValueID.AssetID);
             glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
             scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
             // Sprites are assigned in the E000 Private Area + sprite Index
@@ -1879,4 +1877,3 @@ namespace UnityEngine.TextCore
         }
     }
 }
-

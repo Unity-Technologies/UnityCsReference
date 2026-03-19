@@ -9,77 +9,77 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Column Descriptor used to register a new Column in the Hierarchy and to control display and customization of this column.
+    /// Provides a column descriptor used to register a new column in the <see cref="HierarchyView"/> and to control the display and customization of this column.
     /// </summary>
     public sealed class HierarchyViewColumnDescriptor
     {
         bool m_IsBound;
 
         /// <summary>
-        /// Column Id. HierarchyViewCellDescriptor will use this Id to register themselves with the Column.
+        /// Gets the column identifier. <see cref="HierarchyViewCellDescriptor"/> instances use this identifier to register themselves with the column.
         /// </summary>
         public string Id { get; }
 
         /// <summary>
-        /// Display name of the Column. If null the header will be empty (unless it contains an icon).
+        /// Gets or sets the display name of the column. If null, the header is empty unless it contains an icon.
         /// </summary>
         public string Title { get; set; }
 
         /// <summary>
-        /// Icon displayed in the header of the column. 
+        /// Gets or sets the icon displayed in the header of the column.
         /// </summary>
         public Texture2D Icon { get; set; }
 
         /// <summary>
-        /// Tooltip shown when the user hover the header of this column.
+        /// Gets or sets the tooltip shown when the user hovers over the header of this column.
         /// </summary>
         public string Tooltip { get; set; }
 
         /// <summary>
-        /// Priority used to sort column order.
-        /// Priority of 0 corresponds to the Hierarchy Name column.
-        /// Negative priority will put the column the the left of the Name column.
-        /// Positive priority will put the column to the right of the Name default column.
+        /// Gets or sets the priority used to sort column order.
+        /// A priority of 0 corresponds to the Name column in the <see cref="Hierarchy"/>.
+        /// A negative priority places the column to the left of the Name column.
+        /// A positive priority places the column to the right of the default Name column.
         /// </summary>
         public int DefaultPriority { get; set; }
 
         /// <summary>
-        /// Default Width when first instantiating the column. If negative the columns will be assigned an arbitrary width.
+        /// Gets or sets the default width when first instantiating the column. If you set it to a negative value, the column is assigned an arbitrary width.
         /// </summary>
         public int DefaultWidth { get; set; } = -1;
 
         /// <summary>
-        /// Define if the column should initially be visible.
+        /// Gets or sets whether the column is initially visible.
         /// </summary>
         public bool DefaultVisibility { get; set; }
 
         /// <summary>
-        /// User data
+        /// Gets or sets user data associated with this descriptor.
         /// </summary>
         public object UserData { get; set; }
 
         /// <summary>
-        /// Callback allowing the user to create a custom header. If callback is null, default header will be used to display both the icon and text of the Name field.
+        /// Callback that creates a custom header. If null, the default header displays both the icon and text of the Name field.
         /// </summary>
         public Func<VisualElement> MakeHeader;
 
         /// <summary>
-        /// Callback allowing the user to bind a custom header.
+        /// Callback that binds a custom header.
         /// </summary>
         public Action<VisualElement, HierarchyView> BindHeader;
 
         /// <summary>
-        /// Callback triggered when the header is about to be destroyed.
+        /// Callback triggered when the header is about to be destroyed or after domain reload.
         /// </summary>
         public Action<VisualElement, HierarchyView> UnbindHeader;
 
         /// <summary>
-        /// Callback triggered when the header is about to be destroyed.
+        /// Callback triggered when the window is closed.
         /// </summary>
         public Action<VisualElement, HierarchyView> DestroyHeader;
 
         /// <summary>
-        /// Callback triggered when the column is built and shown in the View.
+        /// Callback triggered when the column is built and shown in the <see cref="HierarchyView"/>.
         /// </summary>
         public Action<HierarchyViewColumn, HierarchyView> BindColumn;
 
@@ -105,9 +105,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a new Column Descriptor.
+        /// Creates a new <see cref="HierarchyViewColumnDescriptor"/>.
         /// </summary>
-        /// <param name="columnId">Unique ID of this column descriptor.</param>
+        /// <param name="columnId">The unique identifier for this column descriptor.</param>
         public HierarchyViewColumnDescriptor(string columnId)
         {
             Id = columnId;

@@ -367,6 +367,21 @@ namespace UnityEditor
         Calculate = 1,
     }
 
+    [Flags, NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterUVs
+    {
+        None = 0,
+        UV0 = 1 << 0,
+        UV1 = 1 << 1,
+        UV2 = 1 << 2,
+        UV3 = 1 << 3,
+        UV4 = 1 << 4,
+        UV5 = 1 << 5,
+        UV6 = 1 << 6,
+        UV7 = 1 << 7,
+        All = ~0
+    }
+
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAvatarSetup
     {
@@ -574,6 +589,26 @@ namespace UnityEditor
         }
 
         public extern bool preserveHierarchy
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Determines which UV channels are imported from the source model.
+        /// </summary>
+        public extern ModelImporterUVs importUVs
+        {
+            [NativeMethod("GetUVOptions")]
+            get;
+            [NativeMethod("SetUVOptions")]
+            set;
+        }
+
+        /// <summary>
+        /// Imports the vertex color channel from the source model.
+        /// </summary>
+        public extern bool importVertexColors
         {
             get;
             set;

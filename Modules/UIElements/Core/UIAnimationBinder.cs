@@ -25,7 +25,6 @@ namespace UnityEngine.UIElements
             return m_PropertyTypeMapping[(int)id];
         }
 
-        [RequiredByNativeCode(Optional = true)]
         internal void SetFloatValue(int elementIndex, int propertyId, int channel, float value)
         {
             if (elementIndex < 0 || elementIndex >= m_Elements.Count)
@@ -103,7 +102,6 @@ namespace UnityEngine.UIElements
 
         }
 
-        [RequiredByNativeCode]
         internal float GetFloatValue(int elementIndex, int propertyId, int channel)
         {
             if (elementIndex < 0 || elementIndex >= m_Elements.Count)
@@ -153,5 +151,69 @@ namespace UnityEngine.UIElements
 
         }
 
+        internal void SetObjectValue(int elementIndex, int propertyId, int channel, EntityId value)
+        {
+            if (elementIndex < 0 || elementIndex >= m_Elements.Count)
+                return;
+
+            var e = m_Elements[elementIndex].Value;
+            StylePropertyId id = (StylePropertyId)propertyId;
+
+            Debug.Assert(channel < GetChannelCount(id));
+
+            switch (GetPropertyTypeMapping(id))
+            {
+                case PropertyType.Background:
+                case PropertyType.Font:
+                case PropertyType.FontDefinition:
+                case PropertyType.MaterialDefinition:
+                    e.computedStyle.ApplyPropertyAnimation(e, id, value);
+                    break;
+            }
+        }
+
+        internal EntityId GetObjectValue(int elementIndex, int propertyId, int channel)
+        {
+            if (elementIndex < 0 || elementIndex >= m_Elements.Count)
+                return EntityId.None;
+            var element = m_Elements[elementIndex].Value;
+            StylePropertyId id = (StylePropertyId)propertyId;
+
+            Debug.Assert(channel < GetChannelCount(id));
+
+            return GetPropertyTypeMapping(id) switch
+            {
+                PropertyType.Background => element.computedStyle.ReadPropertyAnimationEntityId(id),
+                PropertyType.Font => element.computedStyle.ReadPropertyAnimationEntityId(id),
+                PropertyType.FontDefinition => element.computedStyle.ReadPropertyAnimationEntityId(id),
+
+                //invalid type
+                PropertyType.Length => throw new InvalidOperationException(),
+                PropertyType.Float => throw new InvalidOperationException(),
+                PropertyType.Int => throw new InvalidOperationException(),
+                PropertyType.Enum => throw new InvalidOperationException(),
+                PropertyType.Color => throw new InvalidOperationException(),
+                PropertyType.Translate => throw new InvalidOperationException(),
+                PropertyType.Rotate => throw new InvalidOperationException(),
+                PropertyType.Scale => throw new InvalidOperationException(),
+                PropertyType.Ratio => throw new InvalidOperationException(),
+                PropertyType.TransformOrigin => throw new InvalidOperationException(),
+                PropertyType.Shorthand => throw new InvalidOperationException(),
+                PropertyType.BackgroundPosition => throw new InvalidOperationException(),
+                PropertyType.BackgroundRepeat => throw new InvalidOperationException(),
+                PropertyType.BackgroundSize => throw new InvalidOperationException(),
+                PropertyType.TextShadow => throw new InvalidOperationException(),
+                PropertyType.TextAutoSize => throw new InvalidOperationException(),
+
+                //Not implemented
+                PropertyType.Filter => throw new NotImplementedException(),
+                PropertyType.Cursor => throw new NotImplementedException(),
+                PropertyType.List => throw new NotImplementedException(),
+                PropertyType.MaterialDefinition => throw new NotImplementedException(),
+                _ => throw new NotImplementedException(),// Why does c# think the list is not exhaustive? seems related to the cast...
+            };
+
+
+        }
     }
 }

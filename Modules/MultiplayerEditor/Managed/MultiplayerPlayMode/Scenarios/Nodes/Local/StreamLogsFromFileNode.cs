@@ -25,7 +25,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public NodeInput<Color> LogColor => m_LogColor;
         public NodeInput<int> ProcessId => m_ProcessId;
 
-        public StreamLogsFromFileNode(string name) : base(name)
+        public StreamLogsFromFileNode()
         {
             m_LogLabel = new(this);
             m_LogPath = new(this);

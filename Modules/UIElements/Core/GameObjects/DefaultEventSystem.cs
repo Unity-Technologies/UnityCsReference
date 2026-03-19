@@ -32,13 +32,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private RuntimePanel m_FocusedPanel;
-        private RuntimePanel m_PreviousFocusedPanel;
+        private Panel m_FocusedPanel;
+        private Panel m_PreviousFocusedPanel;
         private Focusable m_PreviousFocusedElement;
 
-        public RuntimePanel focusedPanel
+        public Panel focusedPanel
         {
-            get => m_FocusedPanel;
+            get => m_FocusedPanel as Panel;
             set
             {
                 if (m_FocusedPanel != value)
@@ -492,7 +492,7 @@ namespace UnityEngine.UIElements
             return documentPoint;
         }
 
-        private void UpdateFocusedPanel(RuntimePanel runtimePanel)
+        private void UpdateFocusedPanel(Panel runtimePanel)
         {
             if (runtimePanel.focusController.focusedElement != null)
             {

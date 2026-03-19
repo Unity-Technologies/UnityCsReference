@@ -37,26 +37,52 @@ namespace UnityEditor.Toolbars
 
         public ToolContextButton()
         {
-            RefreshActiveContext();
-            ToolManager.activeContextChanged += RefreshActiveContext;
-            EditorToolManager.availableToolsChanged += RefreshActiveContext;
             clicked += ShowContextMenu;
+            
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDeatachFromPanel);
         }
-
+        
         ~ToolContextButton()
         {
-            EditorToolManager.availableToolsChanged -= RefreshActiveContext;
-            ToolManager.activeContextChanged -= RefreshActiveContext;
             clicked -= ShowContextMenu;
         }
+        
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            ToolManager.activeContextChangedForOwner += RefreshActiveContext;
+            EditorToolManager.availableToolsChangedForOwner += OnAvailableToolsChangedForOwner;
+            
+            var ownerType = userData as Type;
+            RefreshActiveContext(ownerType);
+        }
 
+        void OnDeatachFromPanel(DetachFromPanelEvent evt)
+        {
+            ToolManager.activeContextChangedForOwner -= RefreshActiveContext;
+            EditorToolManager.availableToolsChangedForOwner -= OnAvailableToolsChangedForOwner;
+        }
+
+        void OnAvailableToolsChangedForOwner(Type changeToolOwner)
+        {
+            var ownerType = userData as Type;
+            if (ownerType == changeToolOwner) 
+                RefreshActiveContext(ownerType);
+        }
+        
+        Type toolOwnerType => userData as Type;
+        
         void ShowContextMenu()
         {
             var dropdownMenu = new GenericDropdownMenu();
-            var sortedCtxsDta = EditorToolUtility.sortedContextsDataCache;
-            var globalCtxs = sortedCtxsDta.globalContextAssociations;
-            var availableCompCtxs = sortedCtxsDta.availableCompContextAssociations;
-            var unavailableCompCtxs = sortedCtxsDta.unavailableCompContextAssociations;
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (state == null)
+                return;
+            
+            var sortedCtxsData = state.sortedContextsDataCache;
+            var globalCtxs = sortedCtxsData.globalContextAssociations;
+            var availableCompCtxs = sortedCtxsData.availableCompContextAssociations;
+            var unavailableCompCtxs = sortedCtxsData.unavailableCompContextAssociations;
          
             // Populate global contexts section
             var totalCtxCount = globalCtxs.Count + availableCompCtxs.Count + unavailableCompCtxs.Count;
@@ -105,14 +131,14 @@ namespace UnityEditor.Toolbars
 
         void AddItem(GenericDropdownMenu menu, bool enabled, Type contextType)
         {
-            var on = ToolManager.activeContextType == contextType;
+            var on = EditorToolManager.GetActiveToolContext(toolOwnerType).GetType() == contextType;
             if (enabled)
                 menu.AddItem(EditorToolUtility.GetToolName(contextType), on, () =>
                 {
-                    if (ToolManager.activeContextType == contextType)
+                    if (EditorToolManager.GetActiveToolContext(toolOwnerType).GetType() == contextType)
                         ToolManager.ExitToolContext();
                     else
-                        ToolManager.SetActiveContext(contextType);
+                        ToolManager.SetActiveContext(contextType, toolOwnerType);
                 });
             else
                 menu.AddDisabledItem(EditorToolUtility.GetToolName(contextType), on);
@@ -155,10 +181,19 @@ namespace UnityEditor.Toolbars
 
             menu.scrollView.Add(infoContainer);
         }
-
-        void RefreshActiveContext()
+        
+        void RefreshActiveContext(Type ownerType)
         {
-            Type activeContextType = ToolManager.activeContextType != null ? ToolManager.activeContextType : typeof(GameObjectToolContext);
+            if (toolOwnerType != ownerType || ownerType == null)
+                return;
+
+            var activeCtx = EditorToolManager.GetActiveToolContext(ownerType);
+
+            var defaultCtxType = typeof(GameObjectToolContext);
+            if (EditorToolUtility.GetToolOwnerDefinition(ownerType, out var ownerDef))
+                defaultCtxType = ownerDef.defaultContext ?? typeof(GameObjectToolContext);
+
+            Type activeContextType = activeCtx != null ? activeCtx.GetType() :defaultCtxType;
             
             icon = EditorToolUtility.GetContextIcon(activeContextType, out _).image as Texture2D;
             text = EditorToolUtility.GetToolName(activeContextType);

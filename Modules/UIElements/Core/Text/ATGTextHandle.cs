@@ -135,12 +135,10 @@ namespace UnityEngine.UIElements
         {
             InitTextLib();
             var fa = m_TextElement.cachedFontAsset;
+            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
 
             if (fa == null)
-            {
-                var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
                 fa = textSettings.GetFontAsset();
-            }
 
             if (fa == null)
                 return;
@@ -152,7 +150,7 @@ namespace UnityEngine.UIElements
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
-            TextUtilities.GetTextSettingsFrom(m_TextElement).UpdateNativeTextSettings();
+            textSettings.UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
         }
 

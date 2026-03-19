@@ -388,6 +388,7 @@ namespace Unity.GraphToolkit.Editor
                     m_Order = 0;
                     m_Attributes.Clear();
                     m_OptionType = null;
+                    m_ShowInInspectorOnly = false;
                     m_DefaultValue = null;
                     m_TypedBuilder = null;
                 }

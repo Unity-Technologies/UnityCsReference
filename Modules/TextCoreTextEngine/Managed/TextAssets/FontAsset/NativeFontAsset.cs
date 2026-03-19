@@ -53,11 +53,6 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            // Ensure this FontAsset is registered in the managed cache before creating the native asset.
-            // This is a safety measure for dynamically created FontAssets (e.g., bitmap clones) that may
-            // not have had OnEnable called yet.
-            EnsureRegisteredInCache();
-
             m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, italicStyleSlant, boldStyleWeight, (int)(boldStyleSpacing * 64.0f), MarshalledUnityObject.MarshalNotNull(this));
         }
 

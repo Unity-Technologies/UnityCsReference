@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("DomainReload-editor")]
 namespace Unity.Scripting.LifecycleManagement
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]

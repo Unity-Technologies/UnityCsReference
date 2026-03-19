@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -9,6 +11,93 @@ namespace UnityEditor.Lighting.LightingSearch
 {
     static class LightingSearchDataAccessors
     {
+        internal static SimplifiedLightType? GetLightType(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return ToSimplifiedLightType(light.type);
+        }
+
+        internal static SimplifiedLightType ToSimplifiedLightType(LightType type)
+        {
+            switch (type)
+            {
+                case LightType.Spot:
+                case LightType.Pyramid:
+                case LightType.Box:
+                    return SimplifiedLightType.Spot;
+                case LightType.Directional:
+                    return SimplifiedLightType.Directional;
+                case LightType.Point:
+                    return SimplifiedLightType.Point;
+                case LightType.Rectangle:
+                case LightType.Disc:
+                case LightType.Tube:
+                    return SimplifiedLightType.Area;
+                default:
+                    return SimplifiedLightType.Point;
+            }
+        }
+        
+        internal static SimplifiedLightType? ToSimplifiedLightTypeFromValue(object value)
+        {
+            if (value is SimplifiedLightType simplified)
+                return simplified;
+            if (value is LightType raw)
+                return ToSimplifiedLightType(raw);
+            if (value is int i)
+            {
+                if (Enum.IsDefined(typeof(LightType), i))
+                    return ToSimplifiedLightType((LightType)i);
+            }
+            return null;
+        }
+
+        internal static void SetLightType(GameObject go, SimplifiedLightType value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            light.type = (LightType)value;
+            EditorUtility.SetDirty(light);
+        }
+
+        internal static LightmapBakeType? GetLightMode(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return light.lightmapBakeType;
+        }
+
+        internal static void SetLightMode(GameObject go, LightmapBakeType value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            if (IsAreaLight(light.type))
+                return;
+            light.lightmapBakeType = value;
+            EditorUtility.SetDirty(light);
+        }
+
+        internal static float? GetColorTemperature(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return light.colorTemperature;
+        }
+        
+        internal static void SetColorTemperature(GameObject go, float value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            light.colorTemperature = value;
+            EditorUtility.SetDirty(light);
+        }
+
+        internal static bool IsAreaLight(LightType type)
+        {
+            return type == LightType.Rectangle || type == LightType.Disc || type == LightType.Tube;
+        }
+
         internal static uint GetRenderingLayers(GameObject go)
         {
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
@@ -73,6 +162,22 @@ namespace UnityEditor.Lighting.LightingSearch
                 return;
 
             meshRenderer.reflectionProbeUsage = value;
+        }
+
+        internal static ReflectionProbeMode? GetReflectionProbeMode(GameObject go)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return null;
+
+            return reflectionProbe.mode;
+        }
+
+        internal static void SetReflectionProbeMode(GameObject go, ReflectionProbeMode value)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return;
+
+            reflectionProbe.mode = value;
         }
 
         internal static int? GetReflectionProbeResolution(GameObject go)

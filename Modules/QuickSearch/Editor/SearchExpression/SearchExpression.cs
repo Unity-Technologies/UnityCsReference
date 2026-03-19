@@ -342,6 +342,9 @@ namespace UnityEditor.Search
             return Utils.TryGetNumber(itemValue, out value);
         }
 
+        public static bool TryConvertToULong(SearchItem item, out ulong value)
+            => Utils.TryGetULong(item.value, out value);
+
         public static string CreateId()
         {
             return Guid.NewGuid().ToString("N");
@@ -365,6 +368,11 @@ namespace UnityEditor.Search
         public static SearchItem CreateItem(int value, string label = null)
         {
             return CreateItem((double)value, label);
+        }
+
+        public static SearchItem CreateItem(ulong value, string label = null)
+        {
+            return CreateItem(label, value, null);
         }
 
         internal static SearchItem CreateItem(bool booleanValue, string label = null)

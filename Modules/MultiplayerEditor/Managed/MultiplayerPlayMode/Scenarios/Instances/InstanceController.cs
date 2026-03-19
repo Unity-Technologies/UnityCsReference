@@ -18,9 +18,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal IInstanceItem GetInstanceItem() => m_InstanceItem;
 
-        protected internal virtual void SetupExecutionGraph(ExecutionGraph graph) { }
+        protected internal virtual void SetupExecutionGraph(ExecutionGraphBuilder graph) { }
 
         protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
+        protected internal virtual VisualElement CreateTitleBarUI(Instance instance) => null;
 
         internal T GetUserSettings<T>(T defaultValue = default) where T : struct
             => OrchestratedScenarioUserSettings.GetSettings<T>(m_Owner, m_InstanceItem, defaultValue);

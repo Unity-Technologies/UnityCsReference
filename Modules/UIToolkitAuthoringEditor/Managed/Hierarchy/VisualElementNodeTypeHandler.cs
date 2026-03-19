@@ -599,7 +599,7 @@ internal abstract class VisualElementNodeTypeHandler :
         if (parent == Hierarchy.Root)
             return AcceptRootAsParent();
 
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in parent);
+        var handler = view.ViewModel.GetNodeTypeHandlerBase(in parent);
         if (handler != this)
             return false;
 
@@ -629,7 +629,7 @@ internal abstract class VisualElementNodeTypeHandler :
         if (isReadonly)
             return false;
 
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in child);
+        var handler = view.ViewModel.GetNodeTypeHandlerBase(in child);
         if (handler != this)
             return false;
 
@@ -1502,7 +1502,7 @@ internal abstract class VisualElementNodeTypeHandler :
         var onlyContainsElements = true;
         foreach (var node in selection)
         {
-            if (view.Source.GetNodeTypeHandlerBase(node) == this)
+            if (view.ViewModel.GetNodeTypeHandlerBase(node) == this)
                 containsElements = true;
             else
                 onlyContainsElements = false;

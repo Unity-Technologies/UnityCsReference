@@ -37,35 +37,39 @@ namespace UnityEditor.Toolbars
         public EditorTool currentVariant => m_Variants[m_CurrentVariantIndex];
         public bool hasVariants => m_Variants.Count > 1;
 
-        public ToolButton(IReadOnlyList<EditorTool> variants) : this(Tool.Custom, variants) {}
+        private Type m_ToolOwnerType;
+        
+        public ToolButton(IReadOnlyList<EditorTool> variants, Type toolOwnerType) : this(Tool.Custom, variants, toolOwnerType) {}
 
-        public ToolButton(Tool targetTool, IReadOnlyList<EditorTool> variants)
+        public ToolButton(Tool targetTool, IReadOnlyList<EditorTool> variants, Type toolOwnerType)
         {
             m_TargetTool = targetTool;
+            m_ToolOwnerType = toolOwnerType;
             m_Variants = new List<EditorTool>(variants);
             m_Variants.Sort((a, b) =>
             {
-                var aa = EditorToolUtility.GetMetaData(a.GetType()).variantPriority;
-                var bb = EditorToolUtility.GetMetaData(b.GetType()).variantPriority;
+                var aa = EditorToolUtility.GetMetaData(a.GetType(), m_ToolOwnerType).variantPriority;
+                var bb = EditorToolUtility.GetMetaData(b.GetType(), m_ToolOwnerType).variantPriority;
                 if (aa == ToolAttribute.defaultPriority && bb == ToolAttribute.defaultPriority)
                     return a.GetType().GetHashCode().CompareTo(b.GetType().GetHashCode());
                 return aa.CompareTo(bb);
             });
+            
             m_CurrentVariantIndex = GetPreferredVariantIndex();
             name = currentVariant.GetType().Name;
 
             AddToClassList("unity-tool-button");
 
-            this.RegisterValueChangedCallback((evt) =>
+            this.RegisterValueChangedCallback((e) =>
             {
-                if (evt.newValue)
-                    ToolManager.SetActiveTool(currentVariant);
+                if (e.newValue)
+                    ToolManager.SetActiveTool(currentVariant, m_ToolOwnerType);
 
                 // Keep the toggle checked if target is still the current tool
-                if (ToolManager.IsActiveTool(currentVariant))
+                if (ToolManager.IsActiveTool(currentVariant, m_ToolOwnerType))
                     SetValueWithoutNotify(true);
             });
-
+            
             this.RemoveManipulator(m_Clickable); //We handle clicking for the variant dropdown
 
             if (hasVariants)
@@ -219,7 +223,7 @@ namespace UnityEditor.Toolbars
                 if (m_HoveredVariantIndex >= 0)
                     m_CurrentVariantIndex = m_HoveredVariantIndex;
 
-                ToolManager.SetActiveTool(currentVariant);
+                ToolManager.SetActiveTool(currentVariant, m_ToolOwnerType);
                 UpdateContent();
 
                 m_ToolVariantDropdown?.RemoveFromHierarchy();
@@ -228,9 +232,9 @@ namespace UnityEditor.Toolbars
             else
             {
                 if (value && m_TargetTool == Tool.Custom)
-                    ToolManager.RestorePreviousTool();
+                    ToolManager.RestorePreviousTool(m_ToolOwnerType);
                 else
-                    ToolManager.SetActiveTool(currentVariant);
+                    ToolManager.SetActiveTool(currentVariant, m_ToolOwnerType);
             }
 
             this.ReleaseMouse();
@@ -239,8 +243,8 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            ToolManager.activeToolChanged += UpdateState;
-            ToolManager.activeContextChanged += UpdateState;
+            ToolManager.activeToolChangedForOwner += OnActiveToolChanged;
+            ToolManager.activeContextChangedForOwner += OnActiveToolChanged;
             SceneViewMotion.viewToolActiveChanged += UpdateState;
             
             // We only need the state to auto-refresh for custom tools.
@@ -264,8 +268,8 @@ namespace UnityEditor.Toolbars
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            ToolManager.activeContextChanged -= UpdateState;
-            ToolManager.activeToolChanged -= UpdateState;
+            ToolManager.activeContextChangedForOwner -= OnActiveToolChanged;
+            ToolManager.activeToolChangedForOwner -= OnActiveToolChanged;
             SceneViewMotion.viewToolActiveChanged -= UpdateState;
             
             if (!IsBuiltinTool())
@@ -275,6 +279,12 @@ namespace UnityEditor.Toolbars
                 Tools.viewToolChanged -= UpdateViewToolContent;
             
             EditorTool.stateChanged -= OnEditorToolStateChanged;
+        }
+        
+        void OnActiveToolChanged(Type ativatedToolOwnerType)
+        {
+            if (ativatedToolOwnerType == m_ToolOwnerType)
+               UpdateState();
         }
 
         void UpdateViewToolContent()
@@ -351,7 +361,7 @@ namespace UnityEditor.Toolbars
                     break;
             }
         }
-
+        
         void ClearButtonClassList()
         {
             RemoveFromClassList(s_UssClassName_MoveTool);
@@ -374,10 +384,19 @@ namespace UnityEditor.Toolbars
 
             UpdateAvailability();
         }
+        
+        bool IsActiveTool()
+        {
+            // ViewTool is currently only supported for SceneView tool owner.
+            if (Tools.viewToolActive && m_ToolOwnerType == typeof(SceneView))
+                return m_TargetTool == Tool.View;
+            
+            return ToolManager.IsActiveTool(currentVariant, m_ToolOwnerType);
+        }
 
         void UpdateAvailability()
         {
-            var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool;
+            var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool, m_ToolOwnerType) is NoneTool;
             var display = (missing || currentVariant.isHidden) ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (style.display != display)
@@ -389,13 +408,6 @@ namespace UnityEditor.Toolbars
             var enabled = currentVariant.IsAvailable();
             if (enabledSelf != enabled)
                 enabledSelf = enabled;
-        }
-
-        bool IsActiveTool()
-        {
-            if (Tools.viewToolActive)
-                return m_TargetTool == Tool.View;
-            return ToolManager.IsActiveTool(currentVariant);
         }
 
         bool IsBuiltinTool()
@@ -412,13 +424,19 @@ namespace UnityEditor.Toolbars
         {
             if (m_Variants.Count < 1 || m_Variants[0] == null)
                 return 0;
-            var meta = EditorToolUtility.GetMetaData(m_Variants[0].GetType());
+            var meta = EditorToolUtility.GetMetaData(m_Variants[0].GetType(), m_ToolOwnerType);
             if (meta.variantGroup == null)
                 return 0;
-            var pref = EditorToolManager.instance.variantPrefs.GetPreferredVariant(meta.variantGroup);
-            for (int i = 0, c = m_Variants.Count; i < c; ++i)
-                if (m_Variants[i]?.GetType() == pref)
-                    return i;
+
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(m_ToolOwnerType);
+            if (ownerState != null)
+            {
+                var pref = ownerState.variantPrefs.GetPreferredVariant(meta.variantGroup);
+                for (int i = 0, c = m_Variants.Count; i < c; ++i)
+                    if (m_Variants[i]?.GetType() == pref)
+                        return i;
+            }
+
             return 0;
         }
 

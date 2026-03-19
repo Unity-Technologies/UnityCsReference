@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("Unity.ScriptingTests.CodeLoadedGeneration")]
+[assembly: InternalsVisibleTo("DomainReload-editor")]
 namespace Unity.Scripting.LifecycleManagement
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
@@ -17,7 +18,7 @@ namespace Unity.Scripting.LifecycleManagement
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class ClearCacheBetweenCodeLoadsAttribute : LifecycleAttributeBase
+    public sealed class ClearCacheBetweenCodeLoadsAttribute : LifecycleAttributeBase
     {
     }
 

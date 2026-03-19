@@ -486,6 +486,7 @@ namespace UnityEngine.UIElements.UIR
                 stats.recursiveClipUpdatesExpanded++;
 
             isPendingHierarchicalRepaint |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            isRootOfChange |= (renderData.dirtiedValues & RenderDataDirtyTypes.Clipping) != 0;
             hierarchical |= (renderData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
 
             // Internal operations (done in this call) to do:

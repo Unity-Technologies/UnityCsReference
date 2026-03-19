@@ -17,7 +17,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public NodeInput<string> FilePath => m_FilePath;
 
-        public DeleteFileNode(string name) : base(name)
+        public DeleteFileNode()
         {
             m_FilePath = new(this);
         }

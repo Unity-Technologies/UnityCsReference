@@ -13,7 +13,9 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
+using UnityEngine.Events;
+
 using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
@@ -31,6 +33,14 @@ namespace UnityEditor.Build.Profile
         const string k_BuildProfilePath = "Library/BuildProfiles";
         const string k_SharedProfilePath = $"{k_BuildProfilePath}/SharedProfile.asset";
         static BuildProfileContext s_Instance;
+
+        /// <summary>
+        /// Collection of all build profile initilization metadata.
+        /// Kept in order to track progress across domain reloads or
+        /// editor restarts.
+        /// </summary>
+        [SerializeField]
+        List<BuildProfileInitialization> m_BuildProfileInitializations = new();
 
         [SerializeField]
         string[] m_CachedEditorScriptingDefines = Array.Empty<string>();
@@ -71,8 +81,10 @@ namespace UnityEditor.Build.Profile
             {
                 var profile = EditorUserBuildSettings.activeBuildProfile;
 
+
                 if (profile == null || !profile)
                     return null;
+
 
                 return profile;
             }
@@ -127,49 +139,6 @@ namespace UnityEditor.Build.Profile
 
         [VisibleToOtherModules]
         internal static PlatformPackageServiceInfoProvider packageServiceInfoProvider = new();
-
-        List<BuildProfilePackageAddInfo> m_PackageAddInfos = new();
-
-        [VisibleToOtherModules]
-        internal bool TryGetPackageAddInfo(BuildProfile profile, out BuildProfilePackageAddInfo result)
-        {
-            var profileGuid = GetProfileGUID(profile);
-            foreach (var packageAddInfo in m_PackageAddInfos)
-            {
-                if (packageAddInfo.profileGuid == profileGuid)
-                {
-                    result = packageAddInfo;
-                    return true;
-                }
-            }
-            result = null;
-            return false;
-        }
-
-        [VisibleToOtherModules]
-        internal void AddPackageAddInfo(BuildProfile profile, string[] packagesToAdd, int preconfiguredSettingsVariant)
-        {
-            if ((packagesToAdd.Length == 0) && (preconfiguredSettingsVariant == BuildProfilePackageAddInfo.preconfiguredSettingsVariantNotSet))
-                return;
-
-            var profileGuid = GetProfileGUID(profile);
-            var packageAddInfo = new BuildProfilePackageAddInfo()
-            {
-                profileGuid = profileGuid,
-                packagesToAdd = packagesToAdd,
-                preconfiguredSettingsVariant = preconfiguredSettingsVariant
-            };
-            m_PackageAddInfos.Add(packageAddInfo);
-        }
-
-        [VisibleToOtherModules]
-        internal void ClearPackageAddInfo(BuildProfile profile)
-        {
-            if (TryGetPackageAddInfo(profile, out BuildProfilePackageAddInfo packageAddInfo))
-            {
-                m_PackageAddInfos.Remove(packageAddInfo);
-            }
-        }
 
         static string GetProfileGUID(BuildProfile profile)
         {
@@ -341,6 +310,47 @@ namespace UnityEditor.Build.Profile
         internal BuildProfile GetForClassicPlatform(GUID platformGuid)
         {
             return m_PlatformIdToClassicPlatformProfile.GetValueOrDefault(platformGuid);
+        }
+
+        internal void RegisterProfileAwaitingInitialization(
+            BuildProfile profile,
+            string[] packagesToAdd,
+            int preconfiguredSettingsVariant,
+            UnityAction<BuildProfile> onProfileCreated)
+        {
+            var initInfo = BuildProfileInitialization.Create(
+                profile,
+                GetProfileGUID(profile),
+                packagesToAdd,
+                preconfiguredSettingsVariant,
+                onProfileCreated);
+
+            if (initInfo.state != BuildProfileInitialization.State.Ready)
+                m_BuildProfileInitializations.Add(initInfo);
+        }
+
+        /// <summary>
+        /// Checks if there's initialization work for the specified build profile.
+        /// </summary>
+        internal void UpdateBuildProfileInitialization(BuildProfile profile)
+        {
+            if (m_BuildProfileInitializations.Count == 0)
+                return;
+
+            if (!TryGetInitializationInfo(profile, out BuildProfileInitialization initializationInfo))
+                return;
+
+            if (initializationInfo.state == BuildProfileInitialization.State.Ready)
+            {
+                ClearBuildProfileInitialization(profile);
+                return;
+            }
+
+            var curState = initializationInfo.OnState(profile);
+            if (curState == BuildProfileInitialization.State.Ready)
+            {
+                ClearBuildProfileInitialization(profile);
+            }
         }
 
         /// <summary>
@@ -524,6 +534,8 @@ namespace UnityEditor.Build.Profile
 
         void OnEnable()
         {
+            BuildTargetDiscovery.ValidateSDKPlatformProviders();
+            
             EditorUserBuildSettings.isBuildProfileAvailable = true;
             EditorApplication.quitting -= SyncActiveProfileToFallback;
             EditorApplication.quitting += SyncActiveProfileToFallback;
@@ -1029,6 +1041,37 @@ namespace UnityEditor.Build.Profile
             profile.SerializePlayerSettings();
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssetIfDirty(profile);
+        }
+
+        public bool TryGetInitializationInfo(BuildProfile profile, out BuildProfileInitialization result)
+        {
+            var profileGuid = GetProfileGUID(profile);
+            foreach (var initializationInfo in m_BuildProfileInitializations)
+            {
+                if (initializationInfo.assetGUID != profileGuid) continue;
+                result = initializationInfo;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
+        void ClearBuildProfileInitialization(BuildProfile profile)
+        {
+            if (m_BuildProfileInitializations.Count == 0)
+                return;
+
+            string assetGuid = GetProfileGUID(profile);
+            BuildProfileInitialization initializationInstance = null;
+            for(int index = m_BuildProfileInitializations.Count - 1; index >= 0; index--)
+            {
+                initializationInstance = m_BuildProfileInitializations[index];
+                if (initializationInstance.assetGUID == assetGuid)
+                {
+                    m_BuildProfileInitializations.RemoveAt(index);
+                    return;
+                }
+            }
         }
     }
 }

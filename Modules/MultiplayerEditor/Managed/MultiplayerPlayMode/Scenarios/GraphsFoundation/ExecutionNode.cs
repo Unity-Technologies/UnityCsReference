@@ -120,9 +120,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal event Action StatusRefreshed;
 
-        public ExecutionNode(string name)
+        public ExecutionNode()
         {
-            m_Name = name;
+            m_Name = this.GetType().Name;
             m_State = ExecutionState.Idle;
             m_Progress = 0.0f;
         }

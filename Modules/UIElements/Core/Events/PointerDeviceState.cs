@@ -103,7 +103,7 @@ namespace UnityEngine.UIElements
         // When a pointer button is pressed on top of a runtime panel, that panel is flagged as having "soft capture" of that pointer,
         // that is, unless an element has an actual pointer capture, pointer move events should stay inside this panel until
         // all pointer buttons are released again. This is used by runtime panels to mimic GUIView.cpp window capture behavior.
-        private static readonly RuntimePanel[] s_PlayerPanelWithSoftPointerCapture = new RuntimePanel[PointerId.maxPointers];
+        private static readonly IRuntimePanel[] s_PlayerPanelWithSoftPointerCapture = new IRuntimePanel[PointerId.maxPointers];
         private static readonly IPanelComponent[] s_WorldSpacePanelComponentWithSoftPointerCapture = new IPanelComponent[PointerId.maxPointers];
         private static readonly Camera[] s_CameraWithSoftPointerCapture = new Camera[PointerId.maxPointers];
 
@@ -272,7 +272,7 @@ namespace UnityEngine.UIElements
             return (s_PressedButtons[pointerId] & ~(1 << exceptButtonId)) != 0;
         }
 
-        internal static RuntimePanel GetPlayerPanelWithSoftPointerCapture(int pointerId)
+        internal static IRuntimePanel GetPlayerPanelWithSoftPointerCapture(int pointerId)
         {
             return s_PlayerPanelWithSoftPointerCapture[pointerId];
         }
@@ -289,7 +289,7 @@ namespace UnityEngine.UIElements
 
         internal static void SetElementWithSoftPointerCapture(int pointerId, VisualElement element, Camera camera)
         {
-            var runtimePanel = element?.elementPanel as RuntimePanel;
+            var runtimePanel = element?.elementPanel as IRuntimePanel;
             s_PlayerPanelWithSoftPointerCapture[pointerId] = runtimePanel;
             s_CameraWithSoftPointerCapture[pointerId] = camera;
 

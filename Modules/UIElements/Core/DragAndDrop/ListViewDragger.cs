@@ -107,10 +107,12 @@ namespace UnityEngine.UIElements
                 return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
+            // Only block default reordering if enableReordering is false; custom canStartDrag already handled above.
+            if (!dragAndDropController.enableReordering)
+                return false;
+
             if (targetView.HasAnySelectedIds())
-            {
                 return dragAndDropController.CanStartDrag(targetView.selectedIds);
-            }
 
             return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.id });
         }

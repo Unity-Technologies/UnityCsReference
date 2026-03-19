@@ -9,7 +9,6 @@ using UnityEngine.Rendering;
 using UnityEditor.Rendering;
 using UnityEditor.Shaders;
 using System.Runtime.CompilerServices;
-using UnityEngine.Experimental.Rendering;
 
 [assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile

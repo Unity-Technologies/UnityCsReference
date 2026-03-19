@@ -28,7 +28,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeReference] public NodeOutput<Hash128> BuildHash;
         [SerializeReference] public NodeOutput<BuildReport> BuildReport;
 
-        public BuildPlayerNode(string name) : base(name)
+        public BuildPlayerNode()
         {
             BuildPath = new(this);
             Profile = new(this);

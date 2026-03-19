@@ -22,9 +22,10 @@ internal class SDKPlatformFlags
 [Serializable]
 internal class SDKPlatformInfo
 {
+    public int version;
     public string guid;
     public string[] supportedPlatformGuids;
-    public BuildTarget baseBuildTarget;
+    public string basePlatformGuid;
     public string platformGroupName;
     public string displayName;
     public string description;

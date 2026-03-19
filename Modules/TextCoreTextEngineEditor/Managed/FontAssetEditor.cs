@@ -374,8 +374,6 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
-        internal static Func<bool> IsAdvancedTextEnabled;
-
         public override void OnInspectorGUI()
         {
             Event currentEvent = Event.current;

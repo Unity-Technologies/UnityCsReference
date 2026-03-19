@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Experimental;
 using UnityEditor.Search;
@@ -38,53 +39,86 @@ namespace UnityEditor.Lighting.LightingSearch
             var renderPipelineTypeName = currentRenderPipeline?.GetType().Name;
             var queryPath = GetDefaultQueryPath(renderPipelineTypeName);
 
-            var query = EditorResources.Load<Object>(queryPath) as SearchQueryAsset;
+            var query = EditorResources.Load<UnityEngine.Object>(queryPath) as SearchQueryAsset;
 
             return query;
         }
 
+        static void OnTrackSelection(SearchItem item)
+        {
+            if (item == null)
+                return;
+            if (item.provider?.id == BuiltInSceneObjectsProvider.type)
+                SelectItems(item.context?.selection);
+            else
+                PingItem(item);
+        }
+
+        static void PingItem(SearchItem item)
+        {
+            if (item?.provider?.toObject == null)
+            {
+                item?.provider?.trackSelection?.Invoke(item, item.context);
+                return;
+            }
+            try
+            {
+                var obj = item.provider.toObject(item, typeof(UnityEngine.Object));
+                if (obj != null)
+                    EditorGUIUtility.PingObject(obj);
+            }
+            catch (System.Exception)
+            {
+                item?.provider?.trackSelection?.Invoke(item, item.context);
+            }
+        }
+
+        static void SelectItems(IEnumerable<SearchItem> items)
+        {
+            if (items == null)
+                return;
+            var list = new List<UnityEngine.Object>();
+            foreach (var item in items)
+            {
+                if (item?.provider?.toObject == null || item.provider.id != BuiltInSceneObjectsProvider.type)
+                    continue;
+                try
+                {
+                    var obj = item.provider.toObject(item, typeof(UnityEngine.Object));
+                    if (obj != null)
+                        list.Add(obj);
+                }
+                catch (System.Exception)
+                {
+                    // Skip items whose provider.toObject throws (e.g. invalid or disposed context).
+                }
+            }
+            if (list.Count > 0)
+                Selection.objects = list.ToArray();
+        }
+
         internal static SearchViewState CreateSearchViewState()
         {
-            var sceneProvider = BuiltInSceneObjectsProvider.CreateProvider();
+            var sceneProvider = UnityEditor.Search.SearchService.GetProvider(BuiltInSceneObjectsProvider.type) ?? BuiltInSceneObjectsProvider.CreateProvider();
             var lightmapProvider = UnityEditor.Search.SearchService.GetProvider(LightmapSearchProvider.ProviderId) ?? LightmapSearchProvider.CreateProvider();
             var projectProvider = UnityEditor.Search.SearchService.GetProvider(AssetProvider.type) ?? AssetProvider.CreateProvider();
 
             var context = UnityEditor.Search.SearchService.CreateContext(sceneProvider);
 
             if (sceneProvider != null)
-            {
-                sceneProvider.trackSelection = (item, _) =>
-                {
-                    var selectedObjects = new System.Collections.Generic.List<Object>();
-                    foreach (var searchItem in context.selection)
-                    {
-                        var obj = searchItem.provider.toObject(searchItem, typeof(GameObject));
-                        if (obj != null)
-                            selectedObjects.Add(obj);
-                    }
-                    if (selectedObjects.Count > 0)
-                        Selection.objects = selectedObjects.ToArray();
-                };
-
                 OverrideOpenAction(sceneProvider);
-            }
-
             if (projectProvider != null)
-            {
                 OverrideOpenAction(projectProvider);
-            }
 
             context.AddProvider(lightmapProvider);
             context.AddProvider(projectProvider);
             context.options |= SearchFlags.Multiselect;
 
-            return new SearchViewState(context);
+            var viewState = new SearchViewState(context);
+            viewState.trackingHandler = OnTrackSelection;
+            return viewState;
         }
 
-        /// <summary>
-        /// Keep the window open after executing "open" action to maintain consistency with Light Explorer behavior.
-        /// This allows continued interaction with the organized lighting view instead of closing after each selection.
-        /// </summary>
         static void OverrideOpenAction(SearchProvider provider)
         {
             var openAction = provider.actions.Find(a => a.id == "open");
@@ -177,17 +211,11 @@ namespace UnityEditor.Lighting.LightingSearch
                 // Since SearchEvents are global events and can be triggered by any SearchWindow, we need to make sure we are only affecting a relevant one.
 
                 var sourceViewState = evt.sourceViewState;
-
                 var config = sourceViewState.customPanelConfig;
-                if (config == null)
-                {
+                if (config == null || config.id != LightmapSearchProvider.ProviderId)
                     return;
-                }
 
-                if (config.id != LightmapSearchProvider.ProviderId)
-                {
-                    return;
-                }
+                sourceViewState.trackingHandler = OnTrackSelection;
 
                 if (config.bindUserData is not ExposureSlider slider)
                 {
@@ -247,7 +275,7 @@ namespace UnityEditor.Lighting.LightingSearch
                 viewState.text = defaultQuery.searchText;
             }
 
-            viewState.itemSize = (float)DisplayMode.Table;
+            viewState.SetDisplayMode(DisplayMode.Table);
             viewState.windowTitle = new GUIContent(k_WindowTitle);
             viewState.customPanelConfig = LightingCustomPanelSetup.CreateLightingCustomPanel();
             viewState.queryBuilderEnabled = true;

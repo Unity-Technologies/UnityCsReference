@@ -16,6 +16,7 @@ namespace UnityEditor
 
         internal static extern GameObject[] Internal_PickRectObjects(Camera cam, Rect rect, bool selectPrefabRoots, bool drawGizmos);
 
+        [NativeMethod(ThrowsException = true)]
         internal static extern GameObject Internal_FindNearestVertex(Camera cam, Vector2 screenPoint, Transform[] objectsToSearch, Transform[] ignoreObjects, out Vector3 vertex, out bool found);
 
         internal static extern ulong Internal_GetClosestPickingID(

@@ -26,48 +26,68 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
         }
     }
 
+    [Serializable]
+    internal struct UserSettings
+    {
+        public bool KeepAliveEnabled;
+    }
+
+    internal const bool k_DefaultKeepAliveEnabled = true;
+
     internal override string GetTypeNameForAnalytics() => "VirtualEditor";
 
-    protected internal override void SetupExecutionGraph(ExecutionGraph executionGraph)
+    protected internal override void SetupExecutionGraph(ExecutionGraphBuilder graphBuilder)
     {
         if (EditorMultiplayerManager.enableMultiplayerRoles)
         {
-            var roleNode = new SetupEditorMultiplayerRoleNode("CloneEditor_SetupMultiplayerRole");
-            executionGraph.AddNode(roleNode, ExecutionStage.Deploy);
-            executionGraph.ConnectConstant(roleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-            executionGraph.ConnectConstant(roleNode.Role, Settings.RoleMask);
+            var roleNode = graphBuilder.AddNode<SetupEditorMultiplayerRoleNode>(ExecutionStage.Deploy);
+            graphBuilder.ConnectConstant(roleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            graphBuilder.ConnectConstant(roleNode.Role, Settings.RoleMask);
 
-            var restoreRoleNode = new SetupEditorMultiplayerRoleNode("CloneEditor_RestoreMultiplayerRole");
-            executionGraph.AddNode(restoreRoleNode, ExecutionStage.Cleanup);
-            executionGraph.ConnectConstant(restoreRoleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-            executionGraph.ConnectConstant(restoreRoleNode.Role, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Role);
+            var restoreRoleNode = graphBuilder.AddNode<SetupEditorMultiplayerRoleNode>(ExecutionStage.Cleanup);
+            graphBuilder.ConnectConstant(restoreRoleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            graphBuilder.ConnectConstant(restoreRoleNode.Role, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Role);
         }
 
-        var tagsNode = new SetupEditorTagsNode("CloneEditor_SetupTags");
-        executionGraph.AddNode(tagsNode, ExecutionStage.Deploy);
-        executionGraph.ConnectConstant(tagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        executionGraph.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
+        var tagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Deploy);
+        graphBuilder.ConnectConstant(tagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+        graphBuilder.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
 
-        var restoreTagsNode = new SetupEditorTagsNode("CloneEditor_RestoreTags");
-        executionGraph.AddNode(restoreTagsNode, ExecutionStage.Cleanup);
-        executionGraph.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        executionGraph.ConnectConstant(restoreTagsNode.Tags, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Tags);
+        var restoreTagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Cleanup);
+        graphBuilder.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+        graphBuilder.ConnectConstant(restoreTagsNode.Tags, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Tags);
 
 
-        var editorRunNode = new CloneEditorRunNode($"CloneEditor|{Settings.PlayerInstanceIndex}_run");
-        var deployNode = new CloneEditorDeployNode($"CloneEditor|{Settings.PlayerInstanceIndex}_deploy");
+        var deployNode = graphBuilder.AddNode<CloneEditorDeployNode>(ExecutionStage.Deploy);
+        graphBuilder.ConnectConstant(deployNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
 
-        executionGraph.AddNode(deployNode, ExecutionStage.Deploy);
-        executionGraph.ConnectConstant(deployNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-
-        executionGraph.AddNode(editorRunNode, ExecutionStage.Run);
-        executionGraph.ConnectConstant(editorRunNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        executionGraph.ConnectConstant(editorRunNode.StreamLogs, Settings.StreamLogsToMainEditor);
-        executionGraph.ConnectConstant(editorRunNode.LogsColor, Settings.LogsColor);
+        var editorRunNode = graphBuilder.AddNode<CloneEditorRunNode>(ExecutionStage.Run);
+        graphBuilder.ConnectConstant(editorRunNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+        graphBuilder.ConnectConstant(editorRunNode.StreamLogs, Settings.StreamLogsToMainEditor);
+        graphBuilder.ConnectConstant(editorRunNode.LogsColor, Settings.LogsColor);
     }
 
     protected internal override VisualElement CreateControllerUI(Instance instance)
     {
-        return new CloneEditorInstanceStatusElement(instance, Settings);
+        return new CloneEditorInstanceStatusElement(instance, Settings, GetUserSettingsSerializedProperty(new UserSettings { KeepAliveEnabled = k_DefaultKeepAliveEnabled }));
+    }
+
+    protected internal override VisualElement CreateTitleBarUI(Instance instance)
+    {
+        var focusButton = new VisualElement();
+        focusButton.AddToClassList("focus-icon");
+        focusButton.AddToClassList("icon");
+        focusButton.RegisterCallback<MouseDownEvent>(evt =>
+        {
+            evt.StopImmediatePropagation();
+        }, TrickleDown.TrickleDown);
+        focusButton.RegisterCallback<ClickEvent>(evt =>
+        {
+            MultiplayerPlaymodeEditorUtility.FocusPlayerView(
+                (PlayerIndex)Settings.PlayerInstanceIndex + 1);
+            evt.StopImmediatePropagation();
+        });
+        
+        return focusButton;
     }
 }

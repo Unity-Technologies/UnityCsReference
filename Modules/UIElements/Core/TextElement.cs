@@ -184,9 +184,7 @@ namespace UnityEngine.UIElements
         {
             // All panels should account for TextElement  LiveReload in the Editor
             // And otherwise we only register them if ATG is effectively used
-            {
-                (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
-            }
+            (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
             uitkTextHandle.ReleaseResourcesIfPossible();
         }

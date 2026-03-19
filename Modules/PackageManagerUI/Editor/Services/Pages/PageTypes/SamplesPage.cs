@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 [Serializable]
 internal class SamplesPage : SimplePage
 {
-    public static readonly PageSortOption[] k_SupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc };
+    public static readonly PageSortOption[] k_SupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc, PageSortOption.PublishedDateDesc };
     public static readonly PageFilterStatus[] k_SupportedStatusFilters = { PageFilterStatus.Imported, PageFilterStatus.UpdateAvailable, PageFilterStatus.Deprecated };
 
     public const string k_Id = "Samples";
@@ -164,12 +164,27 @@ internal class SamplesPage : SimplePage
             return string.Compare(x.displayName, y.displayName, StringComparison.CurrentCultureIgnoreCase);
         }
 
+        private static int ComparePublishDate(IPackage x, IPackage y)
+        {
+            var xDate = x?.versions?.primary?.publishedDate;
+            var yDate = y?.versions?.primary?.publishedDate;
+
+            if (!xDate.HasValue)
+                return 1;
+            if (!yDate.HasValue)
+                return -1;
+
+            return -xDate.Value.CompareTo(yDate.Value);
+        }
+
         private int ComparePackage(IPackage x, IPackage y)
         {
             switch (m_SortOption)
             {
                 case PageSortOption.NameDesc:
                     return -CompareDisplayName(x, y);
+                case PageSortOption.PublishedDateDesc:
+                    return ComparePublishDate(x, y);
                 default:
                     return CompareDisplayName(x, y);
             }

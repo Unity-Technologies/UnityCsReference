@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -12,6 +13,7 @@ namespace UnityEditor
     /// This allows to control how clips are created and managed in the AnimationWindow.
     /// Also, this gives the ability to customize how animation is authored.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface IAnimationWindowSelectionItem : ISelectionBinding, IDisposable
     {
         GameObject gameObject { get; }

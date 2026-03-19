@@ -1716,7 +1716,7 @@ namespace UnityEditor.Search.Providers
             viewState.flags &= ~UnityEngine.Search.SearchViewFlags.OpenInspectorPreview;
             viewState.flags |= UnityEngine.Search.SearchViewFlags.DisableNoResultTips;
             viewState.context = storeContext;
-            viewState.itemSize = (int)DisplayMode.Grid;
+            viewState.SetDisplayMode(DisplayMode.Grid);
             viewState.queryBuilderEnabled = true;
             SearchService.ShowWindow(viewState);
         }

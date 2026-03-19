@@ -68,6 +68,7 @@ namespace UnityEditor.SearchService
 
         public IEnumerable<EntityId> allowedEntityIds { get; set; }
         public ObjectSelectorSearchEndSessionModes endSessionModes { get; set; }
+        public bool allowBuiltinResources { get; set; } = true;
         internal SearchFilter searchFilter { get; set; }
     }
 

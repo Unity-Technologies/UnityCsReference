@@ -6,143 +6,169 @@ using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 
-namespace UnityEditor.Build.Profile;
-
-[VisibleToOtherModules]
-internal class BuildProfilePackageAddInfo
+namespace UnityEditor.Build.Profile
 {
-    public const int preconfiguredSettingsVariantNotSet = -2;
 
-    public enum ProgressState
+    /// <summary>
+    /// Package installation progress tracker for build profile initialization.
+    /// </summary>
+    [Serializable]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+    internal class BuildProfilePackageAddInfo
     {
-        PackageStateUnknown,
-        PackagePending,
-        PackageDownloading,
-        PackageInstalling,
-        PackageReady,
-        PackageError,
-        ConfigurationPending,
-        ConfigurationRunning
-    }
-
-    public record struct ProgressEntry(ProgressState state, string name, int packageCount);
-
-    [SerializeField]
-    public string profileGuid = string.Empty;
-    [field: SerializeField]
-    public string[] packagesToAdd { get; set; } = Array.Empty<string>();
-    [field: SerializeField]
-    public int preconfiguredSettingsVariant { get; set; } = preconfiguredSettingsVariantNotSet;
-
-    public Action OnPackageAddProgress;
-    public Action OnPackageAddComplete;
-
-    PackageManager.Requests.AddAndRemoveRequest m_PackageAddRequest = null;
-    ProgressEntry m_PackageAddProgressInfo = new();
-
-    public void RequestPackageInstallation()
-    {
-        if (packagesToAdd.Length > 0)
+        public enum ProgressState
         {
-            m_PackageAddRequest = PackageManager.Client.AddAndRemove(packagesToAdd);
-            m_PackageAddRequest.progressUpdated += HandlePackageAddProgress;
-            EditorApplication.update -= HandlePackageRequestCompleted;
-            EditorApplication.update += HandlePackageRequestCompleted;
+            PackageStateUnknown,
+            PackagePending,
+            PackageDownloading,
+            PackageInstalling,
+            PackageReady,
+            PackageError,
+            ConfigurationPending,
+            ConfigurationRunning
         }
-        else if (preconfiguredSettingsVariant != preconfiguredSettingsVariantNotSet)
+        public record struct ProgressEntry(ProgressState state, string name, int packageCount);
+
+        /// <summary>
+        /// Packages pending installation.
+        /// </summary>
+        [field: SerializeField]
+        public string[] packagesToAdd { get; set; } = Array.Empty<string>();
+
+        public Action OnPackageAddProgress;
+        public Action OnPackageAddComplete;
+
+        PackageManager.Requests.AddAndRemoveRequest m_PackageAddRequest = null;
+        ProgressEntry m_PackageAddProgressInfo = new();
+
+        /// <summary>
+        /// Begins package installation if not already started.
+        /// </summary>
+        public void RequestPackageInstallation()
         {
-            OnPackageAddComplete?.Invoke();
-        }
-    }
+            if (m_PackageAddRequest != null)
+                return;
 
-    public ProgressEntry GetPackageAddProgressInfo() => m_PackageAddProgressInfo;
-
-    bool ContainsPackage(string name)
-    {
-        foreach (var package in packagesToAdd)
-        {
-            if (package == name)
-                return true;
-        }
-        return false;
-    }
-
-    void HandlePackageAddProgress(PackageManager.ProgressUpdateEventArgs progress)
-    {
-        int readyPackageNum = 0;
-        bool done = false;
-        bool packageInstalling = false;
-        bool packageDownloading = false;
-        bool packageErr = false;
-        string packageNames = "";
-        int packagesDownloadingCnt = 0;
-        int packagesInstallingCnt = 0;
-        int packagesErrCnt = 0;
-
-
-        ProgressEntry info;
-        foreach (var entry in progress.entries)
-        {
-            if (ContainsPackage(entry.name))
+            if (packagesToAdd.Length > 0)
             {
-                if (packageNames.Length > 0)
-                    packageNames += " ";
-                switch (entry.state)
-                {
-                    case PackageManager.ProgressState.Ready:
-                        readyPackageNum += 1;
-                        break;
-                    case PackageManager.ProgressState.Error:
-                        packageErr = true;
-                        packagesErrCnt++;
-                        break;
-                    case PackageManager.ProgressState.Downloading:
-                        packageDownloading = true;
-                        packagesDownloadingCnt++;
-                        break;
-                    case PackageManager.ProgressState.Installing:
-                        packageInstalling = true;
-                        packagesInstallingCnt++;
-                        break;
-                }
-                packageNames += entry.name;
+                m_PackageAddRequest = PackageManager.Client.AddAndRemove(packagesToAdd);
+                m_PackageAddRequest.progressUpdated += HandlePackageAddProgress;
+                EditorApplication.update += CheckCompletion;
             }
         }
 
-        done = (readyPackageNum == packagesToAdd.Length);
+        /// <summary>
+        /// Check if package installation is completed, considers that multiple
+        /// package add requests with similar packages could be made.
+        /// </summary>
+        public bool IsPackageRequestDone()
+        {
+            foreach (var package in packagesToAdd)
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package))
+                    return false;
+            }
 
-        if (packageErr)
-        {
-            info = new ProgressEntry(ProgressState.PackageError, packageNames, packagesErrCnt);
-        }
-        else if (packageInstalling)
-        {
-            info = new ProgressEntry(ProgressState.PackageInstalling, packageNames, packagesInstallingCnt);
-        }
-        else if (packageDownloading)
-        {
-            info = new ProgressEntry(ProgressState.PackageDownloading, packageNames, packagesDownloadingCnt);
-        }
-        else
-        {
-            info = new ProgressEntry(done ? ProgressState.ConfigurationRunning : ProgressState.ConfigurationPending, packageNames, 0);
+            return true;
         }
 
-        m_PackageAddProgressInfo = info;
-        OnPackageAddProgress?.Invoke();
-    }
+        public ProgressEntry GetPackageAddProgressInfo() => m_PackageAddProgressInfo;
 
-    void HandlePackageRequestCompleted()
-    {
-        if (m_PackageAddRequest != null && m_PackageAddRequest.IsCompleted)
+        /// <summary>
+        /// Cleans up event subscriptions and resources.
+        /// </summary>
+        public void Cleanup()
         {
-            EditorApplication.update -= HandlePackageRequestCompleted;
+            m_PackageAddRequest = null;
+            OnPackageAddComplete = null;
+            OnPackageAddProgress = null;
+        }
+
+        bool ContainsPackage(string name)
+        {
+            foreach (var package in packagesToAdd)
+            {
+                if (package == name)
+                    return true;
+            }
+            return false;
+        }
+
+        void CheckCompletion()
+        {
+            if (m_PackageAddRequest == null || !m_PackageAddRequest.IsCompleted)
+                return;
+
+            EditorApplication.update -= CheckCompletion;
+
             if (m_PackageAddRequest.Status >= PackageManager.StatusCode.Failure)
                 Debug.LogError(m_PackageAddRequest.Error.message);
 
-            m_PackageAddRequest = null;
             packagesToAdd = Array.Empty<string>();
             OnPackageAddComplete?.Invoke();
+        }
+
+        void HandlePackageAddProgress(PackageManager.ProgressUpdateEventArgs progress)
+        {
+            int readyPackageNum = 0;
+            bool packageInstalling = false;
+            bool packageDownloading = false;
+            bool packageErr = false;
+            string packageNames = "";
+            int packagesDownloadingCnt = 0;
+            int packagesInstallingCnt = 0;
+            int packagesErrCnt = 0;
+
+            ProgressEntry info;
+            foreach (var entry in progress.entries)
+            {
+                if (ContainsPackage(entry.name))
+                {
+                    if (packageNames.Length > 0)
+                        packageNames += " ";
+                    switch (entry.state)
+                    {
+                        case PackageManager.ProgressState.Ready:
+                            readyPackageNum += 1;
+                            break;
+                        case PackageManager.ProgressState.Error:
+                            packageErr = true;
+                            packagesErrCnt++;
+                            break;
+                        case PackageManager.ProgressState.Downloading:
+                            packageDownloading = true;
+                            packagesDownloadingCnt++;
+                            break;
+                        case PackageManager.ProgressState.Installing:
+                            packageInstalling = true;
+                            packagesInstallingCnt++;
+                            break;
+                    }
+                    packageNames += entry.name;
+                }
+            }
+
+            bool done = (readyPackageNum == packagesToAdd.Length);
+
+            if (packageErr)
+            {
+                info = new ProgressEntry(ProgressState.PackageError, packageNames, packagesErrCnt);
+            }
+            else if (packageInstalling)
+            {
+                info = new ProgressEntry(ProgressState.PackageInstalling, packageNames, packagesInstallingCnt);
+            }
+            else if (packageDownloading)
+            {
+                info = new ProgressEntry(ProgressState.PackageDownloading, packageNames, packagesDownloadingCnt);
+            }
+            else
+            {
+                info = new ProgressEntry(done ? ProgressState.ConfigurationRunning : ProgressState.ConfigurationPending, packageNames, 0);
+            }
+
+            m_PackageAddProgressInfo = info;
+            OnPackageAddProgress?.Invoke();
         }
     }
 }

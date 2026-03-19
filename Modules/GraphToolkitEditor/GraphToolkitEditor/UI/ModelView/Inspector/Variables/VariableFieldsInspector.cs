@@ -114,14 +114,19 @@ namespace Unity.GraphToolkit.Editor
             TooltipProperty = 1 << 7,
 
             /// <summary>
+            /// Display the mode property (Single vs List).
+            /// </summary>
+            CollectionModeProperty = 1 << 8,
+
+            /// <summary>
             /// The default, which is to display everything.
             /// </summary>
-            Default = TypeProperty | DefaultValueProperty | ExposedProperty | SubgraphPortProperty | TooltipProperty,
+            Default = TypeProperty | DefaultValueProperty | ExposedProperty | SubgraphPortProperty | TooltipProperty | CollectionModeProperty,
 
             /// <summary>
             /// The value for standard quick settings properties.
             /// </summary>
-            QuickSettings = QuickSettingsAttributeOnly | TypeProperty | DefaultValueProperty | ExposedProperty
+            QuickSettings = QuickSettingsAttributeOnly | TypeProperty | CollectionModeProperty | DefaultValueProperty | ExposedProperty
         }
 
         /// <summary>
@@ -217,6 +222,16 @@ namespace Unity.GraphToolkit.Editor
                 {
                     var typeEditor = new VariableTypePropertyField(OwnerRootView, variableModels);
                     fieldList.Insert(insertIndex++, typeEditor);
+                }
+            }
+
+            if (m_DisplayFlags.HasFlagFast(DisplayFlags.CollectionModeProperty))
+            {
+                var variableDeclaration = variableModels[0];
+                if (variableDeclaration.DataType != TypeHandle.Untyped)
+                {
+                    var modeEditor = new VariableModePropertyField(OwnerRootView, variableModels);
+                    fieldList.Insert(insertIndex++, modeEditor);
                 }
             }
 

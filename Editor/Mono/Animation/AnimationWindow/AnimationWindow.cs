@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using System.Collections.Generic;
 using UnityEditor.Callbacks;
 using UnityObject = UnityEngine.Object;
@@ -80,6 +81,7 @@ namespace UnityEditor
             set => clip = new UnityEditor.AnimationWindowBuiltin.AnimationWindowClip(value, state.activeRootGameObject);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal IAnimationWindowSelectionItem selection
         {
             get => state?.selection;
@@ -171,6 +173,8 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            titleContent = GetLocalizedTitleContent();
+
             if (m_AnimEditor == null)
             {
                 m_AnimEditor = CreateInstance<AnimEditor>();

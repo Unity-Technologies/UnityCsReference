@@ -241,6 +241,7 @@ namespace UnityEditor.Search
         internal IEnumerable<IGroup> EnumerateGroups();
         internal void SetupColumns(IList<SearchField> fields);
         internal IEnumerable<SearchQueryError> GetAllVisibleErrors();
+        internal string currentResultViewId { get; set; }
     }
 
     interface ISearchQueryView

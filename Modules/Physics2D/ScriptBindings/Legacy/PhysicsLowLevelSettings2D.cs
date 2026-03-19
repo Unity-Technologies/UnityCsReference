@@ -78,6 +78,16 @@ namespace UnityEngine.LowLevelPhysics2D
             physicsCoreSettings2D.disableSimulation = bypassLowLevel;
             physicsCoreSettings2D.alwaysDrawWorlds = false;
 
+            // Reset the world-drawing defaults.
+            { var newDef = physicsCoreSettings2D.physicsBodyDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsBodyDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsShapeDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsShapeDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsDistanceJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsDistanceJointDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsFixedJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsFixedJointDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsHingeJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsHingeJointDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsRelativeJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsRelativeJointDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsSliderJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsSliderJointDefinition = newDef; }
+            { var newDef = physicsCoreSettings2D.physicsWheelJointDefinition; newDef.worldDrawing = true; physicsCoreSettings2D.physicsWheelJointDefinition = newDef; }
+
             return physicsCoreSettings2D;
         }
 

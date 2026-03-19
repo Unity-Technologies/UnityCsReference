@@ -75,6 +75,8 @@ namespace UnityEditor.Experimental.GraphView
         }
         public float itemIconSize { get; set; }
 
+        public string currentResultViewId { get; set; }
+
         public DisplayMode displayMode { get; set; }
 
         public bool multiselect { get; set; }

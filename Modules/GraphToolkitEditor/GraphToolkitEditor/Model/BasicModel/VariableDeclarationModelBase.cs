@@ -221,7 +221,10 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool RequiresInitialization()
         {
             var dataType = DataType.Resolve();
-            return dataType.IsValueType || dataType == typeof(string);
+            return dataType.IsValueType ||
+                   dataType == typeof(string) ||
+                   typeof(UnityEngine.Object).IsAssignableFrom(dataType) ||
+                   TypeExtensions.IsListOrArray(dataType);
         }
 
         /// <summary>

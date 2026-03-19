@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEngine;
+using UnityEditor.Build;
 
 namespace UnityEditor
 {
@@ -141,8 +142,8 @@ namespace UnityEditor
         private readonly DesktopSingleCPUProperty m_Windows32;
         private readonly DesktopMultiCPUProperty m_Windows64;
 
-        // Linux has 1 build target and 1 supported CPU architecture
-        private readonly DesktopSingleCPUProperty m_Linux;
+        // Linux has 1 build target and 2 supported CPU architectures
+        private readonly DesktopMultiCPUProperty m_Linux;
 
         // macOS has multiple architectures, but one target.
         private readonly DesktopMultiCPUProperty m_MacOS;
@@ -162,7 +163,7 @@ namespace UnityEditor
             m_Windows32 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows, DesktopPluginCPUArchitecture.x86);
             m_Windows64 = new DesktopMultiCPUProperty(BuildTarget.StandaloneWindows64, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
-            m_Linux = new DesktopSingleCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
+            m_Linux = new DesktopMultiCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
             m_MacOS = new DesktopMultiCPUProperty(BuildTarget.StandaloneOSX, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
             // Windows 32-bit (x86) and Windows 64-bit (ARM64/x86_64) are separate targets, so they have separate checkboxes
@@ -326,6 +327,11 @@ namespace UnityEditor
             {
                 // Add the correct architecture if not AnyCPU
                 return base.CalculateFinalPluginPath(platformName, imp);
+            }
+
+            if(pluginForLinux)
+            {
+                return Path.Combine(cpu, Path.GetFileName(imp.assetPath));
             }
 
             // For files this will return filename, for directories, this will return last path component

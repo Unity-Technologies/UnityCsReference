@@ -48,13 +48,31 @@ namespace UnityEditor.EditorTools
             : Selection.objects;
 
         public UnityObject target => m_Target == null ? Selection.activeObject : m_Target;
+        
+        [SerializeField]
+        string m_ContextOwnerTypeName;
+     
+        Type m_ContextOwnerType;
+        Type contextOwnerType
+        {
+            get
+            {
+                if (m_ContextOwnerType == null && !String.IsNullOrEmpty(m_ContextOwnerTypeName))
+                    m_ContextOwnerType = Type.GetType(m_ContextOwnerTypeName);
+                
+                if (m_ContextOwnerType == null)
+                    m_ContextOwnerType = typeof(SceneView);
 
+                return m_ContextOwnerType;
+            }
+        }
+        
         internal void Activate()
         {
             if(m_Active
             // Prevent to reenable the context if this is not the active one anymore
             // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
-                || this != EditorToolManager.activeToolContext)
+                || this != EditorToolManager.GetActiveToolContext(contextOwnerType))
                 return;
 
             OnActivated();
@@ -80,6 +98,8 @@ namespace UnityEditor.EditorTools
 
         void IEditor.SetTargets(UnityObject[] value) => m_Targets = value;
 
+        internal void SetContextOwner(Type contextOwnerType) => m_ContextOwnerTypeName = contextOwnerType.AssemblyQualifiedName;
+
         public virtual void OnToolGUI(EditorWindow window) {}
 
         public Type ResolveTool(Tool tool)
@@ -90,28 +110,45 @@ namespace UnityEditor.EditorTools
                     return typeof(NoneTool);
 
                 case Tool.View:
-                    return typeof(ViewModeTool);
-
+                    var toolOwnerIsNullOrSceneView = contextOwnerType == null || contextOwnerType == typeof(SceneView);
+                    // Do not allow overriding ViewTool if context owner is SceneView
+                    if (toolOwnerIsNullOrSceneView) 
+                        return typeof(ViewModeTool);
+                 
+                    // Try resolving for custom owner
+                    return DoResolveTool(tool);
+                
                 case Tool.Custom:
                     return null;
 
                 default:
-                    var resolved = GetEditorToolType(tool);
-
-                    // Returning null is valid here, but types that do not inherit EditorTool or are abstract are not.
-                    if (resolved != null && (!typeof(EditorTool).IsAssignableFrom(resolved) || resolved.IsAbstract))
-                        Debug.LogError($"Tool context \"{GetType()}\" resolved {tool} to an invalid EditorTool type. " +
-                            $"Resolved types must inherit EditorTool and not be abstract.");
-                    else
-                        return resolved;
-                    return null;
+                    return DoResolveTool(tool);
             }
+        }
+        
+        Type DoResolveTool(Tool tool)
+        {
+            var resolved = GetEditorToolType(tool);
+
+            // Returning null is valid here, but types that do not inherit EditorTool or are abstract are not.
+            if (resolved != null && (!typeof(EditorTool).IsAssignableFrom(resolved) || resolved.IsAbstract))
+                Debug.LogError($"Tool context \"{GetType()}\" resolved {tool} to an invalid EditorTool type. " +
+                               $"Resolved types must inherit EditorTool and not be abstract.");
+            else
+                return resolved;
+            return null;
         }
 
         protected virtual Type GetEditorToolType(Tool tool)
         {
+            const string k_ExceptionMsg = "EditorToolContext should only be used to resolve transform tools. " +
+                "View, Custom, and None are not applicable.";
             switch (tool)
             {
+                case Tool.View:
+                    if (contextOwnerType == null || contextOwnerType == typeof(SceneView))
+                        throw new ArgumentException(k_ExceptionMsg);
+                    return typeof(ViewModeTool);
                 case Tool.Move:
                     return typeof(MoveTool);
                 case Tool.Rotate:
@@ -123,8 +160,7 @@ namespace UnityEditor.EditorTools
                 case Tool.Transform:
                     return typeof(TransformTool);
                 default:
-                    throw new ArgumentException("EditorToolContext should only be used to resolve transform tools. " +
-                        "View, Custom, and None are not applicable.");
+                    throw new ArgumentException(k_ExceptionMsg);
             }
         }
 

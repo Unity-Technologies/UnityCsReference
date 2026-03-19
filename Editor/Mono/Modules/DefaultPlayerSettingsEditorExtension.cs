@@ -179,6 +179,11 @@ namespace UnityEditor.Modules
             return false;
         }
 
+        public virtual bool ShouldShowIl2CppLTOSettings()
+        {
+            return false;
+        }
+
         public virtual bool SupportsStaticSplashScreenBackgroundColor()
         {
             return false;

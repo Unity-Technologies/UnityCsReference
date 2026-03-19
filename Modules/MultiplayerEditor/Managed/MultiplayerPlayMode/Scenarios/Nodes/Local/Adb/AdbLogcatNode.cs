@@ -33,14 +33,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_AdbService;
         }
 
-        public AdbLogcatNode(string name, IAdbService adbService = null) : base(name)
+        public AdbLogcatNode()
         {
-            m_AdbService = adbService;
-
             m_LogPath = new(this);
             m_DeviceName = new(this);
             m_DeviceProcessId = new(this);
             m_ProcessId = new(this);
+        }
+
+        public AdbLogcatNode(IAdbService adbService) : this()
+        {
+            m_AdbService = adbService;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancellationToken)

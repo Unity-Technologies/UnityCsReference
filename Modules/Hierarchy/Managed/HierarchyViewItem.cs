@@ -205,7 +205,7 @@ namespace Unity.Hierarchy
 
             // Setup object
             m_Node = node;
-            m_Handler = view.Source.GetNodeTypeHandler(in node);
+            m_Handler = view.ViewModel.GetNodeTypeHandler(in node);
             m_View = view;
 
             // Setup styling
@@ -227,7 +227,7 @@ namespace Unity.Hierarchy
             if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
                 m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
             else
-                m_Name.Text = m_View.Source.GetName(in m_Node);
+                m_Name.Text = m_View.Source.Exists(in m_Node) ? m_View.Source.GetName(in m_Node) : string.Empty;
 
             // Setup handler-specific or user-defined styling
             m_View.InvokeBindViewItem(this);

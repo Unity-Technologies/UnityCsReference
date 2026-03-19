@@ -30,7 +30,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return player.PlayerState == PlayerState.Launched;
         }
 
-        public CloneEditorRunNode(string name) : base(name)
+        public CloneEditorRunNode()
         {
             PlayerInstanceIndex = new(this);
             StreamLogs = new(this);
@@ -117,18 +117,32 @@ namespace Unity.Multiplayer.PlayMode.Editor
             });
             SetupListeningLogs(false);
 
-            // Grab the current Running Mode from current configurations, if any.
-            // TODO - Remove in favor of new Playmode API, where we can rebuild graphs
-            // directly from instance configurations (with new API) instead of a shallow reset.
-            var isFreeRunningPlayer = false;
+            // We need to access the keep alive value which can be changed during the execution of the instance,
+            // which means we cannot pass it as a parameter. We need a better way to access the current running
+            // instance so we can get an up-to-date keep alive value, but for now, as a workaround, we can find
+            // the instance by its name, just because we know the instance is named by the Virtual Player name.
+            var shouldDeactivate = true;
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config)
             {
                 var instance = config.Scenario.GetInstanceByName(player.Name);
-                isFreeRunningPlayer = instance != null && instance.IsFreeRunMode();
+                var userSettings = instance.Controller.GetUserSettings( new CloneEditorController.UserSettings{KeepAliveEnabled = CloneEditorController.k_DefaultKeepAliveEnabled });
+
+                if (userSettings.KeepAliveEnabled)
+                {
+                    DebugUtils.Trace($"Keep Alive enabled - skipping deactivation for '{player.Name}'");
+                    shouldDeactivate = false;
+                }
+
             }
 
             // Wait until Scenario Mode players (including main player) are out of playmode
-            while (EditorApplication.isPlaying && !isFreeRunningPlayer) { await Task.Delay(100); }
+            while (EditorApplication.isPlaying) { await Task.Delay(100); }
+
+            if (!shouldDeactivate)
+            {
+                return;
+            }
+
 
             var hasDeactivated = player.Deactivate(out _);
             DebugUtils.Trace(hasDeactivated

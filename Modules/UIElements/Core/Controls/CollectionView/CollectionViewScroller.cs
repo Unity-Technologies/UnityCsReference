@@ -285,6 +285,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         public void Adjust()
         {
             // Any factor smaller than 1f will enable the scroller (and its children)
+            SetEnabled(factor < 1f);
             slider.AdjustDragElement(factor);
         }
 

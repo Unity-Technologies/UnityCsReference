@@ -24,6 +24,9 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField, HideInInspector]
         protected string m_Title;
 
+        [NonSerialized]
+        protected string m_Subtitle;
+
         [SerializeField, HideInInspector]
         protected string m_Tooltip;
 
@@ -140,8 +143,16 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>Setter implementations must set the <see cref="ChangeHint.Data"/> change hints.</remarks>
         public virtual string Subtitle
         {
-            get => GetType().GetAttribute<LibraryItemAttribute>()?.Subtitle;
-            set => throw new NotImplementedException();
+            get => string.IsNullOrEmpty(m_Subtitle) ? GetType().GetAttribute<LibraryItemAttribute>()?.Subtitle : m_Subtitle;
+
+            set
+            {
+                if (m_Subtitle == value)
+                    return;
+
+                m_Subtitle = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>

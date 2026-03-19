@@ -739,6 +739,7 @@ namespace UnityEditor
             action.onComplete = onRenameComplete != null ? (id) => onRenameComplete(id) : null; // Wrap to obsolete int version
             StartNameEditingIfProjectWindowExists(EntityId.None, action, filename, icon, null);
         }
+
         public static void CreateAssetWithTextContent(string filename, string content, Texture2D icon = null, Action<EntityId> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();

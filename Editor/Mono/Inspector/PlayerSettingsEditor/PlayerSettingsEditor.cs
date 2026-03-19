@@ -214,6 +214,8 @@ namespace UnityEditor
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
             public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Optimize for runtime speed"), EditorGUIUtility.TrTextContent("Optimize for code size and build time") };
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
+            public static readonly GUIContent il2CppLTOMode = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "Link Time Optimization mode. Full LTO produces smaller and faster code but takes longer to link. Thin LTO is faster to link with nearly equivalent optimization.");
+            public static readonly GUIContent[] il2CppLTOModeOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Full"), EditorGUIUtility.TrTextContent("Thin") };
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR (Internal only)");
@@ -263,6 +265,7 @@ namespace UnityEditor
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
             public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
+            public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
@@ -481,6 +484,7 @@ namespace UnityEditor
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_Il2CppCodeGeneration;
         SerializedProperty m_Il2CppStacktraceInformation;
+        SerializedProperty m_Il2CppLTOMode;
         SerializedProperty m_ScriptingDefines;
         SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
@@ -661,6 +665,7 @@ namespace UnityEditor
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
             m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
             m_Il2CppStacktraceInformation   = FindPropertyAssert("il2cppStacktraceInformation");
+            m_Il2CppLTOMode                 = FindPropertyAssert("il2cppLTOMode");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
@@ -779,7 +784,7 @@ namespace UnityEditor
 
             FindPlayerSettingsAttributeSections();
         }
-        
+
         public static void DiscardPendingChangesForAllEditors(PlayerSettings target)
         {
             foreach (var editor in Resources.FindObjectsOfTypeAll<PlayerSettingsEditor>())
@@ -1878,9 +1883,22 @@ namespace UnityEditor
 
             deviceList.DoLayoutList();
 
+            // Entities Graphics does not support Web platforms, so no need to check
+            if (targetPlatform != BuildTarget.WebGL)
+            {
+                // When EG/GRD unification is done, EG will no longer support GLES
+                bool isEntitiesGraphicsPackageInstalled = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.entities.graphics");
+                bool deviceListContainsGLES = deviceList.list.Contains(GraphicsDeviceType.OpenGLES3);
+                if (isEntitiesGraphicsPackageInstalled && deviceListContainsGLES)
+                {
+                    EditorGUILayout.HelpBox(SettingsContent.glesWithEntitiesGraphicsDeprecationMessage.text,
+                        MessageType.Warning, true);
+                }
+            }
+
             bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
             if (containsDeprecatedAPIs)
-                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
+                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Warning, true);
 
             //@TODO: undo
 
@@ -3210,6 +3228,14 @@ namespace UnityEditor
                 return Il2CppStacktraceInformation.MethodOnly;
         }
 
+        private Il2CppLTOMode GetCurrentIl2CppLTOModeForTarget(NamedBuildTarget namedBuildTarget)
+        {
+            if (m_Il2CppLTOMode.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (Il2CppLTOMode)entry.FindPropertyRelative("second").intValue;
+            else
+                return Il2CppLTOMode.Full;
+        }
+
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
         {
             if (m_ManagedStrippingLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
@@ -3422,6 +3448,33 @@ namespace UnityEditor
                         }
                     }
                 }
+
+                // Il2Cpp LTO settings (e.g. thin LTO)
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                {
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_Il2CppLTOMode))
+                        {
+                            // Check if platform allows LTO configuration
+                            bool allowLtoConfigurationSelection = settingsExtension != null && settingsExtension.ShouldShowIl2CppLTOSettings();
+                            // Only allow if master is selected
+                            allowLtoConfigurationSelection &= GetCurrentIl2CppCompilerConfigurationForTarget(platform.namedBuildTarget) == Il2CppCompilerConfiguration.Master;
+
+                            // Only enable LTO selection if compiler selection is allowed
+                            using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection || !allowLtoConfigurationSelection))
+                            {
+                                Il2CppLTOMode currentMode = GetCurrentIl2CppLTOModeForTarget(platform.namedBuildTarget);
+                                var ltoModes = new[] { Il2CppLTOMode.Full, Il2CppLTOMode.Thin };
+                                var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, ltoModes, SettingsContent.il2CppLTOModeOptions);
+
+                                if (currentMode != newMode)
+                                    m_Il2CppLTOMode.SetMapValue(platform.namedBuildTarget.TargetName, (int)newMode);
+                            }
+                        }
+                    }
+                }
+
 
                 // Il2Cpp Stacktrace Configuration
                 using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP || platform.namedBuildTarget == NamedBuildTarget.WebGL))

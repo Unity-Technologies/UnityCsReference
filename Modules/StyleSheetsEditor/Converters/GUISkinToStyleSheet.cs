@@ -172,6 +172,9 @@ namespace UnityEditor.StyleSheets
             if (helper.options.exportDefaultValues || style.wordWrap != defaultStyle.wordWrap)
                 helper.AddProperty(ConverterUtils.k_WordWrap, style.wordWrap, "GUIStyle.wordWrap");
 
+            if (helper.options.exportDefaultValues || style.isSDF != defaultStyle.isSDF)
+                helper.AddProperty(ConverterUtils.k_IsSDF, style.isSDF, "GUIStyle.isSDF");
+
             // Add Normal state properties
             if (helper.options.exportDefaultValues || !GUISkinCompare.CompareTo(style.normal, defaultStyle.normal))
                 AddState(helper, style.normal, defaultStyle.normal);

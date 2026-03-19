@@ -9,6 +9,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
 using System.Runtime.CompilerServices;
+using Unity.Profiling.Editor.UI;
+using UnityEngine.Events;
 
 [assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile
@@ -243,7 +245,7 @@ namespace UnityEditor.Build.Profile
         {
             // Note: If the build profile is still being configured (package add info is present)
             // we do not want it to be buildable.
-            if (BuildProfileContext.instance.TryGetPackageAddInfo(this, out _))
+            if (BuildProfileContext.instance.TryGetInitializationInfo(this, out _))
                 return false;
             // Note: A platform build profile may have a non-null value even if its module is not installed.
             // This scenario is true for server platform profiles, which are the same type as the standalone one.
@@ -303,19 +305,7 @@ namespace UnityEditor.Build.Profile
             TryLoadGraphicsSettings();
             TryLoadQualitySettings();
 
-            if (BuildProfileContext.instance.TryGetPackageAddInfo(this, out var packageAddInfo))
-            {
-                packageAddInfo.OnPackageAddProgress = () =>
-                {
-                    OnPackageAddProgress?.Invoke();
-                };
-                packageAddInfo.OnPackageAddComplete = () =>
-                {
-                    NotifyBuildProfileExtensionOfCreation(packageAddInfo.preconfiguredSettingsVariant);
-                    OnPackageAddComplete?.Invoke();
-                };
-                packageAddInfo.RequestPackageInstallation();
-            }
+            BuildProfileContext.instance.UpdateBuildProfileInitialization(this);
 
             if (!EditorUserBuildSettings.isBuildProfileAvailable
                 || BuildProfileContext.activeProfile != this)

@@ -121,6 +121,13 @@ namespace UnityEditor.StyleSheets
                 diffs.Add(prefix + "wordWrap");
             }
 
+            if (self.isSDF != otherStyle.isSDF)
+            {
+                if (diffs == null)
+                    return false;
+                diffs.Add(prefix + "isSDF");
+            }
+
             if (self.clipping != otherStyle.clipping)
             {
                 if (diffs == null)

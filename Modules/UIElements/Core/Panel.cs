@@ -932,7 +932,7 @@ namespace UnityEngine.UIElements
 
         public virtual void Render() => panelRenderer.Render();
 
-        internal Func<AbstractGenericMenu> CreateMenuFunctor = () => new GenericDropdownMenu();
+        internal Func<AbstractGenericMenu> CreateMenuFunctor;
 
         internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
     }

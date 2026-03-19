@@ -145,7 +145,7 @@ namespace UnityEditor
         protected float m_PreviousFooterHeight = -1;
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
-        protected HashSet<int> m_DrawnSelection = new HashSet<int>();
+        protected HashSet<EntityId> m_DrawnSelection = new HashSet<EntityId>();
         readonly List<Type> m_EditorTargetTypes = new List<Type>();
 
         VisualElement m_DebugInfoPanel;
@@ -2210,7 +2210,7 @@ namespace UnityEditor
 
             Dictionary<EntityId, IEditorElement> mapping = null;
 
-            var selection = new HashSet<int>(Selection.entityIds.ToIntArray());
+            var selection = new HashSet<EntityId>(Selection.entityIds);
             if (m_DrawnSelection.SetEquals(selection))
             {
                 if (editorsElement.childCount > 0 && m_DrawnSelection.Count > 0) // do we already have a hierarchy

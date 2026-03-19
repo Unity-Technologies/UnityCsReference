@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.InternalBridge;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -33,6 +31,8 @@ namespace Unity.GraphToolkit.Editor
         bool m_LayoutDirty;
         bool m_RelayoutScheduled;
         float m_PreviousValidMinLabelWidth;
+        bool m_AreFieldsAttached;
+        float m_LabelFontSize = 12f;
 
         /// <summary>
         /// The number of fields displayed by the inspector.
@@ -90,19 +90,6 @@ namespace Unity.GraphToolkit.Editor
             BuildFields();
 
             parent.Add(m_Root);
-
-            m_Root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        }
-
-        void OnGeometryChanged(GeometryChangedEvent e)
-        {
-            if (!m_RelayoutScheduled)
-            {
-                m_RelayoutScheduled = true;
-                m_Root.schedule.Execute(UpdateLayout).ExecuteLater(0);
-            }
-
-            m_Root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         /// <inheritdoc />
@@ -136,12 +123,27 @@ namespace Unity.GraphToolkit.Editor
         {
             m_Fields.Clear();
             m_Root.Clear();
+            m_AreFieldsAttached = false;
 
             foreach (var field in GetFields())
             {
-                m_Fields.Add(field);
+                 // Register to the AttachToPanelEvent of each field to know when the fields are attached to the panel.
+                 // This is needed to know when we can compute the label width, which requires the fields to be attached to the panel.
+                 field.RegisterCallback<AttachToPanelEvent>(_ =>
+                 {
+                     m_AreFieldsAttached = true;
+                 });
 
-                m_Root.Add(field);
+                 // Get the font size from the field label.
+                 field.RegisterCallback<GeometryChangedEvent>(_ =>
+                 {
+                    if (field.LabelElement != null)
+                        m_LabelFontSize = field.LabelElement.resolvedStyle.fontSize;
+                 });
+
+                 m_Fields.Add(field);
+
+                 m_Root.Add(field);
             }
 
             if (!m_RelayoutScheduled)
@@ -149,7 +151,6 @@ namespace Unity.GraphToolkit.Editor
                 m_RelayoutScheduled = true;
                 m_Root.schedule.Execute(UpdateLayout).ExecuteLater(0);
             }
-
 
             m_Root.EnableInClassList(emptyUssClassName, m_Fields.Count == 0);
 
@@ -176,7 +177,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public void UpdateLayout()
         {
-            if (m_Root?.panel == null)
+            if (m_Root?.panel == null || !m_AreFieldsAttached)
                 return;
 
             m_RelayoutScheduled = false;
@@ -203,9 +204,9 @@ namespace Unity.GraphToolkit.Editor
                 if (label is { panel: not null } && isPropertyField)
                 {
                     var labelPosition = label.parent.ChangeCoordinatesTo(Root, label.localBound.position); //needed for sub ports label that are offset.
-                    if (!float.IsNaN(label.resolvedStyle.fontSize))
+                    if (!float.IsNaN(m_LabelFontSize))
                     {
-                        var width = label.MeasureTextSize(label.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined).x + labelPosition.x;
+                        var width = label.MeasureTextSize(label.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined, m_LabelFontSize).x + labelPosition.x;
                         if (width > minLabelWidth)
                             minLabelWidth = width;
                     }
@@ -250,7 +251,7 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 var labelPosition = label.parent.ChangeCoordinatesTo(Root, label.localBound.position); //needed for sub ports label that are offset.
-                label.style.minWidth = minLabelWidth + label.resolvedStyle.paddingLeft + label.resolvedStyle.paddingRight + label.resolvedStyle.marginLeft + label.resolvedStyle.marginRight - labelPosition.x;
+                label.style.minWidth = minLabelWidth - labelPosition.x;
             }
         }
 

@@ -138,6 +138,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_PlayerStateJson.Active = true;
             m_SystemDataStore.SavePlayerJson(m_PlayerStateJson.Index, m_PlayerStateJson);
 
+
             return error == ActivationError.None;
         }
 
@@ -177,6 +178,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_PlayerStateJson.Active = false;
             m_SystemDataStore.SavePlayerJson(m_PlayerStateJson.Index, m_PlayerStateJson);
+            
 
             return error == ActivationError.None;
         }

@@ -11,6 +11,7 @@ namespace UnityEngine
 {
     [NativeClass("UI::CanvasRenderer"),
      NativeHeader("Modules/UI/CanvasRenderer.h")]
+    [UIModuleHelpURL("class-CanvasRenderer")]
     public sealed class CanvasRenderer : Component
     {
         public extern bool hasPopInstruction { get; set; }

@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     /// <summary>
     /// Use this interface to control how an animation clip is authored in the AnimationWindow.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface IAnimationWindowClip : IEquatable<IAnimationWindowClip>
     {
         string name { get; }

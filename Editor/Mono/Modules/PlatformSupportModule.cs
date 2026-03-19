@@ -290,6 +290,8 @@ namespace UnityEditor.Modules
 
         bool SupportsForcedSrgbBlit();
 
+        bool ShouldShowIl2CppLTOSettings();
+
         bool SupportsStaticSplashScreenBackgroundColor();
 
         void AutoRotationSectionGUI();

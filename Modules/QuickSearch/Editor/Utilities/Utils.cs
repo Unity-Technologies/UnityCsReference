@@ -1009,6 +1009,24 @@ namespace UnityEditor.Search
             return false;
         }
 
+        // Simplified based on TryGetNumber(object, out double)
+        internal static bool TryGetULong(object value, out ulong number)
+        {
+            number = 0;
+            switch (value)
+            {
+                case null:
+                    return false;
+                case string s:
+                    return TryParse(s, out number);
+                case not null when value.GetType().IsPrimitive:
+                    number = Convert.ToUInt64(value);
+                    return true;
+                default:
+                    return TryParse(Convert.ToString(value), out number);
+            }
+        }
+
 
         internal static bool IsRunningTests()
         {

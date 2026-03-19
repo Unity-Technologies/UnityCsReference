@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
@@ -221,6 +222,13 @@ namespace UnityEditor.PackageManager.UI
             SelectPageStatic(pageId, searchText);
             if (!isWindowAlreadyVisible)
                 PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", pageId);
+        }
+
+        public static void OpenSamplesPage(IReadOnlyList<string> packagesToSelect)
+        {
+            ShowWindow();
+            instance.Focus();
+            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect);
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]

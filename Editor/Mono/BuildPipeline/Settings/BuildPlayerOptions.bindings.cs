@@ -68,11 +68,13 @@ namespace UnityEditor
         [NativeName("platform")]
         public BuildTarget target { get; set; }
         ///<summary>The Subtarget to build.</summary>
-        ///<remarks>For certain platforms, setting a non-zero value for this property can modify the build behaviour.
+        ///<remarks> If you only set <see cref="BuildPlayerOptions.target"/> and not <see cref="BuildPlayerOptions.subtarget"/>, this defaults to the platform's default subtarget.
+        ///
+ /// Setting this property persists the value in <see cref="EditorUserBuildSettings"/>, which overwrites the current Editor subtarget. This behavior also affects an active <see cref="BuildProfile"/>. When using a build profile, use <see cref="BuildPlayerWithProfileOptions"/> instead.
         ///
         ///Both this property and <see cref="BuildPlayerOptions.target" /> should remain unset to automatically use the target and subtarget as defined in the current Build Profile.
         ///
-        ///The valid values for this property correspond to target-specific enums, which are cast to ints.  Examples of these enums include <see cref="StandaloneBuildSubtarget" />, <see cref="MobileTextureSubtarget" />, <see cref="WebGLTextureSubtarget" /> and <see cref="XboxBuildSubtarget" />.
+        ///The valid values for this property correspond to target-specific enum types, which are stored as integers. Examples of these enum types include <see cref="StandaloneBuildSubtarget" />, <see cref="MobileTextureSubtarget" />, <see cref="WebGLTextureSubtarget" /> and <see cref="XboxBuildSubtarget" />.
         ///
         ///Usage examples:
         ///

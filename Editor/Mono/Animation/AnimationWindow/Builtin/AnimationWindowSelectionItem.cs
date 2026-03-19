@@ -5,10 +5,12 @@
 using System;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.AnimationWindowBuiltin
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     abstract class AnimationWindowSelectionItem : System.IEquatable<AnimationWindowSelectionItem>, IAnimationWindowSelectionItem
     {
         [SerializeField] protected AnimationWindow m_Window;

@@ -13,13 +13,6 @@ namespace UnityEngine
     public partial class GameObject
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property rigidbody has been deprecated. Use GetComponent<Rigidbody>() instead. (UnityUpgradable)", true)]
-        public Component rigidbody
-        {
-            get { throw new NotSupportedException("rigidbody property has been deprecated"); }
-        }
-        
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("GameObject.active is obsolete. Use GameObject.SetActive(), GameObject.activeSelf or GameObject.activeInHierarchy.", true)]
         public extern bool active
         {

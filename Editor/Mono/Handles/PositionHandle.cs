@@ -214,11 +214,11 @@ namespace UnityEditor
                     return position;
 
                 case EventType.Layout:
-                    if (Tools.vertexDragging && !s_FreeMoveMode)
+                    if (HandleUtility.vertexDragging && !s_FreeMoveMode)
                     {
                         s_FreeMoveMode = true;
                     }
-                    if (!currentlyDragging && !Tools.vertexDragging)
+                    if (!currentlyDragging && !HandleUtility.vertexDragging)
                     {
                         s_FreeMoveMode = evt.shift;
                     }

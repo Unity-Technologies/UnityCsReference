@@ -79,8 +79,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void SetupNodeEvents(ExecutionNode node)
         {
-            node.StatusRefreshed -= StatusRefreshed;
-            node.StatusRefreshed += StatusRefreshed;
+            node.StatusRefreshed -= OnStatusRefreshed;
+            node.StatusRefreshed += OnStatusRefreshed;
+        }
+
+        void OnStatusRefreshed()
+        {
+            StatusRefreshed?.Invoke();
         }
 
         public void OnBeforeSerialize()
@@ -127,19 +132,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return allNodes;
         }
 
+        internal int GetAllNodesCount()
+        {
+            int count = 0;
+            foreach (var stage in m_Stages)
+            {
+                count += stage.Nodes.Count;
+            }
+            return count;
+        }
+
         internal void AddNode(ExecutionNode node, ExecutionStage stage)
         {
             ValidateHasNotStarted();
-
-            // Ensure we don't have duplicate nodes
-            foreach (var s in m_Stages)
-            {
-                foreach (var existingNode in s.Nodes)
-                {
-                    if (existingNode.Name == node.Name)
-                        throw new ArgumentException($"Node with the same name already exists [{node.Name}].");
-                }
-            }
 
             // Sanity check against adding nodes with invalid states
             if (node.State != ExecutionState.Idle)

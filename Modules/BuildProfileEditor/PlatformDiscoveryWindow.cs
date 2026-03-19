@@ -115,7 +115,7 @@ namespace UnityEditor.Build.Profile
 
         static void AddSingleBuildProfile(BuildProfileCard card, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileModuleUtil.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
@@ -183,7 +183,7 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
             m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
-            m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
+            m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>(BuildProfileModuleUtil.platformRequirementWarningHelpboxName);
             m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
@@ -420,7 +420,8 @@ namespace UnityEditor.Build.Profile
             else
                 m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
 
-            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
+            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId)
+                && !string.IsNullOrEmpty(m_CardWarningHelpBox.text))
                 m_HelpBoxWrapper.Show();
             else
                 m_HelpBoxWrapper.Hide();

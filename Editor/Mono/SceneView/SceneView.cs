@@ -35,7 +35,8 @@ namespace UnityEditor
 {
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
     [NativeHeader("Editor/Src/SceneView/SceneViewBindings.h")]
-    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays
+    [EditorToolOwner(typeof(GameObjectToolContext))]
+    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays, ISupportsToolsOverlays
     {
         [Serializable]
         public struct CameraMode
@@ -656,7 +657,7 @@ namespace UnityEditor
         }
 
         internal bool usesInteractiveLightBakingData => this.debugDrawModesUseInteractiveLightBakingData && this.currentDrawModeMayUseInteractiveLightBakingData;
-
+        
         [SerializeField]
         // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
         internal AnimVector3 m_Position = new AnimVector3(kDefaultPivot);

@@ -16,6 +16,9 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
         }
 
+        public static AnimationClipSelectionItem Create(AnimationClip animationClip, Object sourceObject = null) =>
+            Create(null, animationClip, sourceObject);
+
         public static AnimationClipSelectionItem Create(AnimationWindow window, AnimationClip animationClip, Object sourceObject = null)
         {
             var selectionItem = new AnimationClipSelectionItem(window);

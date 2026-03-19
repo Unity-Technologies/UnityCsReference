@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor;
-using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -48,7 +46,7 @@ namespace UnityEditorInternal
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        bool rayDrag = EditorGUI.actionKey && evt.shift;
+                        bool rayDrag = EditorGUI.actionKey && evt.shift && HandleUtility.IsSceneViewGUILoop();
                         if (rayDrag)
                         {
                             if (HandleUtility.ignoreRaySnapObjects == null)
@@ -57,7 +55,7 @@ namespace UnityEditorInternal
                             if (HandleUtility.PlaceObject(evt.mousePosition, out Vector3 point, out Vector3 normal))
                             {
                                 float offset = 0;
-                                if (Tools.pivotMode != PivotMode.Pivot && !Tools.vertexDragging)
+                                if (Tools.pivotMode != PivotMode.Pivot && !HandleUtility.vertexDragging)
                                 {
                                     float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
                                     if (geomOffset != Mathf.Infinity)
@@ -83,7 +81,7 @@ namespace UnityEditorInternal
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));
 
-                            if (Tools.vertexDragging)
+                            if (HandleUtility.vertexDragging)
                             {
                                 if (HandleUtility.ignoreRaySnapObjects == null)
                                     Handles.SetupIgnoreRaySnapObjects();

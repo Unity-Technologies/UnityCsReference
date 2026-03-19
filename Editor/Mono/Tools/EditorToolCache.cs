@@ -25,6 +25,7 @@ namespace UnityEditor.EditorTools
         public Type editor { get; private set; }
         public Type variantGroup { get; private set; }
         public Type group { get; private set; }
+        public Type targetOwner { get; private set; }
         public int priority { get; private set; }
         public int variantPriority { get; private set; }
         public bool supportsPersistentTargets  { get; private set; }
@@ -42,6 +43,11 @@ namespace UnityEditor.EditorTools
             priority = attrib?.toolPriority ?? ToolAttribute.defaultPriority;
             variantPriority = attrib?.variantPriority ?? ToolAttribute.defaultPriority;
             supportsPersistentTargets = attrib?.allowPersistentTargets ?? false;
+            
+            targetOwner = null;
+            if (attrib != null && attrib is EditorToolContextAttribute contextAttribute)
+                targetOwner = contextAttribute.targetToolOwner;
+            
             m_TargetContext = m_TargetBehaviour = m_EditorType = m_VariantGroup = m_Group = null;
         }
 
@@ -176,17 +182,20 @@ namespace UnityEditor.EditorTools
     class EditorToolCache
     {
         Type m_AttributeType;
+        Type m_OwnerType;
+        
         // Cache of the available tools as defined by EditorToolAttribute
         EditorTypeAssociation[] s_AvailableEditorTypeAssociations = null;
         // Type association data for all loaded tools, regardless of whether they are registered with an EditorToolAttribute.
         Dictionary<Type, EditorTypeAssociation> m_ToolMetaData = new Dictionary<Type, EditorTypeAssociation>();
         Dictionary<Type, List<EditorTypeAssociation>> s_EditorTargetCache = new Dictionary<Type, List<EditorTypeAssociation>>();
 
-        public EditorToolCache(Type attributeType)
+        public EditorToolCache(Type attributeType, Type ownerType)
         {
             if (!typeof(ToolAttribute).IsAssignableFrom(attributeType))
                 throw new ArgumentException("Attribute type must inherit ToolAttribute.", "attributeType");
             m_AttributeType = attributeType;
+            m_OwnerType = ownerType;
         }
 
         public int Count => availableEditorTypeAssociations.Length;
@@ -197,17 +206,36 @@ namespace UnityEditor.EditorTools
             {
                 if (s_AvailableEditorTypeAssociations == null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    Type[] editorTools = TypeCache.GetTypesWithAttribute(m_AttributeType)
-#pragma warning restore UA2001
-                        .Where(x => !x.IsAbstract)
-                        .ToArray();
-                    int len = editorTools.Length;
+                    var editorToolTypes = new List<Type>(TypeCache.GetTypesWithAttribute(m_AttributeType));
+                    var isContextCache = typeof(EditorToolContextAttribute).IsAssignableFrom(m_AttributeType);
+                    for (int i = editorToolTypes.Count - 1; i >= 0; --i)
+                    {
+                        // Remove abstract types
+                        var toolOrContextType = editorToolTypes[i];
+                        if (toolOrContextType.IsAbstract)
+                        {
+                            editorToolTypes.RemoveAt(i);
+                            continue;
+                        }
+
+                        // Remove contexts that have targetOwner metadata that is incompatible with cache's tool owner
+                        if (isContextCache)
+                        {
+                            EditorToolContextAttribute contextAttrib = default;
+                            var attrs = toolOrContextType.GetCustomAttributes(typeof(EditorToolContextAttribute), false);
+                            contextAttrib = attrs.Length > 0 ? (EditorToolContextAttribute)attrs[0] : null;
+
+                            if (contextAttrib != null && 
+                                !EditorToolUtility.IsContextTargetOwnerMatchingGivenOwner(contextAttrib.targetToolOwner, m_OwnerType))
+                                editorToolTypes.RemoveAt(i);
+                        }
+                    }
+                    
+                    int len = editorToolTypes.Count;
                     s_AvailableEditorTypeAssociations = new EditorTypeAssociation[len];
 
                     for (int i = 0; i < len; i++)
-                        s_AvailableEditorTypeAssociations[i] = new EditorTypeAssociation(editorTools[i], m_AttributeType);
-
+                        s_AvailableEditorTypeAssociations[i] = new EditorTypeAssociation(editorToolTypes[i], m_AttributeType);
                 }
 
                 return s_AvailableEditorTypeAssociations;
@@ -246,10 +274,19 @@ namespace UnityEditor.EditorTools
 
             for (int i = 0, c = availableEditorTypeAssociations.Length; i < c; i++)
             {
-                if (availableEditorTypeAssociations[i].targetBehaviour != null
-                    && (availableEditorTypeAssociations[i].targetBehaviour.IsAssignableFrom(target)
-                        || target.IsAssignableFrom(availableEditorTypeAssociations[i].targetBehaviour)))
-                    res.Add(availableEditorTypeAssociations[i]);
+                var typeAssoc = availableEditorTypeAssociations[i];
+                
+                // If context is exclusive to specific tool owner, skip it if owner doesn't match
+                if (typeof(EditorToolContext).IsAssignableFrom(typeAssoc.editor))
+                {
+                    var contextTargetOwner = typeAssoc.targetOwner;
+                    if (!EditorToolUtility.IsContextTargetOwnerMatchingGivenOwner(contextTargetOwner, m_OwnerType))
+                        continue;
+                }
+
+                if (typeAssoc.targetBehaviour != null
+                    && (typeAssoc.targetBehaviour.IsAssignableFrom(target) || target.IsAssignableFrom(typeAssoc.targetBehaviour)))
+                    res.Add(typeAssoc);
             }
 
             return res;
@@ -299,7 +336,12 @@ namespace UnityEditor.EditorTools
         public void InstantiateEditors(EditorToolContext ctx, List<ComponentEditor> editors)
         {
             editors.Clear();
-
+            
+            // Editors are only instantiated either for component tools or contexts that target components.
+            // These are currently only supported for Scene View.
+            if (m_OwnerType != typeof(SceneView))
+                return;
+            
             // If the shared tracker is locked, use fallback tracker instance so that the active selection is always
             // represented. Addresses case where a single locked inspector is open.
             var shared = ActiveEditorTracker.sharedTracker;

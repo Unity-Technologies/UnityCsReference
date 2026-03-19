@@ -145,13 +145,20 @@ namespace UnityEditor.Search
         {
             this.name = name;
             m_BuilderViewFlags = builderViewFlags;
-            m_SearchPlaceholder = new Label($"Search {viewState.title}");
+
+            m_SearchPlaceholder = new Label($"Search {viewState.title}")
+            {
+                style = { unityTextGenerator = TextGeneratorType.Standard }
+            };
             m_SearchPlaceholder.AddToClassList(searchFieldPlaceholderClassName);
             m_SearchPlaceholder.style.paddingLeft = 4f;
             m_SearchPlaceholder.focusable = false;
             m_SearchPlaceholder.pickingMode = PickingMode.Ignore;
 
-            m_PressTabPlaceholder = new Label(pressToFilterTooltip);
+            m_PressTabPlaceholder = new Label(pressToFilterTooltip)
+            {
+                style = { unityTextGenerator = TextGeneratorType.Standard }
+            };
             m_PressTabPlaceholder.AddToClassList(searchFieldPlaceholderClassName);
             m_PressTabPlaceholder.style.paddingBottom = 3f;
             m_PressTabPlaceholder.focusable = false;
@@ -187,6 +194,14 @@ namespace UnityEditor.Search
 #pragma warning restore UA2001
             textField.tripleClickSelectsLine = true;
             textField.selectAllOnFocus = false;
+
+            // The advanced text generator (ATG) requires elements to be in a panel for text
+            // measurement. Set the standard generator directly on the TextElement to
+            // avoid errors when text is measured before panel attachment. Inline styles update computedStyle immediately even
+            // off-panel, but style inheritance does not cascade without a panel.
+            var searchTextElement = searchField.Q<TextElement>();
+            if (searchTextElement != null)
+                searchTextElement.style.unityTextGenerator = TextGeneratorType.Standard;
 
             m_CancelButton = new Button(() => { }) { name = "query-builder-unity-cancel" };
             m_CancelButton.AddToClassList(SearchFieldBase<TextField, string>.cancelButtonUssClassName);

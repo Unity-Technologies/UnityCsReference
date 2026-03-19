@@ -150,7 +150,10 @@ namespace UnityEditor.Toolbars
         {
             var wasOverriden = ModeService.HasExecuteHandler("gui_playbar");
             if (wasOverriden != m_HasImguiOverride)
+            {
+                m_HasImguiOverride = wasOverriden;
                 MainToolbar.Refresh(k_ElementId);
+            }
         }
 
         void OnPlayButtonValueChanged(bool value)

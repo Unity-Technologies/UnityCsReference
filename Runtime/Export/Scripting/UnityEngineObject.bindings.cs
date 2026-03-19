@@ -960,6 +960,11 @@ namespace UnityEngine
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
         internal extern static Object FindObjectFromInstanceID(EntityId instanceID);
 
+        [VisibleToOtherModules]
+        [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceIDThreadSafe", IsThreadSafe = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern static Object FindObjectFromInstanceIDThreadSafe(EntityId instanceID);
+
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
         private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType, out bool isMonoBehaviour);
 

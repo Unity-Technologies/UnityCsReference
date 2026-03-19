@@ -8,7 +8,7 @@ namespace Unity.Scripting.LifecycleManagement.CodeGen
     /// It is public to allow the code generator to be able to create subclassed of it in user code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal static class LifecycleMethodRegistration
+    public static class LifecycleMethodRegistration
     {
         public static void Register(Type lifecycleAttributeType, Assembly assembly, string methodFullName, Action callback)
         {

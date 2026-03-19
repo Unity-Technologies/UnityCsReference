@@ -31,7 +31,19 @@ namespace Unity.Hierarchy
         public static HierarchyNodeTypeHandler GetNodeTypeHandler(this Hierarchy hierarchy, in HierarchyNode node)
         {
             var handlerBase = hierarchy.GetNodeTypeHandlerBase(in node);
-            return handlerBase is HierarchyNodeTypeHandler handler ? handler : null;
+            return handlerBase as HierarchyNodeTypeHandler;
+        }
+
+        /// <summary>
+        /// Get the node type handler instance for the specified node from this hierarchy.
+        /// </summary>
+        /// <param name="hierarchyViewModel">The hierarchy view model.</param>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The hierarchy node the handler.</returns>
+        public static HierarchyNodeTypeHandler GetNodeTypeHandler(this HierarchyViewModel hierarchyViewModel, in HierarchyNode node)
+        {
+            var handlerBase = hierarchyViewModel.GetNodeTypeHandlerBase(in node);
+            return handlerBase as HierarchyNodeTypeHandler;
         }
 
         /// <summary>

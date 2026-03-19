@@ -223,7 +223,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 // Filter out transient panels (Shader graph preview Manager for example)
-                if (overlayPanel is RuntimePanel runtimePanel && runtimePanel.panelSettings != null && runtimePanel.panelSettings.isTransient)
+                if (overlayPanel is IRuntimePanel runtimePanel && runtimePanel.panelSettings != null && runtimePanel.panelSettings.isTransient)
                 {
                     continue;
                 }

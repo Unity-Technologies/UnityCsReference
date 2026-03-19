@@ -52,7 +52,7 @@ namespace UnityEditor
         internal int  m_ClassID;
 
         [NativeName("monoScriptInstanceID")]
-        internal int  m_ScriptInstanceID;
+        internal EntityId  m_ScriptInstanceID;
 
         public bool  isPPtrCurve { get { return m_isPPtrCurve != 0; } }
         public bool  isDiscreteCurve { get { return m_isDiscreteCurve != 0; } }
@@ -95,7 +95,7 @@ namespace UnityEditor
         public Type type
         {
             get { return m_type; }
-            set { m_type = value; m_ClassID = 0; m_ScriptInstanceID = 0; }
+            set { m_type = value; m_ClassID = 0; m_ScriptInstanceID = EntityId.None; }
         }
 
         static private void BaseCurve(string inPath, System.Type inType, string inPropertyName, out EditorCurveBinding binding)

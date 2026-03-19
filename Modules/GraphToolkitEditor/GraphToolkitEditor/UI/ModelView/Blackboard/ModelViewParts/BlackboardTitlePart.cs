@@ -30,6 +30,11 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string subTitleUssClassName = ussClassName.WithUssElement("subtitle");
 
         /// <summary>
+        /// The name of the title label element.
+        /// </summary>
+        public static readonly string titleLabelName = "title-label";
+
+        /// <summary>
         /// The default title for the blackboard.
         /// </summary>
         protected static readonly string k_DefaultTitle = "Blackboard";
@@ -74,7 +79,7 @@ namespace Unity.GraphToolkit.Editor
             m_Root = new VisualElement { name = PartName };
             m_Root.AddToClassList(ussClassName);
 
-            m_TitleLabel = new Label { name = "title-label" };
+            m_TitleLabel = new Label { name = titleLabelName };
             m_TitleLabel.AddToClassList(titleUssClassName);
             m_SubTitleLabel = new Label { name = "sub-title-label" };
             m_SubTitleLabel.AddToClassList(subTitleUssClassName);

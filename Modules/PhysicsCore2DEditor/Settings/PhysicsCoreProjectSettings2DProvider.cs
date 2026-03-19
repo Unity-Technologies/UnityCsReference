@@ -13,7 +13,7 @@ namespace Unity.U2D.Physics.Editor
     {
         static internal class ProjectSettingPath
         {
-            public const string PhysicsCoreModule = "Project/PhysicsCore2D";
+            public const string PhysicsCoreModule = "Project/Physics Core 2D";
         }
 
         static internal class AssetPath
@@ -51,7 +51,7 @@ namespace Unity.U2D.Physics.Editor
         {
             var provider = new SettingsProvider(ProjectSettingPath.PhysicsCoreModule, SettingsScope.Project)
             {
-                label = "PhysicsCore 2D",
+                label = "Physics Core 2D",
                 keywords = SettingsProvider.GetSearchKeywordsFromPath(AssetPath.PhysicsCoreSettingsAsset),
                 activateHandler = (searchContext, root) =>
                 {
@@ -77,14 +77,18 @@ namespace Unity.U2D.Physics.Editor
                     {
                         var coreProjectSettingsField = new ObjectField
                         {
-                            label = "PhysicsCore Settings",
-                            tooltip = "The active PhysicsCore Settings 2D.",
+                            label = "Physics Core Settings",
+                            tooltip = "The active Physics Core Settings 2D.",
                             objectType = typeof(PhysicsCoreSettings2D),
                             bindingPath = "m_PhysicsCoreSettings"
                         };
 
-                        coreProjectSettingsField.AddToClassList(InspectorElement.ussClassName);
+                        // Increase the margin.
+                        coreProjectSettingsField.style.marginLeft = 10;
+                        coreProjectSettingsField.style.marginRight = 10;
 
+                        // Show as inspector class.
+                        coreProjectSettingsField.AddToClassList(InspectorElement.ussClassName);
                         content.Add(coreProjectSettingsField);
 
                         // Ensure we read the change immediately.

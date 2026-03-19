@@ -21,7 +21,7 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy.Editor
 {
     /// <summary>
-    /// The hierarchy node type handler for GameObjects.
+    /// Provides a hierarchy node type handler for <see cref="GameObject"/> instances in a <see cref="HierarchyView"/>.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchyGameObjectHandler.h")]
@@ -81,47 +81,47 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Gets or creates the hierarchy node corresponding to the given game object entity id.
+        /// Gets or creates the <see cref="HierarchyNode"/> that corresponds to the specified <see cref="GameObject"/> <see cref="EntityId"/>.
         /// </summary>
         /// <remarks>
-        /// If the node hasn't been created yet, returns the future node that will be used for the game object.
-        /// An update of the hierarchy will be necessary if you intend to query the hieararchy about this node.
+        /// If the node doesn't exist, this method returns a node that represents the <see cref="GameObject"/> but that doesn't yet exist in the hierarchy.
+        /// To query the <see cref="Hierarchy"/> about this node, update the hierarchy first.
         /// </remarks>
-        /// <param name="entityId">The game object entity id.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <param name="entityId">The <see cref="EntityId"/> of the <see cref="GameObject"/> to get the <see cref="HierarchyNode"/> for.</param>
+        /// <returns>The <see cref="HierarchyNode"/> that corresponds to the specified <see cref="EntityId"/>.</returns>
         public HierarchyNode GetOrCreateNode(EntityId entityId) => GetOrCreateNodeFromEntityId(entityId);
 
         /// <summary>
-        /// Gets or creates the hierarchy node corresponding to the given game object.
+        /// Gets or creates the <see cref="HierarchyNode"/> that corresponds to the specified <see cref="GameObject"/>.
         /// </summary>
         /// <remarks>
-        /// If the node hasn't been created yet, returns the future node that will be used for the game object.
-        /// An update of the hierarchy will be necessary if you intend to query the hieararchy about this node.
+        /// If the node doesn't exist, this method returns a node that represents the <see cref="GameObject"/> but that doesn't yet exist in the Hierarchy. 
+        /// To query the <see cref="Hierarchy"/> about this node, update the hierarchy first.
         /// </remarks>
-        /// <param name="gameObject">The game object.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <param name="gameObject">The <see cref="GameObject"/> to get the <see cref="HierarchyNode"/> for.</param>
+        /// <returns>The <see cref="HierarchyNode"/> that corresponds to the specified <see cref="GameObject"/>.</returns>
         public HierarchyNode GetOrCreateNode(GameObject gameObject) => gameObject != null ? GetOrCreateNodeFromEntityId(gameObject.GetEntityId()) : HierarchyNode.Null;
 
         /// <summary>
-        /// Gets the game object entity id corresponding to the given hierarchy node.
+        /// Gets the <see cref="EntityId"/> of the <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <returns>The entity id.</returns>
+        /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="GameObject"/> <see cref="EntityId"/> for.</param>
+        /// <returns>The <see cref="EntityId"/> of the <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern EntityId GetEntityId(in HierarchyNode node);
 
         /// <summary>
-        /// Gets the game object corresponding to the given hierarchy node.
+        /// Gets the <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.
         /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <returns>A game object.</returns>
+        /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="GameObject"/> for.</param>
+        /// <returns>The <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern GameObject GetGameObject(in HierarchyNode node);
 
         /// <summary>
-        /// Retrieves the hierarchy node type for this hierarchy node type handler.
+        /// Gets the <see cref="HierarchyNodeType"/> for this <see cref="HierarchyGameObjectHandler"/>.
         /// </summary>
-        /// <returns>The type of the hierarchy node.</returns>
+        /// <returns>The <see cref="HierarchyNodeType"/> for <see cref="GameObject"/> nodes.</returns>
         public new HierarchyNodeType GetNodeType()
         {
             if (m_NodeType == HierarchyNodeType.Null)
@@ -226,7 +226,7 @@ namespace Unity.Hierarchy.Editor
 
         string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
         {
-            return Hierarchy.GetName(in node);
+            return Hierarchy.Exists(in node) ? Hierarchy.GetName(in node) : node.ToString();
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
@@ -276,6 +276,9 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
         {
+            if (!Hierarchy.Exists(in item.Node))
+                return;
+
             // By default only show tooltip when filtering
             if (!isFiltering)
                 return;
@@ -294,7 +297,7 @@ namespace Unity.Hierarchy.Editor
             var gameObjectNodeType = GetNodeType();
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
             var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var parentNodeType = Hierarchy.GetNodeType(in parent);
+            var parentNodeType = view.ViewModel.GetNodeType(in parent);
             return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
         }
 
@@ -302,7 +305,7 @@ namespace Unity.Hierarchy.Editor
         {
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
             var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var childNodeType = Hierarchy.GetNodeType(in child);
+            var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
         }
 
@@ -314,7 +317,7 @@ namespace Unity.Hierarchy.Editor
             for (var i = 0; i < nodeSpan.Length; ++i)
             {
                 var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
+                if (node == HierarchyNode.Null || data.View.ViewModel.GetNodeTypeHandler(in node) != this)
                     continue;
                 var go = GetGameObject(in node);
                 if (go == null)
@@ -407,7 +410,7 @@ namespace Unity.Hierarchy.Editor
             var customParentNode = GetOrCreateNode(customParent.gameObject);
 
             // In Prefab stage, CustomParentForNewGameObjects's ancestors cannot be cut, copied nor duplicated.
-            return customParentNode != HierarchyNode.Null && !view.IsSelectedOrAnyAncestorSelected(Hierarchy.GetParent(in customParentNode));
+            return customParentNode != HierarchyNode.Null && !view.IsSelectedOrAnyAncestorSelected(view.ViewModel.GetParent(in customParentNode));
         }
 
         bool IsSelectPrefabRootAvailable(HierarchyView view)
@@ -699,14 +702,14 @@ namespace Unity.Hierarchy.Editor
 
             var currentTarget = target;
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var targetNodeType = Hierarchy.GetNodeType(in target);
+            var targetNodeType = view.ViewModel.GetNodeType(in target);
 
             // When dropping above a scene, we need to update the target and options for the drop handler to work properly.
             if (target != HierarchyNode.Null && option.HasFlag(HierarchyDropFlags.DropAbove) && targetNodeType == sceneNodeType)
             {
                 --targetIndex;
                 currentTarget = targetIndex >= 0 ? view.ViewModel[targetIndex] : HierarchyNode.Null;
-                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : Hierarchy.GetNodeType(in currentTarget);
+                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : view.ViewModel.GetNodeType(in currentTarget);
 
                 option &= ~HierarchyDropFlags.DropAbove;
 
@@ -722,7 +725,7 @@ namespace Unity.Hierarchy.Editor
                 option |= HierarchyDropFlags.DropAbove;
                 ++targetIndex;
                 currentTarget = targetIndex >= 0 ? view.ViewModel[targetIndex] : HierarchyNode.Null;
-                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : Hierarchy.GetNodeType(in currentTarget);
+                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : view.ViewModel.GetNodeType(in currentTarget);
             }
 
             var entityId = GetDropTargetEntityId(in currentTarget, in targetNodeType, option);
@@ -797,6 +800,9 @@ namespace Unity.Hierarchy.Editor
 
         EntityId GetDropTargetEntityId(in HierarchyNode dropTarget, in HierarchyNodeType dropTargetNodeType, HierarchyDropFlags dropOption)
         {
+            if (!Hierarchy.Exists(dropTarget))
+                return EntityId.None;
+
             if (dropTargetNodeType == Hierarchy.GetNodeType<HierarchySceneHandler>())
             {
                 var sceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySceneHandler>();

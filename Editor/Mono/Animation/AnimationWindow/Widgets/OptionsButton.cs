@@ -176,7 +176,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         void CreateDefaultActions()
         {
             CreateTimeFormatSubMenuActions();
-            CreateToolOptionsSubMenuActions();
             CreateFrameRateSubMenuActions();
             CreateGeneralOptionsSubMenuActions();
         }
@@ -214,19 +213,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                     return m_GetTimeFormatFunc?.Invoke() == TimeFormat.Seconds ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
                 }
             );
-        }
-
-        void CreateToolOptionsSubMenuActions()
-        {
-            AddAction(
-                L10n.Tr("Ripple"),
-                k_ToolOptionsGroupName,
-                _ => state.rippleTime = !state.rippleTime,
-                _ =>
-                {
-                    if (!Valid) return DropdownMenuAction.Status.Disabled;
-                    return state.rippleTime ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                });
         }
 
         void CreateFrameRateSubMenuActions()

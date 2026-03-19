@@ -26,7 +26,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return player.PlayerState == PlayerState.Launched;
         }
 
-        public CloneEditorDeployNode(string name) : base(name)
+        public CloneEditorDeployNode()
         {
             PlayerInstanceIndex = new(this);
 

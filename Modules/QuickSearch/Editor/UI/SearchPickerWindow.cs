@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Search;
@@ -30,8 +29,9 @@ namespace UnityEditor.Search
             if (HasSessionSettings())
                 visibilityFlags = (SearchFlags)SearchSettings.GetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(SearchFlags.WantsMore | SearchFlags.Packages));
             m_ViewState.context.options |= visibilityFlags;
+
             if (HasSessionSettings())
-                m_ViewState.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, m_ViewState.itemSize);
+                m_ViewState.itemIconSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, m_ViewState.itemIconSize);
             if (HasSessionSettings() && SearchSettings.GetScopeValue(k_PickerInspector, m_ContextHash, 0) != 0)
             {
                 m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;

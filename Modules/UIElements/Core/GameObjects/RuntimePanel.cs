@@ -22,6 +22,9 @@ namespace UnityEngine.UIElements
         /// Event System selection.
         /// </summary>
         GameObject selectableGameObject { get; set; }
+
+        internal bool drawsInCameras { get; }
+        internal bool isFlat { get; }
     }
 
     internal class RuntimePanel : BaseRuntimePanel, IRuntimePanel
@@ -30,6 +33,9 @@ namespace UnityEngine.UIElements
 
         private readonly PanelSettings m_PanelSettings;
         public PanelSettings panelSettings => m_PanelSettings;
+
+        bool IRuntimePanel.drawsInCameras => base.drawsInCameras;
+        bool IRuntimePanel.isFlat => base.isFlat;
 
         private static readonly List<IPanelComponent> s_EmptyPanelComponentList = new();
 
@@ -44,6 +50,7 @@ namespace UnityEngine.UIElements
         private RuntimePanel(ScriptableObject ownerObject)
             : base(ownerObject, s_EventDispatcher)
         {
+            CreateMenuFunctor = () => new GenericDropdownMenu();
             focusController = new FocusController(new NavigateFocusRing(visualTree));
             m_PanelSettings  = ownerObject as PanelSettings;
             name = m_PanelSettings != null ? m_PanelSettings.name : "RuntimePanel";

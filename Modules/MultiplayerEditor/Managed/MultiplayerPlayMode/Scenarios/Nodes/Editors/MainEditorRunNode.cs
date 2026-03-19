@@ -12,8 +12,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     class MainEditorRunNode : ExecutionNode
     {
-        public MainEditorRunNode(string name) : base(name) { }
-
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested && EditorApplication.isPlayingOrWillChangePlaymode)

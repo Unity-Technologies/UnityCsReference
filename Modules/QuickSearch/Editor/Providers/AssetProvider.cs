@@ -932,7 +932,7 @@ namespace UnityEditor.Search.Providers
                         }
                         else if (paths.Length > 1)
                         {
-                            var pathsStr = string.Join(",", paths);
+                            var pathsStr = string.Join("\n", paths);
                             EditorGUIUtility.systemCopyBuffer = pathsStr;
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, pathsStr);
                         }

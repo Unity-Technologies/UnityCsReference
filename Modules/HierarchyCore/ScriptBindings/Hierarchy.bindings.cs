@@ -225,8 +225,16 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node exists, <see langword="false"/> otherwise.</returns>
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool Exists(in HierarchyNode node);
+
+        /// <summary>
+        /// Determines whether multiple nodes exist or not.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes to check.</param>
+        /// <param name="exists">The span to fill with existence results. Must have the same length as <paramref name="nodes"/>.</param>
+        /// <returns><see langword="true"/> if all nodes exist, <see langword="false"/> otherwise.</returns>
+        internal bool Exists(ReadOnlySpan<HierarchyNode> nodes, Span<bool> exists) => ExistsSpan(nodes, exists);
 
         /// <summary>
         /// Gets the next sibling of a node.
@@ -591,6 +599,9 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyBindings::ClearProperty", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         internal extern void ClearProperty(in HierarchyPropertyId property, in HierarchyNode node);
+
+        [FreeFunction("HierarchyBindings::ExistsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool ExistsSpan(ReadOnlySpan<HierarchyNode> nodes, Span<bool> exists);
 
         #region Called from native
         [RequiredByNativeCode]

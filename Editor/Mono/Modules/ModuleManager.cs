@@ -525,6 +525,18 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        internal static void RemoveDerivedBuildTargetExtension(GUID platformGuid)
+        {
+            if (!platformSupportModulesByGuid.TryGetValue(platformGuid, out var module))
+                return;
+
+            if (module is not IDerivedBuildTargetProvider derivedBuildTargetProvider)
+                return;
+
+            derivedBuildTargetProvider.RemoveDerivedBuildTargetExtension(platformGuid);
+            platformSupportModulesByGuid.Remove(platformGuid);
+        }
+
         internal static string GetTargetStringFromBuildTarget(BuildTarget target)
         {
             return BuildTargetDiscovery.GetModuleNameForBuildTarget(target);

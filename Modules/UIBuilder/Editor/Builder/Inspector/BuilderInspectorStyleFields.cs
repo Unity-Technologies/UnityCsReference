@@ -867,7 +867,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
-                m_Inspector.UpdateAdvancedTextHelpBox();
+                m_Inspector.UpdateTextGeneratorHelpBoxes();
                 return true;
             }
 
@@ -1358,7 +1358,7 @@ namespace Unity.UI.Builder
                 }
 
                 if (styleName is "-unity-text-generator")
-                    m_Inspector.UpdateAdvancedTextHelpBox();
+                    m_Inspector.UpdateTextGeneratorHelpBoxes();
 
                 return true;
             }
@@ -2940,7 +2940,7 @@ namespace Unity.UI.Builder
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
             if (styleName is "-unity-text-generator" or "-unity-text-auto-size")
-                m_Inspector.UpdateAdvancedTextHelpBox();
+                m_Inspector.UpdateTextGeneratorHelpBoxes();
 
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }

@@ -23,6 +23,9 @@ namespace UnityEditor.UIElements
                 UxmlSerializedDataRegistry.RegisterUxmlSerializedDataTypes();
                 UxmlSerializedDataRegistry.RegisterCustomDependencies();
                 UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
+
+                if (UIToolkitProjectSettings.enablePanelRendererAnimation)
+                    UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
             }
             catch (Exception ex)
             {

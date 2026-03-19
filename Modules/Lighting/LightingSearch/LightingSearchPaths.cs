@@ -15,6 +15,8 @@ namespace UnityEditor.Lighting.LightingSearch
         Baked
     }
 
+    // Simplified light type for the Lighting Search table. Maps Unity's detailed shapes
+    // (Spot, Pyramid, Box, Rectangle, Disc, Tube) to four display categories.
     internal enum SimplifiedLightType
     {
         Spot = LightType.Spot,
@@ -23,15 +25,22 @@ namespace UnityEditor.Lighting.LightingSearch
         Area = LightType.Rectangle
     }
 
-    static class LightingSearchSelectors
+    static class LightingSearchProviders
     {
-        internal const string k_SceneProvider = BuiltInSceneObjectsProvider.type;
-        internal const string k_AssetProvider = AssetProvider.type;
+        internal const string k_Scene = BuiltInSceneObjectsProvider.type;
+        internal const string k_Asset = AssetProvider.type;
+        internal const string k_Lightmap = LightmapSearchProvider.ProviderId;
+    }
+
+    static class LightingSearchPaths
+    {
+        internal const string k_SceneProvider = "scene";
+        internal const string k_AssetProvider = "asset";
         internal const string k_ContributeGIFilter = "ContributeGI";
         internal const string k_ReceiveGIFilter = "ReceiveGI";
         internal const string k_ContributeGIPath = k_MeshRendererPath + "ContributeGI";
         internal const string k_ReceiveGIPath = k_MeshRendererPath + "ReceiveGI";
-        internal const string k_MeshRendererPath = "Renderer/MeshRenderer/";
+        internal const string k_MeshRendererPath = "MeshRenderer/";
         internal const string k_MaterialPath = "Material/";
         internal const string k_MaterialGlobalIlluminationPath = k_MaterialPath + "MaterialGlobalIllumination";
         internal const string k_EmissionColorPath = k_MaterialPath + "EmissionColor";
@@ -43,8 +52,11 @@ namespace UnityEditor.Lighting.LightingSearch
         internal const string k_ReflectionProbeUsageFilter = "ReflectionProbeUsage";
         internal const string k_ReflectionProbeUsagePath = k_MeshRendererPath + "ReflectionProbeUsage";
         internal const string k_ReflectionProbePath = "ReflectionProbe/";
+        internal const string k_ReflectionProbeModePath = k_ReflectionProbePath + "Mode";
         internal const string k_ReflectionProbeResolutionPath = k_ReflectionProbePath + "Resolution";
         internal const string k_LightPath = "Light/";
         internal const string k_LightTypePath = k_LightPath + "Type";
+        internal const string k_LightModePath = k_LightPath + "Mode";
+        internal const string k_LightColorTemperaturePath = k_LightPath + "ColorTemperature";
     }
 }

@@ -309,6 +309,8 @@ namespace UnityEditor
                     evt.objectReferenceParameter = events.GetArrayElementAtIndex(index).FindPropertyRelative("objectReferenceParameter").objectReferenceValue;
                     evt.stringParameter = events.GetArrayElementAtIndex(index).FindPropertyRelative("data").stringValue;
                     evt.time = events.GetArrayElementAtIndex(index).FindPropertyRelative("time").floatValue;
+                    evt.m_MessageOptions = events.GetArrayElementAtIndex(index)
+                        .FindPropertyRelative("messageOptions").intValue;
                 }
                 else
                 {
@@ -333,6 +335,7 @@ namespace UnityEditor
                     events.GetArrayElementAtIndex(index).FindPropertyRelative("objectReferenceParameter").objectReferenceValue = animationEvent.objectReferenceParameter;
                     events.GetArrayElementAtIndex(index).FindPropertyRelative("data").stringValue = animationEvent.stringParameter;
                     events.GetArrayElementAtIndex(index).FindPropertyRelative("time").floatValue = animationEvent.time;
+                    events.GetArrayElementAtIndex(index).FindPropertyRelative("messageOptions").intValue = (int)animationEvent.messageOptions;
                 }
                 else
                 {

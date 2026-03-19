@@ -26,7 +26,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     container.Resolve<IPageManager>(),
                     container.Resolve<IUpmCache>(),
                     container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPackageLinkFactory>());
+                    container.Resolve<IPackageLinkFactory>(),
+                    container.Resolve<IDelayedSelectionHandler>());
             }
         }
 
@@ -44,6 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmCache m_UpmCache;
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPackageLinkFactory m_PackageLinkFactory;
+        private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
 
         public PackageDetailsBody(
             IResourceLoader resourceLoader,
@@ -56,7 +58,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPageManager pageManager,
             IUpmCache upmCache,
             IUnityConnectProxy unityConnect,
-            IPackageLinkFactory packageLinkFactory)
+            IPackageLinkFactory packageLinkFactory,
+            IDelayedSelectionHandler delayedSelectionHandler)
         {
             m_ResourceLoader = resourceLoader;
             m_PackageDatabase = packageDatabase;
@@ -69,6 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = upmCache;
             m_UnityConnect = unityConnect;
             m_PackageLinkFactory = packageLinkFactory;
+            m_DelayedSelectionHandler = delayedSelectionHandler;
 
             m_TabView = new PackageDetailsTabView { name = "packageDetailsTabView" };
             m_TabView.onTabSwitched += OnTabSwitched;
@@ -102,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabView.AddTab(new PackageDetailsVersionsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_UpmCache, m_PackageLinkFactory));
             m_TabView.AddTab(new PackageDetailsDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase));
             m_TabView.AddTab(new FeatureDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_Application));
-            m_TabView.AddTab(new PackageDetailsSamplesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_Application, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsSamplesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_Application, m_IOProxy, m_DelayedSelectionHandler));
             m_TabView.AddTab(new PackageDetailsImagesTab(m_UnityConnect, m_AssetStoreCache));
         }
 

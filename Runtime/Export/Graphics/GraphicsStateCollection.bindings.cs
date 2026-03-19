@@ -7,11 +7,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
-using UnityEngine.Rendering;
 using uei = UnityEngine.Internal;
 using Unity.Jobs;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     [NativeHeader("Runtime/Graphics/GraphicsStateCollection.h")]
     public sealed partial class GraphicsStateCollection : Object
@@ -35,6 +34,7 @@ namespace UnityEngine.Experimental.Rendering
         extern public RuntimePlatform runtimePlatform { [NativeName("GetRuntimePlatform")] get; [NativeName("SetRuntimePlatform")] set; }
         extern public string qualityLevelName { [NativeName("GetQualityLevelName")] get; [NativeName("SetQualityLevelName")] set; }
         extern public bool LoadFromFile(string filePath);
+        extern public bool LoadFromJson(string json);
         extern public bool SaveToFile(string filePath);
         extern public bool SendToEditor(string fileName);
 
@@ -75,20 +75,25 @@ namespace UnityEngine.Experimental.Rendering
         extern public int GetGraphicsStateCountForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
 
         public bool AddVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords) { return AddVariantByShader(shader, passId, keywords); }
-        public bool AddVariant(Material mat, PassIdentifier passId) { return AddVariantByMaterial(mat, passId); }
+        public bool AddVariant(Material mat, PassIdentifier passId) { return AddVariantByMaterial(mat, passId, Shader.enabledGlobalKeywords); }
+        public bool AddVariant(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords) { return AddVariantByMaterial(mat, passId, globalKeywords); }
         [NativeName("AddVariant")] extern private bool AddVariantByShader(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
-        [NativeName("AddVariant")] extern private bool AddVariantByMaterial(Material mat, PassIdentifier passId);
-        extern public bool AddVariants(Material mat, [uei.DefaultValue("-1")] int subshaderIndex = -1);
+        [NativeName("AddVariant")] extern private bool AddVariantByMaterial(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords);
+        public bool AddVariants(Material mat, [uei.DefaultValue("-1")] int subshaderIndex = -1) { return AddVariantsByMaterial(mat, Shader.enabledGlobalKeywords, subshaderIndex); }
+        public bool AddVariants(Material mat, GlobalKeyword[] globalKeywords, [uei.DefaultValue("-1")] int subshaderIndex = -1) { return AddVariantsByMaterial(mat, globalKeywords, subshaderIndex); }
+        [NativeName("AddVariants")] extern private bool AddVariantsByMaterial(Material mat, GlobalKeyword[] globalKeywords, int subshaderIndex = -1);
 
         public bool RemoveVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords) { return RemoveVariantByShader(shader, passId, keywords); }
-        public bool RemoveVariant(Material mat, PassIdentifier passId) { return RemoveVariantByMaterial(mat, passId); }
+        public bool RemoveVariant(Material mat, PassIdentifier passId) { return RemoveVariantByMaterial(mat, passId, Shader.enabledGlobalKeywords); }
+        public bool RemoveVariant(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords) { return RemoveVariantByMaterial(mat, passId, globalKeywords); }
         [NativeName("RemoveVariant")] extern private bool RemoveVariantByShader(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
-        [NativeName("RemoveVariant")] extern private bool RemoveVariantByMaterial(Material mat, PassIdentifier passId);
+        [NativeName("RemoveVariant")] extern private bool RemoveVariantByMaterial(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords);
 
         public bool ContainsVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords) { return ContainsVariantByShader(shader, passId, keywords); }
-        public bool ContainsVariant(Material mat, PassIdentifier passId) { return ContainsVariantByMaterial(mat, passId); }
+        public bool ContainsVariant(Material mat, PassIdentifier passId) { return ContainsVariantByMaterial(mat, passId, Shader.enabledGlobalKeywords); }
+        public bool ContainsVariant(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords) { return ContainsVariantByMaterial(mat, passId, globalKeywords); }
         [NativeName("ContainsVariant")] extern private bool ContainsVariantByShader(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
-        [NativeName("ContainsVariant")] extern private bool ContainsVariantByMaterial(Material mat, PassIdentifier passId);
+        [NativeName("ContainsVariant")] extern private bool ContainsVariantByMaterial(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords);
 
         extern public void ClearVariants();
         extern public bool AddGraphicsStateForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords, GraphicsState setup);

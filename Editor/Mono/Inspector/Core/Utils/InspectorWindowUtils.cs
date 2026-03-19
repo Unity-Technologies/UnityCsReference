@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -65,7 +65,7 @@ namespace UnityEditor
                 if (type.GetConstructor(Type.EmptyTypes) == null)
                 {
                     Debug.LogError($"{type} does not contain a default constructor, it will not be registered as a " +
-                        $"preview handler. Use the Initialize function to set up your object instead.");
+                                   $"preview handler. Use the Initialize function to set up your object instead.");
                     continue;
                 }
 
@@ -87,6 +87,7 @@ namespace UnityEditor
                             types = new List<Type>();
                             previewableTypes.Add(customPreviewType, types);
                         }
+
                         types.Add(type);
                     }
                 }
@@ -110,38 +111,33 @@ namespace UnityEditor
             return null;
         }
 
+        internal static bool TryCreateObsoleteHelpBox(Editor editor, out HelpBox helpBox)
+        {
+            if (!ObsoleteMessageHelper.TryGetObsoleteMessage(editor, out var messageContainer))
+            {
+                helpBox = null;
+                return false;
+            }
+
+            helpBox = new HelpBox(messageContainer.message, messageContainer.messageType);
+            if (messageContainer.replacementType == null)
+                return true;
+
+            helpBox.buttonText = messageContainer.buttonText;
+            helpBox.onButtonClicked += () =>
+            {
+                foreach (var target in editor.targets)
+                {
+                    if (target is Component component)
+                        Undo.AddComponent(component.gameObject, messageContainer.replacementType);
+                }
+            };
+            return true;
+        }
+
         internal static bool IsExcludedClass(Object target)
         {
             return ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
-        }
-
-        private static Dictionary<Type, (string, MessageType)> s_ObsoleteTypeMessages;
-
-        public static void DisplayDeprecationMessageIfNecessary(Editor editor)
-        {
-            if (!editor || !editor.target)
-            {
-                return;
-            }
-
-            if (s_ObsoleteTypeMessages == null)
-            {
-                var obsoleteTypes = TypeCache.GetTypesWithAttribute<ObsoleteAttribute>();
-                s_ObsoleteTypeMessages = new Dictionary<Type, (string, MessageType)>(obsoleteTypes.Count);
-                foreach (var type in obsoleteTypes)
-                {
-                    var attr = type.GetCustomAttribute<ObsoleteAttribute>();
-                    var message = string.IsNullOrEmpty(attr.Message) ? "This component has been marked as obsolete." : attr.Message;
-                    message = ObsoleteMessageHelper.StripVersionTags(message);
-                    var messageType = attr.IsError ? MessageType.Error : MessageType.Warning;
-                    s_ObsoleteTypeMessages[type] = (message, messageType);
-                }
-            }
-
-            if (!s_ObsoleteTypeMessages.TryGetValue(editor.target.GetType(), out var obsoleteMessage))
-                return;
-
-            EditorGUILayout.HelpBox(obsoleteMessage.Item1, obsoleteMessage.Item2);
         }
 
         public static void DrawAddedComponentBackground(Rect position, Object[] targets, float adjust = 0)
@@ -156,7 +152,8 @@ namespace UnityEditor
                 {
                     // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
                     // and extends down to exactly touch the separator line between/after components.
-                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust, position.width,
+                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust,
+                        position.width,
                         position.height - 2));
                 }
             }

@@ -7301,7 +7301,7 @@ namespace UnityEditor
             Color temp = GUI.color;
             GUI.color = new Color(UnityEngine.Random.value * .6f + .4f, UnityEngine.Random.value * .6f + .4f, UnityEngine.Random.value * .6f + .4f, 1f);
             var size = new Vector2(Styles.repaintDot.width, Styles.repaintDot.height);
-            GUI.Label(new Rect(Vector2.zero, EditorGUIUtility.PixelsToPoints(size)), Styles.repaintDot);
+            GUI.Label(new Rect(Vector2.zero, EditorGUIUtility.PixelsToPoints(size, Styles.repaintDot.pixelsPerPoint)), Styles.repaintDot);
             GUI.color = temp;
         }
 

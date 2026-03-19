@@ -122,17 +122,19 @@ namespace Unity.UI.Builder
 
             s_StyleChangeList.Clear();
 
-            bool requiresRefresh = false;
             if (index < filter.Length)
             {
+                // Since filter functions have a variable number of arguments, it's simpler to
+                // remove the entire list of functions and re-add them.
+                RemoveFilterFunctionsFromStyleSheet();
                 var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
                 var manipulator = styleProperty.GetManipulator(styleSheet);
-                manipulator.SetFilterFunction(index, evt.filterFunction);
-                requiresRefresh = true;
-            }
 
-            if (requiresRefresh)
-            {
+                for (var i = 0; i < filter.Length; ++i)
+                {
+                    manipulator.AddFilterFunction(i == index ? evt.filterFunction : filter[i]);
+                }
+
                 s_StyleChangeList.Add(FilterConstants.Filter);
             }
 

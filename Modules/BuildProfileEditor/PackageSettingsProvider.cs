@@ -47,15 +47,8 @@ namespace UnityEditor.Build.Profile
         /// <returns>True if <see cref="PackageInfo"/> describes a built-in or a Unity registry sourced package.</returns>
         static bool IsFromUnityPackageSource(PackageManager.PackageInfo packageInfo)
         {
-            // Local packages may still map to a registry package, but they should not be considered.
-            // Source builds bypass this check.
-            if (!Unsupported.IsSourceBuild()
-                && packageInfo.source != PackageSource.BuiltIn
-                && packageInfo.source != PackageSource.Registry)
-            {
-                return false;
-            }
-
+            if (Unsupported.IsSourceBuild())
+                return true;
             return packageInfo.GetAvailableRegistryType() == RegistryType.UnityRegistry;
         }
     }

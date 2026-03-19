@@ -51,6 +51,11 @@ namespace Unity.U2D.Physics.Editor
 
             // Create the open button.
             var openButton = new Button { text = "Open in Project Settings" };
+
+            // Twice the default height.
+            openButton.style.height = EditorGUIUtility.singleLineHeight * 2;
+
+            // Register for the clicked event.
             openButton.clicked += () => SettingsService.OpenProjectSettings(PhysicsCoreSettings2DProvider.SettingsPath);
             root.Add(openButton);
 
@@ -187,8 +192,8 @@ namespace Unity.U2D.Physics.Editor
 
     class PhysicsCoreSettings2DProvider : SettingsProvider
     {
-        public const string SettingsPath = "Project/PhysicsCore2D/Settings";
-        const string EmptySettingsLabel = $"Select a {nameof(PhysicsCoreSettings2D)} Asset to edit ...";
+        public const string SettingsPath = "Project/Physics Core 2D/Settings";
+        static readonly string EmptySettingsLabel = $"Select a \"{ObjectNames.NicifyVariableName(nameof(PhysicsCoreSettings2D))}\" Asset to edit ...";
 
         public static PhysicsCoreSettings2DProvider Instance { get; private set; }
 

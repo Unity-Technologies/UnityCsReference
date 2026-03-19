@@ -20,7 +20,7 @@ namespace UnityEditor.Search
     {
         private UnityEngine.Object m_EditorTarget;
 
-        private IMGUIContainer m_Header;
+        private VisualElement m_Header;
         private InspectorElement m_InspectorElement;
         private IMGUIContainer m_Footer;
 
@@ -117,15 +117,16 @@ namespace UnityEditor.Search
             return inspectorElement;
         }
 
-        IMGUIContainer BuildHeaderElement(string editorTitle)
+        VisualElement BuildHeaderElement(string editorTitle)
         {
             //Create and IMGUIContainer to enclose the header
             // This also needs to validate the state of the editor tracker (stuff that was already done in the original DrawEditors
-            var headerElement = CreateIMGUIContainer(HeaderOnGUI, editorTitle + "Header");
-
-            headerElement.AddToClassList(headerElementClassName);
-
-            return headerElement;
+            var headerContainer = new VisualElement();
+            var headerImguiContainer = CreateIMGUIContainer(HeaderOnGUI, editorTitle + "Header");
+            headerContainer.Add(headerImguiContainer);
+            if (InspectorWindowUtils.TryCreateObsoleteHelpBox(editor, out var obsoleteHelpBox))
+                headerContainer.Add(obsoleteHelpBox);
+            return headerContainer;
         }
 
         void HeaderOnGUI()
@@ -191,8 +192,6 @@ namespace UnityEditor.Search
             }
 
             UpdateInspectorVisibility();
-
-            InspectorWindowUtils.DisplayDeprecationMessageIfNecessary(editor);
 
             // Reset dirtiness when repainting
             if (Event.current.type == EventType.Repaint)

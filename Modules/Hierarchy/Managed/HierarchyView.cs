@@ -103,10 +103,11 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanging"/> event.
         /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="oldHierarchy">The previous source <see cref="Hierarchy"/>.</param>
         /// <param name="newHierarchy">The current source <see cref="Hierarchy"/>.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
-        public delegate void SourceHierarchyChangingEventHandler(Unity.Hierarchy.Hierarchy oldHierarchy, Unity.Hierarchy.Hierarchy newHierarchy, HierarchyNodeFlags defaultFlags);
+        public delegate void SourceHierarchyChangingEventHandler(HierarchyView view, Unity.Hierarchy.Hierarchy oldHierarchy, Unity.Hierarchy.Hierarchy newHierarchy, HierarchyNodeFlags defaultFlags);
 
         /// <summary>
         /// Raised when the source hierarchy is about to change.
@@ -116,42 +117,65 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanged"/> event.
         /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="hierarchy">The current source <see cref="Hierarchy"/>.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
-        public delegate void SourceHierarchyChangedEventHandler(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags);
+        public delegate void SourceHierarchyChangedEventHandler(HierarchyView view, Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags);
 
         /// <summary>
-        /// Raised when the source hierarchy has been changed.
+        /// Raised when the source hierarchy changes.
         /// </summary>
         public event SourceHierarchyChangedEventHandler SourceHierarchyChanged;
 
         /// <summary>
+        /// Delegate type used to handle the <see cref="BindViewItem"/> event.
+        /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being bound.</param>
+        public delegate void BindViewItemEventHandler(HierarchyView view, HierarchyViewItem item);
+
+        /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>, allowing customization of the view item.
         /// </summary>
-        public event Action<HierarchyViewItem> BindViewItem;
+        public event BindViewItemEventHandler BindViewItem;
+
+        /// <summary>
+        /// Delegate type used to handle the <see cref="UnbindViewItem"/> event.
+        /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being unbound.</param>
+        public delegate void UnbindViewItemEventHandler(HierarchyView view, HierarchyViewItem item);
 
         /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>, allowing cleanup of the view item.
         /// </summary>
-        public event Action<HierarchyViewItem> UnbindViewItem;
+        public event UnbindViewItemEventHandler UnbindViewItem;
+
+        /// <summary>
+        /// Delegate type used to handle the <see cref="FlagsChanged"/> event.
+        /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
+        /// <param name="flags">The flags that changed.</param>
+        public delegate void FlagsChangedEventHandler(HierarchyView view, HierarchyNodeFlags flags);
 
         /// <summary>
         /// Raised when flags on <see cref="HierarchyNode"/> instances are changed.
         /// </summary>
-        public event HierarchyViewModel.FlagsChangedEventHandler FlagsChanged;
+        public event FlagsChangedEventHandler FlagsChanged;
 
         /// <summary>
         /// Delegate type used to handle <see cref="PopulateContextMenu"/> event.
         /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="item">The <see cref="HierarchyViewItem"/> the context is being created for. Can be null if the context menu is created from the background of the view.</param>
         /// <param name="menu">The <see cref="DropdownMenu"/> being populated.</param>
-        public delegate void PopulateContextMenuEventHandler(HierarchyViewItem item, DropdownMenu menu);
+        public delegate void PopulateContextMenuEventHandler(HierarchyView view, HierarchyViewItem item, DropdownMenu menu);
 
         /// <summary>
         /// Raised when a right click is handled on a <see cref="HierarchyNode"/> or on the background of the view.
         /// </summary>
         /// <remarks>
-        /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
+        /// This callback receives the <see cref="HierarchyView"/> and the <see cref="HierarchyViewItem"/> to create the context menu for, and the <see cref="DropdownMenu"/> to populate.
         /// If the user right clicks in empty space, the callback receives null for the view item.
         /// </remarks>
         public event PopulateContextMenuEventHandler PopulateContextMenu;
@@ -159,16 +183,18 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Delegate type used to handle the event of getting a tooltip for a <see cref="HierarchyViewItem" />.
         /// </summary>
+        /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="item">The <see cref="HierarchyViewItem"/> for which the tooltip is being requested.</param>
-        /// <param name="filtering">A boolean value indicating whether the hierarchy is currently being filtered.</param>
         /// <param name="tooltip">A <see cref="StringBuilder"/> object to which the tooltip text should be appended.</param>
-        public delegate void GetTooltipEventHandler(HierarchyViewItem item, bool filtering, StringBuilder tooltip);
+        /// <param name="filtering">Whether the hierarchy is currently filtered.</param>
+        public delegate void GetTooltipEventHandler(HierarchyView view, HierarchyViewItem item, StringBuilder tooltip, bool filtering);
 
         /// <summary>
         /// Customize the tooltip displayed when the mouse hovers the node name label.
         /// </summary>
         /// <remarks>
-        /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for the StringBuilder to build the tooltip, and to determine whether the <see cref="HierarchyView"/> is being filtered.
+        /// This callback receives the <see cref="HierarchyView"/> and the <see cref="HierarchyViewItem"/> to get the tooltip for, a <see cref="StringBuilder"/> to build the tooltip,
+        /// and whether the <see cref="HierarchyView"/> is being filtered.
         /// </remarks>
         public event GetTooltipEventHandler GetTooltip;
 
@@ -177,7 +203,7 @@ namespace Unity.Hierarchy
         /// Internal because it is only used by HierarchyWindow to allow to statically customize the <see cref="HierarchyView"/>.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal event Action Bind; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
+        internal event Action<HierarchyView> Bind; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
 
         /// <summary>
         /// Gets the source hierarchy used to populate the <see cref="HierarchyView"/>.
@@ -276,7 +302,7 @@ namespace Unity.Hierarchy
 
         internal bool DataUpdateNeeded => m_Hierarchy.UpdateNeeded || m_HierarchyFlattened.UpdateNeeded || m_HierarchyViewModel.UpdateNeeded;
         internal bool DisplayUpdateNeeded => m_Version != m_HierarchyViewModel.Version;
-        internal bool ExecutePostUpdateActionsNeeded => m_PostUpdateActionQueue.Count > 0;
+        internal bool ExecutePostUpdateActionsNeeded => m_PostUpdateActionQueue.Count > 0 && !m_PostUpdateActionQueue.Locked;
         internal HierarchyViewDragHandler DragHandler => m_DragHandler;
 
         internal HierarchyViewColumnName NameColumn
@@ -374,7 +400,7 @@ namespace Unity.Hierarchy
                 m_CollectionView.BeforeRefreshingItems -= UpdateData;
 
             // Invoke source hierarchy changing
-            SourceHierarchyChanging?.Invoke(m_Hierarchy, hierarchy, defaultFlags);
+            SourceHierarchyChanging?.Invoke(this, m_Hierarchy, hierarchy, defaultFlags);
 
             // Clear columns before releasing UX
             ClearColumns();
@@ -433,7 +459,7 @@ namespace Unity.Hierarchy
             Initialize();
 
             // Invoke source hierarchy changed
-            SourceHierarchyChanged?.Invoke(hierarchy, defaultFlags);
+            SourceHierarchyChanged?.Invoke(this, hierarchy, defaultFlags);
 
             // Register events
             m_Hierarchy.HandlerCreated += OnHandlerCreated;
@@ -959,8 +985,7 @@ namespace Unity.Hierarchy
                 return;
 
             ExpandParents(in node);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
+            Update();
             ScrollToNode(in node);
         }
 
@@ -975,8 +1000,7 @@ namespace Unity.Hierarchy
                 return;
 
             ExpandParents(nodes);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
+            Update();
             ScrollToNode(in nodes[0]);
         }
 
@@ -1159,7 +1183,7 @@ namespace Unity.Hierarchy
             BindHandlers();
             try
             {
-                Bind?.Invoke();
+                Bind?.Invoke(this);
             }
             catch (Exception ex)
             {
@@ -1234,13 +1258,13 @@ namespace Unity.Hierarchy
         internal void InvokeBindViewItem(HierarchyViewItem item)
         {
             item.Handler?.Internal_BindItem(item);
-            BindViewItem?.Invoke(item);
+            BindViewItem?.Invoke(this, item);
         }
 
         internal void InvokeUnbindViewItem(HierarchyViewItem item)
         {
             item.Handler?.Internal_UnbindItem(item);
-            UnbindViewItem?.Invoke(item);
+            UnbindViewItem?.Invoke(this, item);
         }
 
         internal void InvokePopulateContextMenu(ContextualMenuPopulateEvent evt)
@@ -1279,30 +1303,24 @@ namespace Unity.Hierarchy
                     editorHandler.PopulateContextMenu(this, item, evt.menu);
             }
 
-            PopulateContextMenu?.Invoke(item, evt.menu);
+            PopulateContextMenu?.Invoke(this, item, evt.menu);
         }
 
         internal void InvokeGetTooltip(HierarchyViewItem item, bool filtering, StringBuilder tooltip)
         {
             if (item.Handler is IHierarchyEditorNodeTypeHandler editorHandler)
                 editorHandler.GetTooltip(item, filtering, tooltip);
-            GetTooltip?.Invoke(item, filtering, tooltip);
+            GetTooltip?.Invoke(this, item, tooltip, filtering);
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal void PingNode(HierarchyNode node)
+        internal void Ping(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
             if (node == HierarchyNode.Null || node == m_Hierarchy.Root)
                 return;
 
-            // If the node is invalid, we cannot ping it.
-            if (!m_Hierarchy.Exists(in node))
-                return;
-
             ExpandParents(in node);
-
-            // After expanding parents, need full update again since ExpandParents marks hierarchy as dirty
             Update();
 
             var index = m_HierarchyViewModel.IndexOf(in node);
@@ -1311,13 +1329,14 @@ namespace Unity.Hierarchy
 
             m_CollectionView.ScrollToItem(index);
 
+            var nodeCopy = node;
             EnqueuePostUpdateAction(() =>
             {
-                schedule.Execute(() => DoPingAnimation(node));
+                schedule.Execute(() => DoPingAnimation(nodeCopy));
             });
         }
 
-        void DoPingAnimation(HierarchyNode node)
+        void DoPingAnimation(in HierarchyNode node)
         {
             var index = m_HierarchyViewModel.IndexOf(in node);
             if (index < 0)
@@ -1388,7 +1407,7 @@ namespace Unity.Hierarchy
                 return;
 
             // We do not want to expand the node itself, only its parents recursively.
-            var parentNode = m_Hierarchy.GetParent(in node);
+            var parentNode = m_HierarchyViewModel.GetParent(in node);
             if (parentNode == HierarchyNode.Null || parentNode == m_Hierarchy.Root)
                 return;
 
@@ -1406,7 +1425,7 @@ namespace Unity.Hierarchy
                 if (node == HierarchyNode.Null || node == m_Hierarchy.Root)
                     continue;
 
-                parents.Span[i] = m_Hierarchy.GetParent(in node);
+                parents.Span[i] = m_HierarchyViewModel.GetParent(in node);
             }
 
             // Note: Its fine to pass null, root or invalid nodes to SetFlagsRecursive, no need to check for that.
@@ -1492,8 +1511,7 @@ namespace Unity.Hierarchy
             else if (evt.clickCount == 2)
             {
                 ref readonly var node = ref m_HierarchyViewModel[itemIndex];
-                var handler = m_Hierarchy.GetNodeTypeHandler(in node);
-                if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                if (m_HierarchyViewModel.GetNodeTypeHandler(in node) is IHierarchyEditorNodeTypeHandler editorHandler)
                     editorHandler.OnDoubleClick(this, in node);
             }
 
@@ -1616,7 +1634,7 @@ namespace Unity.Hierarchy
             Initialize();
         }
 
-        void OnViewModelFlagsChanged(HierarchyNodeFlags flags) => FlagsChanged?.Invoke(flags);
+        void OnViewModelFlagsChanged(HierarchyNodeFlags flags) => FlagsChanged?.Invoke(this, flags);
 
         HierarchyViewItem GetHierarchyViewItemFromIndex(int index)
         {
@@ -1811,13 +1829,17 @@ namespace Unity.Hierarchy
 
             void ExecuteActions(CircularBuffer<Action> actions)
             {
+                if (actions.IsEmpty || actions.Locked)
+                    return;
+
                 if (!actions.IsEmpty)
                     HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).ExecuteActions()");
 
                 while (!actions.IsEmpty)
                 {
-                    // Execute action at front of the queue
+                    // Get and remove the action at front of the queue
                     var action = actions.Front();
+                    actions.PopFront();
 
                     // Invoke action in a try-catch block to prevent exceptions from locking the buffer indefinitely
                     try
@@ -1834,7 +1856,6 @@ namespace Unity.Hierarchy
                     {
                         // Unlock the buffer and pop the front action
                         actions.Locked = false;
-                        actions.PopFront();
                     }
                 }
             }

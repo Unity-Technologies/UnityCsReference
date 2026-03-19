@@ -40,13 +40,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override string GetTypeNameForAnalytics() => "Local";
 
-        protected internal override void SetupExecutionGraph(ExecutionGraph executionGraph)
+        protected internal override void SetupExecutionGraph(ExecutionGraphBuilder executionGraph)
         {
             var buildPath = ScenarioFactory.GenerateBuildPath(Settings.BuildProfile);
             // TODO: We need to share the build nodes between instances that share the same build profile and role.
             // The build nodes can be defined in the base PlayerController class. Move it once the graph builder is ready.
-            var buildNode = new BuildPlayerNode($"LocalPlayer_Build");
-            executionGraph.AddNode(buildNode, ExecutionStage.Prepare);
+            var buildNode = executionGraph.AddNode<BuildPlayerNode>(ExecutionStage.Prepare);
             executionGraph.ConnectConstant(buildNode.BuildPath, buildPath);
             executionGraph.ConnectConstant(buildNode.Profile, Settings.BuildProfile);
 
@@ -60,28 +59,24 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        void SetupExecutionGraphForAdbProcess(ExecutionGraph executionGraph, BuildPlayerNode buildNode)
+        void SetupExecutionGraphForAdbProcess(ExecutionGraphBuilder executionGraph, BuildPlayerNode buildNode)
         {
-            var installAdbNode = new AdbInstallNode($"LocalPlayer_Install");
-            executionGraph.AddNode(installAdbNode, ExecutionStage.Deploy);
+            var installAdbNode = executionGraph.AddNode<AdbInstallNode>(ExecutionStage.Deploy);
             executionGraph.Connect(buildNode.ExecutablePath, installAdbNode.ApkPath);
             executionGraph.ConnectConstant(installAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
 
             var packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
-            var startAdbNode = new AdbStartProcessNode("LocalPlayer_Start");
-            executionGraph.AddNode(startAdbNode, ExecutionStage.Start);
+            var startAdbNode = executionGraph.AddNode<AdbStartProcessNode>(ExecutionStage.Start);
             executionGraph.ConnectConstant(startAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
             executionGraph.ConnectConstant(startAdbNode.PackageName, packageName);
             executionGraph.ConnectConstant(startAdbNode.ActivityName, AdbUtilities.GetActivityName());
 
-            var monitorAdbNode = new AdbMonitorProcessNode("LocalPlayer_Run");
-            executionGraph.AddNode(monitorAdbNode, ExecutionStage.Run);
+            var monitorAdbNode = executionGraph.AddNode<AdbMonitorProcessNode>(ExecutionStage.Run);
             executionGraph.Connect(startAdbNode.ProcessId, monitorAdbNode.ProcessId);
             executionGraph.ConnectConstant(monitorAdbNode.DeviceName,  GetUserSettings<UserSettings>().DeviceID);
             executionGraph.ConnectConstant(monitorAdbNode.PackageName, packageName);
 
-            var stopAdbNode = new AdbStopProcessNode("LocalPlayer_Stop");
-            executionGraph.AddNode(stopAdbNode, ExecutionStage.Cleanup);
+            var stopAdbNode = executionGraph.AddNode<AdbStopProcessNode>(ExecutionStage.Cleanup);
             executionGraph.ConnectConstant(stopAdbNode.PackageName, packageName);
             executionGraph.ConnectConstant(stopAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
 
@@ -92,30 +87,26 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 var logsFilePath = GenerateRandomLogFilePath();
 
-                var logcatNode = new AdbLogcatNode("LocalPlayer_AdbLogcat");
-                executionGraph.AddNode(logcatNode, ExecutionStage.Run);
+                var logcatNode = executionGraph.AddNode<AdbLogcatNode>(ExecutionStage.Run);
                 executionGraph.ConnectConstant(logcatNode.LogPath, logsFilePath);
                 executionGraph.ConnectConstant(logcatNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
                 executionGraph.Connect(startAdbNode.ProcessId, logcatNode.DeviceProcessId);
 
-                var streamLogsNode = new StreamLogsFromFileNode("LocalPlayer_StreamLogs");
-                executionGraph.AddNode(streamLogsNode, ExecutionStage.Run);
+                var streamLogsNode = executionGraph.AddNode<StreamLogsFromFileNode>(ExecutionStage.Run);
                 executionGraph.ConnectConstant(streamLogsNode.LogLabel, name);
                 executionGraph.ConnectConstant(streamLogsNode.LogPath, logsFilePath);
                 executionGraph.ConnectConstant(streamLogsNode.LogColor, Settings.LogsColor);
                 executionGraph.Connect(logcatNode.ProcessId, streamLogsNode.ProcessId);
 
-                var stopLogcatNode = new StopProcessNode("LocalPlayer_StopLogcat");
-                executionGraph.AddNode(stopLogcatNode, ExecutionStage.Cleanup);
+                var stopLogcatNode = executionGraph.AddNode<StopProcessNode>(ExecutionStage.Cleanup);
                 executionGraph.Connect(logcatNode.ProcessId, stopLogcatNode.ProcessId);
 
-                var deleteLogsNode = new DeleteFileNode("LocalPlayer_DeleteLogsFile");
-                executionGraph.AddNode(deleteLogsNode, ExecutionStage.Cleanup);
+                var deleteLogsNode = executionGraph.AddNode<DeleteFileNode>(ExecutionStage.Cleanup);
                 executionGraph.ConnectConstant(deleteLogsNode.FilePath, logsFilePath);
             }
         }
 
-        void SetupExecutionGraphForLocalProcess(ExecutionGraph executionGraph, BuildPlayerNode buildNode)
+        void SetupExecutionGraphForLocalProcess(ExecutionGraphBuilder executionGraph, BuildPlayerNode buildNode)
         {
             var arguments = Settings.Arguments ?? string.Empty;
             if (InternalUtilities.IsServerProfile(Settings.BuildProfile))
@@ -131,30 +122,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 arguments = AppendLogsArguments(arguments, logsFilePath);
             }
 
-            var startProcessNode = new StartProcessNode("LocalPlayer_Start");
-            executionGraph.AddNode(startProcessNode, ExecutionStage.Start);
+            var startProcessNode = executionGraph.AddNode<StartProcessNode>(ExecutionStage.Start);
             executionGraph.ConnectConstant(startProcessNode.Arguments, arguments);
             executionGraph.Connect(buildNode.ExecutablePath, startProcessNode.ExecutablePath);
 
-            var monitorProcessNode = new MonitorProcessNode($"LocalPlayer_Run");
-            executionGraph.AddNode(monitorProcessNode, ExecutionStage.Run);
+            var monitorProcessNode = executionGraph.AddNode<MonitorProcessNode>(ExecutionStage.Run);
             executionGraph.Connect(startProcessNode.ProcessId, monitorProcessNode.ProcessId);
 
-            var stopProcessNode = new StopProcessNode("LocalPlayer_Stop");
-            executionGraph.AddNode(stopProcessNode, ExecutionStage.Cleanup);
+            var stopProcessNode = executionGraph.AddNode<StopProcessNode>(ExecutionStage.Cleanup);
             executionGraph.Connect(startProcessNode.ProcessId, stopProcessNode.ProcessId);
 
             if (Settings.StreamLogsToMainEditor)
             {
-                var streamLogsNode = new StreamLogsFromFileNode("LocalPlayer_StreamLogs");
-                executionGraph.AddNode(streamLogsNode, ExecutionStage.Run);
+                var streamLogsNode = executionGraph.AddNode<StreamLogsFromFileNode>(ExecutionStage.Run);
                 executionGraph.ConnectConstant(streamLogsNode.LogLabel, name);
                 executionGraph.ConnectConstant(streamLogsNode.LogPath, logsFilePath);
                 executionGraph.ConnectConstant(streamLogsNode.LogColor, Settings.LogsColor);
                 executionGraph.Connect(startProcessNode.ProcessId, streamLogsNode.ProcessId);
 
-                var deleteLogsNode = new DeleteFileNode("LocalPlayer_DeleteLogsFile");
-                executionGraph.AddNode(deleteLogsNode, ExecutionStage.Cleanup);
+                var deleteLogsNode = executionGraph.AddNode<DeleteFileNode>(ExecutionStage.Cleanup);
                 executionGraph.ConnectConstant(deleteLogsNode.FilePath, logsFilePath);
             }
         }

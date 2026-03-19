@@ -113,7 +113,7 @@ internal class ScreenOverlayPanelPicker
         }
         else
         {
-            capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
+            capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId) as BaseVisualElementPanel;
         }
 
         return capturingPanel != null;

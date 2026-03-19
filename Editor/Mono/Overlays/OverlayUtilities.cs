@@ -179,7 +179,15 @@ namespace UnityEditor.Overlays
                     OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) :
                     OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) && filter(overlays[i].overlayId);
                 if (shouldAddOverlayType)
+                {
+                    // Do not add overlay to the current window if the overlay targets tool owner windows but
+                    // the given windowType is not a valid/registered tool owner.
+                    if (overlays[i].editorWindowType == typeof(ISupportsToolsOverlays) &&
+                        !EditorToolUtility.IsRegisteredToolOwner(windowType))
+                        continue;
+                    
                     res.Add(overlays[i].overlay);
+                }
             }
 
             return res;

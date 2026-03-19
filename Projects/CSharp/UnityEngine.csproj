@@ -1377,6 +1377,9 @@
     <Compile Include="..\..\Modules\Input\Private\Managed\InputFocusEvent.cs">
       <Link>Modules\Input\Private\Managed\InputFocusEvent.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Insights\EngineDiagnostics.bindings.cs">
+      <Link>Modules\Insights\EngineDiagnostics.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\JSONSerialize\Public\JsonUtility.bindings.cs">
       <Link>Modules\JSONSerialize\Public\JsonUtility.bindings.cs</Link>
     </Compile>
@@ -4320,6 +4323,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\WorldSpaceData.cs">
       <Link>Modules\UIElements\Core\WorldSpaceData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UI\Managed\UGUIHelpURL.cs">
+      <Link>Modules\UI\Managed\UGUIHelpURL.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
     </Compile>
@@ -5655,9 +5661,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Component.bindings.cs">
       <Link>Runtime\Export\Scripting\Component.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\Component.deprecated.cs">
-      <Link>Runtime\Export\Scripting\Component.deprecated.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Coroutine.bindings.cs">
       <Link>Runtime\Export\Scripting\Coroutine.bindings.cs</Link>
     </Compile>
@@ -5720,6 +5723,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RangeInt.cs">
       <Link>Runtime\Export\Scripting\RangeInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ReplacementComponentAttribute.cs">
+      <Link>Runtime\Export\Scripting\ReplacementComponentAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs">
       <Link>Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
@@ -5894,6 +5900,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.cs">
       <Link>Runtime\Export\Shaders\ShaderVariantCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\VariantMonitor.cs">
+      <Link>Runtime\Export\Shaders\VariantMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Snapping\SnapAxis.cs">
       <Link>Runtime\Export\Snapping\SnapAxis.cs</Link>
@@ -6200,6 +6209,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Transform\Managed\UIModuleHelpURL.cs">
+      <Link>Runtime\Transform\Managed\UIModuleHelpURL.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>

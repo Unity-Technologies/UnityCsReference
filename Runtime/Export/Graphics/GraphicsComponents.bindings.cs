@@ -74,6 +74,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Camera/Flare.h")]
     [System.Obsolete("The Lens Flare component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
+    [ReplacementComponent("UnityEngine.Rendering.LensFlareComponentSRP", "Lens Flare SRP")]
     public sealed partial class LensFlare : Behaviour
     {
         extern public float brightness    { get; set; }
@@ -86,6 +87,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Camera/Projector.h")]
     [System.Obsolete("The Projector component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
+    [ReplacementComponent("UnityEngine.Rendering.Universal.DecalProjector")]
     public sealed partial class Projector : Behaviour
     {
         extern public float nearClipPlane    { get; set; }
@@ -119,6 +121,7 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Camera/HaloManager.h")]
     [System.Obsolete("The Halo component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
+    [ReplacementComponent("UnityEngine.Rendering.LensFlareComponentSRP", "Lens Flare SRP")]
     internal sealed partial class Halo : Behaviour
     {
         extern public float size { get; set; }

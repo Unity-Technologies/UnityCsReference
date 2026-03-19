@@ -36,7 +36,7 @@ namespace UnityEditor
 
         // This is only used internally for deleting curves
         internal int  classID;
-        internal int  scriptInstanceID;
+        internal EntityId  scriptInstanceID;
 
         public AnimationClipCurveData()
         {

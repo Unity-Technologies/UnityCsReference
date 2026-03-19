@@ -10,6 +10,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
     interface IToggleButtonItem
     {
         string Name { get; }
+        string Tooltip { get; }
     }
 
     // Wrapper around ToggleButtonGroup that deals with list of items instead of indices for convenience
@@ -38,7 +39,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 m_NumItems = 0;
                 foreach (var item in value)
                 {
-                    Add(new Button(){ text = item.Name });
+                    Add(new Button(){ text = item.Name, tooltip = item.Tooltip });
                     ++m_NumItems;
                 }
 

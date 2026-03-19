@@ -22,7 +22,7 @@ class StartProcessNode : ExecutionNode
     public NodeInput<string> Arguments => m_Arguments;
     public NodeOutput<int> ProcessId => m_ProcessId;
 
-    public StartProcessNode(string name) : base(name)
+    public StartProcessNode()
     {
         m_ExecutablePath = new(this);
         m_Arguments = new(this);

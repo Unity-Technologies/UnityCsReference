@@ -38,6 +38,7 @@ namespace UnityEngine
      NativeHeader("Modules/UI/Canvas.h"),
      NativeHeader("Modules/UI/CanvasManager.h"),
      NativeHeader("Modules/UI/UIStructs.h")]
+    [UIModuleHelpURL("class-Canvas")]
     public sealed class Canvas : Behaviour
     {
         public delegate void WillRenderCanvases();

@@ -81,19 +81,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal static Instance Create(IInstanceItem instanceItem, InstanceController playModeController, IEnumerable<InstanceControllerDecorator> decorators)
+        internal static Instance Create(
+            IInstanceItem instanceItem,
+            InstanceController playModeController,
+            List<InstanceControllerDecorator> decorators,
+            ExecutionGraph executionGraph)
         {
             Assert.IsNotNull(instanceItem, "InstanceItem cannot be null");
             Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
+            Assert.IsNotNull(executionGraph, "ExecutionGraph cannot be null");
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
-            var executionGraph = new ExecutionGraph();
-            executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
             instance.m_InstanceItem = instanceItem;
             instance.m_InstanceController = playModeController;
             instance.m_ExecutionGraph = executionGraph;
-            instance.m_DecoratorsControllers = new(decorators);
+            instance.m_DecoratorsControllers = decorators;
+
+            executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
+            instance.OnGraphStatusRefreshed();
 
             return instance;
         }
@@ -131,6 +137,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsFreeRunMode()
         {
+            // TODO only local instances support free running currently, we should move this to a decorator
+            if (m_InstanceController is not LocalPlayerController)
+                return false;
             return RunModeState == RunModeState.ManualControl;
         }
 
@@ -161,7 +170,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var runningMode = isFreeRun
                 ? RunModeState.ManualControl.ToString()
                 : RunModeState.ScenarioControl.ToString();
-            
+
             var hasBeenActive = IsActive() || durationMs > 0;
 
             return new InstanceData

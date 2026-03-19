@@ -61,8 +61,12 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                     isSelected,
                     () => ChangeValueFromMenu(menuItem));
             }
-            menu.AddSeparator(String.Empty);
-            menu.AddItem(s_CreateNewClip, false, CreateNewClipFromMenu);
+
+            if (m_State.selection.canChangeClip)
+            {
+                menu.AddSeparator(String.Empty);
+                menu.AddItem(s_CreateNewClip, false, CreateNewClipFromMenu);
+            }
         }
 
         new string GetListItemToDisplay(IAnimationWindowClip clip) =>

@@ -149,7 +149,7 @@ namespace UnityEditor
         {
             ConsoleWindow.LoadIcons();
 
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
+            GUI.color = EditorUtility.activePlayModeTint;
 
             if (Event.current.type == EventType.Layout)
                 m_ShowProgress = Progress.running && Progress.GetMaxElapsedTime() > k_ShowProgressThreshold;

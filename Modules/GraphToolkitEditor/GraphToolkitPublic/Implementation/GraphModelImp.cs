@@ -119,8 +119,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanAssignTo(PortModel destination, PortModel source)
         {
-            if(destination.DataTypeHandle == TypeHandle.Untyped)
-                return source.DataTypeHandle == TypeHandle.Untyped;
+            if(destination.PortDataType == typeof(Untyped))
+                return source.PortDataType == typeof(Untyped);
             return destination.PortDataType.IsAssignableFrom(source.PortDataType);
         }
 
@@ -721,7 +721,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanPasteVariable(VariableDeclarationModelBase originalModel)
         {
-            return originalModel is VariableDeclarationModel && SupportedTypes.Contains(originalModel.DataType.Resolve());
+            return originalModel is VariableDeclarationModel && 
+                   SupportedTypes.Contains(originalModel.DataType.Resolve());
         }
 
         public override bool CanBeDroppedInOtherGraph(GraphModel otherGraph)

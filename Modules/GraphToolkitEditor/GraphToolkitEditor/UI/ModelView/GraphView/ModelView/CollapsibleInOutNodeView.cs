@@ -36,6 +36,7 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string bottomPortContainerPartName = "bottom-vertical-port-container";
 
         bool m_ShouldRename;
+        bool m_LastCollapsedState;
 
         const float k_DefaultMinWidth = 80f;
 
@@ -114,6 +115,27 @@ namespace Unity.GraphToolkit.Editor
             {
                 OnSetVisible();
             }
+
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        }
+
+        void OnGeometryChangedEvent(GeometryChangedEvent evt)
+        {
+            var isCollapsed = (NodeModel as ICollapsible)?.Collapsed ?? false;
+
+            if (m_LastCollapsedState != isCollapsed && EditableTitlePart is NodeTitlePart nodeTitlePart)
+            {
+                if (isCollapsed)
+                {
+                    nodeTitlePart.UpdateUIOnCollapse();
+                }
+                else
+                {
+                    nodeTitlePart.UpdateUIOnExpand(evt.oldRect.width, evt.newRect.width);
+                }
+            }
+
+            m_LastCollapsedState =  isCollapsed;
         }
 
         /// <inheritdoc />
@@ -146,9 +168,6 @@ namespace Unity.GraphToolkit.Editor
         {
             GraphView.Dispatch(new CollapseNodeCommand(evt.newValue, NodeModel));
             EnableInClassList(collapsedUssClassName, evt.newValue);
-
-            if (!evt.newValue && EditableTitlePart is NodeTitlePart nodeTitlePart)
-                nodeTitlePart.UpdateUIOnCollapseStateChange();
         }
 
         protected void OnShowButton(bool show)

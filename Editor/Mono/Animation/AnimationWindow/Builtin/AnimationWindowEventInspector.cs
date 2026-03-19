@@ -16,7 +16,8 @@ namespace UnityEditor.AnimationWindowBuiltin
     internal class AnimationWindowEventInspector : UnityEditor.Editor
     {
         public static GUIContent s_OverloadWarning = EditorGUIUtility.TrTextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!");
-        public static GUIContent s_DuplicatesWarning = EditorGUIUtility.TrTextContent("Some functions have the same name across several Monobehaviour components and may not work as intended if used with Animation Events!");
+        public static GUIContent s_DuplicatesWarning = EditorGUIUtility.TrTextContent("Some functions have the same name across several MonoBehaviour components and may not work as intended if used with Animation Events!");
+        public static GUIContent s_RequireMethod = EditorGUIUtility.TrTextContent("Require Receiver", "When enabled, an error will be emitted if there is no matching method on the GameObject.");
 
         const string kNotSupportedPostFix = " (Function Not Supported)";
         const string kNoneSelected = "(No Function Selected)";
@@ -56,6 +57,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             AnimationEvent firstEvent = data.selectedEvents[0];
 
             bool singleFunctionName = Array.TrueForAll(data.selectedEvents, evt => evt.functionName == firstEvent.functionName);
+            bool singleMessageOptions = Array.TrueForAll(data.selectedEvents, evt => evt.messageOptions == firstEvent.messageOptions);
 
             EditorGUI.BeginChangeCheck();
 
@@ -114,6 +116,22 @@ namespace UnityEditor.AnimationWindowBuiltin
                 }
                 EditorGUI.showMixedValue = false;
 
+                EditorGUI.indentLevel++;
+                EditorGUI.showMixedValue = !singleMessageOptions;
+                bool requireReceiver = EditorGUILayout.Toggle(
+                    s_RequireMethod,
+                    firstEvent.messageOptions == SendMessageOptions.RequireReceiver);
+                var sendMessageOptions = requireReceiver ? SendMessageOptions.RequireReceiver : SendMessageOptions.DontRequireReceiver;
+                if (sendMessageOptions != firstEvent.messageOptions)
+                {
+                    foreach (var evt in data.selectedEvents)
+                    {
+                        evt.messageOptions = sendMessageOptions;
+                    }
+                }
+                EditorGUI.showMixedValue = false;
+                EditorGUI.indentLevel--;
+
                 var selectedParameter = supportedMethods[selected].parameterType;
 
                 if (singleFunctionName && selectedParameter != null)
@@ -150,6 +168,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                         GUILayout.Label(duplicatedFunctionDetails, EditorStyles.helpBox);
                     }
                 }
+
             }
             else
             {
@@ -164,6 +183,21 @@ namespace UnityEditor.AnimationWindowBuiltin
                     }
                 }
                 EditorGUI.showMixedValue = false;
+
+                EditorGUI.indentLevel++;
+                EditorGUI.showMixedValue = !singleMessageOptions;
+                bool wasRequiringReceiver = firstEvent.messageOptions == SendMessageOptions.RequireReceiver;
+                bool nowRequireReceiver = EditorGUILayout.Toggle(s_RequireMethod, wasRequiringReceiver);
+                var sendMessageOptions = nowRequireReceiver ? SendMessageOptions.RequireReceiver : SendMessageOptions.DontRequireReceiver;
+                if (wasRequiringReceiver != nowRequireReceiver)
+                {
+                    foreach (var evt in data.selectedEvents)
+                    {
+                        evt.messageOptions = sendMessageOptions;
+                    }
+                }
+                EditorGUI.showMixedValue = false;
+                EditorGUI.indentLevel--;
 
                 if (singleFunctionName)
                 {
@@ -228,6 +262,9 @@ namespace UnityEditor.AnimationWindowBuiltin
             using (new EditorGUI.DisabledScope(true))
             {
                 dummyEvent.functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), dummyEvent.functionName);
+                EditorGUI.indentLevel++;
+                    dummyEvent.m_MessageOptions = EditorGUILayout.Toggle(s_RequireMethod, dummyEvent.messageOptions == SendMessageOptions.RequireReceiver) ? 0 : 1;
+                EditorGUI.indentLevel--;
                 DoEditRegularParameters(new AnimationEvent[] { dummyEvent }, typeof(AnimationEvent));
             }
         }

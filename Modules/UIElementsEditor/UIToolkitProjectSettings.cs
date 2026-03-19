@@ -24,31 +24,11 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
         const string k_EnableUSStatsWindow = "UIToolkit.EnableUSSStatsWindow";
-        const string k_EnableAdvancedText = "UIToolkit.EnableAdvancedText";
 
-        [SerializeField] bool m_EnableAdvancedText = false;
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultRuntimeTheme;
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultEditorTheme;
         [SerializeField] CanvasTheme m_DefaultRuntimeCanvasTheme;
         [SerializeField] CanvasTheme m_DefaultEditorCanvasTheme;
-
-        internal static bool enableAdvancedText
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-            get => instance.m_EnableAdvancedText;
-            set
-            {
-                if (instance.m_EnableAdvancedText == value)
-                    return;
-                instance.m_EnableAdvancedText = value;
-                onEnableAdvancedTextChanged?.Invoke(value);
-                ATGAnalytics.ReportATGEnabled(value);
-                instance.Save();
-            }
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal static Action<bool> onEnableAdvancedTextChanged;
 
         /// <summary>
         /// Invoked when any theme setting changes (runtime/editor theme or canvas theme).
@@ -122,6 +102,21 @@ namespace UnityEditor.UIElements
 
         [SerializeField]
         private bool m_EnableLowLevelDebugger = false;
+
+        [SerializeField]
+        private bool m_EnablePanelRendererAnimation = false;
+
+        internal static bool enablePanelRendererAnimation
+        {
+            get => instance.m_EnablePanelRendererAnimation;
+            set
+            {
+                if (instance.m_EnablePanelRendererAnimation == value)
+                    return;
+                instance.m_EnablePanelRendererAnimation = value;
+                instance.Save();
+            }
+        }
 
         internal static bool EnableLowLevelDebugger
         {
@@ -257,11 +252,11 @@ namespace UnityEditor.UIElements
 
         internal void Reset()
         {
-            enableAdvancedText = false;
             defaultRuntimeTheme = null;
             defaultEditorTheme = null;
             defaultRuntimeCanvasTheme = CanvasTheme.ProjectSettings;
             defaultEditorCanvasTheme = CanvasTheme.ProjectSettings;
+            m_EnablePanelRendererAnimation = false;
         }
 
 
@@ -273,7 +268,6 @@ namespace UnityEditor.UIElements
             EditorUserSettings.SetConfigValue(k_DisableMouseWheelZooming, null);
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
             EditorUserSettings.SetConfigValue(k_EnableEventDebugger, null);
-            enableAdvancedText = false;
         }
     }
 }

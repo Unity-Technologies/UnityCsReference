@@ -12,22 +12,21 @@ namespace UnityEditor.Actions
     {
         public EditorAction action { get; internal set; }
         bool m_IsCancelled;
+        Type m_ToolOwner;
 
         EditorActionTool() { }
 
-        public EditorActionTool(EditorAction action)
+        public EditorActionTool(EditorAction action, Type toolOwner)
         {
             this.action = action;
             this.action.actionFinished += OnActionFinished;
+            m_ToolOwner = toolOwner;
 
             Selection.selectionChanged += Dispose;
         }
 
         public void OnGUI(EditorWindow window)
         {
-            if (!(window is SceneView sceneView))
-                return;
-
             var evt = Event.current;
 
             if(evt.type == EventType.KeyDown)
@@ -47,7 +46,10 @@ namespace UnityEditor.Actions
                 }
             }
 
-            action?.OnSceneGUI(sceneView);
+            if (window is SceneView sceneView)
+                action?.OnSceneGUI(sceneView);
+            if (window is EditorToolWindowBase toolOwnerWindow)
+                action?.OnToolOwnerGUI(toolOwnerWindow);
         }
 
         void OnActionFinished(EditorActionResult result) => Dispose();
@@ -67,7 +69,7 @@ namespace UnityEditor.Actions
 
             action?.Finish(m_IsCancelled ? EditorActionResult.Canceled : EditorActionResult.Success);
             action = null;
-            EditorToolManager.activeOverride = null;
+            EditorToolManager.SetActiveOverride(null, m_ToolOwner);
         }
     }
 }

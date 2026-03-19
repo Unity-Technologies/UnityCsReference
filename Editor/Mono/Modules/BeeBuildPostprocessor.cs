@@ -386,6 +386,7 @@ namespace UnityEditor.Modules
                 ExtraTypes = extraTypesFile?.ToString(),
                 GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(namedBuildTarget) == Il2CppStacktraceInformation.MethodFileLineNumber,
                 UsymtoolPath = GetUsymtoolPath(),
+                LtoMode = (BuildProgramLTOMode)PlayerSettings.GetIl2CppLTOMode(namedBuildTarget)
             };
         }
 

@@ -263,7 +263,7 @@ namespace Unity.Hierarchy
         static int InvokeGetNodeHashCode(IntPtr handlePtr, in HierarchyNode node) => FromIntPtr(handlePtr).GetNodeHashCode(in node);
 
         [RequiredByNativeCode]
-        static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
+        static int InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => (int)FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
 
 #pragma warning disable 618 // Remove this pragma once the corresponding public APIs below are removed
         [RequiredByNativeCode]

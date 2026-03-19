@@ -242,14 +242,14 @@ sealed class HierarchyViewDragHandler
 
         ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
-        var parentNodeTypeHandler = parentNode == Source.Root ? null : Source.GetNodeTypeHandler(in parentNode) as IHierarchyEditorNodeTypeHandler;
+        var parentNodeTypeHandler = parentNode == Source.Root ? null : ViewModel.GetNodeTypeHandler(in parentNode) as IHierarchyEditorNodeTypeHandler;
         for (var i = 0; i < draggedNodes.Span.Length; ++i)
         {
             var draggedNode = draggedNodes.Span[i];
             if (IsDescendant(parentNode, draggedNode))
                 return HierarchyViewDragAndDropTargets.Rejected;
 
-            var draggedNodeTypeHandler = Source.GetNodeTypeHandler(in draggedNode) as IHierarchyEditorNodeTypeHandler;
+            var draggedNodeTypeHandler = ViewModel.GetNodeTypeHandler(in draggedNode) as IHierarchyEditorNodeTypeHandler;
             if (!parentNodeTypeHandler?.AcceptChild(m_HierarchyView, in draggedNode) ?? false)
                 return HierarchyViewDragAndDropTargets.Rejected;
             if (!draggedNodeTypeHandler?.AcceptParent(m_HierarchyView, in parentNode) ?? false)
@@ -351,11 +351,18 @@ sealed class HierarchyViewDragHandler
         if (!DragSourceIsCurrentListView(args))
             return DragVisualMode.Rejected;
 
+        // Because we do Source.GetChildren we first need to check if the source hierarchy changed while dragging
+        // If it did change we can properly handle the drop and need to reject it.
+        if (!Source.Exists(parentNode))
+            return DragVisualMode.Rejected;
+
         using var rentedSpan = new RentSpanUnmanaged<HierarchyNode>(ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
         var draggedNodes = rentedSpan.Span;
         ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
-        var existingChildren = Source.GetChildren(parentNode);
+        var existingChildrenCount = Source.GetChildrenCount(parentNode);
+        using var existingChildren = new RentSpanUnmanaged<HierarchyNode>(existingChildrenCount);
+        Source.GetChildren(parentNode, existingChildren);
         var insertIndex = dragAndDropTargets.childIndex;
 
         // If dragging from inside the view, it is possible that the parent target is pointing to a node that is being dragged.
@@ -415,14 +422,15 @@ sealed class HierarchyViewDragHandler
 
         // Update the sorting indexes of the children of the new parent.
         if (insertIndex == k_InvalidIndex)
-            insertIndex = existingChildren.Length;
+            insertIndex = existingChildrenCount;
 
         // If dragging from inside the view, it is possible that the dragged nodes are already children of the parent node.
         // In that case, we need to skip them.
         currentSortIndex = 0;
-        for (var i = 0; i < insertIndex && i < existingChildren.Length; ++i)
+
+        for (var i = 0; i < insertIndex && i < existingChildrenCount; ++i)
         {
-            var node = existingChildren[i];
+            var node = existingChildren.Span[i];
             if (ViewModel.HasFlags(in node, HierarchyNodeFlags.Selected))
                 continue;
 
@@ -434,9 +442,9 @@ sealed class HierarchyViewDragHandler
             Source.SetSortIndex(draggedNodes[i], currentSortIndex++);
         }
 
-        for (var i = insertIndex; i < existingChildren.Length; ++i)
+        for (var i = insertIndex; i < existingChildrenCount; ++i)
         {
-            var node = existingChildren[i];
+            var node = existingChildren.Span[i];
             if (ViewModel.HasFlags(in node, HierarchyNodeFlags.Selected))
                 continue;
 
@@ -705,7 +713,11 @@ sealed class HierarchyViewDragHandler
                 {
                     var beforeItem = m_CollectionView.GetRootElementForIndex(dragTargets.insertAtIndex - 1);
                     var afterItem = m_CollectionView.GetRootElementForIndex(dragTargets.insertAtIndex);
-                    PlaceHoverBarAtElement(beforeItem ?? afterItem);
+                    var item = beforeItem ?? afterItem;
+                    if (item != null)
+                        PlaceHoverBarAtElement(item);
+                    else
+                        PlaceHoverBarAt(0);
                 }
 
                 break;

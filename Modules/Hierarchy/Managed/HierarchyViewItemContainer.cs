@@ -52,7 +52,7 @@ namespace Unity.Hierarchy
             if (view == null)
                 throw new ArgumentNullException(nameof(view));
 
-            var handler = view.Source.GetNodeTypeHandler(in node);
+            var handler = view.ViewModel.GetNodeTypeHandler(in node);
             if (m_ViewItem == null || m_ViewItemNodeTypeHandler != handler)
             {
                 Release();

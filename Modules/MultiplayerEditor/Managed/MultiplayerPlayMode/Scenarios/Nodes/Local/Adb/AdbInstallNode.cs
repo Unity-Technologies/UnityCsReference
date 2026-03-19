@@ -26,12 +26,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_AdbService;
         }
 
-        public AdbInstallNode(string name, IAdbService adbService = null) : base(name)
+        public AdbInstallNode()
         {
-            m_AdbService = adbService;
-
             m_ApkPath = new(this);
             m_DeviceName = new(this);
+        }
+
+        public AdbInstallNode(IAdbService adbService) : this()
+        {
+            m_AdbService = adbService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)

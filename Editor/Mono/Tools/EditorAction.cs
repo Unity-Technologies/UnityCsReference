@@ -24,18 +24,27 @@ namespace UnityEditor.Actions
 
         public static T Start<T>(T action) where T : EditorAction
         {
+            return Start(action, typeof(SceneView));
+        }
+        
+        internal static T Start<T>(Type toolOwner) where T : EditorAction, new() => Start(new T(), toolOwner);
+
+        internal static T Start<T>(T action, Type toolOwner) where T : EditorAction
+        {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
             if (action.m_IsFinished)
                 return action;
 
-            EditorToolManager.activeOverride = new EditorActionTool(action);
-
+            EditorToolManager.SetActiveOverride(new EditorActionTool(action, toolOwner), toolOwner);
+            
             return action;
         }
 
         public virtual void OnSceneGUI(SceneView sceneView) {}
+        
+        internal virtual void OnToolOwnerGUI(EditorToolWindowBase toolOwnerWindow) {}
 
         public void Finish(EditorActionResult result)
         {

@@ -96,7 +96,7 @@ namespace Unity.Hierarchy.Editor
             }
 
             var insertAfterParent = insertAtIndex == parentIndex + 1 || (parentIndex == targetIndex && dropPosition != DragAndDropPosition.OverItem);
-            if (droppedInParent != hierarchyView.Source.Root && insertAfterParent && hierarchyView.Source.GetChildrenCount(in droppedInParent) > 0 && hierarchyView.ViewModel.HasFlags(in droppedInParent, HierarchyNodeFlags.Expanded))
+            if (droppedInParent != hierarchyView.Source.Root && insertAfterParent && hierarchyView.ViewModel.GetChildrenCount(in droppedInParent) > 0 && hierarchyView.ViewModel.HasFlags(in droppedInParent, HierarchyNodeFlags.Expanded))
             {
                 option |= HierarchyDropFlags.DropAfterParent;
             }

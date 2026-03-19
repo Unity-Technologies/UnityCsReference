@@ -64,12 +64,18 @@ namespace UnityEngine
         [NoAutoStaticsCleanup]
         private static AssemblyLoadedScopeIl2Cpp _currentAssemblyLoadedScope = null;
 
+        [NoAutoStaticsCleanup]
+        private static DependencyOrderedNativeCallbackProvider _nativeCallbackProvider = null;
+
         [RequiredByNativeCode]
         static void Internal_EnterAssembliesLoadedLifecycleScopes_PreDeserialization()
         {
             try
             {
                 LifecycleController.InitializeForIl2Cpp(new ScriptingCoreDebugForIl2AndMonoCpp());
+
+                _nativeCallbackProvider = new DependencyOrderedNativeCallbackProvider();
+                LifecycleController.Instance.SetDependency_NativeCallbackProvider(_nativeCallbackProvider);
 
                 _currentAssemblyLoadedScope = new AssemblyLoadedScopeIl2Cpp(CurrentAssemblies.GetLoadedAssemblies());
                 LifecycleController.Instance.EnterScope(_currentAssemblyLoadedScope);
@@ -92,6 +98,7 @@ namespace UnityEngine
 
                 LifecycleController.Instance.ExitScope(_currentAssemblyLoadedScope);
                 _currentAssemblyLoadedScope = null;
+                _nativeCallbackProvider = null;
             }
             catch (Exception e)
             {

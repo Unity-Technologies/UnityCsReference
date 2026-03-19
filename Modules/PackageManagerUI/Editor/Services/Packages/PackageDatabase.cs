@@ -181,7 +181,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
         {
-            package = GetPackage(info.name);
+            m_TechnicalNameToUniqueIdMap.TryGetValue(info.name, out var potentialUniqueId);
+            package = GetPackage(potentialUniqueId ?? info.name);
+
             if (package == null)
             {
                 version = null;

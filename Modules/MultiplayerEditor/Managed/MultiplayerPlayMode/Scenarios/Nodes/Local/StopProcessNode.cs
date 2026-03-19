@@ -20,7 +20,7 @@ class StopProcessNode : ExecutionNode
 
     public NodeInput<int> ProcessId => m_ProcessId;
 
-    public StopProcessNode(string name) : base(name)
+    public StopProcessNode()
     {
         m_ProcessId = new(this);
     }

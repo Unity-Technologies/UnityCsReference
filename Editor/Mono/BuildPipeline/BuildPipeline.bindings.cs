@@ -176,6 +176,8 @@ namespace UnityEditor
         ///<summary>Builds a player.</summary>
         ///<remarks>Use this function to programatically create a build of your project.
         ///
+        ///When working with <see cref="BuildProfile"/>, use the overload of <see cref="BuildPipeline.BuildPlayer(UnityEditor.BuildPlayerWithProfileOptions)"/> that accepts <see cref="BuildPlayerWithProfileOptions"/> instead. That overload applies the settings from the specified build profile to the build process.
+        ///
         ///Calling this method will invalidate any variables in the editor script that reference GameObjects, so they will need to be reacquired after the call.
         ///
         ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" />, <see cref="IProcessSceneWithReport" /> and <see cref="IPostprocessBuildWithContext" />.

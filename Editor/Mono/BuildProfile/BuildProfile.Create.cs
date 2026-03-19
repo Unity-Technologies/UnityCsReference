@@ -6,8 +6,11 @@ using System;
 using System.IO;
 using JetBrains.Annotations;
 using UnityEditor.Modules;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Events;
+using UnityEngine.Profiling;
 
 namespace UnityEditor.Build.Profile
 {
@@ -32,7 +35,7 @@ namespace UnityEditor.Build.Profile
         internal static BuildProfile CreateInstance(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
         {
             var platformGuid = BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
-            ValidatePlatform(platformGuid);
+            ValidatePlatformExists(platformGuid);
 
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
@@ -44,7 +47,7 @@ namespace UnityEditor.Build.Profile
 
         internal static BuildProfile CreateInstance(GUID platformId)
         {
-            ValidatePlatform(platformId);
+            ValidatePlatformExists(platformId);
 
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var buildProfile = CreateInstance<BuildProfile>();
@@ -56,20 +59,100 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Creates a new build profile asset for the specified platform with the provided name. Created asset will be
+        /// placed under "Assets/Settings/BuildProfiles".
+        /// </summary>
+        /// <param name="platformId">The GUID of the target platform. Must be a valid installed editor platform.</param>
+        /// <param name="profileName">The name for the build profile. Used as the asset filename.</param>
+        /// <param name="onProfileReady">Optional callback invoked when the profile has completed
+        /// initialization and is ready to use. For the callback to survive domain reloads, it must be
+        /// a static method or a method on a serialized UnityEngine.Object. 
+        /// Non-persistent callbacks will not be invoked if a domain reload occurs during initialization.</param>
+        /// <returns>
+        /// The newly created <see cref="BuildProfile"/> instance. The profile may require initialization if
+        /// platform packages need to be installed.
+        /// </returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="platformId"/> is cannot be found
+        /// as an installed platform.</exception>
+        /// /// <remarks>
+        /// <para>
+        /// This method automatically installs required platform packages if they are not already installed.
+        /// Package installation happens asynchronously.
+        /// </para>
+        /// <para>
+        /// The profile will be created at: Assets/Settings/Build Profiles/{profileName}.asset
+        /// If a profile with the same name exists, a unique name will be generated.
+        /// </para>
+        /// <para>
+        /// If required, package installation begins immediately and cannot be cancelled.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// //Static method example - will continue after a domain reload
+        /// var buildProfile = BuildProfile.CreateBuildProfile(
+        ///     androidGuid,
+        ///     "My Profile",
+        ///     OnProfileReadyStatic);
+        /// 
+        /// static void OnProfileReadyStatic(BuildProfile profile)
+        /// {
+        ///     Debug.Log($"Profile {profile.name} ready!");
+        /// }
+        /// </code>
+        /// </example>
+        public static BuildProfile CreateBuildProfile(
+            GUID platformId,
+            string profileName,
+            UnityAction<BuildProfile> onProfileReady = null)
+        {
+            // Ensure the requested platform is installed.
+            var installedPlatforms = BuildProfile.GetInstalledPlatformModules();
+            bool isPlatformInstalled = false;
+            foreach (var platform in installedPlatforms)
+            {
+                if (platform.platformGuid == platformId)
+                {
+                    isPlatformInstalled = true;
+                    break;
+                }
+            }
+
+            if (!isPlatformInstalled)
+            {
+                var platformName = BuildTargetDiscovery.BuildPlatformDisplayName(platformId);
+                throw new ArgumentException(
+                    $"Cannot create build profile for '{platformName}' (GUID: {platformId}). "
+                    + $"This platform is not installed in the editor. ");
+            }
+
+            BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
+            string assetPath = BuildProfileModuleUtil.GetProfilePathWithProvidedName(platformId, profileName);
+            var packagesToInstall = BuildTargetDiscovery.GetAllMissingRequiredPlatformPackageNames(platformId);
+
+            return CreateInstance(platformId, assetPath, -1, packagesToInstall, onProfileReady);
+        }
+
+        /// <summary>
         /// Internal helper function for creating new build profile assets and invoking the onBuildProfileCreated
         /// event after an asset is created by AssetDatabase.CreateAsset.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static void CreateInstance(GUID platformId, string assetPath)
+        internal static BuildProfile CreateInstance(GUID platformId, string assetPath)
         {
-            CreateInstance(platformId, assetPath, -1, Array.Empty<string>());
+            return CreateInstance(platformId, assetPath, -1, Array.Empty<string>());
         }
 
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static void CreateInstance(GUID platformId, string assetPath, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        internal static BuildProfile CreateInstance(
+            GUID platformId,
+            string assetPath,
+            int preconfiguredSettingsVariant,
+            string[] packagesToAdd,
+            UnityAction<BuildProfile> onProfileReady = null)
         {
             ValidateFileNameLength(assetPath);
-            ValidatePlatform(platformId);
+            ValidatePlatformExists(platformId);
 
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var buildProfile = CreateInstance<BuildProfile>();
@@ -79,18 +162,21 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.CreateAsset(
                 buildProfile,
                 AssetDatabase.GenerateUniqueAssetPath(assetPath));
-            BuildProfileContext.instance.AddPackageAddInfo(buildProfile, packagesToAdd, preconfiguredSettingsVariant);
+            BuildProfileContext.instance.RegisterProfileAwaitingInitialization(
+                buildProfile, packagesToAdd, preconfiguredSettingsVariant, onProfileReady);
+
+            // OnEnable must be called after CreateAsset so that serialized fields are properly initialized.
             buildProfile.OnEnable();
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
+            return buildProfile;
         }
 
         /// <summary>
-        /// Validates if the provided platform GUID is valid by checking against all supported platforms.
-        /// Throws an ArgumentException if the platform is not valid.
+        /// Validates that the platform GUID corresponds to a known Unity platform.
+        /// Does NOT check if the platform module is installed.
         /// </summary>
-        /// <param name="platformGuid">The GUID of the platform to validate.</param>
-        static void ValidatePlatform(GUID platformGuid)
+        static void ValidatePlatformExists(GUID platformGuid)
         {
             foreach (var guid in BuildTargetDiscovery.GetAllPlatforms())
             {
@@ -98,7 +184,8 @@ namespace UnityEditor.Build.Profile
                     return;
             }
 
-            throw new ArgumentException("A build profile must be created for a valid platform.");
+            throw new ArgumentException(
+                $"Platform GUID {platformGuid} is not a valid Unity build platform.");
         }
 
         /// <summary>
@@ -123,7 +210,6 @@ namespace UnityEditor.Build.Profile
                 SerializePlayerSettings();
                 AssetDatabase.SaveAssetIfDirty(this);
             }
-            BuildProfileContext.instance.ClearPackageAddInfo(this);
         }
 
         void TryCreatePlatformSettings()

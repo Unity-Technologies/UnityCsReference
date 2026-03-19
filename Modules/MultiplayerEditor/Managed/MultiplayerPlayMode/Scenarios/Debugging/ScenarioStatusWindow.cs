@@ -29,13 +29,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.styleSheets.Add(styleSheet);
 
             ScenarioManagerProvider.instance.ConfigAssetChanged += Refresh;
+            ScenarioManagerProvider.instance.StateChanged += Refresh;
             Refresh();
         }
 
         private void OnDisable()
         {
             ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
+            ScenarioManagerProvider.instance.StateChanged -= Refresh;
         }
+
+        private void Refresh(PlayModeScenarioState _) => Refresh();
 
         private void Refresh()
         {

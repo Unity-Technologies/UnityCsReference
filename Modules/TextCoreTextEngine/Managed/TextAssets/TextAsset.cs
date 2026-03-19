@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 
 
@@ -101,61 +99,8 @@ namespace UnityEngine.TextCore.Text
 
         internal int m_MaterialHashCode;
 
-        private static Dictionary<EntityId, WeakReference<TextAsset>> kTextAssetByInstanceId = new Dictionary<EntityId, WeakReference<TextAsset>>();
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-        internal static TextAsset GetTextAssetByID(EntityId id)
-        {
-            if (id == EntityId.None)
-                return null;
-
-            if (kTextAssetByInstanceId.TryGetValue(id, out var weakRef))
-            {
-                if (weakRef.TryGetTarget(out var asset))
-                    return asset;
-
-                kTextAssetByInstanceId.Remove(id);
-                Debug.Assert(false, $"TextAsset with EntityId {id} was collected but is still referenced.");
-            }
-            else
-            {
-                Debug.Assert(false, $"TextAsset with EntityId {id} not found in the cache.");
-            }
-
-            return null;
-        }
-
         internal virtual void OnDestroy()
         {
-            kTextAssetByInstanceId.Remove(entityId);
-        }
-
-        internal virtual void OnEnable()
-        {
-            EnsureRegisteredInCache();
-        }
-
-        /// <summary>
-        /// Ensures this TextAsset is registered in the cache with a valid WeakReference.
-        /// This handles cases where a previous entry exists but the WeakReference is stale due to a domain reload
-        /// or other reasons.
-        /// </summary>
-        internal void EnsureRegisteredInCache()
-        {
-            var id = entityId;
-            if (kTextAssetByInstanceId.TryGetValue(id, out var existingRef))
-            {
-                // If the existing reference is still valid and points to this object, we're done
-                if (existingRef.TryGetTarget(out var existingAsset) && existingAsset == this)
-                    return;
-
-                // Otherwise, the reference is stale or points to a different object - replace it
-                kTextAssetByInstanceId[id] = new WeakReference<TextAsset>(this);
-            }
-            else
-            {
-                kTextAssetByInstanceId.Add(id, new WeakReference<TextAsset>(this));
-            }
         }
     }
 }

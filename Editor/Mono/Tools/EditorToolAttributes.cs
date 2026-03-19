@@ -66,6 +66,10 @@ namespace UnityEditor.EditorTools
             set => m_AllowPersistentTargets = value;
         }
         
+        // This is temporarily internal until it's moved to public API
+        Type m_TargetToolOwner;
+        internal Type targetToolOwner { get => m_TargetToolOwner; set => m_TargetToolOwner = value; }
+        
         ToolAttribute() {}
 
         protected ToolAttribute(string displayName, Type targetType = null, Type editorToolContext = null)
@@ -126,5 +130,25 @@ namespace UnityEditor.EditorTools
     {
         public EditorToolContextAttribute(string displayName = "", Type targetType = null)
             : base(displayName, targetType) {}
+
+        internal EditorToolContextAttribute(Type targetToolOwner, string displayName = "")
+            : base(displayName, null)
+        {
+            this.targetToolOwner = targetToolOwner;
+        }
+    }
+
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    class EditorToolOwnerAttribute : Attribute
+    {
+        Type m_DefaultContext;
+        
+        public Type defaultContext => m_DefaultContext;
+        
+        public EditorToolOwnerAttribute(Type defaultContextType)
+        {
+            m_DefaultContext = defaultContextType;
+        }
     }
 }

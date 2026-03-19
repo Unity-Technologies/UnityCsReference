@@ -20,7 +20,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public NodeInput<int> ProcessId => m_ProcessId;
 
-        public MonitorProcessNode(string name) : base(name)
+        public MonitorProcessNode()
         {
             m_ProcessId = new(this);
         }

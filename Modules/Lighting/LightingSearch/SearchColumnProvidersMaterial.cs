@@ -10,19 +10,9 @@ using UnityEditor.UIElements;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
-    static class LightingSearchSelectorsMaterial
+    static class SearchColumnProvidersMaterial
     {
-        [SearchSelector(LightingSearchSelectors.k_MaterialGlobalIlluminationPath, provider: LightingSearchSelectors.k_AssetProvider)]
-        static object MaterialGlobalIlluminationSearchSelector(SearchSelectorArgs args)
-        {
-            var material = args.current.ToObject<Material>();
-            if (material == null)
-                return null;
-
-            return LightingSearchDataAccessors.GetMaterialGlobalIlluminationFlags(material);
-        }
-
-        [SearchColumnProvider(LightingSearchSelectors.k_MaterialGlobalIlluminationPath)]
+        [SearchColumnProvider(LightingSearchPaths.k_MaterialGlobalIlluminationPath)]
         internal static void MaterialGlobalIlluminationSearchColumnProvider(SearchColumn column)
         {
             column.getter = args =>
@@ -53,18 +43,7 @@ namespace UnityEditor.Lighting.LightingSearch
                 field.Init(MaterialGlobalIlluminationDisplay.None);
                 return field;
             };
-            column.binder = (args, ve) =>
-            {
-                var field = (EnumField)ve;
-                if (args.value is not MaterialGlobalIlluminationDisplay displayValue)
-                {
-                    field.visible = false;
-                    return;
-                }
-
-                field.visible = true;
-                field.SetValueWithoutNotify(displayValue);
-            };
+            column.binder = LightingSearchColumnHelpers.CreateBinder<EnumField>((f, v) => f.SetValueWithoutNotify((MaterialGlobalIlluminationDisplay)v));
         }
 
         static MaterialGlobalIlluminationDisplay MapToDisplayEnum(MaterialGlobalIlluminationFlags flags)
@@ -87,52 +66,15 @@ namespace UnityEditor.Lighting.LightingSearch
             };
         }
 
-        [SearchSelector(LightingSearchSelectors.k_EmissionColorPath, provider: LightingSearchSelectors.k_AssetProvider, cacheable = false)]
-        static object EmissionColorSearchSelector(SearchSelectorArgs args)
-        {
-            var material = args.current.ToObject<Material>();
-            if (material == null)
-                return null;
-
-            return LightingSearchDataAccessors.GetEmissionColor(material);
-        }
-
-        [SearchColumnProvider(LightingSearchSelectors.k_EmissionColorPath)]
+        [SearchColumnProvider(LightingSearchPaths.k_EmissionColorPath)]
         internal static void EmissionColorSearchColumnProvider(SearchColumn column)
         {
-            column.getter = args =>
-            {
-                var material = args.item.data as Material ?? args.item.ToObject<Material>();
-                if (material == null)
-                    return null;
-
-                return LightingSearchDataAccessors.GetEmissionColor(material);
-            };
-            column.setter = args =>
-            {
-                if (args.value is not Color color)
-                    return;
-
-                var material = args.item.data as Material ?? args.item.ToObject<Material>();
-                if (material == null)
-                    return;
-
-                LightingSearchDataAccessors.SetEmissionColor(material, color);
-            };
+            column.getter = LightingSearchColumnHelpers.CreateMaterialGetter(m => LightingSearchDataAccessors.GetEmissionColor(m));
+            column.setter = LightingSearchColumnHelpers.CreateMaterialSetter(
+                (m, v) => LightingSearchDataAccessors.SetEmissionColor(m, (Color)v),
+                v => v is Color);
             column.cellCreator = _ => new ColorField { style = { flexGrow = 1 } };
-            column.binder = (args, ve) =>
-            {
-                var field = (ColorField)ve;
-                if (args.value is Color color)
-                {
-                    field.visible = true;
-                    field.SetValueWithoutNotify(color);
-                }
-                else
-                {
-                    field.visible = false;
-                }
-            };
+            column.binder = LightingSearchColumnHelpers.CreateBinder<ColorField>((f, v) => f.SetValueWithoutNotify((Color)v));
         }
     }
 }

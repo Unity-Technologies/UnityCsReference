@@ -15,6 +15,7 @@ using UnityObject = UnityEngine.Object;
 using System.Linq;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEditor.EditorTools;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
@@ -1737,6 +1738,11 @@ namespace UnityEditor
             return true;
         }
 
+        internal static bool vertexDragging
+        {
+            get => Tools.vertexDragging && IsSceneViewGUILoop();
+        }
+
         // Casts /ray/ against the scene.
         public static object RaySnap(Ray ray)
         {
@@ -2220,6 +2226,16 @@ namespace UnityEditor
             outObjectList.Clear();
             foreach (var pobj in SceneViewPicking.GetAllOverlapping(position))
                 outObjectList.Add(pobj.target);
+        }
+        
+        internal static bool IsSceneViewGUILoop()
+        {
+            // Try checking if the GUIView.current is SceneView
+            if (GUIView.current is HostView view && view.actualView != null)
+                return view.actualView.GetType() == typeof(SceneView);
+
+            // If state is undefined, fallback to SceneView
+            return true;
         }
     }
 }

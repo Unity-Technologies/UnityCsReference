@@ -32,7 +32,7 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableUSSStatsWindow = "enable-uss-stats-window";
-        const string k_EnableTextAdvanced = "enable-text-advanced";
+        const string k_EnablePanelRendererAnimation = "enable-panel-renderer-animation";
         const string k_EnableDebuggerLowLevelName = "enable-debugger-low-level";
         const string k_DefaultRuntimeTheme = "default-runtime-theme";
         const string k_DefaultEditorTheme = "default-editor-theme";
@@ -164,11 +164,11 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableUSSStats = e.newValue;
             });
 
-            var enableTextAdvancedToggle = rootElement.Q<Toggle>(k_EnableTextAdvanced);
-            enableTextAdvancedToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableAdvancedText);
-            enableTextAdvancedToggle.RegisterValueChangedCallback(e =>
+            var panelRendererAnimationToggle = rootElement.Q<Toggle>(k_EnablePanelRendererAnimation);
+            panelRendererAnimationToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enablePanelRendererAnimation);
+            panelRendererAnimationToggle.RegisterValueChangedCallback(e =>
             {
-                UIToolkitProjectSettings.enableAdvancedText = e.newValue;
+                UIToolkitProjectSettings.enablePanelRendererAnimation = e.newValue;
             });
 
             var enableDebuggerLowLevelToggle = rootElement.Q<Toggle>(k_EnableDebuggerLowLevelName);

@@ -36,11 +36,31 @@ namespace UnityEditor.Search
         }
 
         bool ITableView.readOnly => false;
-        public override bool showNoResultMessage => m_ViewModel.displayMode != DisplayMode.Table;
+        internal static string resultViewId = "table";
+        public override string ViewId => resultViewId;
+        public override bool ShowNoResultMessage => m_ViewModel.displayMode != DisplayMode.Table;
 
         Columns viewColumns => m_ListView.columns;
 
         const float k_DefaultItemHeight = 22f;
+
+        public static SearchTableView Create(ISearchView viewModel)
+        {
+            return new SearchTableView(viewModel);
+        }
+
+        public static Texture2D FetchIcon()
+        {
+            return EditorGUIUtility.LoadIconRequired("TableView");
+        }
+
+        public static SearchResultViewDescriptor GetDescriptor()
+        {
+            return new SearchResultViewDescriptor(resultViewId, Create, FetchIcon,
+                (float)DisplayMode.Table,
+                description: "Table View",
+                buttonClassName: "search-statusbar__table-mode-button");
+        }
 
         public SearchTableView(ISearchView viewModel)
             : base("SearchTableView", viewModel, ussClassName)

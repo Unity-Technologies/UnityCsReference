@@ -30,7 +30,7 @@ namespace Unity.GraphToolkit.Editor
         GraphReference m_SubgraphReference;
 
         [SerializeField, NodeOption(true)]
-        string m_Subtitle;
+        new string m_Subtitle;
 
         // Used by the inspector to change the subgraph asset, when the node refers to an asset subgraph.
         [SerializeField, NodeOption(true)]

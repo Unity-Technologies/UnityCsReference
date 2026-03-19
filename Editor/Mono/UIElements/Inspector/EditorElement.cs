@@ -88,7 +88,8 @@ namespace UnityEditor.UIElements
 
         VisualElement m_PrefabElement;
 
-        IMGUIContainer m_Header;
+        VisualElement m_Header;
+        IMGUIContainer m_HeaderIMGUIContainer;
         InspectorElement m_InspectorElement;
         VisualElement m_DecoratorsElement;
         IMGUIContainer m_Footer;
@@ -156,7 +157,7 @@ namespace UnityEditor.UIElements
             m_EditorTarget = editor.targets[0];
             var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget, editor.targets.Length > 1);
 
-            m_Header = BuildHeaderElement(editorTitle);
+            m_Header = BuildHeaderElement(editorTitle, out m_HeaderIMGUIContainer);
             m_Footer = BuildFooterElement(editorTitle);
 
             Add(m_Header);
@@ -246,14 +247,14 @@ namespace UnityEditor.UIElements
             // See https://fogbugz.unity3d.com/f/cases/1279830/
             if (m_EditorTarget != editorTarget)
             {
-                m_Header.MarkDirtyLayout();
+                m_HeaderIMGUIContainer.MarkDirtyLayout();
                 m_Footer.MarkDirtyLayout();
             }
 
             m_EditorTarget = editorTarget;
             m_EditorIndex = editorIndex;
 
-            m_Header.onGUIHandler = HeaderOnGUI;
+            m_HeaderIMGUIContainer.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
 
             m_Header.name = editorTitle + "Header";
@@ -385,12 +386,16 @@ namespace UnityEditor.UIElements
 
         #region Header
 
-        IMGUIContainer BuildHeaderElement(string editorTitle)
+        VisualElement BuildHeaderElement(string editorTitle, out IMGUIContainer headerImguiContainer)
         {
             //Create and IMGUIContainer to enclose the header
             // This also needs to validate the state of the editor tracker (stuff that was already done in the original DrawEditors
-            var headerElement = inspectorWindow.CreateIMGUIContainer(HeaderOnGUI, editorTitle + "Header");
-            return headerElement;
+            var headerContainer = new VisualElement();
+            headerImguiContainer = inspectorWindow.CreateIMGUIContainer(HeaderOnGUI, editorTitle + "Header");
+            headerContainer.Add(headerImguiContainer);
+            if (InspectorWindowUtils.TryCreateObsoleteHelpBox(editor, out var obsoleteHelpBox))
+                headerContainer.Add(obsoleteHelpBox);
+            return headerContainer;
         }
 
         private static UQueryState<IMGUIContainer> ImguiContainersQuery = new UQueryBuilder<IMGUIContainer>(null).SingleBaseType().Build();
@@ -495,8 +500,6 @@ namespace UnityEditor.UIElements
                 GUILayout.Label("Multi-object editing not supported.", EditorStyles.helpBox);
                 return;
             }
-
-            InspectorWindowUtils.DisplayDeprecationMessageIfNecessary(editor);
 
             // Reset dirtiness when repainting
             if (Event.current.type == EventType.Repaint)

@@ -66,7 +66,7 @@ namespace UnityEngine.UIElements
 
                 foreach (var meshInfo in meshInfos)
                 {
-                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
                     if (textAsset is FontAsset fa && fa.atlasTextureCount > 1)
                         Debug.LogWarning("PostProcessTextVertices with ATG does not support this Multi-Atlas.");
                 }

@@ -4,16 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEditor.Profiling;
 using Unity.Collections;
-
-
 
 using System.Reflection;
 
@@ -956,7 +951,7 @@ namespace UnityEditor.Search
             context.options |= flags | SearchFlags.OpenPicker;
             var state = SearchViewState.CreatePickerState(title, context, selectHandler, trackingHandler, filterHandler);
             state.position = new Rect(0, 0, defaultWidth, defaultHeight);
-            state.itemSize = itemSize;
+            state.itemIconSize = itemSize;
             return state;
         }
     }

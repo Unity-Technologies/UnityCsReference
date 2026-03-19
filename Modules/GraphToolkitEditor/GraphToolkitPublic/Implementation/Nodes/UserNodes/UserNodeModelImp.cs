@@ -20,9 +20,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public Node Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -141,9 +145,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public BlockNode Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -264,9 +272,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public ContextNode Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor = Color.darkGreen;
 
         public override string Tooltip

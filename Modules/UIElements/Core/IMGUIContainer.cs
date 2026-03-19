@@ -162,7 +162,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string ussClassName = "unity-imgui-container";
 
-        internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
+        //These 2 are copied in order to help with code stripping
+        internal static readonly string ussFoldoutChildDepthClassName = $"{FoldoutConstants.ussClassName}__{ussClassName}--depth-";
+        internal static readonly int ussFoldoutMaxDepth = FoldoutConstants.ussFoldoutMaxDepth;
+
         internal static readonly List<string> ussFoldoutChildDepthClassNames;
 
         internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = true; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
@@ -170,8 +173,8 @@ namespace UnityEngine.UIElements
 
         static IMGUIContainer()
         {
-            ussFoldoutChildDepthClassNames = new List<string>(Foldout.ussFoldoutMaxDepth + 1);
-            for (int i = 0; i <= Foldout.ussFoldoutMaxDepth; i++)
+            ussFoldoutChildDepthClassNames = new List<string>(ussFoldoutMaxDepth + 1);
+            for (int i = 0; i <= ussFoldoutMaxDepth; i++)
             {
                 ussFoldoutChildDepthClassNames.Add(ussFoldoutChildDepthClassName + i);
             }

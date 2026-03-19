@@ -24,16 +24,15 @@ namespace UnityEditor.Snap
 
         Toggle m_DisplayGrid;
         Toggle m_ShowClosestToHandle;
-        
+
         ButtonStripField m_GridPlane;
-        Slider m_GridOpacity;
-        
+        SliderInt m_GridOpacity;
+
         LinkedVector3Field m_GridSize;
         LinkedVector3Field m_IncrementSnapSize;
         Vector3Field m_GridPosition;
         Vector3Field m_GridRotation;
-        bool m_IgnoreGridChangeCallback;
-        
+
         Button m_CopyFromActiveButton;
         Button m_ApplyLastCustomButton;
         Button m_ResetWorldButton;
@@ -74,19 +73,18 @@ namespace UnityEditor.Snap
             });
             m_GridPlane.SetValueWithoutNotify((int)sceneView.sceneViewGrids.gridAxis);
 
-            m_GridOpacity = rootVisualElement.Q<Slider>("Opacity");
+            m_GridOpacity = rootVisualElement.Q<SliderInt>("Opacity");
             m_GridOpacity.label = L10n.Tr("Opacity");
             m_GridOpacity.tooltip = L10n.Tr("The opacity of the Scene view grid.");
-            m_GridOpacity.lowValue = 0f;
-            m_GridOpacity.highValue = 100f;
+            m_GridOpacity.lowValue = 0;
+            m_GridOpacity.highValue = 100;
             m_GridOpacity.RegisterValueChangedCallback(evt =>
             {
                 sceneView.sceneViewGrids.gridOpacity = evt.newValue / 100f;
-                m_GridOpacity.SetValueWithoutNotify(Mathf.RoundToInt(sceneView.sceneViewGrids.gridOpacity * 100f));
                 SceneView.RepaintAll();
             });
-            m_GridOpacity.SetValueWithoutNotify(Mathf.RoundToInt(sceneView.sceneViewGrids.gridOpacity * 100f));
-            
+            m_GridOpacity.SetValueWithoutNotify((int)(sceneView.sceneViewGrids.gridOpacity * 100));
+
             var transformGridSection = rootVisualElement.Q<Label>("TransformGrid");
             transformGridSection.text = L10n.Tr("Grid Transform");
 
@@ -105,11 +103,11 @@ namespace UnityEditor.Snap
                 gridSettings.gridSize = value;
             });
             rootVisualElement.Q<VisualElement>("GridSizeContainer").Add(m_GridSize);
-            
+
             m_IncrementSnapSize = new LinkedVector3Field(L10n.Tr("Increment Snap")) { name = "IncrementSnapSize" };
             m_IncrementSnapSize.value = EditorSnapSettings.move;
             m_IncrementSnapSize.style.flexGrow = 1;
-            m_IncrementSnapSize.linked = Mathf.Approximately(m_IncrementSnapSize.value.x, m_IncrementSnapSize.value.y) && 
+            m_IncrementSnapSize.linked = Mathf.Approximately(m_IncrementSnapSize.value.x, m_IncrementSnapSize.value.y) &&
                                          Mathf.Approximately(m_IncrementSnapSize.value.x, m_IncrementSnapSize.value.z);
             m_IncrementSnapSize.tooltip = L10n.Tr("The increment value for moving objects when incremental snapping is enabled.");
             m_IncrementSnapSize.RegisterValueChangedCallback(evt =>
@@ -120,28 +118,32 @@ namespace UnityEditor.Snap
                 EditorSnapSettings.move = value;
             });
             rootVisualElement.Q<VisualElement>("IncrementSnapSizeContainer").Add(m_IncrementSnapSize);
-            
+
             m_GridPosition = rootVisualElement.Q<Vector3Field>("GridPositionField");
             m_GridPosition.value = gridSettings.position;
+            m_GridPosition.isDelayed = true;
             m_GridPosition.tooltip = L10n.Tr("The origin position of the Scene view grid in world space.");
             m_GridPosition.RegisterValueChangedCallback(evt =>
             {
-                m_IgnoreGridChangeCallback = true;
-                ApplyCustomPosition(evt.newValue);
-                m_IgnoreGridChangeCallback = false;
+                if (GridSettings.IsValid(evt.newValue))
+                    ApplyCustomPosition(evt.newValue);
+                else
+                    m_GridPosition.SetValueWithoutNotify(evt.previousValue);
             });
-            
+
             m_GridRotation = rootVisualElement.Q<Vector3Field>("GridRotationField");
             RefreshGridRotationField();
-            
+
             m_GridRotation.tooltip = L10n.Tr("The rotation of the Scene view grid in world space.");
+            m_GridRotation.isDelayed = true;
             m_GridRotation.RegisterValueChangedCallback(evt =>
             {
-                m_IgnoreGridChangeCallback = true;
-                ApplyCustomRotation(Quaternion.Euler(evt.newValue));
-                m_IgnoreGridChangeCallback = false;
+                if (GridSettings.IsValid(evt.newValue))
+                    ApplyCustomRotation(Quaternion.Euler(evt.newValue));
+                else
+                    m_GridRotation.SetValueWithoutNotify(evt.previousValue);
             });
-            
+
             m_CopyFromActiveButton = rootVisualElement.Q<Button>("CopyFromActiveObject");
             m_CopyFromActiveButton.text = L10n.Tr("Copy from Active Object");
             m_CopyFromActiveButton.tooltip = L10n.Tr("Apply the active GameObject's position and rotation to the Scene view grid.");
@@ -265,19 +267,19 @@ namespace UnityEditor.Snap
             sceneViewGrids.gridOpacity = SceneViewGrid.defaultGridOpacity;
             sceneViewGrids.showGrid = true;
             sceneViewGrids.nearestPlaneToHandleMode = false;
-            
+
             var snapVal = SnapSettings.defaultIncrementalSnapSize;
             EditorSnapSettings.move = new Vector3(snapVal, snapVal, snapVal);
-            ResetVisualSettings(sceneView);
-            
+            ResetVisualSettings();
+
             SceneView.RepaintAll();
         }
-        
-        public void ResetVisualSettings(SceneView targetSceneView)
-        {
-            m_GridOpacity.SetValueWithoutNotify(Mathf.RoundToInt(sceneView.sceneViewGrids.gridOpacity * 100f));
 
-            SceneViewGrid grid = targetSceneView.sceneViewGrids;
+        public void ResetVisualSettings()
+        {
+            m_GridOpacity.SetValueWithoutNotify((int)(sceneView.sceneViewGrids.gridOpacity * 100));
+
+            SceneViewGrid grid = sceneView.sceneViewGrids;
             grid.gridRenderAxisChanged += axis => { m_GridPlane.SetValueWithoutNotify((int)axis); };
             m_GridPlane.SetValueWithoutNotify((int)grid.gridAxis);
         }
@@ -287,27 +289,25 @@ namespace UnityEditor.Snap
             m_GridSize.SetValueWithoutNotify(size);
         }
 
-        void OnGridModeChanged(IGridMode mode)
+        void OnGridModeChanged()
         {
             var gridSettings = GridSettings.instance;
             m_GridSize.SetValueWithoutNotify(gridSettings.gridSize);
             m_GridPosition.SetValueWithoutNotify(gridSettings.position);
-            if (!m_IgnoreGridChangeCallback)
-                m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
+            m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
 
             RefreshLastCustomAndWorldButtons();
         }
 
-        void OnGridModeSettingsChanged(IGridMode mode)
+        void OnGridModeSettingsChanged()
         {
             var gridSettings = GridSettings.instance;
             m_GridPosition.SetValueWithoutNotify(gridSettings.position);
-            if (!m_IgnoreGridChangeCallback)
-                m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
+            m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
 
             RefreshLastCustomAndWorldButtons();
         }
-        
+
         void OnIncrementalSnapSizeChanged(Vector3 newValue)
         {
             m_IncrementSnapSize.SetValueWithoutNotify(newValue);

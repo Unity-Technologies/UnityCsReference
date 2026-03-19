@@ -187,7 +187,7 @@ namespace UnityEngine
                 return (textSettings, null, 0);
 
             roundedFontSize = Mathf.RoundToInt(fontSize);
-            var shouldRenderBitmap = !style.isGizmo && fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isSDF && fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
                 roundedFontSize = (int)Math.Round(fontSize, MidpointRounding.AwayFromZero);
@@ -282,7 +282,7 @@ namespace UnityEngine
             for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
             {
                 ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
-                var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is SpriteAsset)
                     continue;
                 FontAsset fa = textAsset as FontAsset;
@@ -296,7 +296,7 @@ namespace UnityEngine
             {
                 ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
                 FontAsset fa = null;
-                var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is SpriteAsset)
                     continue;
                 fa = textAsset as FontAsset;
@@ -366,7 +366,7 @@ namespace UnityEngine
             List<uint> missingGlyphs = new();
             foreach (var entry in missingGlyphsPerFontAsset)
             {
-                var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(entry.Key);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
                     continue;
 

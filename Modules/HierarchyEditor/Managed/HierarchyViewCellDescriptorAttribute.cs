@@ -8,26 +8,26 @@ using UnityEditor;
 namespace Unity.Hierarchy.Editor
 {
     /// <summary>
-    /// Attribute used to register a new Cell Descriptor for a specific Column.
+    /// Specifies that a method creates a <see cref="HierarchyViewCellDescriptor"/> for a specific <see cref="HierarchyViewColumn"/>. 
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class HierarchyViewCellDescriptorAttribute : Attribute
     {
         /// <summary>
-        /// Column Id or Column header title to register the Cell to.
+        /// The column identifier or column header title to register this cell to.
         /// </summary>
         public string ColumnHint { get; }
 
         /// <summary>
-        /// NodeHandler used to manage the Nodes corresponding to this Cell. Only a single Cell per NodeHandler can be registered in a Column.
+        /// Gets the <see cref="HierarchyNodeTypeHandler"/> type used to manage the nodes for this cell. Only one cell descriptor per handler type can be registered in a column.
         /// </summary>
         public Type Handler { get; }
 
         /// <summary>
-        /// Attribute constructor.
+        /// Creates a new <see cref="HierarchyViewCellDescriptorAttribute"/>.
         /// </summary>
-        /// <param name="columnHint">Column Id or Column header title to register the Cell to.</param>
-        /// <param name="handler">NodeHandler used to manage the Nodes corresponding to this Cell. If Null we assume the Cell will manipulate pure HierarchyNode.</param>
+        /// <param name="columnHint">The column identifier or column header title to register the cell descriptor to.</param>
+        /// <param name="handler">The <see cref="HierarchyNodeTypeHandler"/> type used to manage the nodes for this cell. If null, the cell manipulates <see cref="HierarchyNode"/> instances directly.</param>
         public HierarchyViewCellDescriptorAttribute(string columnHint, Type handler = null)
         {
             ColumnHint = columnHint;
@@ -35,9 +35,9 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Required signature for the function decorated by [HierarchyViewCellDescriptor]. This function can be used to populate the CellDescriptor.
+        /// Defines the required signature for methods decorated with <see cref="HierarchyViewCellDescriptorAttribute"/>. Implement this method to populate the <see cref="HierarchyViewCellDescriptor"/>.
         /// </summary>
-        /// <param name="cell">Cell Descriptor to populate.</param>
+        /// <param name="cell">The <see cref="HierarchyViewCellDescriptor"/> to populate.</param>
         [RequiredSignature] public static void CustomizeDescriptor(HierarchyViewCellDescriptor cell) { }
     }
 }

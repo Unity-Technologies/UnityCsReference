@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditor
@@ -516,7 +517,7 @@ namespace UnityEditor
             var cameraAligned = (isHot && s_IsHotInCameraAlignedMode || !isHot && Event.current.shift);
             var isCustomPivotRotation = Tools.pivotRotation == PivotRotation.Custom;
 
-            if (Tools.vertexDragging)
+            if (HandleUtility.vertexDragging)
             {
                 pParam = param.vertexSnappingPosition;
                 rParam = param.vertexSnappingRotation;

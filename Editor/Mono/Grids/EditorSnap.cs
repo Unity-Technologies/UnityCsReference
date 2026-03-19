@@ -151,7 +151,7 @@ namespace UnityEditor
         
         public static event Action scaleSnapEnabledChanged;
 
-        internal static bool vertexSnapActive => Tools.vertexDragging;
+        internal static bool vertexSnapActive => HandleUtility.vertexDragging;
 
         // Used by 2D package
         internal static bool hotkeyActive => EditorGUI.actionKey;

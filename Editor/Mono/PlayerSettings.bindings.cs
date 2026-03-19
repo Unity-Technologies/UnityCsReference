@@ -54,6 +54,13 @@ namespace UnityEditor
         MethodFileLineNumber = 1,
     }
 
+    // Must be in sync with Il2CppLTOMode enum in SerializationMetaFlags.h
+    public enum Il2CppLTOMode
+    {
+        Full = 0,
+        Thin = 1,
+    }
+
     // Mac fullscreen mode
     public enum MacFullscreenMode
     {
@@ -1178,6 +1185,18 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetIl2CppLTOMode", ThrowsException = true)]
+        private static extern Il2CppLTOMode GetIl2CppLTOModeInternal(string buildTargetName);
+        public static Il2CppLTOMode GetIl2CppLTOMode(NamedBuildTarget buildTarget) =>
+            GetIl2CppLTOModeInternal(buildTarget.TargetName);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetIl2CppLTOMode", ThrowsException = true)]
+        private static extern void SetIl2CppLTOModeInternal(string buildTargetName, Il2CppLTOMode mode);
+        public static void SetIl2CppLTOMode(NamedBuildTarget buildTarget, Il2CppLTOMode mode) =>
+            SetIl2CppLTOModeInternal(buildTarget.TargetName, mode);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformIncrementalIl2CppBuild", ThrowsException = true)]
         private static extern bool GetIncrementalIl2CppBuildInternal(string buildTargetName);
         [Obsolete("GetIncrementalIl2CppBuild has no impact on the build process")]
@@ -1715,6 +1734,8 @@ namespace UnityEditor
             get { return GetWindowsGamepadBackendHint(); }
             set { SetWindowsGamepadBackendHint(value); }
         }
+
+        public static extern bool enableDirectStorage { get; set; }
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]

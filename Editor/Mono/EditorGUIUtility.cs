@@ -1383,7 +1383,7 @@ namespace UnityEditor
         {
             GUI.skin = null;
             GUI.backgroundColor = GUI.contentColor = Color.white;
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
+            GUI.color = EditorUtility.activePlayModeTint;
             GUI.enabled = true;
             GUI.changed = false;
             EditorGUI.indentLevel = 0;
@@ -1805,7 +1805,7 @@ namespace UnityEditor
 
             // Draw background color
             Color oldColor = GUI.color;
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? bgColor * HostView.kPlayModeDarken : bgColor;
+            GUI.color = bgColor * EditorUtility.activePlayModeTint;
             GUIStyle gs = whiteTextureStyle;
             gs.Draw(position, false, false, false, false);
             GUI.color = oldColor;

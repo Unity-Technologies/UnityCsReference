@@ -255,7 +255,7 @@ namespace UnityEditorInternal
             Init();
 
             // drag'n'drops outside any dopelines
-            HandleDragAndDropToEmptyArea();
+            HandleDragAndDropToEmptyArea(position);
 
             GUIClip.Push(position, scrollPosition, Vector2.zero, false);
 
@@ -754,11 +754,15 @@ namespace UnityEditorInternal
         }
 
         // Handles drag and drop into empty area outside dopelines
-        private void HandleDragAndDropToEmptyArea()
+        private void HandleDragAndDropToEmptyArea(Rect dopeSheetArea)
         {
             Event evt = Event.current;
 
             if (evt.type != EventType.DragPerform && evt.type != EventType.DragUpdated)
+                return;
+
+            // Only handle drag and drop if the mouse is inside the DopeSheet area
+            if (!dopeSheetArea.Contains(evt.mousePosition))
                 return;
 
             if (!ValidateDragAndDropObjects())

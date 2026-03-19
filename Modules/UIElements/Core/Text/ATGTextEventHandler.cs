@@ -73,8 +73,15 @@ namespace UnityEngine.UIElements
 
         internal static event Action<Dictionary<string, string>> onComplexHyperlinkClicked;
 
+        void EnsureTextGenerationInfoIsValid()
+        {
+            if (m_TextElement.uitkTextHandle.textGenerationInfo == IntPtr.Zero)
+                m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+        }
+
         void HyperlinkOnPointerUp(PointerUpEvent pue)
         {
+            EnsureTextGenerationInfoIsValid();
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var(id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
             if (link == null || type!= TextCore.RichTextTagParser.TagType.Hyperlink)
@@ -127,6 +134,7 @@ namespace UnityEngine.UIElements
 
         void HyperlinkOnPointerMove(PointerMoveEvent pme)
         {
+            EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
 
@@ -171,6 +179,7 @@ namespace UnityEngine.UIElements
 
         void LinkTagOnPointerDown(PointerDownEvent pde)
         {
+            EnsureTextGenerationInfoIsValid();
             var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
             var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
@@ -186,6 +195,7 @@ namespace UnityEngine.UIElements
 
         void LinkTagOnPointerUp(PointerUpEvent pue)
         {
+            EnsureTextGenerationInfoIsValid();
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
             if (link == null || type != TextCore.RichTextTagParser.TagType.Link)
@@ -203,6 +213,7 @@ namespace UnityEngine.UIElements
 
         void LinkTagOnPointerMove(PointerMoveEvent pme)
         {
+            EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
             var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);

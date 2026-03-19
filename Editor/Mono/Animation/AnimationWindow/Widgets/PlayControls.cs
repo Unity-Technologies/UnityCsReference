@@ -4,6 +4,7 @@
 
 
 using System;
+using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -18,11 +19,11 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
     {
         AnimationWindowState m_State;
 
-        public static string s_PlayContentTooltip = L10n.Tr("Play the animation clip.");
-        public static string s_PrevKeyContentTooltip = L10n.Tr("Go to previous keyframe.");
-        public static string s_NextKeyContentTooltip = L10n.Tr("Go to next keyframe.");
-        public static string s_FirstKeyContentTooltip = L10n.Tr("Go to the beginning of the animation clip.");
-        public static string s_LastKeyContentTooltip = L10n.Tr("Go to the end of the animation clip.");
+        public static string s_PlayContentTooltip = L10n.Tr("Play the animation clip ({0}).");
+        public static string s_PrevKeyContentTooltip = L10n.Tr("Go to previous keyframe ({0}).");
+        public static string s_NextKeyContentTooltip = L10n.Tr("Go to next keyframe ({0}).");
+        public static string s_FirstKeyContentTooltip = L10n.Tr("Go to the beginning of the animation clip ({0}).");
+        public static string s_LastKeyContentTooltip = L10n.Tr("Go to the end of the animation clip ({0}).");
 
         internal new ToolbarToggle playToggle => base.playToggle;
 
@@ -48,11 +49,11 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             };
             playRangeToggle.style.display = DisplayStyle.None;
 
-            firstKeyframeButton.tooltip = s_FirstKeyContentTooltip;
-            previousKeyframeButton.tooltip = s_PrevKeyContentTooltip;
-            playToggle.tooltip = s_PlayContentTooltip;
-            nextKeyframeButton.tooltip = s_NextKeyContentTooltip;
-            lastKeyframeButton.tooltip = s_LastKeyContentTooltip;
+            firstKeyframeButton.tooltip = String.Format(s_FirstKeyContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/First Keyframe"));
+            previousKeyframeButton.tooltip = String.Format(s_PrevKeyContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Previous Keyframe"));
+            playToggle.tooltip = String.Format(s_PlayContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Play Animation"));
+            nextKeyframeButton.tooltip = String.Format(s_NextKeyContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Next Keyframe"));
+            lastKeyframeButton.tooltip = String.Format(s_LastKeyContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Last Keyframe"));
         }
 
         public void Initialize(AnimationWindowState state)

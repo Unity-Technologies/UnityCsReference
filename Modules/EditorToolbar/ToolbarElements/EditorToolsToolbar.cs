@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Tools/Builtin Tools")]
-    sealed class BuiltinToolsStrip : VisualElement
+    sealed class BuiltinToolsStrip : VisualElement, IAccessContainerWindow
     {
         internal const string k_ToolGroupContainerClassName = "tool-group-container";
         internal const string k_ToolGroupOutlineClassName = "tool-group-outline";
@@ -22,21 +22,36 @@ namespace UnityEditor.Toolbars
         
         VisualElement[] m_Toolbars;
         List<ToolEntry> m_AvailableTools = new();
+        VisualElement m_Contexts;
 
         VisualElement defaultToolButtons => m_Toolbars[0];
         VisualElement customGlobalToolButtons => m_Toolbars[1];
         VisualElement groupedToolButtons => m_Toolbars[2];
         VisualElement componentToolButtons => m_Toolbars[3];
+
+        private Type toolOwner => containerWindow?.GetType() ?? typeof(SceneView);
+
+        EditorWindow m_ContainerWindow;
+        public EditorWindow containerWindow
+        {
+            get => m_ContainerWindow;
+            set
+            {
+                m_ContainerWindow = value;
+                if (m_Contexts != null)
+                    m_Contexts.userData = toolOwner;
+            }
+        }
         
         public BuiltinToolsStrip()
         {
             name = "BuiltinTools";
             SceneViewToolbarStyles.AddStyleSheets(this);
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
-            
-            var contexts = new ToolContextButton();
-            contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
-            Add(contexts);
+
+            m_Contexts = new ToolContextButton();
+            m_Contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
+            Add(m_Contexts);
 
             m_Toolbars = new VisualElement[k_ToolbarSections]
             {
@@ -51,32 +66,39 @@ namespace UnityEditor.Toolbars
                 m_Toolbars[i].AddToClassList("toolbar-contents");
                 Add(m_Toolbars[i]);
             }
-
+            
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-            RebuildAvailableTools();
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            EditorToolManager.availableToolsChanged += RebuildAvailableTools;
+            EditorToolManager.availableToolsChangedForOwner += OnAvailableToolsChangedForOwner;
             EditorTool.stateChanged += OnEditorToolStateChanged;
+            
+            RebuildAvailableTools();
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            EditorToolManager.availableToolsChanged -= RebuildAvailableTools;
+            EditorToolManager.availableToolsChangedForOwner -= OnAvailableToolsChangedForOwner;
             EditorTool.stateChanged -= OnEditorToolStateChanged;
+        }
+
+        void OnAvailableToolsChangedForOwner(Type changeToolOwner)
+        {
+            if (changeToolOwner == toolOwner)
+                RebuildAvailableTools();
         }
         
         void RebuildAvailableTools()
         {
-            EditorToolManager.GetAvailableTools(m_AvailableTools);
+            EditorToolManager.GetAvailableTools(m_AvailableTools, toolOwner);
+            
             foreach (var toolbar in m_Toolbars)
                 toolbar.Clear();
 
-            EditorToolManager.OrderAvailableTools(m_AvailableTools);
+            EditorToolUtility.OrderAvailableTools(m_AvailableTools);
             VisualElement curGroupContent = null;
             Type curGroupType = null;
             
@@ -90,13 +112,13 @@ namespace UnityEditor.Toolbars
                     case ToolEntry.Scope.BuiltinScale:
                     case ToolEntry.Scope.BuiltinRect:
                     case ToolEntry.Scope.BuiltinTransform:
-                        defaultToolButtons.Add(new ToolButton((Tool)entry.scope, entry.tools));
+                        defaultToolButtons.Add(new ToolButton((Tool)entry.scope, entry.tools, toolOwner));
                         break;
                     case ToolEntry.Scope.BuiltinAdditional:
-                        defaultToolButtons.Add(new ToolButton(entry.tools));
+                        defaultToolButtons.Add(new ToolButton(entry.tools, toolOwner));
                         break;
                     case ToolEntry.Scope.CustomGlobal:
-                        customGlobalToolButtons.Add(new ToolButton(entry.tools));
+                        customGlobalToolButtons.Add(new ToolButton(entry.tools, toolOwner));
                         break;
                     case ToolEntry.Scope.Grouped:
                         ProcessGroupedToolEntry(entry, entry.group, groupedToolButtons, "Grouped Tools", ref curGroupType, ref curGroupContent);
@@ -156,22 +178,22 @@ namespace UnityEditor.Toolbars
                 if (curGroupType == typeof(CreationToolsGroup))
                     groupHeader.tooltip = CreationToolsGroup.k_Tooltip;
                 groupHeader.userData = curGroupType;
-                groupHeader.collapsed = EditorToolsSettings.IsGroupCollapsed(groupType);
+                groupHeader.collapsed = EditorToolsSettings.IsGroupCollapsed(groupType, toolOwner);
                 
                 groupHeader.clicked += OnGroupHeaderClicked;
                 curGroupContent.Add(groupHeader);
                 groupContainer.Add(curGroupContent);
             }
             
-            if (curGroupType == null || !EditorToolsSettings.IsGroupCollapsed(curGroupType))
-                curGroupContent.Add(new ToolButton(entry.tools));
+            if (curGroupType == null || !EditorToolsSettings.IsGroupCollapsed(curGroupType, toolOwner))
+                curGroupContent.Add(new ToolButton(entry.tools, toolOwner));
         }
 
         void OnGroupHeaderClicked(VisualElement headerVE)
         {
             var groupType = headerVE.userData as Type;
-            var collapsed = !EditorToolsSettings.IsGroupCollapsed(groupType);
-            EditorToolsSettings.SetGroupCollapsed(groupType, collapsed);
+            var collapsed = !EditorToolsSettings.IsGroupCollapsed(groupType, toolOwner);
+            EditorToolsSettings.SetGroupCollapsed(groupType, collapsed, toolOwner);
             RebuildAvailableTools();
         }
     }

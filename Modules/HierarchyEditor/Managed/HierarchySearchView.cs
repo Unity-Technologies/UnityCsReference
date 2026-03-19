@@ -72,6 +72,7 @@ namespace Unity.Hierarchy.Editor
         #region NotImplemented
         SearchSelection ISearchView.selection => throw new NotSupportedException();
         float ISearchView.itemIconSize { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        string ISearchView.currentResultViewId { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         DisplayMode ISearchView.displayMode => throw new NotSupportedException();
 

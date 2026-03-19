@@ -1689,7 +1689,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="useWorldSpace">Whether to create the shape proxy in world-space or not. World-space will transform by the body origin the shape is attached to.</param>
         /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape is invalid or the shape type is unknown.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
         public readonly ShapeProxy CreateShapeProxy(bool useWorldSpace = false)
         {
             if (!isValid)

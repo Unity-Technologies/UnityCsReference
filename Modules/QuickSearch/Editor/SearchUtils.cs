@@ -1443,28 +1443,29 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static Texture2D GetIconFromDisplayMode(DisplayMode displayMode)
-        {
-            switch (displayMode)
-            {
-                case DisplayMode.Grid:
-                    return EditorGUIUtility.LoadIconRequired("GridView");
-                case DisplayMode.Table:
-                    return EditorGUIUtility.LoadIconRequired("TableView");
-                default:
-                    return EditorGUIUtility.LoadIconRequired("ListView");
-            }
-        }
-
         internal static DisplayMode GetDisplayModeFromItemSize(float itemSize)
         {
-            if (itemSize <= (int)DisplayMode.List)
+            if (itemSize <= (float)DisplayMode.Compact)
+                return DisplayMode.Compact;
+
+            if (itemSize <= (float)DisplayMode.List)
                 return DisplayMode.List;
 
-            if (itemSize >= (int)DisplayMode.Table)
+            if (itemSize <= (float)DisplayMode.Limit)
+                return DisplayMode.Grid;
+
+            if (itemSize == (float)DisplayMode.Table)
                 return DisplayMode.Table;
 
+            // Default View:
             return DisplayMode.Grid;
+        }
+
+        internal static float GetItemSizeFromDisplayMode(DisplayMode displayMode)
+        {
+            if (displayMode == DisplayMode.None)
+                return (float)DisplayMode.List;
+            return (float)displayMode;
         }
 
         internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
@@ -2056,7 +2057,29 @@ namespace UnityEditor.Search
             }
             return tokenCount;
         }
-        
+
+        internal static void GetSplitIndices(string source, ReadOnlySpan<char> splitChars, List<int> outIndices)
+        {
+            // Early out if there is nothing to split on
+            if (string.IsNullOrEmpty(source) || splitChars.IsEmpty)
+                return;
+
+            var lastIndexOf = 0;
+            do
+            {
+                var sourceSpan = source.AsSpan(lastIndexOf);
+                var oldLastIndexOf = lastIndexOf;
+                lastIndexOf = sourceSpan.IndexOfAny(splitChars);
+                if (lastIndexOf >= 0)
+                {
+                    // Adjust index to be relative to source string
+                    lastIndexOf += oldLastIndexOf;
+                    outIndices.Add(lastIndexOf);
+                    lastIndexOf++;
+                }
+            } while (lastIndexOf >= 0 && lastIndexOf < source.Length);
+        }
+
         internal static string BuildUnionTypeQuery(Type[] types)
         {
             var query = types.Length > 1 ? "(" : string.Empty;

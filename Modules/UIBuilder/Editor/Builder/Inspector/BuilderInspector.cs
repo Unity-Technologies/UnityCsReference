@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
 
         TextAutoSizeStyleField m_TextAutoSizeField;
         EnumField m_TextGeneratorField;
-        BuilderStyleRow m_AtgWarningRow;
+        BuilderStyleRow m_StandardGeneratorWarningRow;
         BuilderStyleRow m_AutoSizeWarningRow;
         BuilderStyleRow m_BitmapWarningRow;
         FontDefinitionStyleField m_FontDefinitionField;
@@ -396,19 +396,18 @@ namespace Unity.UI.Builder
         {
             m_TextGeneratorField   = this.Q<EnumField>("textgenerator-field");
             m_TextAutoSizeField    = this.Q<TextAutoSizeStyleField>("text-auto-size");
-            m_AtgWarningRow        = this.Q<BuilderStyleRow>("atg-warning-row");
+            m_StandardGeneratorWarningRow = this.Q<BuilderStyleRow>("standard-generator-warning-row");
             m_AutoSizeWarningRow   = this.Q<BuilderStyleRow>("autosize-warning-row");
 
-            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateAdvancedTextHelpBox());
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += _ => UpdateAdvancedTextHelpBox();
+            m_TextGeneratorField?.RegisterValueChangedCallback(_ => UpdateTextGeneratorHelpBoxes());
+            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateTextGeneratorHelpBoxes());
         }
 
-        internal void UpdateAdvancedTextHelpBox()
+        internal void UpdateTextGeneratorHelpBoxes()
         {
             bool isAdvanced = m_TextGeneratorField?.value != null && (TextGeneratorType)m_TextGeneratorField.value == TextGeneratorType.Advanced;
 
-            bool showAtg = isAdvanced && !UIToolkitProjectSettings.enableAdvancedText;
-            m_AtgWarningRow.style.display = showAtg ? DisplayStyle.Flex : DisplayStyle.None;
+            m_StandardGeneratorWarningRow.style.display = !isAdvanced ? DisplayStyle.Flex : DisplayStyle.None;
 
             bool bestFit = m_TextAutoSizeField != null && m_TextAutoSizeField.IsBestFit;
             bool showAutoSize = !isAdvanced && bestFit;

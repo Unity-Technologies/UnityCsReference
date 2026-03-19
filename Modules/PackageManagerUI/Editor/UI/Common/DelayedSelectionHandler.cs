@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SelectPackage(string packageToSelect, string pageId = null);
 
         void SelectPage(string pageId, string searchText = null);
+        void SelectSamplePageWithPackageFilters(IReadOnlyList<string> packagesToSelect);
     }
 
     [Serializable]
@@ -121,6 +123,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             page.searchText = searchText ?? string.Empty;
             m_PageManager.activePage = page;
+        }
+
+        public void SelectSamplePageWithPackageFilters(IReadOnlyList<string> packagesToSelect)
+        {
+            var page = m_PageManager.GetPage(SamplesPage.k_Id);
+            if (page == null)
+                return;
+            m_PageManager.activePage = page;
+
+            if (packagesToSelect == null || packagesToSelect.Count == 0)
+                return;
+
+            var newPageFilters = new PageFilters(page.filters);
+            var validPackages = new List<string>();
+            foreach (var id in packagesToSelect)
+                if (page.filters.supportedPackageUniqueIds.ContainsMatches(id))
+                    validPackages.Add(id);
+            newPageFilters.UpdatePackages(validPackages);
+
+            page.UpdateFilters(newPageFilters);
         }
     }
 }

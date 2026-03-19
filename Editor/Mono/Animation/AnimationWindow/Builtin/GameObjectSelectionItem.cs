@@ -5,10 +5,12 @@
 using System;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.AnimationWindowBuiltin
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class GameObjectSelectionItem : AnimationWindowSelectionItem
     {
         protected GameObjectSelectionItem(AnimationWindow window) : base(window)

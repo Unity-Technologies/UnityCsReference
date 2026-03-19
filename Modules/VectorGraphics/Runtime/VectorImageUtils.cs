@@ -164,7 +164,7 @@ namespace Unity.VectorGraphics
         }
 
         [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
-        internal static Texture2D RenderVectorImageToTexture2D(VectorImage vi, int width, int height, Material mat, int antiAliasing = 1)
+        internal static Texture2D RenderVectorImageToTexture2D(VectorImage vi, int width, int height, int antiAliasing = 1)
         {
             if (vi == null)
                 return null;
@@ -183,7 +183,9 @@ namespace Unity.VectorGraphics
             rt = RenderTexture.GetTemporary(desc);
             RenderTexture.active = rt;
 
+            var tempTheme = ScriptableObject.CreateInstance<ThemeStyleSheet>();
             var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            panelSettings.themeStyleSheet = tempTheme;
             panelSettings.clearColor = true;
             panelSettings.clearDepthStencil = true;
             panelSettings.targetTexture = rt;
@@ -200,6 +202,7 @@ namespace Unity.VectorGraphics
             GL.PopMatrix();
 
             ScriptableObject.DestroyImmediate(panelSettings);
+            ScriptableObject.DestroyImmediate(tempTheme);
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
@@ -408,7 +411,7 @@ namespace Unity.VectorGraphics
                         painter.lineWidth = stroke.HalfThickness * 2.0f;
                         painter.lineJoin = pathProps.Corners == PathCorner.Tipped ? LineJoin.Miter : (pathProps.Corners == PathCorner.Beveled ? LineJoin.Bevel : LineJoin.Round);
                         painter.lineCap = (pathProps.Head == PathEnding.Round || pathProps.Tail == PathEnding.Round) ? LineCap.Round : LineCap.Butt;
-                        painter.dashPattern = stroke.Pattern;
+                        painter.SetDashPattern(stroke.Pattern);
                         painter.dashOffset = stroke.PatternOffset;
 
                         painter.Stroke();

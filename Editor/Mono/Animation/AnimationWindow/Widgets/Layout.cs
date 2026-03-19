@@ -13,6 +13,7 @@ using UnityObject = UnityEngine.Object;
 using UnityEditor.Animations.AnimationWindow.TimelineFoundation;
 using UnityEditor.AnimationWindowBuiltin;
 using UnityEditor.Experimental;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine.Playables;
 
@@ -41,6 +42,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         const string k_AnimationAddPropertyButton = "animation-addPropertyButton";
         const string k_AnimationAddKeyframeButton = "animation-addKeyframeButton";
         const string k_AnimationAddEventButton = "animation-addEventButton";
+        const string k_AnimationModeRippleToggle = "animation-modeRippleToggle";
         const string k_AnimationFilterBySelectionToggle = "animation-filterBySelectionToggle";
 
         const string k_AnimationApplyButton = "animation-applyButton";
@@ -66,10 +68,11 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
         static string s_RevertContentTooltip = L10n.Tr("Discard changes made to imported animation.");
         static string s_ApplyContentTooltip = L10n.Tr("Apply changes made to imported animation.");
-        static string s_AddKeyframeContentTooltip = L10n.Tr("Add keyframe.");
+        static string s_AddKeyframeContentTooltip = L10n.Tr("Add keyframe ({0}).");
         static string s_AddEventContentTooltip = L10n.Tr("Add event.");
         static string s_FilterBySelectionContentTooltip = L10n.Tr("Filter by selection.");
         static string s_SequencerLinkContentTooltip = L10n.Tr("Animation Window is linked to Timeline Editor.  Press to Unlink.");
+        static string s_ModeRippleContentTooltip = L10n.Tr("Ripple mode ({0}).");
 
         const float k_LeftMargin = 40f;
         const float k_RightMargin = 40f;
@@ -77,11 +80,13 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         class DopesheetButton : IToggleButtonItem
         {
             public string Name => L10n.Tr("Dopesheet");
+            public string Tooltip => L10n.Tr($"Show Dopesheet ({ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves")})");
         }
 
         class CurveEditorButton : IToggleButtonItem
         {
             public string Name => L10n.Tr("Curves");
+            public string Tooltip => L10n.Tr($"Show Curves ({ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves")})");
         }
 
         AnimEditor m_AnimEditor;
@@ -107,6 +112,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         Button m_AddPropertyButton;
         Button m_AddKeyframeButton;
         Button m_AddEventButton;
+        ToolbarToggle m_ModeRippleToggle;
         ToolbarToggle m_FilterBySelectionToggle;
 
         ToggleButtonStrip m_ContentSwitcherButtons;
@@ -263,7 +269,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AddPropertyButton.SetEnabled(m_AnimEditor.selection.canAddCurves);
 
             m_AddKeyframeButton = this.Q<Button>(className: k_AnimationAddKeyframeButton);
-            m_AddKeyframeButton.tooltip = s_AddKeyframeContentTooltip;
+            m_AddKeyframeButton.tooltip = String.Format(s_AddKeyframeContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Key Selected"));
             m_AddKeyframeButton.clicked += () =>
             {
                 m_AnimEditor.SaveCurveEditorKeySelection();
@@ -286,6 +292,14 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                     clip.animationClip);
             };
             m_AddKeyframeButton.SetEnabled(false);
+
+            m_ModeRippleToggle = this.Q<ToolbarToggle>(className: k_AnimationModeRippleToggle);
+            m_ModeRippleToggle.tooltip = String.Format(s_ModeRippleContentTooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Toggle Ripple"));
+            m_ModeRippleToggle.RegisterValueChangedCallback(_ =>
+            {
+                state.rippleTime = !state.rippleTime;
+            });
+            m_ModeRippleToggle.SetEnabled(false);
 
             m_LinkWithSequencerButton = this.Q<ToolbarToggle>(className: k_AnimationLinkWithSequencerButton);
             m_LinkWithSequencerButton.tooltip = s_SequencerLinkContentTooltip;
@@ -383,12 +397,13 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             };
         }
 
-        void OnControlsWidthManipulatorDragged(float delta)
+        internal void OnControlsWidthManipulatorDragged(float delta)
         {
+            var totalWidth = m_AnimationKeyframeHeader.parent.resolvedStyle.width;
             var width = m_AnimationKeyframeHeader.resolvedStyle.width;
             var minWidth = m_AnimationKeyframeHeader.resolvedStyle.minWidth.value;
 
-            float newWidth = Mathf.Max(minWidth, width + delta);
+            float newWidth = Mathf.Min(Mathf.Max(minWidth, width + delta), totalWidth - minWidth);
             float adjustedDelta = newWidth - width;
 
             var rect = state.timeArea.rect;
@@ -428,6 +443,10 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             if (state.disabled) mainContentState = MainContentState.OnboardingPanel;
             else if (state.showCurveEditor) mainContentState = MainContentState.CurveEditor;
 
+            // Update ripple mode
+            if (m_ModeRippleToggle.value != state.rippleTime)
+                m_ModeRippleToggle.SetValueWithoutNotify(state.rippleTime);
+
             // Update play controls
             if (m_PreviewButton.value != state.previewing)
                 m_PreviewButton.SetValueWithoutNotify(state.previewing);
@@ -458,7 +477,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 var widthInsideMargins = width - k_LeftMargin - k_RightMargin;
 
                 xmin = (CanvasTransform.foundationCanvasPixelsBeforeZero - k_LeftMargin) / widthInsideMargins;
-                xmax = (width - k_LeftMargin) / widthInsideMargins;
+                xmax = Mathf.Max(xmin, (width - k_LeftMargin) / widthInsideMargins);
             }
             else
             {
@@ -546,6 +565,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AnimationClipFrameRateField.SetValueWithoutNotify((int)state.frameRate);
 
             // Keyframing panel
+            m_ModeRippleToggle.SetEnabled(!state.disabled);
+            m_FilterBySelectionToggle.SetValueWithoutNotify(state.rippleTime);
+
             bool canAddKey = !m_AnimEditor.selection.isReadOnly && state.filteredCurves.Count != 0;
             m_AddKeyframeButton.SetEnabled(canAddKey);
 
