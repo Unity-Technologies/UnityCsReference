@@ -54,6 +54,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public override object GetItemForIndex(int index)
+        {
+            var sourceIndex = columnController.GetSourceIndex(index);
+            return base.GetItemForIndex(sourceIndex);
+        }
+
+        public override int GetIndexForId(int id)
+        {
+            var sortedIndex = base.GetIndexForId(id);
+            return columnController.GetSortedIndex(sortedIndex);
+        }
+
+        public override int GetIdForIndex(int index)
+        {
+            var sourceIndex = columnController.GetSourceIndex(index);
+            return base.GetIdForIndex(sourceIndex);
+        }
+
         /// <inheritdoc />
         protected override VisualElement MakeItem()
         {

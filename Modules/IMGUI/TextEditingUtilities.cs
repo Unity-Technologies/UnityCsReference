@@ -443,13 +443,22 @@ namespace UnityEngine
                 DeleteSelection();
                 return true;
             }
+            else if (textHandle.useAdvancedText && stringCursorIndex < text.Length)
+            {
+                int startIndex = 0;
+
+                if (cursorIndex == 0 && textHandle.IsMainDirectionRTL())
+                    startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
+                else
+                    startIndex = m_TextSelectingUtility.NextCodePointIndex(cursorIndex);
+
+                int count = Mathf.Abs(startIndex - cursorIndex);
+                text = text.Remove(stringCursorIndex, count);
+                return true;
+            }
             else if (stringCursorIndex < text.Length)
             {
-                int count;
-                if (textHandle.useAdvancedText)
-                    count = Mathf.Abs(textHandle.NextCodePointIndex(cursorIndex) - cursorIndex);
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
                 text = text.Remove(stringCursorIndex, count);
                 return true;
             }
@@ -460,26 +469,38 @@ namespace UnityEngine
         public bool Backspace()
         {
             RestoreCursorState();
+            int prevCursorIndex = cursorIndex;
+            int prevSelectIndex = selectIndex;
 
             if (hasSelection)
             {
                 DeleteSelection();
                 return true;
             }
+            else if (textHandle.useAdvancedText && cursorIndex > 0)
+            {
+                int startIndex = 0;
+
+                if (cursorIndex == text.Length && textHandle.IsMainDirectionRTL())
+                    startIndex = m_TextSelectingUtility.NextCodePointIndex(cursorIndex);
+                else
+                    startIndex  = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
+
+                int count = Mathf.Abs(cursorIndex - startIndex);
+                text = text.Remove(stringCursorIndex - count, count);
+                cursorIndex = Math.Max(0, prevCursorIndex - count) ;
+                selectIndex = Math.Max(0, prevSelectIndex - count);
+                m_TextSelectingUtility.ClearCursorPos();
+                return true;
+            }
             else if (cursorIndex > 0)
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
-                int count;
-                if (textHandle.useAdvancedText)
-                {
-                    count = Mathf.Abs(cursorIndex - startIndex);
-                }
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
 
                 text = text.Remove(stringCursorIndex - count, count);
-                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, cursorIndex - count) : startIndex;
-                selectIndex = textHandle.useAdvancedText ? Math.Max(0, selectIndex - count) : startIndex;
+                cursorIndex = startIndex;
+                selectIndex = startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }

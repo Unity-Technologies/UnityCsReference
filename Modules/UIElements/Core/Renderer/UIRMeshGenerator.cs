@@ -666,7 +666,7 @@ namespace UnityEngine.UIElements.UIR
                     nativeMeshInfo = meshInfosMarshalSpan[i];
                     int glyphAmount = nativeMeshInfo.textElementInfos.Length;
                     remainingVertexCount = glyphAmount * 4;
-                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(nativeMeshInfo.textAssetId);
+                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
 
                     if (textAsset == null)
                         continue;

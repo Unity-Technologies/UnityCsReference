@@ -154,6 +154,13 @@ namespace UnityEngine.UIElements.UIR
                     commandLists.Clear();
                 }
                 m_CommandListsArray = null;
+
+                while(m_CommandListPool.Count > 0)
+                {
+                    var cmdList = m_CommandListPool.Pop();
+                    cmdList.Dispose();
+                }
+                m_CommandListPool = null;
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

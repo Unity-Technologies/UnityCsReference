@@ -280,7 +280,7 @@ namespace UnityEngine.UIElements
                 {
                     if (!targetPanel.isFlat)
                     {
-                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        // World-space panels don't use the regular RecomputeElementUnderPointer mechanism.
                         //
                         // This behavior is slightly different than screen-space panels and Editor panels: if an
                         // element moves or a collider starts blocking our raycast, the element under pointer will not
@@ -341,7 +341,7 @@ namespace UnityEngine.UIElements
                 {
                     if (!targetPanel.isFlat)
                     {
-                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        // World-space panels don't use the regular RecomputeElementUnderPointer mechanism.
                         //
                         // This behavior is slightly different than screen-space panels and Editor panels: if an
                         // element moves or a collider starts blocking our raycast, the element under pointer will not

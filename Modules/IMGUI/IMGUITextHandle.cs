@@ -237,7 +237,7 @@ namespace UnityEngine
             if (settings.fontAsset == null)
                 return;
 
-            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isSDF && settings.fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
                 settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());

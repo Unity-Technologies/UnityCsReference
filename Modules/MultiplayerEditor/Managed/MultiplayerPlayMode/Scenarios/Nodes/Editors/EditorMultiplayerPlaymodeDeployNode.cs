@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditor.Multiplayer.Internal;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -26,6 +27,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeReference] public NodeOutput<PlayerIdentifier> PlayerIdentifier; // Nodes needs to be public fields since they are serialized
         [SerializeReference] public NodeOutput<TypeDependentPlayerInfo> TypeDependentPlayerInfo; // Nodes needs to be public fields since they are serialized
         [SerializeField] private SceneSetup[] m_CurrentSceneSetup;
+        [SerializeField] private MultiplayerRoleFlags m_InitialMultiplayerRoleMask;
         public bool IsRunning()
         {
             var player = MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)];
@@ -97,6 +99,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                     // Set role
                     player.Role = (UnityEngine.Multiplayer.Internal.MultiplayerRoleFlags)GetInput(MultiplayerRole);
+                    if (IsMainEditor() && EditorMultiplayerManager.enableMultiplayerRoles)
+                    {
+                        m_InitialMultiplayerRoleMask = EditorMultiplayerManager.activeMultiplayerRoleMask;
+                        EditorMultiplayerManager.activeMultiplayerRoleMask = GetInput(MultiplayerRole);
+                    }
 
                     // Activating at first could take a while
                     // 1. Could be symbolic linking the MPPM folder
@@ -131,6 +138,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 // Perform Cleanup on node task cancellation
                 CleanupInitialScene();
+                RestoreMultiplayerRole();
                 player.ClearTags(out _);
 
                 DebugUtils.Trace($"Play Mode cancelled, deactivating '{player.Name}'.");
@@ -150,6 +158,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Perform Cleanup on node task Monitoring completion
             CleanupInitialScene();
+            RestoreMultiplayerRole();
         }
 
         private void SetupAndLoadInitialScene()
@@ -206,6 +215,21 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_CurrentSceneSetup = null;
         }
 
+        private void RestoreMultiplayerRole()
+        {
+            if (!IsMainEditor() || !EditorMultiplayerManager.enableMultiplayerRoles)
+                return;
+
+            if (EditorApplication.isPlaying)
+            {
+                EditorApplication.playModeStateChanged -= OnNotifyEnteredEditMode;
+                EditorApplication.playModeStateChanged += OnNotifyEnteredEditMode;
+                return;
+            }
+
+            EditorMultiplayerManager.activeMultiplayerRoleMask = m_InitialMultiplayerRoleMask;
+        }
+
         private bool IsMainEditor()
         {
             var playerInstanceIndex = GetInput(PlayerInstanceIndex);
@@ -219,6 +243,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (state == PlayModeStateChange.EnteredEditMode)
             {
                 CleanupInitialScene();
+                RestoreMultiplayerRole();
             }
         }
     }

@@ -343,7 +343,7 @@ internal class ATGTextJobSystem
 
         foreach (var entry in allUniqueMissingGlyphs)
         {
-            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(entry.Key);
+            var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
             if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
                 continue;
 
@@ -405,7 +405,7 @@ internal class ATGTextJobSystem
             ATGMeshInfo meshInfo = meshInfos[i];
             FontAsset fa = null;
             SpriteAsset sa = null;
-            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+            var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
             if (textAsset == null)
                 continue;
             bool isSprite = false;

@@ -33,9 +33,9 @@ namespace UnityEditor.Build.Profile
         const string k_HeroPathPrefix = "BuildProfile/Hero/";
         const string k_HeroPathSuffix = ".Hero";
         // The asset database supports file name length to max. 250 symbols
-        // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
+        // Leave 5 symbols for the GenerateUniqueAssetPath() that adds " (1)"(2,3...) in case
         // an asset with such name already exists.
-        public const int k_MaxAssetFileNameLength = 247;
+        public const int k_MaxAssetFileNameLength = 245;
         // For UI cases where the extension `.asset` is not taken into consideration
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");

@@ -265,6 +265,7 @@ namespace UnityEditor
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
             public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
+            public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
@@ -1875,9 +1876,22 @@ namespace UnityEditor
 
             deviceList.DoLayoutList();
 
+            // Entities Graphics does not support Web platforms, so no need to check
+            if (targetPlatform != BuildTarget.WebGL)
+            {
+                // When EG/GRD unification is done, EG will no longer support GLES
+                bool isEntitiesGraphicsPackageInstalled = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.entities.graphics");
+                bool deviceListContainsGLES = deviceList.list.Contains(GraphicsDeviceType.OpenGLES3);
+                if (isEntitiesGraphicsPackageInstalled && deviceListContainsGLES)
+                {
+                    EditorGUILayout.HelpBox(SettingsContent.glesWithEntitiesGraphicsDeprecationMessage.text,
+                        MessageType.Warning, true);
+                }
+            }
+
             bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
             if (containsDeprecatedAPIs)
-                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
+                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Warning, true);
 
             //@TODO: undo
 
@@ -3583,7 +3597,7 @@ namespace UnityEditor
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
-                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
+                            EditorGUIUtility.systemCopyBuffer = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
                         }
 
                         GUI.enabled = hasScriptingDefinesBeenModified;

@@ -31,6 +31,14 @@ namespace UnityEngine.Networking
         }
     }
 
+    public enum HttpForcedVersion
+    {
+        NotForced = 0,
+        HTTP1_0 = 1,
+        HTTP1_1 = 2,
+        HTTP2 = 3,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequest/Public/UnityWebRequest.h")]
     public partial class UnityWebRequest : IDisposable
@@ -648,6 +656,23 @@ namespace UnityEngine.Networking
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
             }
         }
+
+        private extern HttpForcedVersion GetHttpForcedVersion();
+        private extern UnityWebRequestError SetHttpForcedVersion(HttpForcedVersion forceHttp2);
+
+        public HttpForcedVersion httpForcedVersion
+        {
+            get { return GetHttpForcedVersion(); }
+            set
+            {
+                if (!isModifiable)
+                    throw new InvalidOperationException("UnityWebRequest has already been sent; cannot modify the protocol version");
+                UnityWebRequestError ret = SetHttpForcedVersion(value);
+                if (ret != UnityWebRequestError.OK)
+                    throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
+            }
+        }
+
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(UnityWebRequest unityWebRequest) => unityWebRequest.m_Ptr;

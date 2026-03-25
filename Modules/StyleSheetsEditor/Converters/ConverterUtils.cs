@@ -71,6 +71,7 @@ namespace UnityEditor.StyleSheets
         public const string k_StretchHeight = "-unity-stretch-height";
         public const string k_StretchWidth = "-unity-stretch-width";
         public const string k_WordWrap = "-unity-word-wrap";
+        public const string k_IsSDF = "-unity-is-sdf";
         public const string k_TextColor = "color";
         public const string k_BackgroundImage = "background-image";
         public const string k_ScaledBackground = "-unity-scaled-backgrounds";
@@ -122,6 +123,7 @@ namespace UnityEditor.StyleSheets
             k_StyleProperties.Add(k_StretchHeight);
             k_StyleProperties.Add(k_StretchWidth);
             k_StyleProperties.Add(k_WordWrap);
+            k_StyleProperties.Add(k_IsSDF);
             k_StyleProperties.Add(k_TextColor);
             k_StyleProperties.Add(k_BackgroundImage);
             k_StyleProperties.Add(k_ScaledBackground);
@@ -403,6 +405,7 @@ namespace UnityEditor.StyleSheets
             style.stretchHeight = src.stretchHeight;
             style.stretchWidth = src.stretchWidth;
             style.wordWrap = src.wordWrap;
+            style.isSDF = src.isSDF;
 
             style.active.Assign(src.active);
             style.hover.Assign(src.hover);

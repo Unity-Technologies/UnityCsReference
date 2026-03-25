@@ -829,6 +829,18 @@ namespace UnityEngine.TextCore.Text
             }
             return new GlyphMetricsForOverlay(ref textInfo.textElementInfo[i], GetPixelsPerPoint());
         }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        internal bool IsMainDirectionRTL()
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("IsMainDirectionRTL should only be called for ATG.");
+                return false;
+            }
+
+            return TextLib.IsMainDirectionRTL(textGenerationInfo);
+        }
     }
 }
 

@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Profile.Elements
         /// Scripting define visual element handles comitting scripting define changes
         /// to a build profile. Active profiles prompts for script recompilation when
         /// navigating away from the editor window. Play mode must reflect active profiles
-        /// scripting defiens.
+        /// scripting defines.
         /// </summary>
         class ScriptingDefinesVisualElement : VisualElement
         {
@@ -48,8 +48,7 @@ namespace UnityEditor.Build.Profile.Elements
                 recompileDefinesButton.text = TrText.apply;
 
                 recompileDefinesButton.clicked += () => {
-                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
-                BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+                    m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);
                 };
                 revertDefinesButton.clicked += RevertScriptingDefines;
 
@@ -152,8 +151,7 @@ namespace UnityEditor.Build.Profile.Elements
         
                 if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
                 {
-                    m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
-                    BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+                    m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);
                 }
                 else
                 {

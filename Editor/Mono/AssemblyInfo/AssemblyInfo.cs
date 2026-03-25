@@ -52,6 +52,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS4")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS5")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Switch")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Switch2")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.NintendoCore")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Rendering")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.SceneVisibility")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]

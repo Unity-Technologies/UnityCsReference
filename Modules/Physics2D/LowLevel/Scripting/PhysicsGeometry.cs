@@ -1191,8 +1191,8 @@ namespace UnityEngine.LowLevelPhysics2D
 
         #region Internal
 
-        [SerializeField] Vector2 m_Ghost1;
         [SerializeField] SegmentGeometry m_Segment;
+        [SerializeField] Vector2 m_Ghost1;
         [SerializeField] Vector2 m_Ghost2;
         readonly int m_ChainId;
 

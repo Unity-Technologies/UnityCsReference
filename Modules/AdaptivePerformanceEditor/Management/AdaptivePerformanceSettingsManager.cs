@@ -15,6 +15,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
 {
     class AdaptivePerformanceSettingsManager : SettingsProvider
     {
+        const string k_WarningPlaymodePopup = "Adaptive Performance settings cannot be changed while the Editor is in Play mode.";
+
         struct Content
         {
             public static readonly GUIContent k_InitializeOnStart = new GUIContent(L10n.Tr("Initialize Adaptive Performance on Startup"));
@@ -61,6 +63,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             if (!string.IsNullOrEmpty(assetPath))
                             {
                                 assetPath = Path.Combine(assetPath, "AdaptivePerformanceGeneralSettings.asset");
+                                generalSettings.hideFlags = HideFlags.HideInInspector;
                                 AssetDatabase.CreateAsset(generalSettings, assetPath);
                             }
                         }
@@ -204,7 +207,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (loaderProp.objectReferenceValue == null)
                 {
                     var adaptivePerformanceManagerSettings = ScriptableObject.CreateInstance<AdaptivePerformanceManagerSettings>() as AdaptivePerformanceManagerSettings;
-                    //adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
+                    adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
                     adaptivePerformanceManagerSettings.name = $"{buildTargetGroup.ToString()} Providers";
                     AssetDatabase.AddObjectToAsset(adaptivePerformanceManagerSettings, AssetDatabase.GetAssetOrScenePath(currentSettings));
                     loaderProp.objectReferenceValue = adaptivePerformanceManagerSettings;
@@ -308,7 +311,13 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
 
             bool preValue = s_EnableAdaptivePerformance;
-            s_EnableAdaptivePerformance = EditorGUILayout.Toggle("Enable Adaptive Performance", s_EnableAdaptivePerformance);
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPlaymodePopup), MessageType.Warning);
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                s_EnableAdaptivePerformance = EditorGUILayout.Toggle("Enable Adaptive Performance", s_EnableAdaptivePerformance);
+            }
 
             EditorGUIUtility.labelWidth = originalValue;
             if (currentSettings != null)

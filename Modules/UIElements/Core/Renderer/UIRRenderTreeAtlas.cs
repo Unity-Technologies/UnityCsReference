@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements.UIR
 
             var old = RenderTexture.active;
             RenderTexture.active = block.texture;
-            GL.Clear(true, true, Color.clear, 1.0f);
+            GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
 
             // To remind custom filter creators to use the atlas UVs, we draw a colored margin around the texture.
             // Leave a 2 pixels gab to avoid filtering issues.

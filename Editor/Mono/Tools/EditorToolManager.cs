@@ -142,6 +142,13 @@ namespace UnityEditor.EditorTools
                     if(!isAdditionalContextTool)
                         RestorePreviousPersistentTool();
                 }
+                else if (tool == Tool.Custom)
+                {
+                    // If this is a global custom tool, and it's targeting the previous context - we need to switch out of it
+                    var toolMeta = EditorToolUtility.GetMetaData(active.GetType());
+                    if (toolMeta.targetBehaviour == typeof(NullTargetKey) && (prev != null && toolMeta.targetContext == prev.GetType()))
+                        RestorePreviousPersistentTool();
+                }
 
                 ToolManager.ActiveContextDidChange();
 

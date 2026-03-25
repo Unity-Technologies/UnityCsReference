@@ -3003,6 +3003,9 @@
     <Compile Include="..\..\Editor\Mono\PlatformSupport\ReorderableTextureList.cs">
       <Link>Editor\Mono\PlatformSupport\ReorderableTextureList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayModeTintResolver.cs">
+      <Link>Editor\Mono\PlayModeTintResolver.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayModeView\PlayModeAnalytics.cs">
       <Link>Editor\Mono\PlayModeView\PlayModeAnalytics.cs</Link>
     </Compile>
@@ -3038,6 +3041,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsEmbeddedLinux.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsEmbeddedLinux.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsEntitiesGraphicsValidation.cs">
+      <Link>Editor\Mono\PlayerSettingsEntitiesGraphicsValidation.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsFacebook.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsFacebook.bindings.cs</Link>
@@ -4556,6 +4562,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTarget.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTargetEditor.cs">
+      <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTargetEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceLoaderInfo.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceLoaderInfo.cs</Link>

@@ -41,7 +41,7 @@ namespace UnityEngine.TextCore.Text
             bool hasMissingGlyphs = false;
             foreach (ref var meshInfo in meshInfosSpan)
             {
-                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextAsset;
                 HashSet<uint> missingUnicodes = null;
 
                 if (textAsset is SpriteAsset spriteAsset || textAsset == null)
@@ -88,7 +88,7 @@ namespace UnityEngine.TextCore.Text
 
             foreach (ref var meshInfo in meshInfosSpan)
             {
-                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextAsset;
                 if (textAsset == null)
                     continue;
                 float inverseAtlasWidth = 0f;
@@ -232,6 +232,9 @@ namespace UnityEngine.TextCore.Text
 
         [NativeMethod(Name = "TextLib::GetCharacterCount")]
         static public extern int GetCharacterCount(IntPtr textGenerationInfo);
+
+        [NativeMethod(Name = "TextLib::IsMainDirectionRTL")]
+        static public extern bool IsMainDirectionRTL(IntPtr textGenerationInfo);
 
         internal static class BindingsMarshaller
         {

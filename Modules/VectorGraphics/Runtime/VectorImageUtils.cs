@@ -183,7 +183,9 @@ namespace Unity.VectorGraphics
             rt = RenderTexture.GetTemporary(desc);
             RenderTexture.active = rt;
 
+            var tempTheme = ScriptableObject.CreateInstance<ThemeStyleSheet>();
             var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            panelSettings.themeStyleSheet = tempTheme;
             panelSettings.clearColor = true;
             panelSettings.clearDepthStencil = true;
             panelSettings.targetTexture = rt;
@@ -200,6 +202,7 @@ namespace Unity.VectorGraphics
             GL.PopMatrix();
 
             ScriptableObject.DestroyImmediate(panelSettings);
+            ScriptableObject.DestroyImmediate(tempTheme);
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
