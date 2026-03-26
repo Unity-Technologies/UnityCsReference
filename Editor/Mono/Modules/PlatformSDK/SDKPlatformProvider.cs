@@ -26,7 +26,9 @@ class SDKPlatformProvider
     public bool shouldShowPlatformSettings { get; private set; } = true;
     public bool shouldShowAdditionalSettings { get; private set; } = true;
     public bool shouldShowAddSettingsButton { get; private set; } = true;
+    public bool shouldShowBuildActions { get; private set; } = true;
     public Type[] requiredComponents { get; private set; } = [];
+    public Type[] customFooterActions { get; private set; } = [];
 
     public Action<BuildProfile> onMultiTargetPlatformBuildProfileCreated { get; private set; }
     public Action<BuildProfile, int, Action<BuildProfile, int>> onDerivedPlatformBuildProfileCreated { get; private set; }
@@ -37,7 +39,9 @@ class SDKPlatformProvider
     const string k_ShouldShowPlatformSettings = "shouldShowPlatformSettings";
     const string k_ShouldShowAdditionalSettings = "shouldShowAdditionalSettings";
     const string k_ShouldShowAddSettingsButton = "shouldShowAddSettingsButton";
+    const string k_ShouldShowBuildActions = "shouldShowBuildActions";
     const string k_RequiredComponents = "requiredComponents";
+    const string k_FooterActions = "customFooterActions";
     const string k_OnMultiTargetPlatformBuildProfileCreated = "OnMultiTargetPlatformBuildProfileCreated";
     const string k_OnDerivedPlatformBuildProfileCreated = "OnDerivedPlatformBuildProfileCreated";
 
@@ -53,7 +57,9 @@ class SDKPlatformProvider
         shouldShowPlatformSettings = providerType.GetProperty(k_ShouldShowPlatformSettings)?.GetValue(provider) as bool? ?? true;
         shouldShowAdditionalSettings = providerType.GetProperty(k_ShouldShowAdditionalSettings)?.GetValue(provider) as bool? ?? true;
         shouldShowAddSettingsButton = providerType.GetProperty(k_ShouldShowAddSettingsButton)?.GetValue(provider) as bool? ?? true;
+        shouldShowBuildActions = providerType.GetProperty(k_ShouldShowBuildActions)?.GetValue(provider) as bool? ?? true;
         requiredComponents = providerType.GetProperty(k_RequiredComponents)?.GetValue(provider) as Type[] ?? [];
+        customFooterActions = providerType.GetProperty(k_FooterActions)?.GetValue(provider) as Type[] ?? [];
 
         if (platformType == SDKPlatformType.MultiTarget)
         {

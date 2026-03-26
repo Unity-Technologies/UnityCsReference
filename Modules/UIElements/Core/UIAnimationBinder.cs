@@ -102,6 +102,7 @@ namespace UnityEngine.UIElements
 
         }
 
+        [RequiredByNativeCode(Optional = true)]
         internal float GetFloatValue(int elementIndex, int propertyId, int channel)
         {
             if (elementIndex < 0 || elementIndex >= m_Elements.Count)

@@ -21,7 +21,6 @@ namespace UnityEngine.UIElements.UIR
         ApplyUserProps
     }
 
-    [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     struct SerializedCommand

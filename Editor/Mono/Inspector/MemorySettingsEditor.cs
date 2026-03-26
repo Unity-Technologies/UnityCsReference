@@ -28,6 +28,8 @@ namespace UnityEditor
             public static readonly GUIContent kMainAllocatorBlockSize = EditorGUIUtility.TrTextContent("Main Thread Block Size", "Block size used by main thread allocator");
             public static readonly GUIContent kThreadAllocatorBlockSize = EditorGUIUtility.TrTextContent("Shared Thread Block Size", "Block size used by shared thread allocator");
 
+            public static readonly GUIContent kMainAllocatorMimallocEnabled = EditorGUIUtility.TrTextContent("Mimalloc enabled", "Use Mimalloc as main allocator");
+
             public static readonly GUIContent kGfxAllocatorTitle = EditorGUIUtility.TrTextContent("Gfx Allocator");
             public static readonly GUIContent kMainGfxBlockSize = EditorGUIUtility.TrTextContent("Main Thread Block Size", "Block size used by main thread for gfx allocations");
             public static readonly GUIContent kThreadGfxBlockSize = EditorGUIUtility.TrTextContent("Shared Thread Block Size", "Block size used by shared threads for gfx allocations");
@@ -201,6 +203,74 @@ namespace UnityEditor
             B,
             KB,
             MB,
+        }
+
+        private void OptionalBooleanField(SerializedProperty settings, string variableName, GUIContent label)
+        {
+            const int fieldSpacing = 2;
+            s_Styles ??= new Styles();
+
+            var valueProperty = settings.FindPropertyRelative(variableName);
+            var defaultValueProperty = m_DefaultMemorySettingsProperty.FindPropertyRelative(variableName);
+            var overrideContent = new GUIContent(string.Empty, "Override Default");
+
+            var lockToggleSize = EditorStyles.toggle.CalcSize(overrideContent);
+            var minWidth = EditorGUI.indent + EditorGUIUtility.labelWidth + EditorGUI.kSpacing + lockToggleSize.x + EditorGUI.kSpacing + EditorGUIUtility.fieldWidth;
+
+            var rowRect = GUILayoutUtility.GetRect(minWidth, EditorGUIUtility.singleLineHeight + fieldSpacing);
+            rowRect.height -= fieldSpacing;
+            rowRect = EditorGUI.IndentedRect(rowRect);
+
+            var indentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
+            var labelRect = rowRect;
+            labelRect.width = EditorGUIUtility.labelWidth;
+            GUI.Label(labelRect, label);
+
+            var overrideRect = rowRect;
+            overrideRect.xMin = labelRect.xMax + EditorGUI.kSpacing;
+            overrideRect.size = lockToggleSize;
+
+            var usesDefault = valueProperty.intValue < 0;
+            var nextUsesDefault = GUI.Toggle(overrideRect, usesDefault, overrideContent, Styles.lockButton);
+
+            var valueRect = rowRect;
+            valueRect.xMin = overrideRect.xMax + EditorGUI.kSpacing;
+
+            var defaultInt = defaultValueProperty.intValue != 0 ? 1 : 0;
+
+            if (nextUsesDefault != usesDefault)
+            {
+                if (!nextUsesDefault)
+                {
+                    var confirmed = EditorUtility.DisplayDialog(
+                        Styles.warningDialogTitle,
+                        Styles.warningDialogText,
+                        Styles.okDialogButton,
+                        Styles.cancelDialogButton,
+                        DialogOptOutDecisionType.ForThisSession,
+                        kWarningDialogSessionKey);
+
+                    if (!confirmed)
+                        nextUsesDefault = true;
+                }
+
+                valueProperty.intValue = nextUsesDefault ? -1 : defaultInt;
+            }
+
+            if (nextUsesDefault)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUI.Toggle(valueRect, defaultInt != 0);
+            }
+            else
+            {
+                var toggled = EditorGUI.Toggle(valueRect, valueProperty.intValue != 0);
+                valueProperty.intValue = toggled ? 1 : 0;
+            }
+
+            EditorGUI.indentLevel = indentLevel;
         }
 
         private void OptionalVariableField(SerializedProperty settings, string variablename, GUIContent label, bool useBytes = true)
@@ -383,8 +453,16 @@ namespace UnityEditor
             {
                 if (BeginGroup(1, Content.kMainAllocatorTitle))
                 {
-                    OptionalVariableField(currentSettings, "m_MainAllocatorBlockSize", Content.kMainAllocatorBlockSize);
-                    OptionalVariableField(currentSettings, "m_ThreadAllocatorBlockSize", Content.kThreadAllocatorBlockSize);
+                    var mimallocSettings = currentSettings.FindPropertyRelative("m_MainAllocatorMimallocEnabled");
+                    bool isMimallocEnabled = mimallocSettings != null && mimallocSettings.intValue == 1;
+
+                    using (new EditorGUI.DisabledScope(isMimallocEnabled))
+                    {
+                        OptionalVariableField(currentSettings, "m_MainAllocatorBlockSize", Content.kMainAllocatorBlockSize);
+                        OptionalVariableField(currentSettings, "m_ThreadAllocatorBlockSize", Content.kThreadAllocatorBlockSize);
+                    }
+
+                    OptionalBooleanField(currentSettings, "m_MainAllocatorMimallocEnabled", Content.kMainAllocatorMimallocEnabled);
                 }
                 EndGroup();
                 if (BeginGroup(2, Content.kGfxAllocatorTitle))

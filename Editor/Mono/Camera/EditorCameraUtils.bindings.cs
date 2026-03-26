@@ -20,11 +20,10 @@ namespace UnityEditor.Rendering
         public static bool RenderToCubemap(this Camera camera, Texture target, int faceMask, StaticEditorFlags culledFlags)
             => RenderToCubemapImpl(camera, target, faceMask, culledFlags) == 1;
 
-        [Obsolete("Obsolete. Use GetRenderersFilteringResults(ReadOnlySpan<EntityId>, Span<bool>) instead.")]
+        [System.Obsolete("GetRenderersFilteringResults(ReadOnlySpan<int>) is obsolete. Use GetRenderersFilteringResults(ReadOnlySpan<EntityId>) instead.", true)]
         public static unsafe void GetRenderersFilteringResults(ReadOnlySpan<int> rendererIDs, Span<bool> results)
         {
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId and int should have the same size for this conversion to work correctly.");
-            GetRenderersFilteringResults(MemoryMarshal.Cast<int, EntityId>(rendererIDs), results);
+            throw new System.NotImplementedException("GetRenderersFilteringResults(ReadOnlySpan<int>) is obsolete. Use GetRenderersFilteringResults(ReadOnlySpan<EntityId>) instead.");
         }
 
         public static unsafe void GetRenderersFilteringResults(ReadOnlySpan<EntityId> rendererIDs, Span<bool> results)
@@ -35,11 +34,10 @@ namespace UnityEditor.Rendering
             GetRenderersFilteringResultsImpl(rendererIDs, results);
         }
 
-        [Obsolete("Obsolete. Use GetRenderersHiddenResultBits(ReadOnlySpan<EntityId>, Span<ulong>) instead.")]
+        [System.Obsolete("GetRenderersHiddenResultBits(ReadOnlySpan<int>) is obsolete. Use GetRenderersHiddenResultBits(ReadOnlySpan<EntityId>) instead.", true)]
         public static unsafe void GetRenderersHiddenResultBits(ReadOnlySpan<int> rendererIDs, Span<ulong> resultBits)
         {
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId and int should have the same size for this conversion to work correctly.");
-            GetRenderersHiddenResultBits(MemoryMarshal.Cast<int, EntityId>(rendererIDs), resultBits);
+            throw new System.NotImplementedException("GetRenderersHiddenResultBits(ReadOnlySpan<int>) is obsolete. Use GetRenderersHiddenResultBits(ReadOnlySpan<EntityId>) instead.");
         }
 
         public static unsafe void GetRenderersHiddenResultBits(ReadOnlySpan<EntityId> rendererIDs, Span<ulong> resultBits)

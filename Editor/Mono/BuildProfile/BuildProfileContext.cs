@@ -1000,7 +1000,13 @@ namespace UnityEditor.Build.Profile
             if (activeProfile == null || platformGuid.Empty())
                 return false;
 
-            return platformGuid == activeProfile.platformGuid;
+            if (platformGuid == activeProfile.platformGuid)
+                return true;
+
+            if (activeProfile.isMultiTarget && platformGuid == activeProfile.activePlatformGuid)
+                return true;
+
+            return false;
         }
 
         static bool IsSharedSettingEnabledInActiveProfile(string settingName)

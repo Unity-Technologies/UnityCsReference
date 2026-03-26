@@ -41,7 +41,7 @@ namespace UnityEditor.AddComponent
             AdvancedDropdownItem root = new ComponentDropdownItem("ROOT");
             List<MenuItemData> menuItems = GetSortedMenuItems(m_Targets);
 
-            var pathHashCodeMap = DictionaryPool<string, int>.Get();
+            var pathHashCodeMap = DictionaryPool<KeyValuePair<string, int>, int>.Get();
 
             for (var i = 0; i < menuItems.Count; i++)
             {
@@ -66,10 +66,11 @@ namespace UnityEditor.AddComponent
                         continue;
                     }
 
-                    if (!pathHashCodeMap.TryGetValue(path, out int pathHashCode))
+                    var pathSectionWithId = new KeyValuePair<string, int>(path, parent.id);
+                    if (!pathHashCodeMap.TryGetValue(pathSectionWithId, out int pathHashCode))
                     {
                         pathHashCode = AdvancedDropdownItem.GenerateChildId(parent.id, path);
-                        pathHashCodeMap[path] = pathHashCode;
+                        pathHashCodeMap[pathSectionWithId] = pathHashCode;
                     }
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -89,7 +90,7 @@ namespace UnityEditor.AddComponent
             var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"));
             newScript.AddChild(new NewScriptDropdownItem());
             root.AddChild(newScript);
-            DictionaryPool<string, int>.Release(pathHashCodeMap);
+            DictionaryPool<KeyValuePair<string, int>, int>.Release(pathHashCodeMap);
             return root;
         }
 

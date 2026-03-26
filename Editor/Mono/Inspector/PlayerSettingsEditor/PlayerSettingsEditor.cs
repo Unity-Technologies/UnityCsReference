@@ -821,40 +821,48 @@ namespace UnityEditor
             m_OnTrackSerializedObjectValueChanged = onTrackSerializedObjectChanged;
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
+            var profile = serializedProfile.targetObject as BuildProfile;
+            if (profile != null && profile.isMultiTarget)
+                buildProfilePlatformGuid = profile.selectedPlatformGuid;
+
             // We don't want to show other platform tabs that it's not the build profile one
-            var gotValidPlatform = false;
-            var buildProfileBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(buildProfilePlatformGuid);
-            var buildProfileSubtarget = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(buildProfileBasePlatformGuid).Item2;
-            var isBuildProfilePlatformStandalone = buildProfileSubtarget == StandaloneBuildSubtarget.Player;
-            var isBuildProfilePlatformServer = buildProfileSubtarget == StandaloneBuildSubtarget.Server;
-            for (int i = 0; i < validPlatforms.Length; i++)
-            {
-                var buildTarget = validPlatforms[i].defaultTarget;
-                var namedBuildTarget = validPlatforms[i].namedBuildTarget;
-                var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(namedBuildTarget, buildTarget);
-
-                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
-                // NamedBuildTarget in addition to the base platform guid for standalone and server platforms
-                var isStandalone = namedBuildTarget == NamedBuildTarget.Standalone && isBuildProfilePlatformStandalone;
-                var isServer = namedBuildTarget == NamedBuildTarget.Server && isBuildProfilePlatformServer;
-                if (basePlatformGuid != buildProfileBasePlatformGuid && !(isStandalone || isServer))
-                    continue;
-
-                var copy = (BuildPlatform)validPlatforms[i].Clone();
-                copy.tooltip = string.Empty;
-                validPlatforms[0] = copy;
-                gotValidPlatform = true;
-                break;
-            }
-
-            if (!gotValidPlatform)
+            var matchedPlatform = FindMatchingValidPlatform(buildProfilePlatformGuid);
+            if (matchedPlatform == null)
                 return;
 
+            validPlatforms[0] = matchedPlatform;
             Array.Resize(ref validPlatforms, 1);
             m_SettingsExtensions = new ISettingEditorExtension[1];
             m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(buildProfilePlatformGuid);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
+        }
+
+        /// <summary>
+        /// Finds the valid platform entry matching the given platform GUID, cloning it with the tooltip cleared.
+        /// </summary>
+        BuildPlatform FindMatchingValidPlatform(GUID platformGuid)
+        {
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var (_, subtarget) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
+            var isPlatformStandalone = subtarget == StandaloneBuildSubtarget.Player;
+            var isPlatformServer = subtarget == StandaloneBuildSubtarget.Server;
+
+            foreach (var platform in validPlatforms)
+            {
+                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
+                // NamedBuildTarget in addition to the base platform GUID for standalone and server platforms.
+                var platformBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(platform.namedBuildTarget, platform.defaultTarget);
+                var isStandalone = platform.namedBuildTarget == NamedBuildTarget.Standalone && isPlatformStandalone;
+                var isServer = platform.namedBuildTarget == NamedBuildTarget.Server && isPlatformServer;
+                if (platformBasePlatformGuid != basePlatformGuid && !(isStandalone || isServer))
+                    continue;
+
+                var copy = (BuildPlatform)platform.Clone();
+                copy.tooltip = string.Empty;
+                return copy;
+            }
+            return null;
         }
 
         /// <summary>

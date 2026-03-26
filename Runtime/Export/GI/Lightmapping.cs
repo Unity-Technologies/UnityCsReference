@@ -139,7 +139,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -163,7 +163,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -185,7 +185,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -210,7 +210,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -233,7 +233,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -255,7 +255,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -278,7 +278,7 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -302,7 +302,7 @@ namespace UnityEngine
         public struct Cookie
         {
             public EntityId entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
@@ -320,14 +320,14 @@ namespace UnityEngine
         {
             // light id
             public EntityId     entityId;
-            [System.Obsolete("Please use entityId instead.", false)]
+            [System.Obsolete("Please use entityId instead.", true)]
             public int instanceID
             {
                 get { return entityId; } set { entityId = value; }
             }
             // cookie id
             public EntityId     cookieTextureEntityId;
-            [System.Obsolete("Please use cookieTextureEntityId instead.", false)]
+            [System.Obsolete("Please use cookieTextureEntityId instead.", true)]
             public int          cookieID
             {
                 get { return cookieTextureEntityId; } set { cookieTextureEntityId = value; }
@@ -508,7 +508,7 @@ namespace UnityEngine
                 mode       = LightMode.Unknown;
             }
 
-            [System.Obsolete("Please use InitNoBake with an EntityId argument instead.", false)]
+            [System.Obsolete("Please use InitNoBake with an EntityId argument instead.", true)]
             public void InitNoBake(int lightInstanceID)
             {
                 entityId   = lightInstanceID;

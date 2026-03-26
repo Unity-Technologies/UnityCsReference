@@ -163,7 +163,8 @@ namespace UnityEditor.Build.Profile.Elements
             void EditorUpdate()
             {
                 bool isCompiling = EditorApplication.isCompiling || EditorApplication.isUpdating;
-                bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.platformGuid);
+                var guid = m_Profile.isMultiTarget ? m_Profile.selectedPlatformGuid : m_Profile.platformGuid;
+                bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(guid);
 
                 if (!isVirtualTexturingValid || isCompiling)
                 {

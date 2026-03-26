@@ -216,6 +216,14 @@ namespace UnityEditor
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern int[] GetIntArray(string key, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]int[] defaultValue);
 
+        public static extern void SetEntityId(string key, EntityId value);
+        public static extern EntityId GetEntityId(string key, EntityId defaultValue);
+        public static extern void EraseEntityId(string key);
+        public static extern void SetEntityIdArray(string key, EntityId[] value);
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        public static extern EntityId[] GetEntityIdArray(string key, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]EntityId[] defaultValue);
+        public static extern void EraseEntityIdArray(string key);
+
         internal static extern string[] GetSessionStateIntTypeKeys();
     }
 }

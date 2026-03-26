@@ -128,9 +128,9 @@ namespace UnityEngine
         internal readonly CollisionPairHeaderFlags m_Flags;
         internal readonly Vector3 m_RelativeVelocity;
 
-        [Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", false)]
+        [Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", true)]
         public int bodyInstanceID => m_BodyID;
-        [Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", false)]
+        [Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", true)]
         public int otherBodyInstanceID => m_OtherBodyID;
 
         public EntityId bodyEntityId => m_BodyID;
@@ -173,9 +173,9 @@ namespace UnityEngine
         internal readonly CollisionPairEventFlags m_Events;
         internal readonly Vector3 m_ImpulseSum;
 
-        [Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
+        [Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", true)]
         public int colliderInstanceID => m_ColliderID;
-        [Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", false)]
+        [Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", true)]
         public int otherColliderInstanceID => m_OtherColliderID;
 
         public EntityId colliderEntityId => m_ColliderID;

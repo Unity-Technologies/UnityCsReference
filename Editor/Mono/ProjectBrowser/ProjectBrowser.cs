@@ -1564,9 +1564,7 @@ namespace UnityEditor
                     int filterId = FavoritesEntityIds.instance.GetIdFor(selectedEntityId);
                     SearchFilter filter = SavedSearchFilters.GetFilter(filterId);
 
-                    // Check if the filter is valid (the root of filters are not an actual filter)
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    if (ValidateFilter((int)EntityId.ToULong(selectedEntityId), filter))
+                    if (ValidateFilter(filterId, filter))
                     {
                         m_SearchFilter = filter;
                         EnsureValidFolders();

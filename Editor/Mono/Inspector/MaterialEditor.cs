@@ -246,14 +246,15 @@ namespace UnityEditor
 
             public void OnEnable()
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)SessionState.GetInt("PreviewReflectionProbe", 0))) as ReflectionProbe;
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+                EntityId probeEntityId = SessionState.GetEntityId("PreviewReflectionProbe", EntityId.None);
+                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(probeEntityId) as ReflectionProbe;
             }
 
             public void OnDisable()
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                SessionState.SetInt("PreviewReflectionProbe", (int)EntityId.ToULong(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None));
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+                SessionState.SetEntityId("PreviewReflectionProbe", m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None);
             }
 
             public override void OnGUI(Rect rc)

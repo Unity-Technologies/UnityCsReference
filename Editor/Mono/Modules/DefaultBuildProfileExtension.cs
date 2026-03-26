@@ -183,8 +183,9 @@ namespace UnityEditor.Modules
 
             m_BuildProfile = serializedObject.targetObject as BuildProfile;
             Debug.Assert(m_BuildProfile != null, "Build profile cannot be null");
-            m_BuildTarget = m_BuildProfile.buildTarget;
-            var subtarget = m_BuildProfile.subtarget;
+            m_BuildTarget = m_BuildProfile.selectedBuildTarget;
+            var subtarget = m_BuildProfile.selectedSubtarget;
+
             m_BuildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_BuildTarget);
             m_NamedBuildTarget = (subtarget == StandaloneBuildSubtarget.Server) ? NamedBuildTarget.Server : NamedBuildTarget.FromBuildTargetGroup(m_BuildTargetGroup);
             m_IsClassicProfile = BuildProfileContext.IsClassicPlatformProfile(m_BuildProfile);

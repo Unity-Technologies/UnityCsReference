@@ -45,13 +45,15 @@ namespace UnityEditor.Build.Profile.Handlers
             }
 
             var foundPackageProviders = PackageSettingsProvider.Get();
-            s_GenericSettingProviders = new List<IBuildProfileSettingsProvider>(foundPackageProviders.Count);
+            var genericSettingProviders = new List<IBuildProfileSettingsProvider>(foundPackageProviders.Count);
             for (int i = 0; i < foundPackageProviders.Count; i++)
             {
                 var found = foundPackageProviders[i];
                 var typedInternalProvider = typeof(ScriptableObjectSettingsProvider<>).MakeGenericType(found.settingsType);
-                s_GenericSettingProviders.Add((IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found));
+                genericSettingProviders.Add((IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found));
             }
+            genericSettingProviders.Sort((a, b) => a.GetDisplayOrder().CompareTo(b.GetDisplayOrder()));
+            s_GenericSettingProviders = genericSettingProviders;
         }
 
         /// <summary>
@@ -83,7 +85,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             foreach (var provider in s_GenericSettingProviders)
             {
-                if (provider.GetIsRequired())
+                if (provider.GetIsRequired() && provider.CanAddSettings(m_BuildProfile) && !provider.HasSettings(m_BuildProfile))
                     yield return provider;
             }
         }

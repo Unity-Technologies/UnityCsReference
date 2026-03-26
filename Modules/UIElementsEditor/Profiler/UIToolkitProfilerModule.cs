@@ -10,9 +10,11 @@ using Unity.Profiling.Editor;
 namespace UnityEditor.UIElements
 {
     [Serializable]
-    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UI")]
+    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UIToolkit")]
     internal class UIToolkitProfilerModule : ProfilerModule
     {
+        const int k_DefaultOrderIndex = 9; // before UI (Canvas)
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
         // Specify a list of Profiler category names, which should be auto-enabled when the module is active.
         static readonly string[] k_AutoEnabledCategoryNames = new string[]
         {

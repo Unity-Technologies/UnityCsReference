@@ -62,6 +62,11 @@ namespace UnityEditor.PackageManager.UI
         /// </value>
         public bool isImported { get; private set; }
 
+        /// <value>
+        /// Indicates the relative paths to where images used in the sample's description are located within the package.
+        /// </value>
+        public string[] images { get; private set; }
+
         [SerializeField]
         private string[] m_PreviousImportPaths;
         internal IReadOnlyList<string> previousImportPaths => m_PreviousImportPaths;
@@ -80,6 +85,7 @@ namespace UnityEditor.PackageManager.UI
             displayName = sampleInfo.displayName;
             description = sampleInfo.description;
             interactiveImport = sampleInfo.interactiveImport;
+            images = sampleInfo.images;
             this.packageUniqueId = packageUniqueId;
             this.resolvedPath = resolvedPath;
             this.importPath = importPath;
@@ -98,6 +104,7 @@ namespace UnityEditor.PackageManager.UI
                    interactiveImport == other.interactiveImport &&
                    isImported == other.isImported &&
                    sizeInBytes == other.sizeInBytes &&
+                   images.IsSequenceEqual(other.images) &&
                    m_PreviousImportPaths.IsSequenceEqual(other.m_PreviousImportPaths);
         }
 
@@ -110,6 +117,7 @@ namespace UnityEditor.PackageManager.UI
             !interactiveImport &&
             !isImported &&
             sizeInBytes == 0 &&
+            images.IsSequenceEqual(null) &&
             m_PreviousImportPaths.IsSequenceEqual(null);
 
         internal static IReadOnlyCollection<Sample> FindByPackage(PackageInfo packageInfo)

@@ -42,7 +42,7 @@ namespace UnityEditor
     // needs to survive an assembly reload.
     namespace ProjectWindowCallback
     {
-        [Obsolete("EndNameEditAction is obsolete. Use AssetCreationEndAction that uses EntityId instead of int for instance IDs.")]
+        [Obsolete("EndNameEditAction is obsolete. Use AssetCreationEndAction that uses EntityId instead of int for instance IDs.", true)]
         public abstract class EndNameEditAction : AssetCreationEndAction
         {
             public override void Action(EntityId entityId, string pathName, string resourceFile)
@@ -435,9 +435,9 @@ namespace UnityEditor
                 // Check if the output group should be initialized (instanceID is stored in the resource file) TODO: rename 'resourceFile' to 'userData' so it's more obvious that it can be used by all EndNameEditActions
                 if (!string.IsNullOrEmpty(resourceFile))
                 {
-                    if (System.Int32.TryParse(resourceFile, out var outputEntityIdRaw))
+                    if (System.UInt64.TryParse(resourceFile, out var outputEntityIdRaw))
                     {
-                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
                         var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)outputEntityIdRaw)) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
@@ -731,7 +731,7 @@ namespace UnityEditor
                 return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
-        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", false)]
+        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", true)]
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, Action<int> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
@@ -963,7 +963,7 @@ namespace UnityEditor
             return CreateScriptAssetWithContent(pathName, PreprocessScriptAssetTemplate(pathName, content));
         }
 
-        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string) instead.")]
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string) instead.", true)]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
             => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile);
         public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile)
@@ -971,7 +971,7 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(entityId, endAction, pathName, icon, resourceFile, true);
         }
 
-        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string, bool) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string, bool) instead.")]
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string, bool) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string, bool) instead.", true)]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
             => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
         public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
@@ -1155,7 +1155,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("IsFolder(int instanceID) is deprecated. Use IsFolder(EntityId entityId) instead.")]
+        [Obsolete("IsFolder(int instanceID) is deprecated. Use IsFolder(EntityId entityId) instead.", true)]
         public static bool IsFolder(int instanceID) => IsFolder((EntityId)instanceID);
 
         public static bool IsFolder(EntityId entityId)

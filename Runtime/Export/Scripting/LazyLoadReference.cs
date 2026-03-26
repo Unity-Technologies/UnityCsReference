@@ -93,7 +93,7 @@ namespace UnityEngine
             set => m_EntityId = value;
         }
 
-        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
+        [Obsolete("Use entityId instead, this will be removed in a future version", true)]
         public int instanceID
         {
             get => entityId;
@@ -131,7 +131,7 @@ namespace UnityEngine
             m_EntityId = entityId;
         }
 
-        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", false)]
+        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", true)]
         public LazyLoadReference(int instanceID)
         {
             m_EntityId = instanceID;
@@ -162,7 +162,7 @@ namespace UnityEngine
         /// Calling this never triggers a load.
         /// </summary>
         /// <param name="instanceID">The asset instance ID.</param>
-        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", false)]
+        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", true)]
         public static implicit operator LazyLoadReference<T>(int instanceID)
         {
             return new LazyLoadReference<T> { m_EntityId = instanceID };

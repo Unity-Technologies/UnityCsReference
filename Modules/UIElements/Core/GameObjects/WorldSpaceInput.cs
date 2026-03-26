@@ -100,6 +100,29 @@ internal static class WorldSpaceInput
     }
 
     /// <summary>
+    /// Pick the closest element (in drawing order) from a panel's hierarchy that intersects the given ray.
+    /// </summary>
+    /// <param name="panel">The panel whose root to start the pick from.</param>
+    /// <param name="panelRay">A ray specified in panel world coordinates.</param>
+    /// <returns>The closest pickable element that intersects the ray if any, or null if there are none.</returns>
+    public static VisualElement Pick3D(IPanel panel, Ray panelRay, List<VisualElement> outResults = null)
+    {
+        return Pick3D(panel.visualTree, panel.visualTree.WorldToLocal(panelRay), outResults);
+    }
+
+    /// <summary>
+    /// Pick the closest element (in drawing order) from a subtree hierarchy that intersects the given ray.
+    /// </summary>
+    /// <param name="rootVisualElement">The root element to start the pick from.</param>
+    /// <param name="localRay">A ray specified in rootVisualElement coordinates.</param>
+    /// <returns>The closest pickable element that intersects the ray if any, or null if there are none.</returns>
+    public static VisualElement Pick3D(VisualElement rootVisualElement, Ray localRay, List<VisualElement> outResults = null)
+    {
+        rootVisualElement.elementPanel.ValidateLayout();
+        return PerformPick(rootVisualElement, localRay, outResults);
+    }
+
+    /// <summary>
     /// Finds the intersection point between a ray and the given element.
     /// </summary>
     /// <remarks>The @@element@@ has to be parented to a document.</remarks>
@@ -254,7 +277,7 @@ internal static class WorldSpaceInput
             activeDistance += rayIncrement;
 
             // Skip inactive or invalid documents (treat them the same as empty documents).
-            if (PanelComponentUtils.GetContainerPanel(panelComponent) == null)
+            if (panelComponent?.GetContainerPanel() == null)
                 continue;
 
             // When we've hit a Document, reduce max distance to match the back of the document's bounding box.
@@ -303,7 +326,7 @@ internal static class WorldSpaceInput
     internal static VisualElement Pick_Internal(IPanelComponent panelComponent, Ray documentRay,
         List<VisualElement> outResults = null)
     {
-        var containerPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+        var containerPanel = (Panel)panelComponent.GetContainerPanel();
         containerPanel.ValidateLayout();
 
         var root = panelComponent.GetRootVisualElement();

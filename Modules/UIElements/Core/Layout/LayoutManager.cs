@@ -15,7 +15,6 @@ using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.Layout;
 
-[RequiredByNativeCode]
 enum LayoutNodeDataType
 {
     Node = 0,
@@ -25,7 +24,6 @@ enum LayoutNodeDataType
     Transform = 4,
 }
 
-[RequiredByNativeCode]
 enum LayoutConfigDataType
 {
     Config = 0,

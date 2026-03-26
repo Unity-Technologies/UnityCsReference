@@ -83,11 +83,18 @@ namespace UnityEngine.UIElements
 
         internal VisualElement GetRootVisualElement();
 
+        //Just like the one above, but does not capture the reference to VisualElement for code stripping reasons
+        internal IEventHandler GetRoot();
+
         internal void SetComponentEnabled(bool enabled);
 
         internal int softPointerCaptures { get; set; }
 
         internal VisualElementFocusRing focusRing { get; set; }
+
+        internal Vector3 GetPanelPosition(IEventHandler pickedElement, Ray worldRay);
+
+        internal IRuntimePanel GetContainerPanel();
 
         /// <summary>
         /// Handles live reload of the visual tree asset.

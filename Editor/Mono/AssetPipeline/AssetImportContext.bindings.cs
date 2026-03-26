@@ -100,17 +100,41 @@ namespace UnityEditor.AssetImporters
         [NativeName("GetArtifactFilePath")]
         private extern string GetArtifactFilePath_Internal(string path, string fileName);
 
+        [Obsolete("GetArtifactFilePath has been deprecated. Use GetArtifactData to get the data instead.")]
         public string GetArtifactFilePath(string path, string fileName)
         {
             return GetArtifactFilePath_Internal(path, fileName);
         }
 
+        [Obsolete("GetArtifactFilePath has been deprecated. Use GetArtifactData to get the data instead.")]
         public string GetArtifactFilePath(GUID guid, string fileName)
         {
             return GetArtifactFilePath(AssetDatabaseExperimental.CreateArtifactKey(guid), fileName);
         }
 
+        [Obsolete("GetArtifactFilePath has been deprecated. Use GetArtifactData to get the data instead.")]
         public extern string GetArtifactFilePath(ArtifactKey key, string fileName);
+
+        [NativeName("GetArtifactData")]
+        private extern byte[] GetArtifactData_Internal(string path, string filename);
+
+        public byte[] GetArtifactData(string path, string filename)
+        {
+            return GetArtifactData_Internal(path, filename);
+        }
+
+        public byte[] GetArtifactData(GUID guid, string filename)
+        {
+            return GetArtifactData(AssetDatabaseExperimental.CreateArtifactKey(guid), filename);
+        }
+
+        [NativeName("GetArtifactData")]
+        private extern byte[] GetArtifactData_ArtifactKey(ArtifactKey key, string fileName);
+
+        public byte[] GetArtifactData(ArtifactKey key, string fileName)
+        {
+            return GetArtifactData_ArtifactKey(key, fileName);
+        }
 
         [Obsolete("GetOutputArtifactFilePath has been deprecated. Use SetOutputArtifactData to write artifact data from memory, or SetOutputArtifactFile to copy artifact data from a file instead.")]
         public extern string GetOutputArtifactFilePath(string fileName);

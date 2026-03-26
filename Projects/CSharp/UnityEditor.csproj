@@ -3486,9 +3486,6 @@
     <Compile Include="..\..\Editor\Mono\SavedGUIState.bindings.cs">
       <Link>Editor\Mono\SavedGUIState.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneDefaultParentPersistence.cs">
-      <Link>Editor\Mono\SceneDefaultParentPersistence.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneHierarchy.cs">
       <Link>Editor\Mono\SceneHierarchy.cs</Link>
     </Compile>
@@ -5097,6 +5094,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindow.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileWindowAction.cs">
+      <Link>Modules\BuildProfileEditor\BuildProfileWindowAction.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileBootstrapView.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileBootstrapView.cs</Link>
     </Compile>
@@ -5181,11 +5181,17 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\Handlers\BuildProfileDataSource.cs">
       <Link>Modules\BuildProfileEditor\Handlers\BuildProfileDataSource.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Handlers\BuildProfileWindowActionProvider.cs">
+      <Link>Modules\BuildProfileEditor\Handlers\BuildProfileWindowActionProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Handlers\BuildProfileWindowSelection.cs">
       <Link>Modules\BuildProfileEditor\Handlers\BuildProfileWindowSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\IBuildProfileSettingsProvider.cs">
       <Link>Modules\BuildProfileEditor\IBuildProfileSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\IBuildProfileWindowAction.cs">
+      <Link>Modules\BuildProfileEditor\IBuildProfileWindowAction.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\PackageSettingsProvider.cs">
       <Link>Modules\BuildProfileEditor\PackageSettingsProvider.cs</Link>
@@ -11153,6 +11159,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleChart\LineChartWidget.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleChart\LineChartWidget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleChart\SelectedMarkerOverlayWidget.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleChart\SelectedMarkerOverlayWidget.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs</Link>

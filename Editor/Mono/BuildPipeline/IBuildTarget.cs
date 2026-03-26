@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules]
     internal interface IBuildTarget
     {
         // The DesktopPluginImporterExtension.OnPlatformSettingsGUI method and the PlayerSettingsEditor.GraphicsAPIsGUI method

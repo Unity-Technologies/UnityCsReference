@@ -19,6 +19,9 @@ namespace UnityEditor.Build.Profile
     {
         const string k_Uxml = "BuildProfile/UXML/BuildProfileEditor.uxml";
         const string k_PlatformSettingPropertyName = "m_PlatformBuildProfile";
+        const string k_AdditionalPlatformSettings = "m_AdditionalPlatformBuildSettings";
+        const string k_AdditionalPlatformSettingsPlatformGuid = "platformGuid";
+        const string k_AdditionalPlatformSettingsValue = "platformSettings";
         const string k_PlatformWarningHelpBox = "platform-warning-help-box";
         const string k_PlatformSettingsBaseRoot = "platform-settings-base-root";
 
@@ -39,6 +42,9 @@ namespace UnityEditor.Build.Profile
         const string k_AddSettingsButton = "bp-add-settings-button";
         const string k_SettingsFoldoutRoot = "bp-editor-settings-container";
         const string k_InsightSettingsFoldout = "insights-analytics-foldout";
+        const string k_PlatformSelectionContainer = "platform-selection-container";
+        const string k_PlatformSelectionDropdown = "platform-selection-dropdown";
+        const string k_SwitchProfilePlatformButton = "switch-profile-platform-button";
         bool isClassic = false;
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
@@ -47,6 +53,8 @@ namespace UnityEditor.Build.Profile
         VisualElement m_SettingsFoldoutRoot;
         BuildProfile m_Profile;
         AddSettingsDataProvider m_AddSettingsDataSource;
+        VisualElement m_PlatformSelectionContainer;
+        GUID m_SelectedPlatformGuid;
 
         public BuildProfileWindow parent { get; set; }
 
@@ -59,6 +67,7 @@ namespace UnityEditor.Build.Profile
         internal BuildProfile buildProfile => m_Profile;
 
         IBuildProfileExtension m_PlatformExtension = null;
+        ISDKPlatformExtension m_SDKExtension = null;
 
         public BuildProfileEditor()
         {
@@ -101,7 +110,10 @@ namespace UnityEditor.Build.Profile
                 return new BuildProfileBootstrapView(m_Profile, initializationInfo, callback);
             }
 
-            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
+            var guid = profile.isMultiTarget ? profile.selectedPlatformGuid : profile.platformGuid;
+            m_SelectedPlatformGuid = guid;
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(guid);
+            m_SDKExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
             m_AddSettingsDataSource = new AddSettingsDataProvider(profile);
 
             CleanupEventHandlers();
@@ -128,7 +140,7 @@ namespace UnityEditor.Build.Profile
             m_CompilingWarningHelpBox.text = TrText.compilingMessage;
 
             sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
-            buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid));
+            buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(guid));
 
             if (m_PlatformExtension != null)
             {
@@ -137,8 +149,28 @@ namespace UnityEditor.Build.Profile
                     sharedSettingsInfoHelpBox.text = profileInfoMessage;
             }
 
+            m_PlatformSelectionContainer = root.Q<VisualElement>(k_PlatformSelectionContainer);
+            m_PlatformSelectionContainer.Hide();
+            if (profile.isMultiTarget && (m_SDKExtension == null || m_SDKExtension.shouldShowPlatformSettings))
+                ShowProfilePlatformSelection();
+
             AddSceneList(root, profile);
-            ShowSettingsFoldouts();
+
+            if (m_SDKExtension != null)
+            {
+                if(!m_SDKExtension.shouldShowAdditionalSettings)
+                {
+                    ShowRequiredSettingsFoldouts();
+                    m_AddSettingsButton.Hide();
+                } 
+                else
+                    ShowSettingsFoldouts();
+
+                if(m_SDKExtension.shouldShowAdditionalSettings && !m_SDKExtension.shouldShowAddSettingsButton)
+                    m_AddSettingsButton.Hide();
+            }
+            else
+                ShowSettingsFoldouts();
 
             BuildProfileModuleUtil.OnUpdateActiveEditors += this.OnUpdateEditorView;
 
@@ -163,8 +195,12 @@ namespace UnityEditor.Build.Profile
                 return root;
             }
 
-            ShowPlatformSettings(profile, platformSettingsBaseRoot);
-            ShowInsightsSettings(profile, root, isClassic);
+            if(m_SDKExtension != null && !m_SDKExtension.shouldShowPlatformSettings)
+                buildSettingsFoldout.Hide();
+            else
+                ShowPlatformSettings(profile, platformSettingsBaseRoot);
+            if(m_SDKExtension == null || m_SDKExtension.shouldShowAdditionalSettings)
+                ShowInsightsSettings(profile, root, isClassic);
 
             EditorApplication.update += EditorUpdate;
 
@@ -196,6 +232,7 @@ namespace UnityEditor.Build.Profile
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
             root.Q<Foldout>(k_BuildSettingsFoldout).Hide();
             root.Q<Button>(k_AddSettingsButton).Hide();
+            root.Q<VisualElement>(k_PlatformSelectionContainer).Hide();
 
             sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
 
@@ -238,6 +275,35 @@ namespace UnityEditor.Build.Profile
             UpdateWarningsAndButtonStatesForActiveProfile();
         }
 
+        void RebuildBuildProfileEditor()
+        {
+            if (parent != null)
+            {
+                parent.RepaintBuildProfileInspector();
+                return;
+            }
+
+            // For build profiles in inspector windows without BuildProfileWindow.
+            ActiveEditorTracker.sharedTracker.ForceRebuild();
+        }
+
+        void ShowRequiredSettingsFoldouts()
+        {
+            m_SettingsFoldoutRoot.Clear();
+            foreach (var settings in m_AddSettingsDataSource.GetSettingsInProfile())
+            {
+                if (settings.GetIsRequired())
+                {
+                    m_SettingsFoldoutRoot.Add(new BuildProfileSettingsFoldout(
+                    serializedObject,
+                    m_Profile,
+                    settings));
+
+                    BuildProfileModuleUtil.UpdateActiveEditors(m_Profile);
+                }
+            }
+        }
+
         void ShowSettingsFoldouts()
         {
             m_SettingsFoldoutRoot.Clear();
@@ -267,7 +333,7 @@ namespace UnityEditor.Build.Profile
             if (!m_Profile.IsActiveBuildProfileOrPlatform())
                 return;
 
-            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.platformGuid);
+            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_SelectedPlatformGuid);
             bool isCompiling = EditorApplication.isCompiling || EditorApplication.isUpdating;
             UpdateHelpBoxVisibility(m_VirtualTexturingHelpBox, !isVirtualTexturingValid);
             UpdateHelpBoxVisibility(m_CompilingWarningHelpBox, isCompiling);
@@ -294,10 +360,82 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        void ShowProfilePlatformSelection()
+        {
+            if (!m_Profile.TryGetSupportedIBuildTargets(out var installedPlatforms))
+            {
+                m_PlatformSelectionContainer.Hide();
+                return;
+            }
+
+            if (m_Profile.selectedPlatformGuid.Empty())
+                m_Profile.selectedPlatformGuid = installedPlatforms[0].Guid;
+
+            SetUpPlatformSelectionDropdown();
+            SetUpSwitchProfilePlatformButton();
+            m_PlatformSelectionContainer.Show();
+
+            void SetUpPlatformSelectionDropdown()
+            {
+                var platformSelectionDropdown = m_PlatformSelectionContainer.Q<DropdownField>(k_PlatformSelectionDropdown);
+                platformSelectionDropdown.label = TrText.platformSelectionDropdown;
+                platformSelectionDropdown.choices.Clear();
+                var selectedIndex = 0;
+
+                for (var index = 0; index < installedPlatforms.Length; index++)
+                {
+                    var platform = installedPlatforms[index];
+                    var guid = platform.Guid;
+                    var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(guid);
+                    platformSelectionDropdown.choices.Add(displayName);
+
+                    if (guid == m_Profile.selectedPlatformGuid)
+                        selectedIndex = index;
+                }
+
+                platformSelectionDropdown.index = selectedIndex;
+
+                platformSelectionDropdown.RegisterValueChangedCallback(_ =>
+                {
+                    var dropdownIndex = platformSelectionDropdown.index;
+                    if (dropdownIndex < 0 || dropdownIndex >= installedPlatforms.Length)
+                        return;
+
+                    var selectedGuid = installedPlatforms[dropdownIndex].Guid;
+                    if (m_Profile.selectedPlatformGuid != selectedGuid)
+                    {
+                        m_Profile.selectedPlatformGuid = selectedGuid;
+                        m_SelectedPlatformGuid = selectedGuid;
+                        BuildProfileModuleUtil.UpdateActiveEditors(m_Profile);
+                        RebuildBuildProfileEditor();
+                    }
+                });
+            }
+
+            void SetUpSwitchProfilePlatformButton()
+            {
+                var switchProfilePlatformButton = m_PlatformSelectionContainer.Q<Button>(k_SwitchProfilePlatformButton);
+                switchProfilePlatformButton.text = TrText.switchProfilePlatformButton;
+                switchProfilePlatformButton.clicked += () => parent?.OnActivateButtonClicked();
+
+                if (!m_Profile.IsActiveBuildProfileOrPlatform() || parent == null)
+                {
+                    switchProfilePlatformButton.Hide();
+                    return;
+                }
+
+                switchProfilePlatformButton.Show();
+                if (m_Profile.selectedPlatformGuid == m_Profile.activePlatformGuid)
+                    switchProfilePlatformButton.SetEnabled(false);
+                else
+                    switchProfilePlatformButton.SetEnabled(true);
+            }
+        }
+
         void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
         {
-            var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
+            var platformProperties = GetPlatformSettingsProperty(profile);
+
             if (m_PlatformExtension == null)
                 return;
 
@@ -313,6 +451,35 @@ namespace UnityEditor.Build.Profile
             var settings = m_PlatformExtension.CreateSettingsGUI(
                 serializedObject, platformProperties, platformSettingsState);
             platformSettingsBaseRoot.Add(settings);
+        }
+
+        SerializedProperty GetPlatformSettingsProperty(BuildProfile profile)
+        {
+            var defaultPlatformSettings = serializedObject.FindProperty(k_PlatformSettingPropertyName);
+
+            if (!profile.isMultiTarget)
+                return defaultPlatformSettings;
+
+            var additionalPlatformSettings = serializedObject.FindProperty(k_AdditionalPlatformSettings);
+            if (additionalPlatformSettings == null || !additionalPlatformSettings.isArray)
+                return defaultPlatformSettings;
+
+            for (int index = 0; index < additionalPlatformSettings.arraySize; index++)
+            {
+                var entry = additionalPlatformSettings.GetArrayElementAtIndex(index);
+                var platformIdProperty = entry.FindPropertyRelative(k_AdditionalPlatformSettingsPlatformGuid);
+                if (platformIdProperty == null ||
+                    platformIdProperty.propertyType != SerializedPropertyType.GUID ||
+                    platformIdProperty.guidValue != profile.selectedPlatformGuid)
+                {
+                    continue;
+                }
+
+                var selectedPlatformSettings = entry.FindPropertyRelative(k_AdditionalPlatformSettingsValue);
+                return selectedPlatformSettings ?? defaultPlatformSettings;
+            }
+
+            return defaultPlatformSettings;
         }
 
         void ShowInsightsSettings(BuildProfile profile, VisualElement rootVisualElement, bool isClassic)
@@ -387,12 +554,20 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Callback for updating the settings view after the editor has been initialized.
+        /// Callback for updating all editors of the build profile.
+        /// Used for syncing editors between the Build Profile window and the inspector.
         /// </summary>
         void OnUpdateEditorView(BuildProfile profile)
         {
             if (profile != m_Profile)
                 return;
+
+            if (profile.isMultiTarget && m_SelectedPlatformGuid != profile.selectedPlatformGuid)
+            {
+                m_SelectedPlatformGuid = profile.selectedPlatformGuid;
+                RebuildBuildProfileEditor();
+                return;
+            }
 
             ShowSettingsFoldouts();
         }

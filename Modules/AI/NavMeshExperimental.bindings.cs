@@ -13,7 +13,7 @@ using UnityEngine.AI;
 
 namespace UnityEngine.Experimental.AI
 {
-    [Obsolete("The experimental PolygonId struct has been deprecated without replacement.")]
+    [Obsolete("The experimental PolygonId struct has been deprecated. Use NavNode instead.")]
     public struct PolygonId : IEquatable<PolygonId>
     {
         internal ulong polyRef;
@@ -34,7 +34,7 @@ namespace UnityEngine.Experimental.AI
         }
     }
 
-    [Obsolete("The experimental NavMeshLocation struct has been deprecated without replacement.")]
+    [Obsolete("The experimental NavMeshLocation struct has been deprecated. Use NavLocation instead.")]
     public struct NavMeshLocation
     {
         public PolygonId polygon { get; }
@@ -73,7 +73,7 @@ namespace UnityEngine.Experimental.AI
     //}
 
     // Keep in sync with the values in NavMeshTypes.h
-    [Obsolete("The experimental PathQueryStatus struct has been deprecated without replacement.")]
+    [Obsolete("The experimental PathQueryStatus enum has been deprecated. Use NavQueryStatus instead.")]
     [Flags]
     public enum PathQueryStatus
     {
@@ -94,15 +94,17 @@ namespace UnityEngine.Experimental.AI
     }
 
     // Flags describing polygon properties. Keep in sync with the enum declared in NavMesh.h
-    [Obsolete("The experimental NavMeshPolyTypes enum has been deprecated without replacement.")]
+    [Obsolete("The experimental NavMeshPolyTypes enum has been deprecated. Use NavNodeType instead.")]
     public enum NavMeshPolyTypes
     {
         Ground = 0,                    // Regular ground polygons.
         OffMeshConnection = 1          // Off-mesh connections.
     }
 
-    [Obsolete("The experimental NavMeshWorld struct has been deprecated without replacement.")]
-    [StaticAccessor("NavMeshWorldBindings", StaticAccessorType.DoubleColon)]
+    [Obsolete("The experimental NavMeshWorld struct has been deprecated. Use NavWorld instead.")]
+    [StaticAccessor("NavMeshWorldBindingsExperimental", StaticAccessorType.DoubleColon)]
+    [NativeHeader("Modules/AI/NavMeshExperimental.bindings.h")]
+    [NativeType(CodegenOptions.Auto, "NavMeshWorldExp")]
     public struct NavMeshWorld
     {
         internal IntPtr world;
@@ -112,25 +114,30 @@ namespace UnityEngine.Experimental.AI
             return world != IntPtr.Zero;
         }
 
-        public static extern NavMeshWorld GetDefaultWorld();
+        static extern NavMeshWorld GetDefaultWorldExp();
+        public static NavMeshWorld GetDefaultWorld()
+        {
+            return GetDefaultWorldExp();
+        }
 
-        static extern void AddDependencyInternal(IntPtr navmesh, JobHandle handle);
+        static extern void AddDependencyInternalExp(IntPtr navmesh, JobHandle handle);
 
         public void AddDependency(JobHandle job)
         {
             if (!IsValid())
                 throw new InvalidOperationException("The NavMesh world is invalid.");
-            AddDependencyInternal(world, job);
+            AddDependencyInternalExp(world, job);
         }
     }
 
-    [Obsolete("The experimental NavMeshQuery struct has been deprecated without replacement.")]
+    [Obsolete("The experimental NavMeshQuery struct has been deprecated. Use NavWorld instead.")]
     [NativeContainer]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/AI/NavMeshExperimental.bindings.h")]
     [NativeHeader("Modules/AI/Public/NavMeshBindingTypes.h")]
     [NativeHeader("Runtime/Math/Matrix4x4.h")]
-    [StaticAccessor("NavMeshQueryBindings", StaticAccessorType.DoubleColon)]
+    [StaticAccessor("NavMeshQueryBindingsExperimental", StaticAccessorType.DoubleColon)]
+    [NativeType(CodegenOptions.Auto, "NavMeshQueryExp")]   
     public struct NavMeshQuery : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
@@ -140,18 +147,23 @@ namespace UnityEngine.Experimental.AI
             "Create a different NavMeshQuery with an explicit node pool size.";
         internal AtomicSafetyHandle m_Safety;
 
+        // Each node in the pool stores an index to the next node anywhere in the pool.
+        // To save memory, indices stored in the node pool are of type unsigned short.
+        // Keep in synch with kMaxNavMeshNodePoolSize = USHRT_MAX - 1 from NavMeshNode.h
+        const int k_MaxNavMeshNodePoolSize = ushort.MaxValue - 1;
+
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
             if (!world.IsValid())
                 throw new ArgumentNullException("world", "Invalid world");
 
-            if (pathNodePoolSize < 0 || pathNodePoolSize > ushort.MaxValue)
+            if (pathNodePoolSize < 0 || pathNodePoolSize > k_MaxNavMeshNodePoolSize)
                 throw new ArgumentException($"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {ushort.MaxValue + 1}.");
-            m_NavMeshQuery = Create(world, pathNodePoolSize);
+            m_NavMeshQuery = CreateExp(world, pathNodePoolSize);
 
             UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavMeshQuery, 0);
             AtomicSafetyHandle.CreateHandle(out m_Safety, allocator);
-            AddQuerySafety(m_NavMeshQuery, m_Safety);
+            AddQuerySafetyExp(m_NavMeshQuery, m_Safety);
         }
 
         public void Dispose()
@@ -166,28 +178,28 @@ namespace UnityEngine.Experimental.AI
             AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
             if (removeQuery)
-                RemoveQuerySafety(m_NavMeshQuery, m_Safety);
+                RemoveQuerySafetyExp(m_NavMeshQuery, m_Safety);
             UnsafeUtility.LeakErase(m_NavMeshQuery, LeakCategory.NavMeshQuery);
-            Destroy(m_NavMeshQuery);
+            DestroyExp(m_NavMeshQuery);
             m_NavMeshQuery = IntPtr.Zero;
         }
 
-        static extern IntPtr Create(NavMeshWorld world, int nodePoolSize);
+        static extern IntPtr CreateExp(NavMeshWorld world, int nodePoolSize);
 
-        static extern void Destroy(IntPtr navMeshQuery);
+        static extern void DestroyExp(IntPtr navMeshQuery);
 
-        static extern void AddQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
-        static extern void RemoveQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
+        static extern void AddQuerySafetyExp(IntPtr navMeshQuery, AtomicSafetyHandle handle);
+        static extern void RemoveQuerySafetyExp(IntPtr navMeshQuery, AtomicSafetyHandle handle);
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern bool HasNodePool(IntPtr navMeshQuery);
+        static extern bool HasNodePoolExp(IntPtr navMeshQuery);
 
         public unsafe PathQueryStatus BeginFindPath(NavMeshLocation start, NavMeshLocation end,
             int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            if (!HasNodePool(m_NavMeshQuery))
+            if (!HasNodePoolExp(m_NavMeshQuery))
                 throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
 
             const int kAreaCount = 32;
@@ -220,47 +232,47 @@ namespace UnityEngine.Experimental.AI
                     "The start and end locations belong to different NavMesh surfaces, with agent type IDs {0} and {1}.",
                     agentTypeStart, agentTypeEnd));
             void* costsPtr = costs.Length > 0 ? costs.GetUnsafePtr() : null;
-            return BeginFindPath(m_NavMeshQuery, start, end, areaMask, costsPtr);
+            return BeginFindPathExp(m_NavMeshQuery, start, end, areaMask, costsPtr);
         }
 
         public PathQueryStatus UpdateFindPath(int iterations, out int iterationsPerformed)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            if (!HasNodePool(m_NavMeshQuery))
+            if (!HasNodePoolExp(m_NavMeshQuery))
                 throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
-            return UpdateFindPath(m_NavMeshQuery, iterations, out iterationsPerformed);
+            return UpdateFindPathExp(m_NavMeshQuery, iterations, out iterationsPerformed);
         }
 
         public PathQueryStatus EndFindPath(out int pathSize)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            if (!HasNodePool(m_NavMeshQuery))
+            if (!HasNodePoolExp(m_NavMeshQuery))
                 throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
-            return EndFindPath(m_NavMeshQuery, out pathSize);
+            return EndFindPathExp(m_NavMeshQuery, out pathSize);
         }
 
         public unsafe int GetPathResult(NativeSlice<PolygonId> path)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
-            if (!HasNodePool(m_NavMeshQuery))
+            if (!HasNodePoolExp(m_NavMeshQuery))
                 throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
-            return GetPathResult(m_NavMeshQuery, path.GetUnsafePtr(), path.Length);
+            return GetPathResultExp(m_NavMeshQuery, path.GetUnsafePtr(), path.Length);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe PathQueryStatus BeginFindPath(IntPtr navMeshQuery, NavMeshLocation start, NavMeshLocation end, int areaMask, void* costs);
+        static extern unsafe PathQueryStatus BeginFindPathExp(IntPtr navMeshQuery, NavMeshLocation start, NavMeshLocation end, int areaMask, void* costs);
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern PathQueryStatus UpdateFindPath(IntPtr navMeshQuery, int iterations, out int iterationsPerformed);
+        static extern PathQueryStatus UpdateFindPathExp(IntPtr navMeshQuery, int iterations, out int iterationsPerformed);
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern PathQueryStatus EndFindPath(IntPtr navMeshQuery, out int pathSize);
+        static extern PathQueryStatus EndFindPathExp(IntPtr navMeshQuery, out int pathSize);
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe int GetPathResult(IntPtr navMeshQuery, void* path, int maxPath);
+        static extern unsafe int GetPathResultExp(IntPtr navMeshQuery, void* path, int maxPath);
 
         // If BeginFindPath/UpdateFindPath/EndFindPath existing NativeArray become invalid...
 //      extern NavMeshPathStatus GetPath(out NativeArray<PolygonId> outputPath);
@@ -269,12 +281,12 @@ namespace UnityEngine.Experimental.AI
 
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern bool IsValidPolygon(IntPtr navMeshQuery, PolygonId polygon);
+        static extern bool IsValidPolygonExp(IntPtr navMeshQuery, PolygonId polygon);
 
         public bool IsValid(PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return polygon.polyRef != 0 && IsValidPolygon(m_NavMeshQuery, polygon);
+            return polygon.polyRef != 0 && IsValidPolygonExp(m_NavMeshQuery, polygon);
         }
 
         public bool IsValid(NavMeshLocation location)
@@ -283,95 +295,95 @@ namespace UnityEngine.Experimental.AI
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern int GetAgentTypeIdForPolygon(IntPtr navMeshQuery, PolygonId polygon);
+        static extern int GetAgentTypeIdForPolygonExp(IntPtr navMeshQuery, PolygonId polygon);
         public int GetAgentTypeIdForPolygon(PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return GetAgentTypeIdForPolygon(m_NavMeshQuery, polygon);
+            return GetAgentTypeIdForPolygonExp(m_NavMeshQuery, polygon);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern bool IsPositionInPolygon(IntPtr navMeshQuery, Vector3 position, PolygonId polygon);
+        static extern bool IsPositionInPolygonExp(IntPtr navMeshQuery, Vector3 position, PolygonId polygon);
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern PathQueryStatus GetClosestPointOnPoly(IntPtr navMeshQuery, PolygonId polygon, Vector3 position, out Vector3 nearest);
+        static extern PathQueryStatus GetClosestPointOnPolyExp(IntPtr navMeshQuery, PolygonId polygon, Vector3 position, out Vector3 nearest);
 
         public NavMeshLocation CreateLocation(Vector3 position, PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             Vector3 nearest;
-            var status = GetClosestPointOnPoly(m_NavMeshQuery, polygon, position, out nearest);
+            var status = GetClosestPointOnPolyExp(m_NavMeshQuery, polygon, position, out nearest);
             return (status & PathQueryStatus.Success) != 0 ? new NavMeshLocation(nearest, polygon) : new NavMeshLocation();
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern NavMeshLocation MapLocation(IntPtr navMeshQuery, Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas);
+        static extern NavMeshLocation MapLocationExp(IntPtr navMeshQuery, Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas);
         public NavMeshLocation MapLocation(Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return MapLocation(m_NavMeshQuery, position, extents, agentTypeID, areaMask);
+            return MapLocationExp(m_NavMeshQuery, position, extents, agentTypeID, areaMask);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
+        static extern unsafe void MoveLocationsExp(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
         public unsafe void MoveLocations(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, NativeSlice<int> areaMasks)
         {
             if (locations.Length != targets.Length || locations.Length != areaMasks.Length)
                 throw new ArgumentException("locations.Length, targets.Length and areaMasks.Length must be equal");
 
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            MoveLocations(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), areaMasks.GetUnsafeReadOnlyPtr(), locations.Length);
+            MoveLocationsExp(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), areaMasks.GetUnsafeReadOnlyPtr(), locations.Length);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
+        static extern unsafe void MoveLocationsInSameAreasExp(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
         public unsafe void MoveLocationsInSameAreas(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, int areaMask = NavMesh.AllAreas)
         {
             if (locations.Length != targets.Length)
                 throw new ArgumentException("locations.Length and targets.Length must be equal");
 
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            MoveLocationsInSameAreas(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), locations.Length, areaMask);
+            MoveLocationsInSameAreasExp(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), locations.Length, areaMask);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern NavMeshLocation MoveLocation(IntPtr navMeshQuery, NavMeshLocation location, Vector3 target, int areaMask);
+        static extern NavMeshLocation MoveLocationExp(IntPtr navMeshQuery, NavMeshLocation location, Vector3 target, int areaMask);
         public NavMeshLocation MoveLocation(NavMeshLocation location, Vector3 target, int areaMask = NavMesh.AllAreas)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return MoveLocation(m_NavMeshQuery, location, target, areaMask);
+            return MoveLocationExp(m_NavMeshQuery, location, target, areaMask);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern bool GetPortalPoints(IntPtr navMeshQuery, PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right);
+        static extern bool GetPortalPointsExp(IntPtr navMeshQuery, PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right);
         public bool GetPortalPoints(PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return GetPortalPoints(m_NavMeshQuery, polygon, neighbourPolygon, out left, out right);
+            return GetPortalPointsExp(m_NavMeshQuery, polygon, neighbourPolygon, out left, out right);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern Matrix4x4 PolygonLocalToWorldMatrix(IntPtr navMeshQuery, PolygonId polygon);
+        static extern Matrix4x4 PolygonLocalToWorldMatrixExp(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonLocalToWorldMatrix(PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return PolygonLocalToWorldMatrix(m_NavMeshQuery, polygon);
+            return PolygonLocalToWorldMatrixExp(m_NavMeshQuery, polygon);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern Matrix4x4 PolygonWorldToLocalMatrix(IntPtr navMeshQuery, PolygonId polygon);
+        static extern Matrix4x4 PolygonWorldToLocalMatrixExp(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonWorldToLocalMatrix(PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return PolygonWorldToLocalMatrix(m_NavMeshQuery, polygon);
+            return PolygonWorldToLocalMatrixExp(m_NavMeshQuery, polygon);
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern NavMeshPolyTypes GetPolygonType(IntPtr navMeshQuery, PolygonId polygon);
+        static extern NavMeshPolyTypes GetPolygonTypeExp(IntPtr navMeshQuery, PolygonId polygon);
         public NavMeshPolyTypes GetPolygonType(PolygonId polygon)
         {
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            return GetPolygonType(m_NavMeshQuery, polygon);
+            return GetPolygonTypeExp(m_NavMeshQuery, polygon);
         }
 
         //NavMeshStatus MoveAlongSurface(NavMeshLocation location, Vector3 targetPosition, int agentTypeID, int areaMask,
@@ -379,7 +391,7 @@ namespace UnityEngine.Experimental.AI
 
         // Trace a ray between two points on the NavMesh.
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe PathQueryStatus Raycast(IntPtr navMeshQuery, NavMeshLocation start, Vector3 targetPosition,
+        static extern unsafe PathQueryStatus RaycastExp(IntPtr navMeshQuery, NavMeshLocation start, Vector3 targetPosition,
             int areaMask, void* costs, out NavMeshHit hit, void* path, out int pathCount, int maxPath);
 
         public unsafe PathQueryStatus Raycast(out NavMeshHit hit, NavMeshLocation start, Vector3 targetPosition,
@@ -395,8 +407,8 @@ namespace UnityEngine.Experimental.AI
                         string.Format("The number of costs ({0}) must be exactly {1}, one for each possible area type.", costs.Length, kAreaCount), "costs");
             }
             int pathCount;
-            var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
-            var status = Raycast(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, null, out pathCount, 0);
+            void* costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
+            var status = RaycastExp(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, null, out pathCount, 0);
             status &= ~PathQueryStatus.BufferTooSmall;
             return status;
         }
@@ -414,15 +426,15 @@ namespace UnityEngine.Experimental.AI
                     throw new ArgumentException(
                         string.Format("The number of costs ({0}) must be exactly {1}, one for each possible area type.", costs.Length, kAreaCount), "costs");
             }
-            var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
-            var pathPtr = path.Length > 0 ? path.GetUnsafePtr() : null;
+            void* costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
+            void* pathPtr = path.Length > 0 ? path.GetUnsafePtr() : null;
             var maxPath = pathPtr != null ? path.Length : 0;
-            var status = Raycast(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, pathPtr, out pathCount, maxPath);
+            var status = RaycastExp(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, pathPtr, out pathCount, maxPath);
             return status;
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        static extern unsafe PathQueryStatus GetEdgesAndNeighbors(IntPtr navMeshQuery, PolygonId node, int maxVerts, int maxNei,
+        static extern unsafe PathQueryStatus GetEdgesAndNeighborsExp(IntPtr navMeshQuery, PolygonId node, int maxVerts, int maxNei,
             void* verts, void* neighbors, void* edgeIndices,
             out int vertCount, out int neighborsCount);
 
@@ -438,12 +450,12 @@ namespace UnityEngine.Experimental.AI
                     $"needs to be the same as that of the {nameof(neighbors)} buffer ({neighbors.Length}) " +
                     "because the elements from the two arrays will pair up at the same index.");
             }
-            var vertPtr = edgeVertices.Length > 0 ? edgeVertices.GetUnsafePtr() : null;
-            var neiPtr = neighbors.Length > 0 ? neighbors.GetUnsafePtr() : null;
-            var edgesPtr = edgeIndices.Length > 0 ? edgeIndices.GetUnsafePtr() : null;
+            void* vertPtr = edgeVertices.Length > 0 ? edgeVertices.GetUnsafePtr() : null;
+            void* neiPtr = neighbors.Length > 0 ? neighbors.GetUnsafePtr() : null;
+            void* edgesPtr = edgeIndices.Length > 0 ? edgeIndices.GetUnsafePtr() : null;
             var maxVertices = edgeVertices.Length;
             var maxNeighbors = neighbors.Length > 0 ? neighbors.Length : edgeIndices.Length;
-            var status = GetEdgesAndNeighbors(m_NavMeshQuery, node, maxVertices, maxNeighbors,
+            var status = GetEdgesAndNeighborsExp(m_NavMeshQuery, node, maxVertices, maxNeighbors,
                 vertPtr, neiPtr, edgesPtr,
                 out verticesCount, out neighborsCount);
             return status;

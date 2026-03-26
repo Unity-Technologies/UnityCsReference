@@ -23,7 +23,7 @@ namespace UnityEngine
         public Collider collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider; } }
 
 
-        [System.Obsolete("RaycastHit.colliderInstanceID is obsolete. Use RaycastHit.colliderEntityId instead.")]
+        [System.Obsolete("RaycastHit.colliderInstanceID is obsolete. Use RaycastHit.colliderEntityId instead.", true)]
         public int colliderInstanceID { get { return m_Collider; } }
         public EntityId colliderEntityId { get { return m_Collider; } }
 

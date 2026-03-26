@@ -308,7 +308,7 @@ namespace Unity.GraphToolkit.Editor
             if (isInput)
             {
                 var options = variableDeclaration.ShowOnInspectorOnly ? PortModelOptions.Hidden : PortModelOptions.Default;
-                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options,
+                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options, attributes: [new DelayedAttribute()],
                     initializationCallback: c =>
                     {
                         if (variableDeclaration.InitializationModel != null)
@@ -318,7 +318,8 @@ namespace Unity.GraphToolkit.Editor
             }
             else
             {
-                portModel = scope.AddOutputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: PortModelOptions.NoEmbeddedConstant);
+                portModel = scope.AddOutputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId,
+                    options: PortModelOptions.NoEmbeddedConstant, attributes: [new DelayedAttribute()]);
                 OutputPortToVariableDeclarationDictionary[portModel] = variableDeclaration;
             }
 

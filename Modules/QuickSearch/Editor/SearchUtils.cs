@@ -1280,7 +1280,7 @@ namespace UnityEditor.Search
             return Utils.FormatBytes(byteCount);
         }
 
-        [Obsolete("GetMainAssetInstanceID is obsolete, use GetMainAssetEntityId instead")]
+        [Obsolete("GetMainAssetInstanceID is obsolete, use GetMainAssetEntityId instead", true)]
         public static int GetMainAssetInstanceID(string assetPath) => GetMainAssetEntityId(assetPath);
         public static EntityId GetMainAssetEntityId(string assetPath) => Utils.GetMainAssetEntityId(assetPath);
 

@@ -38,7 +38,7 @@ namespace UnityEditor.SearchService
         public IEnumerable<Type> requiredTypes { get; set; }
         public IEnumerable<string> requiredTypeNames { get; set; }
         public VisibleObjects visibleObjects { get; set; }
-        [Obsolete("allowedInstanceIds is deprecated. Use allowedEntityIds instead.")]
+        [Obsolete("allowedInstanceIds is deprecated. Use allowedEntityIds instead.", true)]
         public IEnumerable<int> allowedInstanceIds
         {
             get

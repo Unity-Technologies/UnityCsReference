@@ -17,7 +17,9 @@ internal interface ISDKPlatformExtension
     bool shouldShowPlatformSettings { get; }
     bool shouldShowAdditionalSettings { get; }
     bool shouldShowAddSettingsButton { get; }
+    bool shouldShowBuildActions { get; }
     Type[] requiredComponents { get; }
+    Type[] customFooterActions { get; }
 
     void OnMultiTargetBuildProfileCreated(BuildProfile buildProfile);
 }

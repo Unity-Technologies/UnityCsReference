@@ -1148,29 +1148,16 @@ namespace UnityEditor
             return new PickingIncludeExcludeEntityIdList(s_RendererIncludeBuffer, null, s_EntityIncludeBuffer, null, allocator);
         }
 
-        [Obsolete("Use GetPickingIncludeExcludeEntityIdList instead. This method will be removed in a future version.")]
+        [Obsolete("Use GetPickingIncludeExcludeEntityIdList instead. This method will be removed in a future version.", true)]
         public static PickingIncludeExcludeList GetPickingIncludeExcludeList(Allocator allocator = Allocator.Persistent)
         {
-            s_RendererIncludeBuffer.Clear();
-            s_RendererExcludeBuffer.Clear();
-            s_EntityIncludeBuffer.Clear();
-            s_EntityExcludeBuffer.Clear();
-            ExtractRenderersAndEntities(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
-            ExtractRenderersAndEntities(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
-            return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), s_RendererExcludeBuffer.ToIntList(), s_EntityIncludeBuffer.ToIntList(), s_EntityExcludeBuffer.ToIntList(), allocator);
+            throw new InvalidOperationException("Get GetPickingIncludeExcludeList is obsolete, use GetPickingIncludeExcludeEntityIdList instead.");
         }
 
-        [Obsolete("Use GetSelectionOutlineIncludeExcludeEntityIdList instead. This method will be removed in a future version.")]
+        [Obsolete("Use GetSelectionOutlineIncludeExcludeEntityIdList instead. This method will be removed in a future version.", true)]
         public static PickingIncludeExcludeList GetSelectionOutlineIncludeExcludeList(Allocator allocator = Allocator.Persistent)
         {
-            s_RendererIncludeBuffer.Clear();
-            s_RendererExcludeBuffer.Clear();
-            s_EntityIncludeBuffer.Clear();
-            s_EntityExcludeBuffer.Clear();
-            Renderer[] deepSelection = Selection.GetFiltered<Renderer>(SelectionMode.Deep);
-            ExtractRenderersEntityIds(deepSelection, s_RendererIncludeBuffer);
-            ExtractEntities(Selection.objects, s_EntityIncludeBuffer);
-            return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), null, s_EntityIncludeBuffer.ToIntList(), null, allocator);
+            throw new InvalidOperationException("Get GetSelectionOutlineIncludeExcludeList is obsolete, use GetSelectionOutlineIncludeExcludeEntityIdList instead.");
         }
 
         internal static PickingObject PickObject(Vector2 guiPosition,
@@ -1342,7 +1329,7 @@ namespace UnityEditor
         [Obsolete]
         static Dictionary<Func<UnityEngine.Object, IEnumerable<int>>, Func<UnityEngine.Object, IEnumerable<EntityId>> > legacygetEntityIdsForAuthoringObjectLookup = new();
 
-        [Obsolete("Use getEntityIdsForAuthoringObject instead. This event will be removed in a future version.")]
+        [Obsolete("Use getEntityIdsForAuthoringObject instead. This event will be removed in a future version.", true)]
         public static event Func<UnityEngine.Object, IEnumerable<int>> getEntitiesForAuthoringObject
         {
             add
@@ -1353,7 +1340,7 @@ namespace UnityEditor
                     if (entities == null)
                         return Array.Empty<EntityId>();
 
-                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId and int must be the same size for this to work");
+                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId and int must be the same size for this to work");
                     var instanceIds = new List<EntityId>();
                     foreach (var entity in entities)
                         instanceIds.Add(entity);

@@ -69,9 +69,8 @@ namespace UnityEditor.AddComponent
 
             if (command.StartsWith("SCRIPT"))
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>()==sizeof(int), "int.Parse needs to become long.Parse if EntityId is not an int");
-                var scriptId = int.Parse(command.Substring(6));
-                var obj = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)scriptId));
+                ClipboardParser.ParseEntityId(command.Substring(6), out var scriptId);
+                var obj = EditorUtility.EntityIdToObject(scriptId);
                 var icon = AssetPreview.GetMiniThumbnail(obj);
                 base.name = name;
                 base.icon = icon;

@@ -53,8 +53,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (SessionState.GetBool(k_CurrentWindowSetKey, false))
                 {
-                    var value = SessionState.GetInt(k_CurrentWindowIdKey, 0);
-                    return ContainerWindowProxy.FromInstanceID(EntityId.FromULong((ulong)value));
+                    var value = SessionState.GetEntityId(k_CurrentWindowIdKey, EntityId.None);
+                    return ContainerWindowProxy.FromInstanceID(value);
                 }
 
                 return null;
@@ -63,13 +63,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (value == null)
                 {
-                    SessionState.EraseInt(k_CurrentWindowIdKey);
+                    SessionState.EraseEntityId(k_CurrentWindowIdKey);
                     SessionState.EraseBool(k_CurrentWindowSetKey);
                 }
                 else
                 {
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    SessionState.SetInt(k_CurrentWindowIdKey, (int)EntityId.ToULong(value.GetEntityId()));
+                    SessionState.SetEntityId(k_CurrentWindowIdKey, value.GetEntityId());
                     SessionState.SetBool(k_CurrentWindowSetKey, true);
                 }
             }

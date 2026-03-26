@@ -1358,9 +1358,8 @@ namespace UnityEditor.Search
             }
             else if (typeof(T) == typeof(EntityId))
             {
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
-                result = (T)(object)EntityId.FromULong((ulong)temp);
+                success = ClipboardParser.ParseEntityId(expression.ToString(), out var temp);
+                result = (T)(object)temp;
             }
             return success;
         }

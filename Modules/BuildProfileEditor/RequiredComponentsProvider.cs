@@ -30,10 +30,7 @@ namespace UnityEditor.Build.Profile
             AddSettingsDataProvider m_AddSettingsDataSource = new AddSettingsDataProvider(profile);
             foreach (var settings in m_AddSettingsDataSource.FetchRequiredPackageSettings())
             {
-                if(!settings.HasSettings(profile))
-                {
-                    settings.OnAdd(profile);
-                }
+                settings.OnAdd(profile);
             }
         }
     }

@@ -15,8 +15,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static class UIElementsRuntimeUtility
     {
-        public static event Action<BaseRuntimePanel> onCreatePanel;
-        public static event Action<BaseRuntimePanel> onWillDestroyPanel;
+        public static event Action<IRuntimePanel> onCreatePanel;
+        public static event Action<IRuntimePanel> onWillDestroyPanel;
 
         public static event Action<Panel> onCreateAuthoringPanel;
         public static event Action<Panel> onWillDestroyAuthoringPanel;
@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements
             var panel = createDelegate(ownerObject);
             panel.IMGUIEventInterests = new EventInterests {wantsMouseMove = true, wantsMouseEnterLeaveWindow = true};
             RegisterCachedPanelInternal(ownerObject.GetEntityId(), panel);
-            onCreatePanel?.Invoke(panel);
+            onCreatePanel?.Invoke((IRuntimePanel)panel);
             return panel;
         }
 
@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
         {
             if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out var panel))
             {
-                onWillDestroyPanel?.Invoke((BaseRuntimePanel)panel);
+                onWillDestroyPanel?.Invoke((IRuntimePanel)panel);
                 panel.Dispose();
                 RemoveCachedPanelInternal(ownerObject.GetEntityId());
             }
@@ -498,12 +498,12 @@ namespace UnityEngine.UIElements
             return s_SortedPlayerPanels;
         }
 
-        // For unit tests
-        internal static List<IPanel> GetSortedPlayerPanelsInternal()
+        // For unit tests and ugui interop
+        internal static List<IRuntimePanel> GetSortedPlayerPanelsInternal()
         {
-            List<IPanel> outPanels = new ();
+            List<IRuntimePanel> outPanels = new ();
             foreach (var panel in GetSortedPlayerPanels())
-                outPanels.Add(panel);
+                outPanels.Add((IRuntimePanel)panel);
             return outPanels;
         }
 

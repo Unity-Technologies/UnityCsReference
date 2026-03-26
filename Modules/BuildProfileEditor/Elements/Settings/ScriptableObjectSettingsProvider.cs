@@ -20,10 +20,20 @@ namespace UnityEditor.Build.Profile.Elements
     class ScriptableObjectSettingsProvider<T> : IBuildProfileSettingsProvider where T : ScriptableObject
     {
         BuildProfileSettingsProvider m_SettingsObjectInfo;
+        HashSet<GUID> m_ValidSDKPlatformIds;
 
         public ScriptableObjectSettingsProvider(BuildProfileSettingsProvider settingsInfo)
         {
             m_SettingsObjectInfo = settingsInfo;
+
+            m_ValidSDKPlatformIds = new HashSet<GUID>();
+            var sdkExtensions = BuildProfileModuleUtil.GetAllSDKPlatformExtensions();
+            foreach (var extension in sdkExtensions)
+            {
+                var found = Array.IndexOf(extension.Value.requiredComponents, m_SettingsObjectInfo.settingsType) > -1;
+                if (found)
+                    m_ValidSDKPlatformIds.Add(extension.Key);
+            }
         }
 
         public string GetDisplayName() => m_SettingsObjectInfo.displayName;
@@ -34,7 +44,12 @@ namespace UnityEditor.Build.Profile.Elements
 
         public bool CanAddSettings(BuildProfile profile)
         {
-            return m_SettingsObjectInfo.canAddSetting?.Invoke(profile) ?? false;
+            var canAddSetting = m_SettingsObjectInfo.canAddSetting?.Invoke(profile) ?? false;
+
+            if (!GetIsRequired())
+                return canAddSetting;
+
+            return m_ValidSDKPlatformIds.Contains(profile.platformGuid) && canAddSetting;
         }
 
         public Action<BuildProfile> GetResetAction() => OnReset;

@@ -38,6 +38,7 @@ namespace UnityEditor
             public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix", "The namespace used for looking up and storing values on the cache server");
+            public static GUIContent cacheServerEnableImportResultCachingLabel = EditorGUIUtility.TrTextContent("Import Result Caching", "Enables import result caching on the cache server.");
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download", "Enables downloads from the cache server.");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload", "Enables uploads to the cache server.");
             public static GUIContent cacheServerEnableTlsLabel = EditorGUIUtility.TrTextContent("TLS/SSL", "Enabled encryption on the cache server connection.");
@@ -827,26 +828,29 @@ namespace UnityEditor
                     if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                     {
                         var address = EditorSettings.cacheServerEndpoint.Split(':');
-                        var ip = address[0];
-                        UInt16 port = 0; // If 0, will use the default set port
-                        if (address.Length == 2)
-                            port = Convert.ToUInt16(address[1]);
+                        if(address.Length > 0)
+                        {
+                            var ip = address[0];
+                            UInt16 port = 0; // If 0, will use the default set port
+                            if (address.Length == 2 && UInt16.TryParse(address[1], out var parsedPort)) 
+                                port = parsedPort;
 
-                        bool canConnect = AssetDatabase.CanConnectToCacheServer(ip, port);
-                        bool isConnected = AssetDatabase.IsConnectedToCacheServer();
-                        if (canConnect)
-                            m_CacheServerConnectionState = CacheServerConnectionState.Success;
-                        else
-                            m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+                            bool canConnect = AssetDatabase.CanConnectToCacheServer(ip, port);
+                            bool isConnected = AssetDatabase.IsConnectedToCacheServer();
+                            if (canConnect)
+                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
+                            else
+                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
 
-                        //We have to check if we're out of sync. here.
-                        //If we can connect, but we're not connected, we need to update some UI
-                        //If we CANNOT connect, but we are connected, we are out of sync. too and
-                        //need to update some UI.
-                        //Calling RefreshSettings here fixes that, and this check encapsulates the
-                        //above 2 conditions.
-                        if (canConnect != isConnected)
-                            AssetDatabase.RefreshSettings();
+                            //We have to check if we're out of sync. here.
+                            //If we can connect, but we're not connected, we need to update some UI
+                            //If we CANNOT connect, but we are connected, we are out of sync. too and
+                            //need to update some UI.
+                            //Calling RefreshSettings here fixes that, and this check encapsulates the
+                            //above 2 conditions.
+                            if (canConnect != isConnected)
+                                AssetDatabase.RefreshSettings();
+                        }
                     }
 
                     GUILayout.Space(25);
@@ -875,6 +879,14 @@ namespace UnityEditor
                         EditorSettings.cacheServerNamespacePrefix = newPrefix;
                     }
 
+                    EditorGUI.BeginChangeCheck();
+                    bool enableImportResultCaching = EditorSettings.cacheServerImportResultCachingEnabled;
+                    enableImportResultCaching = EditorGUILayout.Toggle(Content.cacheServerEnableImportResultCachingLabel, enableImportResultCaching);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        EditorSettings.cacheServerImportResultCachingEnabled = enableImportResultCaching;
+                    }
+                                        
                     EditorGUI.BeginChangeCheck();
                     bool enableDownload = EditorSettings.cacheServerEnableDownload;
                     enableDownload = EditorGUILayout.Toggle(Content.cacheServerEnableDownloadLabel, enableDownload);
@@ -910,6 +922,13 @@ namespace UnityEditor
                             EditorSettings.cacheServerDownloadBatchSize = newDownloadBatchSize;
                     }
                 }
+            }
+            else
+            {
+                if (AssetDatabase.IsConnectedToCacheServer())
+                    AssetDatabase.CloseCacheServerConnection();
+
+                m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
             }
         }
 
@@ -1180,7 +1199,16 @@ namespace UnityEditor
 
         private void SetCacheServerMode(object data)
         {
-            EditorSettings.cacheServerMode = (CacheServerMode)data;
+            var oldMode = EditorSettings.cacheServerMode;
+            var newMode = (CacheServerMode)data;
+
+            if (oldMode != newMode)
+            {
+                EditorSettings.cacheServerMode = newMode;
+                // Trigger refresh to connect/disconnect based on new mode
+                if (!string.IsNullOrEmpty(EditorSettings.cacheServerEndpoint))
+                    AssetDatabase.RefreshSettings();
+            }
         }
 
         private void SetCacheServerAuthMode(object data)

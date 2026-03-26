@@ -108,7 +108,7 @@ namespace UnityEditor.Search
             {
                 if (string.IsNullOrEmpty(selectionResult.assetPath))
                 {
-                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
+                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
                     yield return SearchExpression.CreateItem(EntityId.ToULong(selectionResult.entityId), c.ResolveAlias("Selection"));
                 }
                 else

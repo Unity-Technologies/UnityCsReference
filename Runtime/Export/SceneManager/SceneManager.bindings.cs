@@ -178,19 +178,9 @@ namespace UnityEngine.SceneManagement
         [NativeMethod(ThrowsException = true)]
         private extern static void MoveGameObjectsToSceneByInstanceId(IntPtr instanceIds, int instanceCount, Scene scene);
 
-        [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", false)]
-        public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene)
-        {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
-
-            if (instanceIDs.Length == 0)
-                return;
-
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. This method should be removed, as it relies on this size.");
-
-            MoveGameObjectsToSceneByInstanceId((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, scene);
-        }
+        [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", true)]
+        public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene) =>
+            throw new NotImplementedException("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.");
 
         public static unsafe void MoveGameObjectsToScene(NativeArray<EntityId> entityIds, Scene scene)
         {

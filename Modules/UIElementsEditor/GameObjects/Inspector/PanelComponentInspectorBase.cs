@@ -271,7 +271,7 @@ namespace UnityEditor.UIElements.Inspector
         private void UpdateInputConfigurationOptions()
         {
             var panelComp = (IPanelComponent)target;
-            if (panelComp == null)
+            if ((panelComp as Object) == null)
                 return;
 
             bool isWorldSpace = panelComp.panelSettings?.renderMode == PanelRenderMode.WorldSpace;

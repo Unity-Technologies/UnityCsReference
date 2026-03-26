@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls;
 
-[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
+[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.", true)]
 public abstract partial class TreeView : TreeViewInternal
 {
     protected TreeView(TreeViewState state)
@@ -176,7 +176,7 @@ public abstract partial class TreeView : TreeViewInternal
     protected static bool IsChildListForACollapsedParent(IList<TreeViewItem> childList) => TreeView<int>.IsChildListForACollapsedParent(childList.ToGenericIList());
 }
 
-[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
+[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.", true)]
 public abstract class TreeViewInternal : TreeView<int>
 {
     protected TreeViewInternal(TreeViewState state)
@@ -231,7 +231,7 @@ struct GenericTreeViewItemToNonGenericTreeViewItemIList
     }
 }
 
-[Obsolete("TreeViewItem is now deprecated. You can likely now use TreeViewItem<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewItem<InstanceID> to get the proper typing.")]
+[Obsolete("TreeViewItem is now deprecated. You can likely now use TreeViewItem<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewItem<InstanceID> to get the proper typing.", true)]
 public class TreeViewItem : TreeViewItem<int>
 {
     public new virtual List<TreeViewItem> children
@@ -269,7 +269,7 @@ public class TreeViewItem : TreeViewItem<int>
     internal TreeViewItem(int id, int depth, TreeViewItem parent, string displayName) : base(id, depth, parent, displayName) { }
 }
 
-[Obsolete("TreeViewState is now deprecated. You can likely now use TreeViewState<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewState<InstanceID> to get the proper typing.")]
+[Obsolete("TreeViewState is now deprecated. You can likely now use TreeViewState<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewState<InstanceID> to get the proper typing.", true)]
 public class TreeViewState : TreeViewState<int> {}
 
 [Obsolete]

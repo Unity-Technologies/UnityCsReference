@@ -222,7 +222,7 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::InstanceIDToObject")]
         public extern static Object EntityIdToObject(EntityId entityId);
 
-        [Obsolete("InstanceIDToObject is obsolete. Use EntityIdToObject instead.")]
+        [Obsolete("InstanceIDToObject is obsolete. Use EntityIdToObject instead.", true)]
         public static Object InstanceIDToObject(int instanceID)
         {
             return EntityIdToObject(instanceID);
@@ -271,23 +271,8 @@ namespace UnityEngine
             EntityIdsToObjectList((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, objects);
         }
 
-        [Obsolete("InstanceIDToObjectList is obsolete. Use EntityIdsToObjectList instead.")]
-        public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects)
-        {
-            Debug.Assert(sizeof(int) == sizeof(EntityId), "Update this path to 64bit when we support 64bit");
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
-            if (objects == null)
-                throw new ArgumentNullException(nameof(objects));
-
-            if (instanceIDs.Length == 0)
-            {
-                objects.Clear();
-                return;
-            }
-
-            EntityIdsToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
-        }
+        [Obsolete("InstanceIDToObjectList is obsolete. Use EntityIdsToObjectList instead.", true)]
+        public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects) => throw new NotImplementedException("InstanceIDToObjectList is deprecated. Use EntityIdsToObjectList instead.");
 
         [FreeFunction("Resources_Bindings::InstanceIDsToValidArray", IsThreadSafe = true)]
         private static extern unsafe void InstanceIDsToValidArray_Internal(IntPtr instanceIDs, int instanceCount, IntPtr validArray, int validArrayCount);
@@ -295,28 +280,14 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::DoesObjectWithInstanceIDExist", IsThreadSafe = true)]
         public static extern bool EntityIdIsValid(EntityId entityId);
 
-        [Obsolete("InstanceIDIsValid is obsolete. Use EntityIdIsValid instead.")]
+        [Obsolete("InstanceIDIsValid is obsolete. Use EntityIdIsValid instead.", true)]
         public static bool InstanceIDIsValid(int instanceId)
         {
             return EntityIdIsValid(instanceId);
         }
 
-        [Obsolete("InstanceIDsToValidArray is obsolete. Use EntityIdsToValidArray instead.")]
-        public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray)
-        {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
-            if (!validArray.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(validArray));
-            if (instanceIDs.Length != validArray.Length)
-                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
-            if(instanceIDs.Length == 0)
-                return;
-
-            UnityEngine.Assertions.Assert.AreEqual(sizeof(int), sizeof(EntityId));
-
-            InstanceIDsToValidArray_Internal((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
-        }
+        [Obsolete("InstanceIDsToValidArray is obsolete. Use EntityIdsToValidArray instead.", true)]
+        public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray) => throw new NotImplementedException("InstanceIDsToValidArray is deprecated. Use EntityIdsToValidArray instead.");
 
         public static unsafe void EntityIdsToValidArray(NativeArray<EntityId> entityIDs, NativeArray<bool> validArray)
         {
@@ -332,21 +303,9 @@ namespace UnityEngine
             InstanceIDsToValidArray_Internal((IntPtr)entityIDs.GetUnsafeReadOnlyPtr(), entityIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
         }
 
-        public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray)
-        {
-            if(instanceIDs.Length != validArray.Length)
-                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
-            if(instanceIDs.Length == 0)
-                return;
-
-            UnityEngine.Assertions.Assert.AreEqual(sizeof(int), sizeof(EntityId));
-
-            fixed(int* instanceIDsPtr = instanceIDs)
-            fixed(bool* validArrayPtr = validArray)
-            {
-                InstanceIDsToValidArray_Internal((IntPtr)instanceIDsPtr, instanceIDs.Length, (IntPtr)validArrayPtr, validArray.Length);
-            }
-        }
+        [Obsolete("InstanceIDsToValidArray is obsolete. Use EntityIdsToValidArray instead.", true)]
+        public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray) =>
+            throw new NotImplementedException("InstanceIDsToValidArray is deprecated. Use InstanceIDsToValidArray instead.");
 
         public static unsafe void EntityIdsToValidArray(ReadOnlySpan<EntityId> entityIds, Span<bool> validArray)
         {

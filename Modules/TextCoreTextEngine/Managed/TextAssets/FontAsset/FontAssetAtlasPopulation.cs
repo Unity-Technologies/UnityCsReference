@@ -92,7 +92,7 @@ namespace UnityEngine.TextCore.Text
         internal static void RegisterAtlasTextureForApply(Texture2D texture)
         {
             EntityId entityId = texture.GetEntityId();
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(long), "EntityId size has changed, please update the code below");
             if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(entityId))
                 k_FontAssets_AtlasTexturesUpdateQueue.Add(texture);
         }

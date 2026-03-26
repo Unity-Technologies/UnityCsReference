@@ -364,16 +364,16 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
         extern public static DragAndDropVisualMode ProjectWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
-        [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead")]
+        [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead", true)]
         extern public static DragAndDropVisualMode ProjectWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
         extern public static DragAndDropVisualMode HierarchyWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead")]
+        [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead", true)]
         extern public static DragAndDropVisualMode HierarchyWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
-        [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead")]
+        [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead", true)]
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
             => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
         public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
@@ -515,19 +515,19 @@ namespace UnityEditorInternal
         [FreeFunction("PPtr<Object>::FromEntityId")]
         extern public static Object GetObjectFromEntityId(EntityId entityId);
 
-        [Obsolete("GetObjectFromInstanceID(int) is obsolete. Use GetObjectFromEntityId(EntityId) instead")]
+        [Obsolete("GetObjectFromInstanceID(int) is obsolete. Use GetObjectFromEntityId(EntityId) instead", true)]
         public static Object GetObjectFromInstanceID(int instanceID) => GetObjectFromEntityId(instanceID);
 
         [FreeFunction("GetTypeWithoutLoadingObject")]
         extern public static Type GetTypeWithoutLoadingObject(EntityId entityId);
 
-        [Obsolete("GetTypeWithoutLoadingObject(int) is obsolete. Use GetTypeWithoutLoadingObject(EntityId) instead.")]
+        [Obsolete("GetTypeWithoutLoadingObject(int) is obsolete. Use GetTypeWithoutLoadingObject(EntityId) instead.", true)]
         public static Type GetTypeWithoutLoadingObject(int instanceID) => GetTypeWithoutLoadingObject((EntityId)instanceID);
 
         [FreeFunction("Object::IDToPointer")]
         extern public static Object GetLoadedObjectFromEntityId(EntityId entityId);
 
-        [System.Obsolete("GetLoadedObjectFromInstanceID(int) is obsolete. Use GetLoadedObjectFromEntityId(EntityId) instead.")]
+        [System.Obsolete("GetLoadedObjectFromInstanceID(int) is obsolete. Use GetLoadedObjectFromEntityId(EntityId) instead.", true)]
         public static Object GetLoadedObjectFromInstanceID(int instanceID) => GetLoadedObjectFromEntityId(instanceID);
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
@@ -636,7 +636,7 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::GetGameObjectEntityIdFromComponent")]
         public static extern EntityId GetGameObjectEntityIdFromComponent(EntityId entityId);
-        [Obsolete("GetGameObjectInstanceIDFromComponent(int) is obsolete. Use GetGameObjectEntityIdFromComponent(EntityId) instead.")]
+        [Obsolete("GetGameObjectInstanceIDFromComponent(int) is obsolete. Use GetGameObjectEntityIdFromComponent(EntityId) instead.", true)]
         public static int GetGameObjectInstanceIDFromComponent(int instanceID) => GetGameObjectEntityIdFromComponent(instanceID);
 
         [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixel")]

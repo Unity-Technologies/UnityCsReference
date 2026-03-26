@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements.Layout;
 /// <summary>
 /// The <see cref="LayoutDataAccess"/> gives strongly typed unmanaged access to the individual components of a node.
 /// </summary>
-[RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential)]
 readonly unsafe struct LayoutDataAccess
 {
     readonly int m_Manager;

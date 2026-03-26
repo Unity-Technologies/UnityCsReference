@@ -1440,7 +1440,7 @@ namespace UnityEditor
         [NativeName("SetPPtrValue")]
         private extern void SetPPtrValueInternal(UnityObject value);
 
-        [Obsolete("objectReferenceInstanceIDValue is obsolete. Use objectReferenceEntityIdValue instead")]
+        [Obsolete("objectReferenceInstanceIDValue is obsolete. Use objectReferenceEntityIdValue instead", true)]
         public int objectReferenceInstanceIDValue { get => objectReferenceEntityIdValue; set => objectReferenceEntityIdValue = value; }
 
         public EntityId objectReferenceEntityIdValue

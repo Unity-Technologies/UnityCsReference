@@ -326,15 +326,17 @@ namespace Unity.VectorGraphics.Editor
                     TessellationMode = TessellationMode.Triangulation;
             }
 
-            if (m_SvgType != SVGType.VectorImage && TessellationMode == TessellationMode.AntialiasedArcEncodings)
+            // UUM-136307: Determine the effective tessellation mode without modifying the serialized property
+            TessellationMode effectiveTessellationMode = TessellationMode;
+            if (m_SvgType != SVGType.VectorImage && effectiveTessellationMode == TessellationMode.AntialiasedArcEncodings)
             {
                 // ArcAA is only supported for VectorImage for now
-                TessellationMode = TessellationMode.Triangulation;
+                effectiveTessellationMode = TessellationMode.Triangulation;
             }
 
-            if (TessellationMode == TessellationMode.Triangulation)
+            if (effectiveTessellationMode == TessellationMode.Triangulation)
                 ImportWithTriangulation(ctx, sceneInfo);
-            else if (TessellationMode == TessellationMode.AntialiasedArcEncodings)
+            else if (effectiveTessellationMode == TessellationMode.AntialiasedArcEncodings)
                 ImportWithArcAA(ctx, sceneInfo);
         }
 

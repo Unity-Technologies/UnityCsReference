@@ -178,7 +178,7 @@ namespace UnityEngine
         public int layer {get; set;}
         public uint renderingLayerMask {get; set;}
         public int rendererPriority {get; set;}
-        [System.Obsolete(@"Please use entityId instead.", false)]
+        [System.Obsolete(@"Please use entityId instead.", true)]
         public int instanceID {get => entityId; set => entityId = value;}
         public EntityId entityId {get; set;}
         public Bounds worldBounds {get; set;}

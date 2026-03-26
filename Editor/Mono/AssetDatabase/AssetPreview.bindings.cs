@@ -41,7 +41,7 @@ namespace UnityEditor
         [FreeFunction("AssetPreviewBindings::GetAssetPreviewFromGUID")]
         internal static extern Texture2D GetAssetPreviewFromGUID(string guid, EntityId clientID);
 
-        [Obsolete("IsLoadingAssetPreview(int instanceID) is deprecated. Use IsLoadingAssetPreview(EntityId entityId) instead.")]
+        [Obsolete("IsLoadingAssetPreview(int instanceID) is deprecated. Use IsLoadingAssetPreview(EntityId entityId) instead.", true)]
         public static bool IsLoadingAssetPreview(int instanceID)
         {
             return IsLoadingAssetPreview(instanceID, kSharedClientID);

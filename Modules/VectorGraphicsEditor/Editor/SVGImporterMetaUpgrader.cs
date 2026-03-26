@@ -7,6 +7,7 @@ using System.IO;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
 
 namespace Unity.VectorGraphics.Editor
@@ -44,6 +45,10 @@ namespace Unity.VectorGraphics.Editor
                 return; // This is this version of the importer, nothing to do!
 
             ExtractPropertiesFromMetaContent(importer, metaContents);
+
+            // Preserve the internalIDToNameTable entries from the package version
+            // to maintain file ID compatibility and prevent broken GameObject references
+            PreserveInternalIDToNameTable(importer, metaContents);
         }
 
         static void ExtractPropertiesFromMetaContent(SVGImporter importer, string metaContents)
@@ -297,6 +302,102 @@ namespace Unity.VectorGraphics.Editor
             output.Add(outlineData);
 
             outline.Clear();
+        }
+
+        static void PreserveInternalIDToNameTable(SVGImporter importer, string metaContents)
+        {
+            // Parse the internalIDToNameTable from the package version .meta file
+            // Format:
+            //   internalIDToNameTable:
+            //   - first:
+            //       <persistentTypeID>: <fileID>
+            //     second: <identifierName>
+
+            var so = new SerializedObject(importer);
+            var internalIDMap = so.FindProperty("m_InternalIDToNameTable");
+            if (internalIDMap == null)
+                return;
+
+            var lines = metaContents.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            int lineIdx = 0;
+
+            // Find the internalIDToNameTable section
+            while (lineIdx < lines.Length && !lines[lineIdx].Contains("internalIDToNameTable:"))
+                ++lineIdx;
+
+            if (lineIdx >= lines.Length)
+                return; // No internalIDToNameTable found
+
+            ++lineIdx; // Move past the internalIDToNameTable: line
+
+            // Parse each entry in the table
+            while (lineIdx < lines.Length)
+            {
+                var line = lines[lineIdx].Trim();
+
+                // Stop if we reach another top-level property
+                if (!line.StartsWith("- first:"))
+                    break;
+
+                ++lineIdx;
+                if (lineIdx >= lines.Length)
+                    break;
+
+                // Next line should be "<typeID>: <fileID>"
+                var firstLine = lines[lineIdx].Trim();
+                var firstMatch = Regex.Match(firstLine, @"(\d+):\s*(\d+)");
+                if (!firstMatch.Success)
+                    break;
+
+                int persistentTypeID = int.Parse(firstMatch.Groups[1].Value);
+                long fileID = long.Parse(firstMatch.Groups[2].Value);
+
+                // Find the "second:" line with the identifier name
+                ++lineIdx;
+                while (lineIdx < lines.Length && !lines[lineIdx].Trim().StartsWith("second:"))
+                    ++lineIdx;
+
+                if (lineIdx >= lines.Length)
+                    break;
+
+                var secondLine = lines[lineIdx].Trim();
+                var secondMatch = Regex.Match(secondLine, @"second:\s*(.+)");
+                if (!secondMatch.Success)
+                    break;
+
+                string identifierName = secondMatch.Groups[1].Value.Trim();
+
+                // Directly add entry to m_InternalIDToNameTable using SerializedProperty
+                AddInternalIDEntry(internalIDMap, persistentTypeID, fileID, identifierName);
+
+                ++lineIdx;
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void AddInternalIDEntry(SerializedProperty internalIDMap, int persistentTypeID, long fileID, string name)
+        {
+            // Structure of m_InternalIDToNameTable:
+            // - first:                                    (pair<pair<int, long>, string>)
+            //   - first:                                  (pair<int, long>)
+            //     - first: <persistentTypeID> (int)
+            //     - second: <fileID> (long)
+            //   - second: <name> (string)
+
+            int newIndex = internalIDMap.arraySize;
+            internalIDMap.arraySize++;
+
+            var newEntry = internalIDMap.GetArrayElementAtIndex(newIndex);
+            var firstPair = newEntry.FindPropertyRelative("first");
+            var classID = firstPair.FindPropertyRelative("first");
+            var localID = firstPair.FindPropertyRelative("second");
+            var secondString = newEntry.FindPropertyRelative("second");
+
+            classID.intValue = persistentTypeID;
+            localID.longValue = fileID;
+            secondString.stringValue = name;
         }
     }
 }

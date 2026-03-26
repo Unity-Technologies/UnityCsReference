@@ -113,6 +113,7 @@ namespace Unity.UI.Builder
             m_Text.style.fontSize = currentVisualElement.resolvedStyle.fontSize;
             m_Text.style.color = currentVisualElement.resolvedStyle.color;
             m_Text.style.unityTextAlign = currentVisualElement.resolvedStyle.unityTextAlign;
+            m_Text.style.unityTextGenerator = currentVisualElement.resolvedStyle.unityTextGenerator;
             m_Text.style.whiteSpace = currentVisualElement.resolvedStyle.whiteSpace;
             m_Text.style.textOverflow = currentVisualElement.resolvedStyle.textOverflow;
             m_Text.style.unityTextOutlineWidth = currentVisualElement.resolvedStyle.unityTextOutlineWidth;

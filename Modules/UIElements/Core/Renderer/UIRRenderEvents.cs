@@ -936,7 +936,8 @@ namespace UnityEngine.UIElements.UIR
 
             var job = new NudgeJobData
             {
-                transform = nudgeTransform
+                transform = nudgeTransform,
+                keepZ = renderTreeManager.isFlat ? 1 : 0,
             };
 
             if (renderData.headMesh != null)

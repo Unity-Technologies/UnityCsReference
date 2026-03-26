@@ -18,7 +18,7 @@ namespace UnityEngine.Rendering
     {
         int filterMode;
         uint cullingMask;
-        int instanceID;
+        EntityId instanceID;
 
         public bool Equals(CoreCameraValues other)
         {
@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering
             {
                 var hashCode = filterMode;
                 hashCode = (hashCode * 397) ^ (int)cullingMask;
-                hashCode = (hashCode * 397) ^ instanceID;
+                hashCode = (hashCode * 397) ^ instanceID.GetHashCode();
                 return hashCode;
             }
         }

@@ -94,6 +94,8 @@ namespace UnityEngine.UIElements
         }
 
         VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
+        IEventHandler IPanelComponent.GetRoot() => (this as IPanelComponent).GetRootVisualElement();
+
 
         VisualElementReferenceProvider m_ReferenceProvider;
 
@@ -206,6 +208,11 @@ namespace UnityEngine.UIElements
         float IPanelComponent.sortingOrder => ((Renderer)this).sortingOrder;
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
+
+        Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
+        {
+            return PanelComponentUtils.GetPanelPosition(gameObject, pickedElement, worldRay);
+        }
 
         private int m_SoftPointerCaptures = 0;
         int IPanelComponent.softPointerCaptures
@@ -597,6 +604,8 @@ namespace UnityEngine.UIElements
         #region Update
         internal RuntimePanel containerPanel => (RuntimePanel)rootVisualElement?.elementPanel;
 
+        IRuntimePanel IPanelComponent.GetContainerPanel() => containerPanel;
+
         GameObject IPanelComponent.gameObject => this.gameObject;
 
         private bool isWorldSpace => (panelSettings != null && panelSettings.renderMode == PanelRenderMode.WorldSpace);
@@ -836,6 +845,7 @@ namespace UnityEngine.UIElements
         internal static extern void RegisterPanelRendererAnimationBinding();
 
         [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         internal void ConnectToAnimationBinder()
         {
             UIAnimationBinder binder = GetAnimationBinder();
@@ -864,7 +874,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     internal struct CommandListState
     {

@@ -86,7 +86,7 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true)]
         public extern string GetItemName(int id);
 
-        [Obsolete("Use GetItemEntityId(int id) instead. This method will be removed in a future version.")]
+        [Obsolete("Use GetItemEntityId(int id) instead. This method will be removed in a future version.", true)]
         public int GetItemInstanceID(int id) => GetItemEntityId(id);
 
         [NativeMethod(IsThreadSafe = true)]
@@ -181,7 +181,7 @@ namespace UnityEditor.Profiling
         [NativeMethod("GetItemMergedSamplesColumnDataAsDoubles", IsThreadSafe = true)]
         extern void GetItemMergedSamplesColumnDataAsDoublesInternal(int id, int column, List<double> outValues);
 
-        [Obsolete("Deprecated, use GetItemMergedSamplesEntityId instead. This method will be removed in a future version.")]
+        [Obsolete("Deprecated, use GetItemMergedSamplesEntityId instead. This method will be removed in a future version.", true)]
         public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
         {
             if (outInstanceIds == null)

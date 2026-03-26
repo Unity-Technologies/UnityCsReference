@@ -286,12 +286,20 @@ namespace UnityEngine.Audio
         /// The result returned from a <see cref="IRealtime.Process"/> call.
         /// </summary>
         /// <remarks>
-        /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>.
+        /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>,
+        /// and the status of the generator (eg. whether it has finished or not).
         /// </remarks>
         /// <seealso cref="RealtimeContext.Process"/>
         public ref struct Result
         {
+            internal enum Status : Int32
+            {
+                Success = 0,
+                Finished
+            }
+
             internal int m_ProcessedFrames;
+            internal Status m_Status;
 
             /// <summary>
             /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="RealtimeContext.Process"/>.
@@ -299,11 +307,33 @@ namespace UnityEngine.Audio
             public int processedFrames => m_ProcessedFrames;
 
             /// <summary>
+            /// If this is true, the <see cref="GeneratorInstance"/> has finished generating audio and won't produce any more frames.
+            /// </summary>
+            /// <remarks>
+            /// There may still be a range of valid <see cref="Result.processedFrames"/> values when this is true,
+            /// for example if the <see cref="GeneratorInstance"/> finishes in the middle of a buffer.
+            /// </remarks>
+            public bool isFinished() => m_Status == Status.Finished;
+
+            /// <summary>
             /// Creates a new <see cref="GeneratorInstance.Result"/> from a number of frames processed.
             /// </summary>
+            /// <seealso cref="Result.Finished(int)"/>
             public static implicit operator Result(int processedFrames)
             {
                 return new Result { m_ProcessedFrames = processedFrames };
+            }
+
+            /// <summary>
+            /// Creates a new <see cref="GeneratorInstance.Result"/> that indicates the generator has finished from this point on,
+            /// having delivered <see cref="Result.processedFrames"/> additionally.
+            /// </summary>
+            /// <param name="processedFrames">
+            /// This can just be 0 if the generator finishes before processing any frames.
+            /// </param>
+            public static Result Finished(int processedFrames)
+            {
+                return new Result { m_ProcessedFrames = processedFrames, m_Status = Status.Finished };
             }
         }
 

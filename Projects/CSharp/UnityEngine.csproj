@@ -285,6 +285,21 @@
     <Compile Include="..\..\Modules\AI\Components\OffMeshLink.deprecated.cs">
       <Link>Modules\AI\Components\OffMeshLink.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AI\LowLevel\Scripting\Bindings\NavLocation.bindings.cs">
+      <Link>Modules\AI\LowLevel\Scripting\Bindings\NavLocation.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\LowLevel\Scripting\Bindings\NavLowLevelTypes.bindings.cs">
+      <Link>Modules\AI\LowLevel\Scripting\Bindings\NavLowLevelTypes.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\LowLevel\Scripting\Bindings\NavNode.bindings.cs">
+      <Link>Modules\AI\LowLevel\Scripting\Bindings\NavNode.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\LowLevel\Scripting\Bindings\NavQueryBuffer.bindings.cs">
+      <Link>Modules\AI\LowLevel\Scripting\Bindings\NavQueryBuffer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\LowLevel\Scripting\Bindings\NavWorld.bindings.cs">
+      <Link>Modules\AI\LowLevel\Scripting\Bindings\NavWorld.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AI\NavMeshExperimental.bindings.cs">
       <Link>Modules\AI\NavMeshExperimental.bindings.cs</Link>
     </Compile>

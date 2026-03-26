@@ -13,7 +13,7 @@ namespace UnityEditorInternal
     [StructLayout(LayoutKind.Sequential)]
     public sealed class ObjectMemoryInfo
     {
-        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        [Obsolete("instanceId is deprecated. Use entityId instead.", true)]
         public int instanceId { get => entityId; set => entityId = value; }
         [FormerlySerializedAs("instanceId")]
         public EntityId entityId;

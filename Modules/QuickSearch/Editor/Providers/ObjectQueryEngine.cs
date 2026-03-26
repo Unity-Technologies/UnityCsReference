@@ -403,7 +403,6 @@ namespace UnityEditor.Search.Providers
                 var gocs = go.GetComponents<Component>();
                 if (gocs.Length > 1)
                 {
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                     refs.Add(EntityId.ToULong(obj.GetEntityId()));
                 }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
@@ -466,11 +465,9 @@ namespace UnityEditor.Search.Providers
             if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
 
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
             refs.Add(EntityId.ToULong(p.objectReferenceValue.GetEntityId()));
             if (p.objectReferenceValue is Component c)
             {
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                 refs.Add(EntityId.ToULong(c.gameObject.GetEntityId()));
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
@@ -492,7 +489,6 @@ namespace UnityEditor.Search.Providers
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
                 var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                 refs.Add(EntityId.ToULong(mainEntityId));
             }
 
@@ -594,7 +590,6 @@ namespace UnityEditor.Search.Providers
         {
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<ulong>.none;
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
             return new ParseResult<ulong>(true, EntityId.ToULong(GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid)));
         }
 

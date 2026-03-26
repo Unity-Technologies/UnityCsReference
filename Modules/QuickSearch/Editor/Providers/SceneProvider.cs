@@ -354,7 +354,7 @@ namespace UnityEditor.Search.Providers
             if (!go)
                 return null;
 
-            var entityId = go.GetEntityId();
+            var entityId = EntityId.ToULong(go.GetEntityId());
             var item = provider.CreateItem(context, entityId.ToString(), entityId.GetHashCode(), null, null, null, new GameObjectData(go));
             return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }

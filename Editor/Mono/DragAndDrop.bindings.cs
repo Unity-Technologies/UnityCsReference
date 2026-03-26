@@ -143,7 +143,7 @@ namespace UnityEditor
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(int) && args[0] is EntityId e)
                 {
                     Debug.LogWarning("Using int based drop handlers is deprecated. Please use EntityId based ones instead.");
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    Debug.Assert(sizeof(ulong)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                     args[0] = EntityId.ToULong(e);
                 }
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)
@@ -320,12 +320,12 @@ namespace UnityEditor
         private static extern void StartDrag_Internal(string title);
 
         public delegate DragAndDropVisualMode ProjectBrowserDropHandlerV2(EntityId dragEntityId, string dropUponPath, bool perform);
-        [Obsolete("Use ProjectBrowserDropHandlerV2 instead")]
+        [Obsolete("Use ProjectBrowserDropHandlerV2 instead", true)]
         public delegate DragAndDropVisualMode ProjectBrowserDropHandler(int dragInstanceID, string dropUponPath, bool perform);
         public delegate DragAndDropVisualMode SceneDropHandler(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);
         public delegate DragAndDropVisualMode InspectorDropHandler(UnityEngine.Object[] targets, bool perform);
         public delegate DragAndDropVisualMode HierarchyDropHandlerV2(EntityId dropTargetEntityId, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
-        [Obsolete("Use HierarchyDropHandlerV2 instead")]
+        [Obsolete("Use HierarchyDropHandlerV2 instead", true)]
         public delegate DragAndDropVisualMode HierarchyDropHandler(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         internal static bool HasHandler(int dropDstId)
@@ -343,36 +343,36 @@ namespace UnityEditor
             return handlers != null && handlers.Exists(dropHandler => dropHandler == handler);
         }
 
-        [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        [Obsolete("Use AddDropHandlerV2 instead", true)] // not upgradable since it's a different delegate
         public static void AddDropHandler(ProjectBrowserDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
         public static void AddDropHandlerV2(ProjectBrowserDropHandlerV2 handler) => AddDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
-        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)")]
+        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)", true)]
         public static void AddDropHandler(SceneDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.sceneView, handler);
         public static void AddDropHandlerV2(SceneDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.sceneView, handler);
-        [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        [Obsolete("Use AddDropHandlerV2 instead", true)] // not upgradable since it's a different delegate
         public static void AddDropHandler(HierarchyDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.hierarchy, handler);
         public static void AddDropHandlerV2(HierarchyDropHandlerV2 handler) => AddDropHandler(DragAndDropWindowTarget.hierarchy, handler);
-        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)")]
+        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)", true)]
         public static void AddDropHandler(InspectorDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.inspector, handler);
         public static void AddDropHandlerV2(InspectorDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.inspector, handler);
 
 
-        [Obsolete("Use RemoveDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        [Obsolete("Use RemoveDropHandlerV2 instead", true)] // not upgradable since it's a different delegate
         public static void RemoveDropHandler(ProjectBrowserDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
         public static void RemoveDropHandlerV2(ProjectBrowserDropHandlerV2 handler) => RemoveDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
 
-        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)")]
+        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)", true)]
         public static void RemoveDropHandler(SceneDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.sceneView, handler);
         public static void RemoveDropHandlerV2(SceneDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.sceneView, handler);
 
 
-        [Obsolete("Use RemoveDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        [Obsolete("Use RemoveDropHandlerV2 instead", true)] // not upgradable since it's a different delegate
         public static void RemoveDropHandler(HierarchyDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.hierarchy, handler);
         public static void RemoveDropHandlerV2(HierarchyDropHandlerV2 handler) => RemoveDropHandler(DragAndDropWindowTarget.hierarchy, handler);
 
 
 
-        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)")]
+        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)", true)]
         public static void RemoveDropHandler(InspectorDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.inspector, handler);
         public static void RemoveDropHandlerV2(InspectorDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.inspector, handler);
     }

@@ -253,16 +253,16 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
             UnregisterAllPanels();
     }
 
-    private void RegisterPanelIfEnabled(Panel panel)
+    private void RegisterPanelIfEnabled( IRuntimePanel panel)
     {
         if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
-            RegisterPanel(panel);
+            RegisterPanel((Panel)panel);
     }
 
-    private void UnregisterPanelIfEnabled(Panel panel)
+    private void UnregisterPanelIfEnabled(IRuntimePanel panel)
     {
         if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
-            UnregisterPanel(panel);
+            UnregisterPanel((Panel)panel);
     }
 
     private void RegisterExistingRuntimePanels()

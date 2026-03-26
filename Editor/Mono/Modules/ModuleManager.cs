@@ -98,6 +98,16 @@ namespace UnityEditor.Modules
 
         internal static bool IsPlatformSupportLoadedByGuid(GUID platformId)
         {
+            if (BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformId, out var supportedPlatformGuids))
+            {
+                foreach (var supportedGuid in supportedPlatformGuids)
+                {
+                    if (platformSupportModulesByGuid.ContainsKey(supportedGuid))
+                        return true;
+                }
+                return false;
+            }
+
             return platformSupportModulesByGuid.ContainsKey(platformId);
         }
 
@@ -301,6 +311,10 @@ namespace UnityEditor.Modules
                                 return target;
                             }
                         }
+
+                        var baseBuildTarget = derivedBuildTargetProvider.GetBaseBuildTarget();
+                        if (baseBuildTarget.Guid == platformGuid)
+                            return baseBuildTarget;
                     }
                 }
             }

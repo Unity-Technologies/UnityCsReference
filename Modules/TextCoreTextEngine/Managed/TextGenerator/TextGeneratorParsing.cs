@@ -1646,7 +1646,18 @@ namespace UnityEngine.TextCore.Text
                         bool prevIsLeading = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(charCode);
                         bool nextIsFollowing = textSettings.lineBreakingRules.followingCharactersLookup.Contains(nextChar);
                         if (!prevIsLeading && !nextIsFollowing)
+                        {
+                            isFirstWordOfLine = false;
                             shouldSaveHardLineBreak = true;
+                        }
+
+                        if (isFirstWordOfLine)
+                        {
+                            if (isWhiteSpace)
+                                shouldSaveSoftLineBreak = true;
+
+                            shouldSaveHardLineBreak = true;
+                        }
                     }
                     else if (isFirstWordOfLine)
                     {

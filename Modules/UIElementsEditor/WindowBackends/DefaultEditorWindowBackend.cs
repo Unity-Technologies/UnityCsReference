@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
                 base.OnCreate(model);
 
                 m_LiveReloadVisualTreeAssetTracker = new EditorWindowVisualTreeAssetTracker(this);
-                m_PlayModeDarkenColor = EditorUtility.activePlayModeTint;
+                m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor = EditorUtility.activePlayModeTint;
 
                 PlayModeTintResolver.activePlayModeTintChanged += ActivePlayModeTintChangedCallback;
                 AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;

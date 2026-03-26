@@ -253,6 +253,8 @@ namespace UnityEngine.UIElements
         }
 
         VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
+        IEventHandler IPanelComponent.GetRoot() => (this as IPanelComponent).GetRootVisualElement();
+
 
         VisualElementFocusRing IPanelComponent.focusRing { get; set; }
 
@@ -470,6 +472,12 @@ namespace UnityEngine.UIElements
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
+        //This need to be in the implementation for code stripping reason,is duplicated in PanelRenderer
+        Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
+        {
+            return PanelComponentUtils.GetPanelPosition(gameObject, pickedElement, worldRay);
+        }
+
         /// <summary>
         /// The runtime panel whose visualTree contains this document's rootVisualElement, if any.
         /// </summary>
@@ -482,6 +490,8 @@ namespace UnityEngine.UIElements
         /// Strongly-typed equivalent of <see cref="runtimePanel"/>.
         /// </summary>
         internal RuntimePanel containerPanel => (RuntimePanel)rootVisualElement?.elementPanel;
+
+        IRuntimePanel IPanelComponent.GetContainerPanel() => containerPanel;
 
         bool m_RootHasWorldTransform;
 

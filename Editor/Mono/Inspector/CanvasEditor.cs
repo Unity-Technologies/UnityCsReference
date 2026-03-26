@@ -58,7 +58,7 @@ namespace UnityEditor
         private bool m_AllOverlay = false;
         private bool m_NoneOverlay = false;
 
-        private string[] shaderChannelOptions = { "TexCoord1", "TexCoord2", "TexCoord3", "Normal", "Tangent" };
+        private string[] shaderChannelOptions = { "TexCoord1", "TexCoord2", "TexCoord3", "Normal", "Tangent", "Previous Position" };
 
 
         enum PixelPerfect

@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
+using System;
 
 namespace UnityEditor.Build.Profile
 {
@@ -15,6 +14,7 @@ namespace UnityEditor.Build.Profile
         {
             var foundEntryPoints = TypeCache.GetMethodsWithAttribute<BuildProfileSettingsProviderAttribute>();
             var result = new List<BuildProfileSettingsProvider>(foundEntryPoints.Count);
+            var validRequiredComponents = new List<Type>(BuildTargetDiscovery.TryGetSDKRequiredComponents());
 
             for (int i = 0; i < foundEntryPoints.Count; i++)
             {
@@ -27,7 +27,7 @@ namespace UnityEditor.Build.Profile
                     continue;
 
                 // Loaded types must match a Unity registry.
-                if (!IsFromUnityPackageSource(packageInfo))
+                if (!BuildProfileModuleUtil.IsFromUnityPackageSource(packageInfo))
                 {
                     Debug.LogWarning($"Unsupported package registry type {settingsType.FullName}");
                     continue;
@@ -37,19 +37,14 @@ namespace UnityEditor.Build.Profile
                 if (provider == null)
                     continue;
 
+                if(validRequiredComponents.Contains(settingsType))
+                    provider.isRequired = true;
+
                 provider.settingsType = settingsType;
                 result.Add(provider);
             }
 
             return result;
-        }
-
-        /// <returns>True if <see cref="PackageInfo"/> describes a built-in or a Unity registry sourced package.</returns>
-        static bool IsFromUnityPackageSource(PackageManager.PackageInfo packageInfo)
-        {
-            if (Unsupported.IsSourceBuild())
-                return true;
-            return packageInfo.GetAvailableRegistryType() == RegistryType.UnityRegistry;
         }
     }
 }

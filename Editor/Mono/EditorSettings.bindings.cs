@@ -297,6 +297,9 @@ namespace UnityEditor
         public static extern string cacheServerNamespacePrefix { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerImportResultCachingEnabled { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableDownload { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

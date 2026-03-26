@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string path;
         public string description;
         public bool interactiveImport;
+        public string[] images;
 
         public bool IsEquivalent(SampleInfo other)
         {
@@ -25,6 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                    (displayName ?? string.Empty) == (other.displayName ?? string.Empty) &&
                    (path ?? string.Empty) == (other.path ?? string.Empty) &&
                    (description ?? string.Empty) == (other.description ?? string.Empty) &&
+                   (images ?? Array.Empty<string>()).IsSequenceEqual(other.images ?? Array.Empty<string>()) &&
                    interactiveImport == other.interactiveImport;
         }
     }
@@ -287,6 +289,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                         description = sample.GetString("description"),
                         interactiveImport = sample.Get("interactiveImport", false)
                     };
+                    var imagePaths = new List<string>();
+                    if (sample.TryGetValue("images", out var imgObj) && imgObj is List<object> imgList)
+                    {
+                        foreach (var item in imgList)
+                            if (item is string stringItem && !string.IsNullOrEmpty(stringItem))
+                                imagePaths.Add(stringItem);
+                    }
+                    sampleInfo.images = imagePaths.ToArray();
                     result.Add(sampleInfo);
                 }
 

@@ -57,6 +57,8 @@ namespace UnityEditor.Build.Profile
         VisualElement m_PlatformConfigs;
         VisualElement m_NameLinks;
 
+        VisualElement m_SupportedPlatformStatusContainer;
+
         Label m_SelectedDescriptionLabel;
         Label m_ConfigLabel;
         VisualElement m_ConfigPanel;
@@ -204,6 +206,8 @@ namespace UnityEditor.Build.Profile
 
             m_BuildProfileNameLabel = rootVisualElement.Q<Label>("build-profile-name-label");
             m_BuildProfileNameLabel.text = TrText.buildProfileNameLabel;
+
+            m_SupportedPlatformStatusContainer = rootVisualElement.Q<VisualElement>("supported-platform-status-container");
 
             m_KeyFeaturesContainer = rootVisualElement.Q<VisualElement>("platform-key-features-container");
             m_KeyFeaturesContentLabel = rootVisualElement.Q<Label>("platform-key-features-content");
@@ -420,11 +424,18 @@ namespace UnityEditor.Build.Profile
             else
                 m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
 
+            m_SupportedPlatformStatusContainer.Hide();
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId)
                 && !string.IsNullOrEmpty(m_CardWarningHelpBox.text))
                 m_HelpBoxWrapper.Show();
             else
+            {
                 m_HelpBoxWrapper.Hide();
+
+                var supportedPlatformHelpBox = m_SupportedPlatformStatusContainer.Q<HelpBox>("supported-platform-status-helpbox");
+                if (Util.UpdateSupportedPlatformStatusHelpBox(supportedPlatformHelpBox, card.platformId))
+                    m_SupportedPlatformStatusContainer.Show();
+            }
 
             if (card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0)
             {

@@ -223,7 +223,7 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GameObjectBindings::FindGameObjectsWithTagForListInternal", ThrowsException = true)]
         private static extern void FindGameObjectsWithTagForListInternal(string tag, [Out, NotNull] List<GameObject> results);
- 
+
         public static void FindGameObjectsWithTag(string tag, List<GameObject> results)
         {
             FindGameObjectsWithTagForListInternal(tag, results);
@@ -429,9 +429,12 @@ namespace UnityEngine
         [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByInstanceID")]
         extern private static void SetGameObjectsActive(IntPtr instanceIds, int instanceCount, bool active);
 
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.", true)]
+        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
+            => throw new NotImplementedException("Please use SetGameObjectsActive(NativeArray<EntityId>, bool) instead.");
+
         public static unsafe void SetGameObjectsActive(NativeArray<EntityId> entityIds, bool active)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
             if (!entityIds.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(entityIds));
 
@@ -441,9 +444,11 @@ namespace UnityEngine
             SetGameObjectsActive((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, active);
         }
 
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.", true)]
+        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active) => throw new NotImplementedException("Deprecated. Please use SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.");
+
         public static unsafe void SetGameObjectsActive(ReadOnlySpan<EntityId> entityIds, bool active)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
             if (entityIds.Length == 0)
                 return;
 
@@ -456,10 +461,12 @@ namespace UnityEngine
         [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
         extern private static void InstantiateGameObjects(EntityId sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
 
+        [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.", true)]
+        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
+            => throw new NotImplementedException("Deprecated. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.");
+
         public static unsafe void InstantiateGameObjects(EntityId sourceEntityId, int count, NativeArray<EntityId> newEntityIds, NativeArray<EntityId> newTransformEntityIds, Scene destinationScene = default)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
-
             if (!newEntityIds.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(newEntityIds));
             if (!newTransformEntityIds.IsCreated)

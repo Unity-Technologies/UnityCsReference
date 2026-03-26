@@ -77,19 +77,19 @@ namespace UnityEngine
         extern internal static Vector3 GetActorAngularVelocity(IntPtr actorPtr);
 
         public EntityId colliderEntityId => ResolveShapeToEntityId(shape);
-        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
+        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", true)]
         public int colliderInstanceID => ResolveShapeToEntityId(shape);
 
         public EntityId otherColliderEntityId => ResolveShapeToEntityId(otherShape);
-        [System.Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", false)]
+        [System.Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", true)]
         public int otherColliderInstanceID => ResolveShapeToEntityId(otherShape);
 
         public EntityId bodyEntityId => ResolveActorToEntityId(actor);
-        [System.Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", false)]
+        [System.Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", true)]
         public int bodyInstanceID => ResolveActorToEntityId(actor);
 
         public EntityId otherBodyEntityId => ResolveActorToEntityId(otherActor);
-        [System.Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", false)]
+        [System.Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", true)]
         public int otherBodyInstanceID => ResolveActorToEntityId(otherActor);
 
         public Vector3 bodyVelocity => GetActorLinearVelocity(actor);

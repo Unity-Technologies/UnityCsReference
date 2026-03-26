@@ -61,6 +61,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
         void ClearElementCaches()
         {
             ClearElementNames();
@@ -68,6 +70,7 @@ namespace UnityEngine.UIElements
             m_ElementsMap?.Clear();
         }
 
+        [RequiredMember]
         [RequiredByNativeCode(Optional = true)]
         void UnregisterRootElement()
         {
@@ -87,6 +90,7 @@ namespace UnityEngine.UIElements
             Internal_AssignKnownElementNames(names, propertyNames);
         }
 
+        [RequiredMember]
         [RequiredByNativeCode(Optional = true)]
         internal void UpdateElementNames()
         {
@@ -185,6 +189,7 @@ namespace UnityEngine.UIElements
             Internal_ApplyBoundValues();
         }
 
+        [RequiredMember]
         [RequiredByNativeCode(Optional = true)]
         unsafe void IterateOnBoundValues(IntPtr values, int count)
         {

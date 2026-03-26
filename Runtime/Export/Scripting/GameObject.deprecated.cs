@@ -21,52 +21,13 @@ namespace UnityEngine
             [NativeMethod(Name = "SetSelfActive")]
             set;
         }
-        
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("gameObject.SetActiveRecursively() is obsolete. Use GameObject.SetActive(), which is now inherited by children.", false)]
+        [Obsolete("Use SetActive() instead. Note: SetActive() respects explicitly inactive children, while SetActiveRecursively forced all descendants active.", true)]
         [NativeMethod(Name = "SetActiveRecursivelyDeprecated")]
         public extern void SetActiveRecursively(bool state);
-        
-        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.", false)]
-        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
-        {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
 
-            if (instanceIDs.Length == 0)
-                return;
-
-            SetGameObjectsActive((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, active);
-        }    
-        
-        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.", false)]
-        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active)
-        {
-            if (instanceIDs.Length == 0)
-                return;
-
-            fixed (int* instanceIDsPtr = instanceIDs)
-            {
-                SetGameObjectsActive((IntPtr)instanceIDsPtr, instanceIDs.Length, active);
-            }
-        }
-        
-        [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.", false)]
-        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
-        {
-            if (!newInstanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(newInstanceIDs));
-            if (!newTransformInstanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(newTransformInstanceIDs));
-            if (count == 0)
-                return;
-            if ((count != newInstanceIDs.Length) || (count != newTransformInstanceIDs.Length))
-                throw new ArgumentException("Size mismatch! Both arrays must already be the size of count.");
-
-            InstantiateGameObjects(sourceInstanceID, (IntPtr)newInstanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformInstanceIDs.GetUnsafeReadOnlyPtr(), newInstanceIDs.Length, destinationScene);
-        }   
-        
-        [Obsolete("Obsolete. Please use GameObject.GetScene(EntityId entityId) instead.", false)]
-        public static Scene GetScene(int instanceID) => GetSceneInternal((EntityId)instanceID);        
+        [Obsolete("Obsolete. Please use GameObject.GetScene(EntityId entityId) instead.", true)]
+        public static Scene GetScene(int instanceID) => GetSceneInternal((EntityId)instanceID);
     }
 }

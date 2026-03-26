@@ -15,7 +15,9 @@ class ConfigurableSDKPlatformExtension : ISDKPlatformExtension
     public bool shouldShowPlatformSettings => sdkPlatformProvider.shouldShowPlatformSettings;
     public bool shouldShowAdditionalSettings => sdkPlatformProvider.shouldShowAdditionalSettings;
     public bool shouldShowAddSettingsButton => sdkPlatformProvider.shouldShowAddSettingsButton;
+    public bool shouldShowBuildActions => sdkPlatformProvider.shouldShowBuildActions;
     public Type[] requiredComponents => sdkPlatformProvider.requiredComponents;
+    public Type[] customFooterActions => sdkPlatformProvider.customFooterActions;
 
     public void OnMultiTargetBuildProfileCreated(BuildProfile buildProfile)
     {

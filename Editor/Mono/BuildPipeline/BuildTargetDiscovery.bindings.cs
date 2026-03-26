@@ -1212,16 +1212,32 @@ namespace UnityEditor
             return true;
         }
 
-        static bool IsFromUnityPackageSource(PackageManager.PackageInfo packageInfo)
+        public static bool IsFromUnityPackageSource(PackageManager.PackageInfo packageInfo)
         {
             if (Unsupported.IsSourceBuild())
                 return true;
             return packageInfo.GetAvailableRegistryType() == RegistryType.UnityRegistry;
         }
 
+        public static Type[] TryGetSDKRequiredComponents()
+        {
+            var extensions = k_SDKPlatformExtensions.Values;
+            List<Type> types_list = new List<Type>();
+
+            foreach (var ext in extensions)
+                types_list.AddRange(ext.requiredComponents);
+
+            return types_list.ToArray();
+        } 
+
         public static bool TryGetSDKPlatformExtension(GUID guid, out ISDKPlatformExtension sdkPlatformExtension)
         {
             return k_SDKPlatformExtensions.TryGetValue(guid, out sdkPlatformExtension);
+        }
+
+        public static Dictionary<GUID, ISDKPlatformExtension> GetAllSDKPlatformExtensions()
+        {
+            return k_SDKPlatformExtensions;
         }
 
         internal static bool TryGetPlatformInfo(GUID guid, out PlatformInfo platformInfo)
@@ -1253,9 +1269,20 @@ namespace UnityEditor
 
         /// <summary>
         /// Checks if the platform module corresponding to the given platform GUID is installed.
+        /// For multi-target platforms, it checks if at least one of the supported platform modules is installed.
         /// </summary>
         public static bool BuildPlatformModuleIsInstalled(GUID platformGuid)
         {
+            if (TryGetSupportedPlatformGuids(platformGuid, out var supportedPlatformGuids))
+            {
+                foreach (var supportedGuid in supportedPlatformGuids)
+                {
+                    if (BuildPlatformIsInstalled(GetBasePlatformGUID(supportedGuid)))
+                        return true;
+                }
+                return false;
+            }
+
             return BuildPlatformIsInstalled(GetBasePlatformGUID(platformGuid));
         }
 
@@ -1344,6 +1371,27 @@ namespace UnityEditor
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 return true;
+
+            return false;
+        }
+
+        public static bool BuildPlatformIsMultiTargetPlatform(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsMultiTargetPlatform))
+                return true;
+
+            return false;
+        }
+
+        public static bool TryGetSupportedPlatformGuids(GUID guid, out GUID[] supportedPlatformGuids)
+        {
+            supportedPlatformGuids = Array.Empty<GUID>();
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsMultiTargetPlatform))
+            {
+                supportedPlatformGuids = platformInfo.supportedPlatformGuids;
+                if (supportedPlatformGuids != null && supportedPlatformGuids.Length > 0)
+                    return true;
+            }
 
             return false;
         }

@@ -39,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SetFileAttributes(string file, FileAttributes attributes);
         FileAttributes GetFileAttributes(string file);
         void Move(string sourceDirName, string destinationDirName);
+        bool TryLoadTexture(byte[] data, out Texture2D texture);
     }
     // Proxy class IO operations. Operations that are affected by or will affect the file system should go here.
     // Stateless functions like path and file name manipulations should go to IOUtils.
@@ -180,5 +181,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void SetFileAttributes(string file, FileAttributes attributes) => new NPath(file).Attributes = attributes;
         public FileAttributes GetFileAttributes(string file) => new NPath(file).Attributes;
         public void Move(string sourceDirName, string destinationDirName) => new NPath(sourceDirName).Move(destinationDirName);
+        public bool TryLoadTexture(byte[] data, out Texture2D texture)
+        {
+            texture = new Texture2D(2, 2);
+            return texture.LoadImage(data);
+        }
     }
 }

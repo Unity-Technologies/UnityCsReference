@@ -17,13 +17,13 @@ namespace UnityEditor.SearchService
         public SearchEngineScope engineScope { get; protected set; } = SceneSearch.EngineScope;
         public IEnumerable<Type> requiredTypes { get; set; }
         public IEnumerable<string> requiredTypeNames { get; set; }
-        [Obsolete("Obsolete. Use rootIterator instead.")]
+        [Obsolete("Obsolete. Use rootIterator instead.", true)]
         public HierarchyProperty rootProperty { get => HierarchyProperty.UnsafeCastFrom(rootIterator); set => rootIterator = HierarchyIterator.UnsafeCastFrom(value); }
         public HierarchyIterator rootIterator { get; set; }
         internal SearchFilter searchFilter { get; set; }
     }
 
-    [Obsolete("ISceneSearchEngine is deprecated. Use ISceneSearchEngineV2 instead.")]
+    [Obsolete("ISceneSearchEngine is deprecated. Use ISceneSearchEngineV2 instead.", true)]
     public interface ISceneSearchEngine : IFilterEngine<HierarchyProperty>
     {}
 
@@ -120,11 +120,11 @@ namespace UnityEditor.SearchService
         }
 
         public static void RegisterEngine(ISceneSearchEngineV2 engine) => engineImp.RegisterEngine(engine);
-        [Obsolete("RegisterEngine is deprecated. Use RegisterEngine(ISceneSearchEngineV2 engine) instead.")]
+        [Obsolete("RegisterEngine is deprecated. Use RegisterEngine(ISceneSearchEngineV2 engine) instead.", true)]
         public static void RegisterEngine(ISceneSearchEngine engine) => engineImp.RegisterEngine(new SearchEngineInterop(engine));
 
         public static void UnregisterEngine(ISceneSearchEngineV2 engine) => engineImp.UnregisterEngine(engine);
-        [Obsolete("UnregisterEngine is deprecated. Use UnregisterEngine(ISceneSearchEngineV2 engine) instead.")]
+        [Obsolete("UnregisterEngine is deprecated. Use UnregisterEngine(ISceneSearchEngineV2 engine) instead.", true)]
         public static void UnregisterEngine(ISceneSearchEngine engine) => engineImp.UnregisterEngine(new SearchEngineInterop(engine)); // works because name is used to find the engine to unregister, instead of actual object reference
     }
 

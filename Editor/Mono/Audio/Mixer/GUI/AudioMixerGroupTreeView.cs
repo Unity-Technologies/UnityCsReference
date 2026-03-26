@@ -669,17 +669,16 @@ namespace UnityEditor
 
         void SaveExpandedState()
         {
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), m_AudioGroupTreeState.expandedIDs.ToArray().AsIntArray());
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+            SessionState.SetEntityIdArray(GetUniqueAudioMixerName(m_Controller), m_AudioGroupTreeState.expandedIDs.ToArray());
         }
 
         void LoadExpandedState()
         {
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            var cachedExpandedStateRaw = SessionState.GetIntArray(GetUniqueAudioMixerName(m_Controller), null);
-            if (cachedExpandedStateRaw != null)
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+            var cachedExpandedState = SessionState.GetEntityIdArray(GetUniqueAudioMixerName(m_Controller), null);
+            if (cachedExpandedState != null)
             {
-                var cachedExpandedState = Array.ConvertAll(cachedExpandedStateRaw, input => EntityId.FromULong((ulong)input));
                 m_AudioGroupTreeState.expandedIDs = new List<EntityId>(cachedExpandedState);
             }
             else

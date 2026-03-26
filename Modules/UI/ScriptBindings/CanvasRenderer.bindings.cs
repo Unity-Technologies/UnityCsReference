@@ -77,37 +77,51 @@ namespace UnityEngine
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            SplitUIVertexStreams(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, indices);
+            SplitUIVertexStreams(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, new List<Vector4>(), indices);
         }
 
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
+            SplitUIVertexStreams(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>(), indices);
+        }
+        public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
+            List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions, List<int> indices)
+        {
+            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, prevPositions);
             SplitIndicesStreamsInternal(verts, indices);
         }
 
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, indices);
+            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, new List<Vector4>(), indices);
         }
 
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            CreateUIVertexStreamInternal(verts, NoAllocHelpers.CreateReadOnlySpan(positions), NoAllocHelpers.CreateReadOnlySpan(colors), 
+
+            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>(), indices);
+        }
+        public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions, List<int> indices)
+        {
+            CreateUIVertexStreamInternal(verts, NoAllocHelpers.CreateReadOnlySpan(positions), NoAllocHelpers.CreateReadOnlySpan(colors),
                 NoAllocHelpers.CreateReadOnlySpan(uv0S), NoAllocHelpers.CreateReadOnlySpan(uv1S), NoAllocHelpers.CreateReadOnlySpan(uv2S),
                 NoAllocHelpers.CreateReadOnlySpan(uv3S), NoAllocHelpers.CreateReadOnlySpan(normals), NoAllocHelpers.CreateReadOnlySpan(tangents),
-                NoAllocHelpers.CreateReadOnlySpan(indices));
+                NoAllocHelpers.CreateReadOnlySpan(prevPositions), NoAllocHelpers.CreateReadOnlySpan(indices));
         }
 
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents)
         {
-            AddUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents);
+            AddUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, new List<Vector4>());
         }
 
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents)
         {
-            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
+            AddUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>());
+        }
+        public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions)
+        {
+            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, prevPositions);
         }
 
         [Obsolete("UI System now uses meshes.Generate a mesh and use 'SetMesh' instead", false)]
@@ -129,6 +143,7 @@ namespace UnityEngine
             var uv3S = new List<Vector4>();
             var normals = new List<Vector3>();
             var tangents = new List<Vector4>();
+            var prevPositions = new List<Vector4>();
             var indices = new List<int>();
 
             for (var i = 0; i < size; i += 4)
@@ -143,6 +158,7 @@ namespace UnityEngine
                     uv3S.Add(vertices[i + k].uv3);
                     normals.Add(vertices[i + k].normal);
                     tangents.Add(vertices[i + k].tangent);
+                    prevPositions.Add(vertices[i + k].prevPosition);
                 }
                 //Add the two triangles
                 indices.Add(i);
@@ -162,6 +178,7 @@ namespace UnityEngine
             mesh.SetUVs(1, uv1S);
             mesh.SetUVs(2, uv2S);
             mesh.SetUVs(3, uv3S);
+            mesh.SetUVs(4, prevPositions);
             mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
             SetMesh(mesh);
             DestroyImmediate(mesh);
@@ -176,11 +193,11 @@ namespace UnityEngine
 
         [StaticAccessor("UI", StaticAccessorType.DoubleColon)]
         private static extern void SplitUIVertexStreamsInternal(ReadOnlySpan<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S,
-            List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents);
+            List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions);
 
         [StaticAccessor("UI", StaticAccessorType.DoubleColon)]
         private static extern void CreateUIVertexStreamInternal(List<UIVertex> verts, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color32> colors, ReadOnlySpan<Vector4> uv0S, ReadOnlySpan<Vector4> uv1S, ReadOnlySpan<Vector4> uv2S,
-            ReadOnlySpan<Vector4> uv3S, ReadOnlySpan<Vector3> normals, ReadOnlySpan<Vector4> tangents, ReadOnlySpan<int> indices);
+            ReadOnlySpan<Vector4> uv3S, ReadOnlySpan<Vector3> normals, ReadOnlySpan<Vector4> tangents, ReadOnlySpan<Vector4> prevPositions, ReadOnlySpan<int> indices);
 
         public delegate void OnRequestRebuild();
         public static event OnRequestRebuild onRequestRebuild;

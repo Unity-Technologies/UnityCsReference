@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements
@@ -176,7 +177,6 @@ namespace UnityEngine.UIElements
         public void BindItem<T>(VisualElement element, int index, T item)
         {
             var i = 0;
-            index = GetSourceIndex(index);
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
@@ -355,74 +355,122 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_SortedToSourceIndex ??= new List<int>(m_View.itemsSource.Count);
-            m_SourceToSortedIndex ??= new List<int>(m_View.itemsSource.Count);
-            for (var i = 0; i < m_View.itemsSource.Count; i++)
+            var count = m_View.itemsSource.Count;
+            m_SortedToSourceIndex ??= new List<int>(count);
+            m_SourceToSortedIndex ??= new List<int>(count);
+
+            if (m_View.viewController is BaseTreeViewController treeViewController)
             {
-                m_SortedToSourceIndex.Add(i);
-                m_SourceToSortedIndex.Add(-1); // Fill the list to match the size of the source index
+                // For tree views, sort IDs to avoid index lookup issues during comparison
+                using var _ = ListPool<int>.Get(out var idsToSort);
+                using var __ = DictionaryPool<int, int>.Get(out var idToSourceIndex);
+
+                // Build mapping from ID to original source index before sorting
+                for (var i = 0; i < count; i++)
+                {
+                    var id = treeViewController.GetIdForIndex(i);
+                    idToSourceIndex[id] = i;
+                    idsToSort.Add(id);
+                }
+
+                idsToSort.Sort(CombinedComparisonById);
+
+                // Map sorted IDs back to their original source indices
+                for (var i = 0; i < idsToSort.Count; i++)
+                {
+                    m_SortedToSourceIndex.Add(idToSourceIndex[idsToSort[i]]);
+                }
+            }
+            else
+            {
+                // For list views, sort indices directly
+                for (var i = 0; i < count; i++)
+                {
+                    m_SortedToSourceIndex.Add(i);
+                }
+                m_SortedToSourceIndex.Sort(CombinedComparisonByIndex);
             }
 
-            m_SortedToSourceIndex.Sort(CombinedComparison);
+            // Build reverse mapping: source index -> sorted position
+            for (var i = 0; i < count; i++)
+            {
+                m_SourceToSortedIndex.Add(-1);
+            }
             for (int i = 0; i < m_SortedToSourceIndex.Count; i++)
             {
                 m_SourceToSortedIndex[m_SortedToSourceIndex[i]] = i;
             }
         }
 
-        int CombinedComparison(int a, int b)
+        int CombinedComparisonById(int idA, int idB)
         {
-            if (m_View.viewController is BaseTreeViewController treeViewController)
+            var treeViewController = m_View.viewController as BaseTreeViewController;
+            var parentIdA = treeViewController.GetParentId(idA);
+            var parentIdB = treeViewController.GetParentId(idB);
+
+            // Only sort items within the same parent.
+            if (parentIdA != parentIdB)
             {
-                var idA = treeViewController.GetIdForIndex(a);
-                var idB = treeViewController.GetIdForIndex(b);
-                var parentIdA = treeViewController.GetParentId(idA);
-                var parentIdB = treeViewController.GetParentId(idB);
+                var depthA = treeViewController.GetIndentationDepth(idA);
+                var depthB = treeViewController.GetIndentationDepth(idB);
+                var originalDepthA = depthA;
+                var originalDepthB = depthB;
 
-                // Only sort items within the same parent.
-                if (parentIdA != parentIdB)
+                // We walk up until both sides are at the same depth
+                while (depthA > depthB)
                 {
-                    var depthA = treeViewController.GetIndentationDepth(idA);
-                    var depthB = treeViewController.GetIndentationDepth(idB);
-                    var originalDepthA = depthA;
-                    var originalDepthB = depthB;
+                    depthA--;
+                    idA = parentIdA;
+                    parentIdA = treeViewController.GetParentId(parentIdA);
+                }
 
-                    // We walk up until both sides are at the same depth
-                    while (depthA > depthB)
-                    {
-                        depthA--;
-                        idA = parentIdA;
-                        parentIdA = treeViewController.GetParentId(parentIdA);
-                    }
+                while (depthB > depthA)
+                {
+                    depthB--;
+                    idB = parentIdB;
+                    parentIdB = treeViewController.GetParentId(parentIdB);
+                }
 
-                    while (depthB > depthA)
-                    {
-                        depthB--;
-                        idB = parentIdB;
-                        parentIdB = treeViewController.GetParentId(parentIdB);
-                    }
+                // Now both are at the same depth, we then walk up the tree until we hit the same element
+                while (parentIdA != parentIdB)
+                {
+                    idA = parentIdA;
+                    idB = parentIdB;
+                    parentIdA = treeViewController.GetParentId(parentIdA);
+                    parentIdB = treeViewController.GetParentId(parentIdB);
+                }
 
-                    // Now both are at the same depth, we then walk up the tree until we hit the same element
-                    while (parentIdA != parentIdB)
-                    {
-                        idA = parentIdA;
-                        idB = parentIdB;
-                        parentIdA = treeViewController.GetParentId(parentIdA);
-                        parentIdB = treeViewController.GetParentId(parentIdB);
-                    }
-
-                    // We were looking at a node and one of its parent, so compare the original depths.
-                    if (idA == idB)
-                    {
-                        return originalDepthA.CompareTo(originalDepthB);
-                    }
-
-                    // Compare the indices now that we're at the same depth.
-                    a = treeViewController.GetIndexForId(idA);
-                    b = treeViewController.GetIndexForId(idB);
+                // We were looking at a node and one of its parent, so compare the original depths.
+                if (idA == idB)
+                {
+                    return originalDepthA.CompareTo(originalDepthB);
                 }
             }
 
+            // Get indices for the actual column comparison
+            var indexA = treeViewController.GetIndexForId(idA);
+            var indexB = treeViewController.GetIndexForId(idB);
+
+            var result = 0;
+            foreach (var sortedColumn in header.sortedColumns)
+            {
+                result = sortedColumn.column.comparison?.Invoke(indexA, indexB) ?? 0;
+                if (result != 0)
+                {
+                    if (sortedColumn.direction == SortDirection.Descending)
+                    {
+                        result = -result;
+                    }
+                    break;
+                }
+            }
+
+            // When equal, we keep the current order by comparing IDs.
+            return result == 0 ? idA.CompareTo(idB) : result;
+        }
+
+        int CombinedComparisonByIndex(int a, int b)
+        {
             var result = 0;
             foreach (var sortedColumn in header.sortedColumns)
             {

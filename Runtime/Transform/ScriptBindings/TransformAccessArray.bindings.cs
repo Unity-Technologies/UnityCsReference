@@ -555,7 +555,7 @@ namespace UnityEngine.Jobs
             Add(m_TransformArray, transform);
         }
 
-        [Obsolete("TransformAccessArray.Add(int) is obsolete. Use TransformAccessArray.Add(EntityId) instead.")]
+        [Obsolete("TransformAccessArray.Add(int) is obsolete. Use TransformAccessArray.Add(EntityId) instead.", true)]
         public void Add(int instanceId)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

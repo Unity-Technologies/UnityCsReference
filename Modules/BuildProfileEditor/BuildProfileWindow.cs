@@ -67,6 +67,9 @@ namespace UnityEditor.Build.Profile
         AssetImportOverridesWindow m_AssetImportWindow;
         Background m_WarningIcon;
 
+        BuildProfileWindowActionProvider m_ActionProvider;
+        List<Button> m_CustomButtons;
+
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
         {
@@ -172,6 +175,8 @@ namespace UnityEditor.Build.Profile
             if (m_BuildProfileDataSource != null)
                 m_BuildProfileDataSource.Dispose();
             m_BuildProfileDataSource = new BuildProfileDataSource(this);
+            m_ActionProvider = new BuildProfileWindowActionProvider();
+            m_CustomButtons = new List<Button>();
             m_ProfileListViews = new PlatformListView(this, m_BuildProfileDataSource);
             m_BuildProfileSelection = new BuildProfileWindowSelection(rootVisualElement, m_ProfileListViews);
             m_BuildProfileContextMenu = new BuildProfileContextMenu(this, m_BuildProfileSelection, m_BuildProfileDataSource);
@@ -581,24 +586,37 @@ namespace UnityEditor.Build.Profile
             m_AdditionalActionsDropdown.Show();
         }
 
-        void OnActivateButtonClicked()
+        internal void OnActivateButtonClicked()
         {
             if (!m_BuildProfileSelection.HasSelection())
                 return;
 
             BuildProfile activateProfile = m_BuildProfileSelection.Get(0);
             if (activateProfile.IsActiveBuildProfileOrPlatform())
-                return;
+            {
+                if (!activateProfile.isMultiTarget)
+                    return;
+
+                if (activateProfile.activePlatformGuid == activateProfile.selectedPlatformGuid)
+                    return;
+            }
 
             // before we update the BuildProfileContext's activeProfile,
             // we want to capture the current active profile to check if an editor restart is required
             // because certain player settings changed that will require it
             var currentBuildProfile = BuildProfileContext.activeProfile;
 
+            if (activateProfile.isMultiTarget)
+                activateProfile.activePlatformGuid = activateProfile.selectedPlatformGuid;
+
             // success here is handling the player settings, failure is the user cancels handling the restart.
             var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(currentBuildProfile, activateProfile);
             if (!isSuccess)
+            {
+                if (activateProfile.isMultiTarget)
+                    activateProfile.activePlatformGuid = new GUID(string.Empty);
                 return;
+            }
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
@@ -622,6 +640,7 @@ namespace UnityEditor.Build.Profile
             RebuildProfileListViews();
 
             UpdateToolbarButtonState();
+            RepaintBuildProfileInspector();
         }
 
         void OnBuildButtonClicked(BuildOptions optionFlags)
@@ -647,6 +666,10 @@ namespace UnityEditor.Build.Profile
             var isModuleInstalled = BuildProfileContext.IsModuleInstalled(profile);
             var isBuildAutomationSupported = BuildProfileContext.IsBuildAutomationSupported(profile);
 
+            // Reset any custom buttons
+            m_CustomButtons.ForEach(button => button.RemoveFromHierarchy());
+            m_CustomButtons.Clear();
+
             if (profile is null)
             {
                 m_WindowState.activateAction = ActionState.Hidden;
@@ -657,29 +680,81 @@ namespace UnityEditor.Build.Profile
             }
             else if (profile.IsActiveBuildProfileOrPlatform())
             {
+                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
+
                 m_WindowState.activateAction = ActionState.Hidden;
-                m_WindowState.buildAction = ActionState.Enabled;
-                m_WindowState.buildAndRunAction = ActionState.Enabled;
-                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                    isModuleInstalled ?
-                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+
+                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
+                {
+                    HideBuildButtonActions();
+                }
+                else
+                {
+                    m_WindowState.buildAction = ActionState.Enabled;
+                    m_WindowState.buildAndRunAction = ActionState.Enabled;
+                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                        isModuleInstalled ?
+                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+                }
+
+                if (sdkPlatformExtension != null)
+                    CreateFormButtonsForSDKPlatforms(profile);
+
                 m_WindowState.Refresh();
             }
             else
             {
+                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
+
                 bool canBuild = profile.CanBuildLocally();
                 m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
-                m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
-                m_WindowState.buildAndRunAction = ActionState.Hidden;
-                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                    isModuleInstalled ?
-                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+
+                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
+                {
+                    HideBuildButtonActions();
+                } 
+                else
+                {
+                    m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
+                    m_WindowState.buildAndRunAction = ActionState.Hidden;
+                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                        isModuleInstalled ?
+                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+                }
+
                 m_WindowState.Refresh();
             }
+        }
+
+        void HideBuildButtonActions()
+        {
+            m_WindowState.buildAction = ActionState.Hidden;
+            m_WindowState.buildAndRunAction = ActionState.Hidden;
+            m_WindowState.buildInCloudPackageAction = ActionState.Hidden;
+        }
+
+        void CreateFormButtonsForSDKPlatforms(BuildProfile profile)
+        {
+            var actions = m_ActionProvider.GetAllActions(profile);
+            foreach (var action in actions)
+            {
+                var button = new Button { text = action.GetDisplayName() };
+
+                button.clicked += () => action.OnClick(profile);
+
+                button.SetEnabled(action.IsClickable(profile));
+                button.AddToClassList("form-button");
+                button.AddToClassList("ml-medium");
+
+                m_CustomButtons.Add(button);
+            }
+
+            foreach (var button in m_CustomButtons)
+                m_SelectionFooter.Add(button);
         }
 
         /// <summary>

@@ -18,11 +18,6 @@ namespace UnityEngine.UIElements
             return isWorldSpace && (parentUI == null || panelComponent.position == Position.Absolute);
         }
 
-        public static RuntimePanel GetContainerPanel(IPanelComponent panelComponent)
-        {
-            VisualElement rootVE = panelComponent?.GetRootVisualElement();
-            return (RuntimePanel)rootVE?.elementPanel;
-        }
 
         public static void ComputeParentTransform(Vector2 pivotOffset, float pixelsPerUnit, out Matrix4x4 matrix)
         {
@@ -186,6 +181,14 @@ namespace UnityEngine.UIElements
             Gizmos.DrawWireCube(center, size);
 
             Gizmos.matrix = matrixBackup;
+        }
+
+        static internal Vector3 GetPanelPosition(GameObject gameObject, IEventHandler pickedElement, Ray worldRay)
+        {
+            var documentRay = gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+            ((VisualElement)pickedElement).IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
+            var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
+            return documentPoint;
         }
     }
 }

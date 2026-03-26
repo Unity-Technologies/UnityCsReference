@@ -40,7 +40,7 @@ namespace UnityEngine
 
         public EntityId entityId => m_ColliderEntityId;
 
-        [System.Obsolete("instanceID is deprecated, use entityId instead.", false)]
+        [System.Obsolete("instanceID is deprecated, use entityId instead.", true)]
         public int instanceID => m_ColliderEntityId;
 
         // note this is a main-thread only API
@@ -291,7 +291,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct ClosestPointCommand
     {
-        [System.Obsolete("ClosestPointCommand(Vector3, int, Vector3, Quaternion, Vector3) is obsolete. Use ClosestPointCommand(Vector3, EntityId, Vector3, Quaternion, Vector3) instead.")]
+        [System.Obsolete("ClosestPointCommand(Vector3, int, Vector3, Quaternion, Vector3) is obsolete. Use ClosestPointCommand(Vector3, EntityId, Vector3, Quaternion, Vector3) instead.", true)]
         public ClosestPointCommand(Vector3 point, int colliderInstanceID, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             this.point = point;
@@ -321,7 +321,7 @@ namespace UnityEngine
 
         public Vector3 point { get; set; }
         public EntityId colliderEntityId { get; set; }
-        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
+        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", true)]
         public int colliderInstanceID
         {
             get { return colliderEntityId; }

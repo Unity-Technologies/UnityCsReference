@@ -370,6 +370,9 @@ namespace UnityEngine.UIElements.UIR
 
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
+            bool prevInvertCulling = GL.invertCulling;
+            if (prevInvertCulling)
+                GL.invertCulling = false;
 
             float pixelsPerPoint = panel.scaledPixelsPerPoint;
 
@@ -421,6 +424,9 @@ namespace UnityEngine.UIElements.UIR
             m_BlockDirtyRegistration = false;
 
             Utility.DisableScissor();
+
+            if (prevInvertCulling)
+                GL.invertCulling = true;
 
             if (shouldResetRT)
                 RenderTexture.active = oldRT;

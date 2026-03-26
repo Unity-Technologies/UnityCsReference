@@ -293,19 +293,19 @@ namespace UnityEngine.UIElements
         {
             var settings = input != null ? input.settings : Settings.Default;
 
-            UIElementsRuntimeUtility.overrideUseDefaultEventSystem = settings.panelInputRedirection switch
+            // The default event system will not be there is the component is manually created before any document exists.
+            if (IRuntimePanel.defaultEventSystem != null)
             {
-                PanelInputRedirection.Never => true,
-                PanelInputRedirection.Always => false,
-                _ => null
-            };
-            UIElementsRuntimeUtility.defaultEventSystem.worldSpaceLayers = settings.interactionLayers;
-            UIElementsRuntimeUtility.defaultEventSystem.worldSpaceMaxDistance = settings.maxInteractionDistance;
-            UIElementsRuntimeUtility.defaultEventSystem.raycaster = settings.processWorldSpaceInput
-                ? settings.defaultEventCameraIsMainCamera
-                    ? new MainCameraScreenRaycaster()
-                    : new CameraScreenRaycaster { cameras = (Camera[]) settings.eventCameras.Clone() }
-                : new CameraScreenRaycaster { cameras = Array.Empty<Camera>() };
+                IRuntimePanel.defaultEventSystem.overrideUseDefaultEventSystem = settings.panelInputRedirection switch
+                {
+                    PanelInputRedirection.Never => true,
+                    PanelInputRedirection.Always => false,
+                    _ => null
+                };
+                IRuntimePanel.defaultEventSystem.worldSpaceLayers = settings.interactionLayers;
+                IRuntimePanel.defaultEventSystem.worldSpaceMaxDistance = settings.maxInteractionDistance;
+                IRuntimePanel.defaultEventSystem.ApplyRaycasterAsDefault(settings.processWorldSpaceInput, settings.defaultEventCameraIsMainCamera, settings.eventCameras);
+            }
 
             onApply?.Invoke(input);
         }

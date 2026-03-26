@@ -112,28 +112,28 @@ namespace UnityEngine.SceneManagement
         /// Implicit conversion from <see cref="SceneHandle"/> to <see langword="int"/>.
         /// </summary>
         /// <param name="handle">The SceneHandle</param>
-        [Obsolete("Implicit conversion from SceneHandle to int is deprecated. Use SceneHandle.GetRawData() instead")]
+        [Obsolete("Implicit conversion from SceneHandle to int is deprecated. Use SceneHandle.GetRawData() instead", true)]
         public static implicit operator int(SceneHandle handle) => handle.m_Value;
 
         /// <summary>
         /// Implicit conversion from <see langword="int"/> to <see cref="SceneHandle"/>.
         /// </summary>
         /// <param name="handle"></param>
-        [Obsolete("Implicit conversion from int to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead")]
+        [Obsolete("Implicit conversion from int to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead", true)]
         public static implicit operator SceneHandle(int handle) => FromRawData((ulong)handle);
 
         /// <summary>
         /// Implicit conversion from <see cref="SceneHandle"/> to <see langword="uint"/>.
         /// </summary>
         /// <param name="handle">The SceneHandle</param>
-        [Obsolete("Implicit conversion from SceneHandle to uint is deprecated. Use SceneHandle.GetRawData() instead")]
+        [Obsolete("Implicit conversion from SceneHandle to uint is deprecated. Use SceneHandle.GetRawData() instead",true)]
         public static implicit operator uint(SceneHandle handle) => (uint)(int)handle.m_Value;
 
         /// <summary>
         /// Implicit conversion from <see langword="uint"/> to <see cref="SceneHandle"/>.
         /// </summary>
         /// <param name="handle"></param>
-        [Obsolete("Implicit conversion from uint to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead")]
+        [Obsolete("Implicit conversion from uint to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead", true)]
         public static implicit operator SceneHandle(uint handle) => FromRawData(handle);
 
         public override int GetHashCode() => m_Value.GetHashCode();

@@ -241,14 +241,13 @@ namespace UnityEditor
             hasModifications = AddTreeViewItemRecursive(hiddenRoot, m_PrefabInstanceRoot, entityIdToPrefabOverridesMap);
             if (!hasModifications)
             {
-                int noOverridesItemId = SessionState.GetInt("NoOverridesItemId", 0);
-                if (noOverridesItemId == 0)
+                var noOverridesItemId = SessionState.GetEntityId("NoOverridesItemId", EntityId.None);
+                if (noOverridesItemId == EntityId.None)
                 {
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    noOverridesItemId = (int)EntityId.ToULong(EntityId.AllocateNextLowestEntityId());
-                    SessionState.SetInt("NoOverridesItemId", noOverridesItemId);
+                    noOverridesItemId = EntityId.AllocateNextLowestEntityId();
+                    SessionState.SetEntityId("NoOverridesItemId", noOverridesItemId);
                 }
-                hiddenRoot.AddChild(new TreeViewItem { id = EntityId.FromULong((ulong)noOverridesItemId), depth = 0, displayName = "No Overrides" });
+                hiddenRoot.AddChild(new TreeViewItem { id = noOverridesItemId, depth = 0, displayName = "No Overrides" });
             }
             else
             {

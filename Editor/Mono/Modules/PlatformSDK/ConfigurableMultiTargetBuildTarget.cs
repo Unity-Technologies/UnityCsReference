@@ -16,6 +16,7 @@ internal interface IMultiTargetBuildTarget : IBuildTarget
 class ConfigurableMultiTargetBuildTarget : ConfigurableBuildTarget, IMultiTargetBuildTarget
 {
     public GUID selectedGuid => m_BuildTarget.Guid;
+    public IBuildTarget[] availableBuildTargets => m_AvailableBuildTargets;
 
     IBuildTarget[] m_AvailableBuildTargets;
 

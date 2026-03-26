@@ -42,6 +42,7 @@ namespace UnityEditor.Build.Profile
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         public const string platformRequirementWarningHelpboxName = "helpbox-card-warning";
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
+        static readonly string k_SupportedPlatformStatus = L10n.Tr("{0} module installed, {1} module not loaded.");
         static readonly string k_SDKPlatformPackageNotInstalled = L10n.Tr("{0} SDK Platform package is not installed.");
         static readonly string k_DerivedPlatformInactive = L10n.Tr("{0} is currently disabled.");
         static readonly string k_DerivedPlatformDisabled = L10n.Tr("{0} was disabled via command-line arguments.");
@@ -234,11 +235,9 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static bool IsModuleInstalled(GUID platformId)
         {
-            var (buildTarget, _) = GetBuildTargetAndSubtarget(platformId);
-
             bool installed = BuildTargetDiscovery.BuildPlatformIsInstalled(platformId);
             return installed
-                && BuildPipeline.LicenseCheck(buildTarget)
+                && IsBuildProfileLicensed(platformId)
                 && ModuleManager.IsPlatformSupportLoadedByGuid(platformId);
         }
 
@@ -253,6 +252,16 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static bool IsBuildProfileSupported(GUID platformId)
         {
+            if (BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformId, out var supportedPlatformGuids))
+            {
+                foreach (var supportedGuid in supportedPlatformGuids)
+                {
+                    if (ModuleManager.GetBuildProfileExtension(supportedGuid) != null)
+                        return true;
+                }
+                return false;
+            }
+
             return ModuleManager.GetBuildProfileExtension(platformId) != null;
         }
 
@@ -267,8 +276,32 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static bool IsBuildProfileLicensed(GUID platformId)
         {
-            var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
-            return BuildPipeline.LicenseCheck(buildTarget);
+            if (!BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformId, out var supportedPlatformGuids))
+            {
+                var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
+                return BuildPipeline.LicenseCheck(buildTarget);
+            }
+
+            foreach (var supportedGuid in supportedPlatformGuids)
+            {
+                var buildTarget = GetBuildTargetAndSubtarget(supportedGuid).Item1;
+                if (!BuildPipeline.LicenseCheck(buildTarget))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static ISDKPlatformExtension GetSDKPlatformExtension(GUID platformId)
+        {
+            if (BuildTargetDiscovery.TryGetSDKPlatformExtension(platformId, out var extension))
+                return extension;
+            return null;
+        }
+
+        public static Dictionary<GUID, ISDKPlatformExtension> GetAllSDKPlatformExtensions()
+        {
+            return BuildTargetDiscovery.GetAllSDKPlatformExtensions();
         }
 
         /// <summary>
@@ -341,8 +374,16 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void UpdateHelpBoxForLicenseNotFound(HelpBox helpbox, GUID platformId)
         {
-            var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
             string displayName = GetModuleDisplayName(platformId);
+            if (BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformId, out var supportedPlatformGuids))
+            {
+                var displayNames = new List<string>();
+                foreach (var supportedGuid in supportedPlatformGuids)
+                    displayNames.Add(GetModuleDisplayName(supportedGuid));
+                displayName += " (" + string.Join(", ", displayNames) + ")";
+            }
+
+            var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
             string licenseMsg = L10n.Tr("Your license does not cover {0} Publishing.");
             string buttonMsg = L10n.Tr("Go to Our Online Store");
             string url = k_BuyProUrl;
@@ -979,6 +1020,11 @@ namespace UnityEditor.Build.Profile
             return BuildTargetDiscovery.GetAllPlatformPackageNames();
         }
 
+        public static bool IsFromUnityPackageSource(PackageManager.PackageInfo packageInfo)
+        {
+            return BuildTargetDiscovery.IsFromUnityPackageSource(packageInfo);
+        }
+
         public static string BuildPlatformDescription(GUID platformGuid)
         {
             return BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
@@ -1056,7 +1102,11 @@ namespace UnityEditor.Build.Profile
 
             if (currentBuildProfile != null)
             {
-                currentBuildTarget = currentBuildProfile.buildTarget;
+                // For build platform switch on the active multi-target profile, buildTarget
+                // is already mutated, so falling back to the pre-switch active buildTarget.
+                if (currentBuildProfile != nextBuildProfile)
+                    currentBuildTarget = currentBuildProfile.buildTarget;
+
                 if (currentBuildProfile.playerSettings != null)
                 {
                     currentPlayerSettings = currentBuildProfile.playerSettings;
@@ -1231,22 +1281,93 @@ namespace UnityEditor.Build.Profile
             PackageManager.Client.AddAndRemove(neededPackages.ToArray());
         }
 
-        static void UpdateHelpBoxForPlatformNotInstalled(GUID platformGuid, HelpBox helpbox)
+        /// <summary>
+        /// Updates the provided helpBox with the supported platform status for the given multi-target platform GUID.
+        /// Used in the Platform Browser when not all supported platforms of a multi-target platform are installed to
+        /// inform the users which platforms are installed and which are available for installation.
+        /// </summary>
+        public static bool UpdateHelpBoxForSupportedPlatformStatus(GUID platformGuid, HelpBox helpbox)
         {
-            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
-            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
+            if (!BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformGuid, out GUID[] supportedPlatformGuids))
+                return false;
 
-            helpbox.text = string.Format(k_NoModuleLoaded, displayName) + "\n" + k_EditorWillNeedToBeReloaded;
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(platformGuid);
+            var downloadPlatformGuid = new GUID();
 
-            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
+            var installedPlatforms = new List<string>();
+            var availablePlatforms = new List<string>();
+            foreach (var guid in supportedPlatformGuids)
             {
-                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(platformGuid);
+                var name = GetClassicPlatformDisplayName(guid);
+                if (IsModuleInstalled(guid))
+                    installedPlatforms.Add(name);
+                else
+                {
+                    if (downloadPlatformGuid.Empty())
+                        downloadPlatformGuid = guid;
+
+                    availablePlatforms.Add(name);
+                }
+            }
+
+            if (availablePlatforms.Count == 0)
+                return false;
+
+            var installedPlatformDisplayNames = installedPlatforms.Count > 0
+                ? $"{displayName} ({string.Join(", ", installedPlatforms)})" : displayName;
+            var availablePlatformDisplayNames = $"({string.Join(", ", availablePlatforms)})";
+
+            helpbox.text = string.Format(k_SupportedPlatformStatus, installedPlatformDisplayNames, availablePlatformDisplayNames) +
+                "\n" + k_EditorWillNeedToBeReloaded;
+
+            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(downloadPlatformGuid))
+            {
+                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(downloadPlatformGuid);
                 helpbox.buttonText = k_OpenDownloadPage.ToString();
                 helpbox.onButtonClicked += () => Help.BrowseURL(url);
             }
             else
             {
-                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(platformGuid);
+                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(downloadPlatformGuid);
+                helpbox.buttonText = k_InstallModuleWithHub.ToString();
+                helpbox.onButtonClicked += () => Help.BrowseURL(url);
+            }
+
+            return true;
+        }
+
+        static void UpdateHelpBoxForPlatformNotInstalled(GUID platformGuid, HelpBox helpbox)
+        {
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
+            var downloadPlatformGuid = platformGuid;
+
+            if (BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformGuid, out var supportedPlatformGuids))
+            {
+                downloadPlatformGuid = supportedPlatformGuids[0];
+
+                var supportedDisplayNames = new List<string>();
+                foreach (var supportedGuid in supportedPlatformGuids)
+                {
+                    var baseSupportedGuid = BuildTargetDiscovery.GetBasePlatformGUID(supportedGuid);
+                    var supportedDisplayName = BuildTargetDiscovery.BuildPlatformDisplayName(baseSupportedGuid);
+                    if (!supportedDisplayNames.Contains(supportedDisplayName))
+                        supportedDisplayNames.Add(supportedDisplayName);
+                }
+                displayName += " (" + string.Join(", ", supportedDisplayNames) + ")";
+            }
+
+            helpbox.text = string.Format(k_NoModuleLoaded, displayName) + "\n" + k_EditorWillNeedToBeReloaded;
+
+            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(downloadPlatformGuid))
+            {
+                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(downloadPlatformGuid);
+                helpbox.buttonText = k_OpenDownloadPage.ToString();
+                helpbox.onButtonClicked += () => Help.BrowseURL(url);
+            }
+            else
+            {
+                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(downloadPlatformGuid);
                 helpbox.buttonText = k_InstallModuleWithHub.ToString();
                 helpbox.onButtonClicked += () => Help.BrowseURL(url);
             }

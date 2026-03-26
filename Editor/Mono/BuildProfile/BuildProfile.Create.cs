@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
 using UnityEditor.Modules;
@@ -167,6 +168,10 @@ namespace UnityEditor.Build.Profile
 
             // OnEnable must be called after CreateAsset so that serialized fields are properly initialized.
             buildProfile.OnEnable();
+
+            if (BuildTargetDiscovery.TryGetSDKPlatformExtension(platformId, out var sdkExtension))
+                sdkExtension.OnMultiTargetBuildProfileCreated(buildProfile);
+
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
             return buildProfile;
@@ -220,11 +225,79 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
+            if (TryGetSupportedIBuildTargets(out var supportedTargets))
+            {
+                var platformSettings = new List<AdditionalPlatformSettingsData>();
+                foreach (var target in supportedTargets)
+                {
+                    var guid = target.Guid;
+                    IBuildProfileExtension extension = ModuleManager.GetBuildProfileExtension(guid);
+                    if (extension == null)
+                        continue;
+
+                    platformSettings.Add(new AdditionalPlatformSettingsData
+                        { platformGuid = guid, platformSettings = extension.CreateBuildProfilePlatformSettings() });
+                }
+
+                if (platformSettings.Count == 0)
+                    return;
+
+                additionalPlatformBuildSettings = platformSettings.ToArray();
+                platformBuildProfile = additionalPlatformBuildSettings[0].platformSettings;
+                EditorUtility.SetDirty(this);
+                return;
+            }
+
             IBuildProfileExtension buildProfileExtension = ModuleManager.GetBuildProfileExtension(platformGuid);
             if (buildProfileExtension != null && ModuleManager.IsPlatformSupportLoadedByGuid(platformGuid))
             {
                 platformBuildProfile = buildProfileExtension.CreateBuildProfilePlatformSettings();
                 EditorUtility.SetDirty(this);
+            }
+        }
+
+        /// <summary>
+        /// For multi-target platform profiles, checks if there are any installed supported targets
+        /// that do not have platform settings created yet, and creates them if necessary.
+        /// </summary>
+        void TryCreateAdditionalPlatformSettings()
+        {
+            if (!TryGetSupportedIBuildTargets(out var supportedTargets))
+                return;
+
+            var newSettings = new List<AdditionalPlatformSettingsData>();
+            foreach (var target in supportedTargets)
+            {
+                var guid = target.Guid;
+                if (HasPlatformSettings(guid))
+                    continue;
+
+                IBuildProfileExtension extension = ModuleManager.GetBuildProfileExtension(guid);
+                if (extension == null)
+                    continue;
+
+                newSettings.Add(new AdditionalPlatformSettingsData
+                {
+                    platformGuid = guid,
+                    platformSettings = extension.CreateBuildProfilePlatformSettings()
+                });
+            }
+
+            if (newSettings.Count == 0)
+                return;
+
+            var startIndex = m_AdditionalPlatformBuildSettings.Length;
+            Array.Resize(ref m_AdditionalPlatformBuildSettings, startIndex + newSettings.Count);
+            for (int i = 0; i < newSettings.Count; i++)
+                m_AdditionalPlatformBuildSettings[startIndex + i] = newSettings[i];
+
+            EditorUtility.SetDirty(this);
+
+            bool HasPlatformSettings(GUID guid)
+            {
+                foreach (var setting in m_AdditionalPlatformBuildSettings)
+                    if (setting.platformGuid == guid) return true;
+                return false;
             }
         }
     }
