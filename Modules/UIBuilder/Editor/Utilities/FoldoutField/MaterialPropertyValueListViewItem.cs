@@ -100,7 +100,9 @@ namespace Unity.UI.Builder
                 evt.newMaterialDefinition = newMatDef;
                 evt.refreshField = false;
 
-                // Update the parent field value, but there's no need to refresh the list
+                // Update the parent field value, but there's no need to refresh the list.
+                // Calling SetValueWithoutNotify here causes a listview refresh that causes stutters
+                // when modifying the values by dragging the field.
                 m_ParentField.SetValueWithoutRefresh(newMatDef);
 
                 SendEvent(evt);

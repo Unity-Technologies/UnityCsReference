@@ -3029,6 +3029,9 @@
     <Compile Include="..\..\Editor\Mono\PlatformSupport\ReorderableTextureList.cs">
       <Link>Editor\Mono\PlatformSupport\ReorderableTextureList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayModeTintResolver.cs">
+      <Link>Editor\Mono\PlayModeTintResolver.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayModeView\PlayModeAnalytics.cs">
       <Link>Editor\Mono\PlayModeView\PlayModeAnalytics.cs</Link>
     </Compile>
@@ -4618,6 +4621,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTarget.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTargetEditor.cs">
+      <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceGeneralSettingsPerBuildTargetEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceLoaderInfo.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\AdaptivePerformanceLoaderInfo.cs</Link>
@@ -6427,6 +6433,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\GraphViewCullingState.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\GraphViewCullingState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelViewParts\CapsuleNodePortContainerPart.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelViewParts\CapsuleNodePortContainerPart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelViewParts\Context\AddBlockPart.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelViewParts\Context\AddBlockPart.cs</Link>

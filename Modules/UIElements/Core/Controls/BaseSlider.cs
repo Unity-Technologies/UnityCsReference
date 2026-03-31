@@ -729,13 +729,13 @@ namespace UnityEngine.UIElements
                 {
                     // Make sure the minimum width of drag element is honoured
                     float elemMinWidth = resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : resolvedStyle.minWidth.value;
-                    inlineStyles.width = Mathf.Round(Mathf.Max(dragContainer.layout.width * factor, elemMinWidth));
+                    inlineStyles.width = Mathf.Round(Mathf.Max(dragContainer.layoutSize.x * factor, elemMinWidth));
                 }
                 else
                 {
                     // Make sure the minimum height of drag element is honoured
                     float elemMinHeight = resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : resolvedStyle.minHeight.value;
-                    inlineStyles.height = Mathf.Round(Mathf.Max(dragContainer.layout.height * factor, elemMinHeight));
+                    inlineStyles.height = Mathf.Round(Mathf.Max(dragContainer.layoutSize.y * factor, elemMinHeight));
                 }
             }
             else
@@ -787,7 +787,7 @@ namespace UnityEngine.UIElements
 
                 // This is the main calculation for the location of the thumbs / dragging element
                 float offsetForThumbFullWidth = -dragElement.resolvedStyle.marginLeft - dragElement.resolvedStyle.marginRight;
-                float totalWidth = dragContainer.layout.width - dragElementWidth + offsetForThumbFullWidth;
+                float totalWidth = dragContainer.layoutSize.x - dragElementWidth + offsetForThumbFullWidth;
                 float newLeft = directionalNormalizedPosition * totalWidth;
 
                 if (float.IsNaN(newLeft)) //This can happen when layout is not computed yet

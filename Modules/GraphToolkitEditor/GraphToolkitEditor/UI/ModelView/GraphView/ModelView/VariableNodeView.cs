@@ -55,18 +55,11 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            SinglePortContainerPart portContainer;
-
             if (NodeModel is VariableNodeModel variableNodeModel)
             {
                 var variableDeclarationModel = variableNodeModel.VariableDeclarationModel;
                 if (variableDeclarationModel == null)
                     return;
-
-                if (variableNodeModel.OutputPort != null)
-                    portContainer = PartList.GetPart(outputPortContainerPartName) as SinglePortContainerPart;
-                else
-                    portContainer = PartList.GetPart(inputPortContainerPartName) as SinglePortContainerPart;
 
                 m_ScopeImage.Scope = variableDeclarationModel.Scope;
                 m_ScopeImage.ReadWriteModifiers = variableDeclarationModel.Modifiers;
@@ -74,7 +67,7 @@ namespace Unity.GraphToolkit.Editor
                 // We have to wait for the style to be resolved to get the right Port Color.
                 m_ScopeImage.RegisterCallbackOnce<GeometryChangedEvent>(_ =>
                 {
-                    m_ScopeImage.Color = portContainer?.Port?.PortColor ?? Port.DefaultPortColor;
+                    m_ScopeImage.Color = m_CapsuleNodePortContainerPart?.FirstPort?.PortColor ?? Port.DefaultPortColor;
                 });
             }
         }

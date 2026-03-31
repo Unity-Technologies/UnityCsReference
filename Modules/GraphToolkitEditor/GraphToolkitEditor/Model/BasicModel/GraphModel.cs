@@ -1788,7 +1788,11 @@ namespace Unity.GraphToolkit.Editor
             if (guid.isValid)
                 nodeModel.SetGuid(guid);
             initializationCallback?.Invoke(nodeModel);
-            nodeModel.OnCreateNode();
+
+            // Only call OnCreateNode for nodes that are not block nodes.
+            // Block nodes call OnCreateNode in ContextNodeModel.InsertBlock after their context node is assigned.
+            if (!typeof(BlockNodeModel).IsAssignableFrom(nodeTypeToCreate))
+                nodeModel.OnCreateNode();
 
             return nodeModel;
         }
@@ -3460,7 +3464,8 @@ namespace Unity.GraphToolkit.Editor
             else
             {
                 portalName = nodeModel.Title ?? "";
-                var portName = outputPortModel.Title ?? "";
+
+                var portName = outputPortModel.ComputePortLabel(true) ?? "";
                 if (!string.IsNullOrEmpty(portName))
                     portalName += " - " + portName;
             }

@@ -226,6 +226,7 @@ namespace UnityEngine.UIElements
 
         internal IPointerEvent sourcePointerEvent { get; set; }
         internal bool recomputeTopElementUnderMouse { get; set; }
+        internal Ray? panelRay { get; set; }
 
         IPointerEvent IMouseEventInternal.sourcePointerEvent => sourcePointerEvent;
         bool IMouseEventInternal.recomputeTopElementUnderMouse => recomputeTopElementUnderMouse;
@@ -233,6 +234,7 @@ namespace UnityEngine.UIElements
         int IPointerOrMouseEvent.pointerId => PointerId.mousePointerId;
         Vector3 IPointerOrMouseEvent.position => mousePosition;
         Vector3 IPointerOrMouseEvent.deltaPosition { get => mouseDelta; set => mouseDelta = value; }
+        Ray? IPointerOrMouseEvent.panelRay { get => panelRay; set => panelRay = value; }
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -255,6 +257,7 @@ namespace UnityEngine.UIElements
             pressedButtons = 0;
             sourcePointerEvent = null;
             recomputeTopElementUnderMouse = false;
+            panelRay = null;
         }
 
         /// <summary>

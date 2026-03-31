@@ -694,6 +694,11 @@ namespace UnityEngine.Audio
             PerformRecursiveUpdateInternal(handle, control);
         }
 
+        public static unsafe bool IsSystemWideReconfiguring(ControlHeader* control)
+        {
+            return IsSystemWideReconfiguringInternal(control);
+        }
+
         public static unsafe ProcessorInstance.Response SendMessageToProcessor(ProcessorHeader* header, ControlHeader* control, ProcessorInstance.Message* message)
         {
             return SendMessageToProcessorInternal(header, control, message);
@@ -704,6 +709,9 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::PerformRecursiveUpdate", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe void PerformRecursiveUpdateInternal(Unity.Audio.Handle handle, /*ControlHeader* */ void* control);
+
+        [NativeMethod(Name = "audio::IsSystemWideReconfiguring", IsFreeFunction = true)]
+        static extern unsafe bool IsSystemWideReconfiguringInternal(/*ControlHeader* */ void* control);
 
         [NativeMethod(Name = "audio::PerformRecursiveConfigure", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe void PerformRecursiveConfigureInternal(Unity.Audio.Handle handle, /*ControlHeader* */ void* control, in AudioConfiguration configuration);

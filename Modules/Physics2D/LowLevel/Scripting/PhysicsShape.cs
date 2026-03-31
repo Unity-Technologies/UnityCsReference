@@ -1484,8 +1484,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create a shape proxy from the shape.
         /// </summary>
-        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid or is a Chain.</exception>
-        public readonly ShapeProxy CreateShapeProxy()
+        /// <param name="useWorldSpace">Whether to create the shape proxy in world-space or not. World-space will transform by the body origin the shape is attached to.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
+        public readonly ShapeProxy CreateShapeProxy(bool useWorldSpace = false)
         {
             if (!isValid)
                 throw new ArgumentException("PhysicsShape is not valid.");
@@ -1493,11 +1495,12 @@ namespace UnityEngine.LowLevelPhysics2D
             // Extract the appropriate geometry from the shape.
             return shapeType switch
             {
-                PhysicsShape.ShapeType.Circle => new ShapeProxy(circleGeometry),
-                PhysicsShape.ShapeType.Capsule => new ShapeProxy(capsuleGeometry),
-                PhysicsShape.ShapeType.Segment => new ShapeProxy(segmentGeometry),
-                PhysicsShape.ShapeType.Polygon => new ShapeProxy(polygonGeometry),
-                _ => throw new ArgumentException("PhysicsShape cannot be a Chain."),
+                ShapeType.Circle => new ShapeProxy(useWorldSpace ? circleGeometry.Transform(body.transform) : circleGeometry),
+                ShapeType.Capsule => new ShapeProxy(useWorldSpace ? capsuleGeometry.Transform(body.transform) : capsuleGeometry),
+                ShapeType.Polygon => new ShapeProxy(useWorldSpace ? polygonGeometry.Transform(body.transform) : polygonGeometry),
+                ShapeType.Segment => new ShapeProxy(useWorldSpace ? segmentGeometry.Transform(body.transform) : segmentGeometry),
+                ShapeType.ChainSegment => new ShapeProxy(chainSegmentGeometry),
+                _ => throw new ArgumentException("PhysicsShape type is unknown."),
             };
         }
 

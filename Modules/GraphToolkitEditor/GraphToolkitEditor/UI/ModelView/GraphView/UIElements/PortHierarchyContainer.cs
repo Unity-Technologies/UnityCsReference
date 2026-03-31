@@ -33,6 +33,8 @@ namespace Unity.GraphToolkit.Editor
         Color m_LineColor = Color.gray;
         float m_LineWidth = 1;
 
+        bool m_NoLineOnFirstPort;
+
         static readonly CustomStyleProperty<Color> k_LineColorProperty = new CustomStyleProperty<Color>("--line-color");
         static readonly CustomStyleProperty<float> k_PortLineWidthProperty = new CustomStyleProperty<float>("--line-width");
 
@@ -56,9 +58,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="setupLabelWidth">Whether the label width should be computed based on the largest label.</param>
         /// <param name="maxLabelWidth">If <paramref name="setupLabelWidth"/> is true, sets the maximum width for the labels.</param>
         /// <param name="setCountModifierOnParent">Whether to set the class for the modifier of the number of port on parent <see cref="VisualElement"/> too.</param>
-        public PortHierarchyContainer(bool setupLabelWidth, float maxLabelWidth, bool setCountModifierOnParent = false)
+        /// <param name="noLineOnFirstPort">Whether the first line expands to the first port or starts at the first sub port.</param>
+        public PortHierarchyContainer(bool setupLabelWidth, float maxLabelWidth, bool setCountModifierOnParent = false, bool noLineOnFirstPort = false)
             : base(setupLabelWidth, maxLabelWidth, setCountModifierOnParent)
         {
+            m_NoLineOnFirstPort = noLineOnFirstPort;
             m_ContentContainer = new VisualElement();
             m_ContentContainer.AddToClassList(contentContainerUssClassName);
             hierarchy.Add(m_ContentContainer);
@@ -75,9 +79,10 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortContainer"/> class.
+        /// Initializes a new instance of the <see cref="PortHierarchyContainer"/> class.
+        /// <param name="noLineOnFirstPort">Whether the first line expands to the first port or starts at the first sub port.</param>
         /// </summary>
-        public PortHierarchyContainer() : this(false, float.PositiveInfinity)
+        public PortHierarchyContainer(bool noLineOnFirstPort = false) : this(false, float.PositiveInfinity, noLineOnFirstPort: noLineOnFirstPort)
         { }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
@@ -166,7 +171,7 @@ namespace Unity.GraphToolkit.Editor
 
                         float x, startY;
 
-                        if (parentPortUI != null)
+                        if (parentPortUI != null && (!m_NoLineOnFirstPort || parentPortUI != children[0]))
                         {
                             // If the parent port ui exists, we use it to get the line position
                             var connectorPart = parentPortUI.PartList.GetPart(Port.connectorPartName) as PortConnectorPart;

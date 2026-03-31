@@ -102,7 +102,8 @@ namespace UnityEngine.UIElements
         /// <inheritdoc />
         protected override void BindItem(VisualElement element, int index)
         {
-            m_ColumnController.BindItem(element, index, GetItemForIndex(index));
+            var sourceIndex = columnController.GetSourceIndex(index);
+            m_ColumnController.BindItem(element, sourceIndex, GetItemForIndex(index));
         }
 
         /// <inheritdoc />

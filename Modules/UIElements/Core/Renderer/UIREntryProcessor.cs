@@ -480,7 +480,7 @@ namespace UnityEngine.UIElements.UIR
 
                     remapUVs = m_RemapUVs ? 1 : 0,
                     atlasRect = m_AtlasRect,
-                    layoutSize = (currentMaterial != null) ? new Vector2(m_CurrentRenderData.owner.layout.width, m_CurrentRenderData.owner.layout.height) : new Vector2(0, 0)
+                    layoutSize = (currentMaterial != null) ? m_CurrentRenderData.owner.layoutSize : new Vector2(0, 0)
                 };
                 m_RenderTreeManager.jobManager.Add(ref job);
 

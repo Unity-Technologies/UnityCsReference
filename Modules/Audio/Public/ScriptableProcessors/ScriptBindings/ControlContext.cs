@@ -144,6 +144,20 @@ namespace UnityEngine.Audio
             }
 
             /// <summary>
+            /// Triggers a system-wide reconfiguration with the specified audio format.
+            /// </summary>
+            /// <remarks>
+            /// This suspends realtime processing temporarily while calling Configure on all processors.
+            /// During this time, <see cref="ControlContext.IsSystemWideReconfiguring"/> will return true,
+            /// allowing nested generators to be safely reconfigured.
+            /// </remarks>
+            /// <param name="format">The new audio format to apply to the system.</param>
+            internal void SetConfiguration(in AudioFormat format)
+            {
+                InternalSetConfigurationManualControlContext(m_Context.m_Header, format.audioConfiguration);
+            }
+
+            /// <summary>
             /// Dispose a custom-created <see cref="ControlContext"/>.
             /// </summary>
             /// <remarks>
@@ -403,13 +417,21 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Manually configure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
+        /// Manually reconfigure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
         /// </summary>
         /// <remarks>
-        /// Nested <see cref="GeneratorInstance"/>s must be manually configured,
-        /// and this call is only valid on nested <see cref="ProcessorInstance"/>s.
+        /// This method can only be called on nested <see cref="GeneratorInstance"/>s (created by your code, not root processors)
+        /// and only during system-wide reconfiguration when <see cref="IsSystemWideReconfiguring"/> is true.
+        /// <para/>
+        /// During system-wide reconfiguration (e.g., when the sample rate changes), the realtime audio thread is suspended,
+        /// making it safe to reconfigure nested processors. Calling this method at any other time will throw an exception.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if called when <see cref="IsSystemWideReconfiguring"/> is false.
+        /// </exception>
         /// <seealso cref="ControlContext.AllocateGenerator"/>
+        /// <seealso cref="IsSystemWideReconfiguring"/>
+        /// <seealso cref="Exists"/>
         public void Configure(GeneratorInstance generatorInstance, in AudioFormat format)
         {
             ScriptableProcessorBindings.PerformRecursiveConfigure(
@@ -418,6 +440,23 @@ namespace UnityEngine.Audio
                 format.audioConfiguration
             );
         }
+
+        /// <summary>
+        /// Returns true if the audio system is currently performing a system-wide reconfiguration.
+        /// </summary>
+        /// <remarks>
+        /// This property is true when the system is reconfiguring all processors due to a change
+        /// in audio settings (e.g., sample rate change). During system-wide reconfiguration, the
+        /// realtime audio thread is suspended, making it safe to call <see cref="Configure"/> on
+        /// nested <see cref="GeneratorInstance"/>s.
+        /// <para/>
+        /// During initial processor creation (outside of system-wide reconfiguration), this will be false,
+        /// so calling <see cref="Configure"/> on nested processors will fail. Use lazy initialization
+        /// patterns instead (check <see cref="Exists"/> first, create if needed, only call
+        /// <see cref="Configure"/> when this property is true and the nested processor already exists).
+        /// </remarks>
+        /// <seealso cref="Configure"/>
+        public bool IsSystemWideReconfiguring => ScriptableProcessorBindings.IsSystemWideReconfiguring(Header);
 
         /// <summary>
         /// Manually update this <see cref="GeneratorInstance"/>.

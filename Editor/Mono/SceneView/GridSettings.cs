@@ -61,8 +61,8 @@ namespace UnityEditor
                     return;
 
                 // Do not allow setting invalid quaternion
-                if (m_Rotation.x == 0 && m_Rotation.y == 0 &&
-                    m_Rotation.z == 0 && m_Rotation.w == 0)
+                if (value.x == 0 && value.y == 0 &&
+                    value.z == 0 && value.w == 0)
                     return;
 
                 m_Rotation = value;
@@ -131,31 +131,22 @@ namespace UnityEditor
 
         internal IGridMode activeMode => m_GridModes[(int)m_ActiveModeIndex];
 
-        Vector3 rawSize
-        {
-            get => m_GridSize;
-        }
-
         // Used by ProBuilder package.
         internal static Vector3 size => instance.gridSize;
-        
+
         public Vector3 gridSize
         {
-            get => ApplyMultiplier(rawSize, sizeMultiplier);
+            get => ApplyMultiplier(m_GridSize, sizeMultiplier);
 
             set
             {
-                if (this.gridSize == value)
+                var currentSize = sizeMultiplier == 0 ? m_GridSize : ApplyMultiplier(m_GridSize, sizeMultiplier);
+                if (currentSize == value)
                     return;
 
                 ResetSizeMultiplier();
-                var gridSizeResult = rawSize;
+                m_GridSize = ClampToGrid(value);
 
-                gridSizeResult.x = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.x));
-                gridSizeResult.y = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.y));
-                gridSizeResult.z = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.z));
-
-                m_GridSize = gridSizeResult;
                 sizeChanged?.Invoke(this.gridSize);
             }
         }
@@ -229,11 +220,11 @@ namespace UnityEditor
         }
 
         internal event Action<Vector3> sizeChanged = delegate { };
-        internal event Action<IGridMode> modeChanged = delegate { };
-        internal event Action<IGridMode> modeSettingsChanged = delegate { };
+        internal event Action modeChanged = delegate { };
+        internal event Action modeSettingsChanged = delegate { };
 
         internal bool linked => Mathf.Approximately(gridSize.x, gridSize.y) && Mathf.Approximately(gridSize.x, gridSize.z);
-        
+
         internal bool currentGridIsWorld => position == Vector3.zero && rotation == Quaternion.identity;
 
         internal bool customGridIsWorld
@@ -241,14 +232,14 @@ namespace UnityEditor
             get
             {
                 var customMode = GetMode(GridMode.Custom);
-                return customMode.position == Vector3.zero && rotation == Quaternion.identity;
+                return customMode.position == Vector3.zero && customMode.rotation == Quaternion.identity;
             }
         }
 
         internal void ActivateMode(GridMode mode)
         {
             m_ActiveModeIndex = mode;
-            modeChanged?.Invoke(m_GridModes[(int)mode]);
+            modeChanged?.Invoke();
         }
 
         internal IGridMode GetMode(GridMode mode)
@@ -263,40 +254,43 @@ namespace UnityEditor
 
         Vector3 ApplyMultiplier(Vector3 value, int mul)
         {
-            if (mul > 0)
+            if (mul != 0)
             {
-                for (int i = 0; i < mul; i++)
-                    value *= 2f;
+                float multiplier = Mathf.Pow(2f, mul);
+                value *= multiplier;
             }
-            else if (mul < 0)
-            {
-                for (int i = 0; i > mul; i--)
-                    value /= 2f;
-            }
+
+            value = ClampToGrid(value);
 
             return value;
         }
-        
+
         internal void ApplyCustomPosition(Vector3 newPosition)
         {
+            if(!IsValid(newPosition))
+                return;
+
             if (activeModeIndex != GridMode.Custom)
             {
                 var retainedRotation = rotation;
                 ActivateMode(GridMode.Custom);
                 rotation = retainedRotation;
             }
-            
+
             EditorSnapSettings.gridPosition = newPosition;
             SceneView.RepaintAll();
         }
-        
+
         internal void ApplyCustomRotation(Quaternion newRotation)
         {
+            if(!IsValid(newRotation))
+                return;
+
             if (activeModeIndex != GridMode.Custom)
             {
                 var retainedPosition = position;
                 ActivateMode(GridMode.Custom);
-                EditorSnapSettings.gridPosition = retainedPosition;
+                position = retainedPosition;
             }
 
             EditorSnapSettings.gridRotation = newRotation;
@@ -319,7 +313,28 @@ namespace UnityEditor
 
         void OnModeSettingsChanged(IGridMode mode)
         {
-            modeSettingsChanged?.Invoke(mode);
+            modeSettingsChanged?.Invoke();
+        }
+
+        Vector3 ClampToGrid(Vector3 value)
+        {
+            value.x = Mathf.Clamp(value.x, k_GridSizeMin, k_GridSizeMax);
+            value.y = Mathf.Clamp(value.y, k_GridSizeMin, k_GridSizeMax);
+            value.z = Mathf.Clamp(value.z, k_GridSizeMin, k_GridSizeMax);
+
+            return value;
+        }
+
+        internal static bool IsValid(Vector3 value)
+        {
+            return !(float.IsNaN(value.x) || float.IsNaN(value.y) || float.IsNaN(value.z) ||
+                     float.IsInfinity(value.x) || float.IsInfinity(value.y) || float.IsInfinity(value.z));
+        }
+
+        bool IsValid(Quaternion value)
+        {
+            return !(float.IsNaN(value.x) || float.IsNaN(value.y) || float.IsNaN(value.z) || float.IsNaN(value.w) ||
+                     float.IsInfinity(value.x) || float.IsInfinity(value.y) || float.IsInfinity(value.z) || float.IsInfinity(value.w));
         }
     }
 }

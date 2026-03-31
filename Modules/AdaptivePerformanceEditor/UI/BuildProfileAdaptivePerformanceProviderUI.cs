@@ -461,6 +461,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (adaptivePerformanceProviderContainer == null)
                 {
                     adaptivePerformanceProviderContainer = ScriptableObject.CreateInstance<BuildProfileProviderContainer>();
+                    adaptivePerformanceProviderContainer.hideFlags = HideFlags.HideInHierarchy;
                     m_BuildProfile.AddComponent(adaptivePerformanceProviderContainer);
                 }
 
@@ -515,6 +516,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             if (managerSetting == null)
             {
                 managerSetting = ScriptableObject.CreateInstance<AdaptivePerformanceManagerSettings>();
+                managerSetting.hideFlags = HideFlags.HideInHierarchy;
                 var generalSettings = m_BuildProfile.GetComponent<AdaptivePerformanceGeneralSettings>();
                 if (generalSettings != null)
                 {

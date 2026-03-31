@@ -479,7 +479,7 @@ namespace UnityEngine.UIElements
             if (!IsIndexValid(index))
                 return false;
 
-            return m_HierarchyViewModel.GetChildrenCount(m_HierarchyViewModel[index]) > 0;
+            return HasChildren(GetIdForIndex(index));
         }
 
         /// <summary>

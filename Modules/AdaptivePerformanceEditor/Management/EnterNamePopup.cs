@@ -18,6 +18,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
         private List<string> existingProfileNames = new List<string>();
         static string s_WarningPopup = L10n.Tr("Warning");
         static string s_WarningPopupOption = L10n.Tr("Ok");
+        const int k_maxChars = 256;
+        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Scaler profile name is too long (maximum {0} characters)"), k_maxChars);
 
         public EnterNamePopup(SerializedProperty profiles, EnterDelegate cb)
         {
@@ -36,13 +38,32 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return new Vector2(400, EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing + 14);
         }
 
+        public override void OnClose()
+        {
+            TooltipView.ForceClose();
+        }
+
         public override void OnGUI(Rect windowRect)
         {
             GUILayout.Space(5);
             Event evt = Event.current;
             bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
             GUI.SetNextControlName("ProfileName");
+            EditorGUI.BeginChangeCheck();
             m_NewProfileName = EditorGUILayout.TextField("New Profile Name", m_NewProfileName);
+            Rect textFieldRect = GUILayoutUtility.GetLastRect();
+            if (EditorGUI.EndChangeCheck())
+            {
+                if(m_NewProfileName.Length <= k_maxChars)
+                    TooltipView.ForceClose();
+            }
+
+            if (m_NewProfileName.Length > k_maxChars)
+            {
+                m_NewProfileName = m_NewProfileName.Substring(0, k_maxChars);
+                GUI.FocusControl("ProfileNameSaveButton");
+                TooltipView.Show(k_ErrorMessageLength, GUIUtility.GUIToScreenRect(textFieldRect));
+            }
 
             if (m_NeedsFocus)
             {
@@ -51,6 +72,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
 
             GUI.enabled = m_NewProfileName.Length != 0;
+            GUI.SetNextControlName("ProfileNameSaveButton");
             if (GUILayout.Button("Save") || hitEnter)
             {
                 m_NewProfileName = m_NewProfileName.Trim();

@@ -754,7 +754,7 @@ namespace UnityEngine.AdaptivePerformance
             set { m_EnableBoostOnStartup = value; }
         }
 
-        [SerializeField, Tooltip("Logging Frequency (Development mode only)")]
+        [SerializeField, Min(1), Tooltip("Logging Frequency (Development mode only)")]
         int m_StatsLoggingFrequencyInFrames = 50;
 
         /// <summary>

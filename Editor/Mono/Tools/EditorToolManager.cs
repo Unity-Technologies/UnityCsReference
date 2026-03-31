@@ -142,6 +142,13 @@ namespace UnityEditor.EditorTools
                     if(!isAdditionalContextTool)
                         RestorePreviousPersistentTool();
                 }
+                else if (tool == Tool.Custom)
+                {
+                    // If this is a global custom tool, and it's targeting the previous context - we need to switch out of it
+                    var toolMeta = EditorToolUtility.GetMetaData(active.GetType());
+                    if (toolMeta.targetBehaviour == typeof(NullTargetKey) && (prev != null && toolMeta.targetContext == prev.GetType()))
+                        RestorePreviousPersistentTool();
+                }
 
                 ToolManager.ActiveContextDidChange();
 
@@ -545,13 +552,16 @@ namespace UnityEditor.EditorTools
 
         static void AddDefaultHandleToAvoidExitingToolContext()
         {
+            if (activeToolContext.GetType() == typeof(GameObjectToolContext)
+                || !activeToolContext.overridesDefaultSelection)
+                return;
+        
             int id = GUIUtility.GetControlID(FocusType.Passive);
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
                 case EventType.MouseMove:
-                    if (activeToolContext.GetType() != typeof(GameObjectToolContext))
                         HandleUtility.AddDefaultControl(id);
                     break;
             }

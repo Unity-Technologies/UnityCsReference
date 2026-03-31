@@ -119,7 +119,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public Toggle ExpandToggle => m_ExpandToggle;
 
+        VisualElement m_HitBoxLimitElement;
+
         internal VisualElement ExpandSpacer => m_ExpandSpacer;
+
+        // Used to limit the hit box size when there is an expand toggle.
+        internal VisualElement HitBoxLimitElement => m_HitBoxLimitElement ?? m_ExpandToggle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorPart"/> class.
@@ -250,7 +255,19 @@ namespace Unity.GraphToolkit.Editor
         protected override void PostBuildUI()
         {
             base.PostBuildUI();
+
             m_Root.AddPackageStylesheet("PortConnectorPart.uss");
+        }
+
+        internal void SetHitBoxLimitElement(VisualElement element)
+        {
+            m_HitBoxLimitElement?.RemoveFromHierarchy();
+            m_HitBoxLimitElement = element;
+
+            // Insert the element just after the connector box
+            m_Root.Insert(m_Root.IndexOf(m_ConnectorLabel ?? m_CreateFromPortHitBox) + 1, element);
+            if (m_ConnectorLabel != null)
+                m_ConnectorLabel.style.display = DisplayStyle.None;
         }
 
         /// <inheritdoc />

@@ -159,6 +159,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
             if (generalSetting == null)
             {
                 generalSetting = ScriptableObject.CreateInstance<AdaptivePerformanceGeneralSettings>();
+                generalSetting.hideFlags = HideFlags.HideInInspector;
                 profile.AddComponent(generalSetting);
             }
         }

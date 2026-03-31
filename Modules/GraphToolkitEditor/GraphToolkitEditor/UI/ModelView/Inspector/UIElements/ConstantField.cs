@@ -274,6 +274,13 @@ namespace Unity.GraphToolkit.Editor
                 int i;
                 for (i = 0; i < Owners.Count; i++)
                 {
+                    // Default to using delayed fields for non-user-defined port fields
+                    if (Owners[i] is VariableDeclarationModelBase || Owners[i] is ConstantNodeModel)
+                    {
+                        attributes = new List<Attribute> { new DelayedAttribute() };
+                        break;
+                    }
+
                     if (Owners[i] is not PortModel port)
                         continue;
 

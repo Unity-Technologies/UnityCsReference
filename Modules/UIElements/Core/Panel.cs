@@ -756,14 +756,22 @@ namespace UnityEngine.UIElements
 
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
-            // World-space panels can't compute element from only a 2-D position.
-            if (!isFlat)
-                return GetTopElementUnderPointer(pointerId);
-
             VisualElement element = null;
 
-            if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
-                !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
+            // World-space panels either set this field manually or compute it from a 3-D ray and don't rely on the
+            // PointerDeviceState.LocationFlag.OutsidePanel system.
+            if (!isFlat)
+            {
+                var panelRay = (triggerEvent as IPointerOrMouseEvent)?.panelRay;
+
+                // No ray, the elementUnderPointer is set from an outside process (e.g. DefaultEventSystem)
+                if (panelRay == null)
+                    return GetTopElementUnderPointer(pointerId);
+
+                element = WorldSpaceInput.Pick3D(this, panelRay.Value);
+            }
+            else if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
+                     !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
             {
                 element = Pick(pointerPos, pointerId);
             }

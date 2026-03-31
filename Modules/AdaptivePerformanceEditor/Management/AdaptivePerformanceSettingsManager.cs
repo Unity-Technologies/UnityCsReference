@@ -63,6 +63,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             if (!string.IsNullOrEmpty(assetPath))
                             {
                                 assetPath = Path.Combine(assetPath, "AdaptivePerformanceGeneralSettings.asset");
+                                generalSettings.hideFlags = HideFlags.HideInInspector;
                                 AssetDatabase.CreateAsset(generalSettings, assetPath);
                             }
                         }
@@ -206,7 +207,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (loaderProp.objectReferenceValue == null)
                 {
                     var adaptivePerformanceManagerSettings = ScriptableObject.CreateInstance<AdaptivePerformanceManagerSettings>() as AdaptivePerformanceManagerSettings;
-                    //adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
+                    adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
                     adaptivePerformanceManagerSettings.name = $"{buildTargetGroup.ToString()} Providers";
                     AssetDatabase.AddObjectToAsset(adaptivePerformanceManagerSettings, AssetDatabase.GetAssetOrScenePath(currentSettings));
                     loaderProp.objectReferenceValue = adaptivePerformanceManagerSettings;

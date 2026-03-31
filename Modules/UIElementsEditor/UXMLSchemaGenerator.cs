@@ -887,10 +887,14 @@ namespace UnityEditor.UIElements
             /// <returns></returns>
             XmlQualifiedName AddEnumType(Type type)
             {
+                // For nested types, include the declaring type name to ensure uniqueness
+                // e.g., "Progress+Variant" becomes "Progress_Variant" instead of just "Variant"
+                var typeName = type.FullName.Substring(type.Namespace?.Length + 1 ?? 0).Replace('+', '_') + k_TypeSuffix;
+
                 var schemaInfo = GetSchemaInfo(type.Namespace);
 
                 var simpleType = new XmlSchemaSimpleType();
-                simpleType.Name = type.Name + k_TypeSuffix;
+                simpleType.Name = typeName;
                 schemaInfo.schema.Items.Add(simpleType);
 
                 var restriction = new XmlSchemaSimpleTypeRestriction();
@@ -904,7 +908,7 @@ namespace UnityEditor.UIElements
                     restriction.Facets.Add(enumValue);
                 }
 
-                return new XmlQualifiedName(simpleType.Name, type.Namespace);
+                return new XmlQualifiedName(typeName, type.Namespace);
             }
         }
 

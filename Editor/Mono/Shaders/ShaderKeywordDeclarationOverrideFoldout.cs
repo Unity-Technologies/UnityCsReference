@@ -55,6 +55,8 @@ namespace UnityEditor.Shaders
             m_Header.style.minWidth = 0;
 
             m_ErrorBox = m_Header.Q<HelpBox>("KeywordDeclarationOverrideError");
+            m_ErrorBox.AddToClassList("keyword-declaration-override-error");
+
 
             // Register state change callbacks on the UI elements in the header
             m_KeywordsField = m_Header.Q<TextField>("KeywordListField");

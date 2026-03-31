@@ -165,7 +165,7 @@ namespace UnityEditor
             if (UseUIToolkit && rootVisualElement.panel is Panel panel)
             {
                 panel.ValidateLayout();
-                var contentSize = m_UserContent.layout.size;
+                var contentSize = m_UserContent.layoutSize;
                 if (contentSize.x <= 0f || contentSize.y <= 0f)
                 {
                     var invalidSizeMessage = string.Format(k_InvalidSizeTemplate, contentSize);
@@ -173,7 +173,7 @@ namespace UnityEditor
                     panel.ValidateLayout(); // measure again to get the size of the label
                 }
 
-                var canvasSize = m_UserContent.parent.layout.size;
+                var canvasSize = m_UserContent.parent.layoutSize;
                 SetWindowSize(canvasSize);
                 m_UserContent.RegisterCallback<GeometryChangedEvent>(OnContentGeometryChanged);
             }

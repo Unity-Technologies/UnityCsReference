@@ -795,6 +795,15 @@ namespace Unity.GraphToolkit.Editor
             return ParentPort.IsDescendantOf(ancestor);
         }
 
+        /// <summary>
+        /// Generates a descriptive label for the port, including its expandable ancestor ports if applicable.
+        /// </summary>
+        /// <param name="full">
+        /// If <c>true</c>, includes all ancestor ports in the label; if <c>false</c>, includes only up to the nearest collapsed ancestor.
+        /// </param>
+        /// <returns>
+        /// A string representing the port label, optionally including its ancestor hierarchy for context.
+        /// </returns>
         internal string ComputePortLabel(bool full)
         {
             if (ParentPort == null)
@@ -816,11 +825,16 @@ namespace Unity.GraphToolkit.Editor
             //aggregate the ancestors
             using var poolHolder = ListPool<PortModel>.Get(out var ancestors);
             current = ParentPort;
-            while (current != null && (full || current != higherCollapsedAncestor))
+
+            //Don't include the main port name for VariableNodes.
+            while (current != null && (full || current != higherCollapsedAncestor) && (current.ParentPort != null || current.NodeModel is not VariableNodeModel))
             {
                 ancestors.Add(current);
                 current = current.ParentPort;
             }
+
+            if (ancestors.Count == 0)
+                return Title;
 
             // build the label
             s_LabelSuffixBuilder.Clear();

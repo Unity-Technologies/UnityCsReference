@@ -455,10 +455,16 @@ namespace UnityEditor
         {
             if (m_DeleteLevel >= 0)
             {
+                using var scope = new QualitySettings.QualityLevelRemovalScope(m_DeleteLevel);
+
                 if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
                 {
                     selectedLevel = Mathf.Max(0, selectedLevel - 1);
                     QualitySettings.SetQualityLevel(selectedLevel);
+                }
+                else if (m_DeleteLevel == selectedLevel)
+                {
+                    scope.DeletingCurrentNonLastLevel();
                 }
 
                 //Always ensure there is one quality setting
@@ -672,15 +678,7 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var buildProfiles = BuildProfileModuleUtil.GetAllBuildProfiles();
-            var profilesWithQualityLevelOverrides = 0;
-            foreach (var profile in buildProfiles)
-            {
-                if (profile.qualitySettings != null)
-                {
-                    profilesWithQualityLevelOverrides++;
-                }
-            }
+            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
             if (profilesWithQualityLevelOverrides > 0)
             {
                 if (profilesWithQualityLevelOverrides == 1)

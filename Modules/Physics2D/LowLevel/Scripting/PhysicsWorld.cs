@@ -845,24 +845,12 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Tests if the provided shape overlaps any shapes.
-        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsQuery.QueryFilter"/>.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// </summary>
         /// <param name="shape">The shape used to check overlap.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used.</exception>
-        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter)
-        {
-            return shape.shapeType switch
-            {
-                PhysicsShape.ShapeType.Circle => TestOverlapGeometry(shape.circleGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Capsule => TestOverlapGeometry(shape.capsuleGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Polygon => TestOverlapGeometry(shape.polygonGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Segment => TestOverlapGeometry(shape.segmentGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.ChainSegment => TestOverlapGeometry(shape.chainSegmentGeometry.Transform(shape.body.transform), filter),
-                _ => throw new ArgumentException("Invalid shape type used.", nameof(shape)),
-            };
-        }
+        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapShape(this, shape.CreateShapeProxy(true), filter, shape);
 
         /// <summary>
         /// Test if the provided shape proxy overlaps any shapes.
@@ -940,25 +928,13 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Returns all shapes that overlap the provided shape.
-        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/>, <see cref="LowLevelPhysics2D.PhysicsQuery.QueryFilter"/>, see cref="LowLevelPhysics2D.PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// </summary>
         /// <param name="shape">The shape used to check overlap.</param>
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used.</exception>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp)
-        {
-            return shape.shapeType switch
-            {
-                PhysicsShape.ShapeType.Circle => OverlapGeometry(shape.circleGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Capsule => OverlapGeometry(shape.capsuleGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Polygon => OverlapGeometry(shape.polygonGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Segment => OverlapGeometry(shape.segmentGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.ChainSegment => OverlapGeometry(shape.chainSegmentGeometry.segment.Transform(shape.body.transform), filter, allocator),
-                _ => throw new ArgumentException("Invalid shape type used.", nameof(shape)),
-            };
-        }
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapShape(this, shape.CreateShapeProxy(true), filter, allocator, shape).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the shape proxy.
@@ -1045,25 +1021,28 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Returns the shape(s) that intersect the specified shape as it is cast through the world.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// Neither <see cref="LowLevelPhysics2D.PhysicsShape.ShapeType.Segment"/> or <see cref="LowLevelPhysics2D.PhysicsShape.ShapeType.ChainSegment"/> shape types are supported.
         /// See <see cref="LowLevelPhysics2D.PhysicsQuery.QueryFilter"/>, <see cref="LowLevelPhysics2D.PhysicsQuery.WorldCastMode"/>, <see cref="LowLevelPhysics2D.PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
         /// </summary>
         /// <param name="shape">The shape used to cast through the world.</param>
-        /// <param name="translation">The translation relative to the shape pose defining the direction the geometry will move through the world.</param>
+        /// <param name="translation">The translation relative to the shape pose defining the direction the shape geometry will move through the world.</param>
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used, specifically if <see cref="LowLevelPhysics2D.PhysicsShape.ShapeType.Segment"/> or <see cref="LowLevelPhysics2D.PhysicsShape.ShapeType.ChainSegment"/> shape types are used.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if an invalid shape or shape type is used, specifically if <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are used.</exception>
         public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShape(PhysicsShape shape, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp)
         {
-            return shape.shapeType switch
+            if (shape.isValid)
             {
-                PhysicsShape.ShapeType.Circle => CastGeometry(shape.circleGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                PhysicsShape.ShapeType.Capsule => CastGeometry(shape.capsuleGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                PhysicsShape.ShapeType.Polygon => CastGeometry(shape.polygonGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                _ => throw new ArgumentException("Invalid shape type used for cast.", nameof(shape)),
-            };
+                // Validate shape type and perform cast.
+                var shapeType = shape.shapeType;
+                if (shapeType != PhysicsShape.ShapeType.Segment && shapeType != PhysicsShape.ShapeType.ChainSegment)
+                    return PhysicsWorld_CastShape(this, shape.CreateShapeProxy(true), translation, filter, castMode, allocator, shape).ToNativeArray<PhysicsQuery.WorldCastResult>();
+            }
+
+            throw new ArgumentException("Invalid shape or shape-type used for cast.");
         }
 
         /// <summary>

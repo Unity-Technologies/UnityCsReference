@@ -7,29 +7,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class FilterFunctionAddedEvent : EventBase<FilterFunctionAddedEvent>
+    internal class FilterListChangedEvent : EventBase<FilterListChangedEvent>
     {
-        public FilterFunction filterFunction;
-    }
-
-    class FilterFunctionRemovedEvent : EventBase<FilterFunctionRemovedEvent>
-    {
-        public List<int> indices;
-    }
-
-    class FilterFunctionChangedEvent : EventBase<FilterFunctionChangedEvent>
-    {
-        public FilterFunctionListViewItem item;
-        public FilterFunction filterFunction;
-        public int index;
-    }
-
-    class FilterFunctionValueChangedEvent : EventBase<FilterFunctionValueChangedEvent>
-    {
-        public FilterFunctionListViewItem item;
-        public FilterFunction filterFunction;
-        public int index;
-        public int paramIndex;
+        public List<FilterFunction> newFilterList;
+        public bool refreshField;
     }
 
     class FilterFunctionReorderedEvent : EventBase<FilterFunctionReorderedEvent>

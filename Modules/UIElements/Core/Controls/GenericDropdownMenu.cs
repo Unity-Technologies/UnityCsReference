@@ -682,17 +682,18 @@ namespace UnityEngine.UIElements
 
             m_PanelRootVisualContainer.Add(m_MenuContainer);
 
-            m_MenuContainer.style.left = m_PanelRootVisualContainer.layout.x;
-            m_MenuContainer.style.top = m_PanelRootVisualContainer.layout.y;
-            m_MenuContainer.style.width = m_PanelRootVisualContainer.layout.width;
-            m_MenuContainer.style.height = m_PanelRootVisualContainer.layout.height;
+            var roorContainerLayout = m_PanelRootVisualContainer.layout;
+            m_MenuContainer.style.left = roorContainerLayout.x;
+            m_MenuContainer.style.top = roorContainerLayout.y;
+            m_MenuContainer.style.width = roorContainerLayout.width;
+            m_MenuContainer.style.height = roorContainerLayout.height;
             m_MenuContainer.style.fontSize = m_TargetElement.computedStyle.fontSize;
             m_MenuContainer.style.unityFont = m_TargetElement.computedStyle.unityFont;
             m_MenuContainer.style.unityFontDefinition = m_TargetElement.computedStyle.unityFontDefinition;
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
-            m_PositionTop = local.y + local.height - m_PanelRootVisualContainer.layout.y;
-            m_PositionLeft = local.x - m_PanelRootVisualContainer.layout.x;
+            m_PositionTop = local.y + local.height - roorContainerLayout.y;
+            m_PositionLeft = local.x - roorContainerLayout.x;
 
             m_OuterContainer.style.left = m_PositionLeft;
             m_OuterContainer.style.top = m_PositionTop;
@@ -734,12 +735,14 @@ namespace UnityEngine.UIElements
 
         void EnsureVisibilityInParent()
         {
-            if (m_PanelRootVisualContainer != null && !float.IsNaN(m_OuterContainer.layout.width) && !float.IsNaN(m_OuterContainer.layout.height))
+            var outerSize = m_OuterContainer.layoutSize;
+            if (m_PanelRootVisualContainer != null && !float.IsNaN(outerSize.x) && !float.IsNaN(outerSize.y))
             {
+                var panelRootSize = m_PanelRootVisualContainer.layoutSize;
                 if (m_DesiredRect == Rect.zero)
                 {
-                    var posX = Math.Max(0, Mathf.Min(m_PositionLeft, m_PanelRootVisualContainer.layout.width - m_OuterContainer.layout.width));
-                    var posY = Mathf.Min(m_PositionTop, Mathf.Max(0, m_PanelRootVisualContainer.layout.height - m_OuterContainer.layout.height));
+                    var posX = Math.Max(0, Mathf.Min(m_PositionLeft, panelRootSize.x - outerSize.x));
+                    var posY = Mathf.Min(m_PositionTop, Mathf.Max(0, panelRootSize.y - outerSize.y));
 
                     m_OuterContainer.style.left = posX;
                     m_OuterContainer.style.top = posY;
@@ -757,7 +760,7 @@ namespace UnityEngine.UIElements
                     m_OuterContainer.style.width = dropdownWidth;
 
                     // Ensure width is visible
-                    var spaceToTheRight = m_PanelRootVisualContainer.layout.width - m_PositionLeft;
+                    var spaceToTheRight = panelRootSize.x - m_PositionLeft;
 
                     if (spaceToTheRight <= dropdownWidth)
                     {
@@ -767,23 +770,23 @@ namespace UnityEngine.UIElements
                     m_PositionLeft = Math.Max(m_PositionLeft, 0);
                     if (m_PositionLeft == 0)
                     {
-                        m_OuterContainer.style.maxWidth = Math.Min(m_PanelRootVisualContainer.layout.width, dropdownWidth);
+                        m_OuterContainer.style.maxWidth = Math.Min(panelRootSize.x, dropdownWidth);
                     }
                     m_OuterContainer.style.left = m_PositionLeft;
                 }
 
                 // Ensure height is visible
                 var targetElement = m_MenuContainer.WorldToLocal(m_TargetElement.worldBound);
-                var itemHeight = m_Items.Count == 0 ? k_MenuItemPadding : m_Items[0].element.layout.height + k_MenuItemPadding;
+                var itemHeight = m_Items.Count == 0 ? k_MenuItemPadding : m_Items[0].element.layoutSize.y + k_MenuItemPadding;
 
                 var dropdownHeight = m_OuterContainer.layout.height;
                 var targetElementTop = targetElement.y;
 
-                var topLeft = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
+                var topLeft = m_PanelRootVisualContainer.WorldToLocal(m_OuterContainer.worldBound.min);
 
                 var actualTop = topLeft.y;
-                var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.layout.height - actualTop;
-                var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.layout.height - actualTop : targetElementTop;
+                var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : panelRootSize.y - actualTop;
+                var spaceAbove = m_ShownAboveTarget ? panelRootSize.y - actualTop : targetElementTop;
 
                 var adjustTop = spaceBelow < dropdownHeight;
 
@@ -824,7 +827,7 @@ namespace UnityEngine.UIElements
                     {
                        element = element
                     });
-                    largestWidth = Math.Max(largestWidth, element.layout.width);
+                    largestWidth = Math.Max(largestWidth, element.layoutSize.x);
                 }
                 m_Items.AddRange(menuItems);
                 ListPool<MenuItem>.Release(menuItems);
@@ -834,7 +837,7 @@ namespace UnityEngine.UIElements
             foreach (var item in m_Items)
             {
                 var itemContent = item.element.Q(classes: itemContentUssClassName);
-                var contentWidth = itemContent != null ? itemContent.layout.width : item.element.layout.width;
+                var contentWidth = itemContent != null ? itemContent.layoutSize.x : item.element.layoutSize.x;
                 largestWidth = Math.Max(largestWidth, contentWidth);
             }
 

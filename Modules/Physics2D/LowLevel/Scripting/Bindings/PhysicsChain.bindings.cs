@@ -11,8 +11,8 @@ namespace UnityEngine.LowLevelPhysics2D
     internal static partial class PhysicsLowLevelScripting2D
     {
         [NativeMethod(Name = "PhysicsChain::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsChainDefinition PhysicsChain_GetDefaultDefinition(bool useSettings);
-        [NativeMethod(Name = "PhysicsChain::Create")] extern internal static PhysicsChain PhysicsChain_Create(PhysicsBody body, ChainGeometry geometry, PhysicsChainDefinition definition);
-        [NativeMethod(Name = "PhysicsChain::Destroy")] extern internal static bool PhysicsChain_Destroy(PhysicsChain chain, int ownerKey);
+        [NativeMethod(Name = "PhysicsChain::Create", IsThreadSafe = true)] extern internal static PhysicsChain PhysicsChain_Create(PhysicsBody body, ChainGeometry geometry, PhysicsChainDefinition definition);
+        [NativeMethod(Name = "PhysicsChain::Destroy", IsThreadSafe = true)] extern internal static bool PhysicsChain_Destroy(PhysicsChain chain, int ownerKey);
         [NativeMethod(Name = "PhysicsChain::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsValid(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsChain_GetWorld(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetBody", IsThreadSafe = true)] extern internal static PhysicsBody PhysicsChain_GetBody(PhysicsChain chain);

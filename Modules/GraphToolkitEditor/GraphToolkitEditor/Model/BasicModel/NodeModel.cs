@@ -420,6 +420,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override bool UseColorAlpha => true;
 
+        /// <summary>
+        /// Whether the node can have expandable ports.
+        /// </summary>
+        public virtual bool CanHaveExpandablePorts => true;
+
         /// <inheritdoc />
         public override IReadOnlyDictionary<string, PortModel> InputsById => m_InputPortInfos.portsById;
 
@@ -702,7 +707,7 @@ namespace Unity.GraphToolkit.Editor
 
         void CallOnDefineSubPorts(ref PortInfos portInfos, PortModel singlePort = null)
         {
-            if (GraphModel == null) return;
+            if (GraphModel == null || !CanHaveExpandablePorts) return;
 
             m_SubPortDefinition ??= new SubPortDefinition(this);
 
@@ -1079,10 +1084,17 @@ namespace Unity.GraphToolkit.Editor
 
             if (port.Direction == PortDirection.Input)
             {
-                if (port.ComputedConstant is not SubPortFieldInfoConstant spfic)
-                    port.ComputedConstant = new SubPortFieldInfoConstant(port, fieldInfo);
+                if (parent.EmbeddedValue != null)
+                {
+                    if (port.ComputedConstant is not SubPortFieldInfoConstant spfic)
+                        port.ComputedConstant = new SubPortFieldInfoConstant(port, fieldInfo);
+                    else
+                        spfic.SetMemberInfo(fieldInfo);
+                }
                 else
-                    spfic.SetMemberInfo(fieldInfo);
+                {
+                    port.ComputedConstant = null;
+                }
             }
 
             return port;
@@ -1094,10 +1106,17 @@ namespace Unity.GraphToolkit.Editor
 
             if (port.Direction == PortDirection.Input)
             {
-                if (port.ComputedConstant is not SubPortPropertyInfoConstant sppic)
-                    port.ComputedConstant = new SubPortPropertyInfoConstant(port, propertyInfo);
+                if (parent.EmbeddedValue != null)
+                {
+                    if (port.ComputedConstant is not SubPortPropertyInfoConstant sppic)
+                        port.ComputedConstant = new SubPortPropertyInfoConstant(port, propertyInfo);
+                    else
+                        sppic.SetMemberInfo(propertyInfo);
+                }
                 else
-                    sppic.SetMemberInfo(propertyInfo);
+                {
+                    port.ComputedConstant = null;
+                }
             }
 
             return port;
@@ -1399,7 +1418,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Appends all ports that are not connected or which parents is not collapsed.
+        /// Appends all ports that are not connected or which parent is not collapsed.
         /// </summary>
         void BuildVisiblePorts(ref PortInfos portInfos)
         {
@@ -1407,7 +1426,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var port in portInfos.portsById.Values)
                 {
-                    if (port.ParentPort == null || port.AreAncestorsExpanded || port.IsConnected())
+                    if (port.ParentPort == null || port.AreAncestorsExpanded || port.IsConnected() || port.ParentPort.IsConnected() && port.ParentPort.IsExpandedSelf)
                         portInfos.orderedVisiblePorts.Add(port);
                 }
             }

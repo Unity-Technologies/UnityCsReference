@@ -113,6 +113,7 @@ namespace Unity.GraphToolkit.Editor
 
             blockModel.GraphModel = GraphModel;
             blockModel.ContextNodeModel = this;
+            blockModel.OnCreateNode(); // Needs to be after setting the ContextNodeModel so that the block can access it during OnCreateNode and DefineNode.
             GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
         }
 

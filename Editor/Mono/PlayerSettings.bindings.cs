@@ -1755,6 +1755,8 @@ namespace UnityEditor
             set { SetWindowsGamepadBackendHint(value); }
         }
 
+        public static extern bool enableDirectStorage { get; set; }
+
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]
         public static extern bool GetVirtualTexturingSupportEnabled();

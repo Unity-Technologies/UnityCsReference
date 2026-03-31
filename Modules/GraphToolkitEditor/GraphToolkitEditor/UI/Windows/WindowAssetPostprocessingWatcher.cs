@@ -69,6 +69,9 @@ namespace Unity.GraphToolkit.Editor
 
                 if (!IsWindowDisplayingGraphAsset(window, guid)) continue;
 
+                // Local subgraphs are part of the main graph asset and don't have their own asset, so they shouldn't update their name based on the file name of the asset.
+                if (window.GraphView.GraphModel?.IsLocalSubgraph == true) continue;
+
                 window.OnUpdateModelName(newName);
             }
         }

@@ -17,6 +17,47 @@ unsafe partial struct LayoutNode
     public float LayoutWidth => Layout.Dimensions[(int) LayoutDimension.Width];
     public float LayoutHeight => Layout.Dimensions[(int) LayoutDimension.Height];
 
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Rect GetLayoutRect()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN, float.NaN, float.NaN);
+        }
+
+        var lyt = Layout;
+        return new Rect(lyt.Position[(int)LayoutEdge.Left],
+        lyt.Position[(int)LayoutEdge.Top],
+        lyt.Dimensions[(int)LayoutDimension.Width],
+        lyt.Dimensions[(int)LayoutDimension.Height]);
+    }
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetLayoutSize()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN);
+        }
+
+        var lyt = Layout;
+        return new Vector2(lyt.Dimensions[(int)LayoutDimension.Width],
+            lyt.Dimensions[(int)LayoutDimension.Height]);
+    }
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetLayoutPosition()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN);
+        }
+
+        var lyt = Layout;
+        return new Vector2(lyt.Position[(int)LayoutEdge.Left],
+            lyt.Position[(int)LayoutEdge.Top]);
+    }
+
     public float LayoutMarginLeft => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Left);
     public float LayoutMarginTop => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Top);
     public float LayoutMarginRight => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Right);

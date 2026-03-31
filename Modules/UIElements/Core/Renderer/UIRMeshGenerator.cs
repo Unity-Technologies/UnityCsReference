@@ -80,6 +80,7 @@ namespace UnityEngine.UIElements.UIR
 
         public TextJobSystem textJobSystem { get; set; }
 
+
         public struct BorderParams
         {
             public Rect rect;
@@ -1845,6 +1846,10 @@ namespace UnityEngine.UIElements.UIR
                 var colorPage = rectParams.colorPage;
                 var pageAndID = colorPage.pageAndID;
 
+                // UUM-136987 Dynamic color is now applied as a multiplier tint, so we
+                // need to force the mesh color to white.
+                var color = (colorPage.isValid != 0) ? Color.white : rectParams.color;
+
                 var flags = new Color32(0, 0, 0, (colorPage.isValid != 0) ? (byte)1 : (byte)0);
                 var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
                 var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
@@ -1861,7 +1866,7 @@ namespace UnityEngine.UIElements.UIR
                     vertices[i] = new Vertex
                     {
                         position = new Vector3(v.x, v.y, Vertex.nearZ),
-                        tint = rectParams.color,
+                        tint = color,
                         uv = spriteUV[i],
                         flags = flags,
                         opacityColorPages = page,

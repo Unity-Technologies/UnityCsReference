@@ -20,6 +20,15 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class AnimationClipEditor : Editor
     {
+        internal enum WrapModeFixed
+        {
+            Default = (int)WrapMode.Default,
+            Once = (int)WrapMode.Once,
+            Loop = (int)WrapMode.Loop,
+            ClampForever = (int)WrapMode.ClampForever,
+            PingPong = (int)WrapMode.PingPong
+        }
+
         internal static void EditWithImporter(AnimationClip clip)
         {
             ModelImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(clip)) as ModelImporter;
@@ -1099,7 +1108,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clips[0].wrapMode;
-            wrap = (int)(WrapModeFixedCurve)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixedCurve)wrap);
+            wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixed)wrap);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_ClipInfo != null)
