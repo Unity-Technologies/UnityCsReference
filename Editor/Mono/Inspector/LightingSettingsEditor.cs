@@ -185,7 +185,6 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
-            public static readonly GUIContent appleSiliconCPULightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not available on Apple Silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -902,7 +901,6 @@ namespace UnityEditor
 
         void BakeBackendGUI()
         {
-            bool isOpenRLFunctionalForArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64;
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
@@ -918,15 +916,7 @@ namespace UnityEditor
                 {
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
-
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (!isOpenRLFunctionalForArchitecture && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
-                    {
-                        menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
-                    }
-                    else
-                    {
-                        menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
-                    }
+                    menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
                 }
                 menu.DropDown(rect);
             }
@@ -936,11 +926,7 @@ namespace UnityEditor
 
             EditorGUI.EndProperty();
 
-            if (!isOpenRLFunctionalForArchitecture && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
-            {
-                EditorGUILayout.HelpBox(Styles.appleSiliconCPULightmapperWarning.text, MessageType.Warning);
-            }
-            else if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
+            if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);

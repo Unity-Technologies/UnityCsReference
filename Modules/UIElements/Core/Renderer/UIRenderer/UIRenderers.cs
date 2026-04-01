@@ -142,6 +142,7 @@ namespace UnityEngine.UIElements.UIR
                     RenderTexture.active = oldRT;
                     GL.modelview = drawParams.view.Peek();
                     GL.LoadProjectionMatrix(oldProjection);
+                    GL.invertCulling = false;
 
                     s_ImmediateOverheadMarker.End();
                     break;

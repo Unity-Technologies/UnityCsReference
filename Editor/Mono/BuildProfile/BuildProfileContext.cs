@@ -66,7 +66,12 @@ namespace UnityEditor.Build.Profile
         {
             get
             {
-                return EditorUserBuildSettings.activeBuildProfile;
+                var profile = EditorUserBuildSettings.activeBuildProfile;
+                
+                if (profile == null || !profile)
+                    return null;
+                    
+                return profile;
             }
 
             set
@@ -103,6 +108,7 @@ namespace UnityEditor.Build.Profile
                 OnActiveProfileChangedForSettingExtension(prev, value);
                 value.UpdateGlobalManagerPlayerSettings();
                 activeProfileChanged?.Invoke(prev, value);
+                value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
                 BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
         }
@@ -117,17 +123,32 @@ namespace UnityEditor.Build.Profile
             settingsExtension?.OnActiveProfileChanged(previous, newProfile);
         }
 
+        internal static void HandleScriptingDefinesChanged()
+        {
+            var defines = BuildDefines.GetBuildProfileScriptDefines();
+
+            if (!ArrayUtility.ArrayEquals(defines, instance.cachedEditorScriptingDefines))
+            {
+                bool isAutomatedEnvironment = Application.isBatchMode || BuildPipeline.isBuildingPlayer;
+
+                if (isAutomatedEnvironment || EditorUtility.DisplayDialog(L10n.Tr("Active Build Profile Scripting Defines Have Been Modified"), L10n.Tr("Do you want to apply changes now?"), L10n.Tr("Apply"), L10n.Tr("Revert")))
+                {
+                    activeProfile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(defines);
+                    BuildProfileModuleUtil.RequestScriptCompilation(activeProfile);
+                }
+                else
+                {
+                    activeProfile.scriptingDefines = instance.cachedEditorScriptingDefines;
+                }
+            }
+        }
+
         internal static void HandlePendingChangesBeforeEnterPlaymode()
         {
             if (!EditorUserBuildSettings.isBuildProfileAvailable)
                 return;
 
-            var defines = BuildDefines.GetBuildProfileScriptDefines();
-            if (!ArrayUtility.ArrayEquals(defines, instance.cachedEditorScriptingDefines))
-            {
-                instance.cachedEditorScriptingDefines = defines;
-                PlayerSettings.RecompileScripts("Build profile has been modified.");
-            }
+            HandleScriptingDefinesChanged();
         }
 
         /// <summary>

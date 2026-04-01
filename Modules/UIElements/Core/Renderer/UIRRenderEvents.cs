@@ -724,7 +724,8 @@ namespace UnityEngine.UIElements.UIR
 
             var job = new NudgeJobData
             {
-                transform = nudgeTransform
+                transform = nudgeTransform,
+                keepZ = renderChain.isFlat ? 1 : 0,
             };
 
             if (ve.renderChainData.headMesh != null)

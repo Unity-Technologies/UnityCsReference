@@ -1019,6 +1019,11 @@ namespace UnityEditor
                 return;
             }
 
+            if (BuildProfileContext.activeProfile != null)
+            {
+                BuildProfileContext.HandleScriptingDefinesChanged();
+            }
+
             var reasons = ConvertReasonsToString();
             PlayerSettings.RecompileScripts(reasons);
             m_Reasons.Clear();
@@ -1098,6 +1103,10 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
+            // Add ellipsis truncation for labels
+            var previousTextClipping = EditorStyles.label.clipping;
+            EditorStyles.label.clipping = TextClipping.Ellipsis;
+
             int sectionIndex = 0;
 
             if (serializedObjectUpdated)
@@ -1136,6 +1145,9 @@ namespace UnityEditor
             {
                 RecompileScripts();
             }
+
+            // Resetting truncation of labels back 
+            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()

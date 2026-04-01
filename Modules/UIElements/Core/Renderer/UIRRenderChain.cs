@@ -503,6 +503,10 @@ namespace UnityEngine.UIElements.UIR
             Exception immediateException = null;
             if (m_FirstCommand != null)
             {
+                bool prevInvertCulling = GL.invertCulling;
+                if (prevInvertCulling)
+                    GL.invertCulling = false;
+
                 var viewport = panel.visualTree.layout;
 
                 if (forceGammaRendering)
@@ -521,6 +525,9 @@ namespace UnityEngine.UIElements.UIR
                 device.EvaluateChain(m_FirstCommand, m_DefaultMat, m_DefaultMat, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
                     panel.scaledPixelsPerPoint, ref immediateException);
                 //m_BlockDirtyRegistration = false;
+
+                if (prevInvertCulling)
+                    GL.invertCulling = true;
             }
 
             if (immediateException != null)

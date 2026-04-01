@@ -26,9 +26,9 @@ namespace UnityEditor.Build.Profile
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
         // The asset database supports file name length to max. 250 symbols
-        // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
+        // Leave 5 symbols for the GenerateUniqueAssetPath() that adds " (1)"(2,3...) in case
         // an asset with such name already exists.
-        public const int k_MaxAssetFileNameLength = 247;
+        public const int k_MaxAssetFileNameLength = 245;
         // For UI cases where the extension `.asset` is not taken into consideration
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
@@ -658,9 +658,19 @@ namespace UnityEditor.Build.Profile
             return buildProfile.playerSettings;
         }
 
+        /// <summary>
+        /// Normalizes and removes invalid scripting defines from the provided array.
+        /// </summary>
+        public static string[] RemoveInvalidScriptingDefines(string[] defines)
+        {
+            // Converts to string and back to array to normalize, remove duplicates and empty entries.
+            return ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(
+              ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
+        }
+
         /*
-         * private helper functions
-         */
+        * private helper functions
+        */
         private static bool ContainsPlayerSetting(PlayerSettingsRequiringRestart[] playerSettings, PlayerSettingsRequiringRestart targetSetting)
         {
             foreach (PlayerSettingsRequiringRestart setting in playerSettings)

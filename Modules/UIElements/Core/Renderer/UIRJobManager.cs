@@ -101,6 +101,8 @@ namespace UnityEngine.UIElements.UIR
         public int tailCount;
 
         public Matrix4x4 transform;
+
+        public int keepZ;
     }
 
     [StructLayout(LayoutKind.Sequential)]

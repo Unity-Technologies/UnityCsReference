@@ -223,7 +223,8 @@ namespace UnityEngine.UIElements
         /// <returns>The data.</returns>
         public T GetDataForIndex(int index)
         {
-            return treeDataController.GetDataForNode(GetHierarchyNodeByIndex(index));
+            var sourceIndex = columnController.GetSourceIndex(index);
+            return treeDataController.GetDataForNode(GetHierarchyNodeByIndex(sourceIndex));
         }
 
         /// <inheritdoc />

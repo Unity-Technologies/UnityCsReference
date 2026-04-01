@@ -101,7 +101,7 @@ namespace UnityEditor.Build.Profile.Handlers
 
             EnsureCustomBuildProfileFolderExists();
 
-            string uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(path);
+            string uniqueFilePath = GetUniqueBuildProfilePath(path);
             AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
@@ -113,6 +113,28 @@ namespace UnityEditor.Build.Profile.Handlers
             }));
 
             return duplicatedProfile;
+        }
+
+        /// <summary>
+        /// Generates a unique file path for a build profile by ensuring the file name does not conflict with existing profiles.
+        /// </summary>
+        private static string GetUniqueBuildProfilePath(string path)
+        {
+            var allBuildProfiles = FindAllBuildProfiles();
+            string[] existingNames = allBuildProfiles.ConvertAll(profile => profile.name).ToArray();
+
+            string baseFileName = Path.GetFileNameWithoutExtension(path);
+            string uniqueName = ObjectNames.GetUniqueName(existingNames, baseFileName);
+
+            string directory = Path.GetDirectoryName(path);
+            string extension = Path.GetExtension(path);
+            string uniqueFilePath = Path.Combine(directory, uniqueName + extension);
+
+            // Check that the file path doesn't exist on disk
+            // (shouldn't be the case, as we check against all BuildProfiles before)
+            uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(uniqueFilePath);
+
+            return uniqueFilePath;
         }
 
         /// <summary>
@@ -179,7 +201,7 @@ namespace UnityEditor.Build.Profile.Handlers
             var originalPath = AssetDatabase.GetAssetPath(buildProfile);
             var newPath = ReplaceFileNameInPath(originalPath, newName);
             var onlyCaseChange = string.Equals(buildProfile?.name, newName, StringComparison.OrdinalIgnoreCase);
-            var uniqueAssetPath = onlyCaseChange ? newPath : AssetDatabase.GenerateUniqueAssetPath(newPath);
+            var uniqueAssetPath = onlyCaseChange ? newPath : GetUniqueBuildProfilePath(newPath);
             var finalName = Path.GetFileNameWithoutExtension(uniqueAssetPath);
 
             if (!string.IsNullOrEmpty(originalPath))
