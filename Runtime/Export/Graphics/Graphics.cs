@@ -1250,6 +1250,20 @@ namespace UnityEngine
 {
     public sealed partial class QualitySettings
     {
+        static QualityLevelRemovalScope s_RemovalScope = null;
+
+        /// <summary>
+        /// Callback raised when the current active quality level is being changed.
+        /// It passes to the callback:
+        ///   - the previous quality level
+        ///   - the current quality level.
+        ///   - the current quality level in old name array.
+        /// The third index is usefull to be able to map what is the new name as this
+        /// operation is done before name array is being recomputed. And this should
+        /// remains this way as the name should be inspectable from the callback.
+        /// </summary>
+        internal static event Action<int /*previous*/, int /*current*/, int /*currentInPreviousList*/> activeQualityLevelIndexChanged;
+
         /// <summary>
         /// Callback raised when the current active quality level is being changed
         /// It passes to the callback the previous quality level and the current quality level
@@ -1262,10 +1276,40 @@ namespace UnityEngine
         /// </summary>
         public static event Action<string, string> activeQualityLevelRenamed;
 
+        internal class QualityLevelRemovalScope : IDisposable
+        {
+            public int qualityLevelIndexBeingRemoved { get; private set; }
+
+            public QualityLevelRemovalScope(int qualityLevelIndexBeingRemoved)
+            {
+                this.qualityLevelIndexBeingRemoved = qualityLevelIndexBeingRemoved;
+                s_RemovalScope = this;
+            }
+
+            void IDisposable.Dispose() => s_RemovalScope = null;
+
+            // As SetCurrentIndex on the native side will skip if index don't change
+            // this case need to manually trigger the event
+            public void DeletingCurrentNonLastLevel()
+                => OnActiveQualityLevelChanged(qualityLevelIndexBeingRemoved, qualityLevelIndexBeingRemoved);
+        }
+
         [RequiredByNativeCode]
         internal static void OnActiveQualityLevelChanged(int previousQualityLevel, int currentQualityLevel)
         {
             activeQualityLevelChanged?.Invoke(previousQualityLevel, currentQualityLevel);
+
+            int currentInPreviousList = currentQualityLevel;
+            if (s_RemovalScope != null)
+            {
+                int indexBeingRemoved = s_RemovalScope.qualityLevelIndexBeingRemoved;
+                bool changeDueToRemovalOfLowerOrCurrentLevel = indexBeingRemoved <= previousQualityLevel;
+                bool isLastLevel = indexBeingRemoved == QualitySettings.count - 1;
+                if (changeDueToRemovalOfLowerOrCurrentLevel && !isLastLevel)
+                    currentInPreviousList++; 
+            }
+
+            activeQualityLevelIndexChanged?.Invoke(previousQualityLevel, currentQualityLevel, currentInPreviousList);
         }
 
         internal static void OnActiveQualityLevelRenamed(string previousName, string newName)

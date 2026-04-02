@@ -666,5 +666,40 @@ namespace Unity.U2D.Physics
         }
 
         #endregion
+
+        #region World Definition Changed Event
+
+        /// <summary>
+        /// Event handler for a world definition change event callback.
+        /// </summary>
+        /// <param name="world">The world whose definition changed.</param>
+        public delegate void WorldDefinitionChangeEventHandler(PhysicsWorld world);
+
+        /// <summary>
+        /// Event callback for a world definition change event.
+        /// </summary>
+        public static event WorldDefinitionChangeEventHandler WorldDefinitionChange { add => s_WorldDefinitionChange += value; remove => s_WorldDefinitionChange -= value; }
+        static event WorldDefinitionChangeEventHandler s_WorldDefinitionChange;
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        internal static void InvokeWorldDefinitionChangeEvent(PhysicsWorld world)
+        {
+            try
+            {
+                // Invoke the event.
+                s_WorldDefinitionChange?.Invoke(world);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+            finally
+            {
+            }
+        }
+
+        #endregion
+
     }
 }

@@ -345,6 +345,7 @@ namespace UnityEditor.Build.Profile
         /// Required components to appear in the build profile.
         /// </summary>
         [VisibleToOtherModules]
+        [HideInInspector]
         [SerializeReference]
         internal ScriptableObject[] requiredComponents = [];
 

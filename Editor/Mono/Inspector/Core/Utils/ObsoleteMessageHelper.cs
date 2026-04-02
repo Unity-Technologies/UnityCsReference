@@ -106,6 +106,8 @@ namespace UnityEditor
                 {
                     replacementType = ResolveReplacementType(replacementAttr.TypeName);
                     displayName = replacementAttr.DisplayName;
+                    message = replacementType != null && string.IsNullOrEmpty(replacementAttr.AlternativeMessage)
+                        ? message : StripVersionTags(replacementAttr.AlternativeMessage);
                 }
 
                 s_ObsoleteTypeMessages[type] = new ObsoleteMessageContainer(message, messageType, replacementType, displayName);

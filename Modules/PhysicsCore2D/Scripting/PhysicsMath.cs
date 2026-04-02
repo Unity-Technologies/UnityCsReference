@@ -238,20 +238,21 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get the relative transformation matrix between the two specified transforms using the specified transform plane.
-        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used,  <see cref="PhysicsWorld.TransformPlane.XY"/> will be used instead which may not provide the correct results.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, <see cref="PhysicsWorld.TransformPlane.XY"/> will be used instead which may not provide the correct results.
         /// </summary>
         /// <param name="transformFrom">The transform used as a reference to transform from.</param>
         /// <param name="transformTo">The transform used as a reference to transform to.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <param name="useScale">If the returned matrix should include scale.</param>
         /// <returns>The calculated relative transformation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 GetRelativeMatrix(Transform transformFrom, Transform transformTo, PhysicsWorld.TransformPlane transformPlane = PhysicsWorld.TransformPlane.XY, bool useScale = true)
         {
             // The same transforms use identity with scaling.
             if (transformFrom == transformTo)
             {
                 if (useScale)
-                    return Matrix4x4.TRS(Vector3.zero, Quaternion.identity, transformTo.lossyScale);
+                    return Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Swizzle(transformTo.lossyScale, transformPlane));
                 else
                     return Matrix4x4.identity;
             }
@@ -268,12 +269,94 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Transform a 3D position into a 3D position using the selected transform plane.
+        /// Get the relative transformation matrix between the two specified transform matrix using the specified transform plane to transform into 2D space i.e. XY position and Z rotation.
+        /// </summary>
+        /// <param name="transformFrom">The transform used as a reference to transform from.</param>
+        /// <param name="transformTo">The transform used as a reference to transform to.</param>
+        /// <param name="transformPlane">The transform plane to use.</param>
+        /// <param name="transformPlaneCustom">The custom transform plane to use (if required).</param>
+        /// <param name="useScale">If the returned matrix should include scale. Scale is not relative and always uses the transformTo lossyScale.</param>
+        /// <returns>The calculated relative transformation matrix.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the transform matrices are not a valid TRS matrix.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix4x4 GetRelativeMatrix2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, bool useScale = true)
+        {
+            // Validate.
+            if (!transformFrom.ValidTRS() || !transformTo.ValidTRS())
+                throw new InvalidOperationException("Transform matrix are not valid TRS matrices. Ensure that scaling is non-zero.");
+
+            var useCustomPlane = transformPlane == PhysicsWorld.TransformPlane.Custom;
+
+            // Calculate from/to matrix.
+            var fromCustom = transformPlaneCustom.fromCustom;
+            var fromMatrix = useCustomPlane ? transformFrom * fromCustom : transformFrom;
+            var toMatrix = useCustomPlane ? transformTo * fromCustom : transformTo;
+            var fromMatrixInv = fromMatrix.inverse;
+
+            // Calculate the relative TRS.
+            var relativePos = fromMatrixInv.MultiplyPoint(toMatrix.GetPosition());
+            var relativeRot = fromMatrixInv.rotation * toMatrix.rotation;
+
+            // If using a custom transform plane then filter as XY only.
+            if (useCustomPlane)
+                transformPlane = PhysicsWorld.TransformPlane.XY;
+
+            // Transform by transform plane.
+            relativePos = ToPosition2D(relativePos, transformPlane);
+            relativeRot = ToRotationFast3D(ToRotation2D(relativeRot, transformPlane));
+            var scale = Swizzle(toMatrix.lossyScale, transformPlane);
+
+            // Create the matrix.
+            return Matrix4x4.TRS(relativePos, relativeRot, scale);
+        }
+
+        /// <summary>
+        /// Get the relative transformation pose (translation, rotation and scale) between the two specified transform matrix using the specified transform plane to transform into 2D space.
+        /// </summary>
+        /// <param name="transformFrom">The transform used as a reference to transform from.</param>
+        /// <param name="transformTo">The transform used as a reference to transform to.</param>
+        /// <param name="transformPlane">The transform plane to use.</param>
+        /// <param name="transformPlaneCustom">The custom transform plane to use (if required).</param>
+        /// <param name="translation">The 2D relative translation.</param>
+        /// <param name="rotation">The 2D relative rotation.</param>
+        /// <param name="scale">The 2D relative scale. Scale is not relative and always uses the transformTo lossyScale.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the transform matrices are not a valid TRS matrix.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void GetRelativePose2D(in Matrix4x4 transformFrom, in Matrix4x4 transformTo, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom, out Vector2 translation, out float rotation, out Vector2 scale)
+        {
+            // Validate.
+            if (!transformFrom.ValidTRS() || !transformTo.ValidTRS())
+                throw new InvalidOperationException("Transform matrix are not valid TRS matrices. Ensure that scaling is non-zero.");
+
+            var useCustomPlane = transformPlane == PhysicsWorld.TransformPlane.Custom;
+
+            // Calculate from/to matrix.
+            var fromCustom = transformPlaneCustom.fromCustom;
+            var fromMatrix = useCustomPlane ? transformFrom * fromCustom : transformFrom;
+            var toMatrix = useCustomPlane ? transformTo * fromCustom : transformTo;
+            var fromMatrixInv = fromMatrix.inverse;
+
+            // Calculate the relative TRS.
+            var relativePos = fromMatrixInv.MultiplyPoint(toMatrix.GetPosition());
+            var relativeRot = fromMatrixInv.rotation * toMatrix.rotation;
+
+            // If using a custom transform plane then filter as XY only.
+            if (useCustomPlane)
+                transformPlane = PhysicsWorld.TransformPlane.XY;
+
+            // Transform by transform plane.
+            translation = ToPosition2D(relativePos, transformPlane);
+            rotation = ToRotation2D(relativeRot, transformPlane);
+            scale = Swizzle(toMatrix.lossyScale, transformPlane);
+        }
+
+        /// <summary>
+        /// Transform a 3D vector into a 3D vector using the selected transform plane.
         /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used,  <see cref="PhysicsWorld.TransformPlane.XY"/> will be used instead which may not provide the correct results.
         /// </summary>
-        /// <param name="position">The 3D position to transform.</param>
+        /// <param name="position">The 3D vector to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
-        /// <returns>The transformed position.</returns>
+        /// <returns>The transformed vector.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Swizzle(Vector3 position, PhysicsWorld.TransformPlane transformPlane = PhysicsWorld.TransformPlane.XY)
@@ -341,8 +424,28 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Transform a 2D position into a 3D position using the selected transform plane.
+        /// </summary>
+        /// <param name="position">The 2D position to transform.</param>
+        /// <param name="reference">The 3D position used as a reference.</param>
+        /// <param name="transformPlane">The transform plane to use.</param>
+        /// <param name="transformPlaneCustom">The custom transform plane (if required).</param>
+        /// <returns>The transformed position.</returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 ToPosition3D(Vector2 position, Vector3 reference, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
+        {
+            // If not using a custom transform plane then use the standard conversion.
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
+                return ToPosition3D(position, reference, transformPlane);
+
+            // Transform by custom transform plane.
+            return transformPlaneCustom.toCustom.MultiplyPoint(ToPosition3D(position, reference, PhysicsWorld.TransformPlane.XY));
+        }
+
+        /// <summary>
         /// Transform a 3D position into a 2D position using the selected transform plane.
-        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used,  <see cref="PhysicsWorld.TransformPlane.XY"/> will be used instead which may not provide the correct results.
+        /// If TransformPlane.Custom is used then <see cref="PhysicsWorld.TransformPlane.XY"/> is used.
         /// </summary>
         /// <param name="position">The 3D position to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
@@ -362,8 +465,28 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Transform a 3D position into a 2D position using the selected transform plane.
+        /// This can also be used for a 3D scale vector as it undergoes the same transformation.
+        /// </summary>
+        /// <param name="position">The 3D position to transform.</param>
+        /// <param name="transformPlane">The transform plane to use.</param>
+        /// <param name="transformPlaneCustom">The custom transform plane (if required).</param>
+        /// <returns>The transformed position.</returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 ToPosition2D(Vector3 position, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
+        {
+            // If not using a custom transform plane then use the standard conversion.
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
+                return ToPosition2D(position, transformPlane);
+
+            // Transform by custom transform plane.
+            return transformPlaneCustom.FromPosition(position);
+        }
+
+        /// <summary>
         /// Transform a 3D rotation into a 2D angle using the selected transform plane.
-        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used,  <see cref="PhysicsWorld.TransformPlane.XY"/> will be used instead which may not provide the correct results.
+        /// If TransformPlane.Custom is used then <see cref="PhysicsWorld.TransformPlane.XY"/> is used.
         /// </summary>
         /// <param name="quaternion">The 3D rotation to transform.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
@@ -384,6 +507,25 @@ namespace Unity.U2D.Physics
                 PhysicsWorld.TransformPlane.Custom => 2.0f * Atan2(quaternion.z, quaternion.w),
                 _ => throw new InvalidOperationException("Invalid Transform Plane."),
             };
+        }
+
+        /// <summary>
+        /// Transform a 3D rotation into a 2D angle using the selected transform plane.
+        /// </summary>
+        /// <param name="rotation">The 3D rotation to transform.</param>
+        /// <param name="transformPlane">The transform plane to use.</param>
+        /// <param name="transformPlaneCustom"></param>
+        /// <returns>The transformed rotation in radians.</returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ToRotation2D(Quaternion rotation, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
+        {
+            // If not using a custom transform plane then use the standard conversion.
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
+                return ToRotation2D(rotation, transformPlane);
+
+            // Transform by custom transform plane.
+            return ToRotation2D(transformPlaneCustom.fromCustom.rotation * rotation, PhysicsWorld.TransformPlane.XY);
         }
 
         /// <summary>

@@ -673,6 +673,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 case ConstantNodeModel constantNodeModel:
                     return SupportedTypes.Contains(constantNodeModel.Type);
 
+                case WirePortalModel portalNodeModel:
+                    return SupportedTypes.Contains(portalNodeModel.GetPortDataTypeHandle().Resolve());
+
                 case SubgraphNodeModel subgraphNodeModel:
                     var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph ??
                                    (GraphReference.ResolveGraphModel(subgraphNodeModel.SubgraphReference) as GraphModelImp)?.Graph;

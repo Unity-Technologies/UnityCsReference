@@ -77,6 +77,16 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsBody.bodyConstraints is obsolete. Please use PhysicsBody.constraints instead.", true)]
         public readonly RigidbodyConstraints2D bodyConstraints { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsBody.GetPositionAndRotation3D is deprecated. Please use PhysicsBody.ReadPose instead as it does not require passing transform write details but will instead implicit user them..", false)]
+        public readonly void GetPositionAndRotation3D(Transform transform, PhysicsWorld.TransformWriteMode transformWriteMode, PhysicsWorld.TransformPlane transformPlane, out Vector3 position, out Quaternion rotation) => ReadPose(transform, out position, out rotation);
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsBody.SetAndWriteTransform is deprecated. Please use PhysicsBody.transform and PhysicsBody.WritePose instead which offers more utility by allowing the body transform to be set separately from writing the pose.", false)]
+        public readonly bool SetAndWriteTransform(PhysicsTransform transform) { this.transform = transform; return WritePose(); }
     }
 
     public partial struct PhysicsBodyDefinition

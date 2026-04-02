@@ -81,7 +81,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// will add further information including the DependencyNode, Location and assembly name and add the resulting
         /// ReportItem to the report.
         /// </remarks>
-        public abstract ReportItemBuilder Analyze(InstructionAnalysisContext context);
+        public abstract IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context);
 
         /// <summary>
         /// Implement this method to store custom per-assembly data

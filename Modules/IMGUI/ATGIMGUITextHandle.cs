@@ -258,7 +258,6 @@ namespace UnityEngine
         static List<List<List<int>>> s_TextElementIndicesByMesh = new();
         static Dictionary<EntityId, HashSet<uint>> s_MissingGlyphsPerFontAsset = new();
         static List<bool> s_HasMultipleColors = null;
-        static Vector2 s_UV2 = new Vector2(1, 0);
         internal void ComputeMeshInfos(ref MeshInfoBindings[] meshInfos)
         {
             foreach (var listOfAtlases in s_TextElementIndicesByMesh)
@@ -306,7 +305,6 @@ namespace UnityEngine
                 if (!fa.IsBitmap())
                     sdfScale = fa.atlasPadding + 1;
 
-                s_UV2.y = sdfScale;
                 var textElementInfos = meshInfo.textElementInfos;
 
                 // Create a separate MeshInfoBindings for each atlas
@@ -340,10 +338,13 @@ namespace UnityEngine
                         meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv0 = te.topRight.uv0;
                         meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv0 = te.bottomRight.uv0;
 
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv2 = s_UV2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv2 = s_UV2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv2 = s_UV2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv2 = s_UV2;
+                        float nativeBold = te.bottomLeft.uv2.y;
+                        float signedSdfScale = nativeBold != 0 ? -sdfScale : sdfScale;
+                        var uv2 = new Vector2(1, signedSdfScale);
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv2 = uv2;
 
                         meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].color = te.bottomLeft.color;
                         meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].color = te.topLeft.color;

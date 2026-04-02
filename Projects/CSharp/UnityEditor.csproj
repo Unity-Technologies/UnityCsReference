@@ -11631,6 +11631,9 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\ModuleWithAnalyzers.cs">
       <Link>Modules\ProjectAuditorEditor\Core\ModuleWithAnalyzers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\ObsoleteLibrary.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\ObsoleteLibrary.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\PackageDependencyNode.cs">
       <Link>Modules\ProjectAuditorEditor\Core\PackageDependencyNode.cs</Link>
     </Compile>
@@ -11897,6 +11900,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\Framework\ViewStates.cs">
       <Link>Modules\ProjectAuditorEditor\UI\Framework\ViewStates.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\ObsoleteApiView.cs">
+      <Link>Modules\ProjectAuditorEditor\UI\ObsoleteApiView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\ProjectAuditorWindow.cs">
       <Link>Modules\ProjectAuditorEditor\UI\ProjectAuditorWindow.cs</Link>

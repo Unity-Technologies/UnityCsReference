@@ -47,7 +47,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Extend BuildPlayerProcessor to receive callbacks during a player build.</summary>
-    ///<remarks>Add files and perform custom setup before the build starts. For more information, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>Add files and perform custom setup before the build starts. For more information, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     ///<seealso cref="IFilterBuildAssemblies" />
     ///<seealso cref="IPostBuildPlayerScriptDLLs" />
     ///<seealso cref="IUnityLinkerProcessor" />
@@ -154,7 +154,7 @@ namespace UnityEditor.Build
     ///that are challenging to debug or reproduce. This unpredictability might compromise the efficiency and accuracy of incremental builds or incremental upgrades.
     ///
     ///The main difference between this interface and <see cref="Build.IPreprocessBuildWithReport" /> or <see cref="Build.IPreprocessBuild" /> is that this callback gets called on AssetBundle builds and Player builds.
-    ///For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     ///<example>
     ///  <code><![CDATA[
     ///using System;
@@ -193,7 +193,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to receive a callback to filter assemblies away from the build.</summary>
-    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IFilterBuildAssemblies : IOrderedCallback
     {
         ///<summary>Will be called after building script assemblies, but makes it possible to filter away unwanted scripts to be included.</summary>
@@ -419,7 +419,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to receive a callback after the player scripts have been compiled.</summary>
-    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IPostBuildPlayerScriptDLLs : IOrderedCallback
     {
         ///<summary>Implement this interface to receive a callback just after the player scripts have been compiled.</summary>
@@ -454,21 +454,31 @@ namespace UnityEditor.Build
     [Obsolete("Use IProcessSceneWithReport instead")]
     public interface IProcessScene : IOrderedCallback
     {
-        ///<summary>Implement this function to receive a callback for each Scene during the build.</summary>
-        /// <param name="scene">The current Scene being processed.</param>
+        ///<summary>Implement this method to receive a callback for each scene during the build.</summary>
+        /// <param name="scene">The scene Unity is currently processing during the build.</param>
         void OnProcessScene(UnityEngine.SceneManagement.Scene scene);
     }
 
-    ///<summary>Implement this interface to receive a callback for each Scene during the build.</summary>
-    ///<remarks>If the scene or related content in the project is unchanged from the previous Player build, Unity doesn't build the scene and instead uses cached Player build data will be used. In this case the callback isn't called. For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<summary>Implement this interface to receive a callback for each scene during the build.</summary>
+    ///<remarks>If the scene or related content in the project is unchanged from the previous Player build, Unity doesn't build the scene and instead uses cached Player build data. In this case, the callback isn't called. For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IProcessSceneWithReport : IOrderedCallback
     {
         /// <summary>
-        /// Implement this function to receive a callback for each Scene during the build.
+        /// Implement this method to receive a callback for each scene during the build.
         /// </summary>
-        /// <remarks>This callback is invoked during Player and AssetBundle builds, and also as a scene is reloaded while entering Editor playmode. <see cref="BuildPipeline.isBuildingPlayer" /> can be used to determine in which context the callback is being called</remarks>
-        /// <param name="scene">The current Scene being processed.</param>
-        /// <param name="report">A report containing information about the current build. When this callback is invoked for Scene loading during Editor playmode, this parameter will be null.</param>
+        /// <remarks>Unity invokes this callback during Player and AssetBundle builds, and also when a scene is reloaded while entering Play mode. Use <see cref="BuildPipeline.isBuildingPlayer" /> to determine in which context the callback is called.
+        /// 
+        /// This callback supports editing the provided scene to prepare it for a Player build or entering Play mode, and reading assets. For example, you can add or remove references to project assets in that scene.
+        ///
+        /// This callback doesn't support modifying the state of other assets. Use it to modify only the provided scene.
+        ///
+        /// Keep implementations deterministic. Avoid random values, timestamps, or external changing data sources. For more information, refer to [Deterministic builds](xref:um-build-deterministic-builds).
+        ///
+        /// Apply <see cref="Build.BuildCallbackVersionAttribute" /> to callback types and increment the version whenever the callback logic changes to help Unity invalidate cached scene processing results when needed.
+        ///
+        /// For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks).</remarks>
+        /// <param name="scene">The current scene being processed.</param>
+        /// <param name="report">A report containing information about the current build. When this callback is invoked for scene loading during Play mode, this parameter is null.</param>
         ///<example>
         ///  <code><![CDATA[
         /// using UnityEditor;
@@ -479,7 +489,10 @@ namespace UnityEditor.Build
         /// class MyCustomBuildProcessor : IProcessSceneWithReport
         /// {
         ///     public int callbackOrder { get { return 0; } }
-        ///     public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report) { Debug.Log("MyCustomBuildProcessor.OnProcessScene " + scene.name); }
+        ///     public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report) 
+        ///     { 
+        ///         Debug.Log("MyCustomBuildProcessor.OnProcessScene " + scene.name); 
+        ///     }
         /// }
         ///]]></code>
         ///</example>
@@ -521,7 +534,7 @@ namespace UnityEditor.Build
     {
         ///<summary>Implement this interface to receive a callback before a shader snippet is compiled.</summary>
         ///<remarks>
-        ///  <para>When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:shader-variants). Unity creates variants for some or all of the possible combinations of keywords you define in the shader source file.
+        ///  <para>When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:um-shader-variants). Unity creates variants for some or all of the possible combinations of keywords you define in the shader source file.
         ///
         ///                    You can use <c>OnProcessShader</c> to iterate through each shader and variant Unity is about to compile, and exclude ('strip') variants that use keywords or keyword combinations you don't need. If you strip variants, you can greatly reduce build size, build times, and how much runtime memory Unity uses.
         ///
@@ -533,9 +546,9 @@ namespace UnityEditor.Build
         ///
         ///                    Unity invokes the <c>OnProcessShader</c> callback in both Player and AssetBundle builds.
         ///
-        ///                    You can [check what shader variants you have in your project](xref:shader-how-many-variants) to help you identify keywords and variants to strip.
+        ///                    You can [check what shader variants you have in your project](xref:um-shader-how-many-variants) to help you identify keywords and variants to strip.
         ///
-        ///                    For example if you [declare a keyword](xref:SL-MultipleProgramVariants) called <c>DEBUG</c> in your shader code using <c>#pragma multi_compile _ DEBUG</c>, the following [Editor script](xref:SpecialFolders) finds and strips shader variants that use the keyword.
+        ///                    For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called <c>DEBUG</c> in your shader code using <c>#pragma multi_compile _ DEBUG</c>, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
         ///
         ///                    The script does the following when you build your application:
         ///
@@ -543,13 +556,13 @@ namespace UnityEditor.Build
         ///2. Creates an instance of <c>ShaderKeyword</c> with the name of the keyword.
         ///3. Implements the <c>OnProcessShader</c> callback function and iterates over the <c>data</c> list, which contains every variant in the shader.
         ///4. Uses <c>data.shaderKeywordSet.IsEnabled()</c> to check if each variant uses the keyword.
-        ///5. Uses <c>data.removeAt()</c> to strip a shader variant if it contains the keyword and you've disabled **Development build** in [Build Settings](xref:Build Settings).</para>
+        ///5. Uses <c>data.removeAt()</c> to strip a shader variant if it contains the keyword and you've disabled **Development build** in [Build Settings](xref:um-build-settings).</para>
         ///  <para>You can also find local keywords. You must create the <c>ShaderKeyword</c> instance inside the implementation of <c>OnProcessShader</c>, so you can use the callback's <c>shader</c> variable in the <c>ShaderKeyword</c> constructor.
         ///
         ///                    For example if you declare a local keyword called <c>RED</c> in your shader code using <c>#pragma multi_compile_local _ RED</c>, the following script finds and strips shader variants that use the keyword.</para>
         ///  <para>If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
         ///
-        ///                    Find out about other ways you can [strip shader variants](xref:shader-variant-stripping).
+        ///                    Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
         ///
         ///</para>
         ///</remarks>
@@ -597,7 +610,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to receive a callback before a compute shader is compiled.</summary>
-    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IPreprocessComputeShaders : IOrderedCallback
     {
         ///<summary>Implement this interface to receive a callback before Unity compiles a compute shader kernel into a build.</summary>
@@ -657,8 +670,8 @@ namespace UnityEditor.Build
         ///}
         ///]]></code>
         ///</example>
-        ///<seealso href="xref:shader-variants-and-keywords">Shader variants and keywords</seealso>
-        ///<seealso href="xref:SL-MultipleProgramVariants">Declaring and using shader keywords in HLSL</seealso>
+        ///<seealso href="xref:um-shader-variants-and-keywords">Shader variants and keywords</seealso>
+        ///<seealso href="xref:um-sl-multiple-program-variants">Declaring and using shader keywords in HLSL</seealso>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
         void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data);
@@ -718,7 +731,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to receive callbacks related to the running of UnityLinker.</summary>
-    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     ///<seealso cref="Build.BuildPlayerProcessor" />
     ///<seealso cref="IFilterBuildAssemblies" />
     ///<seealso cref="IPostBuildPlayerScriptDLLs" />

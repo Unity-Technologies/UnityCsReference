@@ -53,7 +53,8 @@ namespace Unity.UI.Builder
 
         public void ImportUxmlSerializedDataFromSource(BuilderLibraryItem sourceCategory)
         {
-            var categoryStack = new List<BuilderLibraryItem>();
+            var namespaceCategoryStack = new List<BuilderLibraryItem>();
+            var libraryPathCategories = new Dictionary<string, BuilderLibraryItem>();
             var emptyNamespaceControls = new List<TreeViewItem>();
 
             var shownTypes = new HashSet<Type>();
@@ -135,21 +136,53 @@ namespace Unity.UI.Builder
 
                     CheckForUxmlElementInClassHierarchy(elementType);
 
-                    bool hasCustomPath = elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.libraryPath);
+                    var hasCustomPath = elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.libraryPath);
                     if (!hasNamespace && !hasCustomPath)
                     {
                         emptyNamespaceControls.Add(newItem);
                     }
+                    else if (hasCustomPath)
+                    {
+                        var path = elementAttribute.libraryPath;
+                        if (!libraryPathCategories.TryGetValue(path, out var category))
+                        {
+                            var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                            var parent = sourceCategory;
+                            var currentPathBuilder = new StringBuilder();
+
+                            for (var i = 0; i < parts.Length; i++)
+                            {
+                                if (i > 0)
+                                    currentPathBuilder.Append('/');
+
+                                currentPathBuilder.Append(parts[i]);
+
+                                var currentPath = currentPathBuilder.ToString();
+                                if (!libraryPathCategories.TryGetValue(currentPath, out var existing))
+                                {
+                                    var idHash = ("library-path-" + currentPath).GetHashCode();
+                                    existing = BuilderLibraryContent.CreateItem(parts[i], null, null, null, null, null, null, idHash);
+                                    parent.AddChild(existing);
+                                    libraryPathCategories[currentPath] = existing;
+                                }
+                                parent = existing;
+                            }
+
+                            category = parent;
+                            // Cache the final path for faster subsequent lookups
+                            if (!libraryPathCategories.ContainsKey(path))
+                                libraryPathCategories[path] = category;
+                        }
+                        category.AddChild(newItem);
+                    }
                     else
                     {
-                        var category = hasCustomPath ? elementAttribute.libraryPath.Split("/", StringSplitOptions.RemoveEmptyEntries) : elementType.Namespace.Split('.');
-                        AddCategoriesToStack(sourceCategory, categoryStack, category, "csharp-uxml-serialized-data-");
-                        if (categoryStack.Count == 0)
+                        var category = elementType.Namespace.Split('.');
+                        AddCategoriesToStack(sourceCategory, namespaceCategoryStack, category, "csharp-uxml-serialized-data-");
+                        if (namespaceCategoryStack.Count == 0)
                             sourceCategory.AddChild(newItem);
                         else
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            categoryStack.Last().AddChild(newItem);
-#pragma warning restore UA2001
+                            namespaceCategoryStack[^1].AddChild(newItem);
                     }
                 }
                 catch (Exception e)

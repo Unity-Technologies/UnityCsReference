@@ -59,11 +59,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh(Sample sample)
         {
-            if (sample.isDefault)
-                return;
-
             m_Sample = sample;
             m_ParentVersion = m_Sample.package?.versions.primary;
+            if (m_Sample.isDefault || m_ParentVersion == null)
+                return;
+
             packageAuthorLabel.Refresh(m_ParentVersion);
 
             RefreshDisplayName();

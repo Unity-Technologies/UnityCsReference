@@ -5,6 +5,7 @@
 using System;
 using Unity.Profiling.Editor.UI;
 using UnityEditor;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -171,7 +172,8 @@ namespace Unity.Profiling.Editor
             m_ChartGuides = new ChartGuidesWidget(m_Model, m_Chart);
             m_ChartSelectionLabels = new ChartSelectionLabelsWidget(m_ChartType, m_Model, m_Chart);
             m_MissingFramesWidget = new FrameWarningsOverlayWidget(m_Model, m_Chart, StatisticsAvailabilityMessageFactory);
-            m_SelectedMarkerOverlay = new SelectedMarkerOverlayWidget(m_Chart);
+            if (m_Module is CPUProfilerModule)
+                m_SelectedMarkerOverlay = new SelectedMarkerOverlayWidget(m_Chart);
 
             View.RegisterCallback<PointerUpEvent>(ModuleActivationCallback);
             View.RegisterCallback<KeyDownEvent>(SelectionManipulationCallback);

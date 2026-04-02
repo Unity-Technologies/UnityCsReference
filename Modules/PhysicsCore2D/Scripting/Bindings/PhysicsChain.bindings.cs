@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -33,7 +34,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsChain::CastShape", IsThreadSafe = true)] extern internal static PhysicsQuery.CastResult PhysicsChain_CastShape(PhysicsChain chain, PhysicsQuery.CastShapeInput input, out PhysicsShape chainSegmentShape);
         [NativeMethod(Name = "PhysicsChain::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsChain_SetWorldDrawing(PhysicsChain chain, bool flag);
         [NativeMethod(Name = "PhysicsChain::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsChain_GetWorldDrawing(PhysicsChain chain);
-        [NativeMethod(Name = "PhysicsChain::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsChain_SetOwner(PhysicsChain chain, UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsChain::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsChain_SetOwner(ReadOnlySpan<PhysicsChain> chains, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsChain::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsChain_GetOwner(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsOwned(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsChain_SetCallbackTarget(PhysicsChain chain, System.Object callbackTarget);

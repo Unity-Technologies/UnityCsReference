@@ -531,5 +531,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             return url.Contains("docs.unity3d.com", StringComparison.Ordinal);
         }
+
+        internal static int VersionToInt(string version)
+        {
+            var parts = version.Split('.');
+            return int.Parse(parts[0]) * 100 + int.Parse(parts[1]); // Just any integer that can be used for comparison
+        }
     }
 }

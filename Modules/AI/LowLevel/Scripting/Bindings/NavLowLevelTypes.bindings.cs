@@ -17,10 +17,9 @@ public enum NavQueryStatus
 
     // Detail information for status.
     StatusDetailMask = 0x0ffffff,
-    OutOfMemory = 1 << 2, // Operation ran out of memory.
-    InvalidParam = 1 << 3, // An input parameter was invalid.
-    BufferTooSmall = 1 << 4, // Result buffer for the query was too small to store all results.
-    OutOfNodes = 1 << 5, // Query ran out of nodes during search.
+    InvalidParameter = 1 << 3, // An input parameter was invalid.
+    MoreDataAvailable = 1 << 4, // Result buffer for the query was too small to store all results.
+    MaxNodesToVisitExceeded = 1 << 5, // Query ran out of nodes during search.
     PartialResult = 1 << 6 // Query did not reach the end location, returning best guess.
 }
 

@@ -68,6 +68,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
             m_PageRefreshHandler.onRefreshOperationFinish += Refresh;
 
+            m_PageManager.onListRebuild += OnListRebuild;
+            m_PageManager.onListUpdate += OnListUpdate;
+
             Refresh();
         }
 
@@ -76,6 +79,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
             m_PageRefreshHandler.onRefreshOperationFinish -= Refresh;
+
+            m_PageManager.onListRebuild -= OnListRebuild;
+            m_PageManager.onListUpdate -= OnListUpdate;
         }
 
         public void UpdateMenu()
@@ -132,6 +138,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnInternetReachabilityChange(bool value)
         {
             loadMoreButton.SetEnabled(value && !m_LoadMoreInProgress);
+        }
+
+        private void OnListUpdate(ListUpdateArgs args)
+        {
+            // Since load bar only shows the number of items on a page, we don't refresh when the number hasn't changed
+            if (args.added.Count > 0 || args.removed.Count > 0)
+                Refresh();
+        }
+
+        private void OnListRebuild(IPage page)
+        {
+            Refresh();
         }
 
         public void Refresh()

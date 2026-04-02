@@ -111,7 +111,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             registerDescriptor(k_StringFormatArrayAllocationDescriptor);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             if (context.Instruction.OpCode == OpCodes.Call || context.Instruction.OpCode == OpCodes.Callvirt)
             {
@@ -135,27 +135,25 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                                 actuallyPassesArray = false;
                         }
                         if (actuallyPassesArray)
-                            return context.CreateIssue(IssueCategory.Code, k_ParamArrayAllocationDescriptor.Id, lastParam.ParameterType.Name, lastParam.Name);
+                            yield return context.CreateIssue(IssueCategory.Code, k_ParamArrayAllocationDescriptor.Id, lastParam.ParameterType.Name, lastParam.Name);
                     }
                 }
-                return null;
             }
-
-            if (context.Instruction.OpCode == OpCodes.Newobj)
+            else if (context.Instruction.OpCode == OpCodes.Newobj)
             {
                 var methodReference = (MethodReference)context.Instruction.Operand;
                 var typeReference = methodReference.DeclaringType;
                 if (typeReference.IsValueType)
-                    return null;
+                    yield break;
 
                 var isClosure = typeReference.Name.StartsWith("<>c__DisplayClass", StringComparison.Ordinal);
                 if (isClosure)
                 {
-                    return context.CreateIssue(IssueCategory.Code, k_ClosureAllocationDescriptor.Id, context.MethodDefinition.DeclaringType.Name, context.MethodDefinition.Name);
+                    yield return context.CreateIssue(IssueCategory.Code, k_ClosureAllocationDescriptor.Id, context.MethodDefinition.DeclaringType.Name, context.MethodDefinition.Name);
                 }
                 else
                 {
-                    return context.CreateIssue(IssueCategory.Code, k_ObjectAllocationDescriptor.Id, typeReference.FastFullName());
+                    yield return context.CreateIssue(IssueCategory.Code, k_ObjectAllocationDescriptor.Id, typeReference.FastFullName());
                 }
             }
             else // OpCodes.Newarr
@@ -172,7 +170,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                         if (callee.Name == "Format" && callee.DeclaringType.FullName == "System.String")
                         {
                             if (callee.HasParameters && callee.Parameters.Count == 2 && callee.Parameters[1].ParameterType.FullName == "System.Object[]") // Check if the second parameter is the parameter array
-                                return context.CreateIssue(IssueCategory.Code, k_StringFormatArrayAllocationDescriptor.Id, typeReference.Name);
+                            {
+                                yield return context.CreateIssue(IssueCategory.Code, k_StringFormatArrayAllocationDescriptor.Id, typeReference.Name);
+                                yield break;
+                            }
                         }
                     }
 
@@ -180,7 +181,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 }
 
                 // Object[] allocation
-                return context.CreateIssue(IssueCategory.Code, k_ArrayAllocationDescriptor.Id, typeReference.Name);
+                yield return context.CreateIssue(IssueCategory.Code, k_ArrayAllocationDescriptor.Id, typeReference.Name);
             }
         }
     }

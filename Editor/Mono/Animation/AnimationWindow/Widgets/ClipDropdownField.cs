@@ -55,7 +55,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             choices = GetOrderedClipList();
             foreach (var menuItem in choices)
             {
-                var isSelected = (menuItem == value) && !showMixedValue;
+                var isSelected = menuItem.Equals(value) && !showMixedValue;
                 menu.AddItem(
                     GetListItemToDisplay(menuItem),
                     isSelected,

@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
@@ -18,7 +19,6 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
-using UnityEngine.Profiling;
 using PropertyDefinition = Unity.ProjectAuditor.Editor.Core.PropertyDefinition;
 using ThreadPriority = System.Threading.ThreadPriority;
 
@@ -52,6 +52,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
         CodeLocation,
         Num
     }
+
+    internal enum ObsoleteApiProperty
+    {
+        Recommendation,
+        AutoUpgradable,
+        WarningSince,
+        ErrorSince,
+        RemovedIn,
+        ObsoleteSince,
+        Num
+    };
 
     class CodeModule : ModuleWithAnalyzers<CodeModuleInstructionAnalyzer>
     {
@@ -126,6 +137,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
+        static readonly IssueLayout k_ObsoleteApiLayout = new IssueLayout
+        {
+            Category = IssueCategory.ObsoleteAPI,
+            Properties =
+            [
+                new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.AutoUpgradable), Format = PropertyFormat.Bool, Name = "Upgradable", LongName = "Automatically upgradable" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.ObsoleteSince), Format = PropertyFormat.String, Name = "Obsolete", LongName = "Obsolete since version", IsDefaultGroup = true },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.RemovedIn), Format = PropertyFormat.String, Name = "Removed", LongName = "Removed in version" }
+            ]
+        };
+
         List<OpCode> m_OpCodes;
         List<int>[] m_OpCodeAnalyzers = new List<int>[ushort.MaxValue];
         CodeModuleInstructionAnalyzer[] m_CompatibleAnalyzers;
@@ -143,7 +166,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_AssemblyLayout,
             k_PrecompiledAssemblyLayout,
             k_CompilerMessageLayout,
-            k_DomainReloadIssueLayout
+            k_DomainReloadIssueLayout,
+            k_ObsoleteApiLayout
         };
 
         public override void Initialize()
@@ -191,9 +215,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var opCodeAnalyzers = new List<int>();
                 for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
                 {
-                    #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
-#pragma warning restore UA2007
                         opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
@@ -640,14 +662,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foreach (var analyzer in analyzers)
                 {
                     context.AssemblyUserData = assemblyUserData[analyzer];
-                    var reportItemBuilder = m_CompatibleAnalyzers[analyzer].Analyze(context);
-                    if (reportItemBuilder != null)
+                    foreach (var reportItemBuilder in m_CompatibleAnalyzers[analyzer].Analyze(context))
                     {
-                        reportItemBuilder.WithDependencies(callerNode); // set root
-                        reportItemBuilder.WithLocation(location);
-                        reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]);
+                        onIssueFound(reportItemBuilder
+                            .WithDependencies(callerNode) // set root
+                            .WithLocation(location)
+                            .WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]));
 
-                        onIssueFound(reportItemBuilder);
                     }
                 }
             }

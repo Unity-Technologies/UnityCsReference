@@ -195,7 +195,7 @@ namespace Unity.U2D.Physics
                     else
                     {
                         // Custom plane projection.
-                        transformPlaneCustom.PlaneProjection(ref physicsTransform, out positionTo, out rotationTo);
+                        transformPlaneCustom.PlaneProjection(in physicsTransform, out positionTo, out rotationTo);
                     }
 
                     // Interpolate the pose.
@@ -248,7 +248,7 @@ namespace Unity.U2D.Physics
                     };
 
                     // Custom plane projection.
-                    transformPlaneCustom.PlaneProjection(ref newTransform, out newPosition, out newRotation);
+                    transformPlaneCustom.PlaneProjection(in newTransform, out newPosition, out newRotation);
                 }
 
                 // Set the transform pose.
@@ -311,7 +311,7 @@ namespace Unity.U2D.Physics
                     else
                     {
                         // Custom plane projection.
-                        transformPlaneCustom.PlaneProjection(ref physicsTransform, out positionTo, out rotationTo);
+                        transformPlaneCustom.PlaneProjection(in physicsTransform, out positionTo, out rotationTo);
                     }
 
                     // Interpolate the pose.
@@ -365,7 +365,7 @@ namespace Unity.U2D.Physics
                     };
 
                     // Custom plane projection.
-                    transformPlaneCustom.PlaneProjection(ref newTransform, out newPosition, out newRotation);
+                    transformPlaneCustom.PlaneProjection(in newTransform, out newPosition, out newRotation);
                 }
 
                 // Set the transform pose.

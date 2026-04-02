@@ -51,8 +51,8 @@ namespace UnityEditor.Search
                 if (context.ImportedCount >= context.TotalCount)
                     return true;
 
-                // If no requested artifacts or all requested artifacts have been processed, request more artifacts. We also request artifacts if some artifacts need to be restarted.
-                if (context.RequestedCount == 0 || context.ImportedCount == context.RequestedCount || context.RestartPendingArtifacts)
+                // If no requested artifacts or all requested artifacts have been processed, request more artifacts.
+                if (context.RequestedCount == 0 || context.ImportedCount == context.RequestedCount)
                 {
                     // We request artifacts in batches because requesting too many artifacts at once can be slow. CreateArtifactsData and RequestProduceArtifacts
                     // scale up linearly with the number of artifacts requested, so we limit the number of artifacts requested at once to avoid blocking the main thread for too long.
@@ -86,6 +86,16 @@ namespace UnityEditor.Search
                 // contiguous spans of available or failed artifacts data to update their ImportResultId, and to have a contiguous region in memory for
                 // those artifacts when we send them through onArtifactsImported callback.
                 var updateBatch = context.ArtifactImportData.AsBatch(context.ImportedCount, context.RequestedCount - context.ImportedCount);
+
+                // If the batch wasn't totally processed, request it again:
+                if (context.RestartPendingArtifacts)
+                {
+                    RequestProduceArtifacts(in updateBatch);
+                    // Check timeLimit again, since requesting artifacts may take some time
+                    if (sw.Elapsed > context.ArtifactProductionFrameTimeLimit)
+                        break;
+                }
+
                 var availableOrFailedArtifactsCount = (int)UpdateOnDemandArtifactsProgress(in updateBatch);
 
                 // Only send report and callback if we have new imported artifacts
@@ -222,6 +232,27 @@ namespace UnityEditor.Search
                 importerTypes[i] = SearchIndexArtifactImporter.GetIndexImporterType(importerHashCode);
             }
             CreateArtifactKeys(assetPaths, assetPathCount, importerTypes, in populatedArtifactImportDataBatch);
+        }
+
+        private static void PrintBatch(string title, in SearchIndexArtifactImportData.Batch batch, SearchIndexArtifactImportContext context, bool printAllProcessedAsset = false)
+        {
+            UnityEngine.Debug.Log($"{title} - batchSize:{batch.Length} ImportedCount:{context.ImportedCount} RequestedCount:{context.RequestedCount} Restart:{context.RestartPendingArtifacts}");
+            for (var i = 0; i < batch.Length; ++i)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(batch.ArtifactKeys[i].guid);
+                UnityEngine.Debug.Log($"    #{i} {path} - {batch.ArtifactKeys[i].guid}");
+            }
+
+            if (printAllProcessedAsset)
+            {
+                UnityEngine.Debug.Log($"    Asset Processed Queue:{context.ArtifactImportData.Length}  imported: {context.ImportedCount}");
+                for (var i = 0; i < context.ArtifactImportData.Length; ++i)
+                {
+                    var guid = context.ArtifactImportData.ArtifactKeys[i].guid;
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    UnityEngine.Debug.Log($"        #{i} {path} - {guid} : IsImported : {i < context.ImportedCount}");
+                }
+            }
         }
     }
 }

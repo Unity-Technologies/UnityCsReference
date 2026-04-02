@@ -12,10 +12,22 @@ namespace UnityEngine
 
         public string DisplayName { get; }
 
+        internal string AlternativeMessage { get; set; }
+
         public ReplacementComponentAttribute(string typeName, string displayName = null)
         {
             TypeName = typeName;
             DisplayName = displayName;
+            AlternativeMessage = string.Empty;
+        }
+    }
+
+    internal class SRPReplacementComponentAttribute : ReplacementComponentAttribute
+    {
+        public SRPReplacementComponentAttribute(string typeName, string displayName = null)
+            : base(typeName, displayName)
+        {
+            AlternativeMessage = $"This component is not supported in SRP projects and will be ignored. Use the {DisplayName} component instead.";
         }
     }
 }

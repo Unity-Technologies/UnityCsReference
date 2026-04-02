@@ -56,6 +56,7 @@ namespace UnityEditor
 
         private const string kShowAnchorPropsPrefName = "RectTransformEditor.showAnchorProperties";
         private const string kLockRectPrefName = "RectTransformEditor.lockRect";
+        private const float kMaxCameraDistance = 200000f;
 
         private static Vector2 kShadowOffset = new Vector2(1, -1);
         private static Color kShadowColor = new Color(0, 0, 0, 0.5f);
@@ -767,6 +768,10 @@ namespace UnityEditor
             if (!target)
                 return;
             RectTransform gui = target as RectTransform;
+
+            // UUM-132309 - Avoid drawing labels and dotted lines with shadows when the camera is too far
+            if (SceneView.currentDrawingSceneView.cameraDistance > kMaxCameraDistance)
+                return;
 
             Rect rectInOwnSpace = gui.rect;
             Rect rectInUserSpace = rectInOwnSpace;

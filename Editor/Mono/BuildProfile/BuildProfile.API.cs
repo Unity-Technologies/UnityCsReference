@@ -176,6 +176,23 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Forcibly removes the first occurrence of a component of type T from the build profile.
+        /// For internal use only to accommodate required components.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal void ForceRemoveComponent<T>() where T : UnityEngine.Object
+        {
+            var found = GetComponent<T>();
+            if (found == null)
+            {
+                Debug.LogWarning($"The component {typeof(T).Name} does not exist in the build profile {name}. ");
+                return;
+            }
+
+            AssetDatabase.RemoveObjectFromAsset(found);
+        }
+
+        /// <summary>
         /// Gets a component of type T associated with the currently active build profile,
         /// its global fallback, or null if the component is not available.
         /// </summary>

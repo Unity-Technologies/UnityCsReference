@@ -111,7 +111,25 @@ namespace UnityEngine.UIElements.UIR
                     uiRenderer.commandLists = m_CommandListsArray;
                     bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
                     uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
-                    uiRenderer.AddDrawCallData((int)m_SafeFrameIndex, i, cmdList.m_Material, forceSingleTexture ? 1 : (uint)m_TextureSlotCount, forceRenderType);
+
+                    var cmdListState = new CommandListState()
+                    {
+                        vertexDeclPtr = m_VertexDecl,
+                        drawRangesPtr = new IntPtr(cmdList.ActiveDrawRanges.GetBuffer().GetUnsafePtr()),
+                        constantPropsPtr = MaterialPropertyBlock.BindingsMarshaller.ConvertToNative(cmdList.constantProps),
+                        stencilStatePtr = cmdList.stencilState
+                    };
+
+                    var commands = cmdList.Commands;
+                    uiRenderer.AddDrawCallData(
+                        (int)m_SafeFrameIndex,
+                        cmdList.m_Material,
+                        forceSingleTexture ? 1 : (uint)m_TextureSlotCount,
+                        forceRenderType,
+                        new IntPtr(commands.GetBuffer().GetUnsafePtr()),
+                        commands.Count,
+                        cmdListState);
+
                     if (m_UIRenderersWithDrawCallData.Count == 0 || m_UIRenderersWithDrawCallData[m_UIRenderersWithDrawCallData.Count - 1] != uiRenderer)
                         m_UIRenderersWithDrawCallData.Add(uiRenderer);
                 }
@@ -169,7 +187,7 @@ namespace UnityEngine.UIElements.UIR
                 // The renderer may become (fake-)null if the managed part has been destroyed,
                 // so it's important to do the null test.
                 if (renderer != null)
-                    renderer.ResetDrawCallData();
+                    renderer.ResetDrawCallData((int)m_SafeFrameIndex);
             }
             m_UIRenderersWithDrawCallData.Clear();
 
@@ -199,6 +217,12 @@ namespace UnityEngine.UIElements.UIR
                     for (int j = 0; j < commandLists.Count; ++j)
                     {
                         var cmdList = commandLists[j];
+                        if (cmdList.m_UIRenderer != null)
+                        {
+                            // It's safe to reset all draw call data here because
+                            // the Dispose() is done after the render thread has finished processing.
+                            cmdList.m_UIRenderer.ResetAllDrawCallData();
+                        }
                         if (cmdList.m_PanelRenderer != null)
                         {
                             // It's safe to reset all draw call data here because

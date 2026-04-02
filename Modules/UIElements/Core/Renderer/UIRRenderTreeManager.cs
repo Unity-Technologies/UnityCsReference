@@ -312,6 +312,11 @@ namespace UnityEngine.UIElements.UIR
             if (m_RootRenderTree?.firstCommand == null)
                 return;
 
+            var runtimePanel = (BaseRuntimePanel)panel;
+            float ppu = runtimePanel.pixelsPerUnit;
+            if (!float.IsFinite(ppu) || ppu < Mathf.Epsilon)
+                return;
+
             k_MarkerSerialize.Begin();
 
             Exception immediateException = null;

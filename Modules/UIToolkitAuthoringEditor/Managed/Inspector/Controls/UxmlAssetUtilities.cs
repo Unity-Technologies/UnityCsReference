@@ -73,7 +73,7 @@ internal static class UxmlAssetUtilities
     {
         SynchronizePathResult result = default;
 
-        if (string.IsNullOrEmpty(propertyPath))
+        if (string.IsNullOrEmpty(propertyPath) || !propertyPath.StartsWith(serializedBasePath, StringComparison.Ordinal))
             return result;
 
         // Cache the split so we don't have to do it every time.

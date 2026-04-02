@@ -7,8 +7,11 @@ using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
-using UnityEditor;
+using Unity.ProjectAuditor.Editor.Modules;
+using Unity.ProjectAuditor.Editor.UI.Framework;
+using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
 {
@@ -17,6 +20,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
         static readonly int k_ObsoleteAttributeHashCode = "System.ObsoleteAttribute".GetHashCode();
 
         internal const string PAC0194 = nameof(PAC0194);
+        internal const string PAC0195 = nameof(PAC0195);
+        internal const string PAC0196 = nameof(PAC0196);
+        internal const string PAC0197 = nameof(PAC0197);
+        internal const string PAC0198 = nameof(PAC0198);
 
         static readonly Descriptor k_ObsoleteAttributeIssueDescriptor = new Descriptor
             (
@@ -28,6 +35,54 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             )
         {
             DefaultSeverity = Severity.Minor
+        };
+
+        static readonly Descriptor k_ObsoleteAutoUpgradeIssueDescriptor = new Descriptor
+            (
+            PAC0195,
+            "Code will become Obsolete",
+            Areas.CPU | Areas.Upgrade,
+            "This code will become obsolete in a future version of Unity. Unity can automatically upgrade this code in the new version for you.",
+            "Upgrade the code now, if the suggested replacement exists in your current version. Otherwise, Unity will update your code when you upgrade."
+            )
+        {
+            DefaultSeverity = Severity.Minor
+        };
+
+        static readonly Descriptor k_ObsoleteWarningUpgradeIssueDescriptor = new Descriptor
+            (
+            PAC0196,
+            "Code will become Obsolete",
+            Areas.CPU | Areas.Upgrade,
+            "This code will become obsolete in a future version of Unity. This issue is a warning, and will not prevent compilation in the new version.",
+            "Upgrade the code now, if the suggested replacement exists in your current version. Otherwise, you can fix your code after upgrading."
+            )
+        {
+            DefaultSeverity = Severity.Moderate
+        };
+
+        static readonly Descriptor k_ObsoleteErrorUpgradeIssueDescriptor = new Descriptor
+            (
+            PAC0197,
+            "Code will become Obsolete",
+            Areas.CPU | Areas.Upgrade,
+            "This code will become obsolete in a future version of Unity. This issue is an error, and will prevent compilation in the new version.",
+            "Upgrade the code now, if the suggested replacement exists in your current version. Otherwise, you must fix your code after upgrading."
+            )
+        {
+            DefaultSeverity = Severity.Major
+        };
+
+        static readonly Descriptor k_ObsoleteRemovedUpgradeIssueDescriptor = new Descriptor
+            (
+            PAC0198,
+            "Code will be removed",
+            Areas.CPU | Areas.Upgrade,
+            "This code has been removed in a future version of Unity. This issue is an error, and will prevent compilation in the new version.",
+            "Upgrade the code now, if the suggested replacement exists in your current version. Otherwise, you must fix your code after upgrading."
+            )
+        {
+            DefaultSeverity = Severity.Major
         };
 
         readonly OpCode[] m_OpCodes =
@@ -58,6 +113,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_ObsoleteAttributeIssueDescriptor);
+            registerDescriptor(k_ObsoleteAutoUpgradeIssueDescriptor);
+            registerDescriptor(k_ObsoleteWarningUpgradeIssueDescriptor);
+            registerDescriptor(k_ObsoleteErrorUpgradeIssueDescriptor);
+            registerDescriptor(k_ObsoleteRemovedUpgradeIssueDescriptor);
         }
 
         internal override object OnAnalyzeAssembly()
@@ -76,42 +135,94 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             return null;
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             var cache = (AnalysisCache)context.AssemblyUserData;
-
-            // If the method being analyzed is obsolete, do not worry about it calling other Obsolete things
-            if (cache.ObsoleteMethod)
-                return null;
 
             // Now check the instruction
             if (context.Instruction.Operand is MemberReference callee)
             {
-                var obsolete = FindObsoleteAttribute(callee, cache, out var obsoleteName, out var declaringType);
-                if (obsolete != null)
+                // If the method being analyzed is obsolete, do not worry about it calling other Obsolete things
+                if (cache.ObsoleteMethod == false)
                 {
-                    if (obsoleteName == ".ctor")
-                        obsoleteName = $"{declaringType} Constructor";
+                    var obsolete = FindObsoleteAttribute(callee, cache, out var obsoleteName, out var declaringType);
+                    if (obsolete != null)
+                    {
+                        if (obsoleteName == ".ctor")
+                            obsoleteName = $"{declaringType} Constructor";
 
-                    var arguments = obsolete.ConstructorArguments;
+                        var arguments = obsolete.ConstructorArguments;
 
-                    bool error = (arguments.Count > 1) ? (bool)arguments[1].Value : false;
-                    if (error && context.AssemblyInfo.IsUnityOwned) // Unity sometimes needs to use Obsolete code eg to set up obsolete fields in constructors. Downgrade this to a warning.
-                        error = false;
+                        bool error = (arguments.Count > 1) ? (bool)arguments[1].Value : false;
+                        if (error && context.AssemblyInfo.IsUnityOwned) // Unity sometimes needs to use Obsolete code eg to set up obsolete fields in constructors. Downgrade this to a warning.
+                            error = false;
 
-                    string msg;
-                    if (arguments.Count > 0)
-                        msg = $"'{obsoleteName}' is obsolete: '{(string)arguments[0].Value}'";
-                    else
-                        msg = $"'{obsoleteName}' is obsolete.";
+                        string msg;
+                        if (arguments.Count > 0)
+                            msg = $"'{obsoleteName}' is obsolete: '{(string)arguments[0].Value}'";
+                        else
+                            msg = $"'{obsoleteName}' is obsolete.";
 
-                    return context.CreateIssue(IssueCategory.Code, k_ObsoleteAttributeIssueDescriptor.Id)
-                        .WithSeverity(error ? Severity.Error : Severity.Warning)
-                        .WithDescription(msg);
+                        yield return context.CreateIssue(IssueCategory.Code, k_ObsoleteAttributeIssueDescriptor.Id)
+                            .WithSeverity(error ? Severity.Error : Severity.Warning)
+                            .WithDescription(msg);
+                    }
+                }
+
+                // Check for obsoletion in future Unity versions
+                if (context.Instruction.OpCode == OpCodes.Call || context.Instruction.OpCode == OpCodes.Callvirt)
+                {
+                    if (ObsoleteLibrary.HasAnyUpgradeVersions)
+                    {
+                        string methodName = callee.Name;
+                        if (methodName.StartsWith("get_", StringComparison.Ordinal))
+                            methodName = methodName.Substring("get_".Length);
+                        string fullName = callee.DeclaringType.FastFullName() + "." + methodName;
+
+                        if (ObsoleteLibrary.LibraryDictionary.TryGetValue(fullName, out var reportItem))
+                        {
+                            var currentVersion = Utility.VersionToInt(Application.unityVersion);
+
+                            bool autoUpgradable = reportItem.GetCustomPropertyBool(ObsoleteApiProperty.AutoUpgradable);
+                            var removedIn = reportItem.GetCustomProperty(ObsoleteApiProperty.RemovedIn);
+                            var recommendation = reportItem.GetCustomProperty(ObsoleteApiProperty.Recommendation);
+
+                            if (autoUpgradable)
+                            {
+                                var obsoleteSince = reportItem.GetCustomProperty(ObsoleteApiProperty.ObsoleteSince);
+                                if (Utility.VersionToInt(obsoleteSince) > currentVersion)
+                                {
+                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteAutoUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' will be automatically upgraded", reportItem)
+                                        .WithUpgradeProperties([obsoleteSince, removedIn, recommendation]);
+                                }
+                            }
+                            else
+                            {
+                                var warningSince = reportItem.GetCustomProperty(ObsoleteApiProperty.WarningSince);
+                                var errorSince = reportItem.GetCustomProperty(ObsoleteApiProperty.ErrorSince);
+
+                                if (!string.IsNullOrEmpty(warningSince) && Utility.VersionToInt(warningSince) > currentVersion)
+                                {
+                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteWarningUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion warning", reportItem)
+                                        .WithUpgradeProperties([warningSince, errorSince ?? removedIn, recommendation]);
+                                }
+
+                                if (!string.IsNullOrEmpty(errorSince) && Utility.VersionToInt(errorSince) > currentVersion)
+                                {
+                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteErrorUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion error", reportItem)
+                                        .WithUpgradeProperties([errorSince, removedIn, recommendation]);
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(removedIn) && Utility.VersionToInt(removedIn) > currentVersion)
+                            {
+                                yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteRemovedUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' will be removed", reportItem)
+                                    .WithUpgradeProperties([removedIn, null, recommendation]);
+                            }
+                        }
+                    }
                 }
             }
-
-            return null;
         }
 
         private CustomAttribute FindObsoleteAttribute(MemberReference callee, AnalysisCache cache, out string obsoleteName, out TypeDefinition declaringType)

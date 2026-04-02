@@ -164,10 +164,11 @@ namespace UnityEditor.Search
 
         public void Update()
         {
-            if (guiCreated && m_SearchView != null)
-                m_SearchView.UpdateIncrementalTimed(k_MaxUpdateTime);
+            if (!guiCreated)
+                return;
 
-            if (m_HasAssetProvider && !m_IsWarningWindowDismissed)
+            m_SearchView?.UpdateIncrementalTimed(k_MaxUpdateTime);
+            if (m_HasAssetProvider && !m_IsWarningWindowDismissed && m_IndexingWarningWindow != null)
             {
                 m_IsWarningWindowDismissed = m_IndexingWarningWindow.CheckIndexing();
             }
@@ -294,7 +295,7 @@ namespace UnityEditor.Search
                     }
                     return true;
                 }
-                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None)
+                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None && !viewState.queryBuilderEnabled)
                 {
                     m_SearchAutoCompleteWindow.Show(m_SearchToolbar);
                     return true;

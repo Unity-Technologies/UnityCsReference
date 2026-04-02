@@ -39,7 +39,7 @@ To open the Preferences window, go to Edit > Preferences (macOS: Unity > Setting
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Show:", GUILayout.ExpandWidth(true), GUILayout.Width(80));
+                EditorGUILayout.LabelField(SharedContents.Show, GUILayout.ExpandWidth(true), ProjectAuditorWindow.LayoutSize.FilterOptionsLabelWidth);
 
                 var guiContent = m_Table.showIgnoredIssues
                     ? Contents.ShowIgnoredIssuesButton

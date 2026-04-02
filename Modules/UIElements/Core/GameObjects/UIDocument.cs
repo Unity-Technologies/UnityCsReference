@@ -556,10 +556,6 @@ namespace UnityEngine.UIElements
 
             m_RootVisualElement.uiRenderer = renderer;
 
-            // Don't render embedded documents which will be rendered as part of their parents
-            // Don't render documents with invalid PPU
-            renderer.skipRendering = (parentUI != null) || (pixelsPerUnit < Mathf.Epsilon);
-
             BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
             if (rtp == null)
                 return;

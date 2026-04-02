@@ -54,9 +54,9 @@ namespace UnityEngine.UIElements
         {
             // This is the root, apply the pixels-per-unit scaling, and the y-flip.
             float ppu = pixelsPerUnit;
-            if (ppu < Mathf.Epsilon)
+            if (!float.IsFinite(ppu) || ppu < Mathf.Epsilon)
             {
-                // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
+                // This isn't a valid PPU, return the identity here, but the renderer will not be serialized
                 return Matrix4x4.identity;
             }
 

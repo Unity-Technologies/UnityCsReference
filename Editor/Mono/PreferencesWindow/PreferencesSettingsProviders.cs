@@ -98,6 +98,7 @@ namespace UnityEditor
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
             public static readonly GUIContent resetAllDialogBoxes = EditorGUIUtility.TrTextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.");
+            public static readonly GUIContent hideDeprecationWarnings = EditorGUIUtility.TrTextContent("Hide deprecation warnings", "Hides warning boxes for deprecated components in the Inspector window.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
 By default, Windows will combine these under a single taskbar item.");
@@ -293,6 +294,23 @@ By default, Windows will combine these under a single taskbar item.");
             }
         }
 
+        internal static Action<bool> hideDeprecationWarningsChanged;
+
+        internal static bool hideDeprecationWarnings
+        {
+            get
+            {
+                return EditorPrefs.GetBool("HideDeprecationWarnings", false);
+            }
+            set
+            {
+                if (value != EditorPrefs.GetBool("HideDeprecationWarnings", false))
+                {
+                    EditorPrefs.SetBool("HideDeprecationWarnings", value);
+                    hideDeprecationWarningsChanged?.Invoke(value);
+                }
+            }
+        }
 
         [SettingsProvider]
         internal static SettingsProvider CreateGeneralProvider()
@@ -690,6 +708,8 @@ By default, Windows will combine these under a single taskbar item.");
                     EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
                 }
             }
+
+            hideDeprecationWarnings = EditorGUILayout.Toggle(GeneralProperties.hideDeprecationWarnings, hideDeprecationWarnings);
 
             using (new EditorGUILayout.HorizontalScope())
             {

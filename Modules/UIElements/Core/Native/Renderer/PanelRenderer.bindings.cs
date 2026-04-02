@@ -328,7 +328,6 @@ namespace UnityEngine.UIElements
         #region Native Calls
 
         internal volatile List<CommandList>[] commandLists;
-        internal volatile bool skipRendering;
 
         internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
         internal extern void ResetDrawCallData(int safeFrameIndex);
@@ -694,7 +693,6 @@ namespace UnityEngine.UIElements
             // Don't render embedded documents which will be rendered as part of their parents
             // Don't render documents with invalid PPU
             float ppu = pixelsPerUnit;
-            skipRendering = (parentUI != null) || (ppu < Mathf.Epsilon);
 
             BaseRuntimePanel rtp = (BaseRuntimePanel)rootVisualElement.panel;
             if (rtp == null)

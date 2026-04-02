@@ -113,18 +113,20 @@ namespace UnityEditor.UIElements.Inspector
             // Since PanelRenderer doesn't have OnValidate() calls, we need to update
             // the size fields when they change.
             m_WorldSpaceWidthField = m_RootVisualElement.MandatoryQ<FloatField>("width-field");
-            m_WorldSpaceWidthField.isDelayed = true;
+            m_WorldSpaceWidthField.SetValueWithoutNotify(pc.worldSpaceSize.x);
             m_WorldSpaceWidthField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Width");
                 var size = pc.worldSpaceSize;
                 size.x = evt.newValue;
                 pc.worldSpaceSize = size;
             });
 
             m_WorldSpaceHeightField = m_RootVisualElement.MandatoryQ<FloatField>("height-field");
-            m_WorldSpaceHeightField.isDelayed = true;
+            m_WorldSpaceHeightField.SetValueWithoutNotify(pc.worldSpaceSize.y);
             m_WorldSpaceHeightField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Height");
                 var size = pc.worldSpaceSize;
                 size.y = evt.newValue;
                 pc.worldSpaceSize = size;

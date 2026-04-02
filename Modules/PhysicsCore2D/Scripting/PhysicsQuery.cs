@@ -1079,7 +1079,6 @@ namespace Unity.U2D.Physics
             readonly float m_Fraction;
 
             #endregion
-
         }
     }
 }

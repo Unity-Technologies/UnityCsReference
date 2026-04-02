@@ -11,7 +11,7 @@ using Mode = UnityEditor.RotationCurveInterpolation.Mode;
 
 namespace UnityEditor.AnimationWindowBuiltin
 {
-    class RotationCurveInterpolation
+    static class RotationCurveInterpolation
     {
         public struct State
         {
@@ -36,7 +36,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             return bindings;
         }
 
-        static public EditorCurveBinding[] RemapAnimationBindingForAddKey(EditorCurveBinding binding, AnimationClip clip)
+        public static EditorCurveBinding[] RemapAnimationBindingForAddKey(EditorCurveBinding binding, AnimationClip clip)
         {
             if (!AnimationWindowUtility.IsTransformType(binding.type))
             {
@@ -83,7 +83,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             }
         }
 
-        static public EditorCurveBinding RemapAnimationBindingForRotationCurves(EditorCurveBinding curveBinding, AnimationClip clip)
+        public static EditorCurveBinding RemapAnimationBindingForRotationCurves(EditorCurveBinding curveBinding, AnimationClip clip)
         {
             if (!AnimationWindowUtility.IsTransformType(curveBinding.type))
                 return curveBinding;

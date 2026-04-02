@@ -10,7 +10,7 @@ using UnityEngine;
 // Compatibility functions to support Timeline's use of the AnimationWindow internal API
 namespace UnityEditor
 {
-    partial class RotationCurveInterpolation
+    static partial class RotationCurveInterpolation
     {
         public static EditorCurveBinding RemapAnimationBindingForRotationCurves(EditorCurveBinding curveBinding, AnimationClip clip) =>
             AnimationWindowBuiltin.RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curveBinding, clip);

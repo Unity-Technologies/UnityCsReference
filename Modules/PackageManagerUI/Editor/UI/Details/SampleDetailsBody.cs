@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NextButtonHotspot = CreateButtonHotspot("nextButtonHotspot", nextButton, OnNextImage);
 
             m_ControlsContainer.Add(m_CounterLabel);
-            m_DescriptionLabel = new SelectableLabel() { name = "descriptionLabel", };
+            m_DescriptionLabel = new SelectableLabel { name = "descriptionLabel", };
 
             CreateImageStructure();
             Add(m_CardsContainer);
@@ -151,16 +151,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_PrevButtonHotspot, showControls);
             UIUtils.SetElementDisplay(m_NextButtonHotspot, showControls);
 
-            var showCards = !sample.isDefault;
+            var parentPackageVersion = sample.package?.versions.primary;
+            var showCards = !sample.isDefault && parentPackageVersion != null;
             UIUtils.SetElementDisplay(m_CardsContainer, showCards);
-
             if (!showCards)
                 return;
 
             foreach (var child in m_CardsContainer.Children())
             {
                 if (child is PackageInformationCard packageCard)
-                    packageCard.Refresh(sample.package?.versions.primary);
+                    packageCard.Refresh(parentPackageVersion);
                 else if (child is SampleInformationCard sampleCard)
                     sampleCard.Refresh(sample);
             }

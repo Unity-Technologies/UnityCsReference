@@ -454,6 +454,11 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             if (m_RecordButton.value != state.recording)
                 m_RecordButton.SetValueWithoutNotify(state.recording);
 
+            if (m_PreviewButton.enabledSelf != state.canPreview)
+                m_PreviewButton.SetEnabled(state.canPreview);
+            if (m_RecordButton.enabledSelf != state.canRecord)
+                m_RecordButton.SetEnabled(state.canRecord);
+
             m_RecordButton.style.backgroundColor =
                 state.recording || (state.canRecord && m_RecordButton.hasHoverPseudoState) ?
                     AnimationMode.recordedPropertyColor.RGBMultiplied(recordColorMultiplier) : StyleKeyword.Null;

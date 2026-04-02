@@ -64,14 +64,14 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             registerDescriptor(k_DebugLogWarningIssueDescriptor);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             var callee = (MethodReference)context.Instruction.Operand;
             var methodName = callee.Name;
             var declaringType = callee.DeclaringType;
 
             if (k_TypeHashCode != declaringType.FastFullName().GetHashCode())
-                return null;
+                yield break;
 
             // second check on module name which requires resolving the type
             try
@@ -80,11 +80,11 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 if (typeDefinition == null)
                 {
                     Debug.LogWarning(declaringType.FullName + " could not be resolved.");
-                    return null;
+                    yield break;
                 }
 
                 if (k_ModuleHashCode != typeDefinition.Module.Name.GetHashCode())
-                    return null;
+                    yield break;
             }
             catch (AssemblyResolutionException e)
             {
@@ -95,19 +95,21 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             if (context.MethodDefinition.HasCustomAttributes && context.MethodDefinition.CustomAttributes.Exists(a =>
                 a.AttributeType.FullName.GetHashCode() == k_ConditionalAttributeHashCode))
             {
-                return null;
+                yield break;
             }
 
             switch (methodName)
             {
                 case "Log":
                 case "LogFormat":
-                    return context.CreateIssue(IssueCategory.Code, k_DebugLogIssueDescriptor.Id, methodName, context.MethodDefinition.Name);
+                    yield return context.CreateIssue(IssueCategory.Code, k_DebugLogIssueDescriptor.Id, methodName, context.MethodDefinition.Name);
+                    break;
                 case "LogWarning":
                 case "LogWarningFormat":
-                    return context.CreateIssue(IssueCategory.Code, k_DebugLogWarningIssueDescriptor.Id, methodName, context.MethodDefinition.Name);
+                    yield return context.CreateIssue(IssueCategory.Code, k_DebugLogWarningIssueDescriptor.Id, methodName, context.MethodDefinition.Name);
+                    break;
                 default:
-                    return null;
+                    break;
             }
         }
     }

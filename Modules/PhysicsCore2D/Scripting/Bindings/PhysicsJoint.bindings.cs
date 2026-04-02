@@ -41,7 +41,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsJoint::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetWorldDrawing(PhysicsJoint joint, bool flag);
         [NativeMethod(Name = "PhysicsJoint::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsJoint_GetWorldDrawing(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::Draw", IsThreadSafe = true)] extern internal static void PhysicsJoint_Draw(PhysicsJoint joint);
-        [NativeMethod(Name = "PhysicsJoint::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetOwner(PhysicsJoint joint, UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsJoint::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetOwner(ReadOnlySpan<PhysicsJoint> joints, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsJoint::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsJoint_GetOwner(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsJoint_IsOwned(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, System.Object callbackTarget);

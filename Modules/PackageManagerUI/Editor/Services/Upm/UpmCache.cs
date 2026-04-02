@@ -43,7 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private Dictionary<string, PackageInfo> m_SearchPackageInfos = new();
         private Dictionary<string, PackageInfo> m_PackageNameToInstalledPackageInfosMap = new();
-        private readonly Dictionary<long, PackageInfo> m_ProductIdToInstalledPackageInfosMap = new();
+        private readonly Dictionary<string, PackageInfo> m_UniqueIdToInstalledPackageInfosMap = new();
 
         private Dictionary<long, (PackageInfo info, long timestamp)> m_ProductIdToProductSearchInfosMap = new();
 
@@ -175,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnAfterDeserialize()
         {
             m_SerializedInstalledPackageInfos.ToDictionary(p => p.name, ref m_PackageNameToInstalledPackageInfosMap);
-            UpdateProductIdToInstalledPackageInfoMap();
+            UpdateUniqueIdToInstalledPackageInfoMap();
 
             m_SerializedSearchPackageInfos.ToDictionary(p => p.name, ref m_SearchPackageInfos);
 
@@ -217,23 +217,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public PackageInfo GetInstalledPackageInfoByName(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
-        public PackageInfo GetInstalledPackageInfoByUniqueId(string packageUniqueId)
-        {
-            return long.TryParse(packageUniqueId, out var productId) ? GetProductInstalledPackageInfo(productId) : GetInstalledPackageInfoByName(packageUniqueId);
-        }
+        public PackageInfo GetInstalledPackageInfoByName(string packageName) => m_PackageNameToInstalledPackageInfosMap.GetValueOrDefault(packageName);
+        public PackageInfo GetInstalledPackageInfoByUniqueId(string packageUniqueId) => m_UniqueIdToInstalledPackageInfosMap.GetValueOrDefault(packageUniqueId);
 
-        public PackageInfo GetProductInstalledPackageInfo(long productId) => m_ProductIdToInstalledPackageInfosMap.GetValueOrDefault(productId);
-
-        private void UpdateProductIdToInstalledPackageInfoMap()
+        private void UpdateUniqueIdToInstalledPackageInfoMap()
         {
-            m_ProductIdToInstalledPackageInfosMap.Clear();
+            m_UniqueIdToInstalledPackageInfosMap.Clear();
             foreach (var packageInfo in m_PackageNameToInstalledPackageInfosMap.Values)
-            {
-                var productId = packageInfo.ParseProductId();
-                if (productId > 0)
-                    m_ProductIdToInstalledPackageInfosMap[productId] = packageInfo;
-            }
+                m_UniqueIdToInstalledPackageInfosMap[packageInfo.GetUniqueId()] = packageInfo;
         }
 
         public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
@@ -244,7 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageNameToInstalledPackageInfosMap = newPackageInfos;
             m_InstalledPackageInfosTimestamp = timestamp;
 
-            UpdateProductIdToInstalledPackageInfoMap();
+            UpdateUniqueIdToInstalledPackageInfoMap();
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
             if (updatedInfos.Count > 0)
@@ -283,7 +274,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IUpmPackageData GetPackageData(long productId)
         {
-            var installedInfo = GetProductInstalledPackageInfo(productId);
+            var installedInfo = GetInstalledPackageInfoByUniqueId(productId.ToString());
             var searchInfo = GetProductSearchPackageInfo(productId);
             if (installedInfo == null && searchInfo == null)
                 return null;
@@ -401,7 +392,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ClearCache()
         {
             m_PackageNameToInstalledPackageInfosMap.Clear();
-            m_ProductIdToInstalledPackageInfosMap.Clear();
+            m_UniqueIdToInstalledPackageInfosMap.Clear();
 
             m_SearchPackageInfos.Clear();
 

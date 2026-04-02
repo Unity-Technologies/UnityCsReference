@@ -281,12 +281,18 @@ namespace Unity.ProjectAuditor.Editor.UI
             var svcName = Path.GetFileNameWithoutExtension(path);
             if (path.Length != 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var variants = m_Issues.Where(issue => predicate == null || predicate(issue));
-
-                ShadersModule.ExportVariantsToSvc(svcName, path, variants.ToArray());
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var variants = m_Issues.Where(issue =>
+                {
+                    if (!Match(issue))
+                        return false;
+                    if (predicate != null && !predicate(issue))
+                        return false;
+                    return true;
+                });
 #pragma warning restore UA2001
 
+                ShadersModule.ExportVariantsToSvc(svcName, path, variants);
                 EditorUtility.RevealInFinder(path);
             }
         }

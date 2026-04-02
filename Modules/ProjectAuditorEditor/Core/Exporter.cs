@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Core
@@ -21,22 +20,23 @@ namespace Unity.ProjectAuditor.Editor.Core
             m_Report = report;
         }
 
-        public void Export(string path, IssueCategory category, Func<ReportItem, bool> predicate = null)
+        public void Export(string path, IssueCategory category, IEnumerable<ReportItem> issues, Func<ReportItem, bool> predicate = null)
         {
-            m_StreamWriter = new StreamWriter(path);
-            var issues = m_Report.FindByCategory(category);
-            if (predicate != null)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                issues = new List<ReportItem>(issues.Where(predicate));
-#pragma warning restore UA2001
             var layout = m_Report.GetLayout(category);
             if (layout == null)
+            {
                 Debug.LogWarning($"Could not find issue layout for category {category}");
+            }
             else
             {
+                m_StreamWriter = new StreamWriter(path);
+
                 WriteHeader(layout);
                 foreach (var issue in issues)
-                    WriteIssue(layout, issue);
+                {
+                    if (predicate == null || predicate(issue))
+                        WriteIssue(layout, issue);
+                }
                 WriteFooter(layout);
             }
         }

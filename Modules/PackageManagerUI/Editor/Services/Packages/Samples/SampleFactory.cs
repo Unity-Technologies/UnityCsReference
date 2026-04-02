@@ -69,13 +69,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var packageUniqueId in packageUniqueIds)
             {
                 var sampleInfoCollection = m_SampleCache.GetSampleInfoCollection(packageUniqueId);
-                if (sampleInfoCollection == null)
+                var packageInfo = m_UpmCache.GetInstalledPackageInfoByUniqueId(packageUniqueId);
+                if (sampleInfoCollection == null || packageInfo == null)
                     removed.Add(packageUniqueId);
                 else
-                {
-                    var packageInfo = m_UpmCache.GetInstalledPackageInfoByUniqueId(packageUniqueId);
                     addedOrUpdated.Add(Convert(packageInfo, sampleInfoCollection));
-                }
             }
             if (addedOrUpdated.Count > 0 || removed.Count > 0)
                 m_PackageDatabase.UpdateSamples(addedOrUpdated, removed);

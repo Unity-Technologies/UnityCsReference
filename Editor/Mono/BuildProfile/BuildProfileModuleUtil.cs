@@ -703,6 +703,8 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.AddObjectToAsset(buildProfile.qualitySettings, buildProfile);
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
+
+            BuildProfileQualitySettingsEditor.RefreshCachedQualitySettingEntities();
         }
 
         /// <summary>
@@ -717,6 +719,8 @@ namespace UnityEditor.Build.Profile
             buildProfile.qualitySettings = null;
             EditorUtility.SetDirty(buildProfile);
             UpdateActiveEditors(buildProfile);
+
+            BuildProfileQualitySettingsEditor.RefreshCachedQualitySettingEntities();
         }
 
         public static void NotifyBuildProfileExtensionOfCreation(BuildProfile buildProfile, int preconfiguredSettingsVariant)

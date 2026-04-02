@@ -339,7 +339,7 @@ namespace Unity.U2D.Physics
             /// <param name="position">The 3D transformed position.</param>
             /// <param name="rotation">The 3D transformed rotation.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal readonly void PlaneProjection(ref PhysicsTransform physicsTransform, out Vector3 position, out Quaternion rotation)
+            internal readonly void PlaneProjection(in PhysicsTransform physicsTransform, out Vector3 position, out Quaternion rotation)
             {
                 position = ToPosition(physicsTransform.position);
 
@@ -592,6 +592,16 @@ namespace Unity.U2D.Physics
         public static RenderingMode renderingMode => PhysicsGlobal_GetRenderingMode();
 
         /// <summary>
+        /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
+        /// </summary>
+        public static PhysicsShape.ContactFilterMode contactFilterMode => PhysicsGlobal_GetContactFilterMode();
+
+        /// <summary>
+        /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
+        /// </summary>
+        public static PhysicsShape.ContactFilterGroupMode contactFilterGroupMode => PhysicsGlobal_GetContactFilterGroupMode();
+
+        /// <summary>
         /// Gets what physics considers a large extent in the world.
         /// Positions greater than approximately 16km will have precision problems, so 100km as a limit should be fine in all cases. This is used to detect bad values.
         /// This value is 100000.0f * <see cref="PhysicsWorld.lengthUnitsPerMeter"/>.
@@ -762,15 +772,54 @@ namespace Unity.U2D.Physics
         public PhysicsWorldDefinition definition { get => PhysicsWorld_ReadDefinition(this); set => PhysicsWorld_WriteDefinition(this, value, false); }
 
         /// <summary>
-        /// Set the (optional) owner object associated with this world and return an owner key that must be specified when destroying the world with <see cref="PhysicsWorld.Destroy(int)"/>.
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Create an owner key.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended as the owner key can use the hash-code of the object to generate a more unique key.</param>
+        /// <returns>The new owner key.</returns>
+        public static int CreateOwnerKey(UnityEngine.Object owner) => PhysicsWorld_CreateOwnerKey(owner);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
-        /// The lifetime of the specified owner object is not linked to this world i.e. this world will still be owned by the owner object, even if it is destroyed.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="worlds">The worlds to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object owner, int ownerKey) => PhysicsWorld_SetOwner(worlds, owner, ownerKey);
+
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this world. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsWorld.Destroy(int)"/> when destroying the body.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsWorld_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var world = this;
+            SetOwner(new ReadOnlySpan<PhysicsWorld>(&world, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this world as specified using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.
@@ -2340,6 +2389,8 @@ namespace Unity.U2D.Physics
 
             /// <summary>
             /// Draw all the custom drawing.
+            /// 
+            /// NOTE: This is only used in a player build as custom drawing is permanently enabled in the Unity Editor.
             /// </summary>
             AllCustom = 1 << 12,
 
@@ -3049,11 +3100,16 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Set the element depth using the specified 3D position. The relevant axis will be extracted using the current <see cref="PhysicsWorld.transformPlane"/>.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the element depth is always set to zero.
         ///
         /// For more details, see <see cref="PhysicsWorld.elementDepth"/>.
         /// </summary>
         /// <param name="position">The 3D position to extract the element depth from.</param>
-        public readonly void SetElementDepth3D(Vector3 position) => elementDepth = PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane);
+        public readonly void SetElementDepth3D(Vector3 position)
+        {
+            var worldTransformPlane = transformPlane;
+            elementDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
+        }
 
         /// <summary>
         /// Clear all the custom drawn items.

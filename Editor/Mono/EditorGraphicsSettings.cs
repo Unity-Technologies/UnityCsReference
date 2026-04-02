@@ -61,7 +61,6 @@ namespace UnityEditor.Rendering
         public RealtimeGICPUUsage realtimeGICPUUsage;
     }
 
-
     public sealed partial class EditorGraphicsSettings
     {
         // Use the version with NamedBuildTarget passed instead.

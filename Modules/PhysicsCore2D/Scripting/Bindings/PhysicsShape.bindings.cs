@@ -93,7 +93,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetPerimeter", IsThreadSafe = true)] extern internal static float PhysicsShape_GetPerimeter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetPerimeterProjected", IsThreadSafe = true)] extern internal static float PhysicsShape_GetPerimeterProjected(PhysicsShape shape, Vector2 axis);
         [NativeMethod(Name = "PhysicsShape::Draw", IsThreadSafe = true)] extern internal static void PhysicsShape_Draw(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsShape_SetOwner(PhysicsShape shape, UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwner(ReadOnlySpan<PhysicsShape> shapes, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
@@ -102,6 +102,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserData(PhysicsShape shape, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetOwnerUserData(PhysicsShape shape);
+
+        [NativeMethod(Name = "PhysicsCore2D::ContactFilter::CanContact", IsThreadSafe = true)] extern internal static bool PhysicsShape_ContactFilter_CanContact(PhysicsShape.ContactFilter filterA, PhysicsShape.ContactFilter filterB);
 
         [NativeMethod(Name = "PhysicsCore2D::PhysicsContactId::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsContactId_IsValid(PhysicsShape.ContactId contactId);
         [NativeMethod(Name = "PhysicsCore2D::PhysicsContactId::GetContact", IsThreadSafe = true)] extern internal static PhysicsShape.Contact PhysicsContactId_GetContact(PhysicsShape.ContactId contactId);

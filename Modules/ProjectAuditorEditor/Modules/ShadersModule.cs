@@ -687,7 +687,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         }
 
-        public static void ExportVariantsToSvc(string svcName, string path, ReportItem[] variants)
+        public static void ExportVariantsToSvc(string svcName, string path, IEnumerable<ReportItem> variants)
         {
             var svc = new ShaderVariantCollection();
             svc.name = svcName;
@@ -702,7 +702,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     var shaderVariant = new ShaderVariantCollection.ShaderVariant();
                     shaderVariant.shader = shader;
-                    shaderVariant.passType = (UnityEngine.Rendering.PassType)Enum.Parse(typeof(UnityEngine.Rendering.PassType), passType);
+                    shaderVariant.passType = (PassType)Enum.Parse(typeof(PassType), passType);
                     shaderVariant.keywords = keywords;
                     svc.Add(shaderVariant);
                 }

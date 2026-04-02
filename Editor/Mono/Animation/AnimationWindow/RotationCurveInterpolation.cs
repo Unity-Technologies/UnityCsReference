@@ -9,7 +9,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    partial class RotationCurveInterpolation
+    static partial class RotationCurveInterpolation
     {
         public enum Mode { Baked, NonBaked, RawQuaternions, RawEuler, Undefined }
 
@@ -44,10 +44,11 @@ namespace UnityEditor
                 return null;
         }
 
-        static List<EditorCurveBinding> s_BindingsCache = new ();
-        static readonly Regex s_PropertyWithSuffixRegex = new (@"(?<suffix>\.[xyz])$");
+        static List<EditorCurveBinding> s_BindingsCache;
+        const string s_PropertyWithSuffixRegex = @"(?<suffix>\.[xyz])$";
         internal static EditorCurveBinding[] ConvertRotationPropertiesToInterpolationType(ReadOnlySpan<EditorCurveBinding> selection, Mode newInterpolationMode)
         {
+            s_BindingsCache ??= new List<EditorCurveBinding>(4);
             if (s_BindingsCache.Capacity < selection.Length)
                 s_BindingsCache.Capacity = selection.Length;
 
@@ -57,7 +58,7 @@ namespace UnityEditor
                 if (GetModeFromCurveData(selection[i]) == Mode.RawQuaternions)
                 {
                     // Process x, y, z rotation bindings. Drop w channel.
-                    var match = s_PropertyWithSuffixRegex.Match(selection[i].propertyName);
+                    var match = Regex.Match(selection[i].propertyName, s_PropertyWithSuffixRegex);
                     if (match.Success)
                     {
                         string prefix = GetPrefixForInterpolation(newInterpolationMode);

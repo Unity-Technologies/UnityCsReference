@@ -14,6 +14,8 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal abstract class FieldsInspector : BaseMultipleModelViewsPart
     {
+        const float k_LabelWidthBuffer = 4f;
+
         /// <summary>
         /// The USS class name added to a <see cref="FieldsInspector"/>.
         /// </summary>
@@ -189,7 +191,7 @@ namespace Unity.GraphToolkit.Editor
                 ComputeMinLabelWidth(m_Root, ref minLabelWidth);
 
                 // Set the minimum label width for each label.
-                SetMinLabelWidth(m_Root, minLabelWidth);
+                SetMinLabelWidth(m_Root, minLabelWidth + k_LabelWidthBuffer);
             }
         }
 

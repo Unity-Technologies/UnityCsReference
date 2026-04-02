@@ -188,14 +188,46 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Set the (optional) owner object associated with this chain and return an owner key that must be specified when destroying the shape with <see cref="PhysicsChain.Destroy(int)"/>.   
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="chains">The chains to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsChain> chains, UnityEngine.Object owner, int ownerKey) => PhysicsChain_SetOwner(chains, owner, ownerKey);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this chain. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsChain.Destroy(int)"/> when destroying the chain.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsChain_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var chain = this;
+            SetOwner(new ReadOnlySpan<PhysicsChain>(&chain, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = PhysicsWorld.CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this chain as specified using <see cref="PhysicsChain.SetOwner(UnityEngine.Object)"/>.

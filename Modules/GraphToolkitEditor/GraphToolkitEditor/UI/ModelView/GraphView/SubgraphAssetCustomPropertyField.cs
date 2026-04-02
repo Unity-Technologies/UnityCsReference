@@ -20,6 +20,11 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string ussClassName = "subgraph-asset-properties";
 
         /// <summary>
+        /// The USS class name added to the main container of a <see cref="SubgraphAssetCustomPropertyField"/>.
+        /// </summary>
+        public static readonly string containerUSSClassName = ussClassName.WithUssElement("container");
+
+        /// <summary>
         /// The USS class name added to the button container of a <see cref="SubgraphAssetCustomPropertyField"/>.
         /// </summary>
         public static readonly string buttonContainerUSSClassName = ussClassName.WithUssElement("button-container");
@@ -56,12 +61,15 @@ namespace Unity.GraphToolkit.Editor
                 m_GraphModel = subgraphNodeModel.GraphModel;
                 m_Container = new VisualElement();
                 m_Container.AddPackageStylesheet("SubgraphAssetPropertyField.uss");
+                m_Container.AddToClassList(containerUSSClassName);
 
                 m_ObjectField = new ObjectField("Asset");
                 m_ObjectField.value = subgraphNodeModel.GetSubgraphModel()?.GraphObject;
                 foreach (var child in m_ObjectField.Children())
                 {
-                    if (child is not Label)
+                    if (child is Label fieldLabel)
+                        fieldLabel.AddToClassList(BaseModelPropertyField.labelUssClassName);
+                    else
                         child.SetEnabled(false);
                 }
 

@@ -373,7 +373,7 @@ namespace Unity.GraphToolkit.Editor
 
             // We need to recreate the m_InspectorContainer to be able to set the scroll offset to any value.
             // If we reuse the existing m_InspectorContainer, offset will be clamped according to the last layout of the scrollView.
-            m_InspectorContainer = new ScrollView(ScrollViewMode.Vertical);
+            m_InspectorContainer = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             m_InspectorContainer.AddToClassList(containerUssClassName);
 
             if (ModelInspectorViewModel == null)

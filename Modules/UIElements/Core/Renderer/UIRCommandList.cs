@@ -108,58 +108,6 @@ namespace UnityEngine.UIElements.UIR
                 m_GpuTextureData[i] = Vector4.zero;
         }
 
-        public unsafe void Execute()
-        {
-            IntPtr* vStream = stackalloc IntPtr[1];
-
-            // Initialize state
-            Utility.SetPropertyBlock(constantProps);
-            Utility.SetStencilState(m_StencilState, 0);
-
-            int textureCount = 0;
-            int* textureNames = stackalloc int[8];
-            IntPtr* textureRefPtrs = stackalloc IntPtr[8];
-
-            IntPtr shaderPropertySheetPtr = Utility.AllocateShaderPropertySheet();
-            try
-            {
-                var commandsBuffer = m_Commands.GetBuffer();
-                for (int i = 0; i < m_Commands.Count; ++i)
-                {
-                    SerializedCommand cmd = commandsBuffer[i];
-                    switch (cmd.type)
-                    {
-                        case SerializedCommandType.SetTexture:
-                            textureNames[textureCount] = cmd.textureName;
-                            textureRefPtrs[textureCount] = cmd.textureRefPtr;
-                            textureCount++;
-                            m_GpuTextureData[cmd.gpuDataOffset + 0] = cmd.gpuData0;
-                            m_GpuTextureData[cmd.gpuDataOffset + 1] = cmd.gpuData1;
-                            break;
-                        case SerializedCommandType.ApplyBatchProps:
-                            Utility.SetAllTextures(shaderPropertySheetPtr, new IntPtr(textureNames), new IntPtr(textureRefPtrs), textureCount);
-                            textureCount = 0;
-                            Utility.SetVectorArray(shaderPropertySheetPtr, TextureSlotManager.textureTableId, m_GpuTextureData);
-                            Utility.ApplyShaderPropertySheet(shaderPropertySheetPtr);
-                            break;
-                        case SerializedCommandType.ApplyUserProps:
-                            Utility.SetPropertyBlockPtr(cmd.userProps);
-                            break;
-                        case SerializedCommandType.DrawRanges:
-                            vStream[0] = cmd.vertexBuffer;
-                            Utility.DrawRanges(cmd.indexBuffer, vStream, 1, new IntPtr(m_DrawRanges.GetSlice(cmd.firstRange, cmd.rangeCount).GetUnsafePtr()), cmd.rangeCount, m_VertexDecl);
-                            break;
-                        default:
-                            throw new NotImplementedException();
-                    }
-                }
-            }
-            finally
-            {
-                Utility.ReleasePropertySheet(shaderPropertySheetPtr);
-            }
-        }
-
         public void SetTexture(int name, Texture texture, int gpuDataOffset, Vector4 gpuData0, Vector4 gpuData1)
         {
             var cmd = new SerializedCommand

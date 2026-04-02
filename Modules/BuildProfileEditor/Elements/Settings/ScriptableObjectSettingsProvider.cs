@@ -99,7 +99,8 @@ namespace UnityEditor.Build.Profile.Elements
                 Debug.LogWarning(profile.name + " does not have a component of type " + typeof(T).Name);
             }
 
-            profile.RemoveComponent<T>();
+            // Forcibly remove components so that required components can handled.
+            profile.ForceRemoveComponent<T>();
             ScriptableObject.DestroyImmediate(instance);
 
             instance = ScriptableObject.CreateInstance<T>();

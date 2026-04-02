@@ -144,7 +144,10 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         public static readonly int kScalerDataTag = 0;
 
-        static Dictionary<string, ScalerInfo> scalerInfos = new Dictionary<string, ScalerInfo>();
+        const int kMaxScalerNameSizeInBytes = 320;
+
+        static List<ScalerInfo> scalerInfos = new List<ScalerInfo>();
+        static Dictionary<string, int> scalerInfosIndex = new Dictionary<string, int>();
 
         /// <summary>
         /// ScalerInfo is a struct used to collect and send scaler info to the profile collectively.
@@ -196,29 +199,43 @@ namespace UnityEngine.AdaptivePerformance
         {
             if (!Profiler.enabled || scalerName.Length == 0)
                 return;
-            ScalerInfo scalerInfo;
-            bool existingInfo = scalerInfos.TryGetValue(scalerName, out scalerInfo);
 
-            if (!existingInfo)
-                scalerInfo = new ScalerInfo();
+            int scalerIndex = -1;
+            ScalerInfo info = default;
 
-            scalerInfo.enabled = (uint)(enabled ? 1 : 0);
-            scalerInfo.overrideLevel = overrideLevel;
-            scalerInfo.currentLevel = currentLevel;
-            scalerInfo.scale = scale;
-            scalerInfo.maxLevel = maxLevel;
-            scalerInfo.applied = (uint)(applied ? 1 : 0);
-
-            const int maxScalerNameSizeInBytes = 320;
             unsafe
             {
-                Encoding.ASCII.GetBytes(scalerName.AsSpan(), new Span<byte>(scalerInfo.scalerName, maxScalerNameSizeInBytes));
-            }
+                if (scalerInfosIndex.TryGetValue(scalerName, out int index))
+                {
+                    scalerIndex = index;
+                    info = scalerInfos[scalerIndex];
+                }
 
-            if (!existingInfo)
-                scalerInfos.Add(scalerName, scalerInfo);
-            else
-                scalerInfos[scalerName] = scalerInfo;
+                else
+                {
+                    info = new ScalerInfo();
+                    int copyLen = Math.Min(scalerName.Length, kMaxScalerNameSizeInBytes);
+                    for (int i = 0; i < copyLen; ++i)
+                        info.scalerName[i] = (byte)scalerName[i];
+                    for (int i = copyLen; i < kMaxScalerNameSizeInBytes; ++i)
+                        info.scalerName[i] = 0;
+                }
+
+
+                info.enabled = (uint)(enabled ? 1 : 0);
+                info.overrideLevel = overrideLevel;
+                info.currentLevel = currentLevel;
+                info.scale = scale;
+                info.maxLevel = maxLevel;
+                info.applied = (uint)(applied ? 1 : 0);
+
+                if (scalerIndex == -1) {
+                    scalerInfos.Add(info);
+                    scalerInfosIndex[scalerName] = scalerInfos.Count - 1;
+                }
+                else
+                    scalerInfos[scalerIndex] = info;
+            }
         }
 
         /// <summary>
@@ -226,9 +243,7 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         public static void FlushScalerDataToProfilerStream()
         {
-            ScalerInfo[] arr = new ScalerInfo[scalerInfos.Count];
-            scalerInfos.Values.CopyTo(arr, 0);
-            Profiler.EmitFrameMetaData(kAdaptivePerformanceProfilerModuleGuid, kScalerDataTag, arr);
+            Profiler.EmitFrameMetaData<ScalerInfo>(kAdaptivePerformanceProfilerModuleGuid, kScalerDataTag, scalerInfos);
         }
     }
 }

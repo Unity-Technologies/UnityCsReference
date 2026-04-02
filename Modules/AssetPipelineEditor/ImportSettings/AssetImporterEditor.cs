@@ -787,6 +787,8 @@ namespace UnityEditor.AssetImporters
             EditorGUI.indentLevel++;
 
             var processor = m_Postprocessors[index];
+
+            Rect clipRect = rect;
             rect.y += 3;
             rect.yMax = rect.yMin + EditorGUIUtility.singleLineHeight;
             if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition))
@@ -797,17 +799,23 @@ namespace UnityEditor.AssetImporters
                 pm.ShowAsContext();
             }
 
-            processor.Expanded = EditorGUI.Foldout(rect, processor.Expanded, m_Postprocessors[index].Name, true);
+            GUI.BeginClip(clipRect);
+            Rect localRect = new Rect(0, 3, clipRect.width, EditorGUIUtility.singleLineHeight);
+
+            processor.Expanded = EditorGUI.Foldout(localRect, processor.Expanded, GUIContent.Temp(processor.Name, processor.Name), true);
             if (processor.Expanded)
             {
                 EditorGUI.indentLevel++;
                 foreach (var method in processor.Methods)
                 {
-                    rect.y += EditorGUIUtility.singleLineHeight;
-                    EditorGUI.LabelField(rect, method);
+                    localRect.y += EditorGUIUtility.singleLineHeight;
+                    EditorGUI.LabelField(localRect, GUIContent.Temp(method, method));
                 }
                 EditorGUI.indentLevel--;
             }
+
+            GUI.EndClip();
+
             m_Postprocessors[index] = processor;
 
             EditorGUI.indentLevel--;

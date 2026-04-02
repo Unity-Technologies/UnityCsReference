@@ -87,9 +87,9 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("layer", GetLayer);
-            m_QueryEngine.AddFilter<string>("renderinglayer", OnRenderingLayer, new[] { ":" });
+            m_QueryEngine.AddFilter<string>("renderinglayer", OnRenderingLayer, new[] { "=", ":" });
             m_QueryEngine.AddFilter("tag", GetTag);
-            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
+            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { "=", ":"});
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter, StringComparison.OrdinalIgnoreCase);

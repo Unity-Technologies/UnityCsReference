@@ -527,7 +527,6 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The mode used for the <see cref="PhysicsShape.ContactFilter"/> when determining if two <see cref="PhysicsShape"/> can contact.
-        /// This mode will be ignored and a contact always be produced if the following is true: contactFilterA.groupIndex == contactFilterB.groupIndex AND contactFilterA.groupIndex NOT zero.
         /// See <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
         /// </summary>
         public enum ContactFilterMode
@@ -535,18 +534,47 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// This mode will produce a contact if both <see cref="PhysicsShape"/> agree, effectively an AND operation.
             /// A contact will be produced if the following is true: (contactFilterA.contacts AND-MASK contactFilterB.categories) AND (contactFilterA.categories AND-MASK contactFilterB.contacts).
-            /// This mode matches query results if similar values are provided to the <see cref="PhysicsQuery.QueryFilter"/>.
-            /// This is the default mode.
+            /// How the <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used is determined by <see cref="PhysicsShape.ContactFilterGroupMode"/>.
             /// </summary>
             Both,
 
             /// <summary>
             /// This mode will produce a contact if either <see cref="PhysicsShape"/> agree, effectively an OR operation.
             /// A contact will be produced if the following is true: (contactFilterA.contacts AND-MASK contactFilterB.categories ) OR (contactFilterA.categories AND-MASK contactFilterB.contacts).
-            /// This will not match query results if similar values are provided to the <see cref="PhysicsQuery.QueryFilter"/>.
-            /// To get the same results, set <see cref="PhysicsQuery.QueryFilter.categories"/> to <see cref="PhysicsQuery.QueryFilter.Everything"/>.
+            /// How the <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used is determined by <see cref="PhysicsShape.ContactFilterGroupMode"/>.
             /// </summary>
             Either
+        }
+
+        /// <summary>
+        /// The mode used to determine how <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used.
+        /// </summary>
+        public enum ContactFilterGroupMode
+        {
+            /// <summary>
+            /// In this mode, the <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used to control if contacts are never created (negative) or always created (positive).
+            /// A non-zero group always overrides the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks.
+            /// A group of zero has no effect.
+            /// 
+            /// The rules for two shapes coming into contact are:
+            /// 
+            ///- If either shape has a group of zero then the group is ignored and the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used.
+            ///- If both shapes have a non-zero but different group then the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used.
+            ///- If both shapes have an identical and positive group then they will always produce a contact.
+            ///- If both shapes have an identical and negative group then they will never produce a contact.
+            /// </summary>
+            Group,
+
+            /// <summary>
+            /// In this mode, the <see cref="PhysicsShape.ContactFilter.groupIndex"/> is used to filter if contacts are allowed to be created by the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks.
+            /// 
+            /// The rules for two shapes coming into contact are:
+            ///
+            ///- If both shapes have an identical group then the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used.
+            ///- If both shapes have a different group then they will never produce a contact irrelevant of the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> mask configuration.
+            ///- A group of zero is used like any other group but is also the default therefore if unchanged, the <see cref="PhysicsShape.ContactFilter.categories"/> and <see cref="PhysicsShape.ContactFilter.contacts"/> masks are used by default.
+            /// </summary>
+            Filtering
         }
 
         /// <summary>
@@ -565,7 +593,7 @@ namespace Unity.U2D.Physics
             /// </summary>
             /// <param name="categories">A <see cref="PhysicsMask"/> defining the categories this object is in.</param>
             /// <param name="contacts">A <see cref="PhysicsMask"/> defining the categories this object will produce contacts with.</param>
-            /// <param name="groupIndex">The override group this filter belongs to with zero indicating no group. Groups allow a certain group of objects to never collide (negative) or always collide (positive).</param>
+            /// <param name="groupIndex">The group index this filter belongs to. How this is used is determined by <see cref="PhysicsShape.ContactFilterGroupMode"/>.</param>
             public ContactFilter(PhysicsMask categories, PhysicsMask contacts, Int32 groupIndex = 0)
             {
                 m_Categories = categories;
@@ -585,15 +613,8 @@ namespace Unity.U2D.Physics
             public PhysicsMask contacts { readonly get => m_Contacts; set => m_Contacts = value; }
 
             /// <summary>
-            /// Collision groups allow a certain group of objects to never collide (negative) or always collide (positive).
-            /// A group index of zero has no effect. A non-zero group always overrides the category/contacts masks.
-            /// 
-            /// The rules for two shapes coming into contact are:
-            /// 
-            ///- If either shape has a group of zero then the group is ignored and the category/contacts masks are used.
-            ///- If both shapes have a non-zero but different group then the category/contacts masks are used.
-            ///- If both shapes have an identical and positive group then they will always produce a contact.
-            ///- If both shapes have an identical and negative group then they will never produce a contact.
+            /// The group which the contact filter uses to determine if the categories and contact masks are used.
+            /// See <see cref="PhysicsShape.ContactFilterGroupMode"/> for more information.
             /// </summary>
             public Int32 groupIndex { readonly get => m_GroupIndex; set => m_GroupIndex = value; }
 
@@ -616,6 +637,14 @@ namespace Unity.U2D.Physics
             /// Get a default contact filter that contacts everything.
             /// </summary>
             public static ContactFilter defaultFilter = new(DefaultCategories, DefaultContacts);
+
+            /// <summary>
+            /// Will this contact filter produce a contact with the specified contact filter.
+            /// The term "contact" here means that if these filters were used on two <see cref="PhysicsShape"/>, would a contact be produced.
+            /// </summary>
+            /// <param name="filter">The other contact filter to compare against.</param>
+            /// <returns>Whether a contact would be produced by both contact filters or not.</returns>
+            public readonly bool CanContact(ContactFilter filter) => PhysicsShape_ContactFilter_CanContact(this, filter);
 
             #region Internal
 
@@ -1628,14 +1657,46 @@ namespace Unity.U2D.Physics
         public readonly float GetPerimeterProjected(Vector2 axis) => PhysicsShape_GetPerimeterProjected(this, axis);
 
         /// <summary>
-        /// Set the (optional) owner object associated with this shape and return an owner key that must be specified when destroying the shape with <see cref="PhysicsShape.Destroy(bool, int)"/>.   
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="shapes">The shapes to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsShape> shapes, UnityEngine.Object owner, int ownerKey) => PhysicsShape_SetOwner(shapes, owner, ownerKey);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this shape. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsShape.Destroy(bool, int)"/> when destroying the shape.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsShape_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var shape = this;
+            SetOwner(new ReadOnlySpan<PhysicsShape>(&shape, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = PhysicsWorld.CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this shape as specified using <see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>.

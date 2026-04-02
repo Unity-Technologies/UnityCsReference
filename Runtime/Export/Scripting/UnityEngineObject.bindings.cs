@@ -139,20 +139,25 @@ namespace UnityEngine
     [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
     public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
     {
+        const ulong MagicVersion = (ulong)0x7E25105 << 32;
+
         [SerializeField]
         ulong m_rawData;
 
-        public static EntityId None => default;
+        public static EntityId None => new EntityId { m_rawData = 0 };
         public override bool Equals(object obj) => obj is EntityId other && Equals(other);
-        public bool Equals(EntityId other) => m_rawData == other.m_rawData;
-        public int CompareTo(EntityId other) => ((int)(m_rawData & 0xFFFFFFFF)).CompareTo((int)(other.m_rawData & 0xFFFFFFFF));
+        public bool Equals(EntityId other)
+        {
+            return m_rawData == other.m_rawData;
+        }
+        public int CompareTo(EntityId other) => ((int)(m_rawData & 0xFFFFFFFF)).CompareTo(((int)(other.m_rawData & 0xFFFFFFFF)));
         public static bool operator ==(EntityId left, EntityId right) => left.Equals(right);
         public static bool operator !=(EntityId left, EntityId right) => !left.Equals(right);
 
         public static bool operator <(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) < (int)(right.m_rawData & 0xFFFFFFFF);
         public static bool operator >(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) > (int)(right.m_rawData & 0xFFFFFFFF);
         public static bool operator <=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) <= (int)(right.m_rawData & 0xFFFFFFFF);
-        public static bool operator >=(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) >= (int)(right.m_rawData & 0xFFFFFFFF);
+        public static bool operator >=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) >= (int)(right.m_rawData & 0xFFFFFFFF);
 
         public override int GetHashCode()
         {
@@ -164,14 +169,14 @@ namespace UnityEngine
             return this != EntityId.None;
         }
 
-        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
-        public bool Equals(int other) => (int)(m_rawData & 0xFFFFFFFF) == other;
+        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", false)]
+        public bool Equals(int other) => m_rawData == (MagicVersion | (ulong)(uint)other);
 
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
         public static implicit operator int(EntityId entityId) => (int)(entityId.m_rawData & 0xFFFFFFFF);
 
-        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
-        public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = (ulong)(uint)intValue };
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
+        public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
 
         public override string ToString() => ((int)(m_rawData & 0xFFFFFFFF)).ToString();
         public string ToString(string format) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format);
@@ -188,7 +193,7 @@ namespace UnityEngine
             EntityId res = EntityId.None;
 
             if (int.TryParse(input, out var intResult))
-                res = FromULong((ulong)intResult);
+                res = FromULong(MagicVersion | (ulong)(uint)intResult);
 
             return res;
         }
@@ -197,7 +202,7 @@ namespace UnityEngine
         public ulong GetRawData() => m_rawData;
 
         [Obsolete("Stop using EntityId.From(int)",false)]
-        internal static EntityId From(int input) => new EntityId {m_rawData = (ulong)(uint)input};
+        internal static EntityId From(int input) => new EntityId {m_rawData = MagicVersion | (ulong)(uint)input};
         [Obsolete("Stop using EntityId.From(ulong) and use EntityId.FromULong instead.",false)]
         internal static EntityId From(ulong input) => new EntityId { m_rawData = input };
 

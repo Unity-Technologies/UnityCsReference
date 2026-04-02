@@ -1286,6 +1286,7 @@ namespace UnityEngine.UIElements
         private Vector2 m_LowBounds;
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
+        private int m_TouchDraggingPointerId = PointerId.invalidPointerId;
         private bool m_StartedMoving;
         private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
@@ -1562,7 +1563,7 @@ namespace UnityEngine.UIElements
 
             m_TouchPointerMoveAllowed = true;
             m_StartedMoving = false;
-            InitTouchScrolling(evt.position);
+            InitTouchScrolling(evt.position, evt.pointerId);
 
             if (touchStopsVelocityOnly)
             {
@@ -1576,6 +1577,10 @@ namespace UnityEngine.UIElements
         void OnPointerMove(PointerMoveEvent evt)
         {
             if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
+                return;
+
+            // UUM-135860: don't allow multiple pointers to drive the scrolling behavior at once
+            if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
             var isXRPointer = evt.pointerType == PointerType.tracked;
@@ -1670,8 +1675,12 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests.
-        internal void InitTouchScrolling(Vector2 position)
+        internal void InitTouchScrolling(Vector2 position) =>
+            InitTouchScrolling(position, PointerId.invalidPointerId);
+
+        private void InitTouchScrolling(Vector2 position, int pointerId)
         {
+            m_TouchDraggingPointerId = pointerId;
             m_PointerStartPosition = position;
             m_StartPosition = scrollOffset;
             m_Velocity = Vector2.zero;
@@ -1766,6 +1775,7 @@ namespace UnityEngine.UIElements
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
+            m_TouchDraggingPointerId = PointerId.invalidPointerId;
             m_TouchStoppedVelocity = false;
             m_StartedMoving = false;
             m_TouchPointerMoveAllowed = false;

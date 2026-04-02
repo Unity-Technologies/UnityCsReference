@@ -641,7 +641,7 @@ namespace UnityEditor.Search
                         return true;
                     }
                 }
-                else
+                else if (cb != null)
                 {
                     cb.OpenEditorAndUpdateStyles(cb.drawRect);
                     return true;

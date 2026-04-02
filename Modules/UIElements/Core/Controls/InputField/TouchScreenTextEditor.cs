@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements
                         if (editingUtilities.text != touchKeyboardText)
                         {
                             edition.UpdateText(touchKeyboardText);
-                            textElement.uitkTextHandle.Update();
+                            textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                         }
                     }
 

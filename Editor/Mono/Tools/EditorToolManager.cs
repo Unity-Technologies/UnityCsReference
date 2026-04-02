@@ -475,13 +475,16 @@ namespace UnityEditor.EditorTools
 
             internal void AddDefaultHandleToAvoidExitingToolContext()
             {
+                if (activeToolContext.GetType() == defaultToolContextType
+                    || !activeToolContext.overridesDefaultSelection)
+                    return;
+
                 int id = GUIUtility.GetControlID(FocusType.Passive);
                 Event evt = Event.current;
                 switch (evt.GetTypeForControl(id))
                 {
                     case EventType.Layout:
                     case EventType.MouseMove:
-                        if (activeToolContext.GetType() != defaultToolContextType)
                             HandleUtility.AddDefaultControl(id);
                         break;
                 }

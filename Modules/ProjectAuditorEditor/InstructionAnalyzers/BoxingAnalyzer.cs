@@ -39,7 +39,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             registerDescriptor(k_Descriptor);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             var type = (TypeReference)context.Instruction.Operand;
             if (type.IsGenericParameter)
@@ -47,14 +47,21 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 var isValueType = true; // assume it's value type
                 var genericType = (GenericParameter)type;
                 if (genericType.HasReferenceTypeConstraint)
+                {
                     isValueType = false;
+                }
                 else
+                {
                     foreach (var constraint in genericType.Constraints)
+                    {
                         if (!constraint.ConstraintType.IsValueType)
                             isValueType = false;
+                    }
+                }
+
+                // boxing on ref types are no-ops, so not a problem
                 if (!isValueType)
-                    // boxing on ref types are no-ops, so not a problem
-                    return null;
+                    yield break;
             }
 
             var typeName = type.Name;
@@ -63,7 +70,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             else if (type.FullName.Equals("System.Double"))
                 typeName = "double";
 
-            return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, typeName);
+            yield return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, typeName);
         }
     }
 }

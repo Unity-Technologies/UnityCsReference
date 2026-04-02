@@ -59,6 +59,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onActivePageChanged += OnActivePageChanged;
             m_PageManager.onTrimmedSearchTextChanged += OnTrimmedSearchTextChanged;
+
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -71,6 +73,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onActivePageChanged -= OnActivePageChanged;
             m_PageManager.onTrimmedSearchTextChanged -= OnTrimmedSearchTextChanged;
+
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         private void OnValidateCommandEvent(ValidateCommandEvent evt)
@@ -145,6 +149,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SearchFieldDelayArgs = null;
             if (!string.IsNullOrEmpty(page.trimmedSearchText))
                 PackageManagerWindowAnalytics.SendEvent("search");
+        }
+
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
+        {
+            RefreshVisibility();
         }
 
         private void RefreshVisibility()

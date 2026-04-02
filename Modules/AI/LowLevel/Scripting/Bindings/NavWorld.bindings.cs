@@ -224,7 +224,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         return BeginFindPath(queryBuffer.id, start, end, areaMask, costsPtr);
     }
 
-    public NavQueryStatus ContinueFindPath(NavQueryBuffer queryBuffer, int maxNodesToVisit, out int nodesVisited)
+    public NavQueryStatus ContinueFindPath(NavQueryBuffer queryBuffer, int nodesToVisit, out int nodesVisited)
     {
         CheckValidPtrAndThrow();
         CheckBufferMatchAndThrow(queryBuffer);
@@ -232,7 +232,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
-        return ContinueFindPath(queryBuffer.id, maxNodesToVisit, out nodesVisited);
+        return ContinueFindPath(queryBuffer.id, nodesToVisit, out nodesVisited);
     }
 
     public NavQueryStatus EndFindPath(NavQueryBuffer queryBuffer, out int pathSize)
@@ -264,7 +264,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         NavLocation end, int areaMask, void* costs);
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern NavQueryStatus ContinueFindPath(IntPtr navMeshQuery, int maxNodesToVisit, out int nodesVisited);
+    static extern NavQueryStatus ContinueFindPath(IntPtr navMeshQuery, int nodesToVisit, out int nodesVisited);
 
     [NativeMethod(IsThreadSafe = true)]
     static extern NavQueryStatus EndFindPath(IntPtr navMeshQuery, out int pathSize);
@@ -421,7 +421,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         }
         void* costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
         var status = Raycast(m_ImmutableQuery, start, targetPosition, areaMask, costsPtr, out hit, null, out _, 0);
-        status &= ~NavQueryStatus.BufferTooSmall;
+        status &= ~NavQueryStatus.MoreDataAvailable;
         return status;
     }
 

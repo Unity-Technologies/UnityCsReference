@@ -20,7 +20,7 @@ namespace UnityEditor
         /// 
         ///* If your file is an Android App Bundle, end <c>locationPathName</c> with <c>.aab</c>.</remarks>
         ///<seealso cref="EditorUserBuildSettings.GetBuildLocation" />
-        ///<seealso href="xref:build-path-requirements">Build path requirements for target platforms</seealso>
+        ///<seealso href="xref:um-build-path-requirements">Build path requirements for target platforms</seealso>
         public string locationPathName { get; set; }
         ///<summary>The path to a manifest file describing all the AssetBundles used in the build (optional).</summary>
         ///<remarks>When you call <see cref="BuildPipeline.BuildAssetBundles" /> to create your AssetBundles, Unity will also generate a .manifest file with a file name matching the parent directory.
@@ -28,7 +28,7 @@ namespace UnityEditor
         ///
         ///You don't need to set this property when using <c>link.xml</c> files, or when generating AssetBundles using the &lt;a href="https://docs.unity3d.com/Packages/com.unity.addressables@latest"&gt;Addressables&lt;/a&gt; package.
         ///
-        ///For more information about code stripping, refer to [Managed code stripping](xref:ManagedCodeStripping).</remarks>
+        ///For more information about code stripping, refer to [Managed code stripping](xref:um-managed-code-stripping).</remarks>
         public string assetBundleManifestPath { get; set; }
         ///<summary>Additional <see cref="BuildOptions" />, like whether to run the built player.</summary>
         public BuildOptions options { get; set; }

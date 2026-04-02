@@ -197,7 +197,7 @@ namespace Unity.U2D.Physics
                 else
                 {
                     // Custom plane projection.
-                    transformPlaneCustom.PlaneProjection(ref physicsTransform, out newPosition, out newRotation);
+                    transformPlaneCustom.PlaneProjection(in physicsTransform, out newPosition, out newRotation);
                 }
 
                 // Set the transform pose.
@@ -243,7 +243,7 @@ namespace Unity.U2D.Physics
                 else
                 {
                     // Custom plane projection.
-                    transformPlaneCustom.PlaneProjection(ref physicsTransform, out newPosition, out newRotation);
+                    transformPlaneCustom.PlaneProjection(in physicsTransform, out newPosition, out newRotation);
                 }
 
                 // Set the transform pose.

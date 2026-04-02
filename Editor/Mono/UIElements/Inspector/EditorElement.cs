@@ -393,8 +393,6 @@ namespace UnityEditor.UIElements
             var headerContainer = new VisualElement();
             headerImguiContainer = inspectorWindow.CreateIMGUIContainer(HeaderOnGUI, editorTitle + "Header");
             headerContainer.Add(headerImguiContainer);
-            if (InspectorWindowUtils.TryCreateObsoleteHelpBox(editor, out var obsoleteHelpBox))
-                headerContainer.Add(obsoleteHelpBox);
             return headerContainer;
         }
 

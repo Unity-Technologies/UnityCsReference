@@ -49,7 +49,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Interface for receiving a callback after the application is launched on a target device.</summary>
-    ///<remarks>Unity invokes <c>OnPostprocessLaunch</c> callback after attempting to launch the application. For more information about build callbacks, refer to [Use build callbacks](xref:build-callbacks)</remarks>
+    ///<remarks>Unity invokes <c>OnPostprocessLaunch</c> callback after attempting to launch the application. For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IPostprocessLaunch : IOrderedCallback
     {
         ///<summary>Implement this method to receive a callback after Unity attempts to launch the application.</summary>

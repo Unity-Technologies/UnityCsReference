@@ -393,15 +393,6 @@ namespace UnityEditor
 
                 EditorApplication.hierarchyWindowItemByEntityIdOnGUI(itemID, rect);
             }
-            if (EditorApplication.hierarchyWindowItemByEntityIdOnGUI != null)
-            {
-                // Adjust rect for the right aligned column for the prefab isolation button
-                rect.xMax -=
-                    GameObjectStyles.rightArrow.fixedWidth +
-                    GameObjectStyles.rightArrow.margin.horizontal;
-
-                EditorApplication.hierarchyWindowItemByEntityIdOnGUI(itemID, rect);
-            }
         }
 
         private void HandlePrefabInstanceOverrideStatus(GameObjectTreeViewItem goItem, Rect rect, bool selected, bool focused)

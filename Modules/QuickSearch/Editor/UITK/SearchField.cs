@@ -496,6 +496,8 @@ namespace UnityEditor.Search
 
         public void MoveCursor(TextCursorPlacement moveCursor, int cursorInsertPosition)
         {
+            if (textField == null)
+                return;
             if (cursorInsertPosition >= 0)
             {
                 textField.selectIndex = textField.cursorIndex = cursorInsertPosition;

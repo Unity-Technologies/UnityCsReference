@@ -176,9 +176,14 @@ namespace UnityEngine.AdaptivePerformance
         TemperatureTrend m_TemperatureTrend;
         bool m_UseProviderOverallFrameTime = false;
 
+        static bool HasFeature(Provider.Feature flags, Provider.Feature feature)
+        {
+            return (flags & feature) != 0;
+        }
+
         public bool SupportedFeature(Provider.Feature feature)
         {
-            return m_Subsystem != null ? m_Subsystem.Capabilities.HasFlag(feature) : false;
+            return m_Subsystem != null && HasFeature(m_Subsystem.Capabilities, feature);
         }
 
         public void Awake()
@@ -344,7 +349,7 @@ namespace UnityEngine.AdaptivePerformance
                     m_OverallFrameTimeAccu = 0.0f;
                 }
 
-                m_TemperatureTrend.Update(updateResult.TemperatureTrend, updateResult.TemperatureLevel, updateResult.ChangeFlags.HasFlag(Provider.Feature.TemperatureLevel), Time.time);
+                m_TemperatureTrend.Update(updateResult.TemperatureTrend, updateResult.TemperatureLevel, HasFeature(updateResult.ChangeFlags, Provider.Feature.TemperatureLevel), Time.time);
             }
             else
             {
@@ -391,20 +396,20 @@ namespace UnityEngine.AdaptivePerformance
             }
 
             triggerThermalEventEvent = (ThermalEvent != null) &&
-                (updateResult.ChangeFlags.HasFlag(Provider.Feature.WarningLevel) ||
-                    updateResult.ChangeFlags.HasFlag(Provider.Feature.TemperatureLevel) ||
-                    updateResult.ChangeFlags.HasFlag(Provider.Feature.TemperatureTrend));
+                (HasFeature(updateResult.ChangeFlags, Provider.Feature.WarningLevel) ||
+                    HasFeature(updateResult.ChangeFlags, Provider.Feature.TemperatureLevel) ||
+                    HasFeature(updateResult.ChangeFlags, Provider.Feature.TemperatureTrend));
 
-            triggerPerformanceModeEvent = (PerformanceModeEvent != null) && updateResult.ChangeFlags.HasFlag(Provider.Feature.PerformanceMode);
+            triggerPerformanceModeEvent = (PerformanceModeEvent != null) && HasFeature(updateResult.ChangeFlags, Provider.Feature.PerformanceMode);
 
             // The Subsystem may have changed the current levels (e.g. "timeout" of Samsung subsystem)
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.CpuPerformanceLevel))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.CpuPerformanceLevel))
                 m_DevicePerfControl.CurrentCpuLevel = updateResult.CpuPerformanceLevel;
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.GpuPerformanceLevel))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.GpuPerformanceLevel))
                 m_DevicePerfControl.CurrentGpuLevel = updateResult.GpuPerformanceLevel;
 
             // Update PerformanceControlMode
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.PerformanceLevelControl) || m_AutomaticPerformanceControlChanged)
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.PerformanceLevelControl) || m_AutomaticPerformanceControlChanged)
             {
                 m_AutomaticPerformanceControlChanged = false;
                 if (updateResult.PerformanceLevelControlAvailable)
@@ -448,11 +453,11 @@ namespace UnityEngine.AdaptivePerformance
             }
 
             triggerPerformanceBoostChangeEvent = (PerformanceBoostChangeEvent != null) &&
-                (updateResult.ChangeFlags.HasFlag(Provider.Feature.CpuPerformanceBoost) ||
-                    updateResult.ChangeFlags.HasFlag(Provider.Feature.GpuPerformanceBoost));
+                (HasFeature(updateResult.ChangeFlags, Provider.Feature.CpuPerformanceBoost) ||
+                    HasFeature(updateResult.ChangeFlags, Provider.Feature.GpuPerformanceBoost));
 
             // The Subsystem may have changed the current modes (e.g. "timeout" of Samsung subsystem)
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.CpuPerformanceBoost))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.CpuPerformanceBoost))
             {
                 if (m_DevicePerfControl.CpuPerformanceBoost != updateResult.CpuPerformanceBoost)
                 {
@@ -461,7 +466,7 @@ namespace UnityEngine.AdaptivePerformance
                 }
             }
 
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.GpuPerformanceBoost))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.GpuPerformanceBoost))
             {
                 if (m_DevicePerfControl.GpuPerformanceBoost != updateResult.GpuPerformanceBoost)
                 {
@@ -495,12 +500,12 @@ namespace UnityEngine.AdaptivePerformance
 
             m_NewUserPerformanceLevelRequest = false;
 
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.ClusterInfo))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.ClusterInfo))
             {
                 m_PerformanceMetrics.ClusterInfo = updateResult.ClusterInfo;
             }
 
-            if (updateResult.ChangeFlags.HasFlag(Provider.Feature.PerformanceMode))
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.PerformanceMode))
             {
                 m_PerformanceMode = updateResult.PerformanceMode;
             }
@@ -626,7 +631,7 @@ namespace UnityEngine.AdaptivePerformance
 
             if (m_Subsystem != null)
             {
-                m_UseProviderOverallFrameTime = m_Subsystem.Capabilities.HasFlag(Provider.Feature.OverallFrameTime);
+                m_UseProviderOverallFrameTime = HasFeature(m_Subsystem.Capabilities, Provider.Feature.OverallFrameTime);
                 m_DevicePerfControl = new DevicePerformanceControlImpl(m_Subsystem.PerformanceLevelControl);
                 m_AutoPerformanceLevelController = new AutoPerformanceLevelController(m_DevicePerfControl, PerformanceStatus, ThermalStatus);
                 if (m_Settings.automaticGameMode)
@@ -636,17 +641,17 @@ namespace UnityEngine.AdaptivePerformance
 
                 m_AppLifecycle = m_Subsystem.ApplicationLifecycle;
 
-                if (!m_Subsystem.Capabilities.HasFlag(Provider.Feature.CpuFrameTime))
+                if (!HasFeature(m_Subsystem.Capabilities, Provider.Feature.CpuFrameTime))
                 {
                     m_CpuFrameTimeProvider = new CpuTimeProvider();
                 }
 
-                if (!m_Subsystem.Capabilities.HasFlag(Provider.Feature.GpuFrameTime))
+                if (!HasFeature(m_Subsystem.Capabilities, Provider.Feature.GpuFrameTime))
                 {
                     m_GpuFrameTimeProvider = new GpuTimeProvider();
                 }
 
-                m_TemperatureTrend = new TemperatureTrend(m_Subsystem.Capabilities.HasFlag(Provider.Feature.TemperatureTrend));
+                m_TemperatureTrend = new TemperatureTrend(HasFeature(m_Subsystem.Capabilities, Provider.Feature.TemperatureTrend));
 
                 // Request maximum performance by default
                 if (m_RequestedCpuLevel == Constants.UnknownPerformanceLevel)
@@ -669,7 +674,7 @@ namespace UnityEngine.AdaptivePerformance
                 PerformanceLevelChangeEvent += LogPerformanceLevelEvent;
                 PerformanceModeEvent += LogPerformanceModeEvent;
 
-                if (m_Subsystem.Capabilities.HasFlag(Provider.Feature.CpuPerformanceBoost))
+                if (HasFeature(m_Subsystem.Capabilities, Provider.Feature.CpuPerformanceBoost))
                     PerformanceBoostChangeEvent += LogBoostEvent;
 
                 Indexer = new AdaptivePerformanceIndexer(ref m_Settings, new PerformanceStateTracker(120));

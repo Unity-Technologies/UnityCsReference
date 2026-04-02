@@ -33,6 +33,9 @@ namespace Unity.GraphToolkit.Editor
             m_ModeDropdown = new DropdownField("Mode", choices, 0);
             m_ModeDropdown.AddToClassList(inputUssClassName);
 
+            m_ModeDropdown.labelElement.AddToClassList(labelUssClassName);
+            m_ModeDropdown.labelElement.AddToClassList(BaseModelPropertyField.labelUssClassName);
+
             m_ModeDropdown.RegisterValueChangedCallback(OnModeChanged);
 
             Add(m_ModeDropdown);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -23,10 +24,35 @@ namespace UnityEditor.Build.Profile
         static readonly string k_EmptyQualitySettingsWarning =
             L10n.Tr("When no Quality levels are listed, the build will take from the global list of Quality levels.");
         static readonly string k_SetDefaultQualityLevelMenuText = L10n.Tr("Set as Default");
+        static int s_CachedBuildProfilesWithSettingsOverrideCount = -1;
 
         SerializedProperty m_QualityLevels;
         SerializedProperty m_DefaultQualityLevel;
         HelpBox warning;
+
+        /// <summary>
+        /// Gets the count of build profiles that have quality settings overrides.
+        /// Cached count is updated on creation/removal of <see cref="BuildProfileQualitySettings"/> assets.
+        /// Won't capture all asset deletions and is primarily use for rendering name change warning UI in <see cref="QualitySettingsEditor"/>.
+        /// </summary>
+        public static int GetBuildProfilesWithSettingsOverrideCount()
+        {
+            if (s_CachedBuildProfilesWithSettingsOverrideCount == -1)
+                RefreshCachedQualitySettingEntities();
+
+            return s_CachedBuildProfilesWithSettingsOverrideCount;
+        }
+
+        public static void RefreshCachedQualitySettingEntities()
+        {
+            s_CachedBuildProfilesWithSettingsOverrideCount = 0;
+            var allBuildProfiles = BuildProfile.GetAllBuildProfiles();
+            foreach (var profile in allBuildProfiles)
+            {
+                if (profile.qualitySettings != null)
+                    s_CachedBuildProfilesWithSettingsOverrideCount++;
+            }
+        }
 
         public override VisualElement CreateInspectorGUI()
         {

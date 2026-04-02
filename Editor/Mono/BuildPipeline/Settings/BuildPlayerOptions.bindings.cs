@@ -58,7 +58,7 @@ namespace UnityEditor
         ///
         ///You do not need to set this property when you use /link.xml/ files, or if you generate AssetBundles using the &lt;a href="https://docs.unity3d.com/Packages/com.unity.addressables@latest"&gt;Addressables&lt;/a&gt; package.
         ///
-        ///See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.</remarks>
+        ///See [Managed code stripping](xref:um-managed-code-stripping) for more information about code stripping.</remarks>
         public string assetBundleManifestPath { get; set; }
         ///<summary>The <see cref="BuildTargetGroup" /> to build.</summary>
         [NativeName("platformGroup")]

@@ -127,7 +127,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     categories =
                     [
                         IssueCategory.Code, IssueCategory.Assembly, IssueCategory.PrecompiledAssembly,
-                        IssueCategory.CodeCompilerMessage, IssueCategory.DomainReload
+                        IssueCategory.CodeCompilerMessage, IssueCategory.DomainReload, IssueCategory.ObsoleteAPI
                     ]
                 },
                 new Tab
@@ -855,7 +855,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             ViewDescriptor.Register(new ViewDescriptor
             {
                 Category = IssueCategory.Code,
-                DisplayName = "Code",
+                DisplayName = "Code Issues",
                 MenuLabel = "Code/Issues",
                 MenuOrder = 0,
                 ShowAssemblySelection = true,
@@ -956,6 +956,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                 OnOpenManual = EditorInterop.OpenCodeDescriptor,
                 Type = typeof(CodeDomainReloadView),
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.DomainReload
+            });
+            ViewDescriptor.Register(new ViewDescriptor
+            {
+                Category = IssueCategory.ObsoleteAPI,
+                DisplayName = "Obsolete API Database",
+                MenuLabel = "Code/Obsolete API Database",
+                MenuOrder = 51,
+                ShowFilters = true,
+                ShowInfoPanel = true,
+                ShowDetails = true,
+                Type = typeof(ObsoleteApiView)
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
@@ -1273,7 +1284,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(Contents.AssemblyFilter, GUILayout.Width(LayoutSize.FilterOptionsLeftLabelWidth));
+                EditorGUILayout.LabelField(Contents.AssemblyFilter, LayoutSize.FilterOptionsLabelWidth);
 
                 using (new EditorGUI.DisabledScope(!IsAnalysisValid() || SelectionWindow.IsOpen<AssemblySelectionWindow>()))
                 {
@@ -1337,8 +1348,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(Contents.AreaFilter,
-                    GUILayout.Width(LayoutSize.FilterOptionsLeftLabelWidth));
+                EditorGUILayout.LabelField(Contents.AreaFilter, LayoutSize.FilterOptionsLabelWidth);
 
                 if (AreaNames.Length > 0)
                 {
@@ -2095,11 +2105,15 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_NoCodeSelectedMessage = "Please select either Editor, Player or both.";
 
         // UI styles and layout
-        static class LayoutSize
+        internal static class LayoutSize
         {
+            const int kFilterContentsWidth = 320;
+
             public static readonly int MinWindowWidth = 410;
             public static readonly int MinWindowHeight = 640;
-            public static readonly int FilterOptionsLeftLabelWidth = 94;
+            public static readonly GUILayoutOption FilterOptionsLabelWidth = GUILayout.Width(104);
+            public static readonly GUILayoutOption FilterOptionsContentsWidth = GUILayout.Width(kFilterContentsWidth);
+            public static readonly GUILayoutOption FilterOptionsContentsHalfWidth = GUILayout.Width(kFilterContentsWidth / 2);
             public static readonly int FilterOptionsEnumWidth = 50;
         }
 

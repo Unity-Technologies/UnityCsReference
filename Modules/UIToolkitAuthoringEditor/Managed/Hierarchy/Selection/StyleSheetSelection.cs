@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[CreateAssetMenu]
 internal class StyleSheetSelection : UISelectionObject
 {
     public static readonly BindingId StyleSheetProperty = nameof(StyleSheet);

@@ -72,7 +72,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             return context.CreateIssue(IssueCategory.Code, descriptor.Id).WithDescription(description);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             var callee = (MethodReference)context.Instruction.Operand;
             var description = string.Empty;
@@ -94,10 +94,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             {
                 description = SearchForApi(callee, out descriptor);
                 if (string.IsNullOrEmpty(description))
-                    return null;
+                    yield break;
             }
 
-            return context.CreateIssue(IssueCategory.Code, descriptor.Id)
+            yield return context.CreateIssue(IssueCategory.Code, descriptor.Id)
                 .WithDescription(description);
         }
 

@@ -43,8 +43,10 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX - 1 from NavMeshNode.h
     const int k_MaxNavMeshNodePoolSize = ushort.MaxValue - 1;
 
-    public NavQueryBuffer(NavWorld world, Allocator allocator, int pathNodePoolSize = 1024)
+    public NavQueryBuffer(NavWorld world, Allocator allocator, int maxNodesToVisit = 1024)
     {
+        var pathNodePoolSize = maxNodesToVisit;
+
         if (!world.IsValid())
             throw new ArgumentNullException(nameof(world), "Invalid world");
 

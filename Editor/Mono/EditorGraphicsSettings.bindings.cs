@@ -232,5 +232,6 @@ namespace UnityEditor.Rendering
 
         extern public static ShaderBuildSettings GetShaderBuildSettings();
         extern public static void SetShaderBuildSettings(ShaderBuildSettings settings);
+        extern public static bool ShouldValidateGraphicsForActiveBuildTarget();
     }
 }

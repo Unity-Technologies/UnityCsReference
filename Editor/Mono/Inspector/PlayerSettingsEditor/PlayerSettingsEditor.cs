@@ -1141,6 +1141,10 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
+            // Add ellipsis truncation for labels
+            var previousTextClipping = EditorStyles.label.clipping;
+            EditorStyles.label.clipping = TextClipping.Ellipsis;
+
             int sectionIndex = 0;
 
             if (serializedObjectUpdated)
@@ -1179,6 +1183,9 @@ namespace UnityEditor
             {
                 RecompileScripts();
             }
+
+            // Resetting truncation of labels back 
+            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()
@@ -3735,7 +3742,7 @@ namespace UnityEditor
                         {
                             // Make sure to remove focus from reorderable list text field on apply
                             GUI.FocusControl(null);
-
+                            scriptingDefinesList.RemoveAll(string.IsNullOrWhiteSpace);
                             SetScriptingDefineSymbolsForGroup(platform.namedBuildTarget, scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
@@ -3789,6 +3796,7 @@ namespace UnityEditor
 
                                 if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
+                                    additionalCompilerArgumentsList.RemoveAll(string.IsNullOrWhiteSpace);
                                     SetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget, additionalCompilerArgumentsList.ToArray());
 
                                     // Get Additional Compiler Arguments without duplicates
@@ -3895,22 +3903,36 @@ namespace UnityEditor
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
-            if (m_SerializedScriptingDefinesArray == null ||
-                scriptingDefinesList.Count != m_SerializedScriptingDefinesArray.Length)
+            // m_SerializedScriptingDefinesArray contains the serialized scripting define values
+            // scriptingDefinesList is the list of all scripting define entries in memory, and is initialized with the list of serialized values
+            if (m_SerializedScriptingDefinesArray == null || scriptingDefinesList.Count < m_SerializedScriptingDefinesArray.Length)
             {
                 hasScriptingDefinesBeenModified = true;
                 return;
             }
 
-            for (int i = 0; i < m_SerializedScriptingDefinesArray.Length; i++)
+            // This loop updates hasScriptingDefinesBeenModified if there's a difference between the in-memory values and the serialized values
+            // For indices present in the serialized array, compare corresponding entries
+            // For extra in-memory entries (beyond the serialized array), any non-empty entry is considered a modification.
+            for (int i = 0; i < scriptingDefinesList.Count; i++)
             {
-                if (scriptingDefinesList[i] != m_SerializedScriptingDefinesArray[i])
+                if (i < m_SerializedScriptingDefinesArray.Length)
                 {
-                    hasScriptingDefinesBeenModified = true;
-                    return;
+                    if (!string.Equals(scriptingDefinesList[i], m_SerializedScriptingDefinesArray[i]))
+                    {
+                        hasScriptingDefinesBeenModified = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(scriptingDefinesList[i]))
+                    {
+                        hasScriptingDefinesBeenModified = true;
+                        return;
+                    }
                 }
             }
-
             hasScriptingDefinesBeenModified = false;
         }
 
@@ -3928,22 +3950,36 @@ namespace UnityEditor
 
         void SetAdditionalCompilerArgumentListDirty(ReorderableList list = null)
         {
-            if (serializedAdditionalCompilerArguments == null ||
-                additionalCompilerArgumentsList.Count != serializedAdditionalCompilerArguments.Length)
+            // serializedAdditionalCompilerArguments contains the serialized compiler arguments
+            // additionalCompilerArgumentsList is the list of all compiler arguments in memory, and is initialized with the list of serialized values
+            if (serializedAdditionalCompilerArguments == null || additionalCompilerArgumentsList.Count < serializedAdditionalCompilerArguments.Length)
             {
                 hasAdditionalCompilerArgumentsBeenModified = true;
                 return;
             }
 
+            // This loop updates hasAdditionalCompilerArgumentsBeenModified if there's a difference between the in-memory values and the serialized values
+            // For indices present in the serialized array, compare corresponding entries.
+            // For extra in-memory entries (beyond the serialized array), any non-empty entry is considered a modification.
             for (int i = 0; i < additionalCompilerArgumentsList.Count; i++)
             {
-                if (additionalCompilerArgumentsList[i] != serializedAdditionalCompilerArguments[i])
+                if (i < serializedAdditionalCompilerArguments.Length)
                 {
-                    hasAdditionalCompilerArgumentsBeenModified = true;
-                    return;
+                    if (!string.Equals(additionalCompilerArgumentsList[i], serializedAdditionalCompilerArguments[i]))
+                    {
+                        hasAdditionalCompilerArgumentsBeenModified = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(additionalCompilerArgumentsList[i]))
+                    {
+                        hasAdditionalCompilerArgumentsBeenModified = true;
+                        return;
+                    }
                 }
             }
-
             hasAdditionalCompilerArgumentsBeenModified = false;
         }
 

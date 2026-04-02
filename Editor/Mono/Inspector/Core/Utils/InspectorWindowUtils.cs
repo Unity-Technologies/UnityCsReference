@@ -13,6 +13,63 @@ namespace UnityEditor
 {
     internal static class InspectorWindowUtils
     {
+        internal class DismissableDeprecationHelpBox : HelpBox
+        {
+            private Action<bool> m_OnPreferenceChanged;
+
+            public DismissableDeprecationHelpBox(string message, HelpBoxMessageType messageType)
+                : base(message, messageType)
+            {
+                // Set up the dismiss button
+                buttonText = L10n.Tr("Dismiss...");
+                onButtonClicked += OnDismissClicked;
+
+                // Store the callback so we can unsubscribe later
+                m_OnPreferenceChanged = OnPreferenceChanged;
+
+                // Subscribe to preference changes
+                PreferencesProvider.hideDeprecationWarningsChanged += m_OnPreferenceChanged;
+
+                // Set initial visibility
+                UpdateVisibility();
+
+                // Clean up when removed from hierarchy
+                RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+            }
+
+            private void OnPreferenceChanged(bool hide)
+            {
+                UpdateVisibility();
+            }
+
+            private void UpdateVisibility()
+            {
+                style.display = PreferencesProvider.hideDeprecationWarnings
+                    ? DisplayStyle.None
+                    : DisplayStyle.Flex;
+            }
+
+            private void OnDismissClicked()
+            {
+                if (EditorUtility.DisplayDialog(L10n.Tr("Hide deprecation warnings?"),
+                    L10n.Tr("Do you want to hide the deprecation warnings for deprecated components? You can re-enable the warnings in the Preferences window at any time."),
+                    L10n.Tr("Hide All"), L10n.Tr("Cancel")))
+                {
+                    PreferencesProvider.hideDeprecationWarnings = true;
+                }
+            }
+
+            private void OnDetachedFromPanel(DetachFromPanelEvent evt)
+            {
+                // Clean up all subscriptions to prevent memory leaks
+                PreferencesProvider.hideDeprecationWarningsChanged -= m_OnPreferenceChanged;
+                onButtonClicked -= OnDismissClicked;
+                UnregisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+
+                m_OnPreferenceChanged = null;
+            }
+        }
+
         public struct LayoutGroupChecker : IDisposable
         {
             // cache the layout group we expect to have at the end of drawing this editor
@@ -113,16 +170,20 @@ namespace UnityEditor
 
         internal static bool TryCreateObsoleteHelpBox(Editor editor, out HelpBox helpBox)
         {
+            helpBox = null;
+
             if (!ObsoleteMessageHelper.TryGetObsoleteMessage(editor, out var messageContainer))
-            {
-                helpBox = null;
                 return false;
+
+            // If there is no replacement, just show the message and a dismiss button.
+            if (messageContainer.replacementType == null)
+            {
+                helpBox = new DismissableDeprecationHelpBox(messageContainer.message, messageContainer.messageType);
+                return true;
             }
 
             helpBox = new HelpBox(messageContainer.message, messageContainer.messageType);
-            if (messageContainer.replacementType == null)
-                return true;
-
+            // If we have a replacement, show the message and a button to add the new component to the inspected objects.
             helpBox.buttonText = messageContainer.buttonText;
             helpBox.onButtonClicked += () =>
             {

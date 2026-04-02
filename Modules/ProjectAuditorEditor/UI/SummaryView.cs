@@ -138,6 +138,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (item.WasFixed)
                 return true;
 
+            // Hide upgrade items from the Top 10
+            if (item.IsUpgradeIssue)
+                return true;
+
             if (item.Category != IssueCategory.Code)
                 return false;
 

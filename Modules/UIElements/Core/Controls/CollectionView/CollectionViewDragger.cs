@@ -97,7 +97,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             startDragArgs.modifiers = modifiers;
 
             // User defined handling, if any.
-            startDragArgs = targetView.RaiseSetupDragAndDrop(recycledItem, dragAndDropController.GetSortedSelectedIds(), startDragArgs);
+            if (recycledItem != null)
+                startDragArgs = targetView.RaiseSetupDragAndDrop(recycledItem, dragAndDropController.GetSortedSelectedIds(), startDragArgs);
 
             startDragArgs.SetGenericData(DragAndDropData.dragSourceKey, targetView);
             return startDragArgs;

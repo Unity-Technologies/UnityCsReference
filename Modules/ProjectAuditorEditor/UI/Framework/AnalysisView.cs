@@ -500,7 +500,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             EditorGUILayout.BeginHorizontal();
 
             // note that we don't need to detect string changes (with EditorGUI.Begin/EndChangeCheck(), because the TreeViewController already triggers a BuildRows() when the text changes
-            EditorGUILayout.LabelField(Contents.SearchStringLabel, GUILayout.Width(80));
+            EditorGUILayout.LabelField(Contents.SearchStringLabel, ProjectAuditorWindow.LayoutSize.FilterOptionsLabelWidth);
+
+            var oldIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
 
             m_TextFilter.searchString = EditorGUILayout.DelayedTextField(m_TextFilter.searchString, GUILayout.Width(280));
             m_Table.searchString = m_TextFilter.searchString;
@@ -510,6 +513,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 MarkDirty();
 
             GUILayout.FlexibleSpace();
+
+            EditorGUI.indentLevel = oldIndent;
 
             EditorGUILayout.EndHorizontal();
         }
@@ -760,16 +765,24 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        protected virtual IReadOnlyCollection<ReportItem> GetIssuesToExport()
+        {
+            return m_ViewManager.Report.FindByCategory(m_Layout.Category);
+        }
+
         protected virtual void Export(Func<ReportItem, bool> predicate = null)
         {
-            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category.ToString()).ToLower(),
+            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category).ToLower(),
                 "csv");
             if (path.Length != 0)
             {
                 using (var exporter = new CsvExporter(m_ViewManager.Report))
                 {
-                    exporter.Export(path, m_Layout.Category, (issue) =>
+                    var issues = GetIssuesToExport();
+                    exporter.Export(path, m_Layout.Category, issues, (issue) =>
                     {
+                        if (!Match(issue))
+                            return false;
                         if (predicate != null && !predicate(issue))
                             return false;
 
@@ -1028,6 +1041,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
             public static readonly GUIContent DocumentationInternal = EditorGUIUtility.TrTextContent(string.Empty, "Open the Unity documentation");
             public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
+            public static readonly GUIContent Show = new GUIContent("Show:");
+            public static readonly GUIContent ShowIgnoredIssues = new GUIContent("Show Ignored Issues");
         }
     }
 }

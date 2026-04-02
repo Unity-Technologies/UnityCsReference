@@ -85,28 +85,6 @@ namespace UnityEngine.UIElements
             m_CustomProperties[styleProperty.name] = customProp;
         }
 
-        private static bool AreListPropertiesEqual<T>(List<T> a, List<T> b)
-        {
-            if (a == b)
-                return true;
-
-            if (a == null || b == null)
-                return false;
-
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; ++i)
-            {
-                var aVal = a[i];
-                var bVal = b[i];
-                if (!aVal.Equals(bVal))
-                    return false;
-            }
-
-            return true;
-        }
-
         private void ApplyAllPropertyInitial()
         {
             CopyFrom(ref InitialStyle.Get());

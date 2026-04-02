@@ -122,8 +122,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetAwakeBodyCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetAwakeBodyCount(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetCounters(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetProfile(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters")] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
-        [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile")] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
+        [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
+        [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
         [NativeMethod(Name = "PhysicsWorld::GetWorldCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetWorldCount();
         [NativeMethod(Name = "PhysicsWorld::GetWorlds", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetWorlds(Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodies", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodies(PhysicsWorld world, Allocator allocator);
@@ -173,7 +173,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::DrawQueryCastResult", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawQueryCastResult(PhysicsWorld world, ReadOnlySpan<PhysicsQuery.CastResult> results, Color color, float lifetime, bool drawPoint, bool drawNormal);
         [NativeMethod(Name = "PhysicsWorld::DrawQueryWorldCastResult", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawQueryWorldCastResult(PhysicsWorld world, ReadOnlySpan<PhysicsQuery.WorldCastResult> results, Color color, float lifetime, bool drawPoint, bool drawNormal);
         [NativeMethod(Name = "PhysicsWorld::GetRenderMaterial", IsThreadSafe = true)] extern internal static Material PhysicsWorld_GetRenderMaterial(string editorResourceName, string playerResourceName);
-        [NativeMethod(Name = "PhysicsWorld::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsWorld_SetOwner(PhysicsWorld world, UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsWorld::CreateOwnerKey", IsThreadSafe = true)] extern internal static int PhysicsWorld_CreateOwnerKey(UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsWorld::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsWorld::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsWorld_GetOwner(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsOwned(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetUserData(PhysicsWorld world, PhysicsUserData physicsUserData);

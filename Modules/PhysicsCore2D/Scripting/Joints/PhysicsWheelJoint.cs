@@ -195,6 +195,17 @@ namespace Unity.U2D.Physics
         public readonly int SetOwner(UnityEngine.Object owner) => m_Id.SetOwner(owner);
 
         /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => m_Id.SetOwner(owner, ownerKey);
+
+        /// <summary>
         /// Get the owner object associated with this joint as specified using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.
         /// </summary>
         /// <returns>The owner object associated with this joint or NULL if no owner has been specified.</returns>

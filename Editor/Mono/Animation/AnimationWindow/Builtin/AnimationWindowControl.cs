@@ -19,14 +19,6 @@ namespace UnityEditor.AnimationWindowBuiltin
     [Serializable]
     class AnimationWindowControl : IAnimationWindowController, IAnimationContextualResponder
     {
-        public AnimationWindowControl()
-        {
-            if (AnimationMode.GetDriver() is MainDriver mainDriver)
-                m_Driver = mainDriver;
-        }
-
-        class MainDriver: AnimationModeDriver {}
-        class CandidateDriver: AnimationModeDriver {}
         class CandidateRecordingState : IAnimationRecordingState
         {
             public GameObject activeGameObject { get; private set; }
@@ -174,7 +166,9 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             StopPreview();
             if (m_Driver != null)
+            {
                 ScriptableObject.DestroyImmediate(m_Driver);
+            }
         }
 
         public void OnSelectionChanged()
@@ -361,8 +355,11 @@ namespace UnityEditor.AnimationWindowBuiltin
                 if (state.activeAnimationPlayer is Animator{ isOptimizable:true, hasTransformHierarchy:false})
                     return false;
 
+
                 var driver = GetAnimationModeDriverNoAlloc();
-                return (driver != null && AnimationMode.InAnimationMode(driver)) || !AnimationMode.InAnimationMode();
+
+                return !AnimationMode.InAnimationMode()  // no one is in mode
+                || (driver != null && AnimationMode.InAnimationMode(driver));
             }
         }
 
@@ -696,7 +693,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             if (m_Driver == null)
             {
-                m_Driver = ScriptableObject.CreateInstance<MainDriver>();
+                m_Driver = ScriptableObject.CreateInstance<AnimationModeDriver>();
                 m_Driver.hideFlags = HideFlags.HideAndDontSave;
                 m_Driver.name = "AnimationWindowDriver";
                 m_Driver.isKeyCallback += (Object target, string propertyPath) =>
@@ -726,7 +723,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             if (m_CandidateDriver == null)
             {
-                m_CandidateDriver = ScriptableObject.CreateInstance<CandidateDriver>();
+                m_CandidateDriver = ScriptableObject.CreateInstance<AnimationModeDriver>();
                 m_CandidateDriver.name = "AnimationWindowCandidateDriver";
             }
 
