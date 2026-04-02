@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[MinMaxSlider]]
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Slider.png")]
     public partial class Slider : BaseSlider<float>
     {
@@ -82,14 +83,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-slider";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Creates a new instance of a Slider.
@@ -118,9 +124,9 @@ namespace UnityEngine.UIElements
         public Slider(string label, float start = 0, float end = kDefaultHighValue, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, start, end, direction, pageSize)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
 
         /// <inheritdoc />

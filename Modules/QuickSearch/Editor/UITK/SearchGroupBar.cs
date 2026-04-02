@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -77,10 +78,21 @@ namespace UnityEditor.Search
         void IGroup.Sort() => m_Group.Sort();
         void IGroup.SortBy(ISearchListComparer comparer) => m_Group.SortBy(comparer);
         void IGroup.Clear() => m_Group.Clear();
+        void IGroup.SetSearchListComparer(ISearchListComparer comparer) => m_Group.SetSearchListComparer(comparer);
     }
 
     class SearchGroupBar : SearchElement
     {
+        internal static class TestHelpers
+        {
+            public static void PopulateSortOptionsContextMenuItems(SearchGroupBar groupBar, GenericMenu menu)
+            {
+                if (groupBar == null)
+                    throw new ArgumentNullException(nameof(groupBar));
+                groupBar.PopulateSortOptionsContextMenu(menu);
+            }
+        }
+
         private const float k_MinTabWidth = 80f;
         private const float m_TabMoreButtonWidth = 30f;
         private const int k_MinimumGroupVisible = 1;
@@ -117,6 +129,8 @@ namespace UnityEditor.Search
         private readonly string m_SyncSearchProviderNotSupportedTooltip = L10n.Tr("Search provider doesn't support synchronization");
         private readonly string m_SyncSearchViewNotEnabledTooltip = L10n.Tr("Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.");
         private readonly string m_TabCountTextColorFormat = s_IsDarkTheme ? "<color=#7B7B7B>{0}</color>" : "<color=#6A6A6A>{0}</color>";
+
+        public event Action<ISearchListComparer> SortingChanged;
 
         internal SearchGroupBar(string name, ISearchView viewModel)
             : base(name, viewModel, ussClassName)
@@ -295,9 +309,7 @@ namespace UnityEditor.Search
             m_ShowMoreGroup.Clear();
             if (showMore && m_HiddenGroups.Count > 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var moreSelectedGroup = hiddenSelectedGroup ?? m_HiddenGroups.FirstOrDefault();
-#pragma warning restore UA2001
                 var expandedTab = new SearchGroupTab(this, moreSelectedGroup, ViewModel);
 
                 expandedTab.groupNameLabel.text = expandedTab.name;
@@ -369,6 +381,12 @@ namespace UnityEditor.Search
         private void ShowSortOptions()
         {
             var menu = new GenericMenu();
+            PopulateSortOptionsContextMenu(menu);
+            menu.ShowAsContext();
+        }
+
+        private void PopulateSortOptionsContextMenu(GenericMenu menu)
+        {
             menu.AddItem(new GUIContent("Sort By Rank"), false, () => SortGroup<SortByScoreComparer>());
             menu.AddItem(new GUIContent("Sort By Name"), false, () => SortGroup<SortByNameComparer>());
             menu.AddItem(new GUIContent("Sort By Label"), false, () => SortGroup<SortByLabelComparer>());
@@ -385,8 +403,6 @@ namespace UnityEditor.Search
                     menu.AddItem(new GUIContent($"More.../Sort By {ObjectNames.NicifyVariableName(sortType)}"), false, () => SortGroupBySelector(s));
                 }
             }
-
-            menu.ShowAsContext();
         }
 
         private void SortGroup<T>() where T: ISearchListComparer, new()
@@ -401,8 +417,7 @@ namespace UnityEditor.Search
 
         private void SortGroup(ISearchListComparer comparer)
         {
-            m_ViewModel.results.SortBy(comparer);
-            Dispatcher.Emit(SearchEvent.RefreshContent, new SearchEventPayload(this, RefreshFlags.ItemsChanged));
+            SortingChanged?.Invoke(comparer);
         }
 
         private void UpdateResultViewButton()

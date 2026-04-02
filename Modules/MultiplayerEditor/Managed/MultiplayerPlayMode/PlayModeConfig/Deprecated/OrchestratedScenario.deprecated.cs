@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackReceiver
+sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackReceiver
 {
     // Version 0
     [SerializeField] private bool m_EnableEditors = true;
@@ -92,8 +92,6 @@ partial class OrchestratedScenario : PlayModeScenario, ISerializationCallbackRec
                     StreamLogsToMainEditor = localInstance.AdvancedConfiguration.StreamLogsToMainEditor,
                     LogsColor = localInstance.AdvancedConfiguration.LogsColor,
                     Arguments = localInstance.AdvancedConfiguration.Arguments,
-                    DeviceID = localInstance.AdvancedConfiguration.DeviceID,
-                    DeviceName = localInstance.AdvancedConfiguration.DeviceName
                 });
         }
 

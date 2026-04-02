@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements.UIR
         public struct Range
         {
             public uint start;
-            public uint size;
+            public uint count;
         }
 
         public Utility.GPUBuffer<T> gpuData;
@@ -28,26 +28,18 @@ namespace UnityEngine.UIElements.UIR
         public List<Range> dirtyRanges;
         public readonly uint elemStride;
 
-        readonly uint m_MaxRangesPerFrame;
-
-        // Overflow tracking:
-        // - When false: dirtyRanges contains individual ranges (up to m_MaxRangesPerFrame)
-        // - When true: dirtyRanges contains exactly 1 consolidated range covering [m_UpdateRangeMin, m_UpdateRangeMax)
-        bool m_RangesOverflow;
-
         // These track the overall bounds of all dirty ranges added since the last reset.
-        // Used to compute the consolidated range when we exceed m_MaxRangesPerFrame individual ranges.
-        uint m_UpdateRangeMin;
-        uint m_UpdateRangeMax;
+        uint m_DirtyRangeMin;
+        uint m_DirtyRangeMax;
 
         // Tracks the total size of all dirty ranges
-        uint m_TotalDirtySize;
+        uint m_TotalDirtyCount;
 
-        public uint totalDirtySize => m_TotalDirtySize;
-        public uint updateRangeMin => m_UpdateRangeMin;
-        public uint updateRangeMax => m_UpdateRangeMax;
+        public uint totalDirtyCount => m_TotalDirtyCount;
+        public uint dirtyRangeMin => m_DirtyRangeMin;
+        public uint dirtyRangeMax => m_DirtyRangeMax;
 
-        public DataSet(Utility.GPUBufferType bufferType, bool mapped, uint totalCount, uint maxQueuedFrameCount, uint maxRangesPerFrame)
+        public DataSet(Utility.GPUBufferType bufferType, bool mapped, uint totalCount)
         {
             GpuBufferFlags bufferFlags = 0;
             bufferFlags |= (bufferType == Utility.GPUBufferType.Vertex) ? GpuBufferFlags.BufferFlags_Target_Vertex : GpuBufferFlags.BufferFlags_Target_Index;
@@ -58,8 +50,7 @@ namespace UnityEngine.UIElements.UIR
             allocator = new GPUBufferAllocator(totalCount);
             elemStride = (uint)gpuData.ElementStride;
 
-            m_MaxRangesPerFrame = maxRangesPerFrame;
-            dirtyRanges = new List<Range>((int)maxRangesPerFrame);
+            dirtyRanges = new List<Range>(32);
             ResetDirtyRanges();
         }
 
@@ -95,66 +86,61 @@ namespace UnityEngine.UIElements.UIR
 
         #endregion // Dispose Pattern
 
-        public void AddDirtyRange(uint start, uint size)
+        public void AddDirtyRange(uint start, uint count)
         {
-            Debug.Assert(size > 0 && start + size <= cpuData.Length);
+            Debug.Assert(count > 0 && start + count <= cpuData.Length);
 
             // Update the overall bounds to track the min/max of all ranges added this frame.
-            m_UpdateRangeMin = Math.Min(m_UpdateRangeMin, start);
-            m_UpdateRangeMax = Math.Max(m_UpdateRangeMax, start + size);
-
-            if (m_RangesOverflow)
-            {
-                // We're already in overflow mode (too many ranges were added previously).
-                // dirtyRanges contains exactly 1 consolidated range.
-                // Update that single range to reflect the new overall bounds.
-                Debug.Assert(dirtyRanges.Count == 1);
-                uint consolidatedSize = m_UpdateRangeMax - m_UpdateRangeMin;
-                dirtyRanges[0] = new Range { start = m_UpdateRangeMin, size = consolidatedSize };
-                m_TotalDirtySize = consolidatedSize;
-                return;
-            }
+            m_DirtyRangeMin = Math.Min(m_DirtyRangeMin, start);
+            m_DirtyRangeMax = Math.Max(m_DirtyRangeMax, start + count);
+            m_TotalDirtyCount += count;
 
             if (dirtyRanges.Count > 0)
             {
-                // If this range chains with the previous one, just grow the previous one.
                 Range lastRange = dirtyRanges[^1];
-                if (lastRange.start + lastRange.size == start)
+                if (lastRange.start + lastRange.count == start)
                 {
-                    lastRange.size += size;
+                    // The new range is right after the last added range, grow the previous range.
+                    lastRange.count += count;
                     dirtyRanges[^1] = lastRange;
-                    m_TotalDirtySize += size;
+                    return;
+                }
+                else if(start + count == lastRange.start)
+                {
+                    // The new range is right before the last added range, grow the previous range.
+                    lastRange.count += count;
+                    lastRange.start = start;
+                    dirtyRanges[^1] = lastRange;
                     return;
                 }
             }
 
-            if (dirtyRanges.Count == m_MaxRangesPerFrame)
-            {
-                // We already have m_MaxRangesPerFrame ranges stored, so adding this new range would exceed the limit.
-                // We've reached capacity for individual ranges. Transition to overflow mode. Replace all individual
-                // ranges with a single consolidated range covering [m_UpdateRangeMin, m_UpdateRangeMax).
-                m_RangesOverflow = true;
-                dirtyRanges.Clear();
-                uint consolidatedSize = m_UpdateRangeMax - m_UpdateRangeMin;
-                dirtyRanges.Add(new Range { start = m_UpdateRangeMin, size = consolidatedSize });
-                m_TotalDirtySize = consolidatedSize;
-                return;
-            }
+            // Add the new range
+            dirtyRanges.Add(new Range { start = start, count = count });
+        }
 
-            // The usual case: we have room for more individual ranges
-            dirtyRanges.Add(new Range { start = start, size = size });
-            m_TotalDirtySize += size;
+        public void ConsolidateRanges(float threshold = 0.9f)
+        {
+            if (dirtyRanges.Count > 1)
+            {
+                uint totalRangeCount = m_DirtyRangeMax - m_DirtyRangeMin;
+                if (totalRangeCount > 0 && m_TotalDirtyCount >= totalRangeCount * threshold)
+                {
+                    dirtyRanges.Clear();
+                    dirtyRanges.Add(new Range { start = m_DirtyRangeMin, count = totalRangeCount });
+                    m_TotalDirtyCount = totalRangeCount;
+                }
+            }
         }
 
         public void ResetDirtyRanges()
         {
             dirtyRanges.Clear();
-            m_RangesOverflow = false;
 
             // Reset bounds to prepare for tracking new ranges
-            m_UpdateRangeMin = uint.MaxValue;
-            m_UpdateRangeMax = 0;
-            m_TotalDirtySize = 0;
+            m_DirtyRangeMin = uint.MaxValue;
+            m_DirtyRangeMax = 0;
+            m_TotalDirtyCount = 0;
         }
     }
 }

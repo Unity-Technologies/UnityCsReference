@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements
 
                 return StylePropertyUtil.stylePropertyIdToPropertyName[id];
             }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal set => CacheId(value);
         }
 
@@ -90,7 +90,7 @@ namespace UnityEngine.UIElements
 
         internal bool isCustomProperty
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => id == StylePropertyId.Custom;
         }
 
@@ -199,7 +199,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetDimension(StyleSheet styleSheet, Dimension value)
         {
             SetSize(ref m_Values, 1);
@@ -293,7 +293,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="enumStr">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetEnumAsString(StyleSheet styleSheet, string enumStr)
         {
             SetSize(ref m_Values, 1);

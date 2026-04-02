@@ -56,10 +56,54 @@ class ScopedMenuItemGenerator : IDisposable
 internal static class MenuItemGenerator
 {
     static readonly List<ControlTypeInfo> s_AvailableControlTypes;
+    static int s_HighestItemPriority;
+
     // The current value represents the first item of the "GameObject/UI Toolkit" menu item. Update this value to change the position within the menu item.
-    internal const int k_DefaultPriority = 7;
+    internal const int k_DefaultStandardElementsPriority = 6;
+    internal const int k_DefaultProjectElementsPriority = 7;
     internal const int k_LibraryMenuItemPriorityOffset = 20;
     internal const string k_MenuPrefix = "GameObject";
+    internal static readonly string k_GameObjectMenuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}";
+
+    const string k_StandardElementsPath = "Standard Elements";
+    const string k_ProjectElementsPath = "Project Elements";
+
+    /// <summary>
+    /// Unity core controls to display in "Standard Elements".
+    /// Only these controls will appear (unless they have subcategories defined in s_Categories).
+    /// </summary>
+    static readonly HashSet<string> s_StandardElementControls = new(new[]
+    {
+        nameof(VisualElement),
+        nameof(ScrollView),
+        nameof(Image),
+        nameof(Label),
+        nameof(Button),
+        nameof(Toggle),
+        nameof(DropdownField),
+        nameof(TextField),
+        nameof(Slider),
+        nameof(IntegerField),
+        nameof(FloatField),
+        nameof(DoubleField),
+        nameof(LongField),
+    });
+
+    internal static readonly string[] k_BaseLibraryPaths = new[]
+    {
+        k_StandardElementsPath,
+        k_ProjectElementsPath
+    };
+
+    static readonly Dictionary<string, HashSet<string>> s_CategoriesByType = new()
+    {
+        ["Numeric Fields"] = [
+            nameof(IntegerField),
+            nameof(FloatField),
+            nameof(LongField),
+            nameof(DoubleField)
+        ]
+    };
 
     static MenuItemGenerator()
     {
@@ -95,25 +139,37 @@ internal static class MenuItemGenerator
             );
         }
 
-        var maxPriority = s_AvailableControlTypes.Count > 0
-            ? s_AvailableControlTypes[^1].priority
-            : k_DefaultPriority;
+        // Add "Project Elements" menu item and disable it if there's no items
+        if (!HasControlsUnderBasePath(k_ProjectElementsPath))
+        {
+            Menu.AddMenuItem(
+                $"{k_GameObjectMenuPath}/{k_ProjectElementsPath}",
+                "",
+                false,
+                k_DefaultProjectElementsPriority,
+                () => { },
+                () => false
+            );
+        }
 
-        foreach (var basePath in LibraryContent.k_BaseLibraryPaths)
+        foreach (var basePath in k_BaseLibraryPaths)
         {
             if (HasControlsUnderBasePath(basePath))
             {
-                var menuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/{basePath}/UI Library...";
+                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
                 Menu.AddMenuItem(
                     menuPath,
                     "",
                     false,
-                    maxPriority + k_LibraryMenuItemPriorityOffset,
+                    s_HighestItemPriority + k_LibraryMenuItemPriorityOffset,
                     UIElementsProvider.OpenUIElementsPicker,
                     null
                 );
             }
         }
+
+        // Add separator after the "Project Elements" subgroup
+        Menu.AddSeparator($"{k_GameObjectMenuPath}/", k_DefaultProjectElementsPriority);
     }
 
     public static void UnregisterMenuItems()
@@ -123,11 +179,17 @@ internal static class MenuItemGenerator
             Menu.RemoveMenuItem($"{k_MenuPrefix}/{control.GetMenuPath()}");
         }
 
-        foreach (var basePath in LibraryContent.k_BaseLibraryPaths)
+        // Remove the Disabled "Project Elements" item
+        if (!HasControlsUnderBasePath(k_ProjectElementsPath))
+        {
+            Menu.RemoveMenuItem($"{k_GameObjectMenuPath}/{k_ProjectElementsPath}");
+        }
+
+        foreach (var basePath in k_BaseLibraryPaths)
         {
             if (HasControlsUnderBasePath(basePath))
             {
-                var menuPath = $"{k_MenuPrefix}/{ControlTypeInfo.k_ContextMenuPrefix}/{basePath}/UI Library...";
+                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
                 Menu.RemoveMenuItem(menuPath);
             }
         }
@@ -147,36 +209,52 @@ internal static class MenuItemGenerator
 
     static List<ControlTypeInfo> GetControlElements()
     {
-        var elements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
+        s_HighestItemPriority = k_DefaultStandardElementsPriority;
+
+        var standardElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
+        var projectElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
         var libraryTypeKeys = LibraryContent.GetAllLibraryTypes();
 
         foreach (var (key, item) in libraryTypeKeys)
         {
-            if (string.IsNullOrEmpty(item.libraryPath))
+            var menuPath = GetContextMenuPath(key, item.libraryPath);
+            if (string.IsNullOrEmpty(menuPath))
                 continue;
 
-            elements.Add((key, item.libraryPath));
+            if (menuPath.StartsWith(k_BaseLibraryPaths[0]))
+                standardElements.Add((key, menuPath));
+            else if (menuPath.StartsWith(k_BaseLibraryPaths[1]))
+                projectElements.Add((key, menuPath));
         }
 
-        // Sort by type name and assign priorities
-        elements.Sort(CompareControlElements);
+        standardElements.Sort(CompareControlElements);
+        projectElements.Sort(CompareControlElements);
 
         var result = new List<ControlTypeInfo>();
-        var priority = k_DefaultPriority;
+
+        AddControlTypesWithPriority(result, standardElements, k_DefaultStandardElementsPriority);
+        AddControlTypesWithPriority(result, projectElements, k_DefaultProjectElementsPriority);
+
+        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(standardElements);
+        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(projectElements);
+        return result;
+    }
+
+    static void AddControlTypesWithPriority(List<ControlTypeInfo> result, List<(LibraryTypeKey libraryType, string libraryPath)> elements, int priority)
+    {
         for (var i = 0; i < elements.Count; i++)
         {
-            // Niche request: Only want the top container type items to have a separator
-            if (i > 0 && LibraryContent.IsContainer(elements[i - 1].libraryType.type.Name) && !LibraryContent.IsContainer(elements[i].libraryType.type.Name))
-            {
-                // Gap > 10 creates separator
-                priority += 11;
-            }
+            result.Add(new ControlTypeInfo(elements[i].libraryType, elements[i].libraryPath, priority));
+            priority++;
 
-            result.Add(new ControlTypeInfo(elements[i].libraryType, elements[i].libraryPath, priority: priority++));
+            // Niche request: Only want the top container type items to have a separator
+            if (IsContainer(elements[i].libraryType.type.Name) && i + 1 < elements.Count && !IsContainer(elements[i + 1].libraryType.type.Name))
+            {
+                priority += 10;
+            }
         }
 
-        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(elements);
-        return result;
+        s_HighestItemPriority = Math.Max(s_HighestItemPriority, priority);
     }
 
     /// <summary>
@@ -188,8 +266,8 @@ internal static class MenuItemGenerator
         (LibraryTypeKey libraryType, string libraryPath) b)
     {
         // Containers come first
-        var aIsContainer = LibraryContent.IsContainer(a.libraryType.type.Name);
-        var bIsContainer = LibraryContent.IsContainer(b.libraryType.type.Name);
+        var aIsContainer = IsContainer(a.libraryType.type.Name);
+        var bIsContainer = IsContainer(b.libraryType.type.Name);
 
         if (aIsContainer != bIsContainer)
             return bIsContainer.CompareTo(aIsContainer);
@@ -221,5 +299,45 @@ internal static class MenuItemGenerator
             return pathCompare;
 
         return string.Compare(a.libraryType.name, b.libraryType.name, StringComparison.Ordinal);
+    }
+
+    static string GetCategoryForType(string typeName)
+    {
+        foreach (var (category, types) in s_CategoriesByType)
+        {
+            if (types.Contains(typeName))
+                return category;
+        }
+
+        return null;
+    }
+
+    static string GetContextMenuPath(LibraryTypeKey key, string libraryPath)
+    {
+        if (key.type.Namespace == "UnityEngine.UIElements")
+        {
+            // Only whitelist specific controls for context menu
+            if (!s_StandardElementControls.Contains(key.type.Name))
+                return null;
+
+            var category = GetCategoryForType(key.type.Name);
+            return category != null ? $"{k_StandardElementsPath}/{category}" : k_StandardElementsPath;
+        }
+
+        // Empty libraryPath will be placed at the root
+        if (libraryPath != null)
+        {
+            return string.IsNullOrEmpty(libraryPath) ? k_ProjectElementsPath : $"{k_ProjectElementsPath}/{libraryPath}";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Checks if a control is a container type that should appear at the top.
+    /// </summary>
+    static bool IsContainer(string typeName)
+    {
+        return typeName == nameof(VisualElement) || typeName == nameof(ScrollView);
     }
 }

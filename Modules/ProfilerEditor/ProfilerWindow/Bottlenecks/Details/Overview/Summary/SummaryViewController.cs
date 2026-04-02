@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -12,8 +14,8 @@ namespace Unity.Profiling.Editor.UI
 {
     abstract class SummaryViewController : ViewController, TopMarkersViewController.IResponder
     {
-        const string k_SelectionAssistantPrompt = "Why do I have spikes in the profiler capture?";
-        const string k_SingleFrameAssistantPrompt = "Why is the selected frame slow?";
+        const string k_ProfileAnalyzerPackageName = "com.unity.performance.profile-analyzer";
+        static readonly string k_ProfileAnalyzerMenuItemPath = "Window/Analysis/Profile Analyzer";
 
         // Model.
         protected Range m_SelectedRange;
@@ -22,9 +24,10 @@ namespace Unity.Profiling.Editor.UI
         protected readonly ProfilerWindow m_ProfilerWindow;
         protected readonly IResponder m_Responder;
         protected readonly IDetailsElementBinder m_DetailsBinder;
+        protected CancellationTokenSource m_BuildModelCancellation;
 
         // View.
-        Button m_AskAssistantButton;
+        Button m_OpenProfileAnalyzerButton;
         protected VisualElement m_TopSection;
         protected VisualElement m_BottlenecksContainer;
         protected VisualElement m_SystemsImpactContainer;
@@ -68,42 +71,20 @@ namespace Unity.Profiling.Editor.UI
         {
             base.ViewLoaded();
 
-            if (!((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).CpuProfilerAssistantSupported)
-            {
-                // If there are no implementations of IProfilerAssistantService, hide the "Ask Assistant" button.
-                m_AskAssistantButton.visible = false;
-            }
+            m_OpenProfileAnalyzerButton.clicked += OpenProfileAnalyzer;
+        }
+
+        internal static void OpenProfileAnalyzer()
+        {
+            if (UnityEditor.PackageManager.PackageInfo.IsPackageRegistered(k_ProfileAnalyzerPackageName))
+                EditorApplication.ExecuteMenuItem(k_ProfileAnalyzerMenuItemPath);
             else
-            {
-                // Otherwise, show the button and set up its click handler to launch all assistant services.
-                m_AskAssistantButton.visible = true;
-                m_AskAssistantButton.clickable.clicked += () =>
-                {
-                    var layout = m_AskAssistantButton.localBound;
-                    var worldPos = m_AskAssistantButton.LocalToWorld(new Vector2());
-                    var screenPos = GUIUtility.GUIToScreenPoint(worldPos);
-                    var screenRect = new Rect(screenPos, layout.size);
-
-                    var targetFrameTime = ProfilerUserSettings.targetFramesPerSecond > 0 ? 1000f / ProfilerUserSettings.targetFramesPerSecond : -1f;
-                    var attachment = new CpuProfilerAssistantController.CpuProfilerContext(m_ProfilerWindow.CurrentLoadedCaptureFile,
-                        m_SelectedRange,
-                        targetFrameTime: targetFrameTime);
-
-                    string prompt = m_SelectedRange.Start.Value == m_SelectedRange.End.Value
-                        ? k_SingleFrameAssistantPrompt
-                        : k_SelectionAssistantPrompt;
-
-                    ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(screenRect, attachment, prompt);
-
-                    const string k_LinkDescription_AskAssistant= "Ask Assistant";
-                    UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(k_LinkDescription_AskAssistant);
-                };
-            }
+                UnityEditor.PackageManager.UI.Window.Open(k_ProfileAnalyzerPackageName);
         }
 
         void GatherReferencesInView(VisualElement view)
         {
-            m_AskAssistantButton = view.Q<Button>("summary-view__ask-assistant-button");
+            m_OpenProfileAnalyzerButton = view.Q<Button>("summary-view__open-profile-analyzer-button");
             m_TopSection = view.Q<VisualElement>("summary-view__top-section");
             m_BottlenecksContainer = view.Q<VisualElement>("summary-view__bottlenecks-container");
             m_SystemsImpactContainer = view.Q<VisualElement>("summary-view__systems-impact-container");
@@ -118,6 +99,98 @@ namespace Unity.Profiling.Editor.UI
         {
             m_Responder?.OnTopMarkerSelected(marker, action);
         }
+
+        protected async void ReloadDataAsync(Range range, Action<IDetailsProvider> onDetailsProviderReady = null)
+        {
+            // Cancel previous model build. Do not dispose here — the in-flight task may still
+            // access the token after cancellation. Overwrite the reference and let the GC collect
+            // the old CancellationTokenSource once the task releases it.
+            m_BuildModelCancellation?.Cancel();
+            m_BuildModelCancellation = new CancellationTokenSource();
+
+            ShowContentViewsAndHideNoDataView();
+            ShowContentActivityIndicators();
+
+            var cancellationToken = m_BuildModelCancellation.Token;
+            var success = false;
+            try
+            {
+                await BuildModelAsync(range, cancellationToken);
+                success = true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancelling. Don't report error.
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            finally
+            {
+                // Only update the view if this is the current builder and it wasn't cancelled.
+                var isCurrentBuilder = m_BuildModelCancellation?.Token == cancellationToken;
+                if (!success)
+                {
+                    if (isCurrentBuilder)
+                    {
+                        HideContentActivityIndicators();
+                        HideContentViewsAndShowNoDataView();
+                        onDetailsProviderReady?.Invoke(null);
+                    }
+                }
+                else if (isCurrentBuilder)
+                {
+                    HideContentActivityIndicators();
+
+                    // Bind the details provider to support right-click context menu.
+                    var detailsProvider = CreateDetailsProvider(range);
+                    m_DetailsBinder.BindDetailsElement(View, detailsProvider);
+
+                    // Invoke callback to notify caller that details provider is ready.
+                    onDetailsProviderReady?.Invoke(detailsProvider);
+                }
+            }
+        }
+
+        private void ShowContentViewsAndHideNoDataView()
+        {
+            SetContentViewsVisible(true);
+        }
+
+        protected void HideContentViewsAndShowNoDataView()
+        {
+            SetContentViewsVisible(false);
+        }
+
+        private void SetContentViewsVisible(bool visible)
+        {
+            UIUtility.SetElementDisplay(m_OpenProfileAnalyzerButton, visible);
+            UIUtility.SetElementDisplay(m_TopSection, visible);
+            UIUtility.SetElementDisplay(m_BottlenecksContainer, visible);
+            UIUtility.SetElementDisplay(m_SystemsImpactContainer, visible);
+            UIUtility.SetElementDisplay(m_FrameTimesContainer, visible);
+            UIUtility.SetElementDisplay(m_AllocationsContainer, visible);
+            UIUtility.SetElementDisplay(m_NoDataLabel, !visible);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_BuildModelCancellation?.Cancel();
+                m_BuildModelCancellation?.Dispose();
+                m_BuildModelCancellation = null;
+                m_DetailsBinder.UnbindDetailsElement(View);
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected abstract Task BuildModelAsync(Range range, CancellationToken cancellationToken);
+        protected abstract IDetailsProvider CreateDetailsProvider(Range range);
+        protected abstract void ShowContentActivityIndicators();
+        protected abstract void HideContentActivityIndicators();
 
         public interface IResponder
         {

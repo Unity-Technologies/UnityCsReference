@@ -60,9 +60,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         Dictionary<string, bool> m_FoldoutStates = new Dictionary<string, bool>();
         Dictionary<string, bool> m_TopTenFoldoutStates = new Dictionary<string, bool>();
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        List<IGrouping<string, ReportItem>> m_TopTenIssues = new List<IGrouping<string, ReportItem>>();
-#pragma warning restore UA2001
+        List<List<ReportItem>> m_TopTenIssues = new List<List<ReportItem>>();
 
         bool m_RefreshTopTenIssues;
 
@@ -136,6 +134,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 return true;
 
             if (item.WasFixed)
+                return true;
+
+            // Hide upgrade items from the Top 10
+            if (item.IsUpgradeIssue)
                 return true;
 
             if (item.Category != IssueCategory.Code)
@@ -216,33 +218,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
         }
 
-        public bool DrawCustomFoldout(bool foldoutExpanded, GUIContent content)
-        {
-            using (new GUILayout.HorizontalScope())
-            {
-                if (foldoutExpanded)
-                    EditorGUILayout.LabelField(Utility.GetIcon(Utility.IconType.FoldoutExpanded),
-                        GUILayout.Width(19), GUILayout.Height(19));
-                else
-                    EditorGUILayout.LabelField(Utility.GetIcon(Utility.IconType.FoldoutFolded),
-                        GUILayout.Width(19), GUILayout.Height(19));
-
-                EditorGUILayout.LabelField(content, SharedStyles.BoldLabel);
-            }
-
-            if (Event.current.isMouse && Event.current.type == EventType.MouseDown)
-            {
-                var rect = GUILayoutUtility.GetLastRect();
-                if (rect.Contains(Event.current.mousePosition))
-                {
-                    foldoutExpanded = !foldoutExpanded;
-                    m_Window?.Repaint();
-                }
-            }
-
-            return foldoutExpanded;
-        }
-
         public override void DrawContent()
         {
             if (m_Dirty)
@@ -268,14 +243,14 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             // Issue Breakdown section
-            m_ShowIssueBreakdown = DrawCustomFoldout(m_ShowIssueBreakdown, Contents.IssueBreakdownContent);
+            m_ShowIssueBreakdown = Utility.BoldFoldout(m_ShowIssueBreakdown, Contents.IssueBreakdownContent);
             if (m_ShowIssueBreakdown)
                 DrawIssueBreakdown();
 
             EditorGUILayout.Space();
 
             // Top Ten Issues section
-            m_ShowTopTenIssues = DrawCustomFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
+            m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
             if (m_ShowTopTenIssues)
             {
                 DrawTopTenIssues();
@@ -304,7 +279,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorGUILayout.BeginVertical();
 
-                m_ShowAdditionalInsightChecks = DrawCustomFoldout(m_ShowAdditionalInsightChecks,
+                m_ShowAdditionalInsightChecks = Utility.BoldFoldout(m_ShowAdditionalInsightChecks,
                     Contents.AdditionalInsightChecksContent);
 
                 if (m_ShowAdditionalInsightChecks)
@@ -318,7 +293,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             EditorGUILayout.BeginVertical();
 
-            m_ShowSessionInformation = DrawCustomFoldout(m_ShowSessionInformation,
+            m_ShowSessionInformation = Utility.BoldFoldout(m_ShowSessionInformation,
                 Contents.SessionInformationContent);
 
             if (m_ShowSessionInformation)
@@ -368,7 +343,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             return priority;
         }
 
-        Severity GetHighestGroupSeverity(IGrouping<string, ReportItem> group)
+        Severity GetHighestGroupSeverity(IEnumerable<ReportItem> group)
         {
             var highestSeverity = Severity.Minor;
             foreach (var item in group)
@@ -391,8 +366,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (m_RefreshTopTenIssues)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2005, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
                             !m_ViewManager.HasPendingCategory(i.Category)
@@ -404,13 +378,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                         .ThenBy(group => GetTopTenAreasOrder(group.First().Id.GetDescriptor().Areas))
                         .ThenBy(group => group.First().Id.GetDescriptor().Title)
                         .Take(10)
+                        .Select(g => g.ToList())
                         .ToList();
-#pragma warning restore UA2001
-#pragma warning restore UA2005
+#pragma warning restore UA2001, UA2005, UA2010
                     int oldSize = m_TopTenFoldoutStates.Count;
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Exists(group => group.First().DescriptorIdAsString == key)))
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Exists(group => group[0].DescriptorIdAsString == key)))
 #pragma warning restore UA2001
                         m_TopTenFoldoutStates.Remove(key);
 
@@ -450,11 +424,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void DrawDiagnostic(IGrouping<string, ReportItem> issueGroup, int itemIndex)
+        void DrawDiagnostic(List<ReportItem> issueGroup, int itemIndex)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var firstIssue = issueGroup.First();
-#pragma warning restore UA2001
+            var firstIssue = issueGroup[0];
             var descriptorIdString = firstIssue.DescriptorIdAsString;
 
             if (!m_TopTenFoldoutStates.ContainsKey(descriptorIdString))
@@ -562,7 +534,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                     GUIUtility.ExitGUI();
                                 }
 
-                                using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories() || firstIssue.WasFixed))
+                                using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories() || issueGroup.TrueForAll(i => i.WasFixed)))
                                 {
                                     if (descriptor.Fixer != null)
                                     {
@@ -570,8 +542,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                                         if (GUILayout.Button(firstIssue.WasFixed ? SharedContents.QuickFixDone : content, EditorStyles.miniButton,
                                             GUILayout.Width(buttonWidth)))
                                         {
-                                            descriptor.Fix(firstIssue, m_ViewManager.Report.SessionInfo);
-                                            m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke([firstIssue]);
+                                            foreach (var issue in issueGroup)
+                                                descriptor.Fix(issue, m_ViewManager.Report.SessionInfo);
+                                            m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(issueGroup);
                                         }
                                     }
 
@@ -679,7 +652,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.LabelField(content, SharedStyles.LabelRichText, GUILayout.Width(size.x));
 
             if (count > 1)
-                EditorGUILayout.LabelField($"({count} Items)", SharedStyles.LabelDarkWithDynamicSize);
+                EditorGUILayout.LabelField($"({count} Items)", SharedStyles.LabelGreyWithDynamicSize);
         }
 
         void DrawSessionInfo()
@@ -697,13 +670,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                 new KeyValuePair<string, string>("Unity Version", sessionInfo.UnityVersion),
                 new KeyValuePair<string, string>("Project ID", sessionInfo.ProjectId),
                 new KeyValuePair<string, string>("Rules Version", sessionInfo.ProjectAuditorRulesVersion),
-                new KeyValuePair<string, string>("Project Areas", sessionInfo.ProjectAreas.ToString()),
+                new KeyValuePair<string, string>("Project Areas", ObjectNames.NicifyVariableName(sessionInfo.ProjectAreas.Value.ToString())),
                 new KeyValuePair<string, string>("Analysis Platform", Formatting.GetModernBuildTargetName(sessionInfo.Platform))
             ]);
 
             if ((sessionInfo.ProjectAreas & ProjectAreaFlags.Code) != 0)
             {
-                keyValues.Add(new KeyValuePair<string, string>("Code Analysis Areas", sessionInfo.CodeAnalysisFlags.ToString()));
+                keyValues.Add(new KeyValuePair<string, string>("Code Analysis Areas", ObjectNames.NicifyVariableName(sessionInfo.CodeAnalysisFlags.Value.ToString())));
                 if (Unsupported.IsDeveloperMode())
                     keyValues.Add(new KeyValuePair<string, string>("Code Owners", sessionInfo.CodeOwnerFlags.ToString()));
             }
@@ -760,7 +733,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             bool newFoldoutState = true;
             using (new EditorGUILayout.HorizontalScope())
             {
-                newFoldoutState = EditorGUILayout.Foldout(foldoutState, $"{title} ({value} issues)", SharedStyles.Foldout);
+                newFoldoutState = Utility.BoldFoldout(foldoutState, EditorGUIUtility.TrTempContent($"{title} ({value} issues)"));
                 GUILayout.FlexibleSpace();
             }
 

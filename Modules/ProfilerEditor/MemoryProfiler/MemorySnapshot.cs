@@ -141,8 +141,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
             for (int i = 0; i < snapshot.connections.Length; ++i)
             {
                 var connection = snapshot.connections[i];
-                writer.WriteEntry(EntryType.Connections_From, connection.from);
-                writer.WriteEntry(EntryType.Connections_To, connection.to);
+                writer.WriteEntry(EntryType.Connections_From, connection.fromEntityId);
+                writer.WriteEntry(EntryType.Connections_To, connection.toEntityId);
             }
 
             //write native types
@@ -164,7 +164,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             {
                 var nativeObject = snapshot.nativeObjects[i];
                 writer.WriteEntry(EntryType.NativeObjects_Name, nativeObject.name);
-                writer.WriteEntry(EntryType.NativeObjects_EntityId, nativeObject.instanceId);
+                writer.WriteEntry(EntryType.NativeObjects_EntityId, nativeObject.entityId);
                 writer.WriteEntry(EntryType.NativeObjects_Size, (ulong)nativeObject.size);
                 writer.WriteEntry(EntryType.NativeObjects_NativeTypeArrayIndex, nativeObject.nativeTypeArrayIndex);
                 writer.WriteEntry(EntryType.NativeObjects_HideFlags, (UInt32)nativeObject.hideFlags);

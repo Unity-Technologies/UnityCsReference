@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -45,13 +46,11 @@ namespace UnityEditor.Search
 #pragma warning restore UA2001
             foreach (var factoryType in factoryTypes)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var enumerableCreatorAttribute = factoryType.GetCustomAttributes(typeof(EnumerableCreatorAttribute), false).Cast<EnumerableCreatorAttribute>().FirstOrDefault();
-#pragma warning restore UA2001
+                var enumerableCreatorAttribute = factoryType.GetCustomAttributes(typeof(EnumerableCreatorAttribute), false).FirstOrDefault();
                 if (enumerableCreatorAttribute == null)
                     continue;
 
-                var nodeType = enumerableCreatorAttribute.nodeType;
+                var nodeType = ((EnumerableCreatorAttribute)enumerableCreatorAttribute).nodeType;
                 var factory = Activator.CreateInstance(factoryType) as IQueryEnumerableFactory;
                 if (factory == null)
                     continue;

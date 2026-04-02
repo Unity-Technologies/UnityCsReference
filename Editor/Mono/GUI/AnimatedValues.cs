@@ -8,6 +8,7 @@ using UnityEngine.Events;
 
 namespace UnityEditor.AnimatedValues
 {
+    [Serializable]
     public abstract class BaseAnimValueNonAlloc<T> : BaseAnimValue<T> where T : IEquatable<T>
     {
         protected BaseAnimValueNonAlloc(T value) : base(value)
@@ -24,6 +25,7 @@ namespace UnityEditor.AnimatedValues
         }
     }
 
+    [Serializable]
     public abstract class BaseAnimValue<T> : ISerializationCallbackReceiver
     {
         T m_Start;

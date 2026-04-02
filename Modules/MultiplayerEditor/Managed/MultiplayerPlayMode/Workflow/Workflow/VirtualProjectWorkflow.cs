@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Threading.Tasks;
+using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -135,7 +136,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private static void ClearVirtualProjectFolder()
+        internal static void ClearVirtualProjectFolder()
         {
             if (Directory.Exists(Paths.CurrentProjectVirtualProjectsFolder))
             {
@@ -154,7 +155,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (File.Exists(path))
                 lines = File.ReadAllLines(path);
 
-            
+
 
             foreach (string line in lines)
             {

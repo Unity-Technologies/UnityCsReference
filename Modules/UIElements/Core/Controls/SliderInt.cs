@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A slider containing Integer discrete values. For more information, refer to [[wiki:UIE-uxml-element-sliderInt|UXML element SliderInt]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/SliderInt.png")]
     public partial class SliderInt : BaseSlider<int>
     {
@@ -64,14 +65,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-slider-int";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Constructors for the <see cref="SliderInt"/>.
@@ -99,9 +105,9 @@ namespace UnityEngine.UIElements
         public SliderInt(string label, int start = 0, int end = kDefaultHighValue, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, start, end, direction, pageSize)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
 
         /// <summary>

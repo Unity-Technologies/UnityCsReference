@@ -164,7 +164,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool Contains(EntityId entityId);
 
-        [System.Obsolete(@"Please use Contains(EntityId) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use Contains(EntityId) with the EntityId type instead.", true)]
         public static bool Contains(int instanceID) => Contains((EntityId)instanceID);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
@@ -177,7 +177,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsMainAsset(EntityId entityId);
 
-        [System.Obsolete(@"Please use IsMainAsset(EntityId) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use IsMainAsset(EntityId) with the EntityId type instead.", true)]
         public static bool IsMainAsset(int instanceID) => IsMainAsset((EntityId)instanceID);
 
         public static bool IsSubAsset(Object obj) { return IsSubAsset(obj.GetEntityId()); }
@@ -186,7 +186,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsSubAsset(EntityId entityId);
 
-        [System.Obsolete(@"Please use IsSubAsset(EntityId) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use IsSubAsset(EntityId) with the EntityId type instead.", true)]
         public static bool IsSubAsset(int instanceID) => IsSubAsset((EntityId)instanceID);
 
         public static bool IsForeignAsset(Object obj)
@@ -199,7 +199,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsForeignAsset(EntityId entityId);
 
-        [System.Obsolete(@"Please use IsForeignAsset(EntityId) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use IsForeignAsset(EntityId) with the EntityId type instead.", true)]
         public static bool IsForeignAsset(int instanceID) => IsForeignAsset((EntityId)instanceID);
 
         public static bool IsNativeAsset(Object obj)
@@ -212,7 +212,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsNativeAsset(EntityId entityId);
 
-        [System.Obsolete(@"Please use IsNativeAsset(EntityId) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use IsNativeAsset(EntityId) with the EntityId type instead.", true)]
         public static bool IsNativeAsset(int instanceID) => IsNativeAsset((EntityId)instanceID);
 
         [NativeMethod(ThrowsException = true)]
@@ -317,7 +317,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern private static bool DeleteAssetsCommon(string[] paths, object outFailedPaths, bool moveAssetsToTrash);
+        extern private static bool DeleteAssetsCommon(string[] paths, [Out] List<string> outFailedPaths, bool moveAssetsToTrash);
 
         public static bool MoveAssetsToTrash(string[] paths, List<string> outFailedPaths)
         {
@@ -395,7 +395,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static void AddObjectToAsset_Obj([NotNull] Object newAsset, [NotNull] Object sameAssetFile);
 
-        [System.Obsolete(@"Please use AddEntityIdToAssetWithRandomFileId instead.", false)]
+        [System.Obsolete(@"Please use AddEntityIdToAssetWithRandomFileId instead.", true)]
         static internal void AddInstanceIDToAssetWithRandomFileId(int instanceIDToAdd, Object assetObject, bool hide) => AddEntityIdToAssetWithRandomFileId(instanceIDToAdd, assetObject, hide);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -408,7 +408,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetAssetPath(Object assetObject);
 
-        [System.Obsolete(@"Please use GetAssetPath(EntityId) with the EntityId parameter type instead.", false)]
+        [System.Obsolete(@"Please use GetAssetPath(EntityId) with the EntityId parameter type instead.", true)]
         public static string GetAssetPath(int instanceID) { return GetAssetPathFromEntityId(instanceID); }
         public static string GetAssetPath(EntityId entityId) { return GetAssetPathFromEntityId(entityId); }
 
@@ -416,11 +416,12 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static string GetAssetPathFromEntityId(EntityId entityId);
 
-        [System.Obsolete(@"Please use GetMainAssetEntityId instead.", false)]
+        [System.Obsolete(@"Please use GetMainAssetEntityId instead.", true)]
         internal static int GetMainAssetInstanceID(string assetPath) => GetMainAssetEntityId(assetPath);
-        [System.Obsolete(@"Please use GetMainAssetOrInProgressProxyEntityId instead.", false)]
+        [System.Obsolete(@"Please use GetMainAssetOrInProgressProxyEntityId instead.", true)]
         internal static int GetMainAssetOrInProgressProxyInstanceID(string assetPath) => GetMainAssetOrInProgressProxyEntityId(assetPath);
 
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static EntityId GetMainAssetEntityId(string assetPath);
 
@@ -477,7 +478,7 @@ namespace UnityEditor
         extern internal static void EntityIdsToGUIDs(IntPtr entityIdsPtr, IntPtr guidsPtr, int len);
 
 
-        [System.Obsolete(@"Please use EntityIDsToGUIDs() instead.", false)]
+        [System.Obsolete(@"Please use EntityIDsToGUIDs() instead.", true)]
         public unsafe static void InstanceIDsToGUIDs(NativeArray<int> instanceIDs, NativeArray<GUID> guidsOut)
         {
             if (!instanceIDs.IsCreated)
@@ -490,7 +491,8 @@ namespace UnityEditor
                 throw new ArgumentException("instanceIDs and guidsOut size mismatch!");
 
             // This obsolete method is only valid so long as EntityId is still 4 bytes (size of int)
-            Debug.Assert(sizeof(int) == sizeof(EntityId));
+            // EntityId is now 8 bytes, but we use GetRawData() to get the lower 32 bits for compatibility
+            Debug.Assert(sizeof(ulong) == sizeof(EntityId));
 
             EntityIdsToGUIDs((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), instanceIDs.Length);
         }
@@ -549,24 +551,24 @@ namespace UnityEditor
         [FreeFunction("::CanOpenAssetInEditor")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool CanOpenAssetInEditor(EntityId entityId);
-        [System.Obsolete(@"Please use CanOpenAssetInEditor(EntityId) with the EntityId parameter type instead.", false)]
+        [System.Obsolete(@"Please use CanOpenAssetInEditor(EntityId) with the EntityId parameter type instead.", true)]
         public static bool CanOpenAssetInEditor(int instanceID) => CanOpenAssetInEditor((EntityId)instanceID);
 
         [uei.ExcludeFromDocs] public static bool OpenAsset(EntityId entityId) { return OpenAsset(entityId, -1, -1); }
 
-        [System.Obsolete(@"Please use OpenAsset(EntityId) with the EntityId parameter type instead.", false)]
+        [System.Obsolete(@"Please use OpenAsset(EntityId) with the EntityId parameter type instead.", true)]
         [uei.ExcludeFromDocs] public static bool OpenAsset(int instanceID) { return OpenAsset((EntityId)instanceID, -1, -1); }
 
         public static bool OpenAsset(EntityId entityId, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset(entityId, lineNumber, -1); }
 
-        [System.Obsolete(@"Please use OpenAsset(EntityId, int) with the EntityId parameter type instead.", false)]
+        [System.Obsolete(@"Please use OpenAsset(EntityId, int) with the EntityId parameter type instead.", true)]
         public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset((EntityId)instanceID, lineNumber, -1); }
 
         [FreeFunction("::OpenAsset")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool OpenAsset(EntityId entityId, int lineNumber, int columnNumber);
 
-        [System.Obsolete(@"Please use OpenAsset(EntityId, int, int) with the EntityId parameter type instead.", false)]
+        [System.Obsolete(@"Please use OpenAsset(EntityId, int, int) with the EntityId parameter type instead.", true)]
         public static bool OpenAsset(int instanceID, int lineNumber, int columnNumber) => OpenAsset((EntityId)instanceID, lineNumber, columnNumber);
 
         [uei.ExcludeFromDocs] public static bool OpenAsset(Object target) { return OpenAsset(target, -1); }
@@ -692,7 +694,7 @@ namespace UnityEditor
         extern public static void SetLabels(Object obj, string[] labels);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern private static void GetAllLabelsImpl(object labelsList, object scoresList);
+        extern private static void GetAllLabelsImpl([Out] List<string> labelsList, [Out] List<float> scoresList);
 
         internal static Dictionary<string, float> GetAllLabels()
         {
@@ -1013,7 +1015,7 @@ namespace UnityEditor
             return TryGetGUIDAndLocalFileIdentifier(obj.GetEntityId(), out guid, out localId);
         }
 
-        [System.Obsolete(@"Please use TryGetGUIDAndLocalFileIdentifier(EntityId, out string, out long) with the EntityId type instead.", false)]
+        [System.Obsolete(@"Please use TryGetGUIDAndLocalFileIdentifier(EntityId, out string, out long) with the EntityId type instead.", true)]
         public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out long localId)
         {
             GUID uguid;
@@ -1258,6 +1260,10 @@ namespace UnityEditor
         private extern static void _WaitForPendingCacheServerRequestsToComplete();
         internal static void WaitForPendingCacheServerRequestsToComplete() => _WaitForPendingCacheServerRequestsToComplete();
 
+        [FreeFunction("AssetDatabase::IsCacheServerImportResultCachingEnabled")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        public extern static bool IsCacheServerImportResultCachingEnabled();
+
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsDirectoryMonitoringEnabled();
@@ -1271,7 +1277,6 @@ namespace UnityEditor
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsAssetImportWorkerProcess();
 
         [FreeFunction("AssetDatabase::GetImporterType")]

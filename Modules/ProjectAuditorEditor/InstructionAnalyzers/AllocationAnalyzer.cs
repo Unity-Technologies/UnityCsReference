@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Unity.Collections;
@@ -97,10 +96,12 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             OpCodes.Call,
             OpCodes.Callvirt,
             OpCodes.Newobj,
-            OpCodes.Newarr
+            OpCodes.Newarr,
+            OpCodes.Ldftn,
+            OpCodes.Ldvirtftn,
         };
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
@@ -111,16 +112,14 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             registerDescriptor(k_StringFormatArrayAllocationDescriptor);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             if (context.Instruction.OpCode == OpCodes.Call || context.Instruction.OpCode == OpCodes.Callvirt)
             {
                 var callee = (MethodReference)context.Instruction.Operand;
                 if (callee.HasParameters)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var lastParam = callee.Parameters.Last();
-#pragma warning restore UA2001
+                    var lastParam = callee.Parameters[^1];
                     if (lastParam.HasCustomAttributes && lastParam.CustomAttributes.Exists(a => a.AttributeType.FastFullName().GetHashCode() == k_ParamArrayAtributeHashCode))
                     {
                         // If the previous instruction is loading Array.Empty<T>, we know that the method is being called with no `params`, and we are not actually allocating a managed array for the params array
@@ -135,27 +134,27 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                                 actuallyPassesArray = false;
                         }
                         if (actuallyPassesArray)
-                            return context.CreateIssue(IssueCategory.Code, k_ParamArrayAllocationDescriptor.Id, lastParam.ParameterType.Name, lastParam.Name);
+                            yield return context.CreateIssue(IssueCategory.Code, k_ParamArrayAllocationDescriptor.Id, lastParam.ParameterType.Name, lastParam.Name);
                     }
                 }
-                return null;
             }
-
-            if (context.Instruction.OpCode == OpCodes.Newobj)
+            else if (context.Instruction.OpCode == OpCodes.Newobj || context.Instruction.OpCode == OpCodes.Ldftn || context.Instruction.OpCode == OpCodes.Ldvirtftn)
             {
                 var methodReference = (MethodReference)context.Instruction.Operand;
                 var typeReference = methodReference.DeclaringType;
                 if (typeReference.IsValueType)
-                    return null;
+                    yield break;
 
                 var isClosure = typeReference.Name.StartsWith("<>c__DisplayClass", StringComparison.Ordinal);
                 if (isClosure)
                 {
-                    return context.CreateIssue(IssueCategory.Code, k_ClosureAllocationDescriptor.Id, context.MethodDefinition.DeclaringType.Name, context.MethodDefinition.Name);
+                    if (context.Instruction.OpCode != OpCodes.Newobj)
+                        yield return context.CreateIssue(IssueCategory.Code, k_ClosureAllocationDescriptor.Id, context.MethodDefinition.DeclaringType.Name, context.MethodDefinition.Name);
                 }
                 else
                 {
-                    return context.CreateIssue(IssueCategory.Code, k_ObjectAllocationDescriptor.Id, typeReference.FastFullName());
+                    if (context.Instruction.OpCode == OpCodes.Newobj)
+                        yield return context.CreateIssue(IssueCategory.Code, k_ObjectAllocationDescriptor.Id, typeReference.FastFullName());
                 }
             }
             else // OpCodes.Newarr
@@ -172,7 +171,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                         if (callee.Name == "Format" && callee.DeclaringType.FullName == "System.String")
                         {
                             if (callee.HasParameters && callee.Parameters.Count == 2 && callee.Parameters[1].ParameterType.FullName == "System.Object[]") // Check if the second parameter is the parameter array
-                                return context.CreateIssue(IssueCategory.Code, k_StringFormatArrayAllocationDescriptor.Id, typeReference.Name);
+                            {
+                                yield return context.CreateIssue(IssueCategory.Code, k_StringFormatArrayAllocationDescriptor.Id, typeReference.Name);
+                                yield break;
+                            }
                         }
                     }
 
@@ -180,7 +182,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 }
 
                 // Object[] allocation
-                return context.CreateIssue(IssueCategory.Code, k_ArrayAllocationDescriptor.Id, typeReference.Name);
+                yield return context.CreateIssue(IssueCategory.Code, k_ArrayAllocationDescriptor.Id, typeReference.Name);
             }
         }
     }

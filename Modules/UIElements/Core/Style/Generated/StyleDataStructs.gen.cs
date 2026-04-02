@@ -17,7 +17,7 @@ using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
-    [StructLayout(LayoutKind.Sequential, Size = 168)]
+    [StructLayout(LayoutKind.Sequential, Size = 176)]
     internal struct InheritedData : IStyleDataGroup<InheritedData>, IEquatable<InheritedData>
     {
         public Color color;
@@ -25,12 +25,12 @@ namespace UnityEngine.UIElements
         public Color unityTextOutlineColor;
         public Length fontSize;
         public Length letterSpacing;
+        public EntityId unityFont;
+        public EntityId unityFontDefinition;
         public Length unityParagraphSpacing;
         public Length wordSpacing;
         public TextShadow textShadow;
         public EditorTextRenderingMode unityEditorTextRenderingMode;
-        public EntityId unityFont;
-        public EntityId unityFontDefinition;
         public FontStyle unityFontStyleAndWeight;
         public TextAnchor unityTextAlign;
         public TextAutoSize unityTextAutoSize;
@@ -163,11 +163,11 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 80)]
+    [StructLayout(LayoutKind.Sequential, Size = 88)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
-        public Cursor cursor;
         public Color unityBackgroundImageTintColor;
+        public Cursor cursor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
         public TextOverflow textOverflow;
         public OverflowClipBox unityOverflowClipBox;
@@ -428,17 +428,16 @@ namespace UnityEngine.UIElements
         public Color borderLeftColor;
         public Color borderRightColor;
         public Color borderTopColor;
+        public EntityId backgroundImage;
         public BackgroundRepeat backgroundRepeat;
         public Length borderBottomLeftRadius;
         public Length borderBottomRightRadius;
         public Length borderTopLeftRadius;
         public Length borderTopRightRadius;
-        public EntityId backgroundImage;
         public BackgroundPosition backgroundPositionX;
         public BackgroundPosition backgroundPositionY;
         public BackgroundSize backgroundSize;
         public float opacity;
-        private int __dummy; // increasing group size to a multiple of 8
 
         public VisualData GetDefault()
         {

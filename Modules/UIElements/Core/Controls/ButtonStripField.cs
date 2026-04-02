@@ -23,12 +23,15 @@ namespace UnityEngine.UIElements
         }
 
         public const string className = "unity-button-strip-field";
-        const string k_ButtonClass = className + "__button";
-        const string k_IconClass = className + "__button-icon";
-        const string k_ButtonLeftClass = k_ButtonClass + "--left";
-        const string k_ButtonMiddleClass = k_ButtonClass + "--middle";
-        const string k_ButtonRightClass = k_ButtonClass + "--right";
-        const string k_ButtonAloneClass = k_ButtonClass + "--alone";
+        internal static readonly UniqueStyleString classNameUnique = new(className);
+
+        const string buttonClass = className + "__button";
+        static readonly UniqueStyleString k_ButtonClass = new(buttonClass);
+        static readonly UniqueStyleString k_IconClass = new(buttonClass + "-icon");
+        static readonly UniqueStyleString k_ButtonLeftClass = new(buttonClass + "--left");
+        static readonly UniqueStyleString k_ButtonMiddleClass = new(buttonClass + "--middle");
+        static readonly UniqueStyleString k_ButtonRightClass = new(buttonClass + "--right");
+        static readonly UniqueStyleString k_ButtonAloneClass = new(buttonClass + "--alone");
 
         readonly List<Button> m_Buttons = new List<Button>();
 
@@ -108,7 +111,7 @@ namespace UnityEngine.UIElements
         /// <param name="label">The list of items to use as a data source.</param>
         public ButtonStripField(string label) : base(label)
         {
-            AddToClassList(className);
+            AddToClassList(classNameUnique);
         }
 
         public override void SetValueWithoutNotify(int newValue)

@@ -46,6 +46,9 @@ namespace UnityEngine.UIElements
         private static MethodInfo s_UpdateUIMethodInfo;
         internal static MethodInfo updateUIMethod => s_UpdateUIMethodInfo ??= CacheReflectionInfo();
 
+        internal static readonly UniqueStyleString textElementInnerInputFieldUssClassNameUnique =
+            new("unity-text-element--inner-input-field-component");
+
         private static MethodInfo CacheReflectionInfo()
         {
             foreach (var method in typeof(DataBinding).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
@@ -239,7 +242,7 @@ namespace UnityEngine.UIElements
             {
                 // Only skip setting the value when the actual input field is focused.
                 var leaf = focusController.GetLeafFocusedElement();
-                if (leaf is TextElement textElement && textElement.ClassListContains("unity-text-element--inner-input-field-component") &&
+                if (leaf is TextElement textElement && textElement.ClassListContains(textElementInnerInputFieldUssClassNameUnique) &&
                     (target is IDelayedField { isDelayed: true } || textElement.edition.touchScreenKeyboard != null))
                 {
                     return new BindingResult(BindingStatus.Pending);

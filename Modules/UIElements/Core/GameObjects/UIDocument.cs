@@ -103,7 +103,7 @@ namespace UnityEngine.UIElements
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
     public sealed class UIDocument : MonoBehaviour, IPanelComponent
     {
-        internal const string k_RootStyleClassName = "unity-ui-document__root";
+        internal static readonly UniqueStyleString rootStyleClassNameUnique = new("unity-ui-document__root");
 
         internal const string k_VisualElementNameSuffix = "-container";
 
@@ -248,18 +248,22 @@ namespace UnityEngine.UIElements
             private set
             {
                 m_RootVisualElement = (UIDocumentRootElement)value;
-                focusRing = value != null ? new(value) : null;
+                (this as IPanelComponent).focusRing = value != null ? new(value) : null;
             }
         }
 
         VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
+        IEventHandler IPanelComponent.GetRoot() => (this as IPanelComponent).GetRootVisualElement();
 
-        internal VisualElementFocusRing focusRing { get; private set; } = null;
 
-        /// <summary>
-        /// See <see cref="PointerDeviceState.s_WorldSpaceDocumentWithSoftPointerCapture"/>
-        /// </summary>
-        internal int softPointerCaptures = 0;
+        VisualElementFocusRing IPanelComponent.focusRing { get; set; }
+
+        private int m_SoftPointerCaptures = 0;
+        int IPanelComponent.softPointerCaptures
+        {
+            get => m_SoftPointerCaptures;
+            set => m_SoftPointerCaptures = value;
+        }
 
         private int m_FirstChildInsertIndex;
 
@@ -468,6 +472,12 @@ namespace UnityEngine.UIElements
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
+        //This need to be in the implementation for code stripping reason,is duplicated in PanelRenderer
+        Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
+        {
+            return PanelComponentUtils.GetPanelPosition(gameObject, pickedElement, worldRay);
+        }
+
         /// <summary>
         /// The runtime panel whose visualTree contains this document's rootVisualElement, if any.
         /// </summary>
@@ -480,6 +490,8 @@ namespace UnityEngine.UIElements
         /// Strongly-typed equivalent of <see cref="runtimePanel"/>.
         /// </summary>
         internal RuntimePanel containerPanel => (RuntimePanel)rootVisualElement?.elementPanel;
+
+        IRuntimePanel IPanelComponent.GetContainerPanel() => containerPanel;
 
         bool m_RootHasWorldTransform;
 
@@ -543,10 +555,6 @@ namespace UnityEngine.UIElements
             }
 
             m_RootVisualElement.uiRenderer = renderer;
-
-            // Don't render embedded documents which will be rendered as part of their parents
-            // Don't render documents with invalid PPU
-            renderer.skipRendering = (parentUI != null) || (pixelsPerUnit < Mathf.Epsilon);
 
             BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
             if (rtp == null)
@@ -654,9 +662,9 @@ namespace UnityEngine.UIElements
                 isWorldSpaceRootUIDocument = false;
             }
 
-            if (m_RootVisualElement.isWorldSpaceRootUIDocument != isWorldSpaceRootUIDocument)
+            if (m_RootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
-                m_RootVisualElement.isWorldSpaceRootUIDocument = isWorldSpaceRootUIDocument;
+                m_RootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
                 m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
             }
         }
@@ -891,7 +899,7 @@ namespace UnityEngine.UIElements
             if (!isWorldSpace)
             {
                 // If we're not a child of any other UIDocument stretch to take the full screen.
-                m_RootVisualElement.EnableInClassList(k_RootStyleClassName, parentUI == null);
+                m_RootVisualElement.EnableInClassList(rootStyleClassNameUnique, parentUI == null);
 
                 // Reset inline styles thay may have been set if the PanelSetting was
                 // previously set to world-space rendering.
@@ -965,7 +973,7 @@ namespace UnityEngine.UIElements
         private void OnDisable()
         {
             EnabledDocumentCount--;
-            PointerDeviceState.RemoveDocumentData(this);
+            PointerDeviceState.RemovePanelComponentData(this);
             RemoveWorldSpaceCollider();
 
             if (m_RootVisualElement != null)
@@ -1199,50 +1207,10 @@ namespace UnityEngine.UIElements
 
         private void OnDrawGizmosSelected()
         {
-            if (m_RootVisualElement == null)
+            if (rootVisualElement == null)
                 return;
 
-            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                return;
-
-            // Find the first UIDoc that's controlled by a GameObject
-            var gameObjectDoc = this;
-            while (gameObjectDoc != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectDoc)))
-                gameObjectDoc = gameObjectDoc.parentUI;
-
-            if (gameObjectDoc == null)
-                return;
-
-            Bounds bb;
-            if (PanelComponentUtils.IsTransformControlledByGameObject(this))
-            {
-                bb = PanelComponentUtils.LocalBoundsFromPivotSource(m_RootVisualElement, pivotReferenceSize);
-            }
-            else
-            {
-                // Relative mode gizmos are drawn relative to the next ancestor that's
-                // controlled by a GameObject transform
-                var bbox = m_RootVisualElement.boundingBoxWithoutNested;
-                bbox = m_RootVisualElement.ChangeCoordinatesTo(gameObjectDoc.rootVisualElement, bbox);
-                bb = new Bounds(bbox.center, bbox.size);
-            }
-
-            if (!PanelComponentUtils.IsValidBounds(bb))
-                return;
-
-
-            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(gameObjectDoc.PivotOffset(), gameObjectDoc.pixelsPerUnit);
-            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
-
-            var matrixBackup = Gizmos.matrix;
-
-            Vector3 center = bb.center;
-            Vector3 size = bb.size;
-            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
-            Gizmos.matrix = gameObjectDoc.transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(center, size);
-
-            Gizmos.matrix = matrixBackup;
+            PanelComponentUtils.DrawGizmoBounds(this, PivotOffset(), pixelsPerUnit);
         }
 
     }

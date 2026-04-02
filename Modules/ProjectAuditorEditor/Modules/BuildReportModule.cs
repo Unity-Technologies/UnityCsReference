@@ -135,6 +135,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         IEnumerable<ReportItem> AnalyzeBuildSteps(BuildAnalysisContext context)
         {
+            var zeroDuration = Formatting.FormatDuration(TimeSpan.Zero);
+
             foreach (var step in context.Report.steps)
             {
                 var depth = step.depth;
@@ -154,7 +156,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     yield return context.CreateInsight(IssueCategory.BuildStep, description)
                         .WithCustomProperties(
                         [
-                            0,
+                            zeroDuration,
                             logMessage,
                             depth + 1
                         ])

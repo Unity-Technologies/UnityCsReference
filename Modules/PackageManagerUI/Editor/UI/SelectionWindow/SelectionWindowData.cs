@@ -166,7 +166,7 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     {
         if (id < 0 || id >= nodes.Count)
             return false;
-        return !nodes[id].childIndexes.AnyMatches(IsSelected);
+        return !nodes[id].childIndexes.Exists(IsSelected);
     }
 
     public bool IsSelected(int id) => m_SelectedIndexes.Contains(id);

@@ -711,7 +711,7 @@ namespace UnityEngine.TextCore.Text
                         if (materialHashCode == (int)MarkupTag.DEFAULT)
                         {
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetEntityId() != m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId()) return false;
 
                             m_CurrentMaterial = m_MaterialReferences[0].material;
                             m_CurrentMaterialIndex = 0;
@@ -726,7 +726,7 @@ namespace UnityEngine.TextCore.Text
                         if (MaterialReferenceManager.TryGetMaterial(materialHashCode, out tempMaterial))
                         {
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetEntityId() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId()) return false;
 
                             m_CurrentMaterial = tempMaterial;
 
@@ -748,7 +748,7 @@ namespace UnityEngine.TextCore.Text
                                 return false;
 
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetEntityId() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId()) return false;
 
                             // Add new reference to this material in the MaterialReferenceManager
                             MaterialReferenceManager.AddFontMaterial(materialHashCode, tempMaterial);
@@ -762,7 +762,7 @@ namespace UnityEngine.TextCore.Text
                         return true;
                     case MarkupTag.SLASH_MATERIAL:
                     {
-                        //if (m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID() != m_MaterialReferenceStack.PreviousItem().material.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID())
+                        //if (m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId() != m_MaterialReferenceStack.PreviousItem().material.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId())
                         //    return false;
 
                         MaterialReference materialReference = m_MaterialReferenceStack.Remove();
@@ -822,7 +822,7 @@ namespace UnityEngine.TextCore.Text
 
                                     lastIndex = (m_XmlAttribute[i].valueLength + m_XmlAttribute[i].valueStartIndex);
                                     break;
-                                        
+
                                 }
                                 if (m_XmlAttribute[1].valueLength > 0)
                                     textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, lastIndex - 1);

@@ -124,9 +124,19 @@ namespace UnityEditor.IMGUI.Controls
             AddChild(k_SeparatorItem);
         }
 
+        internal void AddHelpBox(string message, MessageType type)
+        {
+            AddChild(new HelpBoxDropdownItem(message, type));
+        }
+
         internal bool IsSeparator()
         {
             return k_SeparatorItem == this;
+        }
+
+        internal bool IsHelpBox(AdvancedDropdownItem item)
+        {
+            return item is HelpBoxDropdownItem;
         }
 
         public override string ToString()
@@ -149,6 +159,17 @@ namespace UnityEditor.IMGUI.Controls
         {
             public SeparatorDropdownItem() : base("SEPARATOR")
             {
+            }
+        }
+
+        internal class HelpBoxDropdownItem : AdvancedDropdownItem
+        {
+            public string message { get; }
+            public MessageType type { get; }
+            public HelpBoxDropdownItem(string message, MessageType type) : base(message)
+            {
+                this.type = type;
+                this.message = message;
             }
         }
     }

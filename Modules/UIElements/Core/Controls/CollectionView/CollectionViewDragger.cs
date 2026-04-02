@@ -97,7 +97,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             startDragArgs.modifiers = modifiers;
 
             // User defined handling, if any.
-            startDragArgs = targetView.RaiseSetupDragAndDrop(recycledItem, dragAndDropController.GetSortedSelectedIds(), startDragArgs);
+            if (recycledItem != null)
+                startDragArgs = targetView.RaiseSetupDragAndDrop(recycledItem, dragAndDropController.GetSortedSelectedIds(), startDragArgs);
 
             startDragArgs.SetGenericData(DragAndDropData.dragSourceKey, targetView);
             return startDragArgs;
@@ -168,7 +169,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_LastDragPosition = new DragPosition();
             foreach (var recycledItem in targetView.m_IndexToItemDictionary.Values)
             {
-                recycledItem.element.RemoveFromClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
+                recycledItem.element.RemoveFromClassList(BaseVerticalCollectionView.itemDragHoverUssClassNameUnique);
             }
 
             if (m_DragHoverBar != null)
@@ -226,7 +227,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         VisualElement CreateDragHoverBar()
         {
             var dragHoverBar = new VisualElement { pickingMode = PickingMode.Ignore, style = { width = targetView.localBound.width, visibility = Visibility.Hidden } };
-            dragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassName);
+            dragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassNameUnique);
             targetView.RegisterCallback<GeometryChangedEvent>(_ => m_DragHoverBar.style.width = targetView.localBound.width);
             return dragHoverBar;
         }
@@ -244,7 +245,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             switch (dragPosition.dropPosition)
             {
                 case DragAndDropPosition.OverItem:
-                    dragPosition.recycledItem.element.AddToClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
+                    dragPosition.recycledItem.element.AddToClassList(BaseVerticalCollectionView.itemDragHoverUssClassNameUnique);
                     break;
                 case DragAndDropPosition.BetweenItems:
                     if (dragPosition.insertAtIndex == 0)

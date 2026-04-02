@@ -485,16 +485,12 @@ namespace UnityEditor.Search.Providers
                 var labelValue = k_Categories.FirstOrDefault(c => (string)c.value == value);
 #pragma warning restore UA2001
                 if (labelValue.displayName != null)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    label = labelValue.displayName.Split("/").Last();
-#pragma warning restore UA2001
+                    label = labelValue.displayName.Split("/")[^1];
             }
 
             public override void Apply(in SearchProposition searchProposition)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                label = searchProposition.label.Split("/").Last();
-#pragma warning restore UA2001
+                label = searchProposition.label.Split("/")[^1];
                 base.Apply(searchProposition);
             }
 
@@ -654,10 +650,21 @@ namespace UnityEditor.Search.Providers
             public QueryPriceBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
                  : base(source, id, value, attr)
             {
-                int valueInt = Convert.ToInt32(value);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var labelValue = k_PriceRange.FirstOrDefault(c => (int)c.value == valueInt);
-#pragma warning restore UA2001
+                var labelValue = k_PriceRange[0];
+                if (!string.IsNullOrEmpty(value) && int.TryParse(value, out var valueInt))
+                {
+                    for (int i = 0; i < k_PriceRange.Length - 1; ++i)
+                    {
+                        var currentValue = (int)k_PriceRange[i].value;
+                        var nextValue = (int)k_PriceRange[i + 1].value;
+                        if (currentValue >= valueInt && currentValue < nextValue)
+                        {
+                            labelValue = k_PriceRange[i];
+                            break;
+                        }
+                    }
+                }
+
                 if (labelValue.displayName != null)
                     label = labelValue.displayName;
             }
@@ -1205,7 +1212,7 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
-            if (doc.productDetail?.images.Length > 0)
+            if (doc?.productDetail?.images.Length > 0)
                 return (doc.lastPreview = FetchImage(doc.images, false, s_Previews) ?? doc.lastPreview);
 
             return null;
@@ -1321,9 +1328,9 @@ namespace UnityEditor.Search.Providers
         {
             if (items.Count > 1)
                 return false;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return CanShowInPackageManager(items.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
         }
 
         static bool IsItemOwned(SearchItem item)
@@ -1716,7 +1723,7 @@ namespace UnityEditor.Search.Providers
             viewState.flags &= ~UnityEngine.Search.SearchViewFlags.OpenInspectorPreview;
             viewState.flags |= UnityEngine.Search.SearchViewFlags.DisableNoResultTips;
             viewState.context = storeContext;
-            viewState.itemSize = (int)DisplayMode.Grid;
+            viewState.SetDisplayMode(DisplayMode.Grid);
             viewState.queryBuilderEnabled = true;
             SearchService.ShowWindow(viewState);
         }

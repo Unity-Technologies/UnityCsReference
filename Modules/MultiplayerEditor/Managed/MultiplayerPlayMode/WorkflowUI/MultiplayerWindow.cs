@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using Unity.PlayMode.Editor;
 using UnityEditor.Multiplayer.Internal;
 using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -21,7 +22,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public MainView MainView { get; private set; }
         private HelpBox m_DisabledHelpBox;
         private bool m_IsNarrowWindow;
-        private const float k_WindowMinWidth = 275f;
+        private const float k_WindowMinWidth = 380f;
         private const float k_WindowMinHeight = 400f;
 
         void OnFocus()

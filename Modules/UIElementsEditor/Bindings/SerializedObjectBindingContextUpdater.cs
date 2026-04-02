@@ -122,6 +122,27 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
             bindingContext?.RegisterSerializedPropertyChangeCallback(owner, prop, callback);
     }
 
+    public void RemoveTracking(SerializedProperty prop, Action<object, SerializedProperty> callback)
+    {
+        var propertyPathHash = prop.hashCodeForPropertyPath;
+
+        for (var i = trackedProperties.Count - 1; i >= 0; i--)
+        {
+            if (trackedProperties[i].propertyPathHash == propertyPathHash && trackedProperties[i].callback == callback)
+            {
+                trackedProperties.RemoveAt(i);
+
+                if (isActivated && bindingContext != null)
+                {
+                    // Unregister the specific callback, and stop native tracking if this was the last callback
+                    bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propertyPathHash, callback);
+                }
+
+                break;
+            }
+        }
+    }
+
     private void RegisterTrackedProperties()
     {
         if (bindingContext != null)

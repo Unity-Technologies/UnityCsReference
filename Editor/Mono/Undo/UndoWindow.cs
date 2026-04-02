@@ -36,9 +36,9 @@ namespace UnityEditor
         {
             Undo.GetRecords(newUndos, out newUndoCursorPos);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (undos.SequenceEqual(newUndos) && undoCursorPos == newUndoCursorPos)
-#pragma warning restore UA2001
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (undoCursorPos == newUndoCursorPos && undos.SequenceEqual(newUndos))
+#pragma warning restore UA2014
                 return;
 
             undos = new List<string>(newUndos);

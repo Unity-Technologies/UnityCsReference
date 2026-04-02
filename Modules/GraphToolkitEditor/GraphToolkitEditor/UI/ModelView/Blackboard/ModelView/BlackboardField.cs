@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.GraphToolkit.CSO;
-using System.Collections.Generic;
-using Unity.GraphToolkit.InternalBridge;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -515,19 +512,30 @@ namespace Unity.GraphToolkit.Editor
             if (Model is not VariableDeclarationModelBase vdm)
                 return false;
 
-            var typeStyle = vdm.GraphModel?.GetDataTypeStyle(vdm.DataType.Resolve());
+            bool overrideIcon = true;
+            Type resolvedType = vdm.DataType.Resolve();
+            var typeStyle = vdm.GraphModel?.GetDataTypeStyle(resolvedType);
+
+            if (!typeStyle.HasValue && resolvedType.IsListOrArray())
+            {
+                typeStyle = vdm.GraphModel?.GetDataTypeStyle(resolvedType.GetCollectionElementType());
+                overrideIcon = false;
+            }
+
             if (!typeStyle.HasValue)
                 return false;
 
-            m_IconIsInline = true;
 
             // Color for the type.
+            m_IconIsInline = true;
             m_ScopeImage.Color = typeStyle.Value.color;
             m_Icon.tintColor = typeStyle.Value.color;
 
             // Icon
-            if (typeStyle.Value.icon != null)
+            if (overrideIcon && typeStyle.Value.icon != null)
+            {
                 m_Icon.image = typeStyle.Value.icon;
+            }
             else
                 return false;
 

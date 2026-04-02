@@ -23,7 +23,9 @@ namespace UnityEditor
         [Serializable]
         class CachedInstructionInfo
         {
+            [NonSerialized]
             public SerializedObject        styleContainerSerializedObject = null;
+            [NonSerialized]
             public SerializedProperty      styleSerializedProperty = null;
             public readonly GUIStyleHolder styleContainer;
 

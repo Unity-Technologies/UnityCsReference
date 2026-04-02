@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Modules;
 using UnityEditor.Compilation;
 
@@ -63,9 +62,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             {
                 if (m_CompilationStatus != CompilationStatus.Compiled)
                     return false;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return m_Messages.All(message => message.Type != CompilerMessageType.Error);
-#pragma warning restore UA2001
+                return Array.TrueForAll(m_Messages, message => message.Type != CompilerMessageType.Error);
             }
         }
 
@@ -94,13 +91,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             {
                 case AssemblyBuilderStatus.NotStarted:
                     // check if all dependencies are built
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (m_Dependencies.All(dep => dep.IsCompleted))
-#pragma warning restore UA2001
+                    if (Array.TrueForAll(m_Dependencies, dep => dep.IsCompleted))
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (m_Dependencies.All(dep => dep.IsCompletedSuccessfully))
-#pragma warning restore UA2001
+                        if (Array.TrueForAll(m_Dependencies, dep => dep.IsCompletedSuccessfully))
                         {
                             m_StopWatch = Stopwatch.StartNew();
                             m_Builder.Build(); // all references are built, we can kick off this builder
@@ -114,9 +107,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                             {
                                 AssemblyName = m_AssemblyName,
                                 AssemblyPath = AssemblyPath,
-                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                DependentAssemblyNames = m_Dependencies.Select(d => d.m_AssemblyName).ToArray(),
-#pragma warning restore UA2001
+                                DependentAssemblyNames = Array.ConvertAll(m_Dependencies, d => d.m_AssemblyName),
                                 DurationInMs = 0,
                                 Messages = m_Messages,
                                 Status = m_CompilationStatus,
@@ -134,9 +125,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     {
                         AssemblyName = m_AssemblyName,
                         AssemblyPath = AssemblyPath,
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        DependentAssemblyNames = m_Dependencies.Select(d => d.m_AssemblyName).ToArray(),
-#pragma warning restore UA2001
+                        DependentAssemblyNames = Array.ConvertAll(m_Dependencies, d => d.m_AssemblyName),
                         DurationInMs = m_StopWatch.ElapsedMilliseconds,
                         Messages = m_Messages,
                         Status = m_CompilationStatus,

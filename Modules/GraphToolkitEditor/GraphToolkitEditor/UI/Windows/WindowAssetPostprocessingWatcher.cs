@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 
@@ -68,6 +69,9 @@ namespace Unity.GraphToolkit.Editor
                 if (window.GraphView == null) continue;
 
                 if (!IsWindowDisplayingGraphAsset(window, guid)) continue;
+
+                // Local subgraphs are part of the main graph asset and don't have their own asset, so they shouldn't update their name based on the file name of the asset.
+                if (window.GraphView.GraphModel?.IsLocalSubgraph == true) continue;
 
                 window.OnUpdateModelName(newName);
             }
@@ -185,7 +189,7 @@ namespace Unity.GraphToolkit.Editor
         // Returns true if the window is displaying a subgraph of the graph parentGraphGuid.
         static bool IsWindowDisplayingSubgraphAssetOfParentGraphAsset(GraphViewEditorWindow window, GUID parentGraphGuid)
         {
-            return window.GraphTool != null && window.GraphTool.ToolState.SubgraphStack.HasAny(openedGraph => openedGraph.AssetGuid == parentGraphGuid);
+            return window.GraphTool != null && window.GraphTool.ToolState.SubgraphStack.Exists(openedGraph => openedGraph.AssetGuid == parentGraphGuid);
         }
     }
 }

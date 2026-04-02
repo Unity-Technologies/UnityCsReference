@@ -142,9 +142,7 @@ namespace UnityEditorInternal
                 //
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
                 var filename = assemblyTypePair.Key.ToNPath().FileNameWithoutExtension;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
-#pragma warning restore UA2001
+                if (Array.TrueForAll(buildFiles, file => !BuildFileMatchesAssembly(file, filename)))
                     continue;
 
                 if (assemblyTypePair.Value.Length == 0)
@@ -182,9 +180,7 @@ namespace UnityEditorInternal
 #pragma warning restore UA2001
             {
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (buildFiles.All(file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
-#pragma warning restore UA2001
+                if (Array.TrueForAll(buildFiles, file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");
@@ -321,9 +317,7 @@ namespace UnityEditorInternal
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about being able to find
                 // all of the types that are reported as being in the scene.
                 var filename = userAssembly.Key.ToNPath().FileNameWithoutExtension;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
-#pragma warning restore UA2001
+                if (Array.TrueForAll(buildFiles, file => !BuildFileMatchesAssembly(file, filename)))
                     continue;
 
                 foreach (var type in userAssembly.Value)

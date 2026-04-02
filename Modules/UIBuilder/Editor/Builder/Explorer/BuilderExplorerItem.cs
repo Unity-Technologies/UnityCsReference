@@ -88,12 +88,13 @@ namespace Unity.UI.Builder
         {
             m_RenameTextField.UnregisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
             m_RenameTextField.Focus();
-
             var typeLabel = this.Q<Label>(classes: BuilderConstants.ElementTypeClassName);
             if (m_RenameTextField.text == string.Empty && typeLabel != null)
             {
                 m_RenameTextField.text = typeLabel.text;
             }
+
+            m_RenameTextField.SelectAll();
         }
 
         public void ResetRenamingField()

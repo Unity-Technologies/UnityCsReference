@@ -242,6 +242,8 @@ namespace UnityEngine.Device
 
         public static bool supportsDepthFetchInRenderPass => ShimManager.systemInfoShim.supportsDepthFetchInRenderPass;
 
+        public static bool supportsDepthAttachmentAsInputAttachment => ShimManager.systemInfoShim.supportsDepthAttachmentAsInputAttachment;
+
         public static bool supportsDynamicResolution => ShimManager.systemInfoShim.supportsDynamicResolution;
 
         public static bool supportsBackbufferInMultipleRenderTargets => ShimManager.systemInfoShim.supportsBackbufferInMultipleRenderTargets;

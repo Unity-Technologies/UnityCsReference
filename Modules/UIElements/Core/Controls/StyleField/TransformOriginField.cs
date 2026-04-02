@@ -30,18 +30,25 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-transform-origin-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of the composite field in elements of this type.
         /// </summary>
         static readonly string compositeUssClassName = "unity-composite-field";
+        internal static readonly UniqueStyleString compositeUssClassNameUnique = new(compositeUssClassName);
+
         /// <summary>
         /// USS class name of fields in elements of this type.
         /// </summary>
         static readonly string fieldUssClassName = compositeUssClassName + "__field";
+        static readonly UniqueStyleString fieldUssClassNameUnique = new(fieldUssClassName);
 
         LengthField m_XField;
         LengthField m_YField;
@@ -71,12 +78,12 @@ namespace UnityEngine.UIElements
         /// <param name="label">The Label text.</param>
         public TransformOriginField(string label) : base(label, null)
         {
-            AddToClassList(ussClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
 
-            m_XField = new("X") { classList = { fieldUssClassName } };
-            m_YField = new("Y") { classList = { fieldUssClassName } };
-            m_ZField = new("Z") { classList = { fieldUssClassName } };
+            m_XField = new LengthField("X").WithClassList(fieldUssClassNameUnique);
+            m_YField = new LengthField("Y").WithClassList(fieldUssClassNameUnique);
+            m_ZField = new FloatField("Z").WithClassList(fieldUssClassNameUnique);
 
             visualInput.Add(m_XField);
             visualInput.Add(m_YField);

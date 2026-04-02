@@ -42,5 +42,11 @@ namespace UnityEngine
         {
             return exists != null;
         }
+
+        [RequiredByNativeCode(Optional = true)]
+        static void DestroyTrackedReference(TrackedReference trackedReference)
+        {
+            trackedReference.m_Ptr = IntPtr.Zero;
+        }
     }
 }

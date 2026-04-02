@@ -160,19 +160,15 @@ namespace Unity.GraphToolkit.Editor
                     if (!IsSerialized(fieldInfo))
                         continue;
 
-                    var overrideForFields = fieldInfo.GetCustomAttributes<OverrideForFieldAttribute>();
-                    #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (overrideForFields.Any())
-#pragma warning restore UA2002
+                    var overrideForField = Attribute.GetCustomAttribute(fieldInfo, typeof(OverrideForFieldAttribute), false);
+                    if (overrideForField != null)
                     {
                         if (fieldInfo.FieldType != typeof(bool))
                         {
                             Debug.LogWarning($"Field {fieldInfo.Name} of type {t.FullName} with OverrideForFieldAttribute must be of type bool");
                             continue;
                         }
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var overField = t.GetField(overrideForFields.First().FieldName, k_FieldFlags);
-#pragma warning restore UA2001
+                        var overField = t.GetField(((OverrideForFieldAttribute)overrideForField).FieldName, k_FieldFlags);
                         if (overField != null)
                         {
                             overrideFields.Add(overField, fieldInfo);
@@ -184,10 +180,10 @@ namespace Unity.GraphToolkit.Editor
             foreach (var t in typeList)
             {
                 var fields = t.GetFields(k_FieldFlags);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var fieldInfo in fields.Where(m_Filter))
-#pragma warning restore UA2001
+                foreach (var fieldInfo in fields)
                 {
+                    if (!m_Filter(fieldInfo))
+                        continue;
                     if (fieldInfo.IsDefined(typeof(OverrideForFieldAttribute)))
                         continue;
 

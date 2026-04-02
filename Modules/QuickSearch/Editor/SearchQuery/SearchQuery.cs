@@ -350,8 +350,11 @@ namespace UnityEditor.Search
         {
             if (query.thumbnail)
                 return query.thumbnail;
-            var displayMode = SearchUtils.GetDisplayModeFromItemSize(query.GetViewState().itemSize);
-            return SearchUtils.GetIconFromDisplayMode(displayMode);
+
+            var viewState = query.GetViewState();
+            var desc = viewState.resultViewDescriptorList.Current;
+            query.thumbnail = desc.FetchIcon();
+            return query.thumbnail;
         }
 
         internal static void SaveLastUsedTimeToPropertyDatabase(ISearchQuery activeQuery)

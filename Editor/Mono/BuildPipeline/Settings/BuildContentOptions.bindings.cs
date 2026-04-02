@@ -67,16 +67,6 @@ namespace UnityEditor
         /// is certain to have new output if you upgrade and rebuild, even for a minor version upgrade.
         /// </remarks>
         SerializeUnityVersion = 1 << 15,
-
-        /// <summary>
-        /// Generates more information in the BuildReport.
-        /// </summary>
-        /// <remarks>
-        /// The <see cref="Build.Reporting.BuildReport"/> file produced by the build will contain more details (such as <see cref="Build.Reporting.PackedAssets"/>), at
-        /// the cost of a somewhat longer build times and a larger build report file size.
-        /// </remarks>
-        /// <seealso cref="BuildOptions.DetailedBuildReport"/>
-        DetailedBuildReport = 1 << 29
     }
 }
 

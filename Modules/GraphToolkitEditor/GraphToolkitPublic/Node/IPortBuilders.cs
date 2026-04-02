@@ -95,6 +95,18 @@ namespace Unity.GraphToolkit.Editor
         /// However, this method is not supported for ports on a Block node, which are always displayed horizontally.
         /// </remarks>
         T AsVertical();
+
+        /// <summary>
+        /// Configures the connection capacity of the port being built.
+        /// </summary>
+        /// <param name="capacity">The number of connections the port can accept, represented by <see cref="PortCapacity"/>.</param>
+        /// <returns>The current builder instance for method chaining.</returns>
+        /// <remarks>
+        /// Use this method to control how many connections a port can accept.
+        /// By default, input ports use <see cref="PortCapacity.Single"/> and output ports use <see cref="PortCapacity.Multi"/>.
+        /// Call this method before <see cref="IPortBuilder{T}.Build"/> to ensure the capacity is applied.
+        /// </remarks>
+        T WithCapacity(PortCapacity capacity);
     }
 
     /// <summary>

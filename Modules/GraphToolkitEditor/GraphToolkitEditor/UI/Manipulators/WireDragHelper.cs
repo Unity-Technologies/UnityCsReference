@@ -441,7 +441,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="wires">The wires to connect.</param>
         /// <param name="worldPosition">The position on which the nodes will be created.</param>
         /// <param name="wiresToDelete">The wires that need to be deleted, if any.</param>
-        static void CreateNodesFromWires(GraphView view, IReadOnlyList<(WireModel model, WireSide side)> wires, Vector2 worldPosition, List<WireModel> wiresToDelete)
+        static void CreateNodesFromWires(GraphView view, List<(WireModel model, WireSide side)> wires, Vector2 worldPosition, List<WireModel> wiresToDelete)
         {
             var localPosition = view.ContentViewContainer.WorldToLocal(worldPosition);
             Action<ItemLibraryItem> createNode = item =>
@@ -474,12 +474,8 @@ namespace Unity.GraphToolkit.Editor
                     }
                 }
             };
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var portModels = wires.Select(e => e.model.GetOtherPort(e.side)).ToList();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            switch (portModels.First().Direction)
-#pragma warning restore UA2001
+            var portModels = wires.ConvertAll(e => e.model.GetOtherPort(e.side));
+            switch (portModels[0].Direction)
             {
                 case PortDirection.Output:
                     ItemLibraryService.ShowOutputToGraphNodes(view, portModels, worldPosition, createNode);

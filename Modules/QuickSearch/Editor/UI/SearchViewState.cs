@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Search;
+using UnityEngine.Serialization;
 
 namespace UnityEditor.Search
 {
@@ -70,7 +72,24 @@ namespace UnityEditor.Search
         public bool hideAllGroup;
         public GUIContent windowTitle;
         public string title;
+
+        [Obsolete]
         public float itemSize;
+
+        [FormerlySerializedAs("itemSize")]
+        [SerializeField] private float m_ItemIconSize;
+        public float itemIconSize {
+            get
+            {
+                return m_ItemIconSize;
+            }
+            set
+            {
+                SetItemIconSize(value);
+            }
+
+        }
+
         public Rect position;
         public SearchViewFlags flags;
         public string group;
@@ -162,6 +181,74 @@ namespace UnityEditor.Search
         [SerializeField] internal SearchQueryTreeConfig queryTreeConfig;
         [SerializeField] internal SearchWindowCustomPanelConfig customPanelConfig;
 
+        // Assuming this is not something that uis serialzied or else it would change the behavior of the search window when executing queries.
+        private SearchFunctor<Func<ISearchView, string, SearchQueryError, bool>> m_DisplaySearchErrors;
+        internal Func<ISearchView, string, SearchQueryError, bool> displaySearchErrors
+        {
+            get
+            {
+                return m_DisplaySearchErrors == null ? null : m_DisplaySearchErrors.handler;
+            }
+            set
+            {
+                m_DisplaySearchErrors = new SearchFunctor<Func<ISearchView, string, SearchQueryError, bool>>(value);
+            }
+        }
+
+        internal void SetDisplayMode(DisplayMode displayMode)
+        {
+            // Keep the itemSize in sync.
+            if (m_ResultViewDescriptorList == null || !m_ResultViewDescriptorList.isValid)
+            {
+                m_ItemIconSize = SearchUtils.GetItemSizeFromDisplayMode(displayMode);
+            }
+            else if (resultViewDescriptorList.SetCurrentFromDisplayMode(displayMode))
+                m_ItemIconSize = SearchUtils.GetItemSizeFromDisplayMode(displayMode);
+        }
+
+        internal void SetItemIconSize(float itemSize)
+        {
+            if (m_ResultViewDescriptorList == null || !m_ResultViewDescriptorList.isValid)
+            {
+                // ResultViewList has been instantiated yet, only assign itemSize that will be used to init the list.
+                m_ItemIconSize = itemSize;
+            }
+            else if (resultViewDescriptorList.SetCurrentFromItemSize(itemSize))
+                m_ItemIconSize = itemSize;
+        }
+
+        internal void SetResultView(string viewId)
+        {
+            // Keep the itemSize in sync.
+            resultViewDescriptorList.CurrentViewId = viewId;
+            m_ItemIconSize = resultViewDescriptorList.Current.SizeDefault;
+        }
+
+        [SerializeField] private SearchResultViewDescriptorList m_ResultViewDescriptorList;
+        internal SearchResultViewDescriptorList resultViewDescriptorList
+        {
+            get
+            {
+                // Lazy create the descriptor list.
+                if (m_ResultViewDescriptorList == null || !m_ResultViewDescriptorList.isValid)
+                {
+                    m_ResultViewDescriptorList = SearchResultViewDescriptorList.CreateDefaultList();
+                    m_ResultViewDescriptorList.SetCurrentFromItemSize(m_ItemIconSize);
+                }
+                return m_ResultViewDescriptorList;
+            }
+
+            [VisibleToOtherModules]
+            set
+            {
+                m_ResultViewDescriptorList = value;
+                if (m_ResultViewDescriptorList != null && m_ResultViewDescriptorList.Count > 0)
+                {
+                    m_ItemIconSize = m_ResultViewDescriptorList.Current.SizeDefault;
+                }
+            }
+        }
+
         public string text
         {
             get
@@ -199,7 +286,7 @@ namespace UnityEditor.Search
             trackingHandler = null;
             filterHandler = null;
             title = "item";
-            itemSize = (float)DisplayMode.Grid;
+            m_ItemIconSize = SearchUtils.GetItemSizeFromDisplayMode(DisplayMode.Grid);
             position = Rect.zero;
             initialQuery = searchText = context?.searchText ?? string.Empty;
             tableConfig = null;
@@ -311,20 +398,21 @@ namespace UnityEditor.Search
 
             if (flags.HasAny(SearchViewFlags.CompactView))
             {
-                itemSize = 0;
+                SetDisplayMode(DisplayMode.Compact);
             }
-            if (flags.HasAny(SearchViewFlags.ListView))
+            else if (flags.HasAny(SearchViewFlags.ListView))
             {
-                itemSize = (float)DisplayMode.List;
+                SetDisplayMode(DisplayMode.List);
             }
-            if (flags.HasAny(SearchViewFlags.GridView))
+            else if (flags.HasAny(SearchViewFlags.GridView))
             {
-                itemSize = (float)DisplayMode.Grid;
+                SetDisplayMode(DisplayMode.Grid);
             }
-            if (flags.HasAny(SearchViewFlags.TableView))
+            else if (flags.HasAny(SearchViewFlags.TableView))
             {
-                itemSize = (float)DisplayMode.Table;
+                SetDisplayMode(DisplayMode.Table);
             }
+
             if (flags.HasAny(SearchViewFlags.IgnoreSavedSearches))
             {
                 ignoreSaveSearches = true;
@@ -336,18 +424,18 @@ namespace UnityEditor.Search
             return this;
         }
 
-        internal void Assign(SearchViewState state)
-        {
-            // Be sure to create a copy of the context
-            Assign(state, state.context != null ? new SearchContext(state.context) : null);
-        }
-
         internal bool CanAssignCustomPanelConfig()
         {
             return customPanelConfig == null || !customPanelConfig.isValid || !customPanelConfig.isLocked;
         }
 
-        internal void Assign(SearchViewState state, SearchContext searchContext)
+        internal void Assign(SearchViewState sourceState)
+        {
+            // Be sure to create a copy of the context
+            Assign(sourceState, sourceState.context != null ? new SearchContext(sourceState.context) : null);
+        }
+
+        internal void Assign(SearchViewState sourceState, SearchContext searchContext)
         {
             var previousSearchView = context?.searchView;
             if (searchContext != null)
@@ -356,45 +444,61 @@ namespace UnityEditor.Search
                 if (context != null)
                     context.searchView = previousSearchView;
             }
-            searchFlags = searchContext?.options ?? state.searchFlags;
-            searchText = searchContext?.searchText ?? state.searchText;
+            searchFlags = searchContext?.options ?? sourceState.searchFlags;
+            searchText = searchContext?.searchText ?? sourceState.searchText;
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            providerIds = searchContext?.GetProviders().Select(p => p.id).ToArray() ?? state.providerIds.ToArray();
+            providerIds = searchContext?.GetProviders().Select(p => p.id).ToArray() ?? sourceState.providerIds.ToArray();
 #pragma warning restore UA2001
 
-            if (tableConfig != null && state.tableConfig?.columns?.Length > 0)
+            if (tableConfig != null && sourceState.tableConfig?.columns?.Length > 0)
             {
-                tableConfig.Assign(state.tableConfig);
+                tableConfig.Assign(sourceState.tableConfig);
             }
             else
             {
-                tableConfig = state.tableConfig?.Clone();
+                tableConfig = sourceState.tableConfig?.Clone();
             }
 
             if (CanAssignCustomPanelConfig())
-                customPanelConfig = state.customPanelConfig;
+                customPanelConfig = sourceState.customPanelConfig;
 
-            if (this == state)
+            if (this == sourceState)
                 return;
 
-            hideTabs = state.hideTabs;
-            sessionId = state.sessionId;
-            sessionName = state.sessionName;
-            excludeClearItem = state.excludeClearItem;
-            ignoreSaveSearches = state.ignoreSaveSearches;
-            hideAllGroup = state.hideAllGroup;
-            windowTitle = state.windowTitle;
+            hideTabs = sourceState.hideTabs;
+            sessionId = sourceState.sessionId;
+            sessionName = sourceState.sessionName;
+            excludeClearItem = sourceState.excludeClearItem;
+            ignoreSaveSearches = sourceState.ignoreSaveSearches;
+            hideAllGroup = sourceState.hideAllGroup;
+            windowTitle = sourceState.windowTitle;
 
             // NOTE: Active query is only used to persist during domain reload. And it shouldn't be assigned during SearchQueryExecution
+            initialQuery = sourceState.initialQuery;
+            title = sourceState.title;
 
-            initialQuery = state.initialQuery;
-            title = state.title;
-            itemSize = state.itemSize;
-            position = state.position;
-            flags = state.flags;
-            group = state.group;
+            // If the m_ResultViewDescriptorList hasn't been instantiated: create a new one from the sourceState.
+            if (m_ResultViewDescriptorList == null)
+            {
+                m_ResultViewDescriptorList = new SearchResultViewDescriptorList(sourceState.resultViewDescriptorList.Enumerate());
+            }
+            else
+            {
+                // If instantiated be sure to merge all new descriptors in our current state.
+                resultViewDescriptorList.MergeInto(sourceState.resultViewDescriptorList.Enumerate());
+            }
 
-            queryBuilderEnabled = state.queryBuilderEnabled;
+            // Ensure the CurrentView is correctly setup and that itemSize is valid.
+            resultViewDescriptorList.CurrentViewId = sourceState.resultViewDescriptorList.CurrentViewId;
+            m_ItemIconSize = sourceState.m_ItemIconSize;
+
+            position = sourceState.position;
+            flags = sourceState.flags;
+            group = sourceState.group;
+
+            queryBuilderEnabled = sourceState.queryBuilderEnabled;
+
+            ValidateState();
         }
 
         internal void BuildContext()
@@ -405,6 +509,20 @@ namespace UnityEditor.Search
                 m_Context = SearchService.CreateContext(searchText ?? string.Empty, searchFlags | SearchFlags.OpenDefault);
             m_Context.useExplicitProvidersAsNormalProviders = m_ContextUseExplicitProvidersAsNormalProviders;
             m_WasDeserialized = false;
+        }
+
+        void ValidateItemSize()
+        {
+            var currentViewDesc = resultViewDescriptorList.Current;
+            if (m_ItemIconSize < currentViewDesc.SizeMin || m_ItemIconSize > currentViewDesc.SizeMax)
+            {
+                m_ItemIconSize = currentViewDesc.SizeDefault;
+            }
+        }
+
+        internal void ValidateState()
+        {
+            ValidateItemSize();
         }
 
         internal static SearchFlags ToSearchFlags(SearchViewFlags flags)
@@ -444,7 +562,7 @@ namespace UnityEditor.Search
                 title = "Unity";
             // If we were init with a specific view, do not fetch item size from settings.
             if (!flags.HasAny(SearchViewFlags.CompactView | SearchViewFlags.ListView | SearchViewFlags.GridView | SearchViewFlags.TableView) && !runningTests)
-                itemSize = SearchSettings.itemIconSize;
+                m_ItemIconSize = SearchSettings.itemIconSize;
             hideTabs = SearchSettings.hideTabs;
 
             if (!runningTests && flags.HasNone(SearchViewFlags.OpenInBuilderMode) && flags.HasNone(SearchViewFlags.OpenInTextMode))

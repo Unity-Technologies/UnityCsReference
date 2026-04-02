@@ -75,6 +75,9 @@ namespace Unity.U2D.Physics
         float currentAngularSeparationError { get; }
 
         /// <undoc/>
+        void SetOwner(UnityEngine.Object owner, int ownerKey);
+
+        /// <undoc/>
         int SetOwner(UnityEngine.Object owner);
 
         /// <undoc/>
@@ -88,6 +91,15 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         PhysicsUserData userData { get; set; }
+
+        /// <undoc/>
+        PhysicsUserData ownerUserData { get; }
+
+        /// <undoc/>
+        void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0);
+
+        /// <undoc/>
+        bool worldDrawing { get; set; }
 
         /// <undoc/>
         void Draw();
@@ -237,15 +249,46 @@ namespace Unity.U2D.Physics
         public readonly float currentAngularSeparationError => PhysicsJoint_GetCurrentAngularSeparation(this);
 
         /// <summary>
-        /// Set the (optional) owner object associated with this joint and return an owner key that must be specified when destroying the joint with <see cref="PhysicsJoint.Destroy(int)"/>.   
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
-        /// The lifetime of the specified owner object is not linked to this joint i.e. this joint will still be owned by the owner object, even if it is destroyed.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="joints">The bodies to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsJoint> joints, UnityEngine.Object owner, int ownerKey) => PhysicsJoint_SetOwner(joints, owner, ownerKey);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this joint. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsJoint.Destroy(int)"/> when destroying the joint.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsJoint_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var joint = this;
+            SetOwner(new ReadOnlySpan<PhysicsJoint>(&joint, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = PhysicsWorld.CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this joint as specified using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.
@@ -276,6 +319,23 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsJoint_GetUserData(this); set => PhysicsJoint_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsJoint_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsJoint_SetOwnerUserData(this, physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Controls whether this joint is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsJoint_GetWorldDrawing(this); set => PhysicsJoint_SetWorldDrawing(this, value); }
 
         /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.

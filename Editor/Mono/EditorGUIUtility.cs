@@ -892,18 +892,29 @@ namespace UnityEditor
             return tex;
         }
 
+        // Cache for icon paths from IconAttribute - avoids repeated reflection
+        // Key is (Type, inherit) to handle both inherit=true and inherit=false cases correctly
+        [Unity.Scripting.LifecycleManagement.AutoStaticsCleanupOnCodeReload]
+        private static readonly Dictionary<(Type, bool), string> s_IconPathCache = new Dictionary<(Type, bool), string>();
+
         [UsedByNativeCode]
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string GetIconPathFromAttribute(Type type, bool inherit = true)
         {
-            if (Attribute.IsDefined(type, typeof(IconAttribute)))
-            {
-                var attributes = type.GetCustomAttributes(typeof(IconAttribute), inherit);
-                for (int i = 0, c = attributes.Length; i < c; i++)
-                    if (attributes[i] is IconAttribute)
-                        return ((IconAttribute)attributes[i]).path;
-            }
-            return null;
+            var key = (type, inherit);
+
+            // Check cache first
+            if (s_IconPathCache.TryGetValue(key, out string cachedPath))
+                return cachedPath;
+
+            // Use optimized generic GetCustomAttribute (single reflection call, no array allocation)
+            var attribute = type.GetCustomAttribute<IconAttribute>(inherit);
+            string path = attribute?.path;
+
+            // Cache the result (including null to avoid repeated lookups for types without the attribute)
+            s_IconPathCache[key] = path;
+
+            return path;
         }
 
         internal static GUIContent IconContent<T>(string text = null) where T : UnityObject
@@ -1327,8 +1338,8 @@ namespace UnityEditor
         }
 
         // Ping an object in a window like clicking it in an inspector
-        [Obsolete("PingObject(int) is obsolete. Use PingObject(EntityId) instead.")]
-        public static void PingObject(int targetInstanceID) => PingObject((EntityId)targetInstanceID);
+        [Obsolete("PingObject(int) is obsolete. Use PingObject(EntityId) instead.", true)]
+        public static void PingObject(int targetInstanceID) => PingObject(EntityId.FromULong((ulong)targetInstanceID));
         public static void PingObject(EntityId targetEntityId)
         {
             if (IsBuiltinResource(AssetDatabase.GetAssetPath(targetEntityId)))
@@ -1383,7 +1394,7 @@ namespace UnityEditor
         {
             GUI.skin = null;
             GUI.backgroundColor = GUI.contentColor = Color.white;
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
+            GUI.color = EditorUtility.activePlayModeTint;
             GUI.enabled = true;
             GUI.changed = false;
             EditorGUI.indentLevel = 0;
@@ -1805,7 +1816,7 @@ namespace UnityEditor
 
             // Draw background color
             Color oldColor = GUI.color;
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? bgColor * HostView.kPlayModeDarken : bgColor;
+            GUI.color = bgColor * EditorUtility.activePlayModeTint;
             GUIStyle gs = whiteTextureStyle;
             gs.Draw(position, false, false, false, false);
             GUI.color = oldColor;

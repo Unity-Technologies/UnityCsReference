@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.StyleSheets
 {
@@ -101,9 +102,7 @@ namespace UnityEditor.StyleSheets
             if (s_Gradients.Count > 300)
             {
                 while (s_Gradients.Count > 250)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    s_Gradients.Remove(s_Gradients.Keys.ToList().First());
-#pragma warning restore UA2001
+                    s_Gradients.Remove(s_Gradients.First().Key);
             }
 
             var width = (int)rect.width;

@@ -18,34 +18,6 @@ namespace UnityEditor.Build.Profile.Handlers
 
         List<BuildProfile> m_DuplicatedProfiles;
 
-        const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
-
-        static string GetDefaultNewProfilePath(string buildProfileName, string variantName = null)
-        {
-            var assetFileName = string.IsNullOrEmpty(variantName) ?
-                $"{SanitizeFileName(buildProfileName)}.asset" :
-                $"{SanitizeFileName(buildProfileName)} - {SanitizeFileName(variantName)}.asset";
-            // Truncate the length to max. 250 symbols, as supported by the asset database.
-            // Leave 5 symbols for the GetUniqueBuildProfilePath() that adds " (1)"(2,3...) in case
-            // an asset with such name already exists.
-            if (System.Text.Encoding.UTF8.GetByteCount(assetFileName) > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
-                assetFileName = BuildProfileModuleUtil.TruncateUtf8StringByBytes(assetFileName,BuildProfileModuleUtil.k_MaxAssetFileNameLength);
-            return $"{k_AssetFolderPath}/{assetFileName}";
-        }
-
-        static string GetProfilePathWithProvidedName(GUID platformId, string customProfileName, string variantName = null)
-        {
-            return GetDefaultNewProfilePath(string.IsNullOrEmpty(customProfileName) ?
-                BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId) :
-                customProfileName, variantName);
-        }
-
-        static string GetDefaultNewProfilePath(GUID platformGuid)
-        {
-            var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformGuid);
-            return GetDefaultNewProfilePath(platformDisplayName);
-        }
-
         internal BuildProfileDataSource(BuildProfileWindow window)
         {
             this.m_Window = window;
@@ -87,16 +59,6 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Create a new custom build profile asset with the user provided name.
-        /// Ensure that custom build profile folders is created if it doesn't already exist.
-        /// </summary>
-        internal static void CreateNewAssetWithName(GUID platformId, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
-        {
-            EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformId, customProfileName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
-        }
-
-        /// <summary>
         /// Clone build profile and create new build profile asset based on it. The
         /// build profile will be added to the custom build profile list on enable
         /// </summary>
@@ -105,12 +67,19 @@ namespace UnityEditor.Build.Profile.Handlers
             if (buildProfile == null)
                 return null;
 
-            string path = isClassic ? GetDefaultNewProfilePath(buildProfile.platformGuid) : AssetDatabase.GetAssetPath(buildProfile);
+            string path = string.Empty;
+            if (isClassic)
+            {
+                path = BuildProfileModuleUtil.GetDefaultNewProfilePath(buildProfile.platformGuid);
+            }
+            else
+            {
+                path = AssetDatabase.GetAssetPath(buildProfile);
+            }
             if (string.IsNullOrEmpty(path))
                 return null;
 
-            EnsureCustomBuildProfileFolderExists();
-
+            BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
             string uniqueFilePath = GetUniqueBuildProfilePath(path);
 
             BuildProfile duplicatedProfile;
@@ -337,15 +306,6 @@ namespace UnityEditor.Build.Profile.Handlers
             foreach (char c in invalidChars)
                 name = name.Replace(c.ToString(), string.Empty);
             return name;
-        }
-
-        static void EnsureCustomBuildProfileFolderExists()
-        {
-            if (!AssetDatabase.IsValidFolder("Assets/Settings"))
-                AssetDatabase.CreateFolder("Assets", "Settings");
-
-            if (!AssetDatabase.IsValidFolder(k_AssetFolderPath))
-                AssetDatabase.CreateFolder("Assets/Settings", "Build Profiles");
         }
     }
 }

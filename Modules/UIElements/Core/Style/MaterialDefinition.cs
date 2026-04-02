@@ -11,7 +11,7 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     enum MaterialPropertyValueType
     {
         Float,
@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         Texture
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     struct MaterialPropertyValue : IEquatable<MaterialPropertyValue>
     {
         public string name;
@@ -123,8 +123,7 @@ namespace UnityEngine.UIElements
             set { m_Material = value; }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        [SerializeField]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal List<MaterialPropertyValue> propertyValues = null;
 
         /// <summary>
@@ -136,7 +135,7 @@ namespace UnityEngine.UIElements
             m_Material = m;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal MaterialDefinition(Material m, List<MaterialPropertyValue> propertyValues)
         {
             ValidateMaterial(m);
@@ -144,7 +143,7 @@ namespace UnityEngine.UIElements
             this.propertyValues = propertyValues;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal MaterialDefinition(MaterialDefinition other)
         {
             m_Material = other.m_Material;
@@ -279,7 +278,7 @@ namespace UnityEngine.UIElements
             });
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsMaterialValid(Material material)
         {
             if (material == null || material.shader == null) return true;

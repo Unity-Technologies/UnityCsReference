@@ -25,7 +25,7 @@ namespace Unity.IO.Archive
         None = 0,
         MountCAH = 1 << 0,
     };
-    
+
     [NativeHeader("Runtime/VirtualFileSystem/ArchiveFileSystem/ArchiveFileHandle.h")]
     [RequiredByNativeCode]
     public struct ArchiveFileInfo

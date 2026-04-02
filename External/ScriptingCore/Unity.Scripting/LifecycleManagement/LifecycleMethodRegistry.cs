@@ -32,7 +32,7 @@ namespace Unity.Scripting.LifecycleManagement
             attributeTypes.Add(lifecycleAttributeType);
         }
 
-        internal List<LifecycleMethodData> Get(Type lifecycleAttributeType, IReadonlyOrderedAssemblyList assemblies)
+        internal List<LifecycleMethodData> Get(Type lifecycleAttributeType, IReadOnlyList<Assembly> assemblies)
         {
             var result = new List<LifecycleMethodData>();
 
@@ -50,7 +50,7 @@ namespace Unity.Scripting.LifecycleManagement
             return result;
         }
 
-        internal void Clear(OrderedAssemblyList assemblies)
+        internal void Clear(IReadOnlyList<Assembly> assemblies)
         {
             foreach (var assembly in assemblies)
             {

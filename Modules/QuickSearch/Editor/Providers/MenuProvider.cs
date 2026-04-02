@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Search.Providers
 {
@@ -153,10 +154,10 @@ namespace UnityEditor.Search.Providers
                 return menuName;
 
             var shortcutId = menuName;
-            if (Array.IndexOf(shortcutIds, shortcutId) == -1)
+            if (!shortcutIds.Contains(shortcutId))
             {
                 shortcutId = "Main Menu/" + menuName;
-                if (Array.IndexOf(shortcutIds, shortcutId) == -1)
+                if (!shortcutIds.Contains(shortcutId))
                     return menuName;
             }
             var shortcutBinding = ShortcutManager.instance.GetShortcutBinding(shortcutId);

@@ -387,10 +387,15 @@ namespace UnityEngine
 
         internal void UpdateTextHandle()
         {
+            int savedCursor = m_TextSelecting.cursorIndexNoValidation;
+            int savedSelect = m_TextSelecting.selectIndexNoValidation;
+            bool savedRevealCursor = m_TextEditing.revealCursor;
+
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white, false);
             m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextEditing.textHandle = m_TextHandle;
             m_TextSelecting.textHandle = m_TextHandle;
+            m_TextEditing.SyncStateToNative(savedCursor, savedSelect, textWithWhitespace, savedRevealCursor);
         }
 
         Vector2 lastCursorPos = Vector2.zero;

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.SceneManagement;
-using UnityEditor.TextCore.Text;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -19,8 +18,6 @@ namespace UnityEditor.UIElements
             DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
 
             TextUtilities.getEditorTextSettings = () => EditorTextSettings.defaultTextSettings;
-            TextUtilities.IsAdvancedTextEnabled = () => UIToolkitProjectSettings.enableAdvancedText;
-            FontAssetEditor.IsAdvancedTextEnabled = () => UIToolkitProjectSettings.enableAdvancedText;
 
             UIDocument.IsEditorPlaying = () => EditorApplication.isPlaying;
             UIDocument.IsEditorPlayingOrWillChangePlaymode = () => EditorApplication.isPlayingOrWillChangePlaymode;
@@ -44,8 +41,6 @@ namespace UnityEditor.UIElements
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += SetICUdataAssetOnAllPanelSettings;
-
             EditorApplication.playModeStateChanged += stateChange =>
             {
                 if (stateChange == PlayModeStateChange.EnteredPlayMode)
@@ -59,41 +54,15 @@ namespace UnityEditor.UIElements
             L10nUtility.SetTranslateFunc(L10n.Tr);
         }
 
-    
-
-        private static void SetICUdataAssetOnAllPanelSettings(bool _)
-        {
-            try
-            {
-                foreach (var guid in AssetDatabase.FindAssets("t:" + typeof(PanelSettings).FullName))
-                {
-                    SetICUDataAsset( AssetDatabase.LoadMainAssetAtGUID(new GUID(guid))  as PanelSettings);
-                }
-            }
-            finally
-            {
-                AssetDatabase.SaveAssets();
-            }
-        }
-
-
         private static void SetICUDataAsset(PanelSettings target)
         {
             Debug.Assert(target != null, "target PanelSetting is null");
-            if (UIToolkitProjectSettings.enableAdvancedText)
-            {
-                var asset = ICUDataAssetUtilities.GetEditorICUAsset();
-                Debug.Assert(asset != null, "ICU data in the default resources is not found");
+            var asset = ICUDataAssetUtilities.GetEditorICUAsset();
+            Debug.Assert(asset != null, "ICU data in the default resources is not found");
 
-                if (asset != null && target.m_ICUDataAsset != asset)
-                {
-                    target.m_ICUDataAsset = asset;
-                    target.MarkDirty();
-                }
-            }
-            else if (target.m_ICUDataAsset != null)
+            if (asset != null && target.m_ICUDataAsset != asset)
             {
-                target.m_ICUDataAsset = null;
+                target.m_ICUDataAsset = asset;
                 target.MarkDirty();
             }
         }

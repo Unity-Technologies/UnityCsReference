@@ -3173,7 +3173,6 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("ContactFilter", "struct ContactFilter;")]
     [NativeHeader("Modules/Physics2D/Public/Collider2D.h")]
-    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public partial struct ContactFilter2D
     {
         public static ContactFilter2D noFilter => _noFilter;
@@ -3646,7 +3645,6 @@ namespace UnityEngine
         }
     }
 
-    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("PhysicsJobOptions2D", "struct PhysicsJobOptions2D;")]
     [NativeHeader("Modules/Physics2D/Public/Physics2DSettings.h")]
@@ -3793,16 +3791,15 @@ namespace UnityEngine
             public void SetStartPosition(Vector2 position) { startPosition = position; useStartPosition = true; }
         }
 
-        [Serializable]
         [StructLayout(LayoutKind.Sequential)]
         [NativeHeader("Modules/Physics2D/Public/Rigidbody2D.h")]
         public struct SlideResults
         {
-            [field: SerializeField] public Vector2 remainingVelocity { get; set; }
-            [field: SerializeField] public Vector2 position { get; set; }
-            [field: SerializeField] public int iterationsUsed { get; set; }
-            [field: SerializeField] public RaycastHit2D slideHit { get; set; }
-            [field: SerializeField] public RaycastHit2D surfaceHit { get; set; }
+            public Vector2 remainingVelocity { get; set; }
+            public Vector2 position { get; set; }
+            public int iterationsUsed { get; set; }
+            public RaycastHit2D slideHit { get; set; }
+            public RaycastHit2D surfaceHit { get; set; }
         }
 
         public SlideResults Slide(Vector2 velocity, float deltaTime, SlideMovement slideMovement)

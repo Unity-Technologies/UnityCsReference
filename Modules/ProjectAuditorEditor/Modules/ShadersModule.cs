@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
+using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -411,9 +412,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 context.Params.OnIncomingIssues(ProcessVariants(shaderAnalysisContext));
 
                 foreach (var analyzer in analyzers)
-                {
                     context.Params.OnIncomingIssues(analyzer.Analyze(shaderAnalysisContext));
-                }
 
                 yield return null;
             }
@@ -502,11 +501,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
             else if (shaderMessages.Length > 0)
                 severity = Severity.Warning;
 
+            var location = new Location(context.AssetPath);
+            var dependencyNode = new ShaderDependencyNode { Location = location };
+            
             if (shaderHasError)
             {
                 yield return context.CreateInsight(IssueCategory.Shader, Path.GetFileNameWithoutExtension(context.AssetPath))
                     .WithCustomProperties((int)ShaderProperty.Num, k_NotAvailable)
-                    .WithLocation(context.AssetPath)
+                    .WithDependencies(dependencyNode)
+                    .WithLocation(location)
                     .WithSeverity(severity);
             }
             else
@@ -543,7 +546,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         isSrpBatcherCompatible,
                         isAlwaysIncluded
                     ])
-                    .WithLocation(context.AssetPath)
+                    .WithDependencies(dependencyNode)
+                    .WithLocation(location)
                     .WithSeverity(severity);
             }
         }
@@ -611,6 +615,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var buildTargetPropertyInfo = typeof(ShaderCompilerData).GetRuntimeProperty("buildTarget");
             foreach (var shaderCompilerData in data)
             {
+                var keywords = shaderCompilerData.shaderKeywordSet.GetShaderKeywords();
+
                 int kernelThreadCount = 0;
                 if (shader.HasKernel(kernelName))
                 {
@@ -626,9 +632,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     // 2) A variant can't have problems if it has every defined or enabled keyword of the base shader.
                     // 3) A variant can have problems if it has keywords but the base shader has enabled no keywords.
                     bool keywordSpaceValid =
-                        (shaderCompilerData.shaderKeywordSet.GetShaderKeywords().Length == shader.shaderKeywords.Length) ||
-                        (shaderCompilerData.shaderKeywordSet.GetShaderKeywords().Length == shader.keywordSpace.keywordCount) ||
-                        !((shader.shaderKeywords.Length == 0 && shaderCompilerData.shaderKeywordSet.GetShaderKeywords().Length != 0) && shader.keywordSpace.keywordCount > 0);
+                        (keywords.Length == shader.shaderKeywords.Length) ||
+                        (keywords.Length == shader.keywordSpace.keywordCount) ||
+                        !((shader.shaderKeywords.Length == 0 && keywords.Length != 0) && shader.keywordSpace.keywordCount > 0);
                     if (keywordSpaceValid && shader.IsSupported(kernelIndex))
                     {
                         shader.GetKernelThreadGroupSizes(kernelIndex, out uint x, out uint y, out uint z);
@@ -640,7 +646,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     KernelName = kernelName,
                     KernelThreadCount = kernelThreadCount == 0 ? k_ComputeShaderMayHaveBadVariants : kernelThreadCount.ToString(),
-                    Keywords = GetShaderKeywords(shader, shaderCompilerData.shaderKeywordSet.GetShaderKeywords()),
+                    Keywords = GetShaderKeywords(shader, keywords),
                     PlatformKeywords = PlatformKeywordSetToStrings(shaderCompilerData.platformKeywordSet),
                     GraphicsTier = shaderCompilerData.graphicsTier,
                     BuildTarget = (buildTargetPropertyInfo != null) ? (BuildTarget)buildTargetPropertyInfo.GetValue(shaderCompilerData) : BuildTarget.NoTarget,
@@ -687,7 +693,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         }
 
-        public static void ExportVariantsToSvc(string svcName, string path, ReportItem[] variants)
+        public static void ExportVariantsToSvc(string svcName, string path, IEnumerable<ReportItem> variants)
         {
             var svc = new ShaderVariantCollection();
             svc.name = svcName;
@@ -702,7 +708,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     var shaderVariant = new ShaderVariantCollection.ShaderVariant();
                     shaderVariant.shader = shader;
-                    shaderVariant.passType = (UnityEngine.Rendering.PassType)Enum.Parse(typeof(UnityEngine.Rendering.PassType), passType);
+                    shaderVariant.passType = (PassType)Enum.Parse(typeof(PassType), passType);
                     shaderVariant.keywords = keywords;
                     svc.Add(shaderVariant);
                 }
@@ -846,9 +852,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             if (!passMatch)
                 return false;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001, UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return cv.Keywords.OrderBy(e => e).SequenceEqual(secondSet.OrderBy(e => e));
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2014
         }
 
         static string[] GetShaderKeywords(Shader shader, ShaderKeyword[] shaderKeywords)

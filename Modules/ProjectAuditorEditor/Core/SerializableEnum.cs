@@ -152,9 +152,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         public static T[] ToValuesArray<T>(this SerializableEnum<T>[] array)
             where T : struct, Enum
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return array.Select(v => v.Value).ToArray();
-#pragma warning restore UA2001
+            return Array.ConvertAll(array, v => v.Value);
         }
 
         public static List<T> ToValuesList<T>(this SerializableEnum<T>[] array)

@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     static class SearchUtils
     {
         internal static bool MatchSearch(string searchContext, string content)
@@ -23,7 +25,7 @@ namespace UnityEditor
         internal static bool MatchSearchGroups(string searchContext, string content, out int startIndex, out int endIndex)
         {
             startIndex = endIndex = -1;
-            if (searchContext == null || content == null || content.Length == 0)
+            if (string.IsNullOrEmpty(searchContext) || string.IsNullOrEmpty(content))
                 return false;
 
             if (searchContext.Equals(content, StringComparison.CurrentCultureIgnoreCase))
@@ -118,6 +120,7 @@ namespace UnityEditor
         const string k_DebounceThresholdKeyName = "Search.DebounceThresholdMs";
         public static int debounceThresholdMs
         {
+            [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
             get
             {
                 if (!s_DebounceThresholdMs.HasValue)

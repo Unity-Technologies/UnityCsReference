@@ -262,17 +262,15 @@ namespace UnityEditor
         }
 
         // Find the given sceen space rectangular bounds from a list of vector 3 points.
-        private static Rect CalculateScreenRect(IEnumerable<Vector3> points)
+        private static Rect CalculateScreenRect(Vector3[] points)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var points2 = points.Select(p => HandleUtility.WorldToGUIPoint(p)).ToList();
-#pragma warning restore UA2001
-
             var min = new Vector2(float.MaxValue, float.MaxValue);
             var max = new Vector2(float.MinValue, float.MinValue);
 
-            foreach (var point in points2)
+            foreach (var worldPoint in points)
             {
+                var point = HandleUtility.WorldToGUIPoint(worldPoint);
+
                 min.x = (point.x < min.x) ? point.x : min.x;
                 max.x = (point.x > max.x) ? point.x : max.x;
 
@@ -387,13 +385,12 @@ namespace UnityEditor
             Vector3 sideways = camera.transform.right * size / 2.0f;
             Vector3 up = camera.transform.up * size / 2.0f;
             var rect = CalculateScreenRect(
-                new[]
-                {
-                    position - sideways + up,
-                    position - sideways - up,
-                    position + sideways + up,
-                    position + sideways - up
-                });
+            [
+                position - sideways + up,
+                position - sideways - up,
+                position + sideways + up,
+                position + sideways - up
+            ]);
 
             // Place the screen space label directly under the screen rect
             var midPoint = rect.x + rect.width / 2.0f;

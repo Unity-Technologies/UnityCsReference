@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Unity.Collections;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -67,9 +68,7 @@ namespace UnityEditor.PackageManager
         {
             get
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (all.LastOrDefault() ?? string.Empty);
-#pragma warning restore UA2001
             }
         }
 
@@ -77,9 +76,7 @@ namespace UnityEditor.PackageManager
         {
             get
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (compatible.LastOrDefault() ?? string.Empty);
-#pragma warning restore UA2001
             }
         }
     }

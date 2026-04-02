@@ -6,12 +6,13 @@ using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
+
 namespace UnityEngine
 {
     internal partial class UnityLifecycleInternal
     {
         [RequiredByNativeCode]
-        internal static void Internal_EnterAssembliesLoadedLifecycleScopes_OnCodeInitializing()
+        internal static void Internal_EnterCodeInitializedScope()
         {
             try
             {
@@ -19,13 +20,13 @@ namespace UnityEngine
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scope CodeInitializedScope due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to enter CodeInitializedScope due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_EnterAssembliesLoadedLifecycleScopes_AfterManagedObjectsAwoken()
+        internal static void Internal_EnterManagedObjectsAwokenScope()
         {
             try
             {
@@ -33,13 +34,13 @@ namespace UnityEngine
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scope ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to enter ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_ExitAssembliesLoadedLifecycleScopes_BeforeManagedObjectsDisabled()
+        internal static void Internal_ExitManagedObjectsAwokenScope()
         {
             try
             {
@@ -47,13 +48,13 @@ namespace UnityEngine
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code reload scope ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_ExitAssembliesLoadedLifecycleScopes_OnCodeDeinitializing()
+        internal static void Internal_ExitCodeInitializedScope()
         {
             try
             {
@@ -61,9 +62,10 @@ namespace UnityEngine
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code reload scope CodeInitializedScope due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit CodeInitializedScope due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }
     }
 }
+

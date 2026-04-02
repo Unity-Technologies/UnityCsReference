@@ -18,7 +18,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class HostView : GUIView, IEditorWindowModel
     {
         static class Styles
@@ -81,8 +81,6 @@ namespace UnityEditor
             }
         }
 
-        static string kPlayModeDarkenKey = "Playmode tint";
-        internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
         internal static event Action<GenericMenu, EditorWindow> populateDefaultMenuItems;
 
@@ -111,7 +109,7 @@ namespace UnityEditor
 
         internal EditorWindow actualView
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get { return m_ActualView; }
             set { SetActualViewInternal(value, sendEvents: true); }
         }
@@ -212,7 +210,7 @@ namespace UnityEditor
             {
                 m_ActualView.m_Pos = newPos;
                 UpdateViewMargins(m_ActualView);
-                m_ActualView.OnResized();
+                m_ActualView.NotifyWindowGeometryChanged();
             }
         }
 
@@ -228,7 +226,6 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             CreateDelegates();
-            EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
 
             RegisterSelectedPane(sendEvents: true);
@@ -240,7 +237,6 @@ namespace UnityEditor
         protected override void OnDisable()
         {
             ModeService.modeChanged -= OnEditorModeChanged;
-            EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
             // Host views are destroyed in the middle of an OnGUI loop, so we need to ensure that we're not invoking
@@ -397,14 +393,15 @@ namespace UnityEditor
                 yield return typeof(SceneHierarchyWindow);
             yield return typeof(ProjectBrowser);
             yield return typeof(ProfilerWindow);
-            yield return typeof(AnimationWindow);
+            if (AnimationWindowCallbacks.AnimationWindowType != null)
+                yield return AnimationWindowCallbacks.AnimationWindowType;
         }
 
         private static IEnumerable<Type> GetCurrentModePaneTypes(string modePaneTypeSectionName)
         {
-            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, modePaneTypeSectionName);
+            var modePaneTypes = ModeService.GetModeDataSectionList(ModeService.currentIndex, modePaneTypeSectionName);
             var editorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>();
-            foreach (var paneTypeName in modePaneTypes)
+            foreach (string paneTypeName in modePaneTypes)
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var paneType = editorWindowTypes.FirstOrDefault(t => t.Name.EndsWith(paneTypeName));
@@ -858,21 +855,25 @@ namespace UnityEditor
         private static WindowAction[] FetchWindowActionFromAttribute()
         {
             var methods = AttributeHelper.GetMethodsWithAttribute<WindowActionAttribute>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return methods.methodsWithAttributes.Select(method =>
-#pragma warning restore UA2001
+
+            var windowActions = new WindowAction[methods.methodsWithAttributes.Count];
+            for (int i = 0; i < windowActions.Length; i++)
             {
+                var method = methods.methodsWithAttributes[i];
+
                 try
                 {
                     var callback = Delegate.CreateDelegate(typeof(Func<WindowAction>), method.info) as Func<WindowAction>;
-                    return callback?.Invoke();
+                    windowActions[i] = callback?.Invoke();
                 }
                 catch (Exception)
                 {
                     Debug.LogError("Cannot create Window Action for: " + method.info.Name);
                 }
-                return null;
-            }).OrderBy(a => a.priority).ToArray();
+            }
+
+            Array.Sort(windowActions, (a,b) => { return a.priority.CompareTo(b.priority); });
+            return windowActions;
         }
 
         private static void FlushView(EditorWindow view)
@@ -987,16 +988,6 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
 
                 menu.AddSeparator("");
-            }
-        }
-
-        Color IEditorWindowModel.playModeTintColor => kPlayModeDarken.Color;
-
-        private void PlayModeTintColorChangedCallback(string key)
-        {
-            if (key == kPlayModeDarkenKey)
-            {
-                editorWindowBackend?.PlayModeTintColorChanged();
             }
         }
     }

@@ -10,6 +10,7 @@ namespace Unity.Scripting
 
         public void Log(string message);
         public void LogError(string message);
+        public void LogException(Exception exception);
 
         public void Assert(bool condition);
         public void AssertMsg(bool condition, string message);

@@ -31,14 +31,14 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             OpCodes.Ret
         };
 
-        public override IReadOnlyCollection<OpCode> opCodes => m_OpCodes;
+        public override IReadOnlyList<OpCode> opCodes => m_OpCodes;
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_Descriptor);
         }
 
-        public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
+        public override IEnumerable<ReportItemBuilder> Analyze(InstructionAnalysisContext context)
         {
             // skip any no-op
             var previousIL = context.Instruction.Previous;
@@ -47,16 +47,16 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
 
             // if there is no instruction before OpCodes.Ret, then we know this method is empty
             if (previousIL != null)
-                return null;
+                yield break;
 
             var methodDefinition = context.MethodDefinition;
             if (!MonoBehaviourAnalysis.IsMonoBehaviourEvent(methodDefinition))
-                return null;
+                yield break;
 
             if (!MonoBehaviourAnalysis.IsMonoBehaviour(methodDefinition.DeclaringType))
-                return null;
+                yield break;
 
-            return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, methodDefinition.Name);
+            yield return context.CreateIssue(IssueCategory.Code, k_Descriptor.Id, methodDefinition.Name);
         }
 
         internal static string GetDescriptorID()

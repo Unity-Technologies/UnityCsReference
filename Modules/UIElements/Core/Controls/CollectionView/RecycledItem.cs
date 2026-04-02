@@ -66,7 +66,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_CollectionView = parent;
             this.element = element;
             index = k_UndefinedIndex;
-            element.AddToClassList(BaseVerticalCollectionView.itemUssClassName);
+            element.AddToClassList(BaseVerticalCollectionView.itemUssClassNameUnique);
         }
 
         public static void UpdatePositions(RecycledItem item)
@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (element == null)
                 return;
 
-            element.RemoveFromClassList(BaseVerticalCollectionView.itemUssClassName);
+            element.RemoveFromClassList(BaseVerticalCollectionView.itemUssClassNameUnique);
             element.RemoveFromHierarchy();
             SetSelected(false);
             index = k_UndefinedIndex;
@@ -129,12 +129,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 if (selected)
                 {
-                    element.AddToClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
+                    element.AddToClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassNameUnique);
                     element.pseudoStates |= PseudoStates.Checked;
                 }
                 else
                 {
-                    element.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
+                    element.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassNameUnique);
                     element.pseudoStates &= ~PseudoStates.Checked;
                 }
             }

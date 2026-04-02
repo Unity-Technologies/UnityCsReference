@@ -391,25 +391,65 @@ namespace UnityEditorInternal
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureLoaded;
 
         [RequiredByNativeCode]
-        static void InvokeProfilerCaptureLoaded(ProfilerAnalyticsSaveLoadData data)
+        static void InvokeProfilerCaptureLoaded(string extension, long duration, long size, uint frameCount, bool customFrameRange, string details, bool success, bool isLoad, bool isSave)
         {
-            profilerCaptureLoaded?.Invoke(data);
+            profilerCaptureLoaded?.Invoke(new ProfilerAnalyticsSaveLoadData()
+            {
+                extension = extension,
+                duration = duration,
+                size = size,
+                frameCount = frameCount,
+                customFrameRange = customFrameRange,
+                details = details,
+                success = success,
+                isLoad = isLoad,
+                isSave = isSave
+            });
         }
 
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureSaved;
 
         [RequiredByNativeCode]
-        static void InvokeProfilerCaptureSaved(ProfilerAnalyticsSaveLoadData data)
+        static void InvokeProfilerCaptureSaved(string extension, long duration, long size, uint frameCount, bool customFrameRange, string details, bool success, bool isLoad, bool isSave)
         {
-            profilerCaptureSaved?.Invoke(data);
+            profilerCaptureSaved?.Invoke(new ProfilerAnalyticsSaveLoadData()
+            {
+                extension = extension,
+                duration = duration,
+                size = size,
+                frameCount = frameCount,
+                customFrameRange = customFrameRange,
+                details = details,
+                success = success,
+                isLoad = isLoad,
+                isSave = isSave
+            });
         }
 
         internal static event Action<ProfilerAnalyticsConnectionData> profilerConnected;
 
         [RequiredByNativeCode]
-        static void InvokeProfilerConnected(ProfilerAnalyticsConnectionData data)
+        static void InvokeProfilerConnected(bool success, string details)
         {
-            profilerConnected?.Invoke(data);
+
+            profilerConnected?.Invoke(new ProfilerAnalyticsConnectionData()
+            {
+                success = success,
+                connectionDetail = null,
+                details = details
+            });
+        }
+
+        [RequiredByNativeCode]
+        static void InvokeProfilerConnectedWithConnectionDetail(bool success, string details, string connectionDetail)
+        {
+
+            profilerConnected?.Invoke(new ProfilerAnalyticsConnectionData()
+            {
+                success = success,
+                connectionDetail = connectionDetail,
+                details = details
+            });
         }
 
         internal static event Action profilerCaptureStarted;

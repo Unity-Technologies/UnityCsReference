@@ -324,9 +324,7 @@ namespace UnityEditor.IMGUI.Controls
                 if (!hasLastClicked)
                 {
                     // See if we can find a valid id, we check the last selected (selectedids might contain invalid ids e.g scene objects in project browser and vice versa)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    TIdentifier lastSelectedID = selectedIDs.Last();
-#pragma warning restore UA2001
+                    TIdentifier lastSelectedID = selectedIDs[^1];
                     if (data.GetRow(lastSelectedID) != -1)
                     {
                         state.lastClickedID = lastSelectedID;
@@ -677,7 +675,7 @@ namespace UnityEditor.IMGUI.Controls
                         // If this is contained withing something from UI Toolkit (e.g. the Inspector window), the scroll
                         // will be controlled by UI Toolkit itself so we need to make sure to only show what we need to
                         // show, otherwise things can become really slow.
-                        var container = UIElementsIMGUIUtility.GetCurrentIMGUIContainer();
+                        var container = IMGUIContainer.GetCurrentIMGUIContainer();
                         var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
                         if (uiScrollView != null)
                         {
@@ -1316,9 +1314,9 @@ namespace UnityEditor.IMGUI.Controls
         {
             state.lastClickedID = itemID;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool selectionChanged = !state.selectedIDs.SequenceEqual(newSelection);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
             if (selectionChanged)
             {
                 state.selectedIDs = newSelection;

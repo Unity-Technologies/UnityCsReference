@@ -9,28 +9,40 @@ namespace UnityEditor.Toolbars
     static class QualityDropdown
     {
         const string k_Path = "Editor Utility/Quality";
+        static bool s_Displayed = false;
+        static int s_TemporaryNewQualityLevel = -1;
 
         static QualityDropdown()
         {
             ModeService.modeChanged += (args) => RebuildContent();
-            QualitySettings.activeQualityLevelChanged += (prev, current) => RebuildContent();
+            QualitySettings.activeQualityLevelIndexChanged += (prev, current, currentInOld) => RebuildContent(currentInOld);
             QualitySettings.activeQualityLevelRenamed += (prev, current) => RebuildContent();
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
-        static void RebuildContent()
+        static void RebuildContent(int newQualityLevel = -1)
         {
+            s_Displayed = false;
+            s_TemporaryNewQualityLevel = newQualityLevel;
             MainToolbar.Refresh(k_Path);
+        }
+
+        static void OnUndoRedo(in UndoRedoInfo info)
+        {
+            if (s_Displayed)
+                RebuildContent();
         }
 
         [MainToolbarElement(k_Path, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
-            string currentQualityName = QualitySettings.names[QualitySettings.GetQualityLevel()];
-            Texture2D icon = EditorGUIUtility.LoadIcon("BuildSettings.DedicatedServer.Small");
+            s_Displayed = true;
+            int qualityLevelIndex = s_TemporaryNewQualityLevel == -1 ? QualitySettings.GetQualityLevel() : s_TemporaryNewQualityLevel;
+            s_TemporaryNewQualityLevel = -1;
+            string currentQualityName = QualitySettings.names[qualityLevelIndex];
 
             return new MainToolbarDropdown(new MainToolbarContent(
                     currentQualityName,
-                    icon,
                     L10n.Tr("Select current quality level")),
                      (buttonRect) => {
                     OpenQualityWindow(buttonRect);

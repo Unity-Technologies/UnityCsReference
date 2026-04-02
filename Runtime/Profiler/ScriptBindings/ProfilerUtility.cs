@@ -43,6 +43,7 @@ namespace Unity.Profiling.LowLevel
     // Must be in sync with UnityProfilerMarkerDataType!
     public enum ProfilerMarkerDataType : byte
     {
+        [Obsolete("Use EntityId, this will be removed in future versions (UnityUpgradable) -> EntityId")]
         InstanceId = 1,
         Int32 = 2,
         UInt32 = 3,
@@ -53,5 +54,6 @@ namespace Unity.Profiling.LowLevel
         String16 = 9,
         Blob8 = 11,
         GfxResourceId = 12,
+        EntityId = 13,
     }
 }

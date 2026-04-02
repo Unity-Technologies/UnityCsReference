@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements.UIR
                     forceGammaRendering = true;
             }
             isFlat = panel.isFlat;
-            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering, panel.panelRenderer.requestedGpuUpdateMode);
+            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering);
 
             Shaders.Acquire();
 
@@ -312,6 +312,11 @@ namespace UnityEngine.UIElements.UIR
             if (m_RootRenderTree?.firstCommand == null)
                 return;
 
+            var runtimePanel = (BaseRuntimePanel)panel;
+            float ppu = runtimePanel.pixelsPerUnit;
+            if (!float.IsFinite(ppu) || ppu < Mathf.Epsilon)
+                return;
+
             k_MarkerSerialize.Begin();
 
             Exception immediateException = null;
@@ -370,6 +375,9 @@ namespace UnityEngine.UIElements.UIR
 
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
+            bool prevInvertCulling = GL.invertCulling;
+            if (prevInvertCulling)
+                GL.invertCulling = false;
 
             float pixelsPerPoint = panel.scaledPixelsPerPoint;
 
@@ -421,6 +429,9 @@ namespace UnityEngine.UIElements.UIR
             m_BlockDirtyRegistration = false;
 
             Utility.DisableScissor();
+
+            if (prevInvertCulling)
+                GL.invertCulling = true;
 
             if (shouldResetRT)
                 RenderTexture.active = oldRT;

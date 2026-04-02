@@ -477,7 +477,7 @@ namespace Unity.GraphToolkit.Editor
 
                 var uiList = new List<ChildView>();
                 lastSelectedItem.AppendAllViews(this, null, uiList);
-                if (uiList.HasAny(ui => (ui as ModelView)?.Rename() ?? false))
+                if (uiList.Exists(ui => (ui as ModelView)?.Rename() ?? false))
                 {
                     e.StopPropagation();
                 }

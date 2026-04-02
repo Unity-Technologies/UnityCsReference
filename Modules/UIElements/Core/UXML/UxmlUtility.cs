@@ -56,41 +56,41 @@ namespace UnityEngine.UIElements
             list.Insert(dst, item);
         }
 
-        public static float ParseFloat(string value, float defaultValue = default)
+        public static float ParseFloat(string value)
         {
-            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : defaultValue;
+            return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 
-        public static byte ParseByte(string value, byte defaultValue = default)
+        public static byte ParseByte(string value)
         {
-            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return byte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static sbyte ParseSByte(string value, sbyte defaultValue = default)
+        public static sbyte ParseSByte(string value)
         {
-            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static short ParseShort(string value, short defaultValue = default)
+        public static short ParseShort(string value)
         {
-            return short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static ushort ParseUShort(string value, ushort defaultValue = default)
+        public static ushort ParseUShort(string value)
         {
-            return ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static int ParseInt(string value, int defaultValue = default)
+        public static int ParseInt(string value)
         {
-            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         public static bool TryParse(string value, out int result, out string error)
         {
             try
             {
-                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = ParseInt(value);
                 error = null;
                 return true;
             }
@@ -102,19 +102,19 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static uint ParseUint(string value, uint defaultValue = default)
+        public static uint ParseUint(string value)
         {
-            return uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static long ParseLong(string value, long defaultValue = default)
+        public static long ParseLong(string value)
         {
-            return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
-        public static ulong ParseULong(string value, ulong defaultValue = default)
+        public static ulong ParseULong(string value)
         {
-            return ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+            return ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         public static Angle ParseAngle(string value, Angle defaultValue = default)

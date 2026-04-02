@@ -400,6 +400,10 @@ namespace UnityEditorInternal
 
                 case ApiCompatibilityLevel.NET_Unity_4_8:
                 case ApiCompatibilityLevel.NET_Standard:
+                    // CORECLR_FIXME - .NET Should have a different set of defines
+#pragma warning disable CS0618
+                case ApiCompatibilityLevel.NET:
+#pragma warning restore CS0618
                     defines.AddRange(BaseDefines46);
                     break;
 
@@ -435,7 +439,10 @@ namespace UnityEditorInternal
                 }
 
                 var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
-                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard);
+                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard
+#pragma warning disable CS0618
+                    || apiCompatibilityLevel == ApiCompatibilityLevel.NET);
+#pragma warning restore CS0618
 
                 if (hasGCBarrierValidation || hasIncrementalGCTimeSlice)
                 {
@@ -596,7 +603,7 @@ namespace UnityEditorInternal
         {
             var projectBinDirs = new[]
             {
-                GetLibrarySearchPaths("Unity.Options", "netstandard2.0", "repos/UnityOptions"),
+                GetLibrarySearchPaths("Unity.Options", "netstandard2.0", "external/UnityOptions"),
                 GetLibrarySearchPaths("Unity.Linker.Api", "netstandard2.0"),
                 GetLibrarySearchPaths("Unity.IL2CPP.Api", "netstandard2.0"),
                 GetLibrarySearchPaths("Unity.Api.Attributes", "netstandard2.0"),

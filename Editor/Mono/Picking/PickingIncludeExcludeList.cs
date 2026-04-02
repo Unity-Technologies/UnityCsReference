@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    [Obsolete("PickingIncludeExcludeList is deprecated. Use PickingIncludeExcludeEntityIdList instead.")]
+    [Obsolete("PickingIncludeExcludeList is deprecated. Use PickingIncludeExcludeEntityIdList instead.", true)]
     public struct PickingIncludeExcludeList : IDisposable
     {
         NativeArray<int> m_IncludeRenderers, m_ExcludeRenderers, m_IncludeEntities, m_ExcludeEntities;

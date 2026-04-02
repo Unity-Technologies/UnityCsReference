@@ -212,7 +212,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
-            recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
+            recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassNameUnique, useAlternateUss);
 
             var previousIndex = recycledItem.index;
 
@@ -381,10 +381,7 @@ namespace UnityEngine.UIElements
 
             if (m_EmptyRows == null)
             {
-                m_EmptyRows = new VisualElement()
-                {
-                    classList = {BaseVerticalCollectionView.backgroundFillUssClassName}
-                };
+                m_EmptyRows = new VisualElement().WithClassList(BaseVerticalCollectionView.backgroundFillUssClassName);
             }
 
             if (m_EmptyRows.parent == null)
@@ -414,7 +411,7 @@ namespace UnityEngine.UIElements
                 var child = m_EmptyRows.hierarchy[i];
                 index++;
                 child.style.height = pixelAlignedItemHeight;
-                child.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, index % 2 == 1);
+                child.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassNameUnique, index % 2 == 1);
             }
         }
 

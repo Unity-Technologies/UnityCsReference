@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -29,6 +31,12 @@ class InstanceItemDrawer : PropertyDrawer
         container.AddToClassList(k_UssClassName);
         container.Add(CreateNameField(property));
         container.Add(CreateSettingsField(property));
+
+        foreach (var decoratorField in CreateDecoratorFields(property))
+        {
+            container.Add(decoratorField);
+        }
+
         return container;
     }
 
@@ -53,6 +61,17 @@ class InstanceItemDrawer : PropertyDrawer
         var settingsProperty = property.FindPropertyRelative(IInstanceItem.k_SettingsPropertyPath);
         var settingsField = new PlainPropertyField(settingsProperty);
         return settingsField;
+    }
+
+    IEnumerable<VisualElement> CreateDecoratorFields(SerializedProperty property)
+    {
+        var decoratorsProperty = property.FindPropertyRelative(IInstanceItem.k_DecoratorsPropertyPath);
+        for (int i = 0; i < decoratorsProperty.arraySize; i++)
+        {
+            var decoratorProperty = decoratorsProperty.GetArrayElementAtIndex(i).FindPropertyRelative(IDecoratorItem.k_SettingsPropertyPath);
+            var decoratorField = new PlainPropertyField(decoratorProperty);
+            yield return decoratorField;
+        }
     }
 }
 

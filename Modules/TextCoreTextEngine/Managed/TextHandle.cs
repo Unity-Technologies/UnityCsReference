@@ -118,12 +118,12 @@ namespace UnityEngine.TextCore.Text
             return pixel / GetPixelsPerPoint();
         }
 
-        protected Vector2 PointsToPixels(Vector2 point)
+        protected internal Vector2 PointsToPixels(Vector2 point)
         {
             return point * GetPixelsPerPoint();
         }
 
-        protected Vector2 PixelsToPoints(Vector2 pixel)
+        protected internal Vector2 PixelsToPoints(Vector2 pixel)
         {
             return pixel / GetPixelsPerPoint();
         }
@@ -262,6 +262,14 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        public virtual void AddToPermanentCache()
+        {
+            if (!useAdvancedText)
+            {
+                throw new InvalidOperationException("Method is not implemented for TextCore.");
+            }
+        }
+
         public void AddTextInfoToTemporaryCache(int hashCode)
         {
             if (useAdvancedText)
@@ -367,6 +375,12 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal TextInfo Update()
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("TextHandle.Update should not be used with Advanced Text, use TextHandle.ComputeSettingsAndUpdate() instead.");
+                return null;
+            }
+                
             return UpdateWithHash(settings.GetHashCode());
         }
 
@@ -505,12 +519,12 @@ namespace UnityEngine.TextCore.Text
 
         public int LineDownCharacterPosition(int originalLogicalPos)
         {
-            return useAdvancedText ? TextSelectionService.LineDownCharacterPosition(textGenerationInfo, originalLogicalPos): textInfo.LineDownCharacterPosition(originalLogicalPos);
+            return textInfo.LineDownCharacterPosition(originalLogicalPos);
         }
 
         public int LineUpCharacterPosition(int originalLogicalPos)
         {
-            return useAdvancedText ? TextSelectionService.LineUpCharacterPosition(textGenerationInfo, originalLogicalPos) : textInfo.LineUpCharacterPosition(originalLogicalPos);
+            return textInfo.LineUpCharacterPosition(originalLogicalPos);
         }
 
         // This could be improved if TextElementInfo had a reference to the word index.
@@ -562,12 +576,12 @@ namespace UnityEngine.TextCore.Text
 
         public int GetCorrespondingStringIndex(int index)
         {
-            return useAdvancedText ? TextSelectionService.GetValidPointIndex(textGenerationInfo, index) : textInfo.GetCorrespondingStringIndex(index);
+            return textInfo.GetCorrespondingStringIndex(index);
         }
 
         public int GetCorrespondingCodePointIndex(int stringIndex)
         {
-            return useAdvancedText ? TextSelectionService.GetValidPointIndex(textGenerationInfo, stringIndex) : textInfo.GetCorrespondingCodePointIndex(stringIndex);
+            return textInfo.GetCorrespondingCodePointIndex(stringIndex);
         }
 
         public LineInfo GetLineInfoFromCharacterIndex(int index)
@@ -607,67 +621,19 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public string Substring(int startIndex, int length)
         {
-            return useAdvancedText ? TextSelectionService.Substring(textGenerationInfo, startIndex, startIndex + length) : textInfo.Substring(startIndex, length);
-        }
-
-        public int PreviousCodePointIndex(int currentIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use PreviousCodePointIndex while using Standard Text");
-                return 0;
-            }
-            return TextSelectionService.PreviousCodePointIndex(textGenerationInfo, currentIndex);
-        }
-
-        public int NextCodePointIndex(int currentIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use NextCodePointIndex while using Standard Text");
-                return 0;
-            }
-            return TextSelectionService.NextCodePointIndex(textGenerationInfo, currentIndex);
-        }
-
-        public int GetStartOfNextWord(int currentIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use GetStartOfNextWord while using Standard Text");
-                return 0;
-            }
-            return TextSelectionService.GetStartOfNextWord(textGenerationInfo, currentIndex);
-        }
-
-        public int GetEndOfPreviousWord(int currentIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use GetEndOfPreviousWord while using Standard Text");
-                return 0;
-            }
-            return TextSelectionService.GetEndOfPreviousWord(textGenerationInfo, currentIndex);
+            return textInfo.Substring(startIndex, length);
         }
 
         public int GetFirstCharacterIndexOnLine(int currentIndex)
         {
-            if (!useAdvancedText)
-            {
-                LineInfo li = GetLineInfoFromCharacterIndex( currentIndex);
-                return li.firstCharacterIndex;
-            }
-            return TextSelectionService.GetFirstCharacterIndexOnLine(textGenerationInfo, currentIndex);
+            LineInfo li = GetLineInfoFromCharacterIndex(currentIndex);
+            return li.firstCharacterIndex;
         }
 
         public int GetLastCharacterIndexOnLine(int currentIndex)
         {
-            if (!useAdvancedText)
-            {
-                LineInfo li = GetLineInfoFromCharacterIndex( currentIndex);
-                return li.lastCharacterIndex;
-            }
-            return TextSelectionService.GetLastCharacterIndexOnLine(textGenerationInfo, currentIndex) /* This is a patch that works for LTR only */ + 1;
+            LineInfo li = GetLineInfoFromCharacterIndex(currentIndex);
+            return li.lastCharacterIndex;
         }
 
         /// <summary>
@@ -702,66 +668,6 @@ namespace UnityEngine.TextCore.Text
                 return 0;
             }
             return textInfo.LastIndexOf(value, startIndex);
-        }
-
-        public void SelectCurrentWord(int index, ref int cursorIndex, ref int selectIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectCurrentWord while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectCurrentWord(textGenerationInfo, index, ref cursorIndex, ref selectIndex);
-        }
-
-        public void SelectCurrentParagraph(ref int cursorIndex, ref int selectIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectCurrentParagraph while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectCurrentParagraph(textGenerationInfo, ref cursorIndex, ref selectIndex);
-        }
-
-        public void SelectToPreviousParagraph(ref int cursorIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectToPreviousParagraph while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectToPreviousParagraph(textGenerationInfo, ref cursorIndex);
-        }
-
-        public void SelectToNextParagraph(ref int cursorIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectToNextParagraph while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectToNextParagraph(textGenerationInfo, ref cursorIndex);
-        }
-
-        public void SelectToStartOfParagraph(ref int cursorIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectToStartOfParagraph while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectToStartOfParagraph(textGenerationInfo, ref cursorIndex);
-        }
-
-        public void SelectToEndOfParagraph(ref int cursorIndex)
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("Cannot use SelectToEndOfParagraph while using Standard Text");
-                return;
-            }
-            TextSelectionService.SelectToEndOfParagraph(textGenerationInfo, ref cursorIndex);
         }
 
         internal virtual bool IsAdvancedTextEnabledForElement() { return false; }
@@ -930,6 +836,17 @@ namespace UnityEngine.TextCore.Text
 
             IsCachedPermanentATG = true;
             textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
+        }
+
+        internal bool IsMainDirectionRTL()
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("IsMainDirectionRTL should only be called for ATG.");
+                return false;
+            }
+
+            return TextLib.IsMainDirectionRTL(textGenerationInfo);
         }
     }
 }

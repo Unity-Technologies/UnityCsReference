@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal virtual VisualElement Instantiate(CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
             var ve = (VisualElement) serializedData.CreateInstance();
@@ -150,8 +150,7 @@ namespace UnityEngine.UIElements
 
             if (classes != null)
             {
-                for (var i = 0; i < classes.Length; i++)
-                    ve.AddToClassList(classes[i]);
+                ve.AddToClassList(classes);
             }
 
             if (hasAuthoringId && parentAuthoringNode != null)
@@ -202,7 +201,7 @@ namespace UnityEngine.UIElements
             stylesheets.RemoveAll((s) => s == styleSheet);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void AddStyleClass(string className)
         {
             m_Classes ??= Array.Empty<string>();

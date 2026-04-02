@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -147,9 +147,7 @@ namespace UnityEditor.Search
                 MethodSignature.FromDelegate<SearchExpressionParserHandlerStringView>(),
                 MethodSignature.FromDelegate<SearchExpressionParserWithStructHandler>()
             };
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            parsers = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionParserAttribute, SearchExpressionParser>(
-#pragma warning restore UA2001
+            parsers = new List<SearchExpressionParser>(ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionParserAttribute, SearchExpressionParser>(
                 (mi, attribute, handler) =>
                 {
                     if (handler is SearchExpressionParserWithStructHandler handlerWithStruct)
@@ -160,7 +158,7 @@ namespace UnityEditor.Search
                         return new SearchExpressionParser(attribute.name, attribute.priority, (args) => handlerNoContext(args.text.ToString()));
                     throw new CustomAttributeFormatException($"Invalid parser handler {attribute.name} using {mi.DeclaringType.FullName}.{mi.Name}");
                 },
-                supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToList();
+                supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation));
             parsers.Sort((a, b) => a.priority.CompareTo(b.priority));
         }
 
@@ -203,7 +201,7 @@ namespace UnityEditor.Search
                     paramStartIndex = i;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
-                if (Array.Exists(k_Quotes, c => c == paramsBlock[i]))
+                if (k_Quotes.Contains(paramsBlock[i]))
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -212,13 +210,13 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
-                if (Array.Exists(k_Openers, c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
+                if (k_Openers.Contains(paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     openersStack.Push(paramsBlock[i]);
                     continue;
                 }
 
-                if (Array.Exists(k_Closers, c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
+                if (k_Closers.Contains(paramsBlock[i]) && !IsEscaped(paramsBlock, i))
                 {
                     if (CharMatchOpener(openersStack.Peek(), paramsBlock[i]))
                     {
@@ -302,9 +300,7 @@ namespace UnityEditor.Search
             var c = sv[0];
             if (!IsQuote(c))
                 return false;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return c == sv.Last();
-#pragma warning restore UA2001
+            return c == sv[^1];
         }
 
         public static StringView[] GetExpressionsStartAndLength(StringView text, out bool rootHasParameters, out bool rootHasEscapedOpenersAndClosers)
@@ -321,7 +317,7 @@ namespace UnityEditor.Search
                     continue;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
-                if (Array.Exists(k_Quotes, c => c == text[i]))
+                if (k_Quotes.Contains(text[i]))
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -332,7 +328,7 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
-                if (Array.Exists(k_Openers, c => c == text[i]))
+                if (k_Openers.Contains(text[i]))
                 {
                     if (IsEscaped(text, i))
                     {
@@ -346,7 +342,7 @@ namespace UnityEditor.Search
                     continue;
                 }
 
-                if (Array.Exists(k_Closers, c => c == text[i]))
+                if (k_Closers.Contains(text[i]))
                 {
                     if (IsEscaped(text, i))
                     {
@@ -407,9 +403,7 @@ namespace UnityEditor.Search
                 {
                     if (char.IsWhiteSpace(outerText[i]))
                         continue;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (k_Quotes.Contains(outerText[i]))
-#pragma warning restore UA2001
                     {
                         isInString = !isInString;
                     }

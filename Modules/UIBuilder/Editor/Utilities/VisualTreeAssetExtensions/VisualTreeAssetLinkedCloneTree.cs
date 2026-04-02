@@ -134,11 +134,8 @@ namespace Unity.UI.Builder
                     {
                         Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
                             context.slotInsertionPoints == null
-                                ? String.Empty
-                                : String.Join(", ",
-                                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                    System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
-#pragma warning restore UA2001
+                                ? string.Empty
+                                : string.Join(", ", context.slotInsertionPoints.Keys));
                         ve.Add(childVe);
                     }
                     else

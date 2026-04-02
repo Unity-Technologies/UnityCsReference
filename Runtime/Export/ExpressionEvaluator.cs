@@ -47,7 +47,7 @@ namespace UnityEngine
             {
                 if (obj is Expression other)
                 {
-                    return rpnTokens.AsSpan().SequenceEqual(other.rpnTokens.AsSpan());
+                    return rpnTokens.AsSpan().SequenceEqual(other.rpnTokens);
                 }
                 return false;
             }

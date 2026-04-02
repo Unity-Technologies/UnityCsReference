@@ -50,6 +50,7 @@ namespace Unity.U2D.Physics
             m_RenderingMode = PhysicsWorld.RenderingMode.EditorOnly;
             m_TransformChangeMode = PhysicsWorld.TransformChangeMode.FixedUpdate;
             m_ContactFilterMode = PhysicsShape.ContactFilterMode.Both;
+            m_ContactFilterGroupMode = PhysicsShape.ContactFilterGroupMode.Group;
             m_PhysicsLayerNames = PhysicsLayers.LayerNames.DefaultLayerNames;
             m_MaximumWorlds = 128;
             m_ConcurrentSimulations = 2;
@@ -140,6 +141,12 @@ namespace Unity.U2D.Physics
         public PhysicsShape.ContactFilterMode contactFilterMode { get => m_ContactFilterMode; set => m_ContactFilterMode = value; }
 
         /// <summary>
+        /// The mode used for the <see cref="PhysicsShape.ContactFilter"/> when determining if two <see cref="PhysicsShape"/> can contact.
+        /// See <see cref="PhysicsShape.ContactFilterGroupMode"/>.
+        /// </summary>
+        public PhysicsShape.ContactFilterGroupMode contactFilterGroupMode { get => m_ContactFilterGroupMode; set => m_ContactFilterGroupMode = value; }
+
+        /// <summary>
         /// Get/Set the maximum number of worlds that can be created.
         /// The larger the number of worlds, the more memory that is initially allocated so care must be taken.
         /// Setting this value to one will reduce start-up memory usage to a minimum but will not allow any additional worlds to be created.
@@ -222,6 +229,7 @@ namespace Unity.U2D.Physics
         [SerializeField] internal PhysicsWheelJointDefinition m_PhysicsWheelJointDefinition;
         [SerializeField] internal PhysicsWorld.TransformChangeMode m_TransformChangeMode;
         [SerializeField] internal PhysicsShape.ContactFilterMode m_ContactFilterMode;
+        [SerializeField] internal PhysicsShape.ContactFilterGroupMode m_ContactFilterGroupMode;
         [SerializeField][Range(1, 1024)] internal int m_MaximumWorlds;
         [SerializeField][Range(1, PhysicsConstants.MaxWorkers)] internal int m_ConcurrentSimulations;
         [SerializeField][Range(0.00001f, 10000.0f)] internal float m_LengthUnitsPerMeter;
@@ -285,6 +293,10 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         PhysicsShape.ContactFilterMode GetContactFilterMode() => m_ContactFilterMode;
 
+        /// <undoc/>
+        [RequiredByNativeCode]
+        PhysicsShape.ContactFilterGroupMode GetContactFilterGroupMode() => m_ContactFilterGroupMode;
+        
         /// <undoc/>
         [RequiredByNativeCode]
         int GetMaximumWorlds() => m_MaximumWorlds;

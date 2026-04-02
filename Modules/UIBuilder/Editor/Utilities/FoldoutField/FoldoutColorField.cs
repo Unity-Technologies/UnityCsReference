@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,9 +32,7 @@ namespace Unity.UI.Builder
                 if (fieldValues.Count == 0)
                     return true;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var allSame = fieldValues.All(o => o == fieldValues[0]);
-#pragma warning restore UA2001
+                var allSame = fieldValues.TrueForAll(o => o == fieldValues[0]);
                 return !allSame;
             }
         }

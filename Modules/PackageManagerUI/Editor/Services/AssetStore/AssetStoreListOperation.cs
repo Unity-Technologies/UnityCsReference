@@ -88,7 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && m_AdjustedQueryArgs.productIds.Length == 0)
+            if (m_OriginalQueryArgs.status is PageFilterStatus.Downloaded or PageFilterStatus.Imported or PageFilterStatus.UpdateAvailable && m_AdjustedQueryArgs.productIds.Length == 0)
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
@@ -120,16 +120,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             switch (m_OriginalQueryArgs.status)
             {
-                case PageFilters.Status.Downloaded:
-                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                case PageFilterStatus.Downloaded:
+                    m_AdjustedQueryArgs.UpdateStatus(PageFilterStatus.None);
                     m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.SelectToNewArray(info => info.productId);
                     break;
-                case PageFilters.Status.Imported:
-                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                case PageFilterStatus.Imported:
+                    m_AdjustedQueryArgs.UpdateStatus(PageFilterStatus.None);
                     m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.SelectToNewArray(p => p.productId);
                     break;
-                case PageFilters.Status.UpdateAvailable:
-                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                case PageFilterStatus.UpdateAvailable:
+                    m_AdjustedQueryArgs.UpdateStatus(PageFilterStatus.None);
                     var productIdsToCheck = new HashSet<long>();
                     foreach (var localInfo in m_AssetStoreCache.localInfos)
                     {

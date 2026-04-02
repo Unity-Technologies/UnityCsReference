@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements
@@ -43,18 +45,26 @@ namespace UnityEngine.UIElements
         /// The USS class name for the header container inside a multi column view.
         /// </summary>
         public static readonly string headerContainerUssClassName = baseUssClassName + "__header-container";
+        internal static readonly UniqueStyleString headerContainerUssClassNameUnique = new(headerContainerUssClassName);
+
         /// <summary>
         /// The USS class name for all row containers inside a multi column view.
         /// </summary>
         public static readonly string rowContainerUssClassName = baseUssClassName + "__row-container";
+        [VisibleToOtherModules] internal static readonly UniqueStyleString rowContainerUssClassNameUnique = new(rowContainerUssClassName);
+
         /// <summary>
         /// The USS class name for all cells inside a multi column view.
         /// </summary>
         public static readonly string cellUssClassName = baseUssClassName + "__cell";
+        internal static readonly UniqueStyleString cellUssClassNameUnique = new(cellUssClassName);
+
         /// <summary>
         /// The USS class name for default labels cells inside a multi column view.
         /// </summary>
         public static readonly string cellLabelUssClassName = cellUssClassName + "__label";
+        internal static readonly UniqueStyleString cellLabelUssClassNameUnique = new(cellLabelUssClassName);
+
         private static readonly string k_HeaderViewDataKey = "Header";
 
         /// <summary>
@@ -130,7 +140,7 @@ namespace UnityEngine.UIElements
         static VisualElement DefaultMakeCellItem()
         {
             var label = new Label();
-            label.AddToClassList(cellLabelUssClassName);
+            label.AddToClassList(cellLabelUssClassNameUnique);
             return label;
         }
 
@@ -150,12 +160,12 @@ namespace UnityEngine.UIElements
         public VisualElement MakeItem()
         {
             var container = new VisualElement() { name = rowContainerUssClassName };
-            container.AddToClassList(rowContainerUssClassName);
+            container.AddToClassList(rowContainerUssClassNameUnique);
 
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 var cellContainer = new VisualElement();
-                cellContainer.AddToClassList(cellUssClassName);
+                cellContainer.AddToClassList(cellUssClassNameUnique);
 
                 var cellItem = column.makeCell?.Invoke() ?? DefaultMakeCellItem();
                 cellContainer.SetProperty(bindableElementPropertyName, cellItem);
@@ -176,7 +186,6 @@ namespace UnityEngine.UIElements
         public void BindItem<T>(VisualElement element, int index, T item)
         {
             var i = 0;
-            index = GetSourceIndex(index);
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
@@ -244,7 +253,7 @@ namespace UnityEngine.UIElements
 
             // Insert header to the multi column view.
             m_HeaderContainer = new VisualElement { name = headerContainerUssClassName };
-            m_HeaderContainer.AddToClassList(headerContainerUssClassName);
+            m_HeaderContainer.AddToClassList(headerContainerUssClassNameUnique);
             m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
             collectionView.scrollView.hierarchy.Insert(0, m_HeaderContainer);
             m_HeaderContainer.Add(m_MultiColumnHeader);
@@ -355,74 +364,122 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_SortedToSourceIndex ??= new List<int>(m_View.itemsSource.Count);
-            m_SourceToSortedIndex ??= new List<int>(m_View.itemsSource.Count);
-            for (var i = 0; i < m_View.itemsSource.Count; i++)
+            var count = m_View.itemsSource.Count;
+            m_SortedToSourceIndex ??= new List<int>(count);
+            m_SourceToSortedIndex ??= new List<int>(count);
+
+            if (m_View.viewController is BaseTreeViewController treeViewController)
             {
-                m_SortedToSourceIndex.Add(i);
-                m_SourceToSortedIndex.Add(-1); // Fill the list to match the size of the source index
+                // For tree views, sort IDs to avoid index lookup issues during comparison
+                using var _ = ListPool<int>.Get(out var idsToSort);
+                using var __ = DictionaryPool<int, int>.Get(out var idToSourceIndex);
+
+                // Build mapping from ID to original source index before sorting
+                for (var i = 0; i < count; i++)
+                {
+                    var id = treeViewController.GetIdForIndex(i);
+                    idToSourceIndex[id] = i;
+                    idsToSort.Add(id);
+                }
+
+                idsToSort.Sort(CombinedComparisonById);
+
+                // Map sorted IDs back to their original source indices
+                for (var i = 0; i < idsToSort.Count; i++)
+                {
+                    m_SortedToSourceIndex.Add(idToSourceIndex[idsToSort[i]]);
+                }
+            }
+            else
+            {
+                // For list views, sort indices directly
+                for (var i = 0; i < count; i++)
+                {
+                    m_SortedToSourceIndex.Add(i);
+                }
+                m_SortedToSourceIndex.Sort(CombinedComparisonByIndex);
             }
 
-            m_SortedToSourceIndex.Sort(CombinedComparison);
+            // Build reverse mapping: source index -> sorted position
+            for (var i = 0; i < count; i++)
+            {
+                m_SourceToSortedIndex.Add(-1);
+            }
             for (int i = 0; i < m_SortedToSourceIndex.Count; i++)
             {
                 m_SourceToSortedIndex[m_SortedToSourceIndex[i]] = i;
             }
         }
 
-        int CombinedComparison(int a, int b)
+        int CombinedComparisonById(int idA, int idB)
         {
-            if (m_View.viewController is BaseTreeViewController treeViewController)
+            var treeViewController = m_View.viewController as BaseTreeViewController;
+            var parentIdA = treeViewController.GetParentId(idA);
+            var parentIdB = treeViewController.GetParentId(idB);
+
+            // Only sort items within the same parent.
+            if (parentIdA != parentIdB)
             {
-                var idA = treeViewController.GetIdForIndex(a);
-                var idB = treeViewController.GetIdForIndex(b);
-                var parentIdA = treeViewController.GetParentId(idA);
-                var parentIdB = treeViewController.GetParentId(idB);
+                var depthA = treeViewController.GetIndentationDepth(idA);
+                var depthB = treeViewController.GetIndentationDepth(idB);
+                var originalDepthA = depthA;
+                var originalDepthB = depthB;
 
-                // Only sort items within the same parent.
-                if (parentIdA != parentIdB)
+                // We walk up until both sides are at the same depth
+                while (depthA > depthB)
                 {
-                    var depthA = treeViewController.GetIndentationDepth(idA);
-                    var depthB = treeViewController.GetIndentationDepth(idB);
-                    var originalDepthA = depthA;
-                    var originalDepthB = depthB;
+                    depthA--;
+                    idA = parentIdA;
+                    parentIdA = treeViewController.GetParentId(parentIdA);
+                }
 
-                    // We walk up until both sides are at the same depth
-                    while (depthA > depthB)
-                    {
-                        depthA--;
-                        idA = parentIdA;
-                        parentIdA = treeViewController.GetParentId(parentIdA);
-                    }
+                while (depthB > depthA)
+                {
+                    depthB--;
+                    idB = parentIdB;
+                    parentIdB = treeViewController.GetParentId(parentIdB);
+                }
 
-                    while (depthB > depthA)
-                    {
-                        depthB--;
-                        idB = parentIdB;
-                        parentIdB = treeViewController.GetParentId(parentIdB);
-                    }
+                // Now both are at the same depth, we then walk up the tree until we hit the same element
+                while (parentIdA != parentIdB)
+                {
+                    idA = parentIdA;
+                    idB = parentIdB;
+                    parentIdA = treeViewController.GetParentId(parentIdA);
+                    parentIdB = treeViewController.GetParentId(parentIdB);
+                }
 
-                    // Now both are at the same depth, we then walk up the tree until we hit the same element
-                    while (parentIdA != parentIdB)
-                    {
-                        idA = parentIdA;
-                        idB = parentIdB;
-                        parentIdA = treeViewController.GetParentId(parentIdA);
-                        parentIdB = treeViewController.GetParentId(parentIdB);
-                    }
-
-                    // We were looking at a node and one of its parent, so compare the original depths.
-                    if (idA == idB)
-                    {
-                        return originalDepthA.CompareTo(originalDepthB);
-                    }
-
-                    // Compare the indices now that we're at the same depth.
-                    a = treeViewController.GetIndexForId(idA);
-                    b = treeViewController.GetIndexForId(idB);
+                // We were looking at a node and one of its parent, so compare the original depths.
+                if (idA == idB)
+                {
+                    return originalDepthA.CompareTo(originalDepthB);
                 }
             }
 
+            // Get indices for the actual column comparison
+            var indexA = treeViewController.GetIndexForId(idA);
+            var indexB = treeViewController.GetIndexForId(idB);
+
+            var result = 0;
+            foreach (var sortedColumn in header.sortedColumns)
+            {
+                result = sortedColumn.column.comparison?.Invoke(indexA, indexB) ?? 0;
+                if (result != 0)
+                {
+                    if (sortedColumn.direction == SortDirection.Descending)
+                    {
+                        result = -result;
+                    }
+                    break;
+                }
+            }
+
+            // When equal, we keep the current order by comparing IDs.
+            return result == 0 ? idA.CompareTo(idB) : result;
+        }
+
+        int CombinedComparisonByIndex(int a, int b)
+        {
             var result = 0;
             foreach (var sortedColumn in header.sortedColumns)
             {

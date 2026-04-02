@@ -202,13 +202,13 @@ namespace UnityEditorInternal
             }
         }
 
-        [Obsolete("Use HandleMultiSelection<T> instead", false)]
+        [Obsolete("Use HandleMultiSelection<T> instead", true)]
         public static List<EntityId> GetNewSelection(EntityId clickedInstanceID, List<EntityId> allInstanceIDs, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
         {
             return HandleMultiSelectionWithCurrentModifiers(clickedInstanceID, allInstanceIDs, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, allowMultiSelection, useShiftAsActionKey);
         }
 
-        [Obsolete("Use HandleMultiSelection<T> instead", false)]
+        [Obsolete("Use HandleMultiSelection<T> instead", true)]
         public static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
         {
             return HandleMultiSelectionWithCurrentModifiers(clickedInstanceID, allInstanceIDs, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, allowMultiSelection, useShiftAsActionKey);

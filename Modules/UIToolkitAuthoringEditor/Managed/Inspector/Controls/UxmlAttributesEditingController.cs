@@ -28,6 +28,11 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     public LiveAttributePropertyController liveAttributePropertyController { get; } = new LiveAttributePropertyController();
 
     /// <summary>
+    /// Handles changes to UXML attributes.
+    /// </summary>
+    public UxmlAttributeChangeHandler attributeChangeHandler { get; } = new UxmlAttributeChangeHandler();
+
+    /// <summary>
     /// The authoring context this controller is operating on.
     /// </summary>
     public UxmlAttributesEditingContext context
@@ -40,6 +45,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
             m_Context = value;
             liveAttributePropertyController.context = m_Context;
+            attributeChangeHandler.Context = m_Context;
 
             if (m_Context != null)
                 m_Context.contextChanged += OnContextChanged;
@@ -67,13 +73,10 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
         if (context.element != null && context.uxmlSerializedData != null)
         {
-            // If the context is read-only then we only need to sync the serialized data from the element
-            if (context.isReadOnly)
-            {
-                context.element.RegisterCallback<PropertyChangedEvent>(OnElementPropertyChange);
-            }
+            context.element.RegisterCallback<PropertyChangedEvent>(OnElementPropertyChange);
+
             // If the context is not read-only then default the not overridden data of the serialized data
-            else
+            if (!context.isReadOnly)
             {
                 // We treat the serialized data as the source of truth.
                 // There are times when we may need to resync, such as when an undo/redo was performed.
@@ -81,13 +84,15 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
                 // Deserialize the element to ensure it has the latest data
                 DeserializeElement();
+
+                attributeChangeHandler.StartTrackingChanges();
             }
 
             // Ensure the serialized object is up to date
             context.rootSerializedObject.UpdateIfRequiredOrScript();
 
             // We need to sync the serialized data from the element
-            liveAttributePropertyController.SyncLiveProperties();
+            liveAttributePropertyController.SyncLiveProperties(!context.isReadOnly);
 
             if (context.element?.panel is Panel targetPanel)
             {
@@ -101,6 +106,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         if (m_HasPendingSync)
             EditorApplication.delayCall -= Sync;
         liveAttributePropertyController.RemoveLiveProperties();
+        attributeChangeHandler.StopTrackingChanges();
     }
 
     // Called when a property has changed
@@ -126,10 +132,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
             return;
 
         // If the context is read only, we need to sync the serialized data from the element
-        if (context.isReadOnly)
-        {
-            liveAttributePropertyController.SyncLiveProperties();
-        }
+        liveAttributePropertyController.SyncLiveProperties(!context.isReadOnly);
     }
 
     internal void DeserializeElement()
@@ -191,7 +194,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     void UpdateDecoratorsForBoundProperties()
     {
         using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
-        context.element.GetBindingInfos(bindingInfos);
+        context.element?.GetBindingInfos(bindingInfos);
 
         foreach (var info in bindingInfos)
         {

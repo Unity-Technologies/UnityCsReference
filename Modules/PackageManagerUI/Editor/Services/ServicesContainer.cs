@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Type registrationType { get; }
     }
 
+    [Serializable]
     internal abstract class BaseService : IService
     {
         private readonly List<IService> m_Dependencies = new();
@@ -53,6 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void OnDisable() {}
     }
 
+    [Serializable]
     internal abstract class BaseService<T> : BaseService where T : IService
     {
         public override Type registrationType => typeof(T);
@@ -90,6 +92,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmRegistryClient m_SerializedUpmRegistryClient;
         [SerializeField]
         private UpmCacheRootClient m_SerializedUpmCacheRootClient;
+        [SerializeField]
+        private SampleCache m_SerializedSampleCache;
         [SerializeField]
         private PackageManagerPrefs m_SerializedPackageManagerPrefs;
         [SerializeField]
@@ -150,10 +154,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             var upmClient = Register(new UpmClient(upmCache, fetchStatusTracker, ioProxy, clientProxy, applicationProxy));
             var upmRegistryClient = Register(new UpmRegistryClient(settingsProxy, clientProxy, upmCache, applicationProxy));
 
-            var packageDatabase = Register(new PackageDatabase(assetDatabaseProxy, upmCache, ioProxy));
-            var pageFactory = Register(new PageFactory(unityConnectProxy, packageManagerPrefs, assetStoreClient, packageDatabase, upmCache));
-            var pageManager = Register(new PageManager(unityConnectProxy, packageDatabase, settingsProxy, upmRegistryClient, pageFactory));
-            var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient));
+            Register(new SampleImporter(ioProxy, assetDatabaseProxy));
+            var sampleCache = Register(new SampleCache(ioProxy, assetDatabaseProxy, upmCache));
+
+            var packageDatabase = Register(new PackageDatabase());
+            var pageFactory = Register(new PageFactory(unityConnectProxy, packageManagerPrefs, assetStoreClient, assetStoreRestAPI, packageDatabase, upmCache));
+            var pageManager = Register(new PageManager(settingsProxy, upmRegistryClient, pageFactory));
+            var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient, sampleCache));
             var backgroundFetchHandler = Register(new BackgroundFetchHandler(applicationProxy, unityConnectProxy, upmCache, upmClient, assetStoreClient, assetStoreCache, fetchStatusTracker, pageManager, pageRefreshHandler));
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
@@ -162,10 +169,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var operationDispatcher = Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient, selectionProxy, assetDatabaseProxy));
 
             Register(new EditorAnalyticsProxy());
+            Register(new PackageManagerWindowProxy());
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
             Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator));
             Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy));
+            Register(new SampleFactory(ioProxy, upmCache, sampleCache, packageDatabase));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
             Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator));
             Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient));
@@ -184,6 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedUpmClient = upmClient;
             m_SerializedUpmRegistryClient = upmRegistryClient;
             m_SerializedUpmCacheRootClient = upmCacheRootClient;
+            m_SerializedSampleCache = sampleCache;
             m_SerializedPackageManagerPrefs = packageManagerPrefs;
             m_SerializedPageManager = pageManager;
             m_SerializedPageRefreshHandler = pageRefreshHandler;

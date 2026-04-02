@@ -494,6 +494,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// The Mask64Field is a control that lets users select one or more options from a list of 64-bit mask options.
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Mask64Field.png")]
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Mask64Field : BaseMask64Field
@@ -587,14 +588,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-mask64-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Mask64Field.
@@ -642,9 +648,9 @@ namespace UnityEngine.UIElements
         public Mask64Field(string label)
             : base(label)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 }

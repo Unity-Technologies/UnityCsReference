@@ -74,11 +74,17 @@ namespace UnityEditor.Search
         }
         public float itemIconSize
         {
-            get => m_ViewState.itemSize;
-            set => m_ViewState.itemSize = value;
+            get => m_ViewState.itemIconSize;
+            set => m_ViewState.itemIconSize = value;
         }
 
-        public DisplayMode displayMode => GetDisplayMode(itemIconSize);
+        public string currentResultViewId
+        {
+            get => m_ViewState.resultViewDescriptorList.CurrentViewId;
+            set => m_ViewState.SetResultView(value);
+        }
+
+        public DisplayMode displayMode => SearchUtils.GetDisplayModeFromItemSize(m_ViewState.itemIconSize);
 
         public bool multiselect { get; set; }
 
@@ -116,6 +122,7 @@ namespace UnityEditor.Search
         #region Internal properties
         bool ISearchView.syncSearch { get; set; }
         SearchPreviewManager ISearchView.previewManager => null;
+        internal SearchResultViewDescriptorList resultViewDescriptorList => m_ViewState.resultViewDescriptorList;
         #endregion
 
         #region State Change Notification
@@ -270,7 +277,7 @@ namespace UnityEditor.Search
                 var actionEnabled = action.enabled?.Invoke(currentSelection) ?? true;
                 if (!actionEnabled)
                     continue;
-                
+
                 var itemName = !string.IsNullOrWhiteSpace(action.content.text) ? action.content.text : action.content.tooltip;
                 switch (shortcutIndex)
                 {
@@ -425,17 +432,6 @@ namespace UnityEditor.Search
                 return selection.First().provider;
             }
             return null;
-        }
-
-        internal static DisplayMode GetDisplayMode(float itemSize)
-        {
-            if (itemSize <= (float)DisplayMode.Compact)
-                return DisplayMode.Compact;
-            if (itemSize <= (float)DisplayMode.List)
-                return DisplayMode.List;
-            if (itemSize >= (float)DisplayMode.Table)
-                return DisplayMode.Table;
-            return DisplayMode.Grid;
         }
 
         internal IEnumerable<IGroup> EnumerateGroups(bool showTheAllGroupTab)

@@ -36,11 +36,31 @@ namespace UnityEditor.Search
         }
 
         bool ITableView.readOnly => false;
-        public override bool showNoResultMessage => m_ViewModel.displayMode != DisplayMode.Table;
+        internal static string resultViewId = "table";
+        public override string ViewId => resultViewId;
+        public override bool ShowNoResultMessage => m_ViewModel.displayMode != DisplayMode.Table;
 
         Columns viewColumns => m_ListView.columns;
 
         const float k_DefaultItemHeight = 22f;
+
+        public static SearchTableView Create(ISearchView viewModel)
+        {
+            return new SearchTableView(viewModel);
+        }
+
+        public static Texture2D FetchIcon()
+        {
+            return EditorGUIUtility.LoadIconRequired("TableView");
+        }
+
+        public static SearchResultViewDescriptor GetDescriptor()
+        {
+            return new SearchResultViewDescriptor(resultViewId, Create, FetchIcon,
+                (float)DisplayMode.Table,
+                description: "Table View",
+                buttonClassName: "search-statusbar__table-mode-button");
+        }
 
         public SearchTableView(ISearchView viewModel)
             : base("SearchTableView", viewModel, ussClassName)
@@ -416,9 +436,7 @@ namespace UnityEditor.Search
             {
                 var providers = m_ViewModel.context.GetProviders();
                 // TODO: the currentGroup might be an invalid value and we might try to get the DefaultTableConfig from the wrong provider.
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
-#pragma warning restore UA2001
+                var provider = providers.Count == 1 ? providers[0] : SearchService.GetProvider(m_ViewModel.currentGroup);
                 if (provider?.tableConfig != null)
                     return provider.tableConfig(context);
             }
@@ -449,7 +467,7 @@ namespace UnityEditor.Search
 
             var oldColumns = tableConfig.columns ?? Array.Empty<SearchColumn>();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var uniqueColumns = newColumns.Where(newColumn => oldColumns.All(c => c.selector != newColumn.selector)).ToList();
+            var uniqueColumns = newColumns.Where(newColumn => Array.TrueForAll(oldColumns, c => c.selector != newColumn.selector)).ToList();
 #pragma warning restore UA2001
             if (uniqueColumns.Count == 0)
                 return;
@@ -463,9 +481,7 @@ namespace UnityEditor.Search
             var columnAdded = searchColumns.Count - columnCountBefore;
             if (columnAdded > 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var firstColumn = uniqueColumns.First();
-#pragma warning restore UA2001
+                var firstColumn = uniqueColumns[0];
                 var e = SearchAnalytics.GenericEvent.Create(null, SearchAnalytics.GenericEventType.QuickSearchTableAddColumn, firstColumn.name);
                 e.intPayload1 = columnAdded;
                 e.message = firstColumn.provider;

@@ -54,6 +54,13 @@ namespace UnityEditor
         MethodFileLineNumber = 1,
     }
 
+    // Must be in sync with Il2CppLTOMode enum in SerializationMetaFlags.h
+    public enum Il2CppLTOMode
+    {
+        Full = 0,
+        Thin = 1,
+    }
+
     // Mac fullscreen mode
     public enum MacFullscreenMode
     {
@@ -181,6 +188,10 @@ namespace UnityEditor
 
         // .NET Framework 8 + .NET Standard 2.1 APIs
         NET_Unity_4_8 = NET_4_6,
+
+        [Obsolete("CoreCLR support is still a work in progress and is disabled for now.")] // Hide from intellisense
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        NET = 7
     }
 
 
@@ -1178,6 +1189,18 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetIl2CppLTOMode", ThrowsException = true)]
+        private static extern Il2CppLTOMode GetIl2CppLTOModeInternal(string buildTargetName);
+        public static Il2CppLTOMode GetIl2CppLTOMode(NamedBuildTarget buildTarget) =>
+            GetIl2CppLTOModeInternal(buildTarget.TargetName);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetIl2CppLTOMode", ThrowsException = true)]
+        private static extern void SetIl2CppLTOModeInternal(string buildTargetName, Il2CppLTOMode mode);
+        public static void SetIl2CppLTOMode(NamedBuildTarget buildTarget, Il2CppLTOMode mode) =>
+            SetIl2CppLTOModeInternal(buildTarget.TargetName, mode);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformIncrementalIl2CppBuild", ThrowsException = true)]
         private static extern bool GetIncrementalIl2CppBuildInternal(string buildTargetName);
         [Obsolete("GetIncrementalIl2CppBuild has no impact on the build process")]
@@ -1633,6 +1656,9 @@ namespace UnityEditor
         // Is multi-threaded rendering enabled?
         public static extern bool MTRendering { get; set; }
 
+        // Call OnDisable on objects when unloading AssetBundles
+        public static extern bool callOnDisableOnAssetBundleUnload { get; set; }
+
         [NativeMethod("GetStackTraceType")]
         public static extern StackTraceLogType GetStackTraceLogType(LogType logType);
 
@@ -1715,6 +1741,8 @@ namespace UnityEditor
             get { return GetWindowsGamepadBackendHint(); }
             set { SetWindowsGamepadBackendHint(value); }
         }
+
+        public static extern bool enableDirectStorage { get; set; }
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]
@@ -1977,6 +2005,16 @@ namespace UnityEditor
         [NativeMethod("GetEnableFrameTimingStats")]
         [VisibleToOtherModules]
         internal extern bool GetEnableFrameTimingStats_Internal();
+
+        public static extern bool adjustIOSFPSUsingThermalState{ get; set; }
+
+        [NativeMethod("SetAdjustIOSFPSUsingThermalState")]
+        [VisibleToOtherModules]
+        internal extern void SetAdjustIOSFPSUsingThermalState_Internal(bool value);
+
+        [NativeMethod("GetAdjustIOSFPSUsingThermalState")]
+        [VisibleToOtherModules]
+        internal extern bool GetAdjustIOSFPSUsingThermalState_Internal();
 
         public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
     }

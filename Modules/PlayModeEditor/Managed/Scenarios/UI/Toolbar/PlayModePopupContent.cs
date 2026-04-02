@@ -115,6 +115,7 @@ namespace Unity.PlayMode.Editor
                 warnIcon.AddToClassList("unity-scenarios-playmode-popup__warn-icon");
                 warnIcon.image = EditorGUIUtility.FindTexture("console.warnicon");
                 container.Add(warnIcon);
+                container.RegisterCallback<ClickEvent>(_ => editorWindow.Close());
                 return container;
             };
 

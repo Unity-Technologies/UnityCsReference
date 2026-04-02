@@ -1161,8 +1161,10 @@ namespace UnityEditor
             if (m_BlendType.intValue == (int)BlendTreeType.SimpleDirectional2D)
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                List<float> angles = points.Where(e => e != Vector2.zero).Select(e => Mathf.Atan2(e.y, e.x)).OrderBy(e => e).ToList();
+                List<float> angles = points.Where(e => e != Vector2.zero).Select(e => Mathf.Atan2(e.y, e.x)).ToList();
 #pragma warning restore UA2001
+                angles.Sort();
+
                 float maxAngle = 0;
                 float minAngle = 180;
                 for (int i = 0; i < angles.Count; i++)

@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// Default options are <see cref="RadioButton"/>, but users can provide other implementations.
     /// If no <see cref="IGroupBox"/> is found in the hierarchy, the default container will be the panel.
     /// </summary>
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/GroupBox.png")]
     public partial class GroupBox : BindableElement, IGroupBox
     {
@@ -59,6 +60,8 @@ namespace UnityEngine.UIElements
         /// this class affects every GroupBox located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string ussClassName = "unity-group-box";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name for Labels in GroupBox elements.
         /// </summary>
@@ -66,6 +69,7 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the <see cref="Label"/> sub-element of the <see cref="GroupBox"/> if the GroupBox has a Label.
         /// </remarks>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
 
         Label m_TitleLabel;
 
@@ -93,7 +97,7 @@ namespace UnityEngine.UIElements
                     if (m_TitleLabel == null)
                     {
                         m_TitleLabel = new Label(value);
-                        m_TitleLabel.AddToClassList(labelUssClassName);
+                        m_TitleLabel.AddToClassList(labelUssClassNameUnique);
                         Insert(0, m_TitleLabel);
                     }
 
@@ -122,7 +126,7 @@ namespace UnityEngine.UIElements
         /// <param name="text">The title text.</param>
         public GroupBox(string text)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             this.text = text;
         }

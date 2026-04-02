@@ -57,7 +57,7 @@ namespace Unity.GraphToolkit.Editor
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var portalsToOpen = command.Models.Where(p => p.CanCreateOppositePortal()).ToList();
 #pragma warning restore UA2001
-            if (!portalsToOpen.HasAny())
+            if (portalsToOpen.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -65,7 +65,7 @@ namespace Unity.GraphToolkit.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
-            var createdElements = new List<GraphElementModel>();
+            var createdElements = new List<GraphElementModel>(portalsToOpen.Count);
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
@@ -77,7 +77,7 @@ namespace Unity.GraphToolkit.Editor
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (createdElements.HasAny())
+            if (createdElements.Count > 0)
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)

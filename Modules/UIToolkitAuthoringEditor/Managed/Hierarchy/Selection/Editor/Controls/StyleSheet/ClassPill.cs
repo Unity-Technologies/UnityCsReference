@@ -12,6 +12,9 @@ namespace Unity.UIToolkit.Editor
     internal class ClassPill : VisualElement
     {
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPill.uxml";
+        static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPill.uss";
+        static readonly string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPillDark.uss";
+        static readonly string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPillLight.uss";
 
         static readonly string ussClassName = "unity-builder-class-pill";
 
@@ -43,6 +46,12 @@ namespace Unity.UIToolkit.Editor
 
         public ClassPill()
         {
+            styleSheets.Add(EditorGUIUtility.Load(s_UssPath) as StyleSheet);
+
+            var styleSheetPath = EditorGUIUtility.isProSkin ? k_StyleSheetDark : k_StyleSheetLight;
+            var styleSheet = EditorGUIUtility.Load(styleSheetPath) as StyleSheet;
+            styleSheets.Add(styleSheet);
+
             var visualAsset = EditorGUIUtility.Load(s_UxmlPath) as VisualTreeAsset;
             visualAsset.CloneTree(this);
             AddToClassList(ussClassName);

@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering a float. For more information, refer to [[wiki:UIE-uxml-element-FloatField|UXML element FloatField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/FloatField.png")]
     public partial class FloatField : TextValueField<float>
     {
@@ -77,14 +78,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-float-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Constructor.
@@ -105,9 +111,9 @@ namespace UnityEngine.UIElements
         public FloatField(string label, int maxLength = kMaxValueFieldLength)
             : base(label, maxLength, new FloatInput())
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
             AddLabelDragger<float>();
         }
 

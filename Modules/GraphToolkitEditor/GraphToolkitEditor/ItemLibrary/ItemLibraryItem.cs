@@ -138,8 +138,6 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             (si => Enumerable.Repeat(si.Name, 1), 1f),
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             (si => Enumerable.Repeat(si.SearchableFullName, 1), 0.5f),
 #pragma warning restore UA2001
             (si => si.Synonyms ?? Array.Empty<string>(), 0.5f),

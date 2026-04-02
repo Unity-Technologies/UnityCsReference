@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -151,6 +152,8 @@ namespace UnityEditor.UIElements
         /// The root element of this inspector. This can either be a full visual hierarchy or an IMGUIContainer.
         /// </summary>
         VisualElement m_InspectorElement;
+
+        VisualElement m_ObsoleteElement;
 
         internal VisualElement inspectorContent => m_InspectorElement;
 
@@ -421,10 +424,20 @@ namespace UnityEditor.UIElements
             this.Bind(m_Editor.serializedObject);
         }
 
+        void ClearObsolete()
+        {
+            if (m_ObsoleteElement != null)
+            {
+                m_ObsoleteElement.RemoveFromHierarchy();
+                m_ObsoleteElement = null;
+            }
+        }
+
         void ClearInspectorElement()
         {
             // Clear any previously generated element.
             m_InspectorElement?.RemoveFromHierarchy();
+            m_InspectorElement = null;
 
             // Clear all top level styles
             RemoveFromClassList(iMGUIInspectorVariantUssClassName);
@@ -454,6 +467,7 @@ namespace UnityEditor.UIElements
             if (m_BoundObject == null)
             {
                 ClearInspectorElement();
+                ClearObsolete();
                 return;
             }
 
@@ -479,6 +493,9 @@ namespace UnityEditor.UIElements
                                 m_InspectorElement = CreateInspectorElementUsingIMGUI(m_Editor);
                                 break;
                         }
+
+                        ClearObsolete();
+                        m_ObsoleteElement = CreateObsoleteElement();
                     }
                 }
                 else
@@ -489,14 +506,34 @@ namespace UnityEditor.UIElements
                     // This is a custom editor type. Try to use UI toolkit first with an IMGUI fallback.
                     m_InspectorElement = CreateInspectorElementUsingUIToolkit(m_Editor) ?? CreateInspectorElementUsingIMGUI(m_Editor);
                     m_InspectorElement.AddToClassList(customInspectorUssClassName);
+
+                    ClearObsolete();
+                    m_ObsoleteElement = CreateObsoleteElement();
                 }
 
-                // Re-add the generated element if it was re-created.
+                // Re-add the generated elements if they were re-created.
+                if (m_ObsoleteElement != null && m_ObsoleteElement.parent != this)
+                {
+                    hierarchy.Add(m_ObsoleteElement);
+                }
+
                 if (m_InspectorElement != null && m_InspectorElement.parent != this)
+                {
                     hierarchy.Add(m_InspectorElement);
+                }
             }
 
             k_CreateInspectorElementFromSerializedObject.End();
+        }
+
+        VisualElement CreateObsoleteElement()
+        {
+            if (InspectorWindowUtils.TryCreateObsoleteHelpBox(editor, out var obsoleteHelpBox))
+            {
+                return obsoleteHelpBox;
+            }
+
+            return null;
         }
 
         /// <summary>

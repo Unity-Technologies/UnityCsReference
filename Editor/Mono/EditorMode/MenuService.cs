@@ -375,7 +375,7 @@ namespace UnityEditor
 
             foreach (var methodInfo in methodInfos)
             {
-                foreach (var attribute in (MenuItem[])methodInfo.GetCustomAttributes(typeof(MenuItem), false))
+                foreach (MenuItem attribute in methodInfo.GetCustomAttributes(typeof(MenuItem), false))
                 {
                     string menuName = SanitizeMenuItemName(attribute.menuItem);
                     string[] editorModes = attribute.editorModes;
@@ -547,12 +547,17 @@ namespace UnityEditor
                     var children = m_Children;
                     if (sorted)
                     {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        children = m_Children.OrderBy(c => c.m_Priority)
-#pragma warning restore UA2001
-                            .ThenBy(c => c.m_SecondaryPriority)
-                            .ThenBy(c => c.key)
-                            .ToList();
+                        children = new List<MenuItemsTree<T>>(m_Children);
+                        children.Sort((a, b) =>
+                        {
+                            int result = a.m_Priority.CompareTo(b.m_Priority);
+                            if (result != 0) return result;
+
+                            result = a.m_SecondaryPriority.CompareTo(b.m_SecondaryPriority);
+                            if (result != 0) return result;
+
+                            return string.Compare(a.key, b.key);
+                        });
                     }
                     foreach (var child in children)
                         child.GetChildrenRecursively(sorted, result);

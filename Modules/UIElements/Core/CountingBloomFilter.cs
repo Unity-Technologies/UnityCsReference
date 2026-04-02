@@ -105,10 +105,10 @@ namespace UnityEngine.UIElements
             if (!string.IsNullOrEmpty(element.name))
                 AddHash(element.name.GetHashCode() * (int)Salt.IdSalt);
 
-            List<string> classList = element.GetClassesForIteration();
+            var classList = element.GetClassesForIteration();
             for (int i = 0; i < classList.Count; i++)
             {
-                AddHash(classList[i].GetHashCode() * (int)Salt.ClassSalt);
+                AddHash(classList[i].value.GetHashCode() * (int)Salt.ClassSalt);
             }
 
             m_HashStack.Push(m_HashStack.Count - rememberCount);

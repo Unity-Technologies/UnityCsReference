@@ -79,6 +79,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return !string.IsNullOrEmpty(productIdString) && long.TryParse(productIdString, out var productId) ? productId : 0;
         }
 
+        public static string GetUniqueId(this PackageInfo packageInfo)
+        {
+            var productIdString = packageInfo?.assetStore?.productId;
+            return !string.IsNullOrEmpty(productIdString) ? productIdString : packageInfo?.name ?? string.Empty;
+        }
+
         public static RegistryType GetAvailableRegistryType(this PackageInfo packageInfo)
         {
             // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry

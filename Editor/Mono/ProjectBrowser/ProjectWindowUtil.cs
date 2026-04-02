@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Audio;
 using UnityEditor.Compilation;
@@ -42,7 +43,7 @@ namespace UnityEditor
     // needs to survive an assembly reload.
     namespace ProjectWindowCallback
     {
-        [Obsolete("EndNameEditAction is obsolete. Use AssetCreationEndAction that uses EntityId instead of int for instance IDs.")]
+        [Obsolete("EndNameEditAction is obsolete. Use AssetCreationEndAction that uses EntityId instead of int for instance IDs.", true)]
         public abstract class EndNameEditAction : AssetCreationEndAction
         {
             public override void Action(EntityId entityId, string pathName, string resourceFile)
@@ -269,6 +270,10 @@ namespace UnityEditor
                 {
                     foreach (var toMovePath in m_Paths)
                     {
+                        // UUM-134783 - If the new folder is being created inside one of the folders being moved, skip. This can occur when the user has nothing selected in a Package or Project root. E.g "Assets/"
+                        if (newFolderPath.Contains(toMovePath))
+                            continue;
+
                         var hasSelectedAncestor = false;
                         var parent = Path.GetDirectoryName(toMovePath).ConvertSeparatorsToUnity();
 
@@ -431,9 +436,9 @@ namespace UnityEditor
                 // Check if the output group should be initialized (instanceID is stored in the resource file) TODO: rename 'resourceFile' to 'userData' so it's more obvious that it can be used by all EndNameEditActions
                 if (!string.IsNullOrEmpty(resourceFile))
                 {
-                    if (System.Int32.TryParse(resourceFile, out var outputEntityIdRaw))
+                    if (System.UInt64.TryParse(resourceFile, out var outputEntityIdRaw))
                     {
-                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
                         var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)outputEntityIdRaw)) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
@@ -449,9 +454,7 @@ namespace UnityEditor
 
             private bool ActiveSelectionIsAudioClipList()
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return selection.Length > 0 && selection.All(obj => obj.GetType() == typeof(AudioClip));
-#pragma warning restore UA2001
+                return selection.Length > 0 && Array.TrueForAll(selection, obj => obj.GetType() == typeof(AudioClip));
             }
 
             private void CreateAudioRandomContainer(string path)
@@ -464,20 +467,15 @@ namespace UnityEditor
 
             private void CreateAudioRandomContainerFromSelectedClips(string path)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var audioClips = selection.Select(obj => obj as AudioClip).ToArray();
-#pragma warning restore UA2001
                 var container = new AudioRandomContainer { name = Path.GetFileName(path) };
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                container.elements = audioClips.Select(audioClip =>
-#pragma warning restore UA2001
+                container.elements = Array.ConvertAll(selection, obj =>
                 {
                     var element = new AudioContainerElement();
-                    element.audioClip = audioClip;
+                    element.audioClip = obj as AudioClip;
                     element.hideFlags = HideFlags.HideInHierarchy;
                     return element;
-                }).ToArray();
+                });
 
                 AssetDatabase.CreateAsset(container, path);
 
@@ -711,9 +709,7 @@ namespace UnityEditor
             if (createdVariants.Count > 0)
             {
                 Selection.objects = createdVariants.ToArray();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                FrameObjectInProjectWindow(createdVariants.Last().GetEntityId());
-#pragma warning restore UA2001
+                FrameObjectInProjectWindow(createdVariants[^1].GetEntityId());
             }
 
             return createdVariants.ToArray();
@@ -727,7 +723,7 @@ namespace UnityEditor
                 return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
-        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", false)]
+        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", true)]
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, Action<int> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
@@ -735,6 +731,7 @@ namespace UnityEditor
             action.onComplete = onRenameComplete != null ? (id) => onRenameComplete(id) : null; // Wrap to obsolete int version
             StartNameEditingIfProjectWindowExists(EntityId.None, action, filename, icon, null);
         }
+
         public static void CreateAssetWithTextContent(string filename, string content, Texture2D icon = null, Action<EntityId> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
@@ -909,7 +906,7 @@ namespace UnityEditor
                 contentLines[i] = $"{indentationString}{line}";
             }
 
-            return string.Join(newline, contentLines.ToArray());
+            return string.Join(newline, contentLines);
         }
 
         internal static string PreprocessScriptAssetTemplate(string pathName, string resourceContent)
@@ -958,7 +955,7 @@ namespace UnityEditor
             return CreateScriptAssetWithContent(pathName, PreprocessScriptAssetTemplate(pathName, content));
         }
 
-        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string) instead.")]
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string) instead.", true)]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
             => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile);
         public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile)
@@ -966,7 +963,7 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(entityId, endAction, pathName, icon, resourceFile, true);
         }
 
-        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string, bool) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string, bool) instead.")]
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string, bool) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string, bool) instead.", true)]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
             => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
         public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
@@ -999,12 +996,13 @@ namespace UnityEditor
             return ProjectBrowser.s_LastInteractedProjectBrowser;
         }
 
-        internal static void FrameObjectInProjectWindow(EntityId entityId)
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static void FrameObjectInProjectWindow(EntityId entityId, bool ping = false)
         {
             ProjectBrowser pb = GetProjectBrowserIfExists();
             if (pb)
             {
-                pb.FrameObject(entityId, false);
+                pb.FrameObject(entityId, ping);
             }
         }
 
@@ -1150,7 +1148,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("IsFolder(int instanceID) is deprecated. Use IsFolder(EntityId entityId) instead.")]
+        [Obsolete("IsFolder(int instanceID) is deprecated. Use IsFolder(EntityId entityId) instead.", true)]
         public static bool IsFolder(int instanceID) => IsFolder((EntityId)instanceID);
 
         public static bool IsFolder(EntityId entityId)
@@ -1234,9 +1232,7 @@ namespace UnityEditor
 
         static bool AnyTargetMaterialHasChildren(string[] targetPaths)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            GUID[] guids = targetPaths.Select(path => AssetDatabase.GUIDFromAssetPath(path)).ToArray();
-#pragma warning restore UA2001
+            GUID[] guids = Array.ConvertAll(targetPaths, AssetDatabase.GUIDFromAssetPath);
 
             Func<string, bool> HasChildrenInPath = (string rootPath) => {
                 var property = new HierarchyIterator(rootPath, false);
@@ -1315,12 +1311,12 @@ namespace UnityEditor
         // Returns true if the delete operation was successfully performed on all assets.
         // Note: Zero input assets always returns true.
         // Also note that the operation cannot be undone even if some operations failed.
-        internal static bool DeleteAssets(List<EntityId> instanceIDs, bool askIfSure)
+        internal static bool DeleteAssets(IReadOnlyList<EntityId> instanceIDs, bool askIfSure)
         {
             if (instanceIDs.Count == 0)
                 return true;
 
-            bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets")) >= 0;
+            bool foundAssetsFolder = instanceIDs.Contains(AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets"));
             if (foundAssetsFolder)
             {
                 EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("OK"));

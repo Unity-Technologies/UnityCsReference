@@ -74,9 +74,9 @@ namespace Unity.UI.Builder
                         {
                             m_StyleFields.BindStyleField(styleRow, styleField as FoldoutColorField);
                         }
-                        else if (styleField is FilterStyleField filterStyleField)
+                        else if (styleField is FilterStyleField filterField)
                         {
-                            m_StyleFields.BindStyleField(styleRow, filterStyleField);
+                            m_StyleFields.BindStyleField(styleRow, filterField);
                         }
                         else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
                         {
@@ -203,9 +203,9 @@ namespace Unity.UI.Builder
                     {
                         m_StyleFields.RefreshStyleField(styleField as FoldoutField);
                     }
-                    else if (styleField is FilterStyleField filterStyleField)
+                    else if (styleField is FilterStyleField filterField)
                     {
-                        m_StyleFields.RefreshStyleField(filterStyleField);
+                        m_StyleFields.RefreshStyleField(filterField);
                     }
                     else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
                     {

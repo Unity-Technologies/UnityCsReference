@@ -690,6 +690,11 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, p.entityIdValue.ToString(), saveKeyword: true);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.entityIdValue);
                     break;
+                case SerializedPropertyType.LoadableReference:
+                    var loadableObj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(p.loadableReferenceValue);
+                    AddReference(documentIndex, fieldName, loadableObj);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, loadableObj);
+                    break;
             }
         }
 

@@ -36,13 +36,6 @@ namespace Unity.GraphToolkit.Editor
                 ve.AddToClassList(classNameCache);
         }
 
-        public static void PreallocForMoreClasses(this VisualElement ve, int numNewClasses)
-        {
-            var classList = (List<string>)ve.GetClasses();
-            if (classList.Count + numNewClasses > classList.Capacity)
-                classList.Capacity = classList.Count + numNewClasses;
-        }
-
         /// <summary>
         /// Replaces a manipulator by another one.
         /// </summary>

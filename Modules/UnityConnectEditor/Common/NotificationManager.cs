@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using System.Threading;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Connect
 {
@@ -67,9 +67,7 @@ namespace UnityEditor.Connect
             var notifications = new List<Notification>();
             foreach (var notificationBuilder in m_NotificationBuilders)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (topics.Contains(notificationBuilder.topic))
-#pragma warning restore UA2001
                 {
                     notifications.Add(notificationBuilder.BuildNotification());
                 }

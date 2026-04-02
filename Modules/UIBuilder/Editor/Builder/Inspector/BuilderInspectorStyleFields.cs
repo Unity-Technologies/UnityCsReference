@@ -11,13 +11,13 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditor.UIElements.Debugger;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Collections;
 using Unity.Properties;
 using Unity.UIToolkit.Editor;
 using Button = UnityEngine.UIElements.Button;
@@ -113,9 +113,7 @@ namespace Unity.UI.Builder
         void OnFieldFocusIn(FocusInEvent evt)
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection.First());
-#pragma warning restore UA2001
+            m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection[0]);
         }
 
         void OnFieldFocusOut(FocusOutEvent evt)
@@ -450,14 +448,6 @@ namespace Unity.UI.Builder
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
                     uiField.visualInput.tooltip = styleValueTooltip;
             }
-            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField materialDefinitionField)
-            {
-                materialDefinitionField.RegisterValueChangedCallback(e => OnFieldValueChangeMaterial(e, styleName));
-
-                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
-                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
-                    materialDefinitionField.visualInput.tooltip = styleValueTooltip;
-            }
             else if (IsComputedStyleEnum(val, styleType))
             {
                 var enumValue = GetComputedStyleEnumValue(val, styleType);
@@ -537,9 +527,7 @@ namespace Unity.UI.Builder
                     uiField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
 
                     // We store the ToggleButtonGroup that needs to be updated when the Flex Direction value changes
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_FlexDirectionDependentStyleNames.Contains(styleName))
-#pragma warning restore UA2001
                         m_FlexAlignmentToggleButtonGroups.Add(uiField);
                 }
                 else
@@ -869,7 +857,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
-                m_Inspector.UpdateAdvancedTextHelpBox();
+                m_Inspector.UpdateTextGeneratorHelpBoxes();
                 return true;
             }
 
@@ -1204,9 +1192,9 @@ namespace Unity.UI.Builder
                 return true;
             }
 
-            if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterStyleField)
+            if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterField)
             {
-                RefreshStyleField(filterStyleField);
+                RefreshStyleField(filterField);
                 return false; // To skip UpdateFieldStatus, not applicable here
             }
 
@@ -1263,18 +1251,6 @@ namespace Unity.UI.Builder
                 {
                     uiField.SetValueWithoutNotify(value);
                 }
-                return true;
-            }
-
-            if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField)
-            {
-                var uiField = fieldElement as MaterialDefinitionField;
-                var value = GetComputedStyleMaterialValue(val);
-                if (useStyleProperty)
-                    value = styleSheet.GetAsset(styleProperty.values[0]) as Material;
-
-                uiField.SetValueWithoutNotify(value.material);
-
                 return true;
             }
 
@@ -1360,7 +1336,7 @@ namespace Unity.UI.Builder
                 }
 
                 if (styleName is "-unity-text-generator")
-                    m_Inspector.UpdateAdvancedTextHelpBox();
+                    m_Inspector.UpdateTextGeneratorHelpBoxes();
 
                 return true;
             }
@@ -1536,10 +1512,6 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleList<EasingFunction>(val) && fieldElement is EnumField transitionTimingFunctionField)
             {
                 DispatchChangeEvent(transitionTimingFunctionField);
-            }
-            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField objectMaterialDefinitionField)
-            {
-                DispatchChangeEvent(objectMaterialDefinitionField);
             }
             else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionStyleField materialDefinitionField)
             {
@@ -2942,7 +2914,7 @@ namespace Unity.UI.Builder
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
             if (styleName is "-unity-text-generator" or "-unity-text-auto-size")
-                m_Inspector.UpdateAdvancedTextHelpBox();
+                m_Inspector.UpdateTextGeneratorHelpBoxes();
 
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
@@ -2955,48 +2927,6 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             styleProperty.SetRatio(styleSheet, e.newValue);
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
-        }
-
-        void OnFieldValueChangeMaterial(ChangeEvent<MaterialDefinition> e, string styleName)
-        {
-            var target = e.target;
-            var newValue = e.newValue.material;
-            var previousValue = e.previousValue.material;
-
-            if (newValue == null)
-            {
-                var keywords = StyleFieldConstants.GetStyleKeywords(styleName);
-                if (keywords == StyleFieldConstants.KLNone)
-                    OnFieldKeywordChange(StyleValueKeyword.None, target as VisualElement, styleName);
-                else if (keywords == StyleFieldConstants.KLAuto)
-                    OnFieldKeywordChange(StyleValueKeyword.Auto, target as VisualElement, styleName);
-                else
-                    OnFieldKeywordChange(StyleValueKeyword.Initial, target as VisualElement, styleName);
-
-                return;
-            }
-
-            var assetPath = AssetDatabase.GetAssetPath(newValue);
-            if (BuilderAssetUtilities.IsBuiltinPath(assetPath))
-            {
-                Builder.ShowWarning(BuilderConstants.BuiltInAssetPathsNotSupportedMessage);
-
-                // Revert the change.
-                ((MaterialDefinitionField)target).SetValueWithoutNotify(previousValue);
-                return;
-            }
-
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
-            var isNewValue = !styleProperty.HasValue();
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue, out var resolvedResourcePath))
-                styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
-            else
-                styleProperty.SetAssetReference(styleSheet, newValue);
-
-            PostStyleFieldSteps(target as VisualElement, styleProperty, styleName, isNewValue);
         }
 
         private void SetXAndYSubFieldsTooltips(VisualElement parentField, string xFieldName, string xTooltip, string yFieldName, string yTooltip)

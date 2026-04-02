@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.IO;
 using UnityEditor.AssetImporters;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -16,63 +15,137 @@ namespace UnityEditor.UIElements
     {
         protected override bool needsApplyRevert => false;
 
-        internal const string k_ApplyButtonName = "apply-fixes";
-        static readonly string k_MultipleAssetsInfo = L10n.Tr("{0} of the selected assets can be updated to fix some warnings.\nClick the button below to apply the update to the UXML files.\n\n");
-        static readonly string k_SingleAssetsInfo = L10n.Tr("This asset can be updated to fix some warnings.\nClick the button below to apply the update to the UXML file.\n\n");
-        static readonly string k_Warning = L10n.Tr("This action will update asset paths to resolve file references and prevent future warnings.\nApplying the fix will replace the entire UXML file.\n<b>Custom comments and formatting may be lost.</b>");
-        static readonly string k_ApplyButtonLabel = L10n.Tr("Apply (Overwrites File)");
-        static readonly string k_ApplyButtonLabelMultiple = L10n.Tr("Apply (Overwrites Files)");
-        private readonly VisualTreeAssetExporter m_Exporter = new VisualTreeAssetExporter();
+        internal const string k_ApplyUpgradesButtonName = "apply-upgrades";
+        static readonly string k_UpgradeWarning = L10n.Tr("Applying upgrades will replace the entire UXML file.\n<b>Custom comments and formatting may be lost.</b>");
+        static readonly string k_ApplyUpgradesButtonLabel = L10n.Tr("Apply Upgrades (Overwrites File)");
+        static readonly string k_ApplyUpgradesButtonLabelMultiple = L10n.Tr("Apply Upgrades (Overwrites Files)");
+
+        static UxmlUpgradeService s_UpgradeService = new UxmlUpgradeService();
 
         public override VisualElement CreateInspectorGUI()
         {
-            // Collect all the assets that can be upgraded
-            var upgradedAssets = new List<VisualTreeAsset>();
-            foreach(var t in targets)
+            var root = new VisualElement();
+
+            // Add UXML upgrade section
+            var uxmlUpgradeSection = CreateUxmlUpgradeSection();
+            if (uxmlUpgradeSection != null)
+                root.Add(uxmlUpgradeSection);
+
+            return root.childCount > 0 ? root : null;
+        }
+
+        private VisualElement CreateUxmlUpgradeSection()
+        {
+            // Collect all assets
+            using var _assets = ListPool<VisualTreeAsset>.Get(out var upgradeableAssets);
+            foreach (var t in targets)
             {
                 var importer = (UIElementsViewImporter)t;
                 var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(importer.assetPath);
-                if (vta != null && vta.importerWithUpdatedUrls)
-                    upgradedAssets.Add(vta);
+                if (vta != null)
+                    upgradeableAssets.Add(vta);
             }
 
-            if (upgradedAssets.Count == 0)
-                return null;
+            var section = new Foldout 
+            { 
+                text = L10n.Tr("UXML Upgrades"), 
+                viewDataKey = "uxml-upgrades",
+                tooltip = L10n.Tr("Apply upgrades to maintain or modernize UXML assets.")
+            };
 
-            bool multiple = targets.Length != 1;
-            var message = multiple ? k_SingleAssetsInfo : string.Format(k_MultipleAssetsInfo, upgradedAssets.Count);
-            message += k_Warning;
+            // Show informational message about upgrades
+            section.Add(new HelpBox(L10n.Tr(
+                "Selected UXML assets may contain patterns that can be upgraded.\n" +
+                "Some upgrades detect issues ahead of time, while others report changes after running. " +
+                "Use the options below to review and apply upgrades based on your target version and use cases."),
+                HelpBoxMessageType.Info));
 
-            var root = new VisualElement();
-            root.Add(new HelpBox(message, HelpBoxMessageType.Warning));
-            root.Add(new Button(() =>
+            // Check if any assets have broken URL references
+            foreach (var vta in upgradeableAssets)
             {
-                AssetDatabase.StartAssetEditing();
-                try
+                if (vta.importerWithUpdatedUrls)
                 {
-                    foreach (var vta in upgradedAssets)
-                    {
-                        var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(vta)) as UIElementsViewImporter;
-                        if (importer == null)
-                            continue;
+                    section.Add(new HelpBox(L10n.Tr("Broken URL references detected in some selected assets. Apply URL Fixes to resolve file references and prevent import warnings."),
+                    HelpBoxMessageType.Warning));
+                    break;
+                }
+            }
 
-                        var uxml = m_Exporter.ToUxmlString(vta);
-                        File.WriteAllText(importer.assetPath, uxml);
-                        AssetDatabase.ImportAsset(importer.assetPath);
-                    }
-                }
-                finally
+            // Show all upgraders in a multi-column list view
+            var nameColumn = new Column
+            {
+                name = "name",
+                title = L10n.Tr("Upgrader"),
+                stretchable = true,
+                sortable = false
+            };
+            var enabledColumn = new Column
+            {
+                name = "enabled",
+                title = L10n.Tr("Enabled"),
+                width = 80,
+                stretchable = false,
+                sortable = false
+            };
+
+            var columns = new Columns
+            {
+                nameColumn,
+                enabledColumn
+            };
+
+            var listView = new MultiColumnListView(columns)
+            {
+                showBorder = true,
+                itemsSource = s_UpgradeService.m_Upgraders,
+                fixedItemHeight = 20,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight
+            };
+
+            nameColumn.makeCell = () => new Label();
+            nameColumn.bindCell = (element, index) =>
+            {
+                var label = (Label)element;
+                var upgrader = s_UpgradeService.upgraders[index];
+                label.text = upgrader.name;
+                label.tooltip = upgrader.description;
+            };
+
+            enabledColumn.makeCell = () => new Toggle();
+            enabledColumn.bindCell = (element, index)  =>
+            {
+                var toggle = (Toggle)element;
+                var upgrader = s_UpgradeService.upgraders[index];
+
+                toggle.SetValueWithoutNotify(s_UpgradeService.IsUpgraderEnabled(upgrader));
+                toggle.RegisterValueChangedCallback(evt =>
                 {
-                    AssetDatabase.StopAssetEditing();
+                    s_UpgradeService.SetUpgraderEnabled(upgrader, evt.newValue);
+                });
+            };
+
+            section.Add(listView);
+
+            section.Add(new Button(() =>
+            {
+                using var _ = ListPool<VisualTreeAsset>.Get(out var assets);
+                foreach (var t in targets)
+                {
+                    var importer = (UIElementsViewImporter)t;
+                    var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(importer.assetPath);
+                    if (vta != null)
+                        assets.Add(vta);
                 }
+
+                s_UpgradeService.ApplyUpgrades(assets);
             })
             {
-                text = multiple ? k_ApplyButtonLabelMultiple : k_ApplyButtonLabel,
-                name = k_ApplyButtonName,
-                style = { alignSelf = Align.FlexEnd }
+                text = targets.Length > 1 ? k_ApplyUpgradesButtonLabelMultiple : k_ApplyUpgradesButtonLabel,
+                name = k_ApplyUpgradesButtonName,
+                tooltip = k_UpgradeWarning
             });
 
-            return root;
+            return section;
         }
     }
 }

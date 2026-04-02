@@ -161,7 +161,7 @@ namespace UnityEditor.Experimental
             return FontDef.k_Inter;
         }
 
-        internal static IEnumerable<string> supportedFontNames => EditorResources.supportedFonts.Keys;
+        internal static IReadOnlyCollection<string> supportedFontNames => supportedFonts.Keys;
 
         private static string s_CurrentFontName = null;
 
@@ -174,9 +174,7 @@ namespace UnityEditor.Experimental
                     s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
 
                     // If the current is not available then fallback to the default font
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!supportedFontNames.Contains(s_CurrentFontName))
-#pragma warning restore UA2001
+                    if (!supportedFonts.ContainsKey(s_CurrentFontName))
                     {
                         s_CurrentFontName = GetDefaultFont();
                         EditorPrefs.DeleteKey(k_PrefsUserFontKey);
@@ -313,7 +311,7 @@ namespace UnityEditor.Experimental
 
                 if (rebuildCatalog)
                 {
-                    Console.WriteLine($"Loading style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
+                    Console.WriteLine($"Loading style catalogs ({paths.Count})\r\n\t{string.Join("\r\n\t", paths)}");
 
                     s_StyleCatalog.Load(paths);
 

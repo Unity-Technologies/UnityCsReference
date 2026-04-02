@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -33,9 +32,7 @@ namespace UnityEditor
         public static UnityType[] GetModuleTypes(string moduleName)
         {
             var runtimeTypeIndices = GetModuleTypeIndices(moduleName);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return runtimeTypeIndices.Select(index => UnityType.GetTypeByRuntimeTypeIndex(index)).ToArray();
-#pragma warning restore UA2001
+            return System.Array.ConvertAll(runtimeTypeIndices, UnityType.GetTypeByRuntimeTypeIndex);
         }
 
         [NativeName("GetModuleIncludeSetting")]

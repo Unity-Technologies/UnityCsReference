@@ -10,54 +10,54 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Container holding the data needed to handle a drag and drop operation.
+    /// Contains the data needed to handle a drag and drop operation in a <see cref="HierarchyView"/>.
     /// </summary>
     public readonly ref struct HierarchyViewDragAndDropHandlingData
     {
         readonly DragAndDropData m_DragAndDropData;
 
         /// <summary>
-        /// The parent <see cref="HierarchyNode"/> which will accept the new nodes created by the drag and drop operation. This can be the parent of the <see cref="Target"/>, or the <see cref="Target"/> itself if <see cref="DropPosition"/> is <see cref="DragAndDropPosition.OverItem"/>.
+        /// Gets the parent <see cref="HierarchyNode"/> that accepts the new nodes from the drag and drop operation. This is either the parent of the <see cref="Target"/>, or the <see cref="Target"/> itself if <see cref="DropPosition"/> is <see cref="DragAndDropPosition.OverItem"/>.
         /// </summary>
         public HierarchyNode Parent { get; }
 
         /// <summary>
-        /// The target <see cref="HierarchyNode"/> under the cursor.
+        /// Gets the target <see cref="HierarchyNode"/> under the cursor.
         /// </summary>
         public HierarchyNode Target { get; }
 
         /// <summary>
-        /// The insertion index in the <see cref="View"/>.
+        /// Gets the insertion index in the <see cref="HierarchyView"/>.
         /// </summary>
         public int InsertAtIndex { get; }
 
         /// <summary>
-        /// The Child index in the <see cref="View"/>.
+        /// Gets the child index in the <see cref="HierarchyView"/>.
         /// </summary>
         public int ChildIndex { get; }
 
         /// <summary>
-        /// The <see cref="DragAndDropPosition"/>.
+        /// Gets the <see cref="DragAndDropPosition"/> of the drop relative to the <see cref="Target"/>.
         /// </summary>
         public DragAndDropPosition DropPosition { get; }
 
         /// <summary>
-        /// The <see cref="HierarchyView"/> where the drag and drop operation is happening.
+        /// Gets the <see cref="HierarchyView"/> where the drag and drop operation occurs.
         /// </summary>
         public HierarchyView View { get; }
 
         /// <summary>
-        /// The Entity Ids references being dragged.
+        /// Gets the <see cref="EntityId"/> values involved in the drag and drop operation.
         /// </summary>
         public IReadOnlyList<EntityId> EntityIds => m_DragAndDropData.entityIds;
 
         /// <summary>
-        /// A list of paths to the assets being dragged.
+        /// Gets the paths to the assets involved in the drag and drop operation.
         /// </summary>
         public string[] Paths => m_DragAndDropData.paths;
 
         /// <summary>
-        /// The object that started the drag.
+        /// Gets the object that started the drag and drop operation.
         /// </summary>
         public object Source => m_DragAndDropData.source;
 
@@ -68,7 +68,7 @@ namespace Unity.Hierarchy
         /// Gets generic data from the drag and drop operation.
         /// </summary>
         /// <param name="key">The key for this entry.</param>
-        /// <returns>The generic data.</returns>
+        /// <returns>The generic data associated with the specified key.</returns>
         public object GetGenericData(string key)
         {
             return m_DragAndDropData.GetGenericData(key);

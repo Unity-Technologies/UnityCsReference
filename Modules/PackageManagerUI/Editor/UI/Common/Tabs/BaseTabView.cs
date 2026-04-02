@@ -107,8 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(tabHeader, true);
             SelectTab(tabHeaderId);
 
-            var tabIdsAndAssociatedWidths = m_ValidTabIds.SelectToNewArray(t => (t, GetTotalWidthForTabHeader(t)));
-
+            var tabIdsAndAssociatedWidths = m_ValidTabIds.ConvertAll(t => (t, GetTotalWidthForTabHeader(t)));
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
         }
@@ -173,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // so we just skip the calculation in this case, especially since the panel is not visible anyway
             if (elementPanel == null)
                 return;
-            var tabIdsAndAssociatedWidths = m_ValidTabIds.SelectToNewArray(t => (t, GetTotalWidthForTabHeader(t)));
+            var tabIdsAndAssociatedWidths = m_ValidTabIds.ConvertAll(t => (t, GetTotalWidthForTabHeader(t)));
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
         }

@@ -336,13 +336,13 @@ namespace UnityEngine.UIElements
                 m_Direction = value;
                 if (m_Direction == SliderDirection.Horizontal)
                 {
-                    RemoveFromClassList(verticalVariantUssClassName);
-                    AddToClassList(horizontalVariantUssClassName);
+                    RemoveFromClassList(verticalVariantUssClassNameUnique);
+                    AddToClassList(horizontalVariantUssClassNameUnique);
                 }
                 else
                 {
-                    RemoveFromClassList(horizontalVariantUssClassName);
-                    AddToClassList(verticalVariantUssClassName);
+                    RemoveFromClassList(horizontalVariantUssClassNameUnique);
+                    AddToClassList(verticalVariantUssClassNameUnique);
                 }
                 if (previous != m_Direction)
                     NotifyPropertyChanged(directionProperty);
@@ -379,47 +379,68 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-base-slider";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// USS class name of elements of this type, when they are displayed horizontally.
         /// </summary>
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        internal static readonly UniqueStyleString horizontalVariantUssClassNameUnique = new(horizontalVariantUssClassName);
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed vertically.
         /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        internal static readonly UniqueStyleString verticalVariantUssClassNameUnique = new(verticalVariantUssClassName);
+
         /// <summary>
         /// USS class name of container elements in elements of this type.
         /// </summary>
         public static readonly string dragContainerUssClassName = ussClassName + "__drag-container";
+        internal static readonly UniqueStyleString dragContainerUssClassNameUnique = new(dragContainerUssClassName);
+
         /// <summary>
         /// USS class name of tracker elements in elements of this type.
         /// </summary>
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
+        internal static readonly UniqueStyleString trackerUssClassNameUnique = new(trackerUssClassName);
+
         /// <summary>
         /// USS class name of dragger elements in elements of this type.
         /// </summary>
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        internal static readonly UniqueStyleString draggerUssClassNameUnique = new(draggerUssClassName);
+
         /// <summary>
         /// USS class name of the dragger border element in elements of this type.
         /// </summary>
         public static readonly string draggerBorderUssClassName = ussClassName + "__dragger-border";
+        internal static readonly UniqueStyleString draggerBorderUssClassNameUnique = new(draggerBorderUssClassName);
+
         /// <summary>
         /// USS class name of the text field element in elements of this type.
         /// </summary>
         public static readonly string textFieldClassName = ussClassName + "__text-field";
+        internal static readonly UniqueStyleString textFieldClassNameUnique = new(textFieldClassName);
+
         /// <summary>
         /// USS class name of fill element in elements of this type.
         /// </summary>
         public static readonly string fillUssClassName = ussClassName + "__fill";
+        internal static readonly UniqueStyleString fillUssClassNameUnique = new(fillUssClassName);
+
         /// <summary>
         /// USS class name on the dragger that indicates it is currently controlled by <see cref="NavigationMoveEvent"/>.
         /// When the slider detects move events aligned with the slider's direction, it adjusts the slider's value.
@@ -427,15 +448,16 @@ namespace UnityEngine.UIElements
         /// A second navigation submit event re-applies the style to the dragger and restores the previous customized behavior.
         /// </summary>
         public static readonly string movableUssClassName = ussClassName + "--movable";
+        internal static readonly UniqueStyleString movableUssClassNameUnique = new(movableUssClassName);
 
         internal const string k_FillElementName = "unity-fill";
 
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, null)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
 
             this.direction = direction;
             this.pageSize = pageSize;
@@ -444,21 +466,21 @@ namespace UnityEngine.UIElements
             pickingMode = PickingMode.Ignore;
 
             dragContainer = new VisualElement { name = "unity-drag-container" };
-            dragContainer.AddToClassList(dragContainerUssClassName);
+            dragContainer.AddToClassList(dragContainerUssClassNameUnique);
             dragContainer.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             visualInput.Add(dragContainer);
 
             trackElement = new VisualElement { name = "unity-tracker", usageHints = UsageHints.DynamicColor };
-            trackElement.AddToClassList(trackerUssClassName);
+            trackElement.AddToClassList(trackerUssClassNameUnique);
             dragContainer.Add(trackElement);
 
             dragBorderElement = new VisualElement { name = "unity-dragger-border" };
-            dragBorderElement.AddToClassList(draggerBorderUssClassName);
+            dragBorderElement.AddToClassList(draggerBorderUssClassNameUnique);
             dragContainer.Add(dragBorderElement);
 
             dragElement = new VisualElement { name = "unity-dragger", usageHints = UsageHints.DynamicTransform };
             dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
-            dragElement.AddToClassList(draggerUssClassName);
+            dragElement.AddToClassList(draggerUssClassNameUnique);
             dragContainer.Add(dragElement);
 
             clampedDragger = new ClampedDragger<TValueType>(this, SetSliderValueFromClick, SetSliderValueFromDrag);
@@ -475,7 +497,7 @@ namespace UnityEngine.UIElements
 
             var mouseDragger = new FieldMouseDragger<TValueType>(this);
             mouseDragger.SetDragZone(labelElement);
-            labelElement.AddToClassList(labelDraggerVariantUssClassName);
+            labelElement.AddToClassList(labelDraggerVariantUssClassNameUnique);
         }
 
         /// <undoc/>
@@ -655,7 +677,7 @@ namespace UnityEngine.UIElements
 
         void OnNavigationMove(NavigationMoveEvent evt)
         {
-            if (!dragElement.ClassListContains(movableUssClassName))
+            if (!dragElement.ClassListContains(movableUssClassNameUnique))
                 return;
 
             SliderKey sliderKey = SliderKey.None;
@@ -678,7 +700,7 @@ namespace UnityEngine.UIElements
         {
             if (m_IsEditingTextField)
                 return;
-            dragElement.EnableInClassList(movableUssClassName, !dragElement.ClassListContains(movableUssClassName));
+            dragElement.EnableInClassList(movableUssClassNameUnique, !dragElement.ClassListContains(movableUssClassNameUnique));
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -840,7 +862,7 @@ namespace UnityEngine.UIElements
             if (fillElement == null)
             {
                 fillElement = new VisualElement { name = k_FillElementName, usageHints = UsageHints.DynamicColor };
-                fillElement.AddToClassList(fillUssClassName);
+                fillElement.AddToClassList(fillUssClassNameUnique);
                 trackElement.Add(fillElement);
             }
 
@@ -891,7 +913,7 @@ namespace UnityEngine.UIElements
                 if (inputTextField == null)
                 {
                     inputTextField = new TextField() { name = "unity-text-field" };
-                    inputTextField.AddToClassList(textFieldClassName);
+                    inputTextField.AddToClassList(textFieldClassNameUnique);
                     inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
                     inputTextField.RegisterCallback<FocusInEvent>(OnTextFieldFocusIn);
                     inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
@@ -919,9 +941,9 @@ namespace UnityEngine.UIElements
             inputTextField.SetValueWithoutNotify(String.Format(CultureInfo.InvariantCulture, "{0:g7}", value));
         }
 
-        void OnFocusIn(FocusInEvent evt) => dragElement.AddToClassList(movableUssClassName);
+        void OnFocusIn(FocusInEvent evt) => dragElement.AddToClassList(movableUssClassNameUnique);
 
-        void OnFocusOut(FocusOutEvent evt) => dragElement.RemoveFromClassList(movableUssClassName);
+        void OnFocusOut(FocusOutEvent evt) => dragElement.RemoveFromClassList(movableUssClassNameUnique);
 
         private void OnTextFieldFocusIn(FocusInEvent evt)
         {

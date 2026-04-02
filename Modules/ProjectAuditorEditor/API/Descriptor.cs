@@ -167,10 +167,8 @@ namespace Unity.ProjectAuditor.Editor
 
         internal void Fix(ReportItem issue, AnalysisParams analysisParams)
         {
-            // Temp workaround for lost 'Fixer' after domain reload
-            if (Fixer == null)
+            if (Fixer == null || issue.WasFixed)
                 return;
-
             issue.WasFixed = Fixer(issue, analysisParams);
         }
 

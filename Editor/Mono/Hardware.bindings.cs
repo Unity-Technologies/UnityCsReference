@@ -9,8 +9,6 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Hardware
 {
-    [RequiredByNativeCode(GenerateProxy = true)]
-    [StructLayout(LayoutKind.Sequential)]
     public struct UsbDevice
     {
         readonly public int vendorId;
@@ -19,9 +17,24 @@ namespace UnityEditor.Hardware
         readonly public string udid;
         readonly public string name;
 
+        internal UsbDevice(int vendorId, int productId, int revision, string udid, string name)
+        {
+            this.vendorId = vendorId;
+            this.productId = productId;
+            this.revision = revision;
+            this.udid = udid;
+            this.name = name;
+        }
+
         public override string ToString()
         {
             return name + " (udid:" + udid + ", vid: " + vendorId.ToString("X4") + ", pid: " + productId.ToString("X4") + ", rev: " + revision.ToString("X4") + ")";
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        internal static void ReconstructArrayElementRaw(UsbDevice[] array, int index, int vendorId, int productId, int revision, string udid, string name)
+        {
+            array[index] = new UsbDevice(vendorId, productId, revision, udid, name);
         }
     }
 

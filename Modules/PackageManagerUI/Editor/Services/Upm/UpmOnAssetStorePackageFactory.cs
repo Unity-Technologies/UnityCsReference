@@ -209,7 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
             var productId = packageInfo.ParseProductId();
-            if (productId > 0 && m_UpmCache.GetInstalledPackageInfo(packageInfo.name)?.packageId != packageInfo.packageId)
+            if (productId > 0 && m_UpmCache.GetInstalledPackageInfoByName(packageInfo.name)?.packageId != packageInfo.packageId)
                 GeneratePackagesAndTriggerChangeEvent(new [] { productId });
         }
 

@@ -171,9 +171,7 @@ namespace UnityEditor.StyleSheets
             {
                 return new Property(Name)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    Values = Values.Select(v => v.Clone()).ToList()
-#pragma warning restore UA2001
+                    Values = Values.ConvertAll(v => v.Clone())
                 };
             }
         }
@@ -1017,9 +1015,7 @@ namespace UnityEditor.StyleSheets
             }
 
             var sortedEdges = graph.DepthFirstTraversal();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var sortedDerivations = sortedEdges.Select(index => derivations[index]).ToList();
-#pragma warning restore UA2001
+            var sortedDerivations = sortedEdges.ConvertAll(index => derivations[index]);
 
             return sortedDerivations;
         }

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
@@ -164,9 +163,7 @@ namespace UnityEditor
                 }
 
                 // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (overlapping.Count > 0 && res == overlapping.Last())
-#pragma warning restore UA2001
+                if (overlapping.Count > 0 && res == overlapping[^1])
                 {
                     Debug.LogError($"GetAllOverlapping failed, could not ignore game object '{res}' when picking");
                     break;

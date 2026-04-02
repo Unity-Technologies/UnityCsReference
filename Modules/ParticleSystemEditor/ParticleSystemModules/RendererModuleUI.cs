@@ -7,7 +7,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Rendering;
-using UnityEngine.UIElements;
+using Unity.Collections;
 using System;
 
 namespace UnityEditor
@@ -233,9 +233,7 @@ namespace UnityEditor
 
             public Texts()
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                vertexStreamsMenuContent = vertexStreamsMenu.Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
+                vertexStreamsMenuContent = Array.ConvertAll(vertexStreamsMenu, x => new GUIContent(x));
             }
         }
         private static Texts s_Texts;
@@ -544,9 +542,7 @@ namespace UnityEditor
                 renderers.Add(ps.GetComponent<ParticleSystemRenderer>());
             }
             var renderersArray = renderers.ToArray();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
-#pragma warning restore UA2001
 
             RendererEditorBase.DrawRenderingLayer(m_RenderingLayerMask, renderer, renderersArray, true);
             RendererEditorBase.DrawRendererPriority(m_RendererPriority, true);

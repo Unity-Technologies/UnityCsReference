@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 
 
 [assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")]
+[assembly: InternalsVisibleTo("UnityEditor.AnimationWindowModule")]

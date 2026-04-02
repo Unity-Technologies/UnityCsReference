@@ -53,12 +53,12 @@ namespace UnityEditor.UIElements
         public BackgroundField(string label) : base(label, null)
         {
             m_TypeOptions = new Dictionary<string, Type>();
-            m_ObjectField = new ObjectField() { classList = { objectFieldUssClassName }};
+            m_ObjectField = new ObjectField().WithClassList(objectFieldUssClassName);
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 
             m_ObjectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>() { typeof(Texture2D), typeof(RenderTexture), typeof(Sprite), typeof(VectorImage) });
 
-            var popupContainer = new VisualElement() {name = optionsPopupContainerName, classList = { optionsPopupContainerName }};
+            var popupContainer = new VisualElement() {name = optionsPopupContainerName }.WithClassList(optionsPopupContainerName);
             m_TypePopup = new PopupField<string> { formatSelectedValueCallback = OnFormatSelectedValue };
             popupContainer.Add(m_TypePopup);
 

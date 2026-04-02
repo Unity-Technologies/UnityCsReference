@@ -34,6 +34,11 @@ namespace UnityEditor
             public static GUIContent SharedSettingInformation = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
         }
 
+#pragma warning disable UAC1001
+        // These fields are public and as such candidates for Serialization
+        // but SerializaProperty can't be serialized, consider making them private
+        // and add a property getter/setter or use NonSerialized attribute
+        // https://jira.unity3d.com/browse/UUM-132885
         public SerializedProperty m_ForceToMono;
         public SerializedProperty m_Normalize;
         public SerializedProperty m_Ambisonic;
@@ -41,6 +46,7 @@ namespace UnityEditor
         public SerializedProperty m_OrigSize;
         public SerializedProperty m_CompSize;
         public SerializedProperty m_DefaultSampleSettings;
+#pragma warning restore UAC1001
 
         bool m_SelectionContainsTrackerFile;
 
@@ -351,8 +357,6 @@ namespace UnityEditor
                                 compressionFormatProperty.intValue,
                                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 allowedFormats.Select(a => new GUIContent(a.ToString())).ToArray(),
-#pragma warning restore UA2001
-                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 allowedFormats.Select(a => (int)a).ToArray());
 #pragma warning restore UA2001
                             if (changed.changed)

@@ -342,6 +342,9 @@ namespace UnityEditor.Search
             return Utils.TryGetNumber(itemValue, out value);
         }
 
+        public static bool TryConvertToULong(SearchItem item, out ulong value)
+            => Utils.TryGetULong(item.value, out value);
+
         public static string CreateId()
         {
             return Guid.NewGuid().ToString("N");
@@ -365,6 +368,11 @@ namespace UnityEditor.Search
         public static SearchItem CreateItem(int value, string label = null)
         {
             return CreateItem((double)value, label);
+        }
+
+        public static SearchItem CreateItem(ulong value, string label = null)
+        {
+            return CreateItem(label, value, null);
         }
 
         internal static SearchItem CreateItem(bool booleanValue, string label = null)
@@ -463,9 +471,9 @@ namespace UnityEditor.Search
             if (count == 0)
                 return false;
             if (count == 1)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return IsTrue(result.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             return true;
         }
 

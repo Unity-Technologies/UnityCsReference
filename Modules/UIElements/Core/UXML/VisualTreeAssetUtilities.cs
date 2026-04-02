@@ -9,7 +9,7 @@ using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class VisualTreeAssetUtilities
     {
         public static IEnumerable<string> EnumerateEnclosingNamespaces(string fullTypeName)

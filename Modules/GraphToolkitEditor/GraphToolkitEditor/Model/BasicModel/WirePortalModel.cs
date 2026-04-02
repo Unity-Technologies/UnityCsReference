@@ -40,6 +40,9 @@ namespace Unity.GraphToolkit.Editor
         TypeHandle m_TypeHandle;
 
         /// <inheritdoc />
+        public override bool CanHaveExpandablePorts => false;
+
+        /// <inheritdoc />
         public DeclarationModel DeclarationModel
         {
             get
@@ -75,7 +78,7 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public TypeHandle GetPortDataTypeHandle()
         {
-            if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelHashGuid, out var model) && model is PortalDeclarationPlaceholder)
+            if (m_DeclarationModel == null && GraphModel?.TryGetModelFromGuid(m_DeclarationModelHashGuid, out var model) == true && model is PortalDeclarationPlaceholder)
                 return TypeHandle.MissingPort;
 
             // Type's identification of portals' ports are empty strings in the compatibility tests.

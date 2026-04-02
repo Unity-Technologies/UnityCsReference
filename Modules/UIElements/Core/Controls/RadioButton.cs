@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that allows users to select a single option inside a <see cref="RadioButtonGroup"/>. For more information, refer to [[wiki:UIE-uxml-element-RadioButton|UXML element RadioButton]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/RadioButton.png")]
     public partial class RadioButton : BaseBoolField, IGroupBoxOption
     {
@@ -52,6 +53,8 @@ namespace UnityEngine.UIElements
         /// this class affects every RadioButton located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-radio-button";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name for Labels in RadioButton elements.
         /// </summary>
@@ -59,6 +62,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the <see cref="Label"/> sub-element of the <see cref="RadioButton"/> if the RadioButton has a Label.
         /// </remarks>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique= new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in RadioButton elements.
         /// </summary>
@@ -67,6 +72,8 @@ namespace UnityEngine.UIElements
         /// responses to the manipulator.
         /// </remarks>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of checkmark background in RadioButton elements.
         /// </summary>
@@ -74,6 +81,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the checkmark background sub-element of the <see cref="RadioButton"/>.
         /// </remarks>
         public static readonly string checkmarkBackgroundUssClassName = ussClassName + "__checkmark-background";
+        internal static readonly UniqueStyleString checkmarkBackgroundUssClassNameUnique = new(checkmarkBackgroundUssClassName);
+
         /// <summary>
         /// USS class name of checkmark in RadioButton elements.
         /// </summary>
@@ -81,6 +90,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the checkmark sub-element of the <see cref="RadioButton"/>.
         /// </remarks>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        internal static readonly UniqueStyleString checkmarkUssClassNameUnique = new(checkmarkUssClassName);
+
         /// <summary>
         /// USS class name of Text elements in RadioButton elements.
         /// </summary>
@@ -88,6 +99,7 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to Text sub-elements of the <see cref="RadioButton"/>.
         /// </remarks>
         public static readonly string textUssClassName = ussClassName + "__text";
+        internal static readonly UniqueStyleString textUssClassNameUnique = new(textUssClassName);
 
         VisualElement m_CheckmarkBackground;
 
@@ -125,17 +137,17 @@ namespace UnityEngine.UIElements
         public RadioButton(string label)
             : base(label)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
-            visualInput.AddToClassList(inputUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
 
             // Reorder checkmark hierarchy to add a background.
             m_CheckMark.RemoveFromHierarchy();
             m_CheckmarkBackground = new VisualElement() { pickingMode = PickingMode.Ignore };
             m_CheckmarkBackground.Add(m_CheckMark);
-            m_CheckmarkBackground.AddToClassList(checkmarkBackgroundUssClassName);
-            m_CheckMark.AddToClassList(checkmarkUssClassName);
+            m_CheckmarkBackground.AddToClassList(checkmarkBackgroundUssClassNameUnique);
+            m_CheckMark.AddToClassList(checkmarkUssClassNameUnique);
             visualInput.Add(m_CheckmarkBackground);
             UpdateCheckmark();
 
@@ -156,7 +168,7 @@ namespace UnityEngine.UIElements
         protected override void InitLabel()
         {
             base.InitLabel();
-            m_Label.AddToClassList(textUssClassName);
+            m_Label.AddToClassList(textUssClassNameUnique);
         }
 
         protected override void ToggleValue()

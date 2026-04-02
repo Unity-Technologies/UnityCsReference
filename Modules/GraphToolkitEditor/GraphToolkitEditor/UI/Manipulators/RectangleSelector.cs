@@ -182,9 +182,7 @@ namespace Unity.GraphToolkit.Editor
                 .OfType<GraphElementModel>()
                 .Where(model => model.IsSelectable())
                 .ToList();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool onlyWiresSelected = allSelectedModels.All(m => m is WireModel);
-#pragma warning restore UA2001
+            bool onlyWiresSelected = allSelectedModels.TrueForAll(m => m is WireModel);
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedNodes = allSelectedModels
 #pragma warning restore UA2001

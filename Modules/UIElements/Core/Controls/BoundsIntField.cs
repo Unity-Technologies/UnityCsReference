@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="BoundsInt"/> field. For more information, refer to [[wiki:UIE-uxml-element-BoundsIntField|UXML element BoundsIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/BoundsIntField.png")]
     public partial class BoundsIntField : BaseField<BoundsInt>
     {
@@ -64,23 +65,31 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-bounds-int-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// USS class name of position fields in elements of this type.
         /// </summary>
         public static readonly string positionUssClassName = ussClassName + "__position-field";
+        internal static readonly UniqueStyleString positionUssClassNameUnique = new(positionUssClassName);
+
         /// <summary>
         /// USS class name of size fields in elements of this type.
         /// </summary>
         public static readonly string sizeUssClassName = ussClassName + "__size-field";
+        internal static readonly UniqueStyleString sizeUssClassNameUnique = new(sizeUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of BoundsIntField.
@@ -98,14 +107,14 @@ namespace UnityEngine.UIElements
             delegatesFocus = false;
             visualInput.focusable = false;
 
-            AddToClassList(ussClassName);
-            visualInput.AddToClassList(inputUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
+            AddToClassList(ussClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
 
             m_PositionField = new Vector3IntField("Position");
             m_PositionField.name = "unity-m_Position-input";
             m_PositionField.delegatesFocus = true;
-            m_PositionField.AddToClassList(positionUssClassName);
+            m_PositionField.AddToClassList(positionUssClassNameUnique);
             m_PositionField.RegisterValueChangedCallback(e =>
             {
                 var current = value;
@@ -118,7 +127,7 @@ namespace UnityEngine.UIElements
             m_SizeField = new Vector3IntField("Size");
             m_SizeField.name = "unity-m_Size-input";
             m_SizeField.delegatesFocus = true;
-            m_SizeField.AddToClassList(sizeUssClassName);
+            m_SizeField.AddToClassList(sizeUssClassNameUnique);
             m_SizeField.RegisterValueChangedCallback(e =>
             {
                 var current = value;

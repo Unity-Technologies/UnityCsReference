@@ -9,11 +9,11 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Hierarchy Column
+    /// Represents a column in a <see cref="HierarchyView"/>.
     /// </summary>
     public sealed class HierarchyViewColumn : Column
     {
-        internal const string k_NonDefaultValue = "non-default-value";
+        internal static readonly UniqueStyleString k_NonDefaultValue = new("non-default-value");
 
         readonly HierarchyView m_View;
         readonly List<HierarchyViewCellDescriptor> m_CellDescriptors = new();
@@ -21,20 +21,20 @@ namespace Unity.Hierarchy
         internal HierarchyView View => m_View;
 
         /// <summary>
-        /// Column Descriptor used to build this Column.
+        /// Gets the <see cref="HierarchyViewColumnDescriptor"/> used to build this column.
         /// </summary>
         public HierarchyViewColumnDescriptor Descriptor { get; }
 
         /// <summary>
-        /// Available Collection of CellDescriptors for this column
+        /// Gets the collection of <see cref="HierarchyViewCellDescriptor"/> instances available for this column.
         /// </summary>
         public IReadOnlyCollection<HierarchyViewCellDescriptor> CellDescriptors => m_CellDescriptors;
 
         /// <summary>
-        /// Create a new Column from a ColumnDescriptor and set the View it belongs to.
+        /// Creates a new <see cref="HierarchyViewColumn"/> from a <see cref="HierarchyViewColumnDescriptor"/> and sets the <see cref="HierarchyView"/> it belongs to.
         /// </summary>
-        /// <param name="view">HierarchyView that will host the column</param>
-        /// <param name="descriptor">ColumnDescriptor used to provide all the data to create the column and binds it.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> that hosts this column.</param>
+        /// <param name="descriptor">The <see cref="HierarchyViewColumnDescriptor"/> that provides the data to create the column and bind it.</param>
         public HierarchyViewColumn(HierarchyView view, HierarchyViewColumnDescriptor descriptor)
         {
             m_View = view;
@@ -71,9 +71,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Add a CellDescriptor to this Column. The cell descriptor must match Id of the ColumnDescriptor and there must be no other CellDescriptor with the same NodeType.
+        /// Adds a <see cref="HierarchyViewCellDescriptor"/> to this column. The cell descriptor must match the identifier of the <see cref="HierarchyViewColumnDescriptor"/>, and there must be no other cell descriptor with the same node type.
         /// </summary>
-        /// <param name="desc">CellDescriptor to register.</param>
+        /// <param name="desc">The <see cref="HierarchyViewCellDescriptor"/> to register.</param>
         public void AddCell(HierarchyViewCellDescriptor desc)
         {
             if (!desc.ValidForColumn(Descriptor))
@@ -187,7 +187,7 @@ namespace Unity.Hierarchy
 
             cell.Node = node;
             cell.NodeIndex = index;
-            cell.Handler = m_View.Source.GetNodeTypeHandler(node);
+            cell.Handler = m_View.ViewModel.GetNodeTypeHandler(node);
             if (cell.Handler == null)
                 return;
 
@@ -216,9 +216,9 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Return Column string representation
+        /// Returns a string representation of this <see cref="HierarchyViewColumn"/>.
         /// </summary>
-        /// <returns>Return Column string representation</returns>
+        /// <returns>A string representation of this column.</returns>
         public override string ToString()
         {
             return Descriptor.ToString();

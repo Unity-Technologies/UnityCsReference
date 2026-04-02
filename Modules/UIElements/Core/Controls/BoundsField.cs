@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Bounds"/> editor field. For more information, refer to [[wiki:UIE-uxml-element-BoundsField|UXML element BoundsField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/BoundsField.png")]
     public partial class BoundsField : BaseField<Bounds>
     {
@@ -61,22 +62,31 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-bounds-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of center fields in elements of this type.
         /// </summary>
         public static readonly string centerFieldUssClassName = ussClassName + "__center-field";
+        internal static readonly UniqueStyleString centerFieldUssClassNameUnique = new(centerFieldUssClassName);
+
         /// <summary>
         /// USS class name of extents fields in elements of this type.
         /// </summary>
         public static readonly string extentsFieldUssClassName = ussClassName + "__extents-field";
+        internal static readonly UniqueStyleString extentsFieldUssClassNameUnique = new(extentsFieldUssClassName);
 
         private Vector3Field m_CenterField;
         private Vector3Field m_ExtentsField;
@@ -97,14 +107,14 @@ namespace UnityEngine.UIElements
             delegatesFocus = false;
             visualInput.focusable = false;
 
-            AddToClassList(ussClassName);
-            visualInput.AddToClassList(inputUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
+            AddToClassList(ussClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
 
             m_CenterField = new Vector3Field("Center");
             m_CenterField.name = "unity-m_Center-input";
             m_CenterField.delegatesFocus = true;
-            m_CenterField.AddToClassList(centerFieldUssClassName);
+            m_CenterField.AddToClassList(centerFieldUssClassNameUnique);
 
             m_CenterField.RegisterValueChangedCallback(e =>
             {
@@ -117,7 +127,7 @@ namespace UnityEngine.UIElements
             m_ExtentsField = new Vector3Field("Extents");
             m_ExtentsField.name = "unity-m_Extent-input";
             m_ExtentsField.delegatesFocus = true;
-            m_ExtentsField.AddToClassList(extentsFieldUssClassName);
+            m_ExtentsField.AddToClassList(extentsFieldUssClassNameUnique);
             m_ExtentsField.RegisterValueChangedCallback(e =>
             {
                 Bounds current = value;

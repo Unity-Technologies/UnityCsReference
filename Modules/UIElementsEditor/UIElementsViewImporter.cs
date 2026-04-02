@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 29, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 30, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -129,6 +129,18 @@ namespace UnityEditor.UIElements
         #pragma warning restore CS0618 // Type or member is obsolete
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
+
+        /// <summary>
+        /// Controls whether URL paths are automatically upgraded during import.
+        /// When false, the importer will not set importerWithUpdatedUrls flag.
+        /// </summary>
+        internal bool enableAutomaticUrlUpgrades = true;
+
+        /// <summary>
+        /// Controls whether obsolete attribute names are automatically renamed during import.
+        /// When false, the importer will not set importedWithObsoleteAttributeNames flag.
+        /// </summary>
+        internal bool enableAutomaticAttributeRenames = true;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal UXMLImporterImpl()
@@ -1217,7 +1229,7 @@ namespace UnityEditor.UIElements
                                     asset = ExtractSubAssetFromParent(asset, assetType, response);
 
                                     // Update the url value so it is correct when saved back to UXML
-                                    if (response.resolvedUrlChanged)
+                                    if (response.resolvedUrlChanged && enableAutomaticUrlUpgrades)
                                     {
                                         attrValue = URIHelpers.MakeAssetUri(asset);
                                         vta.importerWithUpdatedUrls = true;
@@ -1228,16 +1240,29 @@ namespace UnityEditor.UIElements
                             }
                         }
 
-                        UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, attributeDescription, cc);
+                        var result = UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, attributeDescription, cc);
+                        if (!result.success && result.hasError)
+                        {
+                            LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeParsing, result.GenerateFullErrorMessage(attributeDescription.name), elt);
+                        }
                     };
 
                     // Since a deprecated attribute name may be shared by multiple attributes, we apply it to every matching occurrence.
-                    foreach (var obsoleteAttribute in uxmlSerializedDataDescription.FindAttributesWithObsoleteUxmlName(attrName))
+                    if (enableAutomaticAttributeRenames)
                     {
-                        if (UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, obsoleteAttribute, cc))
+                        foreach (var obsoleteAttribute in uxmlSerializedDataDescription.FindAttributesWithObsoleteUxmlName(attrName))
                         {
-                            // Upgrade the attribute name
-                            attrName = obsoleteAttribute.name;
+                            var result = UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, obsoleteAttribute, cc);
+                            if (result.success)
+                            {
+                                // Upgrade the attribute name
+                                attrName = obsoleteAttribute.name;
+                                vta.importedWithObsoleteAttributeNames = true;
+                            }
+                            else if (result.hasError)
+                            {
+                                LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeParsing, result.GenerateFullErrorMessage(attrName), elt);
+                            }
                         }
                     }
                 }
@@ -1256,7 +1281,11 @@ namespace UnityEditor.UIElements
                         var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attrName);
                         if (attributeDesc != null)
                         {
-                            UxmlSerializer.TryParseSerializedAttribute(uxmlAsset.GetAttributeValue(attrName), uxmlSerializedData, attributeDesc, cc);
+                            var result = UxmlSerializer.TryParseSerializedAttribute(uxmlAsset.GetAttributeValue(attrName), uxmlSerializedData, attributeDesc, cc);
+                            if (!result.success && result.hasError)
+                            {
+                                LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeParsing, result.GenerateFullErrorMessage(attributeDesc.name), elt);
+                            }
                         }
                     }
                 }
@@ -1409,9 +1438,9 @@ namespace UnityEditor.UIElements
                     // it's then applied during tree cloning
                     m_Builder.BeginRule(-1);
                     m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var prop in parsed.StyleRules.First().Style.Declarations)
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                     {
                         m_Builder.BeginProperty(prop.Name);
                         VisitValue(prop);

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -14,6 +13,7 @@ using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using Component = UnityEngine.Component;
 using UnityObject = UnityEngine.Object;
 
@@ -768,9 +768,7 @@ namespace UnityEditor
             iterator.Dispose();
             if (exitCount > 0)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Debug.LogWarning("The following properties registered with CacheProperty where not found during the inspector creation: " + string.Join(", ", properties.Keys.ToArray()));
-#pragma warning restore UA2001
+                Debug.LogWarning("The following properties registered with CacheProperty where not found during the inspector creation: " + string.Join(", ", properties.Keys));
             }
         }
 
@@ -844,9 +842,7 @@ namespace UnityEditor
             {
                 expanded = false;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (propertyToExclude.Contains(property.name))
-#pragma warning restore UA2001
                     continue;
 
                 EditorGUILayout.PropertyField(property, true);
@@ -1030,9 +1026,7 @@ namespace UnityEditor
                 bool openAssets = false;
 
                 // 'Check Out and Open' dialog
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                openAssets = AssetDatabase.MakeEditable(assets.Select(AssetDatabase.GetAssetPath).ToArray(),
-#pragma warning restore UA2001
+                openAssets = AssetDatabase.MakeEditable(Array.ConvertAll(assets, AssetDatabase.GetAssetPath),
                     "Do you want to check out " +
                     (assetCount > 1 ? String.Format("these {0} files?", assetCount) : "this file?"));
 

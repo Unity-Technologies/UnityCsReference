@@ -110,9 +110,8 @@ namespace UnityEditor.UIElements.Debugger
             if (!String.IsNullOrEmpty(elementText))
                 elt.SetAttributeValue("text", elementText);
 
-            var classes = ve.GetClassesForIteration();
-            if (classes.Count > 0)
-                elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
+            if (ve.classListCount > 0)
+                elt.SetAttributeValue("class", string.Join(" ", ve.GetClasses()));
 
             if (ve is TemplateContainer)
             {

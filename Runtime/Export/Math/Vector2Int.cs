@@ -17,7 +17,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/Vector2Int.h")]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     [Serializable]
-    public struct Vector2Int : IEquatable<Vector2Int>, IFormattable
+    public partial struct Vector2Int : IEquatable<Vector2Int>, IFormattable
     {
         public int x
         {

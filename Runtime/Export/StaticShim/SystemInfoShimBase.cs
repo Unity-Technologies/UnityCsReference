@@ -256,6 +256,8 @@ namespace UnityEngine
 
         public virtual bool supportsDepthFetchInRenderPass => UnityEngine.SystemInfo.supportsDepthFetchInRenderPass;
 
+        public virtual bool supportsDepthAttachmentAsInputAttachment => UnityEngine.SystemInfo.supportsDepthAttachmentAsInputAttachment;
+
         public virtual bool supportsDynamicResolution => UnityEngine.SystemInfo.supportsDynamicResolution;
 
         public virtual bool supportsBackbufferInMultipleRenderTargets => UnityEngine.SystemInfo.supportsBackbufferInMultipleRenderTargets;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using Unity.UIToolkit.Editor;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -114,7 +115,7 @@ namespace Unity.UI.Builder
             variableField = new VariableField();
 
             completer = CreateCompleter();
-            completer.alwaysVisible = true;
+            completer.AlwaysVisible = true;
             variableField.AddToClassList(BuilderConstants.HiddenStyleClassName);
             targetField.Add(variableField);
 
@@ -229,7 +230,7 @@ namespace Unity.UI.Builder
 
             // Disable completion on text field-based property fields when editing inline styles
             if (m_CompleterOnTarget != null)
-                m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
+                m_CompleterOnTarget.Enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
         }
 
         public static string GetBoundVariableName(VariableEditingHandler handler)

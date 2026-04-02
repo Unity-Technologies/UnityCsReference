@@ -17,6 +17,7 @@ internal class InstanceStatusElement : VisualElement
     internal const string k_InstanceFoldoutTitleContentClass = "unity-instance-status__title-content";
     internal const string k_InstanceFoldoutTitleIconClass = "unity-instance-status__title-icon";
     internal const string k_InstanceFoldoutTitleLabelClass = "unity-instance-status__title-label";
+    internal const string k_InstanceFoldoutTitleCustomClass = "unity-instance-status__title-custom";
     internal const string k_InstanceFoldoutTitleStatusClass = "unity-instance-status__title-status";
     internal const string k_InstanceFoldoutTitleStatusIconClass = "unity-instance-status__title-status-icon";
     internal const string k_InstanceFoldoutTitleFreeRunIconClass = "unity-instance-status__title-free-run-icon";
@@ -24,6 +25,7 @@ internal class InstanceStatusElement : VisualElement
     internal const string k_InstanceFoldoutTitleFreeRunIconInactiveClass = "unity-instance-status__title-free-run-icon--inactive";
     internal const string k_InstanceFoldoutTitleStatusLabelClass = "unity-instance-status__title-status-label";
     internal const string k_InstanceFoldoutContentClass = "unity-instance-status__content";
+    internal const string k_InstanceInspectorClass = "unity-instance-status__inspector";
     internal const string k_InstanceFoldoutTitleDriftIconClass = "unity-instance-status__title-drift-icon";
     internal const string k_DriftToolTip = "This instance might be drifting. This is caused by running an instance for a long time while possible changes were detected in the Main Editor. Consider exiting and restarting the instance.";
 
@@ -81,6 +83,7 @@ internal class InstanceStatusElement : VisualElement
 
         titleContent.Add(icon);
         titleContent.Add(label);
+        titleContent.Add(CreateTitleBarCustomUI(instance));
         titleContent.Add(CreateStatusElement());
 
         return titleContent;
@@ -114,10 +117,26 @@ internal class InstanceStatusElement : VisualElement
         m_DriftIcon.style.backgroundImage = Icons.GetImage(Icons.ImageName.Drift);
         m_DriftIcon.tooltip = k_DriftToolTip;
 
+
+
         container.Add(m_DriftIcon);
         container.Add(m_FreeRunIcon);
         container.Add(m_StatusIcon);
         container.Add(m_StatusLabel);
+
+        return container;
+    }
+
+    VisualElement CreateTitleBarCustomUI(Instance instance)
+    {
+        var container = new VisualElement();
+        container.AddToClassList(k_InstanceFoldoutTitleCustomClass);
+        container.Add(instance.Controller.CreateTitleBarUI(instance));
+
+        foreach (var decorator in instance.DecoratorsControllers)
+        {
+            container.Add(decorator.CreateTitleBarUI(instance));
+        }
 
         return container;
     }
@@ -174,6 +193,14 @@ internal class InstanceStatusElement : VisualElement
 
     VisualElement CreateContent(Instance instance)
     {
-        return instance.Controller.CreateControllerUI(instance);
+        var container = new VisualElement();
+        container.AddToClassList(k_InstanceInspectorClass);
+        container.AddToClassList("unity-inspector-element");
+        container.Add(instance.Controller.CreateControllerUI(instance));
+        foreach (var decorator in instance.DecoratorsControllers)
+        {
+            container.Add(decorator.CreateControllerUI(instance));
+        }
+        return container;
     }
 }

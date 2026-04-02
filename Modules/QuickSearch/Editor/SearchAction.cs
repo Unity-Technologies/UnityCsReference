@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -105,9 +105,7 @@ namespace UnityEditor.Search
         {
             handler = execute;
             if (enabled != null)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                this.enabled = (items) => items.All(e => enabled(e));
-#pragma warning restore UA2001
+                this.enabled = (items) => items.TrueForAll(e => enabled(e));
         }
 
         /// <summary>

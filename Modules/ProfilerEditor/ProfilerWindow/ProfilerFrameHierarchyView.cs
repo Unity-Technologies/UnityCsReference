@@ -101,7 +101,7 @@ namespace UnityEditorInternal.Profiling
         List<ThreadInfo> m_ThreadInfoCache;
 
         [SerializeField]
-        DetailedViewType m_DetailedViewType = DetailedViewType.None;
+        DetailedViewType m_DetailedViewType = DetailedViewType.Objects;
 
         [SerializeField]
         SplitterState m_DetailedViewSpliterState;

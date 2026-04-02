@@ -16,7 +16,9 @@ internal class OverrideBarManipulator : Manipulator
     private bool m_IsOverridden;
     VisualElement m_OverrideContainer;
 
-    public bool isOverridden
+    public Color @Color { get; set; } = Color.white;
+
+    public bool IsOverridden
     {
         get => m_IsOverridden;
         set
@@ -41,6 +43,11 @@ internal class OverrideBarManipulator : Manipulator
         }
     }
 
+    public OverrideBarManipulator()
+    {
+        Color = EditorGUIUtility.isProSkin ? Color.white : Color.black;
+    }
+
     protected override void RegisterCallbacksOnTarget()
     {
         target.generateVisualContent += DrawOverrideBar;
@@ -53,7 +60,7 @@ internal class OverrideBarManipulator : Manipulator
 
     void DrawOverrideBar(MeshGenerationContext mgc)
     {
-        if (!isOverridden)
+        if (!IsOverridden)
             return;
 
         const float lineWidth = 4;
@@ -64,7 +71,7 @@ internal class OverrideBarManipulator : Manipulator
             return;
 
         var painter = mgc.painter2D;
-        painter.strokeColor = EditorGUIUtility.isProSkin ? Color.white : Color.black;
+        painter.strokeColor = Color;
         painter.lineWidth = lineWidth;
         painter.BeginPath();
 

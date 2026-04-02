@@ -73,6 +73,18 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// The globally unique identifier for this graph.
+        /// </summary>
+        public Hash128 Guid
+        {
+            get
+            {
+                CheckImplementation();
+                return m_Implementation.Guid;
+            }
+        }
+
+        /// <summary>
         /// Creates and adds a new variable to the graph.
         /// </summary>
         /// <param name="name">The name of the variable.</param>
@@ -80,7 +92,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="defaultValue">The default value. Must be compatible with <paramref name="valueType"/> and work with Unity serialization rules for <see cref="SerializeField"/>.</param>
         /// <param name="kind">The kind of variable, defined by <see cref="VariableKind"/>.</param>
         /// <returns>The newly created variable.</returns>
-        /// <remarks> If the variable is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        /// <remarks>
+        /// If successful, also adds the node's type to the graph's list of supported types.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public IVariable CreateVariable(string name, Type valueType, object defaultValue = null, VariableKind kind = VariableKind.Local)
         {
             CheckImplementation();
@@ -95,7 +111,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="defaultValue">The default value. Must be compatible with <typeparamref name="T"/> and work with Unity serialization rules for <see cref="SerializeField"/>.</param>
         /// <param name="kind">The kind of variable, defined by <see cref="VariableKind"/>.</param>
         /// <returns>The newly created variable.</returns>
-        /// <remarks> If the variable is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        /// <remarks>
+        /// If successful, also adds the variable's type to the graph's list of supported types.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public IVariable CreateVariable<T>(string name, T defaultValue = default, VariableKind kind = VariableKind.Local)
         {
             return CreateVariable(name, typeof(T), defaultValue, kind);
@@ -107,6 +127,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="variable">The variable to remove. Must belong to this graph.</param>
         /// <param name="forceRemove">If true, removes the variable and all variable nodes referencing it. If false, removal fails if nodes exist.</param>
         /// <returns>True if the variable was removed; otherwise false.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public bool RemoveVariable(IVariable variable, bool forceRemove = false)
         {
             CheckImplementation();
@@ -182,6 +206,8 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// If the node is already in this graph, this method does nothing.
         /// If the node is currently in another graph, it will be removed from that graph and added to this one.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
         /// </remarks>
         public void AddNode(Node node)
         {
@@ -193,6 +219,10 @@ namespace Unity.GraphToolkit.Editor
         /// Removes a node from the Graph.
         /// </summary>
         /// <param name="node">The node to remove.</param>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public void RemoveNode(INode node)
         {
             CheckImplementation();
@@ -206,7 +236,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="valueType">The type of the value held by the constant.</param>
         /// <param name="defaultValue">The default value.</param>
         /// <returns>The newly created constant node.</returns>
-        /// <remarks> If the node is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        /// <remarks>
+        /// If successful, also adds the node's type to the graph's list of supported types.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public IConstantNode CreateConstantNode(Vector2 position, Type valueType, object defaultValue = null)
         {
             CheckImplementation();
@@ -220,7 +254,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="position">The position of the node.</param>
         /// <param name="defaultValue">The default value.</param>
         /// <returns>The newly created constant node.</returns>
-        /// <remarks> If the node is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        /// <remarks>
+        /// If successful, also adds the node's type to the graph's list of supported types.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public IConstantNode CreateConstantNode<T>(Vector2 position, T defaultValue = default)
         {
             return CreateConstantNode(position, typeof(T), defaultValue);
@@ -232,6 +270,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="variable">The variable to reference. Must belong to this graph.</param>
         /// <param name="position">The position of the node.</param>
         /// <returns>The newly created variable node.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public IVariableNode AddVariableNode(IVariable variable, Vector2 position)
         {
             CheckImplementation();
@@ -244,6 +286,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="subgraph">The Graph asset to reference.</param>
         /// <param name="position">The position of the node.</param>
         /// <returns>The newly created subgraph node.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public ISubgraphNode AddSubgraphNode(Graph subgraph, Vector2 position)
         {
             CheckImplementation();
@@ -257,6 +303,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The name of the local subgraph.</param>
         /// <param name="position">The position of the node.</param>
         /// <returns>The newly created subgraph node.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public ISubgraphNode CreateLocalSubgraphNode(Type subgraphType, string name, Vector2 position)
         {
             CheckImplementation();
@@ -270,6 +320,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The name of the local subgraph.</param>
         /// <param name="position">The position of the node.</param>
         /// <returns>The newly created subgraph node.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public ISubgraphNode CreateLocalSubgraphNode<TSubGraph>(string name, Vector2 position) where TSubGraph : Graph, new()
         {
             return CreateLocalSubgraphNode(typeof(TSubGraph), name, position);
@@ -281,6 +335,10 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="output">The output port to connect from.</param>
         /// <param name="input">The input port to connect to.</param>
         /// <returns>true if the connection was created; false if the connection already existed.</returns>
+        /// <remarks>
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// </remarks>
         public bool Connect(IPort output, IPort input)
         {
             CheckImplementation();
@@ -294,8 +352,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="input">The input port to disconnect.</param>
         /// <returns>true if a connection (wire or portal) existed and was removed; otherwise false.</returns>
         /// <remarks>
-        /// This method will remove direct wires. If the ports are connected via Portals, and those Portals serve only this specific connection, 
-        /// the Portals may also be removed.
+        /// This method removes direct wires and any Portals that serve only this specific connection.
+        /// Enclose this method with <see cref="UndoBeginRecordGraph"/> and <see cref="UndoEndRecordGraph"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
         /// </remarks>
         public bool Disconnect(IPort output, IPort input)
         {
@@ -382,6 +441,40 @@ namespace Unity.GraphToolkit.Editor
         /// Do not modify the graph within this method, as it may cause instability or recursive updates.
         /// </remarks>
         public virtual void OnGraphChanged(GraphLogger graphLogger) { }
+
+        /// <summary>
+        /// Signals the beginning of an undoable operation.
+        /// </summary>
+        /// <param name="actionName">The name of the operation, which is displayed in the undo menu.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if an undo operation has already been registered to the Graph.
+        /// </exception>
+        /// <remarks>
+        /// Call this before you trigger a sequence of graph modification methods to record those operations to the undo stack.
+        /// Call <see cref="UndoEndRecordGraph"/> after the sequence to signal that the operation is complete.
+        /// </remarks>
+        public void UndoBeginRecordGraph(string actionName)
+        {
+            CheckImplementation();
+            m_Implementation.UndoBeginRecordGraph(actionName);
+        }
+
+        /// <summary>
+        /// Signals the end of an undoable operation. Sends the undo data to the editor undo system and refreshes the graph view
+        /// with the changes made.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the there is no undo operation currently registered to the Graph.
+        /// </exception>
+        /// /// <remarks>
+        /// Call this after you trigger a sequence of graph modification methods to finalize recording the operations to the
+        /// undo stack. Call <see cref="UndoBeginRecordGraph"/> before the sequence to signal the operations to be recorded.
+        /// </remarks>
+        public void UndoEndRecordGraph()
+        {
+            CheckImplementation();
+            m_Implementation.UndoEndRecordGraph();
+        }
 
         /// <summary>
         /// Called to define the <see cref="INodeOption"/>s available on subgraph nodes that reference this type of graph.

@@ -23,7 +23,7 @@ internal class GitUpdateAction : PackageAction
         var installedVersion = version.package.versions.installed;
         var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, installedVersion.package.product?.id ?? 0, true);
 
-        if (!m_OperationDispatcher.Install(packageInfo.packageId))
+        if (!m_OperationDispatcher.Install(packageInfo.packageId, OperationType.Update))
             return false;
 
         PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);

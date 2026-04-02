@@ -72,7 +72,7 @@ namespace UnityEditor.UIElements
                 }
             }
             backDots.Add(UxmlSchemaGenerator.SchemaFolder);
-            var schemaDirectory = string.Join("/", backDots.ToArray());
+            var schemaDirectory = string.Join("/", backDots);
 
             var uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <ui:{0}

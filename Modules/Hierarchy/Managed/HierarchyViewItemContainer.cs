@@ -5,6 +5,7 @@
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements;
+using HierarchyViewItemPool = UnityEngine.Pool.ObjectPool<Unity.Hierarchy.HierarchyViewItem>;
 
 namespace Unity.Hierarchy
 {
@@ -15,8 +16,7 @@ namespace Unity.Hierarchy
     {
         // The pool for the typeless nodes. This is used when there isn't a node type handler.
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
-        static readonly UnityEngine.Pool.ObjectPool<HierarchyViewItem> s_ViewItemPool =
-            new UnityEngine.Pool.ObjectPool<HierarchyViewItem>(() => new HierarchyViewItem());
+        static readonly HierarchyViewItemPool s_ViewItemPool = new (() => new HierarchyViewItem(), defaultCapacity: 0, maxSize: 512);
 
         HierarchyView m_View;
         HierarchyViewItem m_ViewItem;
@@ -26,6 +26,25 @@ namespace Unity.Hierarchy
         public HierarchyViewItem ViewItem => m_ViewItem;
         public HierarchyNodeTypeHandler ViewItemNodeTypeHandler => m_ViewItemNodeTypeHandler;
 
+        static HierarchyViewItem GetViewItem(HierarchyNodeTypeHandler handler)
+        {
+            if (handler != null)
+                return handler.ViewItemPool.Get();
+            else
+                return s_ViewItemPool.Get();
+        }
+
+        static void ReleaseViewItem(HierarchyViewItem viewItem, HierarchyNodeTypeHandler currentHandler)
+        {
+            if (viewItem == null)
+                throw new ArgumentNullException(nameof(viewItem));
+
+            if (currentHandler != null)
+                currentHandler.ViewItemPool.Release(viewItem);
+            else
+                s_ViewItemPool.Release(viewItem);
+        }
+
         public void Bind(in HierarchyNode node, HierarchyView view)
         {
             if (node == HierarchyNode.Null)
@@ -33,11 +52,12 @@ namespace Unity.Hierarchy
             if (view == null)
                 throw new ArgumentNullException(nameof(view));
 
-            var handler = view.Source.GetNodeTypeHandler(in node);
+            var handler = view.ViewModel.GetNodeTypeHandler(in node);
             if (m_ViewItem == null || m_ViewItemNodeTypeHandler != handler)
             {
-                ReleaseViewItem();
-                m_ViewItem = handler != null ? handler.ViewItemPool.Get() : s_ViewItemPool.Get();
+                Release();
+
+                m_ViewItem = GetViewItem(handler);
                 if (m_ViewItem == null)
                     throw new NullReferenceException("Failed to get a view item from the pool");
 
@@ -57,19 +77,15 @@ namespace Unity.Hierarchy
             m_ViewItem?.Unbind();
         }
 
-        public void ReleaseViewItem()
+        public void Release()
         {
             if (m_ViewItem != null)
             {
                 if (m_ViewItem.Bound)
                     m_ViewItem.Unbind();
+
                 Remove(m_ViewItem);
-
-                if (m_ViewItemNodeTypeHandler != null)
-                    m_ViewItemNodeTypeHandler.ViewItemPool.Release(m_ViewItem);
-                else
-                    s_ViewItemPool.Release(m_ViewItem);
-
+                ReleaseViewItem(m_ViewItem, m_ViewItemNodeTypeHandler);
                 m_ViewItem = null;
             }
             m_View = null;

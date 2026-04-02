@@ -17,7 +17,7 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class Subgraph : ISerializationCallbackReceiver
     {
-        static readonly int k_InstanceIDNone = 0;
+        static readonly EntityId k_InstanceIDNone = EntityId.None;
 
         [SerializeField]
         string m_AssetGUID; // For serialization only. Otherwise use m_AssetGuid128.
@@ -26,7 +26,7 @@ namespace Unity.GraphToolkit.Editor
         long m_AssetLocalId;
 
         [SerializeField]
-        int m_GraphAssetObjectInstanceID;
+        EntityId m_GraphAssetObjectInstanceID;
 
         [SerializeField]
         string m_Title;
@@ -43,7 +43,7 @@ namespace Unity.GraphToolkit.Editor
             m_GraphAsset = graphAsset;
         }
 
-        internal Subgraph(GUID assetGuid, long assetLocalId, int instanceID)
+        internal Subgraph(GUID assetGuid, long assetLocalId, EntityId instanceID)
         {
             m_AssetGuid128 = assetGuid;
             m_AssetLocalId = assetLocalId;
@@ -78,7 +78,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public long AssetLocalId => m_AssetLocalId;
 
-        public int AssetInstanceId => m_GraphAssetObjectInstanceID;
+        public EntityId AssetInstanceId => m_GraphAssetObjectInstanceID;
         /// <summary>
         /// Gets the graph model of the subgraph.
         /// </summary>
@@ -110,7 +110,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (asset == null && m_GraphAssetObjectInstanceID != k_InstanceIDNone)
             {
-                var graphAsset = EditorUtility.InstanceIDToObject(m_GraphAssetObjectInstanceID) as GraphObject;
+                var graphAsset = EditorUtility.EntityIdToObject(m_GraphAssetObjectInstanceID) as GraphObject;
                 m_GraphAsset = graphAsset;
             }
         }
@@ -123,7 +123,7 @@ namespace Unity.GraphToolkit.Editor
             m_IsNativeAsset = AssetDatabase.IsNativeAsset(asset);
             m_IsAssetSubgraph = !m_GraphAsset.GraphModel.IsLocalSubgraph;
             AssetDatabaseHelper.TryGetGUIDAndLocalFileIdentifier(asset, out m_AssetGuid128, out m_AssetLocalId);
-            m_GraphAssetObjectInstanceID = asset.GetInstanceID();
+            m_GraphAssetObjectInstanceID = asset.GetEntityId();
             m_AssetGUID = null;
         }
 

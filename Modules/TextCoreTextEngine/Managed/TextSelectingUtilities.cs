@@ -14,17 +14,68 @@ namespace UnityEngine
     internal class TextSelectingUtilities
     {
         public enum DblClickSnapping : byte { WORDS, PARAGRAPHS }
-        public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;
-        public int iAltCursorPos = -1;
-        public bool hasHorizontalCursorPos = false;
+        DblClickSnapping m_DblClickSnap = DblClickSnapping.WORDS;
+        int m_IAltCursorPos = -1;
+        bool m_HasHorizontalCursorPos = false;
 
         private bool m_bJustSelected = false;
         private bool m_MouseDragSelectsWholeWords = false;
         private int m_DblClickInitPosStart = 0;
         private int m_DblClickInitPosEnd = 0;
+
+        public DblClickSnapping dblClickSnap
+        {
+            get
+            {
+                if (useAdvancedText)
+                    return (DblClickSnapping)TextSelectionService.GetDblClickSnap(tgi);
+                return m_DblClickSnap;
+            }
+            set
+            {
+                if (useAdvancedText)
+                    TextSelectionService.SetDblClickSnap(tgi, (int)value);
+                m_DblClickSnap = value;
+            }
+        }
+
+        public int iAltCursorPos
+        {
+            get
+            {
+                if (useAdvancedText)
+                    return TextSelectionService.GetIAltCursorPos(tgi);
+                return m_IAltCursorPos;
+            }
+            set
+            {
+                if (useAdvancedText)
+                    TextSelectionService.SetIAltCursorPos(tgi, value);
+                m_IAltCursorPos = value;
+            }
+        }
+
+        public bool hasHorizontalCursorPos
+        {
+            get
+            {
+                if (useAdvancedText)
+                    return TextSelectionService.GetHasHorizontalCursorPos(tgi);
+                return m_HasHorizontalCursorPos;
+            }
+            set
+            {
+                if (useAdvancedText)
+                    TextSelectionService.SetHasHorizontalCursorPos(tgi, value);
+                m_HasHorizontalCursorPos = value;
+            }
+        }
         public TextHandle textHandle;
         private const int kMoveDownHeight = 5;
         private const char kNewLineChar = '\n';
+
+        bool useAdvancedText => textHandle.useAdvancedText;
+        IntPtr tgi => textHandle.textGenerationInfo;
 
         /// Does this text field has a selection
         public bool hasSelection => cursorIndex != selectIndex;
@@ -32,9 +83,23 @@ namespace UnityEngine
         bool m_RevealCursor;
         public bool revealCursor
         {
-            get => m_RevealCursor;
+            get
+            {
+                if (useAdvancedText)
+                    return TextSelectionService.GetRevealCursor(tgi);
+                return m_RevealCursor;
+            }
             set
             {
+                if (useAdvancedText)
+                {
+                    if (TextSelectionService.SetRevealCursor(tgi, value))
+                    {
+                        m_RevealCursor = value;
+                        OnRevealCursorChange?.Invoke();
+                    }  
+                    return;
+                }
                 if (m_RevealCursor != value)
                 {
                     m_RevealCursor = value;
@@ -45,15 +110,31 @@ namespace UnityEngine
 
         int m_CharacterCount => textHandle.characterCount;
         // For TextCore we need to substract 1 if the last character is a zero width space
-        int characterCount => (!textHandle.useAdvancedText && m_CharacterCount > 0 && textHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
+        int characterCount => (!useAdvancedText && m_CharacterCount > 0 && textHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
         TextElementInfo[] m_TextElementInfos => textHandle.textInfo.textElementInfo;
 
         int m_CursorIndex = 0;
         public int cursorIndex
         {
-            get => textHandle.IsPlaceholder ? 0 : ClampTextIndex(m_CursorIndex);
+            get
+            {
+                if (textHandle.IsPlaceholder) return 0;
+                if (useAdvancedText)
+                    return TextSelectionService.GetCursorIndex(tgi);
+                return ClampTextIndex(m_CursorIndex);
+            }
             set
             {
+                if (useAdvancedText)
+                {
+                    if (TextSelectionService.SetCursorIndex(tgi, value))
+                    {
+                        m_CursorIndex = value;
+                        OnCursorIndexChange?.Invoke();
+                    }
+                        
+                    return;
+                }
                 if (m_CursorIndex != value)
                 {
                     m_CursorIndex = value;
@@ -65,9 +146,20 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal int cursorIndexNoValidation
         {
-            get { return m_CursorIndex; }
+            get
+            {
+                if (useAdvancedText)
+                    return TextSelectionService.GetCursorIndexNoValidation(tgi);
+                return m_CursorIndex;
+            }
             set
             {
+                if (useAdvancedText)
+                {
+                    if (TextSelectionService.SetCursorIndex(tgi, value))
+                        OnCursorIndexChange?.Invoke();
+                    return;
+                }
                 if (m_CursorIndex != value)
                 {
                     SetCursorIndexWithoutNotify(value);
@@ -78,16 +170,38 @@ namespace UnityEngine
 
         internal void SetCursorIndexWithoutNotify(int index)
         {
-            m_CursorIndex = index;
+            if (useAdvancedText)
+            {
+
+                TextSelectionService.SetCursorIndex(tgi, index);
+                m_CursorIndex = index;
+            }
+            else
+                m_CursorIndex = index;
         }
 
         internal int m_SelectIndex = 0;
         public int selectIndex
         {
-            get => textHandle.IsPlaceholder ? 0 : ClampTextIndex(m_SelectIndex);
+            get
+            {
+                if (textHandle.IsPlaceholder) return 0;
+                if (useAdvancedText)
+                    return TextSelectionService.GetSelectIndex(tgi);
+                return ClampTextIndex(m_SelectIndex);
+            }
             set
             {
-
+                if (useAdvancedText)
+                {
+                    if (TextSelectionService.SetSelectIndex(tgi, value))
+                    {
+                        m_SelectIndex = value;
+                        OnSelectIndexChange?.Invoke();
+                    }
+                        
+                    return;
+                }
                 if (m_SelectIndex != value)
                 {
                     SetSelectIndexWithoutNotify(value);
@@ -96,9 +210,23 @@ namespace UnityEngine
             }
         }
 
-        internal int selectIndexNoValidation {
-            get { return m_SelectIndex; }
-            set {
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        internal int selectIndexNoValidation
+        {
+            get
+            {
+                if (useAdvancedText)
+                    return TextSelectionService.GetSelectIndexNoValidation(tgi);
+                return m_SelectIndex;
+            }
+            set
+            {
+                if (useAdvancedText)
+                {
+                    if (TextSelectionService.SetSelectIndex(tgi, value))
+                        OnSelectIndexChange?.Invoke();
+                    return;
+                }
                 if (m_SelectIndex != value)
                 {
                     SetSelectIndexWithoutNotify(value);
@@ -106,9 +234,16 @@ namespace UnityEngine
                 }
             }
         }
+
         internal void SetSelectIndexWithoutNotify(int index)
         {
-            m_SelectIndex = index;
+            if (useAdvancedText)
+            {
+                TextSelectionService.SetSelectIndex(tgi, index);
+                m_SelectIndex = index;
+            }
+            else
+                m_SelectIndex = index;
         }
 
         /// Returns the selected text
@@ -116,6 +251,9 @@ namespace UnityEngine
         {
             get
             {
+                if (useAdvancedText)
+                    return TextSelectionService.GetSelectedText(tgi);
+
                 if (cursorIndex == selectIndex)
                     return "";
 
@@ -245,8 +383,43 @@ namespace UnityEngine
             return null;
         }
 
+        internal void NotifyFromFlags(int flags)
+        {
+            if ((flags & (int)EditingEventFlags.CursorIndexChanged) != 0)
+            {
+                OnCursorIndexChange?.Invoke();
+                m_CursorIndex = cursorIndex;
+            }
+            if ((flags & (int)EditingEventFlags.SelectIndexChanged) != 0)
+            {
+                OnSelectIndexChange?.Invoke();
+                m_SelectIndex = selectIndex;
+            }
+            if ((flags & (int)EditingEventFlags.RevealCursorChanged) != 0)
+            {
+                OnRevealCursorChange?.Invoke();
+                m_RevealCursor = revealCursor;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal void SyncStateToNative()
+        {
+            if (tgi != IntPtr.Zero)
+            {
+                TextSelectionService.SetCursorIndex(tgi, m_CursorIndex);
+                TextSelectionService.SetSelectIndex(tgi, m_SelectIndex);
+                TextSelectionService.SetRevealCursor(tgi, m_RevealCursor);
+            }
+        }
+
         public void ClearCursorPos()
         {
+            if (useAdvancedText)
+            {
+                TextSelectionService.ClearCursorPos(tgi);
+                return;
+            }
             hasHorizontalCursorPos = false;
             iAltCursorPos = -1;
         }
@@ -262,6 +435,11 @@ namespace UnityEngine
         /// Select all the text
         public void SelectAll()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectAll(tgi));
+                return;
+            }
             cursorIndex = 0; selectIndex = Int32.MaxValue;
             ClearCursorPos();
         }
@@ -269,6 +447,11 @@ namespace UnityEngine
         /// Select none of the text
         public void SelectNone()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectNone(tgi));
+                return;
+            }
             selectIndex = cursorIndex;
             ClearCursorPos();
         }
@@ -276,6 +459,11 @@ namespace UnityEngine
         /// Expand the selection to the left
         public void SelectLeft()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectLeft(tgi));
+                return;
+            }
             if (m_bJustSelected)
                 if (cursorIndex > selectIndex)
                 { // swap
@@ -290,6 +478,11 @@ namespace UnityEngine
 
         public void SelectRight()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectRight(tgi));
+                return;
+            }
             if (m_bJustSelected)
                 if (cursorIndex < selectIndex)
                 { // swap
@@ -304,17 +497,32 @@ namespace UnityEngine
 
         public void SelectUp()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectUp(tgi));
+                return;
+            }
             cursorIndex = textHandle.LineUpCharacterPosition(cursorIndex);
         }
 
         public void SelectDown()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectDown(tgi));
+                return;
+            }
             cursorIndex = textHandle.LineDownCharacterPosition(cursorIndex);
         }
 
         /// Select to the end of the text
         public void SelectTextEnd()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectTextEnd(tgi));
+                return;
+            }
             // This is not quite like the mac - there, when you select to end of text, the position of the cursor becomes somewhat i'll defined
             // Hard to explain. In textedit, try: CMD-SHIFT-down, SHIFT-LEFT for case 1. then do CMD-SHIFT-down, SHIFT-RIGHT, SHIFT-LEFT for case 2.
             // Anyways, it's wrong so we won't do that
@@ -324,24 +532,44 @@ namespace UnityEngine
         /// Select to the start of the text
         public void SelectTextStart()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectTextStart(tgi));
+                return;
+            }
             // Same thing as SelectTextEnd...
             cursorIndex = 0;
         }
 
         public void SelectToStartOfNextWord()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectToStartOfNextWord(tgi));
+                return;
+            }
             ClearCursorPos();
             cursorIndex = FindStartOfNextWord(cursorIndex);
         }
 
         public void SelectToEndOfPreviousWord()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectToEndOfPreviousWord(tgi));
+                return;
+            }
             ClearCursorPos();
             cursorIndex = FindEndOfPreviousWord(cursorIndex);
         }
 
         public void SelectWordRight()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectWordRight(tgi));
+                return;
+            }
             ClearCursorPos();
             int cachedPos = selectIndex;
             if (cursorIndex < selectIndex)
@@ -359,6 +587,11 @@ namespace UnityEngine
 
         public void SelectWordLeft()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectWordLeft(tgi));
+                return;
+            }
             ClearCursorPos();
             int cachedPos = selectIndex;
             if (cursorIndex > selectIndex)
@@ -378,6 +611,11 @@ namespace UnityEngine
         /// Used on a Windows for SHIFT-Home
         public void SelectGraphicalLineStart()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectGraphicalLineStart(tgi));
+                return;
+            }
             ClearCursorPos();
             cursorIndex = GetGraphicalLineStart(cursorIndex);
         }
@@ -386,23 +624,24 @@ namespace UnityEngine
         /// Used on a mac for SHIFT-End
         public void SelectGraphicalLineEnd()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectGraphicalLineEnd(tgi));
+                return;
+            }
             ClearCursorPos();
             cursorIndex = GetGraphicalLineEnd(cursorIndex);
         }
 
         public void SelectParagraphForward()
         {
-            ClearCursorPos();
-            bool wasBehind = cursorIndex < selectIndex;
-
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToNextParagraph(ref cursorTempIndex);
-                cursorIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.SelectParagraphForward(tgi));
                 return;
             }
-
+            ClearCursorPos();
+            bool wasBehind = cursorIndex < selectIndex;
             if (cursorIndex < characterCount)
             {
                 cursorIndex = IndexOfEndOfLine(cursorIndex + 1);
@@ -413,17 +652,13 @@ namespace UnityEngine
 
         public void SelectParagraphBackward()
         {
-            ClearCursorPos();
-            bool wasInFront = cursorIndex > selectIndex;
-
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
-                cursorIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.SelectParagraphBackward(tgi));
                 return;
             }
-
+            ClearCursorPos();
+            bool wasInFront = cursorIndex > selectIndex;
             if (cursorIndex > 1)
             {
                 cursorIndex = textHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
@@ -438,36 +673,22 @@ namespace UnityEngine
         /// Select the word under the cursor
         public void SelectCurrentWord()
         {
-            var index = cursorIndex;
-            
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursor = 0;
-                int select = 0;
-                textHandle.SelectCurrentWord(index, ref cursor, ref select);
-                if (cursorIndex < selectIndex)
-                {
-                    cursorIndex = cursor;
-                    selectIndex = select;
-                }
-                else
-                {
-                    cursorIndex = select;
-                    selectIndex = cursor;
-                }
+                NotifyFromFlags(TextSelectionService.SelectCurrentWord(tgi));
+                return;
+            }
+
+            var index = cursorIndex;
+            if (cursorIndex < selectIndex)
+            {
+                cursorIndex = FindEndOfClassification(index, Direction.Backward);
+                selectIndex = FindEndOfClassification(index, Direction.Forward);
             }
             else
             {
-                if (cursorIndex < selectIndex)
-                {
-                    cursorIndex = FindEndOfClassification(index, Direction.Backward);
-                    selectIndex = FindEndOfClassification(index, Direction.Forward);
-                }
-                else
-                {
-                    cursorIndex = FindEndOfClassification(index, Direction.Forward);
-                    selectIndex = FindEndOfClassification(index, Direction.Backward);
-                }
+                cursorIndex = FindEndOfClassification(index, Direction.Forward);
+                selectIndex = FindEndOfClassification(index, Direction.Backward);
             }
 
             ClearCursorPos();
@@ -477,18 +698,14 @@ namespace UnityEngine
         // Select the entire paragraph the cursor is on (separated by \n)
         public void SelectCurrentParagraph()
         {
-            ClearCursorPos();
-            int textLen = characterCount;
-
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                int selectTempIndex = selectIndex;
-                textHandle.SelectCurrentParagraph(ref cursorTempIndex, ref selectTempIndex);
-                cursorIndex = cursorTempIndex;
-                selectIndex = selectTempIndex;
+                NotifyFromFlags(TextSelectionService.SelectCurrentParagraph(tgi));
                 return;
             }
+
+            ClearCursorPos();
+            int textLen = characterCount;
 
             if (cursorIndex < textLen)
                 cursorIndex = IndexOfEndOfLine(cursorIndex);
@@ -499,6 +716,11 @@ namespace UnityEngine
         /// Move the cursor one character to the right and deselect.
         public void MoveRight()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveRight(tgi));
+                return;
+            }
             ClearCursorPos();
             if (selectIndex == cursorIndex)
             {
@@ -517,6 +739,11 @@ namespace UnityEngine
         /// Move the cursor one character to the left and deselect.
         public void MoveLeft()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveLeft(tgi));
+                return;
+            }
             if (selectIndex == cursorIndex)
             {
                 cursorIndex = PreviousCodePointIndex(cursorIndex);
@@ -535,6 +762,11 @@ namespace UnityEngine
         /// Move the cursor up and deselects.
         public void MoveUp()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveUp(tgi));
+                return;
+            }
             if (selectIndex < cursorIndex)
                 selectIndex = cursorIndex;
             else
@@ -547,6 +779,11 @@ namespace UnityEngine
         /// Move the cursor down and deselects.
         public void MoveDown()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveDown(tgi));
+                return;
+            }
             if (selectIndex > cursorIndex)
                 selectIndex = cursorIndex;
             else
@@ -559,11 +796,9 @@ namespace UnityEngine
         /// Moves the cursor to the start of the current line.
         public void MoveLineStart()
         {
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToStartOfParagraph(ref cursorTempIndex);
-                cursorIndex = selectIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.MoveLineStart(tgi));
                 return;
             }
 
@@ -583,14 +818,11 @@ namespace UnityEngine
         /// Moves the selection to the end of the current line
         public void MoveLineEnd()
         {
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToEndOfParagraph(ref cursorTempIndex);
-                cursorIndex = selectIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.MoveLineEnd(tgi));
                 return;
             }
-
 
             // we start from the right-most selected character
             int p = selectIndex > cursorIndex ? selectIndex : cursorIndex;
@@ -612,35 +844,53 @@ namespace UnityEngine
         /// Move to the start of the current graphical line. This takes word-wrapping into consideration.
         public void MoveGraphicalLineStart()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveGraphicalLineStart(tgi));
+                return;
+            }
             cursorIndex = selectIndex = GetGraphicalLineStart(cursorIndex < selectIndex ? cursorIndex : selectIndex);
         }
 
         /// Move to the end of the current graphical line. This takes word-wrapping into consideration.
         public void MoveGraphicalLineEnd()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveGraphicalLineEnd(tgi));
+                return;
+            }
             cursorIndex = selectIndex = GetGraphicalLineEnd(cursorIndex > selectIndex ? cursorIndex : selectIndex);
         }
 
         /// Moves the cursor to the beginning of the text
         public void MoveTextStart()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveTextStart(tgi));
+                return;
+            }
             selectIndex = cursorIndex = 0;
         }
 
         /// Moves the cursor to the end of the text
         public void MoveTextEnd()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveTextEnd(tgi));
+                return;
+            }
             selectIndex = cursorIndex = characterCount;
         }
 
         /// Move to the next paragraph
         public void MoveParagraphForward()
         {
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToNextParagraph(ref cursorTempIndex);
-                cursorIndex = selectIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.MoveParagraphForward(tgi));
                 return;
             }
 
@@ -654,11 +904,9 @@ namespace UnityEngine
         /// Move to the previous paragraph
         public void MoveParagraphBackward()
         {
-            if (textHandle.useAdvancedText)
+            if (useAdvancedText)
             {
-                int cursorTempIndex = cursorIndex;
-                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
-                cursorIndex = selectIndex = cursorTempIndex;
+                NotifyFromFlags(TextSelectionService.MoveParagraphBackward(tgi));
                 return;
             }
 
@@ -677,17 +925,23 @@ namespace UnityEngine
         /// This corresponds to Alt-RightArrow on a Mac
         public void MoveWordRight()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveWordRight(tgi));
+                return;
+            }
             cursorIndex = cursorIndex > selectIndex ? cursorIndex : selectIndex;
-
-            if (textHandle.useAdvancedText)
-                cursorIndex = selectIndex = FindStartOfNextWord(cursorIndex);
-            else
-                cursorIndex = selectIndex = FindNextSeperator(cursorIndex);
+            cursorIndex = selectIndex = FindNextSeperator(cursorIndex);
             ClearCursorPos();
         }
 
         public void MoveToStartOfNextWord()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveToStartOfNextWord(tgi));
+                return;
+            }
             ClearCursorPos();
             if (cursorIndex != selectIndex)
             {
@@ -699,6 +953,11 @@ namespace UnityEngine
 
         public void MoveToEndOfPreviousWord()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveToEndOfPreviousWord(tgi));
+                return;
+            }
             ClearCursorPos();
             if (cursorIndex != selectIndex)
             {
@@ -710,18 +969,24 @@ namespace UnityEngine
 
         public void MoveWordLeft()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveWordLeft(tgi));
+                return;
+            }
             cursorIndex = cursorIndex < selectIndex ? cursorIndex : selectIndex;
-            if (textHandle.useAdvancedText)
-                cursorIndex = FindEndOfPreviousWord(cursorIndex);
-            else
-                cursorIndex = FindPrevSeperator(cursorIndex);
-
+            cursorIndex = FindPrevSeperator(cursorIndex);
             selectIndex = cursorIndex;
         }
 
         /// sets whether the text selection is done by dbl click or not
         public void MouseDragSelectsWholeWords(bool on)
         {
+            if (useAdvancedText)
+            {
+                TextSelectionService.MouseDragSelectsWholeWords(tgi, on);
+                return;
+            }
             m_MouseDragSelectsWholeWords = on;
             m_DblClickInitPosStart = cursorIndex < selectIndex ? cursorIndex : selectIndex;
             m_DblClickInitPosEnd = cursorIndex < selectIndex ? selectIndex : cursorIndex;
@@ -731,6 +996,11 @@ namespace UnityEngine
         /// Used on a mac for CMD-SHIFT-LEFT
         public void ExpandSelectGraphicalLineStart()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.ExpandSelectGraphicalLineStart(tgi));
+                return;
+            }
             ClearCursorPos();
             if (cursorIndex < selectIndex)
                 cursorIndex = GetGraphicalLineStart(cursorIndex);
@@ -746,6 +1016,11 @@ namespace UnityEngine
         /// Used on a mac for CMD-SHIFT-RIGHT
         public void ExpandSelectGraphicalLineEnd()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.ExpandSelectGraphicalLineEnd(tgi));
+                return;
+            }
             ClearCursorPos();
             if (cursorIndex > selectIndex)
                 cursorIndex = GetGraphicalLineEnd(cursorIndex);
@@ -764,6 +1039,11 @@ namespace UnityEngine
 
         protected internal void MoveCursorToPosition_Internal(Vector2 cursorPosition, bool shift)
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.MoveCursorToPosition(tgi, textHandle.PointsToPixels(cursorPosition), shift));
+                return;
+            }
             selectIndex = textHandle.GetCursorIndexFromPosition(cursorPosition);
 
             if (!shift)
@@ -774,6 +1054,11 @@ namespace UnityEngine
 
         protected internal void MoveAltCursorToPosition(Vector2 cursorPosition)
         {
+            if (useAdvancedText)
+            {
+                TextSelectionService.MoveAltCursorToPosition(tgi, textHandle.PointsToPixels(cursorPosition));
+                return;
+            }
             // This action is invalid if the entire text is selected
             if (cursorIndex == 0 && selectIndex == characterCount)
             {
@@ -786,6 +1071,9 @@ namespace UnityEngine
 
         protected internal bool IsOverSelection(Vector2 cursorPosition)
         {
+            if (useAdvancedText)
+                return TextSelectionService.IsOverSelection(tgi, textHandle.PointsToPixels(cursorPosition));
+
             int p = textHandle.GetCursorIndexFromPosition(cursorPosition);
             return ((p < Mathf.Max(cursorIndex, selectIndex)) && (p > Mathf.Min(cursorIndex, selectIndex)));
         }
@@ -793,6 +1081,12 @@ namespace UnityEngine
         // Do a drag selection. Used to expand the selection in MouseDrag events.
         public void SelectToPosition(Vector2 cursorPosition)
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextSelectionService.SelectToPosition(tgi, textHandle.PointsToPixels(cursorPosition)));
+                return;
+            }
+
             if (characterCount == 0)
                 return;
             if (!m_MouseDragSelectsWholeWords)
@@ -805,48 +1099,24 @@ namespace UnityEngine
                 {
                     if (p <= m_DblClickInitPosStart)
                     {
-                        if (textHandle.useAdvancedText)
-                        {
-                            selectIndex = Mathf.Max(selectIndex, cursorIndex);
-                            cursorIndex = textHandle.GetEndOfPreviousWord(p);
-                        }
-                        else
-                        {
-                            cursorIndex = FindEndOfClassification(p, Direction.Backward);
-                            selectIndex = FindEndOfClassification(m_DblClickInitPosEnd - 1, Direction.Forward);
-                        }
+                        cursorIndex = FindEndOfClassification(p, Direction.Backward);
+                        selectIndex = FindEndOfClassification(m_DblClickInitPosEnd - 1, Direction.Forward);
                     }
                     else if (p >= m_DblClickInitPosEnd)
                     {
-                        if (textHandle.useAdvancedText)
-                        {
-                            selectIndex = Mathf.Min(selectIndex, cursorIndex);
-                            cursorIndex = textHandle.GetStartOfNextWord(p - 1);
-                        }
-                        else
-                        {
-                            cursorIndex = FindEndOfClassification(p - 1, Direction.Forward);
-                            selectIndex = FindEndOfClassification(m_DblClickInitPosStart + 1, Direction.Backward);
-                        }
+                        cursorIndex = FindEndOfClassification(p - 1, Direction.Forward);
+                        selectIndex = FindEndOfClassification(m_DblClickInitPosStart + 1, Direction.Backward);
                     }
                     else
                     {
                         cursorIndex = m_DblClickInitPosStart;
                         selectIndex = m_DblClickInitPosEnd;
                     }
-                } // paragraph
-                else
+                }
+                else // paragraph
                 {
-                    if ((!textHandle.useAdvancedText && p <= m_DblClickInitPosStart) || (textHandle.useAdvancedText && p < m_DblClickInitPosStart))
+                    if (p <= m_DblClickInitPosStart)
                     {
-                        if (textHandle.useAdvancedText)
-                        {
-                            int selectTempIndex = p;
-                            textHandle.SelectToStartOfParagraph(ref selectTempIndex);
-                            selectIndex = selectTempIndex;
-                            return;
-                        }
-
                         if (p > 0)
                             cursorIndex = textHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 1)) + 1;
                         else
@@ -856,14 +1126,6 @@ namespace UnityEngine
                     }
                     else if (p >= m_DblClickInitPosEnd)
                     {
-                        if (textHandle.useAdvancedText)
-                        {
-                            int cursorTempIndex = p;
-                            textHandle.SelectToEndOfParagraph(ref cursorTempIndex);
-                            cursorIndex = cursorTempIndex;
-                            return;
-                        }
-
                         if (p < characterCount)
                         {
                             cursorIndex = IndexOfEndOfLine(p);
@@ -875,16 +1137,8 @@ namespace UnityEngine
                     }
                     else
                     {
-                        if (textHandle.useAdvancedText)
-                        {
-                            cursorIndex = m_DblClickInitPosEnd;
-                            selectIndex = m_DblClickInitPosStart;
-                        }
-                        else
-                        {
-                            cursorIndex = m_DblClickInitPosStart;
-                            selectIndex = m_DblClickInitPosEnd;
-                        }
+                        cursorIndex = m_DblClickInitPosStart;
+                        selectIndex = m_DblClickInitPosEnd;
                     }
                 }
             }
@@ -919,10 +1173,9 @@ namespace UnityEngine
 
         public int FindStartOfNextWord(int p)
         {
-            if (textHandle.useAdvancedText)
-            {
-                return textHandle.GetStartOfNextWord(p);
-            }
+            if (useAdvancedText)
+                return TextSelectionService.GetStartOfNextWord(tgi, p);
+
             int textLen = characterCount;
             if (p == textLen)
                 return p;
@@ -959,10 +1212,9 @@ namespace UnityEngine
 
         public int FindEndOfPreviousWord(int p)
         {
-            if (textHandle.useAdvancedText)
-            {
-                return textHandle.GetEndOfPreviousWord(p);
-            }
+            if (useAdvancedText)
+                return TextSelectionService.GetEndOfPreviousWord(tgi, p);
+
             if (p == 0)
                 return p;
             p = PreviousCodePointIndex(p);
@@ -1021,6 +1273,11 @@ namespace UnityEngine
 
         int ClampTextIndex(int index)
         {
+            // When there is no cached Standard textInfo for this element (e.g., after
+            // switching from Advanced to Standard text generator), characterCount comes
+            // from a shared instance and is unreliable. Avoid clamping to a stale value.
+            if (!useAdvancedText && textHandle.TextInfoNode == null)
+                return Mathf.Max(0, index);
             return Mathf.Clamp(index, 0, characterCount);
         }
 
@@ -1032,8 +1289,8 @@ namespace UnityEngine
 
         public int PreviousCodePointIndex(int index)
         {
-            if (textHandle.useAdvancedText)
-                return textHandle.PreviousCodePointIndex(index);
+            if (useAdvancedText)
+                return TextSelectionService.PreviousCodePointIndex(tgi, index);
 
             if (index > 0)
                 index--;
@@ -1043,10 +1300,8 @@ namespace UnityEngine
 
         public int NextCodePointIndex(int index)
         {
-            if (textHandle.useAdvancedText)
-            {
-                return textHandle.NextCodePointIndex(index);
-            }
+            if (useAdvancedText)
+                return TextSelectionService.NextCodePointIndex(tgi, index);
 
             if (index < characterCount)
                 index++;
@@ -1066,6 +1321,13 @@ namespace UnityEngine
 
         public void Copy()
         {
+            if (useAdvancedText)
+            {
+                string selected = TextSelectionService.GetSelectedText(tgi);
+                if (selected.Length > 0)
+                    StytemCopyBuffer.systemCopyBuffer = selected;
+                return;
+            }
             if (selectIndex == cursorIndex)
                 return;
 

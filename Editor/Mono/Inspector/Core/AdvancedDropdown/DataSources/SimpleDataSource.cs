@@ -36,9 +36,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public SimpleDataSource(string[] displayOptions)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_DisplayedOptions = displayOptions.Select(a => new GUIContent(a)).ToArray();
-#pragma warning restore UA2001
+            m_DisplayedOptions = System.Array.ConvertAll(displayOptions, a => new GUIContent(a));
         }
 
         protected override AdvancedDropdownItem FetchData()

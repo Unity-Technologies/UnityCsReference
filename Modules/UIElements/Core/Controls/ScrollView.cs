@@ -109,6 +109,8 @@ namespace UnityEngine.UIElements
     /// This example creates a ScrollView that contains multiple labels and uses a Button to scroll to a selected label.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_ScrollTo.cs"/>
     /// </example>
+    ///
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/ScrollView.png")]
     public partial class ScrollView : VisualElement
     {
@@ -317,7 +319,7 @@ namespace UnityEngine.UIElements
         VisualElement m_AttachedRootVisualContainer;
         float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
         bool m_SingleLineHeightDirtyFlag;
-        const string k_SingleLineHeightPropertyName = "--unity-metrics-single_line-height";
+        static readonly UniqueStyleString k_SingleLineHeightPropertyName = new("--unity-metrics-single_line-height");
 
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
@@ -897,74 +899,105 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-scroll-view";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of viewport elements in elements of this type.
         /// </summary>
         public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
+        internal static readonly UniqueStyleString viewportUssClassNameUnique = new(viewportUssClassName);
+
         /// <summary>
         /// USS class name that's added when the Viewport is in horizontal mode.
         /// <seealso cref="ScrollViewMode.Horizontal"/>
         /// </summary>
         public static readonly string horizontalVariantViewportUssClassName = viewportUssClassName + "--horizontal";
+        internal static readonly UniqueStyleString horizontalVariantViewportUssClassNameUnique = new(horizontalVariantViewportUssClassName);
+
         /// <summary>
         /// USS class name that's added when the Viewport is in vertical mode.
         /// <seealso cref="ScrollViewMode.Vertical"/>
         /// </summary>
         public static readonly string verticalVariantViewportUssClassName = viewportUssClassName + "--vertical";
+        internal static readonly UniqueStyleString verticalVariantViewportUssClassNameUnique = new(verticalVariantViewportUssClassName);
+
         /// <summary>
         /// USS class name that's added when the Viewport is in both horizontal and vertical mode.
         /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
         /// </summary>
         public static readonly string verticalHorizontalVariantViewportUssClassName = viewportUssClassName + "--vertical-horizontal";
+        internal static readonly UniqueStyleString verticalHorizontalVariantViewportUssClassNameUnique = new(verticalHorizontalVariantViewportUssClassName);
+
         /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentAndVerticalScrollUssClassName = ussClassName + "__content-and-vertical-scroll-container";
+        internal static readonly UniqueStyleString contentAndVerticalScrollUssClassNameUnique = new(contentAndVerticalScrollUssClassName);
+
         /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
+        internal static readonly UniqueStyleString contentUssClassNameUnique = new(contentUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ContentContainer is in horizontal mode.
         /// <seealso cref="ScrollViewMode.Horizontal"/>
         /// </summary>
         public static readonly string horizontalVariantContentUssClassName = contentUssClassName + "--horizontal";
+        internal static readonly UniqueStyleString horizontalVariantContentUssClassNameUnique = new(horizontalVariantContentUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ContentContainer is in vertical mode.
         /// <seealso cref="ScrollViewMode.Vertical"/>
         /// </summary>
         public static readonly string verticalVariantContentUssClassName = contentUssClassName + "--vertical";
+        internal static readonly UniqueStyleString verticalVariantContentUssClassNameUnique = new(verticalVariantContentUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ContentContainer is in both horizontal and vertical mode.
         /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
         /// </summary>
         public static readonly string verticalHorizontalVariantContentUssClassName = contentUssClassName + "--vertical-horizontal";
+        internal static readonly UniqueStyleString verticalHorizontalVariantContentUssClassNameUnique = new(verticalHorizontalVariantContentUssClassName);
+
         /// <summary>
         /// USS class name of horizontal scrollers in elements of this type.
         /// </summary>
         public static readonly string hScrollerUssClassName = ussClassName + "__horizontal-scroller";
+        internal static readonly UniqueStyleString hScrollerUssClassNameUnique = new(hScrollerUssClassName);
+
         /// <summary>
         /// USS class name of vertical scrollers in elements of this type.
         /// </summary>
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
+        internal static readonly UniqueStyleString vScrollerUssClassNameUnique = new(vScrollerUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ScrollView is in horizontal mode.
         /// <seealso cref="ScrollViewMode.Horizontal"/>
         /// </summary>
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        internal static readonly UniqueStyleString horizontalVariantUssClassNameUnique = new(horizontalVariantUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ScrollView is in vertical mode.
         /// <seealso cref="ScrollViewMode.Vertical"/>
         /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        internal static readonly UniqueStyleString verticalVariantUssClassNameUnique = new(verticalVariantUssClassName);
+
         /// <summary>
         /// USS class name that's added when the ScrollView is in both horizontal and vertical mode.
         /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
         /// </summary>
         public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
+        internal static readonly UniqueStyleString verticalHorizontalVariantUssClassNameUnique = new(verticalHorizontalVariantUssClassName);
+
         /// <undoc/>
         // TODO why does this exist? It is set in all cases...
         public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
+        internal static readonly UniqueStyleString scrollVariantUssClassNameUnique = new(scrollVariantUssClassName);
 
         /// <summary>
         /// Constructor.
@@ -976,15 +1009,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         public ScrollView(ScrollViewMode scrollViewMode)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             m_ContentAndVerticalScrollContainer = new VisualElement() { name = "unity-content-and-vertical-scroll-container" };
-            m_ContentAndVerticalScrollContainer.AddToClassList(contentAndVerticalScrollUssClassName);
+            m_ContentAndVerticalScrollContainer.AddToClassList(contentAndVerticalScrollUssClassNameUnique);
 
             hierarchy.Add(m_ContentAndVerticalScrollContainer);
 
             contentViewport = new VisualElement() { name = "unity-content-viewport" };
-            contentViewport.AddToClassList(viewportUssClassName);
+            contentViewport.AddToClassList(viewportUssClassNameUnique);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.pickingMode = PickingMode.Ignore;
 
@@ -998,7 +1031,7 @@ namespace UnityEngine.UIElements
             // See case 1247583
             m_ContentContainer.disableClipping = true;
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            m_ContentContainer.AddToClassList(contentUssClassName);
+            m_ContentContainer.AddToClassList(contentUssClassNameUnique);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
             contentViewport.Add(m_ContentContainer);
 
@@ -1015,7 +1048,7 @@ namespace UnityEngine.UIElements
                 }, SliderDirection.Horizontal)
             { viewDataKey = "HorizontalScroller" };
 
-            horizontalScroller.AddToClassList(hScrollerUssClassName);
+            horizontalScroller.AddToClassList(hScrollerUssClassNameUnique);
             horizontalScroller.style.display = DisplayStyle.None;
             hierarchy.Add(horizontalScroller);
 
@@ -1041,7 +1074,7 @@ namespace UnityEngine.UIElements
             verticalScroller.lowButton.AddAction(UpdateElasticBehaviour);
             verticalScroller.highButton.AddAction(UpdateElasticBehaviour);
 
-            verticalScroller.AddToClassList(vScrollerUssClassName);
+            verticalScroller.AddToClassList(vScrollerUssClassNameUnique);
             verticalScroller.style.display = DisplayStyle.None;
             m_ContentAndVerticalScrollContainer.Add(verticalScroller);
 
@@ -1093,38 +1126,38 @@ namespace UnityEngine.UIElements
         {
             m_Mode = mode;
 
-            RemoveFromClassList(verticalVariantUssClassName);
-            RemoveFromClassList(horizontalVariantUssClassName);
-            RemoveFromClassList(verticalHorizontalVariantUssClassName);
-            RemoveFromClassList(scrollVariantUssClassName);
+            RemoveFromClassList(verticalVariantUssClassNameUnique);
+            RemoveFromClassList(horizontalVariantUssClassNameUnique);
+            RemoveFromClassList(verticalHorizontalVariantUssClassNameUnique);
+            RemoveFromClassList(scrollVariantUssClassNameUnique);
 
-            contentContainer.RemoveFromClassList(verticalVariantContentUssClassName);
-            contentContainer.RemoveFromClassList(horizontalVariantContentUssClassName);
-            contentContainer.RemoveFromClassList(verticalHorizontalVariantContentUssClassName);
+            contentContainer.RemoveFromClassList(verticalVariantContentUssClassNameUnique);
+            contentContainer.RemoveFromClassList(horizontalVariantContentUssClassNameUnique);
+            contentContainer.RemoveFromClassList(verticalHorizontalVariantContentUssClassNameUnique);
 
-            contentViewport.RemoveFromClassList(verticalVariantViewportUssClassName);
-            contentViewport.RemoveFromClassList(horizontalVariantViewportUssClassName);
-            contentViewport.RemoveFromClassList(verticalHorizontalVariantViewportUssClassName);
+            contentViewport.RemoveFromClassList(verticalVariantViewportUssClassNameUnique);
+            contentViewport.RemoveFromClassList(horizontalVariantViewportUssClassNameUnique);
+            contentViewport.RemoveFromClassList(verticalHorizontalVariantViewportUssClassNameUnique);
 
             switch (mode)
             {
                 case ScrollViewMode.Vertical:
-                    AddToClassList(scrollVariantUssClassName);
-                    AddToClassList(verticalVariantUssClassName);
-                    contentViewport.AddToClassList(verticalVariantViewportUssClassName);
-                    contentContainer.AddToClassList(verticalVariantContentUssClassName);
+                    AddToClassList(scrollVariantUssClassNameUnique);
+                    AddToClassList(verticalVariantUssClassNameUnique);
+                    contentViewport.AddToClassList(verticalVariantViewportUssClassNameUnique);
+                    contentContainer.AddToClassList(verticalVariantContentUssClassNameUnique);
                     break;
                 case ScrollViewMode.Horizontal:
-                    AddToClassList(scrollVariantUssClassName);
-                    AddToClassList(horizontalVariantUssClassName);
-                    contentViewport.AddToClassList(horizontalVariantViewportUssClassName);
-                    contentContainer.AddToClassList(horizontalVariantContentUssClassName);
+                    AddToClassList(scrollVariantUssClassNameUnique);
+                    AddToClassList(horizontalVariantUssClassNameUnique);
+                    contentViewport.AddToClassList(horizontalVariantViewportUssClassNameUnique);
+                    contentContainer.AddToClassList(horizontalVariantContentUssClassNameUnique);
                     break;
                 case ScrollViewMode.VerticalAndHorizontal:
-                    AddToClassList(scrollVariantUssClassName);
-                    AddToClassList(verticalHorizontalVariantUssClassName);
-                    contentViewport.AddToClassList(verticalHorizontalVariantViewportUssClassName);
-                    contentContainer.AddToClassList(verticalHorizontalVariantContentUssClassName);
+                    AddToClassList(scrollVariantUssClassNameUnique);
+                    AddToClassList(verticalHorizontalVariantUssClassNameUnique);
+                    contentViewport.AddToClassList(verticalHorizontalVariantViewportUssClassNameUnique);
+                    contentContainer.AddToClassList(verticalHorizontalVariantContentUssClassNameUnique);
                     break;
             }
         }
@@ -1286,8 +1319,8 @@ namespace UnityEngine.UIElements
         private Vector2 m_LowBounds;
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
+        private int m_TouchDraggingPointerId = PointerId.invalidPointerId;
         private bool m_StartedMoving;
-        internal bool m_TouchDraggingAllowed = true;
         private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
@@ -1544,7 +1577,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed)
+            if (evt.pointerType == PointerType.mouse)
                 return;
 
             var isXRPointer = evt.pointerType == PointerType.tracked;
@@ -1563,7 +1596,7 @@ namespace UnityEngine.UIElements
 
             m_TouchPointerMoveAllowed = true;
             m_StartedMoving = false;
-            InitTouchScrolling(evt.position);
+            InitTouchScrolling(evt.position, evt.pointerId);
 
             if (touchStopsVelocityOnly)
             {
@@ -1576,7 +1609,11 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed || !m_TouchPointerMoveAllowed)
+            if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
+                return;
+
+            // UUM-135860: don't allow multiple pointers to drive the scrolling behavior at once
+            if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
             var isXRPointer = evt.pointerType == PointerType.tracked;
@@ -1671,8 +1708,12 @@ namespace UnityEngine.UIElements
         }
 
         // Internal for tests.
-        internal void InitTouchScrolling(Vector2 position)
+        internal void InitTouchScrolling(Vector2 position) =>
+            InitTouchScrolling(position, PointerId.invalidPointerId);
+
+        private void InitTouchScrolling(Vector2 position, int pointerId)
         {
+            m_TouchDraggingPointerId = pointerId;
             m_PointerStartPosition = position;
             m_StartPosition = scrollOffset;
             m_Velocity = Vector2.zero;
@@ -1767,6 +1808,7 @@ namespace UnityEngine.UIElements
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
+            m_TouchDraggingPointerId = PointerId.invalidPointerId;
             m_TouchStoppedVelocity = false;
             m_StartedMoving = false;
             m_TouchPointerMoveAllowed = false;
@@ -1945,8 +1987,7 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            if (computedStyle.customProperties != null &&
-                computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            if (computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
             {
                 m_SingleLineHeightDirtyFlag = false;
                 if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
@@ -1966,8 +2007,8 @@ namespace UnityEngine.UIElements
                 m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
             }
             // Check if the property is set on the root visual element.
-            if (m_AttachedRootVisualContainer is { computedStyle.customProperties: not null } &&
-                     m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
+            if (m_AttachedRootVisualContainer != null &&
+                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
             {
 
                 m_SingleLineHeightDirtyFlag = false;

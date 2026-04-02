@@ -227,7 +227,6 @@ namespace UnityEditor.UIElements
             LengthField.UxmlSerializedData.Register();
             ListView.UxmlSerializedData.Register();
             LongField.UxmlSerializedData.Register();
-            MaterialDefinitionField.UxmlSerializedData.Register();
             MaskField.UxmlSerializedData.Register();
             Mask64Field.UxmlSerializedData.Register();
             MinMaxSlider.UxmlSerializedData.Register();

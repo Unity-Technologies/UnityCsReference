@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         string activePageIdFromLastUnitySession { get; set; }
         int? numItemsPerPage { get; set; }
         string selectedFeatureDependency { get; set; }
-        float packageDetailVerticalScrollOffset { get; set; }
+        float detailVerticalScrollOffset { get; set; }
         string selectedPackageDetailsTabIdentifier { get; set; }
         SortedColumn[] importedAssetsSortedColumns { get; set; }
         bool[] orderedSidebarFoldoutsExpandedStatus { get; set; }
@@ -112,11 +112,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private float m_PackageDetailVerticalScrollOffset;
-        public float packageDetailVerticalScrollOffset
+        private float m_DetailVerticalScrollOffset;
+        public float detailVerticalScrollOffset
         {
-            get => m_PackageDetailVerticalScrollOffset;
-            set => m_PackageDetailVerticalScrollOffset = value;
+            get => m_DetailVerticalScrollOffset;
+            set => m_DetailVerticalScrollOffset = value;
         }
 
         [SerializeField]

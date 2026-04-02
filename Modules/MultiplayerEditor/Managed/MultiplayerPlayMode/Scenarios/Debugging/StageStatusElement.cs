@@ -10,11 +10,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
     internal class StageStatusElement : VisualElement
     {
         private ExecutionStage m_Stage;
-        private IEnumerable<Node> m_Nodes;
+        private IEnumerable<ExecutionNode> m_Nodes;
 
         private Label m_StateLabel;
 
-        public StageStatusElement(ExecutionStage stage, IEnumerable<Node> nodes)
+        public StageStatusElement(ExecutionStage stage, IEnumerable<ExecutionNode> nodes)
         {
             m_Stage = stage;
             m_Nodes = nodes;

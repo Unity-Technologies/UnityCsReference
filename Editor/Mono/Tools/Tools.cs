@@ -71,31 +71,61 @@ namespace UnityEditor
         internal delegate void OnToolChangedFunc(Tool from, Tool to);
         [System.Obsolete("Use EditorTools.activeToolDidChange or EditorTools.activeToolWillChange")]
         internal static OnToolChangedFunc onToolChanged;
-#pragma warning restore 618
+#pragma warning restore 618 
 
         public static event Action pivotModeChanged;
+        internal static event Action<Type> pivotModeChangedForOwner;
         public static event Action pivotRotationChanged;
+        internal static event Action<Type> pivotRotationChangedForOwner;
         public static event Action viewToolChanged;
 
         public static Tool current
         {
-            get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
-            set
-            {
-                var tool = EditorToolUtility.GetEditorToolWithEnum(value);
+            get => GetCurrent(typeof(SceneView));
+            set => SetCurrent(value, typeof(SceneView));
+        }
 
-                //In case the new tool is leading to an incorrect tool type, return and leave the current tool as it is.
-                if (value != Tool.None && tool is NoneTool)
-                    return;
+        internal static Tool GetCurrent(Type toolOwner)
+        {
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolOwner);
+            EditorToolContext activeCtx = null;
+            if (state != null)
+                activeCtx = state.activeToolContext;
+            
+            return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool(toolOwner), activeCtx);
+        }
 
-                EditorToolManager.activeTool = tool;
-                ShortcutManager.RegisterTag(value);
-            }
+        internal static void SetCurrent(Tool tool, Type toolOwner)
+        {
+            var toolInstance = EditorToolUtility.GetEditorToolWithEnum(tool, toolOwner);
+
+            //In case the new tool is leading to an incorrect tool type, return and leave the current tool as it is.
+            if (tool != Tool.None && toolInstance is NoneTool)
+                return;
+
+            EditorToolManager.SetActiveTool(toolInstance, toolOwner);
+            ShortcutManager.RegisterTag(tool);
         }
 
         internal static void SyncToolEnum()
         {
             RepaintAllToolViews();
+        }
+
+        internal static void InvokePivotModeChangedCallback(Type toolOwner)
+        {
+            if (toolOwner == typeof(SceneView))
+                pivotModeChanged?.Invoke();
+            
+            pivotModeChangedForOwner?.Invoke(toolOwner);
+        }
+
+        internal static void InvokePivotRotationChangedCallback(Type toolOwner)
+        {
+            if (toolOwner == typeof(SceneView))
+                pivotRotationChanged?.Invoke();
+            
+            pivotRotationChangedForOwner?.Invoke(toolOwner);
         }
 
         public static ViewTool viewTool
@@ -160,10 +190,10 @@ namespace UnityEditor
                 return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
 
             Vector3 totalOffset = handleOffset + handleRotation * localHandleOffset;
-                
+            
             using (s_GetHandlePositionMarker.Auto())
             {
-                return EditorPivotManager.activePivotMode.position + totalOffset;
+                return EditorPivotManager.GetActivePivotMode(typeof(SceneView)).position + totalOffset;
             }
         }
         
@@ -175,7 +205,7 @@ namespace UnityEditor
                 var activeRotationTracker = EditorPivotManager.activeRotationTracker;
                 if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
-                
+
                 Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
                 int axis = GetRectAxisForViewDir(bounds, rotation, SceneView.currentDrawingSceneView.camera.transform.forward);
                 return GetRectFromBoundsForAxis(bounds, axis);
@@ -190,7 +220,7 @@ namespace UnityEditor
                 var activeRotationTracker = EditorPivotManager.activeRotationTracker;
                 if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
-                
+
                 Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
                 int axis = GetRectAxisForViewDir(bounds, rotation, SceneView.currentDrawingSceneView.camera.transform.forward);
                 return GetRectRotationForAxis(rotation, axis);
@@ -265,55 +295,15 @@ namespace UnityEditor
         {
             s_LockHandleRectAxisActive = false;
         }
-        
+
         public static PivotMode pivotMode
         {
-            get { return get.m_PivotMode; }
-            set
-            {
-                if (get.m_PivotMode != value)
-                {
-                    if (value == PivotMode.Custom)
-                    {
-                        // To match Tools.current behaviour, if Custom pivot mode is set, attempt to
-                        // reactivate last custom pivot but do nothing and return if there's no last custom mode or it's invalid.
-                        var activePivotMode = EditorPivotManager.activePivotMode;
-                        if (activePivotMode == null || EditorPivotManager.IsBuiltInPivotMode(activePivotMode))
-                        {
-                            var lastCustomMode = EditorPivotManager.lastCustomPivotMode;
-                            if (lastCustomMode != null)
-                            {
-                                if (EditorPivotManager.activePivotMode != lastCustomMode)
-                                    PivotManager.SetActivePivotMode(lastCustomMode.GetType());
-                            }
-                            else
-                                return;
-                        }
-                    }
-                    else
-                    {
-                        switch (value)
-                        {
-                            case PivotMode.Center:
-                                PivotManager.SetActivePivotMode(typeof(CenterPivotMode));
-                                break;
-                            case PivotMode.Pivot:
-                                PivotManager.SetActivePivotMode(typeof(PivotPointPivotMode));
-                                break;
-                        }
-                    }
-                    
-                    get.m_PivotMode = value;
-                    
-                    InvalidateHandlePosition();
-                    pivotModeChanged?.Invoke();
-                }
-            }
+            get => EditorToolManager.instance.defaultState.pivotMode;
+            set => EditorToolManager.instance.defaultState.pivotMode = value;
         }
-        private PivotMode m_PivotMode;
 
         [RequiredByNativeCode]
-        internal static int GetPivotMode()
+        internal static int GetPivotModeInternal()
         {
             return (int)pivotMode;
         }
@@ -334,69 +324,49 @@ namespace UnityEditor
         
         public static Quaternion handleRotation
         {
-            get => EditorPivotManager.activePivotRotation.rotation;
+            get => EditorPivotManager.GetActivePivotRotation(typeof(SceneView)).rotation;
             set
             {
-                if (get.m_PivotRotation == PivotRotation.Global)
+                var state = EditorToolManager.instance.defaultState;
+                if (state.pivotRotation == PivotRotation.Global)
                     get.m_GlobalHandleRotation = value;
-                else if (get.m_PivotRotation == PivotRotation.Grid)
+                else if (state.pivotRotation == PivotRotation.Grid)
                     get.m_GlobalHandleRotation = value * Quaternion.Inverse(GridSettings.instance.rotation);
             }
         }
 
         public static PivotRotation pivotRotation
         {
-            get { return get.m_PivotRotation; }
-            set
-            {
-                if (get.m_PivotRotation != value)
-                {
-                    if (value == PivotRotation.Custom)
-                    {
-                        // To match Tools.current behaviour, if Custom pivot mode is set, attempt to
-                        // reactivate last custom pivot but do nothing and return if there's no last custom mode or it's invalid.
-                        var activePivotRotation = EditorPivotManager.activePivotRotation;
-                        if (activePivotRotation == null || EditorPivotManager.IsBuiltInPivotRotation(activePivotRotation))
-                        {
-                            var lastCustomRotation = EditorPivotManager.lastCustomPivotRotation;
-                            if (lastCustomRotation != null)
-                            {
-                                if (EditorPivotManager.activePivotRotation != lastCustomRotation)
-                                    PivotManager.SetActivePivotRotation(lastCustomRotation.GetType());
-                            }
-                            else
-                                return;
-                        }
-                    }
-                    else
-                    {
-                        switch (value)
-                        {
-                            case PivotRotation.Global:
-                                PivotManager.SetActivePivotRotation(typeof(GlobalPivotRotation));
-                                break;
-                            case PivotRotation.Local:
-                                PivotManager.SetActivePivotRotation(typeof(LocalPivotRotation));
-                                break;
-                            case PivotRotation.Grid:
-                                PivotManager.SetActivePivotRotation(typeof(GridPivotRotation));
-                                break;
-                        }
-                    }
-                    
-                    get.m_PivotRotation = value;
-                    pivotRotationChanged?.Invoke();
-                }
-            }
+            get => EditorToolManager.instance.defaultState.pivotRotation;
+            set => EditorToolManager.instance.defaultState.pivotRotation = value;
         }
-        private PivotRotation m_PivotRotation;
 
-        internal static bool s_Hidden = false;
+        internal static bool s_Hidden
+        {
+            get { return hidden; }
+            set { hidden = value; }
+        }
 
         public static bool hidden
         {
-            get { return s_Hidden; }
-            set { s_Hidden = value; }
+            get { return GetHidden(typeof(SceneView)); }
+            set { SetHidden(value, typeof(SceneView)); }
+        }
+
+        internal static bool GetHidden(Type toolOwnerType)
+        {
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (state != null)
+                return state.hidden;
+
+            return false;
+        }
+        
+        internal static void SetHidden(bool hide, Type toolOwnerType)
+        {
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (state != null)
+                state.hidden = hide;
         }
 
         internal static bool vertexDragging;
@@ -414,9 +384,9 @@ namespace UnityEditor
 #pragma warning restore UA2002
                         m_VertexDraggingShortcutEvent = new Event();
                     else
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_VertexDraggingShortcutEvent = vertexSnappingBinding.keyCombinationSequence.First().ToKeyboardEvent();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 }
 
                 return m_VertexDraggingShortcutEvent;
@@ -501,7 +471,7 @@ namespace UnityEditor
 #pragma warning restore 618
             };
         }
-        
+
         void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChange;
@@ -534,12 +504,49 @@ namespace UnityEditor
 
         internal Quaternion m_GlobalHandleRotation = Quaternion.identity;
         internal static Quaternion globalHandleRotation => get.m_GlobalHandleRotation;
-        
+
         ViewTool m_ViewTool = ViewTool.Pan;
+
+        internal static PivotMode GetPivotMode(Type toolOwnerType)
+        {
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (ownerState != null)
+                return ownerState.pivotMode;
+
+            return default;
+        }
+
+        internal static void SetPivotMode(PivotMode pivotMode, Type toolOwnerType)
+        {
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (ownerState != null)
+                ownerState.pivotMode = pivotMode;
+        }
+
+        internal static PivotRotation GetPivotRotation(Type toolOwnerType)
+        {
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (ownerState != null)
+                return ownerState.pivotRotation;
+
+            return default;
+        }
+
+        internal static void SetPivotRotation(PivotRotation pivotRotation, Type toolOwnerType)
+        {
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (ownerState != null)
+                ownerState.pivotRotation = pivotRotation;
+        }
 
         static void SetToolMode(Tool toolMode)
         {
-            current = toolMode;
+            SetToolMode(toolMode, typeof(SceneView));
+        }
+        
+        static void SetToolMode(Tool toolMode, Type toolOwner)
+        {
+            SetCurrent(toolMode, toolOwner);
             Toolbar.instance?.Repaint();
             ResetGlobalHandleRotation();
         }
@@ -548,64 +555,80 @@ namespace UnityEditor
         [FormerlyPrefKeyAs("Tools/View", "q")]
         static void SetToolModeView(ShortcutArguments args)
         {
-            SetToolMode(Tool.View);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.View, toolOwner);
         }
 
         [Shortcut("Tools/Move", KeyCode.W)]
         [FormerlyPrefKeyAs("Tools/Move", "w")]
         static void SetToolModeMove(ShortcutArguments args)
         {
-            SetToolMode(Tool.Move);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.Move, toolOwner);
         }
 
         [Shortcut("Tools/Rotate", KeyCode.E)]
         [FormerlyPrefKeyAs("Tools/Rotate", "e")]
         static void SetToolModeRotate(ShortcutArguments args)
         {
-            SetToolMode(Tool.Rotate);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.Rotate, toolOwner);
         }
 
         [Shortcut("Tools/Scale", KeyCode.R)]
         [FormerlyPrefKeyAs("Tools/Scale", "r")]
         static void SetToolModeScale(ShortcutArguments args)
         {
-            SetToolMode(Tool.Scale);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.Scale, toolOwner);
         }
 
         [Shortcut("Tools/Rect", KeyCode.T)]
         [FormerlyPrefKeyAs("Tools/Rect Handles", "t")]
         static void SetToolModeRect(ShortcutArguments args)
         {
-            SetToolMode(Tool.Rect);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.Rect, toolOwner);
         }
 
         [Shortcut("Tools/Transform", KeyCode.Y)]
         [FormerlyPrefKeyAs("Tools/Transform Handles", "y")]
         static void SetToolModeTransform(ShortcutArguments args)
         {
-            SetToolMode(Tool.Transform);
+            var toolOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            SetToolMode(Tool.Transform, toolOwner);
         }
 
         [Shortcut("Tools/Toggle Pivot Position", KeyCode.Z)]
         [FormerlyPrefKeyAs("Tools/Pivot Mode", "z")]
         static void TogglePivotMode(ShortcutArguments args)
         {
-            var nextModeType = EditorPivotManager.GetNextPivotModeType(EditorPivotManager.activePivotMode);
-            PivotManager.SetActivePivotMode(nextModeType);
-            
-            ResetGlobalHandleRotation();
-            RepaintAllToolViews();
+            var toolsOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            var pivotState = EditorPivotManager.instance.GetOrCreateStateForType(toolsOwner);
+            if (pivotState != null)
+            {
+                var nextModeType = pivotState.GetNextPivotModeType();
+                PivotManager.SetActivePivotMode(nextModeType, toolsOwner);
+
+                ResetGlobalHandleRotation();
+                RepaintAllToolViews();
+            }
         }
 
         [Shortcut("Tools/Toggle Pivot Orientation", KeyCode.X)]
         [FormerlyPrefKeyAs("Tools/Pivot Rotation", "x")]
         static void TogglePivotRotation(ShortcutArguments args)
         {
-            var nextRotationType = EditorPivotManager.GetNextPivotRotationType(EditorPivotManager.activePivotRotation);
-            PivotManager.SetActivePivotRotation(nextRotationType);
-            
-            ResetGlobalHandleRotation();
-            RepaintAllToolViews();
+            var toolsOwner = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            var pivotState = EditorPivotManager.instance.GetOrCreateStateForType(toolsOwner);
+            if (pivotState != null)
+            {
+                var nextRotationType = pivotState.GetNextPivotRotationType();
+                PivotManager.SetActivePivotRotation(nextRotationType, toolsOwner);
+
+                ResetGlobalHandleRotation();
+                RepaintAllToolViews();
+            }
         }
 
         internal static void RepaintAllToolViews()
@@ -622,6 +645,7 @@ namespace UnityEditor
         }
 
         internal static Vector3 handleOffset;
+
         internal static Vector3 localHandleOffset;
 
         internal static void LockHandlePosition()

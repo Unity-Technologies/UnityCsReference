@@ -3,10 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using Mono.Cecil;
 using Unity.ProjectAuditor.Editor.Core;
-using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 {
@@ -37,9 +36,9 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         /// </summary>
         public readonly string PrettyMethodName;
 
-        public CallTreeNode(MethodReference methodReference, CallTreeNode caller = null)
+        public CallTreeNode(MethodReference methodReference)
         {
-            MethodFullName = methodReference.FullName;
+            MethodFullName = methodReference.FastFullName();
             TypeFullName = methodReference.DeclaringType.FullName;
             PrettyMethodName = "(anonymous)"; // default value
             AssemblyName = methodReference.Module.Name;
@@ -80,9 +79,49 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                 PrettyMethodName = methodReference.Name;
             }
 
-            if (caller != null)
-                AddChild(caller);
             PerfCriticalContext = false;
+        }
+
+        public override void BuildHierarchy(int depth, DependencyBuildContext context)
+        {
+            // this check should be removed. Instead, the deep callstacks should be built on-demand
+            if (depth++ == k_MaxDepth)
+                return;
+
+            // let's find all callers with matching callee (this)
+            if (context.BucketedCalls.TryGetValue(MethodFullName, out var callPairs))
+            {
+                var children = new List<DependencyNode>(callPairs.Count);
+
+                foreach (var call in callPairs)
+                {
+                    if (call.Hierarchy != null)
+                    {
+                        // use previously built hierarchy
+                        children.Add(call.Hierarchy);
+                        continue;
+                    }
+
+                    var hierarchy = new CallTreeNode(call.Caller)
+                    {
+                        Location = call.Location,
+                        PerfCriticalContext = call.IsPerfCriticalContext
+                    };
+
+                    // Set before recursing so mutual-recursion cycles (A->B->A) are detected
+                    // by subsequent lookups finding a non-null Hierarchy, rather than relying
+                    // solely on the depth limit.
+                    call.Hierarchy = hierarchy;
+
+                    var callerName = call.Caller.FastFullName();
+                    if (!callerName.Equals(MethodFullName))
+                        hierarchy.BuildHierarchy(depth, context);
+
+                    children.Add(hierarchy);
+                }
+
+                AddChildren(children);
+            }
         }
 
         public override string GetName()

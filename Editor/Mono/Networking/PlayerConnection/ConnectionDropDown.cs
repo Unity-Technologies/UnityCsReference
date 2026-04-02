@@ -422,9 +422,7 @@ namespace UnityEditor.Networking.PlayerConnection
         {
             if (filter == null)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var header = AddHeaderItem(group.Key, treeViewItem);
-#pragma warning restore UA2001
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var player in group.OrderBy(x => x.DisplayName))
 #pragma warning restore UA2001
@@ -432,12 +430,10 @@ namespace UnityEditor.Networking.PlayerConnection
             }
             else
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var header = AddHeaderItem(group.Key, treeViewItem);
-#pragma warning restore UA2001
                 bool addedChild = false;
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var player in group.Where(x => x.DisplayName.ToLower().Contains(filter.ToLower()))
+                foreach (var player in group.Where(x => x.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase))
 #pragma warning restore UA2001
                          .OrderBy(x => x.DisplayName))
                 {
@@ -446,9 +442,7 @@ namespace UnityEditor.Networking.PlayerConnection
                 }
 
                 if (!addedChild && treeViewItem.hasChildren)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    treeViewItem.children.Remove(treeViewItem.children.Last());
-#pragma warning restore UA2001
+                    treeViewItem.children.Remove(treeViewItem.children[^1]);
             }
         }
 

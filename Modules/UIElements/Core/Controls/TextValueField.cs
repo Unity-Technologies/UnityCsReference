@@ -113,9 +113,9 @@ namespace UnityEngine.UIElements
         /// Indicates whether the field supports expressions that can be evaluated into a value.
         /// </summary>
         /// <remarks>
-        /// Expressions are mathematical or logical constructs, such as "1+1" or "5*2", which can be processed 
-        /// to produce a result. When this property is enabled, the field accepts additional characters 
-        /// required for expressions (e.g., '+', '-', '*', '/', etc.), expanding its functionality beyond the typical restrictions 
+        /// Expressions are mathematical or logical constructs, such as "1+1" or "5*2", which can be processed
+        /// to produce a result. When this property is enabled, the field accepts additional characters
+        /// required for expressions (e.g., '+', '-', '*', '/', etc.), expanding its functionality beyond the typical restrictions
         /// of a text field that might otherwise only allow digits.
         /// </remarks>
         [CreateProperty]
@@ -250,7 +250,7 @@ namespace UnityEngine.UIElements
             {
                 m_Dragger.SetDragZone(enable ? labelElement : null);
 
-                labelElement.EnableInClassList(labelDraggerVariantUssClassName, enable);
+                labelElement.EnableInClassList(labelDraggerVariantUssClassNameUnique, enable);
             }
         }
 

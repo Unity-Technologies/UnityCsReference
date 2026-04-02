@@ -108,7 +108,7 @@ namespace UnityEditor
                     m_UploadShaderCache.tooltip = isUploadEnabled ? m_UploadShaderCacheDefaultToolip : $"{m_DisabledSettingPrefix} {m_UploadShaderCacheDefaultToolip}";
                     m_UploadAllRevisions.tooltip = isUploadEnabled ? m_UploadAllRevisionsDefaultToolip : $"{m_DisabledSettingPrefix} {m_UploadAllRevisionsDefaultToolip}";
 
-                    if (GUILayout.Button(m_UploadArtifacts, GUILayout.Width(110)))
+                    if (AssetDatabase.IsCacheServerImportResultCachingEnabled() && GUILayout.Button(m_UploadArtifacts, GUILayout.Width(110)))
                     {
                         CacheServer.UploadArtifacts();
                     }
@@ -118,7 +118,7 @@ namespace UnityEditor
                         CacheServer.UploadShaderCache();
                     }
 
-                    if (GUILayout.Button(m_UploadAllRevisions, GUILayout.Width(130)))
+                    if (AssetDatabase.IsCacheServerImportResultCachingEnabled() && GUILayout.Button(m_UploadAllRevisions, GUILayout.Width(130)))
                     {
                         CacheServer.UploadArtifacts(uploadAllRevisions:true);
                     }

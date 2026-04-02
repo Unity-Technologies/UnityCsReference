@@ -92,7 +92,10 @@ namespace UnityEditor
         EntityId = 27,
 
         // GUID value
-        GUID = 28
+        GUID = 28,
+
+        // LoadableReference value
+        LoadableReference = 29
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -368,6 +371,7 @@ namespace UnityEditor
                     case SerializedPropertyType.Hash128: return hash128Value;
                     case SerializedPropertyType.GUID: return guidValue;
                     case SerializedPropertyType.EntityId: return entityIdValue;
+                    case SerializedPropertyType.LoadableReference: return loadableReferenceValue;
 
                     default:
                         throw new NotSupportedException(string.Format("The boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -456,6 +460,7 @@ namespace UnityEditor
                         case SerializedPropertyType.Hash128: hash128Value = (Hash128)value; break;
                         case SerializedPropertyType.GUID: guidValue = (GUID)value; break;
                         case SerializedPropertyType.EntityId: entityIdValue = (EntityId)value; break;
+                        case SerializedPropertyType.LoadableReference: loadableReferenceValue = (LoadableReference)value; break;
 
                         default: // FixedBufferSize is read-only
                             throw new NotSupportedException(string.Format("Set on boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -1225,6 +1230,12 @@ namespace UnityEditor
         [NativeName("SetAnimationCurveValue")]
         private extern void SetAnimationCurveValueInternal(AnimationCurve value);
 
+        [NativeName("GetLoadableReferenceValue")]
+        private extern LoadableReference GetLoadableReferenceValueInternal();
+
+        [NativeName("SetLoadableReferenceValue")]
+        private extern void SetLoadableReferenceValueInternal(LoadableReference value);
+
         // Value of a gradient property.
         public Gradient gradientValue
         {
@@ -1429,7 +1440,7 @@ namespace UnityEditor
         [NativeName("SetPPtrValue")]
         private extern void SetPPtrValueInternal(UnityObject value);
 
-        [Obsolete("objectReferenceInstanceIDValue is obsolete. Use objectReferenceEntityIdValue instead")]
+        [Obsolete("objectReferenceInstanceIDValue is obsolete. Use objectReferenceEntityIdValue instead", true)]
         public int objectReferenceInstanceIDValue { get => objectReferenceEntityIdValue; set => objectReferenceEntityIdValue = value; }
 
         public EntityId objectReferenceEntityIdValue
@@ -1808,6 +1819,20 @@ namespace UnityEditor
             }
         }
 
+        internal LoadableReference loadableReferenceValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (LoadableReference)GetLoadableReferenceValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetLoadableReferenceValueInternal(value);
+            }
+        }
+
         [FreeFunction(Name = "SerializedPropertyBindings::GetHash128ValueInternal", HasExplicitThis = true)]
         private extern Hash128 GetHash128ValueInternal();
 
@@ -2103,6 +2128,15 @@ namespace UnityEditor
         {
             Verify(VerifyFlags.IteratorNotAtEnd);
             return StringValueEquals(value);
+        }
+
+        [NativeName("LoadableReferenceValueEquals")]
+        extern private bool LoadableReferenceValueEquals(LoadableReference value);
+
+        internal bool ValueEquals(LoadableReference value)
+        {
+            Verify(VerifyFlags.IteratorNotAtEnd);
+            return LoadableReferenceValueEquals(value);
         }
 
         internal bool unsafeMode {get; set; }

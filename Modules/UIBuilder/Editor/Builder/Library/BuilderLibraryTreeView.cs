@@ -184,9 +184,9 @@ namespace Unity.UI.Builder
 
         void OnItemsChosen(IEnumerable<object> selectedItems)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItem = selectedItems.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
 
             var item = selectedItem as BuilderLibraryTreeItem;
             AddItemToTheDocument(item);

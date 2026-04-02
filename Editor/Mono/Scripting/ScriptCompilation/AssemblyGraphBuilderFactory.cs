@@ -15,12 +15,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public bool Equals(AssemblyGraphBuilderKey other)
             {
                 return string.Equals(projectPath, other.projectPath, StringComparison.Ordinal)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && assemblies.SequenceEqual(other.assemblies)
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && customScriptAssemblyReferences.SequenceEqual(other.customScriptAssemblyReferences);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
             }
 
             public override bool Equals(object obj)

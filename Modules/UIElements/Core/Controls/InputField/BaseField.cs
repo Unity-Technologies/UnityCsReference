@@ -92,32 +92,49 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-base-field";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public static readonly string inputUssClassName = ussClassName + "__input";
+        internal static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of elements of this type, when there is no label.
         /// </summary>
         public static readonly string noLabelVariantUssClassName = ussClassName + "--no-label";
+        internal static readonly UniqueStyleString noLabelVariantUssClassNameUnique = new(noLabelVariantUssClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type, when there is a dragger attached on them.
         /// </summary>
         public static readonly string labelDraggerVariantUssClassName = labelUssClassName + "--with-dragger";
+        internal static readonly UniqueStyleString labelDraggerVariantUssClassNameUnique = new(labelDraggerVariantUssClassName);
+
         /// <summary>
         /// USS class name of elements that show mixed values
         /// </summary>
         public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value";
+        internal static readonly UniqueStyleString mixedValueLabelUssClassNameUnique = new(mixedValueLabelUssClassName);
+
         /// <summary>
         /// USS class name of elements that are aligned in a inspector element
         /// </summary>
         public static readonly string alignedFieldUssClassName = ussClassName + "__aligned";
+        internal static readonly UniqueStyleString alignedFieldUssClassNameUnique = new(alignedFieldUssClassName);
 
         private static readonly string inspectorFieldUssClassName = ussClassName + "__inspector-field";
+        internal static readonly UniqueStyleString inspectorFieldUssClassNameUnique = new(inspectorFieldUssClassName);
+
+        private static readonly UniqueStyleString inspectorElementUssClassNameUnique = new("unity-inspector-element");
+        private static readonly UniqueStyleString inspectorMainContainerUssClassNameUnique = new("unity-inspector-main-container");
 
         protected internal static readonly string mixedValueString = "\u2014";
 
@@ -166,7 +183,7 @@ namespace UnityEngine.UIElements
                     m_VisualInput = new VisualElement() { pickingMode = PickingMode.Ignore };
                 }
                 m_VisualInput.focusable = true;
-                m_VisualInput.AddToClassList(inputUssClassName);
+                m_VisualInput.AddToClassList(inputUssClassNameUnique);
                 Add(m_VisualInput);
             }
         }
@@ -247,7 +264,7 @@ namespace UnityEngine.UIElements
                     labelElement.text = value;
                     if (string.IsNullOrEmpty(labelElement.text))
                     {
-                        AddToClassList(noLabelVariantUssClassName);
+                        AddToClassList(noLabelVariantUssClassNameUnique);
                         labelElement.RemoveFromHierarchy();
                     }
                     else
@@ -255,7 +272,7 @@ namespace UnityEngine.UIElements
                         if (!Contains(labelElement))
                         {
                             hierarchy.Insert(0, labelElement);
-                            RemoveFromClassList(noLabelVariantUssClassName);
+                            RemoveFromClassList(noLabelVariantUssClassNameUnique);
                         }
                     }
 
@@ -304,8 +321,8 @@ namespace UnityEngine.UIElements
                 if (m_MixedValueLabel == null)
                 {
                     m_MixedValueLabel = new Label(mixedValueString) { focusable = true, tabIndex = -1 };
-                    m_MixedValueLabel.AddToClassList(labelUssClassName);
-                    m_MixedValueLabel.AddToClassList(mixedValueLabelUssClassName);
+                    m_MixedValueLabel.AddToClassList(labelUssClassNameUnique);
+                    m_MixedValueLabel.AddToClassList(mixedValueLabelUssClassNameUnique);
                 }
 
                 return m_MixedValueLabel;
@@ -328,17 +345,17 @@ namespace UnityEngine.UIElements
             excludeFromFocusRing = true;
             delegatesFocus = true;
 
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             labelElement = new Label() { focusable = true, tabIndex = -1 };
-            labelElement.AddToClassList(labelUssClassName);
+            labelElement.AddToClassList(labelUssClassNameUnique);
             if (label != null)
             {
                 this.label = label;
             }
             else
             {
-                AddToClassList(noLabelVariantUssClassName);
+                AddToClassList(noLabelVariantUssClassNameUnique);
             }
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -382,12 +399,12 @@ namespace UnityEngine.UIElements
             var currentElement = parent;
             while (currentElement != null)
             {
-                if (currentElement.ClassListContains("unity-inspector-element"))
+                if (currentElement.ClassListContains(inspectorElementUssClassNameUnique))
                 {
                     m_CachedInspectorElement = currentElement;
                 }
 
-                if (currentElement.ClassListContains("unity-inspector-main-container"))
+                if (currentElement.ClassListContains(inspectorMainContainerUssClassNameUnique))
                 {
                     m_CachedContextWidthElement = currentElement;
                     break;
@@ -398,7 +415,7 @@ namespace UnityEngine.UIElements
 
             if (m_CachedInspectorElement == null)
             {
-                RemoveFromClassList(inspectorFieldUssClassName);
+                RemoveFromClassList(inspectorFieldUssClassNameUnique);
                 return;
             }
 
@@ -411,7 +428,7 @@ namespace UnityEngine.UIElements
             m_LabelBaseMinWidth = 123.0f;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
-            AddToClassList(inspectorFieldUssClassName);
+            AddToClassList(inspectorFieldUssClassNameUnique);
             RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
         }
 
@@ -471,7 +488,7 @@ namespace UnityEngine.UIElements
 
         private void AlignLabel()
         {
-            if (!ClassListContains(alignedFieldUssClassName) || m_CachedInspectorElement == null)
+            if (!ClassListContains(alignedFieldUssClassNameUnique) || m_CachedInspectorElement == null)
             {
                 return;
             }

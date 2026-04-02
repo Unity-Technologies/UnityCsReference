@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -25,10 +26,12 @@ namespace UnityEngine.UIElements
             return m_PropertyTypeMapping[(int)id];
         }
 
-        [RequiredByNativeCode(Optional = true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int GetElementCount() => m_Elements?.Count ?? -1;
+
         internal void SetFloatValue(int elementIndex, int propertyId, int channel, float value)
         {
-            if (elementIndex < 0 || elementIndex >= m_Elements.Count)
+            if (elementIndex < 0 || elementIndex >= GetElementCount())
                 return;
 
             var e = m_Elements[elementIndex].Value;
@@ -92,7 +95,8 @@ namespace UnityEngine.UIElements
                     break;
 
                 case PropertyType.Int or PropertyType.Enum:
-                    e.computedStyle.ApplyPropertyAnimation(e, id, (int)(value));
+                    var intValue = BitConverter.SingleToInt32Bits(value);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, intValue);
                     break;
 
                 case PropertyType.Length:
@@ -102,11 +106,10 @@ namespace UnityEngine.UIElements
             }
 
         }
-
-        [RequiredByNativeCode]
+      
         internal float GetFloatValue(int elementIndex, int propertyId, int channel)
         {
-            if (elementIndex < 0 || elementIndex >= m_Elements.Count)
+            if (elementIndex < 0 || elementIndex >= GetElementCount())
                 return 0;
             var element = m_Elements[elementIndex].Value;
             StylePropertyId id = (StylePropertyId)propertyId;
@@ -117,8 +120,8 @@ namespace UnityEngine.UIElements
             {
                 PropertyType.Length => element.computedStyle.ReadPropertyAnimationLength(id).pixelValue,
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),
-                PropertyType.Int => element.computedStyle.ReadPropertyAnimationInt(id),
-                PropertyType.Enum => element.computedStyle.ReadPropertyAnimationInt(id),
+                PropertyType.Int => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
+                PropertyType.Enum => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
                 PropertyType.Color => element.computedStyle.ReadPropertyAnimationColor(id)[channel],
                 PropertyType.Translate => channel switch
                 {
@@ -153,5 +156,69 @@ namespace UnityEngine.UIElements
 
         }
 
+        internal void SetObjectValue(int elementIndex, int propertyId, int channel, EntityId value)
+        {
+            if (elementIndex < 0 || elementIndex >= GetElementCount())
+                return;
+
+            var e = m_Elements[elementIndex].Value;
+            StylePropertyId id = (StylePropertyId)propertyId;
+
+            Debug.Assert(channel < GetChannelCount(id));
+
+            switch (GetPropertyTypeMapping(id))
+            {
+                case PropertyType.Background:
+                case PropertyType.Font:
+                case PropertyType.FontDefinition:
+                case PropertyType.MaterialDefinition:
+                    e.computedStyle.ApplyPropertyAnimation(e, id, value);
+                    break;
+            }
+        }
+
+        internal EntityId GetObjectValue(int elementIndex, int propertyId, int channel)
+        {
+            if (elementIndex < 0 || elementIndex >= GetElementCount())
+                return EntityId.None;
+            var element = m_Elements[elementIndex].Value;
+            StylePropertyId id = (StylePropertyId)propertyId;
+
+            Debug.Assert(channel < GetChannelCount(id));
+
+            return GetPropertyTypeMapping(id) switch
+            {
+                PropertyType.Background => element.computedStyle.ReadPropertyAnimationEntityId(id),
+                PropertyType.Font => element.computedStyle.ReadPropertyAnimationEntityId(id),
+                PropertyType.FontDefinition => element.computedStyle.ReadPropertyAnimationEntityId(id),
+
+                //invalid type
+                PropertyType.Length => throw new InvalidOperationException(),
+                PropertyType.Float => throw new InvalidOperationException(),
+                PropertyType.Int => throw new InvalidOperationException(),
+                PropertyType.Enum => throw new InvalidOperationException(),
+                PropertyType.Color => throw new InvalidOperationException(),
+                PropertyType.Translate => throw new InvalidOperationException(),
+                PropertyType.Rotate => throw new InvalidOperationException(),
+                PropertyType.Scale => throw new InvalidOperationException(),
+                PropertyType.Ratio => throw new InvalidOperationException(),
+                PropertyType.TransformOrigin => throw new InvalidOperationException(),
+                PropertyType.Shorthand => throw new InvalidOperationException(),
+                PropertyType.BackgroundPosition => throw new InvalidOperationException(),
+                PropertyType.BackgroundRepeat => throw new InvalidOperationException(),
+                PropertyType.BackgroundSize => throw new InvalidOperationException(),
+                PropertyType.TextShadow => throw new InvalidOperationException(),
+                PropertyType.TextAutoSize => throw new InvalidOperationException(),
+
+                //Not implemented
+                PropertyType.Filter => throw new NotImplementedException(),
+                PropertyType.Cursor => throw new NotImplementedException(),
+                PropertyType.List => throw new NotImplementedException(),
+                PropertyType.MaterialDefinition => throw new NotImplementedException(),
+                _ => throw new NotImplementedException(),// Why does c# think the list is not exhaustive? seems related to the cast...
+            };
+
+
+        }
     }
 }

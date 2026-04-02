@@ -74,47 +74,58 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-collection-view-scroll-view";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of CollectionView scroll container in elements of this type.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__content-container";
+        internal static readonly UniqueStyleString containerUssClassNameUnique = new(containerUssClassName);
+
         /// <summary>
         /// USS class name of the vertical scroller in elements of this type.
         /// </summary>
         public static readonly string verticalScrollerUssClassName = ussClassName + "__vertical-scroller";
+        internal static readonly UniqueStyleString verticalScrollerUssClassNameUnique = new(verticalScrollerUssClassName);
+
         /// <summary>
         /// USS class name of the horizontal scroller in elements of this type.
         /// </summary>
         public static readonly string horizontalScrollerUssClassName = ussClassName + "__horizontal-scroller";
+        internal static readonly UniqueStyleString horizontalScrollerUssClassNameUnique = new(horizontalScrollerUssClassName);
+
         /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentAndHorizontalScrollUssClassName = ussClassName + "__content-and-horizontal-scroll-container";
+        internal static readonly UniqueStyleString contentAndHorizontalScrollUssClassNameUnique = new(contentAndHorizontalScrollUssClassName);
+
         /// <summary>
         /// USS class name of content viewport in elements of this type.
         /// </summary>
         public static readonly string contentViewportUssClassName = ussClassName + "__content-viewport";
+        internal static readonly UniqueStyleString contentViewportUssClassNameUnique = new(contentViewportUssClassName);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public ScrollContainer()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             m_Viewport = new VisualElement();
-            m_Viewport.AddToClassList(contentViewportUssClassName);
+            m_Viewport.AddToClassList(contentViewportUssClassNameUnique);
             m_Viewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             m_Container = new VisualElement();
-            m_Container.AddToClassList(containerUssClassName);
+            m_Container.AddToClassList(containerUssClassNameUnique);
             m_Container.RegisterCallback<WheelEvent>(OnScrollWheel);
             m_Container.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             verticalScroller = new CollectionViewScroller();
-            verticalScroller.AddToClassList(verticalScrollerUssClassName);
+            verticalScroller.AddToClassList(verticalScrollerUssClassNameUnique);
 
             horizontalScroller = new CollectionViewScroller { direction = SliderDirection.Horizontal };
-            horizontalScroller.AddToClassList(horizontalScrollerUssClassName);
+            horizontalScroller.AddToClassList(horizontalScrollerUssClassNameUnique);
             horizontalScroller.RegisterValueChangedCallback(evt =>
             {
                 var offset = containerOffset;
@@ -125,7 +136,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_Viewport.Add(m_Container);
 
             var containerWithHorizontalScroller = new VisualElement();
-            containerWithHorizontalScroller.AddToClassList(contentAndHorizontalScrollUssClassName);
+            containerWithHorizontalScroller.AddToClassList(contentAndHorizontalScrollUssClassNameUnique);
             containerWithHorizontalScroller.Add(m_Viewport);
             containerWithHorizontalScroller.Add(horizontalScroller);
             hierarchy.Add(containerWithHorizontalScroller);

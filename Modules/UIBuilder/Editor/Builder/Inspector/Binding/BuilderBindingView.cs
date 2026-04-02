@@ -8,6 +8,7 @@ using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -39,6 +40,10 @@ namespace Unity.UI.Builder
 
         private const string k_UssClassName = "unity-builder-binding-view";
 
+        private const string k_UITkAuthoringEditor_InspectorStyleSheet = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspector.uss";
+        private const string k_UITkAuthoringEditor_InspectorStyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
+        private const string k_UITkAuthoringEditor_InspectorStyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
+
         private static readonly BindingType[] k_UxmlBindingTypes;
         private static readonly List<string> k_UxmlBindingTypeDisplayNames = new();
 
@@ -60,7 +65,6 @@ namespace Unity.UI.Builder
 
             return -1;
         }
-
 
         private BuilderInspector m_Inspector;
 
@@ -143,6 +147,14 @@ namespace Unity.UI.Builder
                 if (m_Inspector != null && m_Inspector.selection != null)
                     m_Inspector.selection.RemoveNotifier(this);
             });
+
+            // Load assets.
+            var uitke_mainInspectorUSS = EditorGUIUtility.Load(k_UITkAuthoringEditor_InspectorStyleSheet) as StyleSheet;
+            var uitke_themeInspectorUSSPath = EditorGUIUtility.isProSkin ? k_UITkAuthoringEditor_InspectorStyleSheetDark : k_UITkAuthoringEditor_InspectorStyleSheetLight;
+            var uitke_themeInspectorUSS = EditorGUIUtility.Load(uitke_themeInspectorUSSPath) as StyleSheet;
+
+            styleSheets.Add(uitke_mainInspectorUSS);
+            styleSheets.Add(uitke_themeInspectorUSS);
         }
 
         /// <summary>
@@ -468,16 +480,11 @@ namespace Unity.UI.Builder
             if (bindingPropertyName.StartsWith(BuilderConstants.StylePropertyPathPrefix))
             {
                 var styleName = BuilderNameUtilities.ConvertStyleCSharpNameToUssName(bindingPropertyName.Substring(BuilderConstants.StylePropertyPathPrefix.Length));
-                var modifiedProperties = StringObjectListPool.Get();
 
-                modifiedProperties.Add(styleName);
-                try
+                using (ListPool<string>.Get(out var modifiedProperties))
                 {
+                    modifiedProperties.Add(styleName);
                     m_Inspector.selection.NotifyOfStylingChange(this, modifiedProperties);
-                }
-                finally
-                {
-                    StringObjectListPool.Release(modifiedProperties);
                 }
             }
             // needed to refresh the UXML preview with any changes

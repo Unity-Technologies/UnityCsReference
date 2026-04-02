@@ -425,6 +425,10 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     m_Gui.DrawLineSeparator();
                 }
+                else if (child is AdvancedDropdownItem.HelpBoxDropdownItem helpBox)
+                {
+                    m_Gui.DrawHelpBox(helpBox);
+                }
                 else
                 {
                     m_Gui.DrawItem(child, child.displayName, child.icon, child.enabled, child.hasChildren, selected, hasSearch);

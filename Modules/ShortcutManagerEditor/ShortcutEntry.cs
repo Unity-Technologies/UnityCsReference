@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -93,9 +92,7 @@ namespace UnityEditor.ShortcutManagement
         internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, string tag, ShortcutType type, string displayName = null, int priority = int.MaxValue)
         {
             m_Identifier = id;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_DefaultCombinations = defaultCombination.ToList();
-#pragma warning restore UA2001
+            m_DefaultCombinations = new List<KeyCombination>(defaultCombination);
             m_Context = context ?? ContextManager.globalContextType;
             m_Tag = tag;
             m_Action = action;
@@ -115,9 +112,7 @@ namespace UnityEditor.ShortcutManagement
 
         public override string ToString()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return $"{displayName} {string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}] {(!string.IsNullOrWhiteSpace(tag) ? $"[{tag}]" : "")}";
-#pragma warning restore UA2001
+            return $"{displayName} {string.Join(",", combinations)} [{context?.Name}] {(!string.IsNullOrWhiteSpace(tag) ? $"[{tag}]" : "")}";
         }
 
         List<KeyCombination> activeCombination
@@ -144,9 +139,7 @@ namespace UnityEditor.ShortcutManagement
                     return false;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var lastKeyCombination = prefix.Last();
-#pragma warning restore UA2001
+            var lastKeyCombination = prefix[^1];
             var lastKeyCombinationActive = activeCombination[prefix.Count - 1];
 
             if (m_ReservedModifier != 0)
@@ -211,9 +204,7 @@ namespace UnityEditor.ShortcutManagement
 
         internal void SetOverride(IEnumerable<KeyCombination> newKeyCombinations)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_OverriddenCombinations = newKeyCombinations.ToList();
-#pragma warning restore UA2001
+            m_OverriddenCombinations = new List<KeyCombination>(newKeyCombinations);
             if (m_Type == ShortcutType.Menu && m_Identifier.path.StartsWith(ShortcutManagerWindowViewController.k_MainMenu))
             {
                 var newMenuKey = m_OverriddenCombinations.Count > 0 ? m_OverriddenCombinations[0].ToMenuShortcutString() : "";

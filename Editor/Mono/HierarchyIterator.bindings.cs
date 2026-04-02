@@ -152,11 +152,21 @@ public sealed class HierarchyIterator : IHierarchyIterator
     public extern Texture2D icon { [NativeName("GetCachedIcon")] get; }
 
     [RequiredByNativeCode]
-    static void SetFilter(HierarchyIterator hierarchy, string filter)
+    static void SetFilterFromNativePtr(IntPtr nativePtr, string filter)
     {
-        SearchFilter search = new SearchFilter();
-        SearchUtility.ParseSearchString(filter, search);
-        hierarchy.SetSearchFilter(search);
+        var hierarchy = new HierarchyIterator { m_Ptr = nativePtr };
+
+        try
+        {
+            SearchFilter search = new SearchFilter();
+            SearchUtility.ParseSearchString(filter, search);
+            hierarchy.SetSearchFilter(search);
+        }
+        finally
+        {
+            // Clear to prevent finalizer from deleting the borrowed native pointer
+            hierarchy.m_Ptr = IntPtr.Zero;
+        }
     }
 
     // Pre 4.0 interface (kept for backwards compability)
@@ -225,6 +235,9 @@ public sealed class HierarchyIterator : IHierarchyIterator
     internal static class BindingsMarshaller
     {
         public static IntPtr ConvertToNative(HierarchyIterator prop) => prop.m_Ptr;
+
+        public static IntPtr ConvertToUnmanaged(HierarchyIterator prop)
+            => prop != null ? prop.m_Ptr : IntPtr.Zero;
     }
 }
 

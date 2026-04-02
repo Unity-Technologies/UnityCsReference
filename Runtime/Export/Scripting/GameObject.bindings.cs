@@ -29,9 +29,12 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe T GetComponent<T>()
         {
-            var h = new CastHelper<T>();
-            GetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
-            return h.t;
+            var component = GetComponentFastPath(typeof(T));
+            // Because there is no constraint on T, a user could pass a value type that is larger than a reference
+            // If so we need to ensure that the ref we pass to UnsafeUtility.As is larger enough so we don't read
+            // random stack data. In that case we can assume that component will null, so we will return a zero'd T
+            var tuple = (component, default(T));
+            return UnsafeUtility.As<Component, T>(ref tuple.component);
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
@@ -39,7 +42,8 @@ namespace UnityEngine
         public extern Component GetComponent(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        internal extern void GetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern Component GetComponentFastPath(Type type);
 
         [FreeFunction(Name = "Scripting::GetScriptingWrapperOfComponentOfGameObject", HasExplicitThis = true)]
         internal extern Component GetComponentByName(string type);
@@ -188,10 +192,14 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe bool TryGetComponent<T>(out T component)
         {
-            var h = new CastHelper<T>();
-            TryGetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
-            component = h.t;
-            return h.t != null;
+            var componentFound = TryGetComponentFastPath(typeof(T));
+            // Because there is no constraint on T, a user could pass a value type that is larger than a reference
+            // If so we need to ensure that the ref we pass to UnsafeUtility.As is larger enough so we don't read
+            // random stack data. In that case we can assume that component will null, so we will return a zero'd T
+            var tuple = (componentFound, default(T));
+            component = UnsafeUtility.As<Component, T>(ref tuple.componentFound);
+            return component != null;
+
         }
 
         public bool TryGetComponent(Type type, out Component component)
@@ -205,7 +213,8 @@ namespace UnityEngine
         internal extern Component TryGetComponentInternal(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::TryGetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        internal extern void TryGetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern Component TryGetComponentFastPath(Type type);
 
         public static GameObject FindWithTag(string tag)
         {
@@ -214,7 +223,7 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GameObjectBindings::FindGameObjectsWithTagForListInternal", ThrowsException = true)]
         private static extern void FindGameObjectsWithTagForListInternal(string tag, [Out, NotNull] List<GameObject> results);
- 
+
         public static void FindGameObjectsWithTag(string tag, List<GameObject> results)
         {
             FindGameObjectsWithTagForListInternal(tag, results);
@@ -420,9 +429,12 @@ namespace UnityEngine
         [FreeFunction(Name = "GameObjectBindings::SetGameObjectsActiveByInstanceID")]
         extern private static void SetGameObjectsActive(IntPtr instanceIds, int instanceCount, bool active);
 
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(NativeArray<EntityId>, bool) instead.", true)]
+        public static unsafe void SetGameObjectsActive(NativeArray<int> instanceIDs, bool active)
+            => throw new NotImplementedException("Please use SetGameObjectsActive(NativeArray<EntityId>, bool) instead.");
+
         public static unsafe void SetGameObjectsActive(NativeArray<EntityId> entityIds, bool active)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
             if (!entityIds.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(entityIds));
 
@@ -432,9 +444,11 @@ namespace UnityEngine
             SetGameObjectsActive((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, active);
         }
 
+        [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.", true)]
+        public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active) => throw new NotImplementedException("Deprecated. Please use SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.");
+
         public static unsafe void SetGameObjectsActive(ReadOnlySpan<EntityId> entityIds, bool active)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
             if (entityIds.Length == 0)
                 return;
 
@@ -447,10 +461,12 @@ namespace UnityEngine
         [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
         extern private static void InstantiateGameObjects(EntityId sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
 
+        [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.", true)]
+        public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
+            => throw new NotImplementedException("Deprecated. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.");
+
         public static unsafe void InstantiateGameObjects(EntityId sourceEntityId, int count, NativeArray<EntityId> newEntityIds, NativeArray<EntityId> newTransformEntityIds, Scene destinationScene = default)
         {
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
-
             if (!newEntityIds.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(newEntityIds));
             if (!newTransformEntityIds.IsCreated)

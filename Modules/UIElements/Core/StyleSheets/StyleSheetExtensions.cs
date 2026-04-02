@@ -2,14 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Globalization;
-using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class StyleSheetExtensions
     {
         public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)
@@ -65,28 +63,6 @@ namespace UnityEngine.UIElements.StyleSheets
         public static bool IsVarFunction(this StyleValueHandle handle)
         {
             return handle.valueType == StyleValueType.Function && (StyleValueFunction)handle.valueIndex == StyleValueFunction.Var;
-        }
-
-        /// <summary>
-        /// Validates a selector string without creating it.
-        /// </summary>
-        public static bool ValidateSelector(string selectorString, out string errorMessage)
-        {
-            errorMessage = null;
-
-            if (string.IsNullOrEmpty(selectorString))
-            {
-                errorMessage = "Selector string is empty.";
-                return false;
-            }
-
-            if (!CSSSpec.ValidateSelector(selectorString) &&
-                !SelectorUtility.ExtractSelectorsAndSpecificityFromString(selectorString, out var selectors, out var specificity, out errorMessage))
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }

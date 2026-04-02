@@ -449,6 +449,7 @@ namespace UnityEditor.Search
         void Sort();
         void SortBy(ISearchListComparer comparer);
         void Clear();
+        void SetSearchListComparer(ISearchListComparer comparer);
     }
 
     class GroupedSearchList : BaseSearchList
@@ -478,7 +479,7 @@ namespace UnityEditor.Search
                 this.optional = true;
                 m_Items = new List<SearchItem>();
                 m_IdHashes = new HashSet<int>();
-                m_Comparer = comparer ?? new SortByScoreComparer();
+                m_Comparer = comparer;
                 sorted = true;
             }
 
@@ -565,22 +566,30 @@ namespace UnityEditor.Search
                 m_Items.Sort(comparer);
                 sorted = true;
             }
+
+            public void SetSearchListComparer(ISearchListComparer comparer)
+            {
+                if (comparer.GetHashCode() == m_Comparer.GetHashCode())
+                    return;
+                m_Comparer = comparer;
+                sorted = false;
+            }
         }
 
         internal const string allGroupId = "all";
         private int m_CurrentGroupIndex = 0;
         private string m_CurrentGroupId;
         private readonly List<IGroup> m_Groups = new List<IGroup>();
-        private ISearchListComparer m_DefaultComparer;
+        private ISearchListComparer m_SearchListComparer;
         readonly SearchListSortingStrategy m_SortingStrategy;
         double m_ThrottlerTimer;
         static readonly TimeSpan k_ThrottleDelay = TimeSpan.FromSeconds(1);
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public bool Sorted => m_Groups.All(g => ((Group)g).sorted);
-#pragma warning restore UA2001
+        public bool Sorted => m_Groups.TrueForAll(g => ((Group)g).sorted);
         public override int Count => m_Groups[m_CurrentGroupIndex >= 0 ? m_CurrentGroupIndex : 0].count;
         public int TotalCount => m_Groups[0].count;
+
+        public ISearchListComparer SearchListComparer => m_SearchListComparer;
 
         IGroup CreateGroup(string id, string type, string name, ISearchListComparer comparer, int priority = int.MaxValue, bool optional = true)
         {
@@ -598,11 +607,11 @@ namespace UnityEditor.Search
         {
         }
 
-        public GroupedSearchList(SearchContext searchContext, ISearchListComparer defaultComparer, SearchListSortingStrategy sortingStrategy = SearchListSortingStrategy.Manual)
+        public GroupedSearchList(SearchContext searchContext, ISearchListComparer searchListComparer, SearchListSortingStrategy sortingStrategy = SearchListSortingStrategy.Manual)
             : base(searchContext, false)
         {
             m_SortingStrategy = sortingStrategy;
-            m_DefaultComparer = defaultComparer;
+            m_SearchListComparer = searchListComparer ?? new SortByScoreComparer();
             m_ThrottlerTimer = 0;
             Clear();
         }
@@ -681,7 +690,7 @@ namespace UnityEditor.Search
             var defaultGroups = context.providers
 #pragma warning restore UA2001
                 .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
-                .Select(p => CreateGroup(p.id, p.type, p.name, m_DefaultComparer, p.priority, optional: false));
+                .Select(p => CreateGroup(p.id, p.type, p.name, m_SearchListComparer, p.priority, optional: false));
             m_Groups.AddRange(defaultGroups);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
@@ -691,7 +700,7 @@ namespace UnityEditor.Search
             var itemGroup = m_Groups.Find(g => string.Equals(g.id, searchProvider.id, StringComparison.Ordinal));
             if (itemGroup != null)
                 return itemGroup;
-            itemGroup = CreateGroup(searchProvider.id, searchProvider.type, searchProvider.name, m_DefaultComparer, searchProvider.priority);
+            itemGroup = CreateGroup(searchProvider.id, searchProvider.type, searchProvider.name, m_SearchListComparer, searchProvider.priority);
             m_Groups.Add(itemGroup);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
             if (!string.IsNullOrEmpty(m_CurrentGroupId))
@@ -723,7 +732,7 @@ namespace UnityEditor.Search
             if (m_Groups.Count == 0)
             {
                 m_CurrentGroupIndex = 0;
-                m_Groups.Add(CreateGroup(allGroupId, allGroupId, "All", m_DefaultComparer, int.MinValue));
+                m_Groups.Add(CreateGroup(allGroupId, allGroupId, "All", m_SearchListComparer, int.MinValue));
                 AddDefaultGroups();
             }
             else
@@ -830,8 +839,15 @@ namespace UnityEditor.Search
 
         public override void SortBy(ISearchListComparer comparer)
         {
-            m_DefaultComparer = comparer;
-            m_Groups[m_CurrentGroupIndex].SortBy(comparer);
+            if (comparer == m_SearchListComparer)
+                return;
+
+            foreach (var group in m_Groups)
+            {
+                group.SetSearchListComparer(comparer);
+            }
+            m_SearchListComparer = comparer;
+            m_Groups[m_CurrentGroupIndex].Sort();
         }
 
         void SortOnAddItems()
@@ -996,9 +1012,9 @@ namespace UnityEditor.Search
 
         public override bool Contains(SearchItem item)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_UnorderedItems.Contains(item);
-#pragma warning restore UA2001
+#pragma warning restore UA2007
         }
 
         public override void CopyTo(SearchItem[] array, int arrayIndex)

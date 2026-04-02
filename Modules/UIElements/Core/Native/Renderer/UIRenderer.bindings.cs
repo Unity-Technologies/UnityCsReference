@@ -2,14 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    using UIR;
-
     /// <summary>
     /// A renderer Component that should be added next to a UIDocument Component to allow
     /// world-space rendering. This Component is added automatically by the UIDocument when
@@ -19,23 +19,10 @@ namespace UnityEngine.UIElements
     public sealed class UIRenderer : Renderer
     {
         internal volatile List<CommandList>[] commandLists;
-        internal volatile bool skipRendering;
 
-        internal extern void AddDrawCallData(int safeFrameIndex, int cmdListIndex, Material mat, uint textureSlotCount, uint forceRenderType);
-        internal extern void ResetDrawCallData();
+        internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
+        internal extern void ResetDrawCallData(int safeFrameIndex);
+        internal extern void ResetAllDrawCallData();
         internal extern int GetDrawCallDataCount();
-
-        [RequiredByNativeCode(Optional =true)]
-        [RequiredMember]
-        static void OnRenderNodeExecute(UIRenderer renderer, int safeFrameIndex, int cmdListIndex)
-        {
-            if (renderer.skipRendering)
-                return;
-
-            var commandLists = renderer.commandLists;
-            var cmdList = commandLists != null ? commandLists[safeFrameIndex] : null;
-            if (cmdList != null && cmdListIndex < cmdList.Count)
-                cmdList[cmdListIndex]?.Execute();
-        }
     }
 }

@@ -18,11 +18,6 @@ namespace UnityEngine.UIElements
             return isWorldSpace && (parentUI == null || panelComponent.position == Position.Absolute);
         }
 
-        public static RuntimePanel GetContainerPanel(IPanelComponent panelComponent)
-        {
-            VisualElement rootVE = panelComponent?.GetRootVisualElement();
-            return (RuntimePanel)rootVE?.elementPanel;
-        }
 
         public static void ComputeParentTransform(Vector2 pivotOffset, float pixelsPerUnit, out Matrix4x4 matrix)
         {
@@ -59,9 +54,9 @@ namespace UnityEngine.UIElements
         {
             // This is the root, apply the pixels-per-unit scaling, and the y-flip.
             float ppu = pixelsPerUnit;
-            if (ppu < Mathf.Epsilon)
+            if (!float.IsFinite(ppu) || ppu < Mathf.Epsilon)
             {
-                // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
+                // This isn't a valid PPU, return the identity here, but the renderer will not be serialized
                 return Matrix4x4.identity;
             }
 
@@ -137,6 +132,63 @@ namespace UnityEngine.UIElements
             var validDimensionCount = (e.x > 0 ? 1 : 0) + (e.y > 0 ? 1 : 0) + (e.z > 0 ? 1 : 0);
             // Rays can intersect a plane or a volume, so we need at least 2 workable dimensions
             return validDimensionCount >= 2;
+        }
+
+        public static void DrawGizmoBounds(IPanelComponent panelComponent, Vector2 pivotOffset, float pixelsPerUnit)
+        {
+            var root = panelComponent?.GetRootVisualElement();
+            if (root == null)
+                return;
+
+            var panelSettings = panelComponent.panelSettings;
+            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+                return;
+
+            // Find the first PanelRenderer that's controlled by a GameObject
+            var gameObjectPanelComp = panelComponent;
+            while (gameObjectPanelComp != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectPanelComp)))
+                gameObjectPanelComp = gameObjectPanelComp.parentUI;
+
+            if (gameObjectPanelComp == null)
+                return;
+
+            Bounds bb;
+            if (PanelComponentUtils.IsTransformControlledByGameObject(panelComponent))
+            {
+                bb = PanelComponentUtils.LocalBoundsFromPivotSource(root, panelComponent.pivotReferenceSize);
+            }
+            else
+            {
+                // Relative mode gizmos are drawn relative to the next ancestor that's
+                // controlled by a GameObject transform
+                var bbox = root.boundingBoxWithoutNested;
+                bbox = root.ChangeCoordinatesTo(root, bbox);
+                bb = new Bounds(bbox.center, bbox.size);
+            }
+
+            if (!PanelComponentUtils.IsValidBounds(bb))
+                return;
+
+            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(pivotOffset, pixelsPerUnit);
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
+
+            var matrixBackup = Gizmos.matrix;
+
+            Vector3 center = bb.center;
+            Vector3 size = bb.size;
+            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            Gizmos.matrix = gameObjectPanelComp.gameObject.transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(center, size);
+
+            Gizmos.matrix = matrixBackup;
+        }
+
+        static internal Vector3 GetPanelPosition(GameObject gameObject, IEventHandler pickedElement, Ray worldRay)
+        {
+            var documentRay = gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+            ((VisualElement)pickedElement).IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
+            var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
+            return documentPoint;
         }
     }
 }

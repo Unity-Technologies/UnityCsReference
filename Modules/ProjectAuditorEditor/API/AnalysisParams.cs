@@ -115,6 +115,9 @@ namespace Unity.ProjectAuditor.Editor
         [NonSerialized]
         internal Predicate<string> AssetPathFilter;
 
+        [NonSerialized]
+        internal DependencyCrawler DependencyCrawler;
+
         internal string PlatformAsString => m_PlatformAsString;
 
         /// <summary>
@@ -163,6 +166,7 @@ namespace Unity.ProjectAuditor.Editor
             ExistingReport = original.ExistingReport;
 
             AssetPathFilter = original.AssetPathFilter;
+            DependencyCrawler = original.DependencyCrawler;
         }
 
         /// <summary>

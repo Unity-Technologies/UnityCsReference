@@ -98,15 +98,6 @@ namespace UnityEditor
             public OnOpenAssetAttribute(int callbackOrder, OnOpenAssetAttributeMode attributeMode) { m_CallbackOrder = callbackOrder; m_AttributeMode = attributeMode; }
 
             [RequiredSignature]
-            static bool Signature(int instanceID) { throw new InvalidOperationException(); }
-
-            [RequiredSignature]
-            static bool SignatureLine(int instanceID, int line) { throw new InvalidOperationException(); }
-
-            [RequiredSignature]
-            static bool SignatureLineColumn(int instanceID, int line, int column) { throw new InvalidOperationException(); }
-
-            [RequiredSignature]
             static bool Signature(EntityId entityId) { throw new InvalidOperationException(); }
 
             [RequiredSignature]

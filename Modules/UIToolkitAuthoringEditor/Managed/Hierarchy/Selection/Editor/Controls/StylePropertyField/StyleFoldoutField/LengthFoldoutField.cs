@@ -60,22 +60,26 @@ namespace Unity.UIToolkit.Editor
         {
             topField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             rightField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             bottomField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             leftField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
 
@@ -106,9 +110,11 @@ namespace Unity.UIToolkit.Editor
             var allTheSame = true;
             var singleValue = "none";
             var cumulativeValue = string.Empty;
+            var shouldBeEnabled = true;
 
             for (var i = 0; i < fields.Count; ++i)
             {
+                shouldBeEnabled &= fields[i].enabledSelf;
                 var childValue = fields[i].value.ToString().ToLower();
                 if (childValue.Equals("0"))
                 {
@@ -129,6 +135,7 @@ namespace Unity.UIToolkit.Editor
             headerInputField.SetValueWithoutNotify(allTheSame ? singleValue : cumulativeValue);
             if (fields.Count > 0)
                 draggerIntegerField.SetValueWithoutNotify((int)fields[0].value.value.value);
+            enabledSelf = shouldBeEnabled;
         }
 
         protected void OnHeaderValueChange(ChangeEvent<string> evt)
@@ -217,7 +224,7 @@ namespace Unity.UIToolkit.Editor
         public PaddingFoldoutField() : base("Padding")
         {
             var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
-            vta.CloneTree(this);
+            vta.CloneTree(contentContainer);
 
             topField = this.Q<StyleLengthField>("top");
             rightField = this.Q<StyleLengthField>("right");
@@ -246,7 +253,7 @@ namespace Unity.UIToolkit.Editor
         public MarginFoldoutField() : base("Margin")
         {
             var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
-            vta.CloneTree(this);
+            vta.CloneTree(contentContainer);
 
             topField = this.Q<StyleLengthField>("top");
             rightField = this.Q<StyleLengthField>("right");

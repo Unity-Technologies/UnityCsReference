@@ -35,7 +35,7 @@ namespace UnityEditor
         ///<summary>Don't compress the data when creating the AssetBundle.</summary>
         ///<remarks>Builds the AssetBundle without any compression, resulting in larger file sizes but faster build and load times. Uncompressed AssetBundles are 16-byte aligned.
         ///
-        ///                    See [AssetBundles compression wiki](xref:AssetBundles-Cache), <see cref="BuildAssetBundleOptions.ChunkBasedCompression" />, <see cref="UnityEngine.BuildCompression" />, and <see cref="UnityEngine.CompressionType" />.</remarks>
+        ///                    See [AssetBundles compression wiki](xref:um-asset-bundles-cache), <see cref="BuildAssetBundleOptions.ChunkBasedCompression" />, <see cref="UnityEngine.BuildCompression" />, and <see cref="UnityEngine.CompressionType" />.</remarks>
         UncompressedAssetBundle = 1, // 1 << 0
 
         // Includes all dependencies.
@@ -132,7 +132,7 @@ namespace UnityEditor
         ///                    but AssetBundles built with this format can be loaded incrementally, e.g. by only decompressing the needed chunks.
         ///                    This is the default format used for AssetBundles stored in the AssetBundle Cache and provides a good balance between compression ratio and load performance.
         ///
-        ///Related topics: [AssetBundles compression](xref:AssetBundles-Cache), <see cref="UnityEngine.BuildCompression" />, <see cref="UnityEngine.CompressionType" />, <see cref="Unity.IO.Archive.ArchiveHandle.Compression" />, <see cref="UnityEngine.Caching" />, <see cref="BuildAssetBundleOptions.UncompressedAssetBundle" />, <see cref="BuildOptions.CompressWithLz4" />.</remarks>
+        ///Related topics: [AssetBundles compression](xref:um-asset-bundles-cache), <see cref="UnityEngine.BuildCompression" />, <see cref="UnityEngine.CompressionType" />, <see cref="Unity.IO.Archive.ArchiveHandle.Compression" />, <see cref="UnityEngine.Caching" />, <see cref="BuildAssetBundleOptions.UncompressedAssetBundle" />, <see cref="BuildOptions.CompressWithLz4" />.</remarks>
         ChunkBasedCompression = 256, // 1 << 8
 
         // Force the build to fail when any errors are encountered

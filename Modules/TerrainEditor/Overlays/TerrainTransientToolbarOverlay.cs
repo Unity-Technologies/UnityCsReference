@@ -14,8 +14,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System;
 using System.Text.RegularExpressions;
-using UnityEngine.PlayerLoop;
-
+using Unity.Collections;
 
 namespace UnityEditor.TerrainTools
 {
@@ -194,9 +193,7 @@ namespace UnityEditor.TerrainTools
 
         void StoreToolsInDictionary()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
-#pragma warning restore UA2001
+            foreach (TerrainCategory category in Enum.GetValues(typeof(TerrainCategory)))
             {
                 m_CategoryToTools[category] =
                     new List<ITerrainPaintToolWithOverlays>();
@@ -246,9 +243,7 @@ namespace UnityEditor.TerrainTools
         private void KeepOverrides()
         {
             // if duplicate names, keep only the overrides and NOT the built-in tool
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
-#pragma warning restore UA2001
+            foreach (TerrainCategory category in Enum.GetValues(typeof(TerrainCategory)))
             {
                 m_CategoryToTools[category] =
                     KeepOverrides(m_CategoryToTools[category]);
@@ -258,13 +253,9 @@ namespace UnityEditor.TerrainTools
         private void SetLastActiveToolToDefaultTool()
         {
             // by default, set the last active sculptTool to the first in the list
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
-#pragma warning restore UA2001
+            foreach (TerrainCategory category in Enum.GetValues(typeof(TerrainCategory)))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_CategoryToLastUsedTool[category] = (EditorTool)m_CategoryToTools[category].FirstOrDefault() ??
-#pragma warning restore UA2001
                                                      EditorToolManager.GetSingleton<NoneTool>();
             }
         }
@@ -513,9 +504,7 @@ namespace UnityEditor.TerrainTools
             GetPaintTools();
 
             // sort each list by terrainTool.GetIconIndex()
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
-#pragma warning restore UA2001
+            foreach (TerrainCategory category in Enum.GetValues(typeof(TerrainCategory)))
             {
                 m_CategoryToTools[category] =
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

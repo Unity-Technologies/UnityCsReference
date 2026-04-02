@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -31,18 +31,18 @@ namespace Unity.GraphToolkit.Editor
             public bool shouldConvertToPlacemat;
         }
 
-        internal static SubgraphFromSelectionActionData CollectData(GraphView view, Type graphObjectType, Type graphModelType)
+        internal static SubgraphFromSelectionActionData CollectData(GraphView view, GraphTemplate template, Func<SubgraphNodeModel, GraphTemplate, bool> isSameGraphTypeFunc)
         {
             if (!view.GraphModel.AllowSubgraphCreation)
                 return InvalidData;
 
             var selection = view.GetSelection();
 
-            if (selection.HasAny(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
-                || !selection.HasAny(e => e is AbstractNodeModel || e is PlacematModel || e is StickyNoteModel))
+            if (selection.Exists(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
+                || !selection.Exists(e => e is AbstractNodeModel || e is PlacematModel || e is StickyNoteModel))
                 return InvalidData;
 
-            if (!selection.HasAny(e => e is not BlockNodeModel))
+            if (!selection.Exists(e => e is not BlockNodeModel))
                 return InvalidData;
 
             var transferredModels = new HashSet<GraphElementModel>();
@@ -60,7 +60,7 @@ namespace Unity.GraphToolkit.Editor
                 if (model is not StickyNoteModel)
                     allStickyNotes = false;
 
-                if (model is SubgraphNodeModel subgraphNode && graphModelType != null && graphModelType.IsInstanceOfType(subgraphNode.GetSubgraphModel()))
+                if (model is SubgraphNodeModel subgraphNode && (isSameGraphTypeFunc == null || isSameGraphTypeFunc.Invoke(subgraphNode, template)))
                 {
                     if (subgraphNode.GetSubgraphModel()?.GraphObject == null || !subgraphNode.IsReferencingLocalSubgraph)
                     {
@@ -138,9 +138,7 @@ namespace Unity.GraphToolkit.Editor
             var data = new SubgraphFromSelectionActionData()
             {
                 IsValid = true,
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                elementsToInclude = transferredModels.ToList(),
-#pragma warning restore UA2001
+                elementsToInclude = new List<GraphElementModel>(transferredModels),
                 defaultName = shouldConvertToPlacemat ? encompassingPlacemat?.Title : SubgraphCreationHelper.defaultLocalSubgraphName,
                 elementsToDelete = shouldConvertToPlacemat ? new List<GraphElementModel> { encompassingPlacemat } : null,
                 assetSubgraphNodes = assetSubgraphNodes,

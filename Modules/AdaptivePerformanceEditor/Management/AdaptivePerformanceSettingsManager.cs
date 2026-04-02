@@ -21,7 +21,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             public static readonly GUIContent k_InitializeOnStart = new GUIContent(L10n.Tr("Initialize Adaptive Performance on Startup"));
             public static readonly GUIContent k_DocText = new GUIContent(L10n.Tr("View documentation"));
-            public static readonly Uri k_DocUri = new Uri("https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest");
+            public static readonly Uri k_DocUri = new Uri("https://docs.unity3d.com/Manual/adaptive-performance/adaptive-performance.html");
             public static readonly GUIContent k_ExplanatoryText = new GUIContent(L10n.Tr("Selecting an Adaptive Performance provider below enables that provider for the corresponding build target. Unity will download and install the provider package if it is not already present. Disabling a provider will not automatically uninstall packages that are already installed. To uninstall a provider package, use the Package Manager."));
             public static readonly GUIContent k_FrameTimingExplanatoryText = new GUIContent(L10n.Tr("Please enable Frame Timing Stats in the Player Settings. Adaptive Performance requires precise frame time information."));
         }
@@ -63,6 +63,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             if (!string.IsNullOrEmpty(assetPath))
                             {
                                 assetPath = Path.Combine(assetPath, "AdaptivePerformanceGeneralSettings.asset");
+                                generalSettings.hideFlags = HideFlags.HideInInspector;
                                 AssetDatabase.CreateAsset(generalSettings, assetPath);
                             }
                         }
@@ -206,7 +207,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (loaderProp.objectReferenceValue == null)
                 {
                     var adaptivePerformanceManagerSettings = ScriptableObject.CreateInstance<AdaptivePerformanceManagerSettings>() as AdaptivePerformanceManagerSettings;
-                    //adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
+                    adaptivePerformanceManagerSettings.hideFlags = HideFlags.HideInInspector;
                     adaptivePerformanceManagerSettings.name = $"{buildTargetGroup.ToString()} Providers";
                     AssetDatabase.AddObjectToAsset(adaptivePerformanceManagerSettings, AssetDatabase.GetAssetOrScenePath(currentSettings));
                     loaderProp.objectReferenceValue = adaptivePerformanceManagerSettings;
@@ -328,6 +329,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (s_EnableAdaptivePerformance)
                 {
                     EditorUtilities.CheckEnableFrameTimingState();
+                    EditorUtilities.CheckEnableThermalState();
                 }
                 EditorUtilities.EnableAPModule(s_EnableAdaptivePerformance);
                 SettingsService.NotifySettingsProviderChanged();

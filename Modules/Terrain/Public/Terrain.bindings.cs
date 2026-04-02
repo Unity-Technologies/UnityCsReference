@@ -98,9 +98,9 @@ namespace UnityEngine
         extern public bool GetKeepUnusedCameraRenderingResources(EntityId cameraEntityId);
         extern public void SetKeepUnusedCameraRenderingResources(EntityId cameraEntityId, bool keepUnused);
 
-        [Obsolete("GetKeepUnusedCameraRenderingResources(int) is obsolete. Use GetKeepUnusedCameraRenderingResources(EntityId) instead.")]
+        [Obsolete("GetKeepUnusedCameraRenderingResources(int) is obsolete. Use GetKeepUnusedCameraRenderingResources(EntityId) instead.", true)]
         public bool GetKeepUnusedCameraRenderingResources(int cameraInstanceID) => GetKeepUnusedCameraRenderingResources((EntityId)cameraInstanceID);
-        [Obsolete("SetKeepUnusedCameraRenderingResources(int, bool) is obsolete. Use SetKeepUnusedCameraRenderingResources(EntityId, bool) instead.")]
+        [Obsolete("SetKeepUnusedCameraRenderingResources(int, bool) is obsolete. Use SetKeepUnusedCameraRenderingResources(EntityId, bool) instead.", true)]
         public void SetKeepUnusedCameraRenderingResources(int cameraInstanceID, bool keepUnused) => SetKeepUnusedCameraRenderingResources((EntityId)cameraInstanceID, keepUnused);
 
         extern public ShadowCastingMode shadowCastingMode { get; set; }

@@ -21,7 +21,7 @@ using static UnityEditor.SearchableEditorWindow;
 namespace Unity.Hierarchy.Editor
 {
     /// <summary>
-    /// The Unity editor Hierarchy window.
+    /// Represents the Hierarchy Window in the Unity Editor. Use this class to customize the Hierarchy window, register node type handlers, and handle view events.
     /// </summary>
     [EditorWindowTitle(title = "Hierarchy")]
     public sealed class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
@@ -88,6 +88,7 @@ namespace Unity.Hierarchy.Editor
         StageNavigationView m_StageNavigationView;
         HierarchyGlobalSelectionHandler m_SelectionHandler;
         Label m_StatusBar;
+        bool m_ViewStateInit;
         bool m_HasSceneHandler;
         CommandSubscriberHelper m_CommandSubscriberHelper;
 
@@ -147,9 +148,9 @@ namespace Unity.Hierarchy.Editor
         public HierarchyView View => m_HierarchyView;
 
         /// <summary>
-        /// Register an hierarchy node type handler for the hierarchy window.
+        /// Registers a <see cref="HierarchyNodeTypeHandler"/> for the <see cref="HierarchyWindow"/>.
         /// </summary>
-        /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
+        /// <typeparam name="T">The <see cref="HierarchyNodeTypeHandler"/> type to register.</typeparam>
         [VisibleToOtherModules]
         internal static void RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandler
         {
@@ -169,7 +170,7 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Unregister an hierarchy node type handler for the hierarchy window.
+        /// Unregisters a hierarchy node type handler for the Hierarchy window.
         /// </summary>
         /// <remarks>
         /// The change will take effect the next time the hierarchy window is instantiated.
@@ -180,7 +181,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyWindowManager.UnregisterNodeTypeHandler<T>();
 
         /// <summary>
-        /// Create a new instance of <see cref="HierarchyWindow"/>.
+        /// Creates a new <see cref="HierarchyWindow"/>.
         /// </summary>
         public HierarchyWindow()
         {
@@ -189,9 +190,9 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Set filtering text in the hierarchy window.
+        /// Sets the search filter text in the <see cref="HierarchyWindow"/>.
         /// </summary>
-        /// <param name="query">Textual query</param>
+        /// <param name="query">The filter query text.</param>
         public void SetSearchText(string query)
         {
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetSearchText(query=\"{query}\")");
@@ -213,7 +214,56 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyView"/> is bound to the hierarchy window.
+        /// Delegate type for the <see cref="BindView"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> being bound.</param>
+        public delegate void BindViewEventHandler(HierarchyWindow window, HierarchyView view);
+
+        /// <summary>
+        /// Delegate type for the <see cref="UnbindView"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> being unbound.</param>
+        public delegate void UnbindViewEventHandler(HierarchyWindow window, HierarchyView view);
+
+        /// <summary>
+        /// Delegate type for the <see cref="BindViewItem"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> that owns the item.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being bound.</param>
+        public delegate void BindViewItemEventHandler(HierarchyWindow window, HierarchyView view, HierarchyViewItem item);
+
+        /// <summary>
+        /// Delegate type for the <see cref="UnbindViewItem"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> that owns the item.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> being unbound.</param>
+        public delegate void UnbindViewItemEventHandler(HierarchyWindow window, HierarchyView view, HierarchyViewItem item);
+
+        /// <summary>
+        /// Delegate type for the <see cref="PopulateContextMenu"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> handling the context menu request.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> the context menu is being created for, or <see langword="null"/> when invoked from the background.</param>
+        /// <param name="menu">The <see cref="DropdownMenu"/> being populated.</param>
+        public delegate void PopulateContextMenuEventHandler(HierarchyWindow window, HierarchyView view, HierarchyViewItem item, DropdownMenu menu);
+
+        /// <summary>
+        /// Delegate type for the <see cref="GetTooltip"/> event.
+        /// </summary>
+        /// <param name="window">The <see cref="HierarchyWindow"/> that fired the event.</param>
+        /// <param name="view">The <see cref="HierarchyView"/> requesting the tooltip.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> the tooltip is being requested for.</param>
+        /// <param name="tooltip">A <see cref="StringBuilder"/> to append tooltip text to.</param>
+        /// <param name="filtering">Whether the <see cref="HierarchyView"/> is currently filtering nodes.</param>
+        public delegate void GetTooltipEventHandler(HierarchyWindow window, HierarchyView view, HierarchyViewItem item, StringBuilder tooltip, bool filtering);
+
+        /// <summary>
+        /// Raised when a <see cref="HierarchyView"/> is bound to the Hierarchy window.
         /// Typically used to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
         /// </summary>
         /// <remarks>
@@ -221,10 +271,10 @@ namespace Unity.Hierarchy.Editor
         /// but at the window level for global customization. Use <see cref="UnbindView"/> for symmetric cleanup.
         /// </remarks>
         [AutoStaticsCleanupOnCodeReload]
-        public static event Action<HierarchyView> BindView;
+        public static event BindViewEventHandler BindView;
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyView"/> is about to be unbound from the hierarchy window.
+        /// Raised when a <see cref="HierarchyView"/> is about to be unbound from the <see cref="HierarchyWindow"/>.
         /// Typically used to cleanup resources associated with the view.
         /// </summary>
         /// <remarks>
@@ -232,40 +282,51 @@ namespace Unity.Hierarchy.Editor
         /// but at the window level for global cleanup.
         /// </remarks>
         [AutoStaticsCleanupOnCodeReload]
-        public static event Action<HierarchyView> UnbindView;
+        public static event UnbindViewEventHandler UnbindView;
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyViewItem"/> is bound to a hierarchy view, allowing customization of the view item.
+        /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
-        public static event Action<HierarchyViewItem> BindViewItem;
+        public static event BindViewItemEventHandler BindViewItem;
 
         /// <summary>
-        /// This event is fired when a <see cref="HierarchyViewItem"/> is unbound from a hierarchy view, allowing cleanup of the view item.
-        /// Note that hierarchy view item are recycled by handler, so unbinding does not mean destruction. For this reason, it is preferable
-        /// to not "undo" styles or modifications done during binding in this unbind event, for performance reasons.
+        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>. Use this event to cleanup the view item.
+        /// Note that hierarchy view item are recycled by handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
+        /// to not undo styles or modifications done during binding in this unbind event.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
-        public static event Action<HierarchyViewItem> UnbindViewItem;
+        public static event UnbindViewItemEventHandler UnbindViewItem;
 
         /// <summary>
-        /// This event is fired when a right click is handled on a node or on the background of the view.
+        /// Raised when a right click is handled on a node or on the background of the <see cref="HierarchyView"/>.
         /// </summary>
         /// <remarks>
         /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
-        /// If the user right clicks in empty space, the callback receives null for the view item.
+        /// If the user right-clicks in empty space, the callback receives null for the view item.
         /// </remarks>
-        public static event HierarchyView.PopulateContextMenuEventHandler PopulateContextMenu;
+        public static event PopulateContextMenuEventHandler PopulateContextMenu;
 
         /// <summary>
-        /// Customize the tooltip displayed when the mouse hovers the node name label.
+        /// Customize the tooltip that displays when the mouse hovers the node name label.
         /// </summary>
         /// <remarks>
         /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for, the
-        /// StringBuilder to build the tooltip, and whether the HierarchyView is being filtered.
+        /// StringBuilder to build the tooltip, and whether the <see cref="HierarchyView"/> is being filtered.
         /// </remarks>
         [AutoStaticsCleanupOnCodeReload]
-        public static event HierarchyView.GetTooltipEventHandler GetTooltip;
+        public static event GetTooltipEventHandler GetTooltip;
+
+        /// <summary>
+        /// Updates the Editor <see cref="Selection"/> to match the <see cref="EntityId"/>
+        /// of the nodes that are flagged as selected in the Hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// Use this method to update the Editor <see cref="Selection"/> after making a change
+        /// to the <see cref="View"/> selection.
+        /// </remarks>
+        public void UpdateEditorSelection()
+            => m_SelectionHandler.SyncGlobalSelectionFromViewModel();
 
         void OnEnable()
         {
@@ -365,6 +426,7 @@ namespace Unity.Hierarchy.Editor
             ClipboardUtility.pastedGameObjects += OnClearCutStyle;
             ClipboardUtility.duplicatingGameObjects += OnClearCutStyle;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.enterPlayModePreStart += OnEnterPlayModePreStart;
 
             HierarchyPreferences.UseQueryBuilder.valueChanged += OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
@@ -375,22 +437,11 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
             RefreshDescriptors();
-            if (m_ViewState == null)
-            {
-                var settingsState = LoadProjectWindowState();
-                // Note: since we only restore columns, we can do a synchronous SetViewState.
-                ResetColumns(settingsState);
-            }
-            else
-            {
-                ResetColumns();
-                SetViewState(m_ViewState);
-            }
+        }
 
-            m_HierarchyView.EnqueuePostUpdateAction(() =>
-            {
-                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
-            });
+        void OnEnterPlayModePreStart()
+        {
+            SetViewState(m_ViewState);
         }
 
         void OnPointerUp(PointerUpEvent evt)
@@ -403,6 +454,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnDisable()");
             EditorApplication.frameAndRenameNewGameObject -= OnRequestFrameAndRenameNewGameObjectOrEntity;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.enterPlayModePreStart -= OnEnterPlayModePreStart;
 
             s_HierarchyWindows.Remove(this);
 
@@ -452,7 +504,7 @@ namespace Unity.Hierarchy.Editor
 
             if (m_HierarchyView != null)
             {
-                UnbindView?.Invoke(m_HierarchyView);
+                UnbindView?.Invoke(this, m_HierarchyView);
 
                 m_HierarchyView.ListView?.UnregisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
@@ -479,10 +531,32 @@ namespace Unity.Hierarchy.Editor
 
         void OnFocus() => s_LastInteractedHierarchy = this;
 
+        void InitViewState()
+        {
+            if (m_ViewState == null)
+            {
+                var settingsState = LoadProjectWindowState();
+                // Note: since we only restore columns, we can do a synchronous SetViewState.
+                ResetColumns(settingsState);
+            }
+            else
+            {
+                ResetColumns();
+                SetViewState(m_ViewState);
+            }
+
+            m_HierarchyView.EnqueuePostUpdateAction(() =>
+            {
+                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
+            });
+            m_ViewStateInit = true;
+        }
+
         void CreateGUI()
         {
             if (HierarchyPreferences.UseQueryBuilder && m_SearchField?.queryBuilder != null)
                 m_SearchField.queryBuilder.blocksSupportExclude = false;
+            InitViewState();
         }
 
         void OnHierarchyWindowMouseDown(PointerDownEvent evt)
@@ -526,7 +600,7 @@ namespace Unity.Hierarchy.Editor
             m_SelectionHandler.SyncGlobalSelectionFromViewModel();
         }
 
-        void OnSourceHierarchyChanged(Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+        void OnSourceHierarchyChanged(HierarchyView view, Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
             if (m_Hierarchy == null || !m_Hierarchy.IsCreated)
                 return;
@@ -546,15 +620,21 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        void OnBindView() => BindView?.Invoke(m_HierarchyView);
+        void OnBindView(HierarchyView view)
+        {
+            BindView?.Invoke(this, view);
+#pragma warning disable CS0618
+            InitializingView?.Invoke(view);
+#pragma warning restore CS0618
+        }
 
-        void OnBindViewItem(HierarchyViewItem item) => BindViewItem?.Invoke(item);
+        void OnBindViewItem(HierarchyView view, HierarchyViewItem item) => BindViewItem?.Invoke(this, view, item);
 
-        void OnUnbindViewItem(HierarchyViewItem item) => UnbindViewItem?.Invoke(item);
+        void OnUnbindViewItem(HierarchyView view, HierarchyViewItem item) => UnbindViewItem?.Invoke(this, view, item);
 
-        void OnPopulateContextMenu(HierarchyViewItem item, DropdownMenu menu) => PopulateContextMenu?.Invoke(item, menu);
+        void OnPopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu) => PopulateContextMenu?.Invoke(this, view, item, menu);
 
-        void OnGetTooltip(HierarchyViewItem item, bool filtering, StringBuilder tooltip) => GetTooltip?.Invoke(item, filtering, tooltip);
+        void OnGetTooltip(HierarchyView view, HierarchyViewItem item, StringBuilder tooltip, bool filtering) => GetTooltip?.Invoke(this, view, item, tooltip, filtering);
 
         void OnUseNewHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
@@ -579,14 +659,17 @@ namespace Unity.Hierarchy.Editor
                 case PlayModeStateChange.EnteredEditMode:
                     SetViewState(m_ViewState);
                     break;
+
                 case PlayModeStateChange.ExitingPlayMode:
                     SaveViewState(HierarchyViewState.Content.ExitPlayMode);
                     break;
+
                 case PlayModeStateChange.ExitingEditMode:
                     SaveViewState(HierarchyViewState.Content.EnterPlayMode);
                     break;
+
                 case PlayModeStateChange.EnteredPlayMode:
-                    SetViewState(m_ViewState);
+                    // State restoration happens in OnEnterPlayModePreStart to ensure it happens as early as possible.
                     break;
             }
         }
@@ -596,12 +679,17 @@ namespace Unity.Hierarchy.Editor
             if (m_LockTracker.isLocked)
                 return;
 
+            m_HierarchyView.Update();
+
             // Convert EntityId to HierarchyNode
             var node = m_Hierarchy.GetNode(entityId);
             if (node == HierarchyNode.Null)
                 return;
 
-            m_HierarchyView.PingNode(node);
+            if (ping)
+                m_HierarchyView.Ping(node);
+            else
+                m_HierarchyView.Frame(node);
         }
 
         void OnRequestFrameAndRenameNewGameObjectOrEntity()
@@ -650,7 +738,7 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        void OnHierarchyViewFlagsChanged(HierarchyNodeFlags flags)
+        void OnHierarchyViewFlagsChanged(HierarchyView view, HierarchyNodeFlags flags)
         {
             if (!flags.HasFlag(HierarchyNodeFlags.Selected))
                 return;
@@ -980,9 +1068,8 @@ namespace Unity.Hierarchy.Editor
 
         void SaveViewState(HierarchyViewState.Content content)
         {
-            if (m_HierarchyView == null || m_HierarchyView.ViewModel == null)
+            if (m_HierarchyView == null || m_HierarchyView.ViewModel == null || !m_ViewStateInit)
                 return;
-
             m_ViewState = m_HierarchyView.GetState(content);
         }
 
@@ -1006,13 +1093,36 @@ namespace Unity.Hierarchy.Editor
 
         internal void SetViewState(HierarchyViewState viewState)
         {
+            if (viewState == null)
+                return;
+
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetViewState(state=...)");
-            if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.SearchText))
+
+            // Restore view model state synchronously, to ensure all nodes are properly updated before restoring the rest of the view state.
+            if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ViewModelState) &&
+                viewState.ViewModelState != null &&
+                viewState.ViewModelState.Length > 0)
             {
-                SetSearchText(viewState.SearchText);
+                // Update first to ensure all nodes exist before restoring view model state
+                m_HierarchyView.UpdateData();
+
+                // Set the view model state
+                m_HierarchyView.ViewModel.SetState(viewState.ViewModelState);
             }
 
-            m_HierarchyView.SetState(viewState);
+            // Restore search text state synchronously, to ensure the search filter is properly applied before restoring the rest of the view state.
+            if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.SearchText))
+                SetSearchText(viewState.SearchText);
+
+            // Queue the rest to happen on next frame (all except the view model state)
+            m_HierarchyView.SetState(new HierarchyViewState
+            {
+                ValidContent = viewState.ValidContent & ~HierarchyViewState.Content.ViewModelState,
+                SearchText = viewState.SearchText,
+                ScrollPositionX = viewState.ScrollPositionX,
+                ScrollPositionY = viewState.ScrollPositionY,
+                Columns = viewState.Columns
+            });
 
             if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ViewModelState))
             {
@@ -1394,17 +1504,13 @@ namespace Unity.Hierarchy.Editor
 
         #region Marked as obsolete warning in 6.5
         /// <summary>
-        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically
+        /// Raised when the <see cref="HierarchyView"/> is initializing, typically
         /// allowing to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("InitializingView is deprecated. Use BindView instead, which provides direct access to the HierarchyView and has a symmetric UnbindView event.", false)]
-        public static event Action<VisualElement> InitializingView
-        {
-            add => BindView += value;
-            remove => BindView -= value;
-        }
+        public static event Action<VisualElement> InitializingView;
         #endregion
     }
 }

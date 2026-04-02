@@ -91,7 +91,6 @@ namespace Unity.PlayMode.Editor
             label.text = text;
 
             // copy just the content of the uxml and not the template container etc. to prevent extra nesting
-            // while (element.Children().Any())
             while (element.childCount > 0)
             {
                 Add(element.ElementAt(0));

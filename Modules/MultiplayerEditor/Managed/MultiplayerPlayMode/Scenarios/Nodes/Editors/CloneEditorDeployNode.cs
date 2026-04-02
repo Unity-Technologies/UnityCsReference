@@ -12,7 +12,7 @@ using UnityEngine.Multiplayer.Internal;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class CloneEditorDeployNode : Node
+    class CloneEditorDeployNode : ExecutionNode
     {
         bool m_HasConnected;
 
@@ -26,7 +26,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return player.PlayerState == PlayerState.Launched;
         }
 
-        public CloneEditorDeployNode(string name) : base(name)
+        public CloneEditorDeployNode()
         {
             PlayerInstanceIndex = new(this);
 

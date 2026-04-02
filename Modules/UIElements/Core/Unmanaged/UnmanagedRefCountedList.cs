@@ -29,6 +29,8 @@ internal readonly unsafe struct UnmanagedRefCountedList<T>
     where T : unmanaged
 {
     private static readonly MemoryLabel k_MemoryLabel = new(nameof(UnityEngine.UIElements), nameof(UnmanagedRefCountedList<T>), Allocator.Domain);
+    private static readonly int k_SizeOfData = UnsafeUtility.SizeOf<Data>();
+    private static readonly int k_SizeOfT = UnsafeUtility.SizeOf<T>();
     public static UnmanagedRefCountedList<T> Empty => new();
 
     [StructLayout(LayoutKind.Sequential)]
@@ -99,7 +101,7 @@ internal readonly unsafe struct UnmanagedRefCountedList<T>
     internal UnmanagedRefCountedList(int size)
     {
         // Allocate sizeof(Data) + (n-1) * sizeof(T), because Data contains one T already
-        var bytes = UnsafeUtility.SizeOf<Data>() + (size - 1) * UnsafeUtility.SizeOf<T>();
+        var bytes = k_SizeOfData + (size - 1) * k_SizeOfT;
         m_Data = (Data*)UnsafeUtility.MallocTracked(bytes, Data.k_Alignment, k_MemoryLabel, 0);
         m_Data->Size = size;
         m_Data->RefCount = 1;

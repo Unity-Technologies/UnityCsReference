@@ -179,6 +179,10 @@ namespace Unity.GraphToolkit.Editor
                     AssetDatabase.DeleteAsset(path);
 
                 DoCreateAssetFile(path);
+
+                var extension = Path.GetExtension(path);
+                if (!string.IsNullOrEmpty(extension) && GraphObjectFactory.KnowsExtension(extension))
+                    GraphToolkitAnalytics.SendGraphToolCreatedEvent(extension);
             }
 
             return path;
@@ -414,6 +418,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual void OnAfterDeserialize()
         {
             m_GraphModel?.SetGraphObject(this);
+            UndoStateRecorder.PerformCompleteRestore();
         }
 
         /// <summary>
@@ -476,23 +481,6 @@ namespace Unity.GraphToolkit.Editor
         public static void SaveAllGraphs()
         {
             GraphObjectFactory.SaveAllGraphs();
-        }
-
-        /// <summary>
-        /// Loads and saves all native graph assets to update them.
-        /// </summary>
-        [MenuItem("internal:GraphToolkit/Load and Save All Graph Assets")]
-        public static void UpdateAllGraphs()
-        {
-            var assetGuids = AssetDatabase.FindAssets($"t:{nameof(GraphObject)}");
-            foreach (var assetGuid in assetGuids)
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
-                var graphObject = AssetDatabase.LoadAssetAtPath<GraphObject>(assetPath);
-                EditorUtility.SetDirty(graphObject);
-                graphObject.Save();
-                Debug.Log("Saved " + assetPath);
-            }
         }
 
         /// <summary>
@@ -641,6 +629,26 @@ namespace Unity.GraphToolkit.Editor
         internal void CallOnLoadObject()
         {
             OnAfterLoad();
+        }
+
+        internal void ShowGraphObjectInProjectWindow()
+        {
+            if (string.IsNullOrEmpty(FilePath))
+            {
+                Debug.LogWarning("Could not show the asset in the project window because its file path is null or empty.");
+                return;
+            }
+
+            EditorUtility.FocusProjectWindow();
+            var obj = AssetDatabase.LoadMainAssetAtPath(FilePath);
+            if (obj == null)
+            {
+                Debug.LogWarning("Could not show the asset in the project window because it could not be loaded at path: " + FilePath);
+                return;
+            }
+
+            Selection.activeObject = obj;
+            EditorGUIUtility.PingObject(obj);
         }
 
         /// <summary>

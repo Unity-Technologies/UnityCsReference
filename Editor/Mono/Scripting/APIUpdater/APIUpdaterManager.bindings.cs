@@ -109,7 +109,7 @@ namespace UnityEditorInternal.APIUpdating
 
             var finishOk = false;
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var waitEvents = tasks.Select(t => t.Event).ToArray();
+            var waitEvents = tasks.Select(t => t.Event);
 #pragma warning restore UA2001
             var timeout = TimeSpan.FromSeconds(30);
             if (WaitOnManyEvents(waitEvents, timeout))
@@ -489,9 +489,7 @@ namespace UnityEditorInternal.APIUpdating
                 ThreadPool.QueueUserWorkItem(RunAssemblyUpdaterTask, task);
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var waitEvents = tasks.Select(t => t.Event).ToArray();
-#pragma warning restore UA2001
+            var waitEvents = Array.ConvertAll(tasks, t => t.Event);
             var timeout = TimeSpan.FromSeconds(30);
             if (!WaitHandle.WaitAll(waitEvents, timeout))
             {
@@ -643,9 +641,9 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var resolvedList = assetsAssemblies.Where(a => CompareIgnoreCase(AssemblyNameFromPath(a), assemblyName)).ToArray();
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyPathInAssetsFolder = resolvedList.OrderBy(path => path.Length).FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
             if (resolvedList.Length > 1)
             {
                 APIUpdaterLogger.WriteToFile(L10n.Tr("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) chosen as the source of updates. Full list: {2}"), assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));

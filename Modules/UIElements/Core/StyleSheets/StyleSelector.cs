@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -53,9 +52,7 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return string.Join(", ", parts.Select(p => p.ToString()).ToArray());
-#pragma warning restore UA2001
+            return string.Join(", ", parts);
         }
     }
 }

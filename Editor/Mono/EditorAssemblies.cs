@@ -53,12 +53,6 @@ namespace UnityEditor
         static Dictionary<Type, Type[]> m_subClasses = new Dictionary<Type, Type[]>();
 
         /// <summary>
-        /// The same set of assemblies as <see cref="loadedAssemblies"/>, but
-        /// sorted topologically according to each assembly's assembly references.
-        /// </summary>
-        private static Assembly[] m_topologicallySortedAssemblies;
-
-        /// <summary>
         /// The currently loaded editor assemblies
         /// (This is kept up to date from <see cref="SetLoadedEditorAssemblies"/>)
         /// </summary>
@@ -95,8 +89,6 @@ namespace UnityEditor
 
             // clear cached subtype -> types when assemblies change
             m_subClasses.Clear();
-
-            m_topologicallySortedAssemblies = AssemblyHelper.TopologicalSort(loadedAssemblies);
 
             ValidateSourceGenerators(assemblies);
         }
@@ -138,11 +130,11 @@ namespace UnityEditor
             IEnumerable<Type> sortedTypes;
             using (_profilerMarkerSortTypes.Auto())
             {
-                // Sort types according to topologically-sorted assemblies, such that we guarantee that
+                // Sort types according to the list of loaded assemblies (which are topologically-sorted), such that we guarantee that
                 // [InitializeOnLoad] classes in assemblies referenced by a given assembly will have been
                 // initialized prior to that assembly's own [InitializeOnLoad] classes.
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                sortedTypes = types.OrderBy(x => Array.IndexOf(m_topologicallySortedAssemblies, x.Assembly));
+                sortedTypes = types.OrderBy(x => Array.IndexOf(loadedAssemblies, x.Assembly));
 #pragma warning restore UA2001
             }
 

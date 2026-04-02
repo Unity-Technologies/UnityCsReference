@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var width = string.IsNullOrEmpty(text) ? 0.0f :  m_Label.MeasureTextSize(text, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x;
-                if (m_ImageIcon != null && (m_IconBackground != null || m_ImageIcon.classList.Count > 0))
+                if (m_ImageIcon != null && (m_IconBackground != null || m_ImageIcon.classListCount > 0))
                     width += k_SideElementWidth;
                 if (showDropdownIcon)
                     width += isDropdownIconSeparated ? k_SideElementWidth : k_DropdownWidth;

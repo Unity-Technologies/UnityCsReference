@@ -6,6 +6,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {

@@ -164,6 +164,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (selector == null)
                 throw new ArgumentNullException(nameof(selector));
 
+            if (collection.Count == 0)
+                return Array.Empty<TResult>();
             var result = new TResult[collection.Count];
             var index = 0;
             foreach (var item in collection)
@@ -293,23 +295,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 yield return item;
         }
 
-        public static bool IsSequenceEqual<T>(this IReadOnlyCollection<T> first, IReadOnlyCollection<T> second, IEqualityComparer<T> comparer = null)
+        public static bool IsSequenceEqual<T>(this IReadOnlyList<T> first, IReadOnlyList<T> second, IEqualityComparer<T> comparer = null)
         {
             if (ReferenceEquals(first, second))
                 return true;
 
-            if (first == null || second == null || first.Count != second.Count)
+            first ??= Array.Empty<T>();
+            second ??= Array.Empty<T>();
+
+            if (first.Count != second.Count)
                 return false;
 
             comparer ??= EqualityComparer<T>.Default;
-            using var firstEnum = first.GetEnumerator();
-            using var secondEnum = second.GetEnumerator();
-            while (firstEnum.MoveNext())
-            {
-                secondEnum.MoveNext();
-                if (!comparer.Equals(firstEnum.Current, secondEnum.Current))
+            for (var i = 0; i < first.Count; i++)
+                if (!comparer.Equals(first[i], second[i]))
                     return false;
-            }
             return true;
         }
     }

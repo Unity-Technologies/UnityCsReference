@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -11,16 +12,20 @@ internal class ExportAction : PackageAction
     private const string k_ExportActionId = "export";
 
     private readonly IModalManager m_ModalManager;
-    public ExportAction(IModalManager modalManager)
+    private readonly IUnityConnectProxy m_UnityConnect;
+    public ExportAction(IModalManager modalManager, IUnityConnectProxy unityConnect)
     {
         m_ModalManager = modalManager;
+        m_UnityConnect = unityConnect;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        m_ModalManager.ShowExportModal(version);
-        PackageManagerWindowAnalytics.SendEvent(k_ExportActionId, version);
-
+        m_UnityConnect.ParseOrganizationInfosAsync((organizationInfo) =>
+        {
+            m_ModalManager.ShowExportModal(version, organizationInfo);
+            PackageManagerWindowAnalytics.SendEvent(k_ExportActionId, version);
+        });
         return true;
     }
 

@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor;
 
 [Serializable]
-class StopProcessNode : Node
+class StopProcessNode : ExecutionNode
 {
     const float k_ProcessStopTimeoutSeconds = 3f;
     const int k_CheckIntervalMS = 120;
@@ -20,7 +20,7 @@ class StopProcessNode : Node
 
     public NodeInput<int> ProcessId => m_ProcessId;
 
-    public StopProcessNode(string name) : base(name)
+    public StopProcessNode()
     {
         m_ProcessId = new(this);
     }

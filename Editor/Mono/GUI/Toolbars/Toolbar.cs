@@ -433,11 +433,11 @@ namespace UnityEditor
             m_Root.AddToClassList(k_MainToolbarUSSClassName);
 
             var ve = new VisualElement();
-            var toolbarContainerContent = new VisualElement { name = "ToolbarContainerContent", classList = { "unity-editor-toolbar-container" } };
-            var leftZone = new ToolbarZone { name = "ToolbarZoneLeftAlign", classList = { "unity-editor-toolbar-container__zone" } };
-            var toolbarProductCaption = new VisualElement { name = "ToolbarProductCaption", classList = { "unity-editor-toolbar-product-caption" } };
-            var middleZone = new ToolbarZone { name = "ToolbarZonePlayMode", classList = { "unity-editor-toolbar-container__zone" } };
-            var rightZone = new ToolbarZone { name = "ToolbarZoneRightAlign", classList = { "unity-editor-toolbar-container__zone" } };
+            var toolbarContainerContent = new VisualElement { name = "ToolbarContainerContent" }.WithClassList("unity-editor-toolbar-container");
+            var leftZone = new ToolbarZone { name = "ToolbarZoneLeftAlign" }.WithClassList("unity-editor-toolbar-container__zone");
+            var toolbarProductCaption = new VisualElement { name = "ToolbarProductCaption" }.WithClassList("unity-editor-toolbar-product-caption");
+            var middleZone = new ToolbarZone { name = "ToolbarZonePlayMode" }.WithClassList("unity-editor-toolbar-container__zone");
+            var rightZone = new ToolbarZone { name = "ToolbarZoneRightAlign" }.WithClassList("unity-editor-toolbar-container__zone");
             leftZone.Add(toolbarProductCaption);
             toolbarContainerContent.Add(leftZone);
             toolbarContainerContent.Add(middleZone);

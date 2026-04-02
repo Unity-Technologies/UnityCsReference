@@ -156,7 +156,7 @@ namespace UnityEditor.Overlays
         }
 
         // Flex containers have some weird interactions with scroll views so we manually updated the "empty space" between before and after sections
-        void UpdateDockArea()
+        protected virtual void UpdateDockArea()
         {
             var containerRect = layout;
             var beforeSectionRect = beforeSection.layout;

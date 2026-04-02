@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -122,14 +123,14 @@ namespace Unity.ProjectAuditor.Editor.Utils
 
         static readonly string k_StringSeparator = ", ";
 
-        public static string CombineStrings(string[] strings, string separator = null)
+        public static string CombineStrings<T>(IEnumerable<T> strings, string separator = null)
         {
             return string.Join(separator ?? k_StringSeparator, strings);
         }
 
         public static string[] SplitStrings(string combinedString, string separator = null)
         {
-            return combinedString.Split(new[] {separator ?? k_StringSeparator}, StringSplitOptions.None);
+            return combinedString.Split(separator ?? k_StringSeparator, StringSplitOptions.None);
         }
 
         public static string ReplaceStringSeparators(string combinedString, string separator)

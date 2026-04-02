@@ -298,6 +298,20 @@ namespace Unity.Hierarchy
         public extern int GetDepth(in HierarchyNode node);
 
         /// <summary>
+        /// Gets the node type handler instance for the specified node from this hierarchy view model.
+        /// </summary>
+        /// <returns>If the node has a type, the hierarchy node type handler base instance, <see langword="null"/> otherwise.</returns>
+        public HierarchyNodeTypeHandlerBase GetNodeTypeHandlerBase(in HierarchyNode node) => HierarchyNodeTypeHandlerBase.FromIntPtr(GetNodeTypeHandlerFromNode(in node));
+
+        /// <summary>
+        /// Retrieve the hierarchy node type for the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The hierarchy node type.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern HierarchyNodeType GetNodeType(in HierarchyNode node);
+
+        /// <summary>
         /// Gets all the flags set on a given hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -824,6 +838,9 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyViewModelBindings::Destroy", IsThreadSafe = true)]
         static extern void Destroy(IntPtr nativePtr);
+
+        [FreeFunction("HierarchyViewModelBindings::GetNodeTypeHandlerFromNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern IntPtr GetNodeTypeHandlerFromNode(in HierarchyNode node);
 
         [FreeFunction("HierarchyViewModelBindings::SetFlagsAll", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void SetFlagsAll(HierarchyNodeFlags flags);

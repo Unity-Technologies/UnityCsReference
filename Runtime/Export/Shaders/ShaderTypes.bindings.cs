@@ -73,8 +73,8 @@ namespace Shaders
         extern public static bool IsShaderTypeEnabled(ShaderTypeFlags flags, ShaderType type);
         extern public static ShaderStageFlags ShaderStageToFlags(ShaderStage stage);
         extern public static ShaderTypeFlags ShaderTypeToFlags(ShaderType type);
-        extern public static ShaderStage GetPreviousStage(ShaderStage stage);
-        extern public static ShaderStage GetNextStage(ShaderStage stage);
+        public static ShaderStage GetPreviousStage(ShaderStage stage) { return --stage; }
+        public static ShaderStage GetNextStage(ShaderStage stage) { return ++stage; }
     }
 } // namespace Shaders
 } // namespace UnityEngine

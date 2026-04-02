@@ -77,7 +77,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     [
                         context.Material.shader.name
                     ])
-                    .WithLocation(new Location(assetPath)));
+                    .WithLocation(assetPath));
+
+                analysisParams.DependencyCrawler.AddToMaterialCache(context.Material);
 
                 foreach (var analyzer in analyzers)
                 {

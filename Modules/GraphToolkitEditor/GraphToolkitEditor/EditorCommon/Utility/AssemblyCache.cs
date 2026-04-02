@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using Unity.Collections;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -38,7 +39,7 @@ namespace Unity.GraphToolkit.Editor
                 return s_Assemblies ??= AppDomain.CurrentDomain.GetAssemblies()
 #pragma warning restore UA2001
                     .Where(a => !a.IsDynamic
-                        && !k_BlackListedAssemblies.HasAny(b => a.GetName().Name.ToLower().Contains(b)))
+                        && !Array.Exists(k_BlackListedAssemblies, b => a.GetName().Name.ToLower().Contains(b)))
                     .ToList();
             }
         }
@@ -46,7 +47,7 @@ namespace Unity.GraphToolkit.Editor
         // Create a dictionary of every method in a class tagged with TAttribute, grouped by the type of their first parameter type
         // [MyAttr] class Foo { public void A(float); public void B(int); public void C(float); public void D() }
         // GetExtensionMethods<MyAttrAttribute>() =>  { float => {A, C}, int => B }
-        public static Dictionary<Type, List<MethodInfo>> GetExtensionMethods<TAttribute>(IEnumerable<Assembly> assemblies) where TAttribute : Attribute
+        public static Dictionary<Type, List<MethodInfo>> GetExtensionMethods<TAttribute>(IReadOnlyList<Assembly> assemblies) where TAttribute : Attribute
         {
             static Type GetMethodFirstParameterType(MethodInfo m) => m.GetParameters()[0].ParameterType.IsArray ? m.GetParameters()[0].ParameterType.GetElementType() : m.GetParameters()[0].ParameterType;
 

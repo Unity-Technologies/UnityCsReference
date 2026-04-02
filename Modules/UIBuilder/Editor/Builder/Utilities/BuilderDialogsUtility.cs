@@ -104,7 +104,7 @@ namespace Unity.UI.Builder
             if (string.IsNullOrWhiteSpace(newPath))
                 return null;
 
-            var projectPath = BuilderAssetUtilities.GetPathRelativeToProject(newPath.Trim());
+            var projectPath = BuilderAssetUtilities.GetPathRelativeToProject(newPath.Trim(), false);
 
             if (string.IsNullOrWhiteSpace(projectPath))
                 DisplayDialog("Saving new document failed", $"Could not save the current document at the requested path ('{newPath}'): the path is outside of the project.");

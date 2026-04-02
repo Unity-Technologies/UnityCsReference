@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
@@ -179,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (scopedRegistriesUpdated || mainRegistryUpdated)
             {
-                var addedOrUpdatedRegistry = scopedRegistriesUpdated ? newScopedRegistries.FirstMatch(r => !m_SettingsProxy.scopedRegistries.AnyMatches(r.IsEquivalentTo)) : null;
+                var addedOrUpdatedRegistry = scopedRegistriesUpdated ? newScopedRegistries.FirstMatch(r => !m_SettingsProxy.scopedRegistries.Exists(r.IsEquivalentTo)) : null;
                 m_SettingsProxy.SetRegistries(request.Result);
                 if (!string.IsNullOrEmpty(addedOrUpdatedRegistry?.name))
                     m_SettingsProxy.SelectRegistry(addedOrUpdatedRegistry.name);

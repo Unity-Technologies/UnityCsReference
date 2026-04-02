@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -11,9 +13,7 @@ namespace UnityEditor.Search
     {
         private bool m_CompactMode;
         private readonly Label m_Description;
-        private readonly Button m_ActionDropdown;
-
-        public static readonly string moreActionsTooltip = L10n.Tr("Open actions menu");
+        private readonly SearchViewItemButtonWithContext m_ActionDropdown;
 
         public static readonly string ussClassName = "search-list-view-item";
         public static readonly string thumbnailClassName = ussClassName.WithUssElement("thumbnail");
@@ -42,7 +42,13 @@ namespace UnityEditor.Search
 
             if (!viewModel.IsPicker())
             {
-                m_ActionDropdown = CreateButton("SearchItemActionsDropdown", moreActionsTooltip, OnActionDropdownClicked, baseIconButtonClassName, moreActionButtonClassName);
+                m_ActionDropdown = new SearchViewItemButtonWithContext(
+                    moreActionButtonName,
+                    string.Empty,
+                    moreActionsTooltip,
+                    OnActionDropdownClicked,
+                    baseIconButtonClassName,
+                    moreActionButtonClassName);
                 Add(m_ActionDropdown);
             }
 
@@ -56,7 +62,7 @@ namespace UnityEditor.Search
 
         public override void Bind(in SearchItem item)
         {
-            m_CompactMode = m_ViewModel.state.itemSize <= 1f;
+            m_CompactMode = SearchListView.IsCompactMode(m_ViewModel);
             m_Thumbnail.AddToClassList(m_CompactMode ? thumbnailClassName.WithUssModifier("compact") : thumbnailClassName);
 
             if (m_CompactMode)
@@ -73,6 +79,9 @@ namespace UnityEditor.Search
                 m_Description.tooltip = m_Label.text;
 
             m_BindedItem.options &= ~SearchItemOptions.Compacted;
+
+            if (m_ActionDropdown != null)
+                m_ActionDropdown.BoundItem = item;
         }
 
         public override void Unbind()
@@ -84,6 +93,9 @@ namespace UnityEditor.Search
             m_Description.text = string.Empty;
             m_Description.tooltip = string.Empty;
 
+            if (m_ActionDropdown != null)
+                m_ActionDropdown.BoundItem = null;
+
             base.Unbind();
         }
     }
@@ -93,6 +105,27 @@ namespace UnityEditor.Search
         const float k_CompactItemHeight = 20f;
 
         public static readonly string ussClassName = "search-list-view";
+
+        internal static string resultViewId = "list";
+        public override string ViewId => resultViewId;
+
+        public static SearchListView Create(ISearchView viewModel)
+        {
+            return new SearchListView(viewModel);
+        }
+
+        public static Texture2D FetchIcon()
+        {
+            return EditorGUIUtility.LoadIconRequired("ListView");
+        }
+
+        public static SearchResultViewDescriptor GetDescriptor()
+        {
+            return new SearchResultViewDescriptor(resultViewId, Create, FetchIcon,
+                (float)DisplayMode.Compact, (float)DisplayMode.List, (float)DisplayMode.List,
+                description: "List View",
+                buttonClassName: "search-statusbar__list-mode-button");
+        }
 
         public SearchListView(ISearchView viewModel)
             : base("SearchListView", viewModel, ussClassName)
@@ -109,9 +142,14 @@ namespace UnityEditor.Search
             Add(m_ListView);
         }
 
+        internal static bool IsCompactMode(ISearchView viewModel)
+        {
+            return viewModel.currentResultViewId == SearchListView.resultViewId && SearchUtils.GetDisplayModeFromItemSize(viewModel.state.itemIconSize) == DisplayMode.Compact;
+        }
+
         protected override float GetItemHeight()
         {
-            if (viewState.itemSize <= (float)DisplayMode.Compact)
+            if (IsCompactMode(m_ViewModel))
                 return k_CompactItemHeight;
             return base.GetItemHeight();
         }

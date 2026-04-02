@@ -11,16 +11,18 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
-    [ProfilerModuleMetadata("UI (Canvas)", typeof(LocalizationResource), IconPath = "Profiler.UI")]
+    [ProfilerModuleMetadata("UI (Canvas)", typeof(LocalizationResource), IconPath = "Profiler.UICanvas")]
     internal class UIProfilerModule : ProfilerModuleBase
     {
         const int k_DefaultOrderIndex = 10;
         static readonly string k_UIProfilerAvailableOnlyInEditorMode = LocalizationDatabase.GetLocalizedString("Data is only available when profiling Play Mode in the Editor.");
 
         protected static WeakReference instance;
+#pragma warning disable UAC1010
+        // https://jira.unity3d.com/browse/UUM-132549
         [SerializeField]
         UISystemProfiler m_UISystemProfiler;
-
+#pragma warning restore UAC1010
         public UIProfilerModule() : base(ProfilerModuleChartType.StackedTimeArea) {}
 
         // Used by UIDetailsProfilerModule

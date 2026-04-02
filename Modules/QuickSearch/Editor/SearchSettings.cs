@@ -296,9 +296,7 @@ namespace UnityEditor.Search
 #pragma warning restore UA2001
 
             var expandedObjects = ReadSetting<object[]>(settings, nameof(expandedQueries));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            expandedQueries = expandedObjects != null ? expandedObjects.Select(Convert.ToInt32).ToArray() : Array.Empty<int>();
-#pragma warning restore UA2001
+            expandedQueries = expandedObjects != null ? Array.ConvertAll(expandedObjects, Convert.ToInt32) : Array.Empty<int>();
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));

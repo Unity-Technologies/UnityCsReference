@@ -5,12 +5,14 @@
 using System;
 using UnityEngine.Analytics;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Profile
 {
     /// <summary>
     /// Event for when building an active build profile.
     /// </summary>
+    [VisibleToOtherModules]
     [AnalyticInfo(eventName: "buildProfileBuildTime", vendorKey: "unity.buildprofile")]
     internal class BuildProfileBuildTimeEvent : IAnalytic
     {

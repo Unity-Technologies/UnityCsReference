@@ -2,16 +2,16 @@ using System.Reflection;
 
 namespace Unity.Scripting.LifecycleManagement;
 
-internal abstract class AssemblyLoadedScopeBase : LifecycleScopeWithContext<IReadonlyOrderedAssemblyList>
+internal abstract class AssemblyLoadedScopeBase : LifecycleScopeWithContext<ReadOnlyAssemblyList>
 {
     public const string ScopeName = "AssemblyLoaded";
 
-    public OrderedAssemblyList OrderedAssemblies { get; }
+    public ReadOnlyAssemblyList OrderedAssemblies { get; }
 
     protected AssemblyLoadedScopeBase(IReadOnlyList<Assembly> assemblies)
-        : base(ScopeName, new OrderedAssemblyList(assemblies))
+        : base(ScopeName, new ReadOnlyAssemblyList(assemblies))
     {
-        OrderedAssemblies = (OrderedAssemblyList)Context;
+        OrderedAssemblies = (ReadOnlyAssemblyList)Context;
     }
 
     protected override void Enter(ScopeTransitionHelper scopeTransitionHelper)

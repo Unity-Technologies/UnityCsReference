@@ -32,6 +32,7 @@ namespace Unity.GraphToolkit.Editor
 
             AddToClassList(ussClassName);
             this.AddPackageStylesheet("VariableTooltipPropertyField.uss");
+            this.AddPackageStylesheet("Field.uss");
 
             var label = new Label { text = "Tooltip" };
             label.AddToClassList(labelUssClassName);

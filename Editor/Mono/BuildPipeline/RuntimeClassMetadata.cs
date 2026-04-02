@@ -306,13 +306,23 @@ namespace UnityEditor
             }
         }
 
-        // Needs to stay in sync with MethodDescription in Editor/Src/BuildPipeline/BuildSerialization.h
+        // Needs to stay in sync with MethodDescription in Editor/Src/BuildPipeline/ScriptsOnlyCache.h
         [StructLayout(LayoutKind.Sequential)]
         internal class MethodDescription
         {
             public string assembly;
             public string fullTypeName;
             public string methodName;
+
+            [RequiredByNativeCode]
+            internal static void DeconstructMethodDescriptionArrayElement(MethodDescription[] array, int index,
+                out string assembly, out string fullTypeName, out string methodName)
+            {
+                var method = array[index];
+                assembly = method.assembly;
+                fullTypeName = method.fullTypeName;
+                methodName = method.methodName;
+            }
         }
 
         //invoked by native code

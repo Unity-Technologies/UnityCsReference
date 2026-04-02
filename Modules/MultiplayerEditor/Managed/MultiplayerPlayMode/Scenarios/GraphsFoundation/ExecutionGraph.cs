@@ -25,7 +25,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private struct StageData
         {
             [SerializeField] public ExecutionState State;
-            [SerializeReference] public List<Node> Nodes;
+            [SerializeReference] public List<ExecutionNode> Nodes;
         }
 
         internal static readonly ExecutionStage[] k_Stages = Enum.GetValues(typeof(ExecutionStage)) as ExecutionStage[];
@@ -65,7 +65,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             for (int i = 0; i < m_Stages.Length; i++)
             {
                 m_Stages[i].State = ExecutionState.Idle;
-                foreach (Node node in m_Stages[i].Nodes)
+                foreach (ExecutionNode node in m_Stages[i].Nodes)
                     node.Reset();
             }
 
@@ -77,10 +77,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private void SetupNodeEvents(Node node)
+        private void SetupNodeEvents(ExecutionNode node)
         {
-            node.StatusRefreshed -= StatusRefreshed;
-            node.StatusRefreshed += StatusRefreshed;
+            node.StatusRefreshed -= OnStatusRefreshed;
+            node.StatusRefreshed += OnStatusRefreshed;
+        }
+
+        void OnStatusRefreshed()
+        {
+            StatusRefreshed?.Invoke();
         }
 
         public void OnBeforeSerialize()
@@ -105,21 +110,21 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 m_Stages[i] = new StageData()
                 {
                     State = ExecutionState.Idle,
-                    Nodes = new List<Node>()
+                    Nodes = new List<ExecutionNode>()
                 };
             }
         }
 
-        internal ReadOnlyCollection<Node> GetNodes(ExecutionStage stage)
+        internal ReadOnlyCollection<ExecutionNode> GetNodes(ExecutionStage stage)
         {
             if (m_Stages == null || m_Stages.Length == 0)
-                return new List<Node>().AsReadOnly();
+                return new List<ExecutionNode>().AsReadOnly();
             return m_Stages[(int)stage].Nodes.AsReadOnly();
         }
 
-        internal List<Node> GetAllNodes()
+        internal List<ExecutionNode> GetAllNodes()
         {
-            var allNodes = new List<Node>();
+            var allNodes = new List<ExecutionNode>();
             foreach (var stage in m_Stages)
             {
                 allNodes.AddRange(stage.Nodes);
@@ -127,19 +132,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return allNodes;
         }
 
-        internal void AddNode(Node node, ExecutionStage stage)
+        internal int GetAllNodesCount()
+        {
+            int count = 0;
+            foreach (var stage in m_Stages)
+            {
+                count += stage.Nodes.Count;
+            }
+            return count;
+        }
+
+        internal void AddNode(ExecutionNode node, ExecutionStage stage)
         {
             ValidateHasNotStarted();
-
-            // Ensure we don't have duplicate nodes
-            foreach (var s in m_Stages)
-            {
-                foreach (var existingNode in s.Nodes)
-                {
-                    if (existingNode.Name == node.Name)
-                        throw new ArgumentException($"Node with the same name already exists [{node.Name}].");
-                }
-            }
 
             // Sanity check against adding nodes with invalid states
             if (node.State != ExecutionState.Idle)
@@ -228,7 +233,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Grab the current stage's nodes to run and set it State to running.
             Stages[(int)stage].State = ExecutionState.Running;
             var stageNodes = Stages[(int)stage].Nodes;
-            List<Node> nodesToRun;
+            List<ExecutionNode> nodesToRun;
             int completed;
 
             var runningTasks = new List<Task>(stageNodes.Count);
@@ -270,10 +275,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private List<Node> GetNextNodesToRun(IEnumerable<Node> candidates, bool allowIsolation, out int completed)
+        private List<ExecutionNode> GetNextNodesToRun(IEnumerable<ExecutionNode> candidates, bool allowIsolation, out int completed)
         {
-            var availableNodes = new List<Node>();
-            var availableIsolationNode = (Node)null;
+            var availableNodes = new List<ExecutionNode>();
+            var availableIsolationNode = (ExecutionNode)null;
             completed = 0;
 
             foreach (var candidate in candidates)
@@ -306,7 +311,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return availableNodes;
         }
 
-        private static bool NodeFinishedExecution(Node node)
+        private static bool NodeFinishedExecution(ExecutionNode node)
         {
             if (node.State == ExecutionState.Completed ||
                 node.State == ExecutionState.Failed ||
@@ -316,7 +321,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
-        private bool HasAllDependenciesCompleted(Node node)
+        private bool HasAllDependenciesCompleted(ExecutionNode node)
         {
             var inputs = FindConnectedInputs(node);
             return HasAllConnectionsCompleted(inputs);
@@ -337,7 +342,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return true;
         }
 
-        private IEnumerable<NodeInput> FindConnectedInputs(Node node)
+        private IEnumerable<NodeInput> FindConnectedInputs(ExecutionNode node)
         {
             if (m_ConnectedInputs == null)
                 yield break;
@@ -349,16 +354,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private void FlushInputs(Node node)
+        private void FlushInputs(ExecutionNode node)
         {
             foreach (var input in FindConnectedInputs(node))
                 input.Flush();
         }
 
-        private static bool HasToRunInIsolation(Node node)
+        private static bool HasToRunInIsolation(ExecutionNode node)
             => CanRequestDomainReload(node);
 
-        private static bool CanRequestDomainReload(Node node)
+        private static bool CanRequestDomainReload(ExecutionNode node)
             => node.GetType().IsDefined(typeof(CanRequestDomainReloadAttribute), true);
     }
 }

@@ -21,13 +21,14 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-box";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         ///  Initializes and returns an instance of Box.
         /// </summary>
         public Box()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
         }
     }
 }

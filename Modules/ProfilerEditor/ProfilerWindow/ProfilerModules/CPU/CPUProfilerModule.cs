@@ -190,6 +190,9 @@ namespace UnityEditorInternal.Profiling
             {
                 ChartViewController.SetWarningIconVisible(false, null);
             }
+
+            // Update selected marker overlay
+            UpdateSelectedMarkerOverlay();
         }
 
         public override void DrawToolbar(Rect position)
@@ -351,6 +354,8 @@ namespace UnityEditorInternal.Profiling
         {
             if (selection != null)
             {
+                // TODO: Callstack tooltips are currently disabled - see SelectedMarkerOverlayWidget.cs
+                /*
                 System.Text.StringBuilder sampleStack = new System.Text.StringBuilder();
                 if (selection.markerPathDepth > 0)
                 {
@@ -359,22 +364,38 @@ namespace UnityEditorInternal.Profiling
                     {
                         sampleStack.AppendFormat("\n{0}", markerNamePath[i]);
                     }
-                }
+                }*/
                 if (selection.threadName == k_MainThreadName)
                 {
                     selectionHighlightLabel = new GUIContent(
                         string.Format(Content.selectionHighlightLabelBaseText.text, selection.sampleDisplayName),
-                        string.Format(Content.selectionHighlightLabelBaseText.tooltip, sampleStack.ToString()));
+                        ""); //string.Format(Content.selectionHighlightLabelBaseText.tooltip, sampleStack));
                 }
                 else
                 {
                     selectionHighlightLabel = new GUIContent(
                         string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.text, selection.sampleDisplayName, selection.threadName),
-                        string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.tooltip, sampleStack.ToString(), selection.threadName));
+                        ""); //string.Format(Content.selectionHighlightNonMainThreadLabelBaseText.tooltip, sampleStack, selection.threadName));
                 }
             }
             else
                 selectionHighlightLabel = GUIContent.none;
+
+            // Update immediately, else the repaint will miss
+            UpdateSelectedMarkerOverlay();
+        }
+
+        void UpdateSelectedMarkerOverlay()
+        {
+            // InvertedHierarchy currently doesn't support selecting specific markers
+            if (m_ViewType != ProfilerViewType.InvertedHierarchy && selection != null && selectionHighlightLabel != null)
+            {
+                ChartViewController?.SetSelectedMarkerOverlay(selectionHighlightLabel.text, selectionHighlightLabel.tooltip);
+            }
+            else
+            {
+                ChartViewController?.ClearSelectedMarkerOverlay();
+            }
         }
 
         protected override int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, string sampleName, out List<int> markerIdPath, string markerNamePath = null)

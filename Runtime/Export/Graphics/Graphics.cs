@@ -163,18 +163,22 @@ namespace UnityEngine
             shadowCastingMode = ShadowCastingMode.Off;
             receiveShadows = false;
             lightProbeUsage = LightProbeUsage.Off;
+#pragma warning disable CS0618
             lightProbeProxyVolume = null;
+#pragma warning restore CS0618
             overrideSceneCullingMask = false;
             sceneCullingMask = 0;
             entityId = EntityId.None;
             forceMeshLod = -1;
             meshLodSelectionBias = 0.0f;
+            sortingLayerID = 0; // Default Sorting Layer
+            sortingOrder = 0;
         }
 
         public int layer {get; set;}
         public uint renderingLayerMask {get; set;}
         public int rendererPriority {get; set;}
-        [System.Obsolete(@"Please use entityId instead.", false)]
+        [System.Obsolete(@"Please use entityId instead.", true)]
         public int instanceID {get => entityId; set => entityId = value;}
         public EntityId entityId {get; set;}
         public Bounds worldBounds {get; set;}
@@ -189,6 +193,8 @@ namespace UnityEngine
         public bool receiveShadows {get; set;}
 
         public LightProbeUsage lightProbeUsage {get; set;}
+
+        [Obsolete("This field is obsolete. #from(6000.5)", false)]
         public LightProbeProxyVolume lightProbeProxyVolume {get; set;}
 
         public bool overrideSceneCullingMask { get; set; }
@@ -196,6 +202,29 @@ namespace UnityEngine
 
         public int forceMeshLod { get; set; }
         public float meshLodSelectionBias { get; set; }
+        public int sortingLayerID { get; set; }
+        public int sortingOrder { get; set; }
+    }
+
+    public readonly struct SpriteParams
+    {
+        public SpriteParams(Sprite s)
+        {
+            sprite = s;
+            color = Color.white;
+            maskInteraction = SpriteMaskInteraction.None;
+        }
+
+        public SpriteParams(Sprite s, Color spriteColor, SpriteMaskInteraction mask = SpriteMaskInteraction.None)
+        {
+            sprite = s;
+            color = spriteColor;
+            maskInteraction = mask;
+        }
+
+        public Sprite sprite { get; }
+        public Color color { get; }
+        public SpriteMaskInteraction maskInteraction { get; }
     }
 
     internal readonly struct RenderInstancedDataLayout
@@ -214,6 +243,24 @@ namespace UnityEngine
         public int offsetObjectToWorld {get;}
         public int offsetPrevObjectToWorld {get;}
         public int offsetRenderingLayerMask {get;}
+    }
+
+    internal readonly struct RenderSpriteInstancedDataLayout
+    {
+        public RenderSpriteInstancedDataLayout(System.Type t)
+        {
+            size = Marshal.SizeOf(t);
+            offsetObjectToWorld = t == typeof(Matrix4x4) ? 0 : Marshal.OffsetOf(t, "objectToWorld").ToInt32();
+
+            // fill optional data members
+            try { offsetSpriteColor = Marshal.OffsetOf(t, "spriteColor").ToInt32(); } catch (ArgumentException) { offsetSpriteColor = -1; }
+            try { offsetRenderingLayerMask = Marshal.OffsetOf(t, "renderingLayerMask").ToInt32(); } catch (ArgumentException) { offsetRenderingLayerMask = -1; }
+        }
+
+        public int size { get; }
+        public int offsetObjectToWorld { get; }
+        public int offsetSpriteColor { get; }
+        public int offsetRenderingLayerMask { get; }
     }
 }
 
@@ -554,6 +601,19 @@ namespace UnityEngine
             return layout;
         }
 
+        internal static Dictionary<int, RenderSpriteInstancedDataLayout> s_RenderSpriteInstancedDataLayouts = new Dictionary<int, RenderSpriteInstancedDataLayout>();
+        internal static RenderSpriteInstancedDataLayout GetCachedRenderSpriteInstancedDataLayout(Type type)
+        {
+            int typeHashCode = type.GetHashCode();
+            RenderSpriteInstancedDataLayout layout;
+            if (!s_RenderSpriteInstancedDataLayouts.TryGetValue(typeHashCode, out layout))
+            {
+                layout = new RenderSpriteInstancedDataLayout(type);
+                s_RenderSpriteInstancedDataLayouts.Add(typeHashCode, layout);
+            }
+            return layout;
+        }
+
         public unsafe static void RenderMeshInstanced<T>(in RenderParams rparams, Mesh mesh, int submeshIndex, T[] instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
         {
             if (!SystemInfo.supportsInstancing)
@@ -641,6 +701,71 @@ namespace UnityEngine
             Internal_RenderPrimitivesIndexedIndirect(rparams, topology, indexBuffer, commandBuffer, commandCount, startCommand);
         }
 
+        public static void RenderSprite(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, Matrix4x4 objectToWorld)
+        {
+            if (spriteParams.sprite == null)
+                throw new ArgumentNullException("sprite");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+            Internal_RenderSprite(renderParams, spriteParams, submeshIndex, objectToWorld);
+        }
+
+        public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, T[] instanceData) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+            RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
+            fixed (T* data = instanceData) { Internal_RenderSpriteInstanced(renderParams, spriteParams, submeshIndex, (IntPtr)(data), layout, (uint)instanceData.Length); }
+        }
+
+        public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, List<T> instanceData) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+            RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
+            fixed (T* data = NoAllocHelpers.ExtractArrayFromList(instanceData)) { Internal_RenderSpriteInstanced(renderParams, spriteParams, submeshIndex, (IntPtr)(data), layout, (uint)instanceData.Count); }
+        }
+
+        public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, NativeArray<T> instanceData) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+            RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
+            Internal_RenderSpriteInstanced(renderParams, spriteParams, submeshIndex, (IntPtr)(instanceData.GetUnsafeReadOnlyPtr()), layout, (uint)instanceData.Length);
+        }
+
+        public unsafe static void RenderSpriteInstanced<T>(in RenderParams renderParams, in SpriteParams spriteParams, int submeshIndex, ReadOnlySpan<T> instanceData) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!renderParams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderSpriteInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (!SortingLayer.IsValid(renderParams.sortingLayerID))
+                throw new InvalidOperationException("SortingLayerID is invalid.");
+            RenderSpriteInstancedDataLayout layout = GetCachedRenderSpriteInstancedDataLayout(typeof(T));
+            fixed (T* data = instanceData) { Internal_RenderSpriteInstanced(renderParams, spriteParams, submeshIndex, (IntPtr)(data), layout, (uint)instanceData.Length); }
+        }
+
         public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex)
         {
             if (mesh == null)
@@ -661,26 +786,128 @@ namespace UnityEngine
 
         public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
         {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
         }
 
         public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("null")] Transform probeAnchor, [uei.DefaultValue("true")] bool useLightProbes)
         {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
         }
 
         public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
         {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
         }
 
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage)
         {
+            Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, null);
+        }
+
+        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, [uei.DefaultValue("matrices.Length")] int count, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (!material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with DrawMeshInstanced.");
+            else if (matrices == null)
+                throw new ArgumentNullException("matrices");
+            else if (count < 0 || count > Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length))
+                throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length)));
+
+            if (count > 0)
+                Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, null);
+        }
+
+        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage)
+        {
+            if (matrices == null)
+                throw new ArgumentNullException("matrices");
+
+            DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage);
+        }
+
+        public static void DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, Bounds bounds, int count, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (count <= 0)
+                throw new ArgumentOutOfRangeException("count");
+
+            if (count > 0)
+                Internal_DrawMeshInstancedProcedural(mesh, submeshIndex, material, bounds, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, null);
+        }
+
+        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset = 0, [uei.DefaultValue("null")] MaterialPropertyBlock properties = null, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows = ShadowCastingMode.On, [uei.DefaultValue("true")] bool receiveShadows = true, [uei.DefaultValue("0")] int layer = 0, [uei.DefaultValue("null")] Camera camera = null, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, null);
+        }
+
+        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, GraphicsBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset = 0, [uei.DefaultValue("null")] MaterialPropertyBlock properties = null, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows = ShadowCastingMode.On, [uei.DefaultValue("true")] bool receiveShadows = true, [uei.DefaultValue("0")] int layer = 0, [uei.DefaultValue("null")] Camera camera = null, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawMeshInstancedIndirectGraphicsBuffer(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, null);
+        }
+
+        [Obsolete("This method is deprecated. Use DrawMeshInstancedIndirect without a LightProbeProxyVolume argument. #from(6000.5)", false)]
+        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
             if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
                 throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
-            Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+
+            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
+        [Obsolete("This method is deprecated. Use DrawMeshInstanced without a LightProbeProxyVolume argument. #from(6000.5)", false)]
         public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, [uei.DefaultValue("matrices.Length")] int count, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
         {
             if (!SystemInfo.supportsInstancing)
@@ -704,6 +931,7 @@ namespace UnityEngine
                 Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
+        [Obsolete("This method is deprecated. Use DrawMeshInstanced without a LightProbeProxyVolume argument. #from(6000.5)", false)]
         public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
         {
             if (matrices == null)
@@ -712,7 +940,8 @@ namespace UnityEngine
             DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
-        public static void DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, Bounds bounds, int count, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes, LightProbeProxyVolume lightProbeProxyVolume = null)
+        [Obsolete("This method is deprecated. Use DrawMeshInstancedProcedural without a LightProbeProxyVolume argument. #from(6000.5)", false)]
+        public static void DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, Bounds bounds, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume)
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
@@ -731,26 +960,7 @@ namespace UnityEngine
                 Internal_DrawMeshInstancedProcedural(mesh, submeshIndex, material, bounds, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
-        {
-            if (!SystemInfo.supportsInstancing)
-                throw new InvalidOperationException("Instancing is not supported.");
-            if (!SystemInfo.supportsIndirectArgumentsBuffer)
-                throw new InvalidOperationException("Indirect argument buffers are not supported.");
-            else if (mesh == null)
-                throw new ArgumentNullException("mesh");
-            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
-                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
-            else if (material == null)
-                throw new ArgumentNullException("material");
-            else if (bufferWithArgs == null)
-                throw new ArgumentNullException("bufferWithArgs");
-            if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
-                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
-
-            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
-        }
-
+        [Obsolete("This method is deprecated. Use DrawMeshInstancedIndirect without a LightProbeProxyVolume argument. #from(6000.5)", false)]
         public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, GraphicsBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
         {
             if (!SystemInfo.supportsInstancing)
@@ -769,6 +979,14 @@ namespace UnityEngine
                 throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
 
             Internal_DrawMeshInstancedIndirectGraphicsBuffer(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+        }
+
+        [Obsolete("This method is deprecated. Use DrawMesh without a LightProbeProxyVolume argument. #from(6000.5)", false)]
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
+                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
+            Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
         }
 
         public static void DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount = 1)
@@ -1032,6 +1250,20 @@ namespace UnityEngine
 {
     public sealed partial class QualitySettings
     {
+        static QualityLevelRemovalScope s_RemovalScope = null;
+
+        /// <summary>
+        /// Callback raised when the current active quality level is being changed.
+        /// It passes to the callback:
+        ///   - the previous quality level
+        ///   - the current quality level.
+        ///   - the current quality level in old name array.
+        /// The third index is usefull to be able to map what is the new name as this
+        /// operation is done before name array is being recomputed. And this should
+        /// remains this way as the name should be inspectable from the callback.
+        /// </summary>
+        internal static event Action<int /*previous*/, int /*current*/, int /*currentInPreviousList*/> activeQualityLevelIndexChanged;
+
         /// <summary>
         /// Callback raised when the current active quality level is being changed
         /// It passes to the callback the previous quality level and the current quality level
@@ -1044,10 +1276,40 @@ namespace UnityEngine
         /// </summary>
         public static event Action<string, string> activeQualityLevelRenamed;
 
+        internal class QualityLevelRemovalScope : IDisposable
+        {
+            public int qualityLevelIndexBeingRemoved { get; private set; }
+
+            public QualityLevelRemovalScope(int qualityLevelIndexBeingRemoved)
+            {
+                this.qualityLevelIndexBeingRemoved = qualityLevelIndexBeingRemoved;
+                s_RemovalScope = this;
+            }
+
+            void IDisposable.Dispose() => s_RemovalScope = null;
+
+            // As SetCurrentIndex on the native side will skip if index don't change
+            // this case need to manually trigger the event
+            public void DeletingCurrentNonLastLevel()
+                => OnActiveQualityLevelChanged(qualityLevelIndexBeingRemoved, qualityLevelIndexBeingRemoved);
+        }
+
         [RequiredByNativeCode]
         internal static void OnActiveQualityLevelChanged(int previousQualityLevel, int currentQualityLevel)
         {
             activeQualityLevelChanged?.Invoke(previousQualityLevel, currentQualityLevel);
+
+            int currentInPreviousList = currentQualityLevel;
+            if (s_RemovalScope != null)
+            {
+                int indexBeingRemoved = s_RemovalScope.qualityLevelIndexBeingRemoved;
+                bool changeDueToRemovalOfLowerOrCurrentLevel = indexBeingRemoved <= previousQualityLevel;
+                bool isLastLevel = indexBeingRemoved == QualitySettings.count - 1;
+                if (changeDueToRemovalOfLowerOrCurrentLevel && !isLastLevel)
+                    currentInPreviousList++; 
+            }
+
+            activeQualityLevelIndexChanged?.Invoke(previousQualityLevel, currentQualityLevel, currentInPreviousList);
         }
 
         internal static void OnActiveQualityLevelRenamed(string previousName, string newName)

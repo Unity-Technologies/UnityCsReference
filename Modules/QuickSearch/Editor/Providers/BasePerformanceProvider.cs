@@ -712,7 +712,7 @@ namespace UnityEditor.Search.Providers
             context.useExplicitProvidersAsNormalProviders = true;
             var tableConfig = providers[1].tableConfig(context);
             var viewState = new SearchViewState(context, tableConfig);
-            viewState.itemSize = (float)DisplayMode.Table;
+            viewState.SetDisplayMode(DisplayMode.Table);
             SearchService.ShowWindow(viewState);
         }
     }

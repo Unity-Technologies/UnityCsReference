@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 //using UnityEditor;
 using UnityEngine;
@@ -529,38 +530,41 @@ namespace UnityEngine.AdaptivePerformance
             set { m_AdaptiveLayerCulling = value; }
         }
 
-        private List<AdaptivePerformanceScalerSettingsBase> m_DefaultScalerSettings = null;
-        
+        private AdaptivePerformanceScalerSettingsBase[] m_DefaultScalerSettings = new AdaptivePerformanceScalerSettingsBase[16];
+        private ReadOnlyCollection<AdaptivePerformanceScalerSettingsBase> m_ReadOnlyDefaultScalerSettings;
+
+        void SyncDefaultScalerSettings()
+        {
+            m_DefaultScalerSettings[0] = AdaptiveFramerate;
+            m_DefaultScalerSettings[1] = AdaptiveBatching;
+            m_DefaultScalerSettings[2] = AdaptiveLOD;
+            m_DefaultScalerSettings[3] = AdaptiveLut;
+            m_DefaultScalerSettings[4] = AdaptiveMSAA;
+            m_DefaultScalerSettings[5] = AdaptiveResolution;
+            m_DefaultScalerSettings[6] = AdaptiveShadowCascade;
+            m_DefaultScalerSettings[7] = AdaptiveShadowDistance;
+            m_DefaultScalerSettings[8] = AdaptiveShadowmapResolution;
+            m_DefaultScalerSettings[9] = AdaptiveShadowQuality;
+            m_DefaultScalerSettings[10] = AdaptiveTransparency;
+            m_DefaultScalerSettings[11] = AdaptiveSorting;
+            m_DefaultScalerSettings[12] = AdaptiveViewDistance;
+            m_DefaultScalerSettings[13] = AdaptivePhysics;
+            m_DefaultScalerSettings[14] = AdaptiveLayerCulling;
+            m_DefaultScalerSettings[15] = AdaptiveDecals;
+        }
+
         /// <summary>
         /// Returns the list of default scaler settings.
         /// </summary>
-        public List<AdaptivePerformanceScalerSettingsBase> DefaultScalerSettings
+        public IReadOnlyList<AdaptivePerformanceScalerSettingsBase> DefaultScalerSettings
         {
             get
             {
-                if (m_DefaultScalerSettings == null || m_DefaultScalerSettings.Count == 0)
-                {
-                    m_DefaultScalerSettings = new List<AdaptivePerformanceScalerSettingsBase>
-                    {
-                        AdaptiveFramerate,
-                        AdaptiveBatching,
-                        AdaptiveLOD,
-                        AdaptiveLut,
-                        AdaptiveMSAA,
-                        AdaptiveResolution,
-                        AdaptiveShadowCascade,
-                        AdaptiveShadowDistance,
-                        AdaptiveShadowmapResolution,
-                        AdaptiveShadowQuality,
-                        AdaptiveTransparency,
-                        AdaptiveSorting,
-                        AdaptiveViewDistance,
-                        AdaptivePhysics,
-                        AdaptiveLayerCulling,
-                        AdaptiveDecals
-                    };
-                }
-                return m_DefaultScalerSettings;
+                if (m_ReadOnlyDefaultScalerSettings == null)
+                    m_ReadOnlyDefaultScalerSettings = Array.AsReadOnly(m_DefaultScalerSettings);
+
+                SyncDefaultScalerSettings();
+                return m_ReadOnlyDefaultScalerSettings;
             }
         }
 
@@ -750,7 +754,7 @@ namespace UnityEngine.AdaptivePerformance
             set { m_EnableBoostOnStartup = value; }
         }
 
-        [SerializeField, Tooltip("Logging Frequency (Development mode only)")]
+        [SerializeField, Min(1), Tooltip("Logging Frequency (Development mode only)")]
         int m_StatsLoggingFrequencyInFrames = 50;
 
         /// <summary>
@@ -805,8 +809,6 @@ namespace UnityEngine.AdaptivePerformance
         {
             get
             {
-                if(m_ActiveScalerProfile == null && m_scalerProfileList.Length > 0)
-                    return m_scalerProfileList[0];
                 return m_ActiveScalerProfile;
             }
             set
@@ -829,8 +831,8 @@ namespace UnityEngine.AdaptivePerformance
         List<AdaptivePerformanceScaler> m_AddedScalerViaScan = new List<AdaptivePerformanceScaler>();
 
 
-        [SerializeField]
-        AdaptivePerformanceScalerProfile m_ActiveScalerProfile;
+        [SerializeReference]
+        AdaptivePerformanceScalerProfile m_ActiveScalerProfile = null;
         /// <summary>
         /// Add a new scaler profile with default scaler settings.
         /// </summary>

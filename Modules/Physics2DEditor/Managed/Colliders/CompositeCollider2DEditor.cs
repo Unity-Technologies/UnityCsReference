@@ -57,9 +57,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_GeometryType);
 
             // Only show the ability to select the Delaunay mesh if polygon geometry type is selected.
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (targets.All(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons))
-#pragma warning restore UA2001
+            if (Array.TrueForAll(targets, x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons))
             {
                 EditorGUILayout.PropertyField(m_UseDelaunayMesh);
             }
@@ -85,9 +83,7 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ShowEdgeRadius.target = targets.All(x => (x as CompositeCollider2D).geometryType != CompositeCollider2D.GeometryType.Polygons);
-#pragma warning restore UA2001
+            m_ShowEdgeRadius.target = Array.TrueForAll(targets, x => (x as CompositeCollider2D).geometryType != CompositeCollider2D.GeometryType.Polygons);
             if (EditorGUILayout.BeginFadeGroup(m_ShowEdgeRadius.faded))
                 EditorGUILayout.PropertyField(m_EdgeRadius);
             EditorGUILayout.EndFadeGroup();

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -115,5 +116,10 @@ namespace Unity.GraphToolkit.Editor
         /// It also performs a type check and conversion internally. If the value cannot be cast to <see cref="DataType"/>, the method returns <c>false</c>.
         /// </remarks>
         bool TrySetValue<T>(T value);
+
+        /// <summary>
+        /// The globally unique identifier for this port.
+        /// </summary>
+        Hash128 Guid { get; }
     }
 }

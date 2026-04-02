@@ -38,6 +38,9 @@ internal readonly record struct RemoveElementsCommand
         }
 
         foreach (var vta in set)
+        {
             EditorUtility.SetDirty(vta);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
+        }
     }
 }

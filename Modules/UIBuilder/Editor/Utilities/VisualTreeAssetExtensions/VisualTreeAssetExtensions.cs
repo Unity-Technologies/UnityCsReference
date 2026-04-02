@@ -68,6 +68,7 @@ namespace Unity.UI.Builder
                     {
                         ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
                         ignoreTypeList = BuilderConstants.IgnoredTypesWhenExporting,
+                        consistentAttributeOrder = UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting,
                         styleExporterOptions = new StyleSheetExporter.UssExportOptions
                         {
                             ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
@@ -331,24 +332,6 @@ namespace Unity.UI.Builder
             if (vta.inlineSheet == null)
                 vta.inlineSheet = UnityEngine.UIElements.StyleSheetUtility.CreateInstanceWithHideFlags();
             return vta.inlineSheet;
-        }
-
-        public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
-        {
-            return vta.GetOrCreateInlineStyleRule(vea, out var _);
-        }
-
-        public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea, out bool wasCreated)
-        {
-            wasCreated = vea.ruleIndex < 0;
-            if (wasCreated)
-            {
-                var inlineSheet = vta.GetOrCreateInlineStyleSheet();
-                vea.ruleIndex = inlineSheet.rules.Length;
-                return inlineSheet.AddRule();
-            }
-
-            return vta.inlineSheet.GetRule(vea.ruleIndex);
         }
 
         public static void ReplaceStyleSheetPaths(this VisualTreeAsset vta, string oldUssPath, string newUssPath)

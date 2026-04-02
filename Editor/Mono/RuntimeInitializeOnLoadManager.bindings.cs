@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -38,5 +40,36 @@ namespace UnityEngine
     internal sealed partial class RuntimeInitializeOnLoadManager
     {
         extern internal static string[] dontStripClassNames { get; }
+
+        [RequiredByNativeCode]
+        internal static bool ValidateRuntimeInitializeOnLoadMethod(MethodInfo methodInfo)
+        {
+            if (!methodInfo.IsStatic)
+            {
+                return false;
+            }
+            if (methodInfo.IsSpecialName)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is a property or event accessor method and cannot be marked with [RuntimeInitializeOnLoadMethod]");
+                return false;
+            }
+            if (methodInfo.GetParameters().Length != 0)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' has arguments, but [RuntimeInitializeOnLoadMethod] methods cannot have arguments");
+                return false;
+            }
+            if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.IsGenericType)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is in a generic type, but [RuntimeInitializeOnLoadMethod] methods cannot be in generic types");
+                return false;
+            }
+            if (methodInfo.IsGenericMethod)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is a generic method, but [RuntimeInitializeOnLoadMethod] methods cannot be generic");
+                return false;
+            }
+
+            return true;
+        }
     }
 }

@@ -133,9 +133,7 @@ namespace UnityEditor
             LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, true);
             LayoutViewInfo centerViewInfo = new LayoutViewInfo(k_CenterViewClassName, 0, true);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
-#pragma warning restore UA2001
+            var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>();
 
             if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref centerViewInfo))
                 return false;
@@ -157,7 +155,7 @@ namespace UnityEditor
             return true;
         }
 
-        private static View LoadLayoutView<T>(Type[] availableEditorWindowTypes, LayoutViewInfo viewInfo, float width, float height) where T : View
+        private static View LoadLayoutView<T>(TypeCache.TypeCollection availableEditorWindowTypes, LayoutViewInfo viewInfo, float width, float height) where T : View
         {
             if (!viewInfo.used)
                 return null;
@@ -280,9 +278,7 @@ namespace UnityEditor
             var layoutDataJson = File.ReadAllText(layoutDataPath);
             var layoutData = SJSON.LoadString(layoutDataJson);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
-#pragma warning restore UA2001
+            var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>();
 
             LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, false);
             LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, false);
@@ -312,7 +308,7 @@ namespace UnityEditor
             return window;
         }
 
-        private static void GenerateLayout(ContainerWindow window, ShowMode showMode, Type[] availableEditorWindowTypes,
+        private static void GenerateLayout(ContainerWindow window, ShowMode showMode, TypeCache.TypeCollection availableEditorWindowTypes,
             LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
         {
             var width = window.position.width;
@@ -356,7 +352,7 @@ namespace UnityEditor
             window.Show(showMode, true, true, true);
         }
 
-        private static bool GetLayoutViewInfo(JSONObject layoutData, Type[] availableEditorWindowTypes, ref LayoutViewInfo viewInfo)
+        private static bool GetLayoutViewInfo(JSONObject layoutData, TypeCache.TypeCollection availableEditorWindowTypes, ref LayoutViewInfo viewInfo)
         {
             if (!layoutData.Contains(viewInfo.key))
                 return false;
@@ -365,7 +361,7 @@ namespace UnityEditor
             return ParseViewData(availableEditorWindowTypes, viewData, ref viewInfo);
         }
 
-        private static bool ParseViewData(Type[] availableEditorWindowTypes, object viewData, ref LayoutViewInfo viewInfo)
+        private static bool ParseViewData(TypeCache.TypeCollection availableEditorWindowTypes, object viewData, ref LayoutViewInfo viewInfo)
         {
             if (viewData is string)
             {
@@ -432,9 +428,7 @@ namespace UnityEditor
 
             if (layouts is IList<object> modeLayoutPaths)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var layoutPath in modeLayoutPaths.Cast<string>())
-#pragma warning restore UA2001
+                foreach (string layoutPath in modeLayoutPaths)
                 {
                     if (!File.Exists(layoutPath))
                         continue;
@@ -667,9 +661,7 @@ namespace UnityEditor
             var modeLayoutPaths = ModeService.GetModeDataSection(ModeService.currentIndex, ModeDescriptor.LayoutsKey) as IList<object>;
             if (modeLayoutPaths != null)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var layoutPath in modeLayoutPaths.Cast<string>())
-#pragma warning restore UA2001
+                foreach (string layoutPath in modeLayoutPaths)
                 {
                     if (!File.Exists(layoutPath))
                         continue;
@@ -1785,10 +1777,14 @@ namespace UnityEditor
             EditorWindow.GetWindow<ProjectBrowser>();
         }
 
+        [MenuItem("Window/Animation/Animation %6", true)]
+        static bool ShowAnimationWindowValidate() =>
+            AnimationWindowCallbacks.AnimationWindowType != null;
+
         [MenuItem("Window/Animation/Animation %6", false, 1)]
         static void ShowAnimationWindow()
         {
-            EditorWindow.GetWindow<AnimationWindow>();
+            EditorWindow.GetWindow(AnimationWindowCallbacks.AnimationWindowType);
         }
 
         [MenuItem("Window/Audio/Audio Random Container", false, 1)]

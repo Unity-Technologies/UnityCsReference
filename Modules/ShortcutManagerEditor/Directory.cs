@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -76,17 +77,13 @@ namespace UnityEditor.ShortcutManagement
             bool tagMatch = false;
 
             foreach (var entry in outputShortcuts)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 tagMatch |= tags.Contains(entry.tag);
-#pragma warning restore UA2001
 
             if (tagMatch)
             {
                 for (int i = outputShortcuts.Count - 1; i >= 0; i--)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (tags.Contains(outputShortcuts[i].tag)) continue;
-#pragma warning restore UA2001
                     outputShortcuts.RemoveAt(i);
                 }
             }

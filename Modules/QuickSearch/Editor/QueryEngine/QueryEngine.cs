@@ -2009,9 +2009,9 @@ namespace UnityEditor.Search
 
         static Func<string, TParam> GetParameterTransformerFunction<TParam>(MethodInfo mi, string functionName, Type transformerAttributeType)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var transformerMethod = TypeCache.GetMethodsWithAttribute(transformerAttributeType)
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
                 .Where(transformerMethodInfo =>
                 {
                     var sameType = transformerMethodInfo.ReturnType == typeof(TParam);

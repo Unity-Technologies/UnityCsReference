@@ -43,6 +43,9 @@ namespace UnityEditor
         // Required icons for platform. Provided by platform extension
         Dictionary<PlatformIconKind, PlatformIcon[]> m_RequiredIcons;
 
+        // Cache for icons when override is disabled
+        Dictionary<string, Texture2D[]> m_DisabledOverrideIconsCache = new Dictionary<string, Texture2D[]>();
+
         public PlayerSettingsIconsEditor(PlayerSettingsEditor owner)
         {
             m_Owner = owner;
@@ -436,11 +439,27 @@ namespace UnityEditor
                             var changed = EditorGUI.EndChangeCheck();
                             if (changed || (!overrideIcons && icons.Length > 0))
                             {
-                                // Set the list of icons to correct length if overridden, otherwise to an empty list
                                 if (overrideIcons)
-                                    icons = new Texture2D[widths.Length];
+                                {
+                                    if (m_DisabledOverrideIconsCache.TryGetValue(platformName, out var cachedIcons) &&
+                                        cachedIcons.Length == widths.Length)
+                                    {
+                                        icons = cachedIcons;
+                                        m_DisabledOverrideIconsCache.Remove(platformName);
+                                    }
+                                    else
+                                    {
+                                        icons = new Texture2D[widths.Length];
+                                    }
+                                }
                                 else
+                                {
+                                    if (icons.Length == widths.Length)
+                                    {
+                                        m_DisabledOverrideIconsCache[platformName] = icons;
+                                    }
                                     icons = Array.Empty<Texture2D>();
+                                }
 
                                 if (changed)
                                     SetLegacyPlatformIcons(platformName, icons, IconKind.Any, ref m_AllLegacyIcons);
@@ -463,13 +482,13 @@ namespace UnityEditor
                             // Texture slot
                             if (overrideIcons)
                             {
-                                var slotWidth = kSlotSize;
-                                var slotHeight = (int)((float)heights[i] / widths[i] * kSlotSize);   // take into account the aspect ratio
-                                icons[i] = (Texture2D)EditorGUI.ObjectField(
-                                    new Rect(rect.x + width - kMaxPreviewSize - kSlotSize - kIconSpacing, rect.y, slotWidth, slotHeight),
-                                    icons[i],
-                                    typeof(Texture2D),
-                                    false);
+                                // Reset indent level to prevent IndentedRect from making the rect non-square
+                                var slotSize = kSlotSize;
+                                var slotRect = new Rect(rect.x + width - kMaxPreviewSize - kSlotSize - kIconSpacing, rect.y, slotSize, slotSize);
+                                var oldIndentLevel = EditorGUI.indentLevel;
+                                EditorGUI.indentLevel = 0;
+                                icons[i] = (Texture2D)EditorGUI.ObjectField(slotRect, icons[i], typeof(Texture2D), false);
+                                EditorGUI.indentLevel = oldIndentLevel;
                             }
 
                             // Preview

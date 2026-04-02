@@ -101,15 +101,10 @@ namespace UnityEditor.Modules
                 m_DerivedBuildTargetExtensions.Add(guid, derivedBuildTargetExtensions);
             }
         }
-        internal void LoadAndEnableDerivedPlatformPlugin<T>() where T : IDerivedBuildTargetExtensions, new()
+
+        internal void RemoveDerivedPlatformPlugin(GUID guid)
         {
-            var derivedBuildTargetExtensions = new T();
-            var guid = derivedBuildTargetExtensions.DerivedBuildTarget.Guid;
-            if ((!EditorPrefs.HasKey(guid.ToString())) || (EditorPrefs.GetInt(guid.ToString()) != 1))
-            {
-                EditorPrefs.SetInt(guid.ToString(), 1);
-            }
-            LoadDerivedPlatformPlugin<T>();
+            m_DerivedBuildTargetExtensions.Remove(guid);
         }
 
         bool ForceEnablePlatform()
@@ -134,6 +129,51 @@ namespace UnityEditor.Modules
                     m_DiscoveredTargetInfo = info;
                 }
             }
+        }
+
+        internal delegate IBuildProfileExtension CreateBuildProfileExtensionFunction();
+
+        internal void LoadSDKDerivedPlatforms(IBuildTarget baseIBuildTarget, CreateBuildProfileExtensionFunction createBaseBuildProfileExtensionFunction)
+        {
+            var types = TypeCache.GetTypesDerivedFrom<IPlatformProvider>();
+            foreach (var type in types)
+            {
+                if (!BuildTargetDiscovery.TryCreateIPlatformProvider(type, out var provider))
+                    continue;
+
+                var sdkPlatformProvider = SDKPlatformProvider.TryCreateDerivedPlatformProvider(provider);
+                if (sdkPlatformProvider == null)
+                    continue;
+
+                LoadSDKDerivedPlatformExtension(sdkPlatformProvider, baseIBuildTarget, createBaseBuildProfileExtensionFunction);
+            }
+        }
+
+        void LoadSDKDerivedPlatformExtension(SDKPlatformProvider sdkPlatformProvider, IBuildTarget baseIBuildTarget, CreateBuildProfileExtensionFunction createBaseBuildProfileExtensionFunction)
+        {
+            if (!BuildTargetDiscovery.TryGetPlatformInfo(sdkPlatformProvider.guid, out var platformInfo))
+            {
+                Debug.LogError(string.Format(BuildTargetDiscovery.k_SDKProviderMissingPlatformInfoError, sdkPlatformProvider.providerType.FullName));
+                return;
+            }
+
+            if (!BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(sdkPlatformProvider.guid))
+            {
+                Debug.LogError(string.Format(BuildTargetDiscovery.k_SDKProviderNotDerivedTargetError, sdkPlatformProvider.providerType.FullName, sdkPlatformProvider.guid));
+                return;
+            }
+
+            if (platformInfo.buildTarget != m_BuildTarget)
+                return;
+
+            var derivedBuildTarget = new ConfigurableDerivedBuildTarget(sdkPlatformProvider, platformInfo, baseIBuildTarget);
+            var derivedBuildTargetExtensions = new ConfigurableDerivedBuildTargetExtensions(sdkPlatformProvider, derivedBuildTarget, createBaseBuildProfileExtensionFunction);
+            m_DerivedBuildTargetExtensions.Add(derivedBuildTarget.Guid, derivedBuildTargetExtensions);
+
+            var sdkPlatformExtension = new ConfigurableSDKPlatformExtension(sdkPlatformProvider, derivedBuildTarget);
+            BuildTargetDiscovery.RegisterSDKPlatformExtension(derivedBuildTarget.Guid, sdkPlatformExtension);
+
+            BuildTargetDiscovery.SetSDKPlatformInstalledStatus(derivedBuildTarget.Guid, true);
         }
     }
 }

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
+using Unity.UIToolkit.Editor;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -21,12 +21,12 @@ namespace Unity.UI.Builder
         public VariableCompleter(VariableEditingHandler handler)
         {
             m_Handler = handler;
-            getFilterFromTextCallback = (text) => text != null ? text.TrimStart('-') : null;
-            dataSourceCallback = () =>
+            GetFilterFromTextCallback = (text) => text != null ? text.TrimStart('-') : null;
+            DataSourceCallback = () =>
             {
                 return StyleVariableUtilities.GetAllAvailableVariables(handler.inspector.currentVisualElement, GetCompatibleStyleValueTypes(handler), handler.inspector.document.fileSettings.editorExtensionMode);
             };
-            makeItem = () =>
+            MakeItem = () =>
             {
                 var item = new VisualElement();
 
@@ -43,27 +43,27 @@ namespace Unity.UI.Builder
                 item.Add(editorOnlyLabel);
                 return item;
             };
-            bindItem = (e, i) =>
+            BindItem = (e, i) =>
             {
-                var res = results[i];
+                var res = Results[i];
 
                 e.Q<Label>(s_ItemNameLabelName).text = res.name;
             };
 
-            hoveredItemChanged += UpdateDetailView;
-            selectionChanged += UpdateDetailView;
-            itemChosen += (i) =>
+            HoveredItemChanged += UpdateDetailView;
+            SelectionChanged += UpdateDetailView;
+            ItemChosen += (i) =>
             {
                 // Only needed for when the variable is typed in manually in the style field.
                 if (!m_Handler.isVariableFieldVisible)
                 {
-                    var varName = results[i].name;
+                    var varName = Results[i].name;
                     m_Handler.SetVariable(varName);
                 }
             };
 
-            matcherCallback = Matcher;
-            getTextFromDataCallback = GetVarName;
+            MatcherCallback = Matcher;
+            GetTextFromDataCallback = GetVarName;
             SetupCompleterField(handler.variableField?.textField, false);
         }
 
@@ -140,7 +140,7 @@ namespace Unity.UI.Builder
 
         protected override bool IsValidText(string text)
         {
-            if (m_Handler.variableField != null && m_Handler.variableField.textField == textField)
+            if (m_Handler.variableField != null && m_Handler.variableField.textField == AttachedTextField)
             {
                 return true;
             }

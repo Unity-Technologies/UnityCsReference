@@ -50,6 +50,7 @@ namespace UnityEditor
         ///* UserSettings/
         ///
         ///**Note:** Paths pointing directly to the user desktop are not allowed.</remarks>
+        [NativeName("path")]
         public string locationPathName { get; set; }
         ///<summary>The path to an manifest file describing all of the asset bundles used in the build (optional).</summary>
         ///<remarks>When you call <see cref="BuildPipeline.BuildAssetBundles" /> to create your AssetBundles, Unity will also generate a manifest file with a filename matching the parent directory name and ".manifest" as its extension.
@@ -57,19 +58,23 @@ namespace UnityEditor
         ///
         ///You do not need to set this property when you use /link.xml/ files, or if you generate AssetBundles using the &lt;a href="https://docs.unity3d.com/Packages/com.unity.addressables@latest"&gt;Addressables&lt;/a&gt; package.
         ///
-        ///See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.</remarks>
+        ///See [Managed code stripping](xref:um-managed-code-stripping) for more information about code stripping.</remarks>
         public string assetBundleManifestPath { get; set; }
         ///<summary>The <see cref="BuildTargetGroup" /> to build.</summary>
+        [NativeName("platformGroup")]
         public BuildTargetGroup targetGroup { get; set; }
         ///<summary>The <see cref="BuildTarget" /> to build.</summary>
         ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
+        [NativeName("platform")]
         public BuildTarget target { get; set; }
         ///<summary>The Subtarget to build.</summary>
-        ///<remarks>For certain platforms, setting a non-zero value for this property can modify the build behaviour.
+        ///<remarks> If you only set <see cref="BuildPlayerOptions.target"/> and not <see cref="BuildPlayerOptions.subtarget"/>, this defaults to the platform's default subtarget.
+        ///
+ /// Setting this property persists the value in <see cref="EditorUserBuildSettings"/>, which overwrites the current Editor subtarget. This behavior also affects an active <see cref="BuildProfile"/>. When using a build profile, use <see cref="BuildPlayerWithProfileOptions"/> instead.
         ///
         ///Both this property and <see cref="BuildPlayerOptions.target" /> should remain unset to automatically use the target and subtarget as defined in the current Build Profile.
         ///
-        ///The valid values for this property correspond to target-specific enums, which are cast to ints.  Examples of these enums include <see cref="StandaloneBuildSubtarget" />, <see cref="MobileTextureSubtarget" />, <see cref="WebGLTextureSubtarget" /> and <see cref="XboxBuildSubtarget" />.
+        ///The valid values for this property correspond to target-specific enum types, which are stored as integers. Examples of these enum types include <see cref="StandaloneBuildSubtarget" />, <see cref="MobileTextureSubtarget" />, <see cref="WebGLTextureSubtarget" /> and <see cref="XboxBuildSubtarget" />.
         ///
         ///Usage examples:
         ///
@@ -86,5 +91,9 @@ namespace UnityEditor
         ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }
         /*UCBP-PUBLIC*/ internal string[] previousBuildMetadataLocations { get; set; }
+
+        [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerOptions.h")]
+        [FreeFunction("BuildPipeline::GetBuildPlayerSetup")]
+        internal static extern BuildPlayerOptions GetBuildPlayerOptions(IntPtr dataPtr);
     }
 }

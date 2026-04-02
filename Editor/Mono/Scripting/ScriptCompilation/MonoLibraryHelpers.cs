@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,6 +28,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return Directory.GetFiles(NetStandardFinder.GetNetStandardEditorExtensionsDirectory(), "*.dll");
             }
+
+#pragma warning disable CS0618
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
+                throw new NotImplementedException("CORECLR_FIXME");
+
             return System.Array.Empty<string>();
         }
 
@@ -74,6 +81,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 references.AddRange(referenceFileNames.FindReferencesInDirectories(monoAssemblyDirectories));
                 references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
             }
+#pragma warning disable CS0618
+            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
+            {
+                throw new NotImplementedException("CORECLR_FIXME");
+            }
             else
             {
                 var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
@@ -92,6 +105,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return GetUnityReferenceProfileDirectory();
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0)
                 return MonoInstallationFinder.GetProfileDirectory("2.0-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
+#pragma warning disable CS0618
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
+                throw new NotImplementedException("CORECLR_FIXME");
 
             return MonoInstallationFinder.GetProfileDirectory(BuildPipeline.CompatibilityProfileToClassLibFolder(apiCompatibilityLevel), MonoInstallationFinder.MonoBleedingEdgeInstallation);
         }
@@ -103,7 +120,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
+            // CORECLR_FIXME Temporarily treat NET_10 as netstandard.  We are not ready to start compiling against net10 directly
+#pragma warning disable CS0618
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard || apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
             {
                 var systemReferenceDirectories = new List<string>();
                 systemReferenceDirectories.Add(NetStandardFinder.GetReferenceDirectory());

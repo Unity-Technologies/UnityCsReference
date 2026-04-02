@@ -40,13 +40,13 @@ namespace UnityEngine.UIElements
 
         public virtual void PreAttachElement()
         {
-            rootElement.AddToClassList(BaseVerticalCollectionView.itemUssClassName);
+            rootElement.AddToClassList(BaseVerticalCollectionView.itemUssClassNameUnique);
             rootElement.RegisterCallback(m_GeometryChangedEventCallback);
         }
 
         public virtual void DetachElement()
         {
-            rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemUssClassName);
+            rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemUssClassNameUnique);
             rootElement.UnregisterCallback(m_GeometryChangedEventCallback);
 
             rootElement?.RemoveFromHierarchy();
@@ -64,12 +64,12 @@ namespace UnityEngine.UIElements
         {
             if (selected)
             {
-                rootElement.AddToClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
+                rootElement.AddToClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassNameUnique);
                 rootElement.SetCheckedPseudoState(true);
             }
             else
             {
-                rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
+                rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassNameUnique);
                 rootElement.SetCheckedPseudoState(false);
             }
         }

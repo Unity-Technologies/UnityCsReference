@@ -25,7 +25,7 @@ internal class SidebarRow : VisualElement
         UpdateIcon(icon);
         Add(m_RowIcon);
         m_RowTitle = new Label { text = rowTitle };
-        m_RowTitle.classList.Add(k_SidebarTitleClassName);
+        m_RowTitle.AddToClassList(k_SidebarTitleClassName);
         Add(m_RowTitle);
     }
 
@@ -40,7 +40,7 @@ internal class SidebarRow : VisualElement
             return;
 
         m_RowIcon.ClearClassList();
-        m_RowIcon.classList.Add(k_SidebarIconClassName);
-        m_RowIcon.classList.Add(icon.ClassName());
+        m_RowIcon.AddToClassList(k_SidebarIconClassName);
+        m_RowIcon.AddToClassList(icon.ClassName());
     }
 }

@@ -8,6 +8,8 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/LightProbeProxyVolume.h")]
+    [Obsolete("The Light Probe Proxy Volume component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
+    [SRPReplacementComponentAttribute("UnityEngine.Rendering.ProbeVolume", "Adaptive Probe Volume")]
     public sealed partial class LightProbeProxyVolume : Behaviour
     {
         public static extern bool isFeatureSupported {[NativeName("IsFeatureSupported")] get; }

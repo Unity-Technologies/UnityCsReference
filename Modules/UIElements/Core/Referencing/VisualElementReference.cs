@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements;
 /// Represents a reference to a VisualElement in a <see cref="PanelRenderer"/>.
 /// </summary>
 /// <example>
-/// This example shows how to use VisualElementReference to reference an element in a UXML file that is loaded by a <see cref="PanelRenderer"/>.
+/// This example shows how to use VisualElementReference to reference an element in a UXML file that is loaded by a `PanelRenderer`.
 /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementReference_Example.cs"/>
 /// </example>
 /// <example>

@@ -156,11 +156,11 @@ namespace UnityEditor.UIElements.Debugger
 
             m_CustomPropertyFieldsContainer.Clear();
             var customProperties = m_SelectedElement.computedStyle.customProperties;
-            if (customProperties?.Count > 0)
+            if (customProperties.Count > 0)
             {
-                foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
+                foreach (var customProperty in customProperties)
                 {
-                    var styleName = customProperty.Key;
+                    var styleName = (string)customProperty.Key;
 
                     if (!string.IsNullOrEmpty(m_SearchFilter) &&
                         styleName.IndexOf(m_SearchFilter, StringComparison.InvariantCultureIgnoreCase) == -1)

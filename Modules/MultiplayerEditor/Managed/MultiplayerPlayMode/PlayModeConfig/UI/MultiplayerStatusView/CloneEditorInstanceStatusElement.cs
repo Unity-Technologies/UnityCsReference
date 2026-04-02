@@ -2,167 +2,144 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Multiplayer.Internal;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using Unity.PlayMode.Editor;
+using UnityEngine;
+using System.ComponentModel;
+using UnityEngine.Multiplayer.Internal;
+using UnityEngine.PlayerLoop;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
 internal class CloneEditorInstanceStatusElement : VisualElement
 {
-    internal const string k_InstanceViewClass = "instance-view";
-    internal const string k_InstanceIconName = "instance-icon";
-    internal const string k_InstanceRoleTagsContentName = "instance-role-tags-content";
-    internal const string k_InstanceContainerName = "instance-container";
-    internal const string k_StatusContainerName = "status-container";
+    internal const string k_ActivationButtonClass = "unity-instance-status__activate-button";
     internal const string k_LogInfoIcon = "LogInfoIcon";
     internal const string k_LogWarningIcon = "LogWarningIcon";
     internal const string k_LogErrorIcon = "LogErrorIcon";
-    internal const string k_WarnIcon = "WarnIcon";
+    private const string k_KeepAliveLabel = "Keep Active";
+    private const string k_LogsValuesContainerClass = "unity-instance-status__logs-info-container";
+    private const string k_InstanceButtonCloneActivateText = "Activate";
+    private const string k_InstanceButtonCloneDeactivateText = "Deactivate";
+    private const string k_InstanceCancelText = "Cancel";
+    private const string k_LogsContainerClass = "unity-instance-status__log-container";
 
     private Instance m_Instance;
-    private Label m_ConnectedLabel;
-    private FreeRunningStatusElement m_FreeRunningElement;
+    private Button m_ActivateButton;
+    private Button m_DeactivateButton;
 
-    internal Label LogInfoText;
-    internal Label LogWarningText;
-    internal Label LogErrorText;
-    internal TextField IpAddress;
-    internal TextField Port;
-    internal Button IpCopyButton;
-    internal Button PortCopyButton;
-    internal UnityPlayer Player;
-    internal TextField RunDevice;
-    internal Label RunDeviceName;
 
-    internal CloneEditorInstanceStatusElement(Instance instance, CloneEditorController.InstanceSettings settings)
+    private Label m_LogInfoText;
+    private Label m_LogWarningText;
+    private Label m_LogErrorText;
+    private UnityPlayer m_Player;
+
+    internal CloneEditorInstanceStatusElement(Instance instance, CloneEditorController.InstanceSettings settings, SerializedProperty usersettings)
     {
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
         m_Instance = instance;
-        var warnIcon = new VisualElement() { name = k_WarnIcon };
-        warnIcon.AddToClassList("icon");
-        warnIcon.style.display = DisplayStyle.None;
+        m_Player = MultiplayerPlaymode.Players[settings.PlayerInstanceIndex];
+        Add(CreatePills(settings.RoleMask, settings.PlayerTag));
 
-        var instanceContainer = new VisualElement() { name = k_InstanceContainerName };
-        instanceContainer.style.alignItems = Align.FlexStart;
-        instanceContainer.style.justifyContent = Justify.FlexStart;
+        var keepAliveProperty = usersettings.FindPropertyRelative(nameof(CloneEditorController.UserSettings.KeepAliveEnabled));
+        var keepAliveField = new PropertyField(keepAliveProperty) { label = k_KeepAliveLabel };
+        keepAliveField.BindProperty(keepAliveProperty);
+        keepAliveField.AddToClassList("unity-base-field__aligned");
+        Add(keepAliveField);
 
-        var instanceNameContainer = new VisualElement();
-        instanceNameContainer.AddToClassList("instance-view-name-container");
-        instanceNameContainer.style.flexDirection = FlexDirection.Row;
+        Add(new CloneEditorLogsField("Logs", CreateLogsField()));
 
-        var instanceRoleAndTagsContainer = new VisualElement() { name = k_InstanceRoleTagsContentName };
-        instanceRoleAndTagsContainer.AddToClassList("instance-role-tags-container");
-        instanceRoleAndTagsContainer.style.paddingTop = 3;
+        var activateButton = new Button();
+        var deactivateButton = new Button();
+        activateButton.AddToClassList(k_ActivationButtonClass);
+        deactivateButton.AddToClassList(k_ActivationButtonClass);
+        activateButton.RegisterCallback<ClickEvent>(OnActivateButtonClicked);
+        deactivateButton.RegisterCallback<ClickEvent>(OnDeactivateButtonClicked);
+        m_ActivateButton = activateButton;
+        m_DeactivateButton = deactivateButton;
+        m_ActivateButton.text = k_InstanceButtonCloneActivateText;
+        m_DeactivateButton.text = k_InstanceButtonCloneDeactivateText;
 
-        var instanceRunDeviceContainer = new VisualElement();
-        instanceRunDeviceContainer.AddToClassList("instance-run-device-container");
-        instanceRunDeviceContainer.style.display = DisplayStyle.None;
 
-        var instanceRunModeContainer = new VisualElement();
-        instanceRunModeContainer.AddToClassList("instance-content-runmode-container");
+        Add(activateButton);
+        Add(deactivateButton);
 
-        var instanceSimulatorContainer = new VisualElement();
+        // TODO: we don't want this , we need to add an event everytime the clone's state has changed
+        schedule.Execute(() =>
+        {
+            UpdateUI();
+        }).Every(1000);
+    }
 
-        var statusContainer = new VisualElement() { name = k_StatusContainerName };
-        statusContainer.style.alignItems = Align.FlexEnd;
-        statusContainer.style.justifyContent = Justify.FlexEnd;
-        statusContainer.style.alignSelf = Align.Stretch;
+    VisualElement CreatePills(MultiplayerRoleFlags role, string playerTag)
+    {
+        var container = new VisualElement();
+        container.AddToClassList(EditorInstanceStatusElement.k_PillContainerClass);
 
-        m_ConnectedLabel = new Label();
+        if (EditorMultiplayerManager.enableMultiplayerRoles)
+        {
+            var rolePill = new Label(role.ToString());
+            rolePill.AddToClassList(EditorInstanceStatusElement.k_PillClass, EditorInstanceStatusElement.k_RolePillClass);
+            container.Add(rolePill);
+        }
+
+        if (!string.IsNullOrEmpty(playerTag))
+        {
+            var tagPill = new Label(playerTag);
+            tagPill.AddToClassList(EditorInstanceStatusElement.k_PillClass, EditorInstanceStatusElement.k_TagPillClass);
+            container.Add(tagPill);
+        }
+
+        return container;
+    }
+
+    internal class CloneEditorLogsField(string label, VisualElement visualInput)
+        : BaseField<CloneEditorLogsData>(label, visualInput);
+
+     VisualElement CreateLogsField()
+    {
+        var container = new VisualElement();
+        container.AddToClassList("unity-base-field");
+        container.AddToClassList("unity-base-field__aligned");
+
+        var logsValuesContainer = new VisualElement();
+        logsValuesContainer.AddToClassList(k_LogsValuesContainerClass);
+
+        m_LogInfoText = new Label();
+        m_LogWarningText = new Label();
+        m_LogErrorText = new Label();
+
         var logInfoIcon = new VisualElement() { name = k_LogInfoIcon };
-        logInfoIcon.AddToClassList("icon");
-        LogInfoText = new Label();
-        LogWarningText = new Label();
-        LogErrorText = new Label();
         var logWarningIcon = new VisualElement() { name = k_LogWarningIcon };
-        logWarningIcon.AddToClassList("icon");
         var logErrorIcon = new VisualElement() { name = k_LogErrorIcon };
+
+        logInfoIcon.AddToClassList("icon");
+        logWarningIcon.AddToClassList("icon");
         logErrorIcon.AddToClassList("icon");
 
-        var freeRunButtonContainer = new VisualElement();
-        var statusContentContainer = new VisualElement();
-        var statusFocusBtnContainer = new VisualElement();
-        var statusRunDeviceContainer = new VisualElement();
-        var statusRunmodeContainer = new VisualElement();
-        statusContentContainer.AddToClassList("status-content-container");
-        statusContentContainer.style.flexDirection = FlexDirection.Row;
-        statusContainer.style.flexDirection = FlexDirection.Column;
-        statusContentContainer.Add(warnIcon);
-        statusContentContainer.Add(logInfoIcon);
-        statusContentContainer.Add(LogInfoText);
-        statusContentContainer.Add(logWarningIcon);
-        statusContentContainer.Add(LogWarningText);
-        statusContentContainer.Add(logErrorIcon);
-        statusContentContainer.Add(LogErrorText);
+        logsValuesContainer.Add(logInfoIcon);
+        logsValuesContainer.Add(m_LogInfoText);
 
-        var roleLabel = new Label();
-        instanceRoleAndTagsContainer.Add(roleLabel);
+        logsValuesContainer.Add(logWarningIcon);
+        logsValuesContainer.Add(m_LogWarningText);
 
-        Player = MultiplayerPlaymode.Players[settings.PlayerInstanceIndex];
-        bool hasTag = settings.PlayerTag != "";
-        if (hasTag)
-        {
-            var tagPill = new Label(settings.PlayerTag);
-            tagPill.AddToClassList(EditorInstanceStatusElement.k_PillClass, EditorInstanceStatusElement.k_TagPillClass);
-            instanceRoleAndTagsContainer.Add(tagPill);
-        }
+        logsValuesContainer.Add(logErrorIcon);
+        logsValuesContainer.Add(m_LogErrorText);
+        logsValuesContainer.AddToClassList(k_LogsContainerClass);
 
-        // Build the button for focusing the Clone Editors
-        var focusButton = new VisualElement() { name = k_InstanceIconName };
-        focusButton.AddToClassList("focus-icon");
-        focusButton.AddToClassList("icon");
-        focusButton.RegisterCallback<ClickEvent>(evt =>
-            MultiplayerPlaymodeEditorUtility.FocusPlayerView(
-                (PlayerIndex)settings.PlayerInstanceIndex + 1));
-        statusFocusBtnContainer.style.marginTop = -14;
-        statusFocusBtnContainer.style.marginBottom = 4;
-        statusFocusBtnContainer.Add(focusButton);
-
-        // Add manual UI adjustments when Tag controls are included
-        if (hasTag)
-        {
-            instanceRunModeContainer.style.paddingTop = 0;
-            statusFocusBtnContainer.style.marginTop = -10;
-            statusFocusBtnContainer.style.marginBottom = 7;
-        }
-
-        m_FreeRunningElement = new FreeRunningStatusElement(instance);
-        m_FreeRunningElement.BindRunModeDropDownElement(
-            instanceRunModeContainer,
-            statusRunmodeContainer,
-            freeRunButtonContainer);
-
-        roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
-        if (EditorMultiplayerManager.enableMultiplayerRoles)
-            roleLabel.text = ObjectNames.NicifyVariableName(settings.RoleMask.ToString());
-
-        statusContainer.Add(statusFocusBtnContainer);
-        statusContainer.Add(statusRunDeviceContainer);
-        statusContainer.Add(statusRunmodeContainer);
-        statusContainer.Add(statusContentContainer);
-
-        instanceContainer.Add(instanceNameContainer);
-        instanceContainer.Add(instanceRoleAndTagsContainer);
-        instanceContainer.Add(instanceRunDeviceContainer);
-        instanceContainer.Add(instanceRunModeContainer);
-        instanceContainer.Add(instanceSimulatorContainer);
-
-        var parentContainer = new VisualElement();
-        parentContainer.Add(instanceContainer);
-        parentContainer.Add(statusContainer);
-        parentContainer.AddToClassList(k_InstanceViewClass);
-
-        Add(parentContainer);
-        Add(freeRunButtonContainer);
+        container.Add(logsValuesContainer);
+        return container;
     }
 
     private void OnAttachToPanel(AttachToPanelEvent evt)
     {
         ScenarioRunner.StatusChanged += UpdateInstanceStatus;
-        RefreshStatusUI();
+        UpdateUI();
     }
 
     private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -172,37 +149,101 @@ internal class CloneEditorInstanceStatusElement : VisualElement
 
     void UpdateInstanceStatus(ScenarioStatusData scenarioStatus)
     {
-        RefreshStatusUI();
+        UpdateUI();
     }
 
-    private void CleanUpStatus()
+    private void OnActivateButtonClicked(ClickEvent ev)
     {
-        m_ConnectedLabel.text = string.Empty;
-    }
-
-    private void AssignLogs(InstanceStatusData status)
-    {
-        if (status.IsExecutingRunningStage())
+        if (m_Instance == null)
         {
-            if (Player != null)
-            {
-                var logs = MultiplayerPlaymodeLogUtility.PlayerLogs(Player.PlayerIdentifier).LogCounts;
-                LogInfoText.text = logs.Logs.ToString();
-                LogWarningText.text = logs.Warnings.ToString();
-                LogErrorText.text = logs.Errors.ToString();
-            }
+            Debug.LogWarning("Unable to toggle instance - Please ensure Scenario configurations are valid.");
+            return;
+        }
+        var isRunning = IsCloneActiveOrActivating();
+
+        if (isRunning)
+        {
+            Debug.LogWarning("Clone Editor Instance Status Element Error: Cannot activate instance that is already running.");
+            return;
+        }
+        var args = new List<string> { CommandLineParameters.k_ScenarioClone };
+        m_Player.Activate(out _, args);
+        UpdateUI();
+
+    }
+
+    private void OnDeactivateButtonClicked(ClickEvent evt)
+    {
+        if (m_Instance == null)
+        {
+            Debug.LogWarning("Unable to toggle instance - Please ensure Scenario configurations are valid.");
+            return;
+        }
+        var isRunning = IsCloneActiveOrActivating();
+
+        if (!isRunning)
+        {
+            Debug.LogWarning("Clone Editor Instance Status Element Error: Cannot deactivate instance that is not running.");
+            return;
+        }
+
+        m_Player.Deactivate(out _);
+        UpdateUI();
+
+    }
+
+
+    private void UpdateUI()
+    {
+        UpdateActivationButtons();
+        AssignLogs();
+    }
+
+    private void UpdateActivationButtons()
+    {
+        var isInstanceExecuting = m_Instance.StatusData.IsExecuting();
+        var isInPlayMode = UnityEditor.EditorApplication.isPlaying;
+        var shouldEnable = !isInPlayMode &&  !isInstanceExecuting;
+        var isLaunched = m_Player.PlayerState == PlayerState.Launched;
+        var isLaunching = m_Player.PlayerState == PlayerState.Launching;
+        m_ActivateButton.SetEnabled(shouldEnable);
+        m_DeactivateButton.SetEnabled(shouldEnable);
+
+        m_ActivateButton.style.display = isLaunched || isLaunching ? DisplayStyle.None : DisplayStyle.Flex;
+        m_DeactivateButton.style.display = isLaunched || isLaunching ? DisplayStyle.Flex : DisplayStyle.None;
+
+        m_DeactivateButton.text = isLaunching ? k_InstanceCancelText : k_InstanceButtonCloneDeactivateText;
+
+    }
+
+    private bool IsCloneActiveOrActivating()
+    {
+        if (m_Player != null)
+        {
+            return m_Player.PlayerState == PlayerState.Launching || m_Player.PlayerState == PlayerState.Launched;
+        }
+
+        return false;
+    }
+
+    private void AssignLogs()
+    {
+        if ( m_Player != null && m_Player.PlayerState == PlayerState.Launched)
+        {
+            var logs = MultiplayerPlaymodeLogUtility.PlayerLogs(m_Player.PlayerIdentifier).LogCounts;
+            m_LogInfoText.text = logs.Logs.ToString();
+            m_LogWarningText.text = logs.Warnings.ToString();
+            m_LogErrorText.text = logs.Errors.ToString();
         }
         else
         {
-            LogInfoText.text = 0.ToString();
-            LogWarningText.text = 0.ToString();
-            LogErrorText.text = 0.ToString();
+            m_LogInfoText.text = 0.ToString();
+            m_LogWarningText.text = 0.ToString();
+            m_LogErrorText.text = 0.ToString();
         }
     }
+}
 
-    internal void RefreshStatusUI()
-    {
-        CleanUpStatus();
-        AssignLogs(m_Instance.StatusData);
-    }
+internal abstract class CloneEditorLogsData
+{
 }

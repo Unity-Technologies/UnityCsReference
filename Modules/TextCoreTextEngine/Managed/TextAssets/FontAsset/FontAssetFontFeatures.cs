@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
     // ****************************************
@@ -266,4 +268,6 @@ namespace UnityEngine.TextCore.Text
     }
 
 }
+
+#pragma warning restore CS0618
 

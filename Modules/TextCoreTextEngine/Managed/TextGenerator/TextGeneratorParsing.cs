@@ -6,6 +6,8 @@ using System;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
 
@@ -1433,7 +1435,7 @@ namespace UnityEngine.TextCore.Text
 
                 #endregion Carriage Return
 
-               
+
 
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
@@ -1642,9 +1644,20 @@ namespace UnityEngine.TextCore.Text
                     {
                         uint nextChar = textInfo.textElementInfo[m_CharacterCount + 1].character;
                         bool prevIsLeading = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(charCode);
-                        bool nextIsFollowing = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(nextChar);
+                        bool nextIsFollowing = textSettings.lineBreakingRules.followingCharactersLookup.Contains(nextChar);
                         if (!prevIsLeading && !nextIsFollowing)
+                        {
+                            isFirstWordOfLine = false;
                             shouldSaveHardLineBreak = true;
+                        }
+
+                        if (isFirstWordOfLine)
+                        {
+                            if (isWhiteSpace)
+                                shouldSaveSoftLineBreak = true;
+
+                            shouldSaveHardLineBreak = true;
+                        }
                     }
                     else if (isFirstWordOfLine)
                     {
@@ -1759,3 +1772,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

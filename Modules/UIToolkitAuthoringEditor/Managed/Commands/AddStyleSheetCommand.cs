@@ -24,7 +24,7 @@ internal readonly record struct AddStyleSheetCommand
         Index = index;
     }
 
-    public bool Execute()
+    public void Execute()
     {
         Assert.IsFalse(string.IsNullOrEmpty(UssPath));
         Assert.IsNotNull(VisualTreeAsset);
@@ -34,7 +34,7 @@ internal readonly record struct AddStyleSheetCommand
         {
             var errorMessage = $"The USS file at path {UssPath} has import errors and cannot be used.";
             EditorUtility.DisplayDialog("Invalid USS File", errorMessage, "OK");
-            return false;
+            return;
         }
 
         Undo.RegisterCompleteObjectUndo(VisualTreeAsset, CommandUndoName);
@@ -48,13 +48,13 @@ internal readonly record struct AddStyleSheetCommand
             if (actualIndex < 0 || actualIndex > rootElement.stylesheets.Count)
             {
                 Debug.LogWarning($"Invalid index {Index}. Must be -1 (append) or between 0 and {rootElement.stylesheets.Count}.");
-                return false;
+                return;
             }
 
             rootElement.stylesheets.Insert(actualIndex, styleSheet);
         }
 
         EditorUtility.SetDirty(VisualTreeAsset);
-        return true;
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
     }
 }

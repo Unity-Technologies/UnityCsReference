@@ -4,10 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Jobs;
 using Unity.Properties;
 using UnityEditor;
-using UnityEngine.Assertions;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -16,35 +15,25 @@ internal class StyleInspectorDefaultContent : VisualElement
 {
     static bool s_TimeSlice = true;
     static VisualTreeAsset s_DefaultContent;
-    static UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool;
+    static UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool = new(Create);
+
+    static VisualTreeAsset DefaultContent
+    {
+        get
+        {
+            if (s_DefaultContent == null || !s_DefaultContent)
+                s_DefaultContent = EditorGUIUtility.Load("UIToolkitAuthoring/Inspector/StyleInspector/StyleInspectorDefaultContent.uxml") as VisualTreeAsset;
+
+            return s_DefaultContent;
+        }
+    }
 
     class Initializer
     {
-        struct Job(List<Type> types) : IJob
-        {
-            private List<Type> m_Types = types;
-
-            public void Execute()
-            {
-                foreach (var type in m_Types)
-                {
-                    PropertyBag.GetPropertyBag(type);
-                }
-                m_Types.Clear();
-                m_Types = null;
-
-                PropertyBag.GetPropertyBag<VisualElementSelection>();
-                PropertyBag.GetPropertyBag<VisualElementInspector>();
-                PropertyBag.GetPropertyBag<VisualElement>();
-                PropertyBag.GetPropertyBag<Toggle>();
-                PropertyBag.GetPropertyBag<TextField>();
-                PropertyBag.GetPropertyBag<StyleTransitionListView>();
-            }
-        }
-
         private List<VisualTreeAsset> m_Assets;
         private List<Type> m_PropertyBagTypes;
         private int m_AssetIndex;
+        private int m_PropertyBagTypeIndex;
 
         public Initializer(List<VisualTreeAsset> assets)
         {
@@ -55,38 +44,83 @@ internal class StyleInspectorDefaultContent : VisualElement
 
             m_PropertyBagTypes = new List<Type>();
             m_AssetIndex = 0;
+            m_PropertyBagTypeIndex = 0;
             EditorApplication.tick += SlowlyCreateContent;
         }
 
         void SlowlyCreateContent()
         {
-            if (m_AssetIndex < m_Assets.Count)
-            {
-                var vta = m_Assets[m_AssetIndex++];
-                vta.CloneTree();
+            if (!ContentFinishedLoading())
                 return;
-            }
 
-            m_Assets.Clear();
-            m_Assets = null;
+            if (!PropertyBagsWereGenerated())
+                return;
 
             EditorApplication.tick -= SlowlyCreateContent;
             // Prepopulate the content.
             using var handle = s_StyleInspectorDefaultContentPool.Get(out var _);
+        }
 
-            new Job(m_PropertyBagTypes).Execute();
+        bool ContentFinishedLoading()
+        {
+            if (m_Assets == null)
+                return true;
+
+            if (m_AssetIndex < m_Assets.Count)
+            {
+                var vta = m_Assets[m_AssetIndex++];
+                vta.CloneTree();
+                return false;
+            }
+
+            m_Assets.Clear();
+            m_Assets = null;
+            return true;
+        }
+
+        bool PropertyBagsWereGenerated()
+        {
+            if (m_PropertyBagTypes == null)
+                return true;
+
+            if (m_PropertyBagTypeIndex < m_PropertyBagTypes.Count)
+            {
+                var type = m_PropertyBagTypes[m_PropertyBagTypeIndex++];
+                PropertyBag.GetPropertyBag(type);
+                return false;
+            }
+
+            m_PropertyBagTypes.Clear();
+            m_PropertyBagTypes = null;
+            return true;
         }
     }
 
     public static void Prepare()
     {
-        // A lot of time is spent on Mono.JIt during the first frame, so we'll create the elements by blocks across multiple frames.
-        s_DefaultContent = EditorGUIUtility.Load("UIToolkitAuthoring/Inspector/StyleInspector/StyleInspectorDefaultContent.uxml") as VisualTreeAsset;
-
-        if (s_DefaultContent == null || !s_DefaultContent)
+        if (Application.isBuildingEditorResources)
             return;
-        s_StyleInspectorDefaultContentPool = new UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent>(Create, null, null, null);
-        var initializer = new Initializer(new List<VisualTreeAsset>(s_DefaultContent.templateDependencies));
+
+        if (!UIToolkitAuthoringSettings.EnableHierarchyIntegration)
+        {
+            UIToolkitAuthoringSettings.HierarchyIntegrationChanged += OnEnableHierarchyIntegration;
+            return;
+        }
+
+        // A lot of time is spent on Mono.JIt during the first frame, so we'll create the elements by blocks across multiple frames.
+        var defaultContent = DefaultContent;
+        if (defaultContent == null || !defaultContent)
+            return;
+        new Initializer(new List<VisualTreeAsset>(defaultContent.templateDependencies));
+    }
+
+    static void OnEnableHierarchyIntegration(bool enabled)
+    {
+        if (!enabled || s_DefaultContent != null)
+            return;
+
+        Prepare();
+        UIToolkitAuthoringSettings.HierarchyIntegrationChanged -= OnEnableHierarchyIntegration;
     }
 
     private static StyleInspectorDefaultContent Create()
@@ -111,21 +145,20 @@ internal class StyleInspectorDefaultContent : VisualElement
 
     public StyleInspectorDefaultContent()
     {
-        Assert.IsNotNull(s_DefaultContent);
         if (s_TimeSlice)
         {
             CreateTimeSlicedContent();
         }
         else
         {
-            s_DefaultContent.CloneTree(this);
+            DefaultContent.CloneTree(this);
             contentWasGenerated?.Invoke(this);
         }
     }
 
     private void CreateTimeSlicedContent()
     {
-        m_TempTimeSlicedContent = s_DefaultContent.CloneTree();
+        m_TempTimeSlicedContent = DefaultContent.CloneTree();
 
         // Transfer style sheets
         for(var i = 0; i < m_TempTimeSlicedContent.styleSheets.count; ++i)

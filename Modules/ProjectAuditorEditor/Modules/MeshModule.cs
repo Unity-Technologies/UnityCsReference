@@ -144,7 +144,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                                 size,
                                 modelImporter?.isReadable ?? mesh.isReadable
                             ])
-                        .WithLocation(new Location(assetPath)));
+                        .WithLocation(assetPath));
 
                     foreach (var analyzer in analyzers)
                     {

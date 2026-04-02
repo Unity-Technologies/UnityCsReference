@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
 
 namespace UnityEditor.TextCore.Text
 {
@@ -79,18 +80,13 @@ namespace UnityEditor.TextCore.Text
             List<SpriteGlyph> spriteGlyphTable = spriteAsset.spriteGlyphTable;
 
             // Find available glpyh indexes
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            uint[] existingGlyphIndexes = spriteGlyphTable.Select(x => x.index).ToArray();
-#pragma warning restore UA2001
             List<uint> availableGlyphIndexes = new List<uint>();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            uint lastGlyphIndex = existingGlyphIndexes.Length > 0 ? existingGlyphIndexes.Last() : 0;
-#pragma warning restore UA2001
+            uint lastGlyphIndex = (spriteGlyphTable.Count > 0) ? spriteGlyphTable[^1].index : 0;
             int elementIndex = 0;
             for (uint i = 0; i < lastGlyphIndex; i++)
             {
-                uint existingGlyphIndex = existingGlyphIndexes[elementIndex];
+                uint existingGlyphIndex = spriteGlyphTable[elementIndex].index;
 
                 if (i == existingGlyphIndex)
                     elementIndex += 1;
@@ -387,3 +383,5 @@ namespace UnityEditor.TextCore.Text
 
     }
 }
+
+#pragma warning restore CS0618

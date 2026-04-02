@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var action in actions)
             {
                 var state = action.GetActionState(m_Version, out var actionText, out var actionTooltip);
-                var enabled = (state & PackageActionState.Disabled) == PackageActionState.None;
+                var enabled = (state & ActionState.Disabled) == ActionState.None;
                 menu.AppendAction(actionText, enabled, _ =>
                     {
                         action.TriggerAction(m_Version);
@@ -112,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             var state = action.GetActionState(m_Version, out var actionText, out var actionTooltip);
-            var enabled = (state & PackageActionState.Disabled) == PackageActionState.None;
+            var enabled = (state & ActionState.Disabled) == ActionState.None;
 
             text = actionText;
             tooltip = actionTooltip;

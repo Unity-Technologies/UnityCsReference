@@ -1457,11 +1457,11 @@ namespace UnityEditor.Experimental.GraphView
                 }
 
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                rectToFit = selection.Cast<GraphElement>()
+                rectToFit = selection
 #pragma warning restore UA2001
                     .Aggregate(rectToFit, (current, currentGraphElement) =>
                     {
-                        VisualElement currentElement = currentGraphElement;
+                        var currentElement = (VisualElement)currentGraphElement;
                         if (currentGraphElement is Edge)
                             currentElement = (currentGraphElement as Edge).edgeControl;
                         return RectUtils.Encompass(current, currentElement.ChangeCoordinatesTo(contentViewContainer, currentElement.rect));

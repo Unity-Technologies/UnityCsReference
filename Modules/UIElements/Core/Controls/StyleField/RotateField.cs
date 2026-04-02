@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements
         }
 
         public static readonly string styleFieldUssClassName = "unity-style-field";
+        internal static readonly UniqueStyleString styleFieldUssClassNameUnique = new(styleFieldUssClassName);
 
         AngleField m_AngleField;
         Vector3Field m_AxisField;
@@ -54,7 +55,7 @@ namespace UnityEngine.UIElements
             visualInput.Add(m_AngleField);
             visualInput.Add(m_AxisField);
 
-            m_AngleField.AddToClassList(styleFieldUssClassName);
+            m_AngleField.AddToClassList(styleFieldUssClassNameUnique);
 
             m_AngleField.RegisterValueChangedCallback(e =>
             {
@@ -95,7 +96,7 @@ namespace UnityEngine.UIElements
             {
                 m_Dragger.SetDragZone(enable ? labelElement : null);
 
-                labelElement.EnableInClassList(labelDraggerVariantUssClassName, enable);
+                labelElement.EnableInClassList(labelDraggerVariantUssClassNameUnique, enable);
             }
         }
 

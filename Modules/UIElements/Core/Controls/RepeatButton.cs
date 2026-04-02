@@ -69,13 +69,14 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-repeat-button";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public RepeatButton()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
         }
 
         /// <summary>

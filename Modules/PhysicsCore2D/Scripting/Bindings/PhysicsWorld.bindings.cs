@@ -85,7 +85,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::SetTransformAccess", IsThreadSafe = true, ThrowsException = true)] extern internal static void PhysicsWorld_SetTransformAccess(ref TransformAccess access, ref Vector3 position, ref Quaternion rotation, bool transformChangedEvent);
         [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static void PhysicsWorld_Simulate(ReadOnlySpan<PhysicsWorld> worlds, float timeStep);
         [NativeMethod(Name = "PhysicsWorld::Explode", IsThreadSafe = true)] extern internal static void PhysicsWorld_Explode(PhysicsWorld world, PhysicsWorld.ExplosionDefinition definition);
-        [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, bool ownerUserData, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerBeginEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerBeginEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerEndEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerEndEvents(PhysicsWorld world);
@@ -98,6 +98,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetContactCallbackTargets", IsThreadSafe = true)] extern internal static PhysicsCallbacks.ContactCallbackTargets PhysicsWorld_GetContactCallbackTargets(PhysicsWorld world, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetJointThresholdCallbackTargets", IsThreadSafe = true)] extern internal static PhysicsCallbacks.JointThresholdCallbackTargets PhysicsWorld_GetJointThresholdCallbackTargets(PhysicsWorld world, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapAABB", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapAABB(PhysicsWorld world, ReadOnlySpan<PhysicsAABB> span, PhysicsQuery.QueryFilter filter);
+        [NativeMethod(Name = "PhysicsWorld::TestOverlapShape", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapShape(PhysicsWorld world, PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter, PhysicsShape ignoreShape);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapShapeProxy", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapShapeProxy(PhysicsWorld world, ReadOnlySpan<PhysicsShape.ShapeProxy> span, PhysicsQuery.QueryFilter filter);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapPoint", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapPoint(PhysicsWorld world, ReadOnlySpan<Vector2> span, PhysicsQuery.QueryFilter filter);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapCircleGeometry", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapCircleGeometry(PhysicsWorld world, ReadOnlySpan<CircleGeometry> span, PhysicsQuery.QueryFilter filter);
@@ -106,6 +107,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::TestOverlapSegmentGeometry", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapSegmentGeometry(PhysicsWorld world, ReadOnlySpan<SegmentGeometry> span, PhysicsQuery.QueryFilter filter);
         [NativeMethod(Name = "PhysicsWorld::TestOverlapChainSegmentGeometry", IsThreadSafe = true)] extern internal static bool PhysicsWorld_TestOverlapChainSegmentGeometry(PhysicsWorld world, ReadOnlySpan<ChainSegmentGeometry> span, PhysicsQuery.QueryFilter filter);
         [NativeMethod(Name = "PhysicsWorld::OverlapAABB", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapAABB(PhysicsWorld world, ReadOnlySpan<PhysicsAABB> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::OverlapShape", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapShape(PhysicsWorld world, PhysicsShape.ShapeProxy shapeProxy, PhysicsQuery.QueryFilter filter, Allocator allocator, PhysicsShape ignoreShape);
         [NativeMethod(Name = "PhysicsWorld::OverlapShapeProxy", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapShapeProxy(PhysicsWorld world, ReadOnlySpan<PhysicsShape.ShapeProxy> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::OverlapPoint", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapPoint(PhysicsWorld world, ReadOnlySpan<Vector2> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::OverlapCircleGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapCircleGeometry(PhysicsWorld world, ReadOnlySpan<CircleGeometry> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
@@ -114,13 +116,14 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::OverlapSegmentGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapSegmentGeometry(PhysicsWorld world, ReadOnlySpan<SegmentGeometry> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::OverlapChainSegmentGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_OverlapChainSegmentGeometry(PhysicsWorld world, ReadOnlySpan<ChainSegmentGeometry> span, PhysicsQuery.QueryFilter filter, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::CastRay", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CastRay(PhysicsWorld world, PhysicsQuery.CastRayInput input, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::CastShape", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CastShape(PhysicsWorld world, PhysicsShape.ShapeProxy shapeProxy, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode, Allocator allocator, PhysicsShape ignoreShape);
         [NativeMethod(Name = "PhysicsWorld::CastShapeProxy", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CastShapeProxy(PhysicsWorld world, PhysicsShape.ShapeProxy shapeProxy, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::CastMover", IsThreadSafe = true)] extern internal static PhysicsQuery.WorldMoverResult PhysicsWorld_CastMover(PhysicsWorld world, PhysicsQuery.WorldMoverInput input);
         [NativeMethod(Name = "PhysicsWorld::GetAwakeBodyCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetAwakeBodyCount(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetCounters(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetProfile(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters")] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
-        [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile")] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
+        [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
+        [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
         [NativeMethod(Name = "PhysicsWorld::GetWorldCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetWorldCount();
         [NativeMethod(Name = "PhysicsWorld::GetWorlds", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetWorlds(Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodies", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodies(PhysicsWorld world, Allocator allocator);
@@ -170,11 +173,14 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::DrawQueryCastResult", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawQueryCastResult(PhysicsWorld world, ReadOnlySpan<PhysicsQuery.CastResult> results, Color color, float lifetime, bool drawPoint, bool drawNormal);
         [NativeMethod(Name = "PhysicsWorld::DrawQueryWorldCastResult", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawQueryWorldCastResult(PhysicsWorld world, ReadOnlySpan<PhysicsQuery.WorldCastResult> results, Color color, float lifetime, bool drawPoint, bool drawNormal);
         [NativeMethod(Name = "PhysicsWorld::GetRenderMaterial", IsThreadSafe = true)] extern internal static Material PhysicsWorld_GetRenderMaterial(string editorResourceName, string playerResourceName);
-        [NativeMethod(Name = "PhysicsWorld::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsWorld_SetOwner(PhysicsWorld world, UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsWorld::CreateOwnerKey", IsThreadSafe = true)] extern internal static int PhysicsWorld_CreateOwnerKey(UnityEngine.Object ownerObject);
+        [NativeMethod(Name = "PhysicsWorld::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsWorld::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsWorld_GetOwner(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsOwned(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetUserData(PhysicsWorld world, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsWorld::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetUserData(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwnerUserData(PhysicsWorld world, PhysicsUserData physicsUserData, int ownerKey);
+        [NativeMethod(Name = "PhysicsWorld::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetOwnerUserData(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsDefaultWorld", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsDefaultWorld(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB);
     }

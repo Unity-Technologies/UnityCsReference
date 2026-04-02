@@ -58,6 +58,11 @@ namespace UnityEngine.UIElements.Experimental
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
@@ -114,6 +119,11 @@ namespace UnityEngine.UIElements.Experimental
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
@@ -158,11 +168,17 @@ namespace UnityEngine.UIElements.Experimental
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer is pressed on a Link tag.
     /// </summary>
+    [EventCategory(EventCategory.PointerDown)]
     public sealed class PointerDownLinkTagEvent : PointerEventBase<PointerDownLinkTagEvent>
     {
         static PointerDownLinkTagEvent()
@@ -212,6 +228,11 @@ namespace UnityEngine.UIElements.Experimental
         public PointerDownLinkTagEvent()
         {
             LocalInit();
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
     }
 
@@ -268,6 +289,11 @@ namespace UnityEngine.UIElements.Experimental
         public PointerUpLinkTagEvent()
         {
             LocalInit();
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
     }
 }

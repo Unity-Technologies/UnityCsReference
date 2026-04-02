@@ -152,8 +152,17 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetBlendShapeBufferPtr", HasExplicitThis = true, ThrowsException = true)]
         extern GraphicsBuffer GetBlendShapeBufferImpl(int layout);
 
-        public extern GraphicsBuffer.Target vertexBufferTarget { get; set; }
-        public extern GraphicsBuffer.Target indexBufferTarget { get; set; }
+        extern public GraphicsBuffer.Target vertexBufferTarget
+        {
+            get;
+            [FreeFunction(Name = "MeshScripting::SetVertexBufferTarget", HasExplicitThis = true, ThrowsException = true)] set;
+        }
+
+        extern public GraphicsBuffer.Target indexBufferTarget
+        {
+            get;
+            [FreeFunction(Name = "MeshScripting::SetIndexBufferTarget", HasExplicitThis = true, ThrowsException = true)] set;
+        }
 
         // blend shapes
 

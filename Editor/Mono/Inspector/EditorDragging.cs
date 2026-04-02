@@ -131,18 +131,14 @@ namespace UnityEditor
 
                             if (draggedIds.Length == 0)
                                 draggingMode = DraggingMode.NotApplicable;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            else if (draggedIds.All(id =>
-#pragma warning restore UA2001
+                            else if (Array.TrueForAll(draggedIds, id =>
                                      {
                                          var obj = InternalEditorUtility.GetObjectFromEntityId(id);
                                          return obj is Component &&
                                                 !(obj is Transform);
                                      }))
                                 draggingMode = DraggingMode.Component;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            else if (draggedIds.All(id => InternalEditorUtility.GetObjectFromEntityId(id) is MonoScript))
-#pragma warning restore UA2001
+                            else if (Array.TrueForAll(draggedIds, id => InternalEditorUtility.GetObjectFromEntityId(id) is MonoScript))
                                 draggingMode = DraggingMode.Script;
                             else
                                 draggingMode = DraggingMode.NotApplicable;
@@ -200,9 +196,7 @@ namespace UnityEditor
                                 // Validate dragging components
                                 var valid = false;
                                 var objects = editors[m_TargetIndex].targets;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                if (objects.All(t => t is Component))
-#pragma warning restore UA2001
+                                if (Array.TrueForAll(objects, t => t is Component))
                                 {
                                     var ids = new ReadOnlySpan<EntityId>(DragAndDrop.entityIds);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -275,9 +269,7 @@ namespace UnityEditor
                     return;
                 }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!editors[targetIndex].targets.All(t => t is Component))
-#pragma warning restore UA2001
+                if (Array.Exists(editors[targetIndex].targets, t => t is not Component))
                     return;
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

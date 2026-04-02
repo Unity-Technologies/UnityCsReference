@@ -19,9 +19,20 @@ namespace UnityEditor
 
         public void HandleUI(string searchContext)
         {
+            EditorGUI.indentLevel++;
             foreach (var windowType in OverlayPrefs.GetSupportedWindowTypes())
             {
+                EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(ObjectNames.NicifyVariableName(windowType.Name), EditorStyles.boldLabel);
+
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Use Default", GUILayout.Width(120)))
+                {
+                    OverlayPrefs.RevertToDefaultColor(windowType);
+                    OverlayPrefs.DeleteOverlayKey(windowType);
+                }
+                EditorGUILayout.EndHorizontal();
 
                 Color currentColor = OverlayPrefs.GetBackgroundColor(windowType);
                 EditorGUI.BeginChangeCheck();
@@ -31,14 +42,9 @@ namespace UnityEditor
                     OverlayPrefs.SetBackgroundColor(windowType, newColor);
                 }
 
-                if (GUILayout.Button("Use Default", GUILayout.Width(120)))
-                {
-                    OverlayPrefs.RevertToDefaultColor(windowType);
-                    OverlayPrefs.DeleteOverlayKey(windowType);
-                }
-
                 EditorGUILayout.Space();
             }
+            EditorGUI.indentLevel--;
         }
     }
 

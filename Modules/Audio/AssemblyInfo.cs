@@ -4,5 +4,6 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Unity.AI.Assistant.Bridge.Editor")]
 [assembly: InternalsVisibleTo("Unity.Video.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.Audio.Tests")]

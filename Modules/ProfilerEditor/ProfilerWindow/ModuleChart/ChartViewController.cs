@@ -5,6 +5,7 @@
 using System;
 using Unity.Profiling.Editor.UI;
 using UnityEditor;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -47,6 +48,7 @@ namespace Unity.Profiling.Editor
         ChartGuidesWidget m_ChartGuides;
         ChartWidget m_ChartWidget;
         FrameWarningsOverlayWidget m_MissingFramesWidget;
+        SelectedMarkerOverlayWidget m_SelectedMarkerOverlay;
 
         long m_CurrentFrame;
         int[] m_LegendItems;
@@ -170,6 +172,8 @@ namespace Unity.Profiling.Editor
             m_ChartGuides = new ChartGuidesWidget(m_Model, m_Chart);
             m_ChartSelectionLabels = new ChartSelectionLabelsWidget(m_ChartType, m_Model, m_Chart);
             m_MissingFramesWidget = new FrameWarningsOverlayWidget(m_Model, m_Chart, StatisticsAvailabilityMessageFactory);
+            if (m_Module is CPUProfilerModule)
+                m_SelectedMarkerOverlay = new SelectedMarkerOverlayWidget(m_Chart);
 
             View.RegisterCallback<PointerUpEvent>(ModuleActivationCallback);
             View.RegisterCallback<KeyDownEvent>(SelectionManipulationCallback);
@@ -204,6 +208,16 @@ namespace Unity.Profiling.Editor
         {
             UIUtility.SetElementDisplay(m_WarningIcon, visibility);
             m_WarningIcon.tooltip = message;
+        }
+
+        public void SetSelectedMarkerOverlay(string selectionText, string tooltipText)
+        {
+            m_SelectedMarkerOverlay?.Update(selectionText, tooltipText);
+        }
+
+        public void ClearSelectedMarkerOverlay()
+        {
+            m_SelectedMarkerOverlay?.Clear();
         }
 
         void MakeLegend()

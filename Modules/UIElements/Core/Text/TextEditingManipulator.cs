@@ -10,48 +10,85 @@ namespace UnityEngine.UIElements
     {
         private readonly TextElement m_TextElement;
 
-        private TextEditorEventHandler m_EditingEventHandler;
-        internal TextEditorEventHandler editingEventHandler
+        private TextEditorEventHandler m_TouchScreenEditingEventHandler;
+        internal TextEditorEventHandler touchScreenEditingEventHandler
         {
-            get => m_EditingEventHandler;
+            get => m_TouchScreenEditingEventHandler;
             set
             {
-                if (m_EditingEventHandler == value)
+                if (m_TouchScreenEditingEventHandler == value)
                     return;
 
-                m_EditingEventHandler?.UnregisterCallbacksFromTarget(m_TextElement);
-                m_EditingEventHandler = value;
-                m_EditingEventHandler?.RegisterCallbacksOnTarget(m_TextElement);
+                m_TouchScreenEditingEventHandler?.UnregisterCallbacksFromTarget(m_TextElement);
+                m_TouchScreenEditingEventHandler = value;
+                m_TouchScreenEditingEventHandler?.RegisterCallbacksOnTarget(m_TextElement);
             }
         }
+
+        private TextEditorEventHandler m_KeyboardEditingEventHandler;
+        internal TextEditorEventHandler keyboardEditingEventHandler
+        {
+            get => m_KeyboardEditingEventHandler;
+            set
+            {
+                if (m_KeyboardEditingEventHandler == value)
+                    return;
+
+                m_KeyboardEditingEventHandler?.UnregisterCallbacksFromTarget(m_TextElement);
+                m_KeyboardEditingEventHandler = value;
+                m_KeyboardEditingEventHandler?.RegisterCallbacksOnTarget(m_TextElement);
+            }
+        }
+
         internal TextEditingUtilities editingUtilities;
 
-        private bool m_TouchScreenTextFieldInitialized;
-        private bool touchScreenTextFieldChanged => m_TouchScreenTextFieldInitialized != editingUtilities?.TouchScreenKeyboardShouldBeUsed();
         private IVisualElementScheduledItem m_HardwareKeyboardPoller = null;
 
         public TextEditingManipulator(TextElement textElement)
         {
             m_TextElement = textElement;
             editingUtilities = new TextEditingUtilities(textElement.selectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle, textElement.text);
-            InitTextEditorEventHandler();
+            UpdateTextEditorEventHandler();
         }
 
         public void Reset()
         {
-            editingEventHandler = null;
+            touchScreenEditingEventHandler = null;
+            keyboardEditingEventHandler = null;
         }
 
-        private void InitTextEditorEventHandler()
+        private bool touchScreenTextFieldChanged
         {
-            m_TouchScreenTextFieldInitialized = editingUtilities?.TouchScreenKeyboardShouldBeUsed() ?? false;
-            if (m_TouchScreenTextFieldInitialized)
+            get
             {
-                editingEventHandler = new TouchScreenTextEditorEventHandler(m_TextElement, editingUtilities);
+                if (touchScreenCanBeUsed != (touchScreenEditingEventHandler != null) || keyboardCanBeUsed != (keyboardEditingEventHandler != null))
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private bool touchScreenCanBeUsed => (editingUtilities?.TouchScreenKeyboardCanBeUsed() ?? false) && !m_TextElement.edition.hideSoftKeyboard;
+        private bool keyboardCanBeUsed => m_TextElement.edition.hideSoftKeyboard || (editingUtilities?.PhysicalKeyboardCanBeUsed() ?? true);
+
+        private void UpdateTextEditorEventHandler()
+        {
+            if (touchScreenCanBeUsed)
+            {
+                touchScreenEditingEventHandler = new TouchScreenTextEditorEventHandler(m_TextElement, editingUtilities);
             }
             else
             {
-                editingEventHandler = new KeyboardTextEditorEventHandler(m_TextElement, editingUtilities);
+                touchScreenEditingEventHandler = null;
+            }
+            if (keyboardCanBeUsed)
+            {
+                keyboardEditingEventHandler = new KeyboardTextEditorEventHandler(m_TextElement, editingUtilities);
+            }
+            else
+            {
+                keyboardEditingEventHandler = null;
             }
         }
 
@@ -66,7 +103,10 @@ namespace UnityEngine.UIElements
             }
             else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || m_TextElement.selectingManipulator.isClicking)
             {
+                bool wasCached = m_TextElement.uitkTextHandle.IsCachedPermanent;
                 m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+                if (!wasCached)
+                    editingUtilities.SyncStateToNative();
             }
 
             switch (evt)
@@ -79,7 +119,8 @@ namespace UnityEngine.UIElements
                     break;
             }
 
-            editingEventHandler?.HandleEventBubbleUp(evt);
+            keyboardEditingEventHandler?.HandleEventBubbleUp(evt);
+            touchScreenEditingEventHandler?.HandleEventBubbleUp(evt);
         }
 
         void OnFocusInEvent()
@@ -91,7 +132,7 @@ namespace UnityEngine.UIElements
             // When this input field receives focus, make sure the correct text editor is initialized
             // (i.e. hardware keyboard or touchscreen keyboard).
             if (touchScreenTextFieldChanged)
-                InitTextEditorEventHandler();
+                UpdateTextEditorEventHandler();
 
             // When focused and the keyboard availability changes, make sure the correct text editor is
             // initialized under these new conditions and un-focus this input field.
@@ -101,7 +142,7 @@ namespace UnityEngine.UIElements
                 {
                     if (touchScreenTextFieldChanged)
                     {
-                        InitTextEditorEventHandler();
+                        UpdateTextEditorEventHandler();
                         m_TextElement.Blur();
                     }
                 }).Every(250);

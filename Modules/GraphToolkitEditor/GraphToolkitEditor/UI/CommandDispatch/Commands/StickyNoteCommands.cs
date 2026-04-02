@@ -193,7 +193,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateStickyNoteThemeCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -253,7 +253,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateStickyNoteTextSizeCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

@@ -175,12 +175,8 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             foreach (var child in childrenList)
                 child.RemoveFromHierarchy();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ??
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Log.lines.Select(x => x.eventBase).ToList());
-#pragma warning restore UA2001
+            var srcEventBases = m_SelectedEvents ?? m_Log.lines;
+            var histogramValue = m_Debugger.ComputeHistogram(srcEventBases.ConvertAll(x => x.eventBase));
             if (histogramValue == null)
                 return;
 
@@ -365,9 +361,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                     continue;
 
                 var events = eventRegistrationListener.Value;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (events.All(e => IsFilteredOut(e.Key)))
-#pragma warning restore UA2001
+                #pragma warning disable UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if (events.Keys.All(IsFilteredOut))
+#pragma warning restore UA2008
                     continue;
 
                 m_RegisteredEventCallbacksDataSource.Add(new TitleInfo(text, key));
@@ -789,9 +785,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         void SaveReplaySessionFromSelection()
         {
             var path = EditorUtility.SaveFilePanel("Save Replay File", Application.dataPath, "ReplayData.json", "json");
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Debugger.SaveReplaySessionFromSelection(path, m_SelectedEvents.Select(x => x.eventBase).ToList());
-#pragma warning restore UA2001
+            m_Debugger.SaveReplaySessionFromSelection(path, m_SelectedEvents.ConvertAll(x => x.eventBase));
         }
 
         void LoadReplaySession()

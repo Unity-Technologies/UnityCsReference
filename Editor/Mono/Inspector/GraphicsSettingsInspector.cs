@@ -16,6 +16,7 @@ using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using Button = UnityEngine.UIElements.Button;
 using HelpBox = UnityEngine.UIElements.HelpBox;
 
@@ -36,6 +37,10 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
             internal static readonly string k_BuildProfileGraphicsSettingsOverrideWarning =
                 L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...");
+            internal static readonly string k_GraphicsSettingsBuiltinInfo =
+                L10n.Tr("The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.");
+            internal static readonly string k_GraphicsSettingsBuiltinWarning =
+                L10n.Tr("If you don't assign a render pipeline asset in your project, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead.");
         }
         internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
@@ -45,6 +50,8 @@ namespace UnityEditor
         ScrollView m_ScrollView;
         List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> m_GlobalSettings;
         HelpBox m_BuildProfileGraphicsSettingsOverrideWarning;
+        ObjectFieldWithPrompt m_DefaultRenderPipelineField;
+        HelpBox m_BiRPDeprecationInfoBox;
         internal static Action OnActiveProfileGraphicsSettingsChanged;
 
         readonly Dictionary<VisualElement, List<Label>> m_Labels = new();
@@ -120,10 +127,23 @@ namespace UnityEditor
             UpdateBuildProfileGraphicsSettingsOverrideWarning();
             OnActiveProfileGraphicsSettingsChanged += UpdateBuildProfileGraphicsSettingsOverrideWarning;
 
+            SetupBiRPDeprecationInfoBox(m_CurrentRoot);
+
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
             BindEnumFieldToLightProbe(m_CurrentRoot);
+            BindEnumFieldToDefaultLightBaker(m_CurrentRoot);
 
+            // Light Baker section is only visible in developer/internal mode
+            var lightBakerSection = m_CurrentRoot.Q<VisualElement>("LightBakerSection");
+            if (lightBakerSection != null)
+            {
+                lightBakerSection.style.display = Unsupported.IsDeveloperMode()
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            }
+
+            GraphicsStateCollectionSettingsUI.BindGraphicsStateCollection(m_CurrentRoot, serializedObject);
             BindShaderPreload(m_CurrentRoot);
 
             m_ShaderBuildSettingsUI.Initialize(m_CurrentRoot, serializedObject, false);
@@ -167,9 +187,12 @@ namespace UnityEditor
                 //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
                 EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
                 if (EditorGUI.EndChangeCheck())
+                {
                     shaderPreloadProperty.serializedObject.ApplyModifiedProperties();
+                    UIElementsEditorUtility.SetVisibility(root.MandatoryQ<HelpBox>("RecommendGSCInfoBox"), shaderPreloadProperty.arraySize > 0 && shaderPreloadProperty.GetArrayElementAtIndex(0).objectReferenceValue);
+                }
             };
-            
+
             var delayedShaderTimeLimitProperty = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");
             var shaderPreloadToggle = root.MandatoryQ<Toggle>("ShaderPreloadToggle");
             var delayedShaderTimeLimitGroup = root.MandatoryQ<VisualElement>("DelayedShaderTimeLimitGroup");
@@ -194,7 +217,7 @@ namespace UnityEditor
             shaderPreloadToggle.SetValueWithoutNotify(delayedShaderTimeLimitProperty.intValue >= 0);
             delayedShaderTimeLimit.SetValueWithoutNotify(Mathf.Max(0, delayedShaderTimeLimitProperty.intValue));
             delayedShaderTimeLimitGroup.style.display = delayedShaderTimeLimitProperty.intValue >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            
+
             var shaderTracking = root.MandatoryQ<HelpBox>("ShaderTrackingInfoBox");
             shaderTracking.schedule.Execute(() =>
                 shaderTracking.text =
@@ -368,6 +391,16 @@ namespace UnityEditor
             UIElementsEditorUtility.BindSerializedProperty<LightProbeOutsideHullStrategy>(enumMode, enumModeProperty);
         }
 
+        void BindEnumFieldToDefaultLightBaker(VisualElement content)
+        {
+            var enumMode = content.Q<EnumField>("DefaultLightBaker");
+            if (enumMode != null)
+            {
+                var enumModeProperty = serializedObject.FindProperty(enumMode.bindingPath);
+                UIElementsEditorUtility.BindSerializedProperty<LightBaker>(enumMode, enumModeProperty);
+            }
+        }
+
         void SetupTransparencySortMode(VisualElement root)
         {
             var transparencySortMode = root.MandatoryQ<PropertyField>("TransparencySortMode");
@@ -382,6 +415,62 @@ namespace UnityEditor
                 m_BuildProfileGraphicsSettingsOverrideWarning.style.display = DisplayStyle.Flex;
             else
                 m_BuildProfileGraphicsSettingsOverrideWarning.style.display = DisplayStyle.None;
+        }
+
+        void SetupBiRPDeprecationInfoBox(VisualElement root)
+        {
+            m_BiRPDeprecationInfoBox = root.Q<HelpBox>("BiRPDeprecationInfoBox");
+            if (m_BiRPDeprecationInfoBox == null)
+                return;
+
+//          Workaround, as there is a bug in the documentation forwarder that causes links containing a / to be broken:
+            m_BiRPDeprecationInfoBox.linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
+
+//          Use this once the documentation forwarder has been fixed
+//          Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
+//          Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
+//            m_BiRPDeprecationInfoBox.linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
+
+            m_DefaultRenderPipelineField = root.Q<ObjectFieldWithPrompt>("DefaultRenderPipeline");
+            if (m_DefaultRenderPipelineField != null)
+                m_DefaultRenderPipelineField.RegisterValueChangedCallback(evt => UpdateBiRPDeprecationInfoBox());
+
+            UpdateBiRPDeprecationInfoBox();
+        }
+
+        void UpdateBiRPDeprecationInfoBox()
+        {
+            if (m_BiRPDeprecationInfoBox == null)
+                return;
+
+            bool srpInstalled = false;
+            foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+            {
+                if (!type.IsAbstract)
+                {
+                    srpInstalled = true;
+                    break;
+                }
+            }
+
+            bool defaultSrpSelected = m_DefaultRenderPipelineField?.value != null;
+
+            if (!srpInstalled)
+            {
+                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Info;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_GraphicsSettingsBuiltinInfo;
+                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.Flex;
+            }
+            else if (!defaultSrpSelected)
+            {
+                m_BiRPDeprecationInfoBox.messageType = HelpBoxMessageType.Warning;
+                m_BiRPDeprecationInfoBox.text = GraphicsSettingsData.k_GraphicsSettingsBuiltinWarning;
+                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                m_BiRPDeprecationInfoBox.style.display = DisplayStyle.None;
+            }
         }
 
         [Serializable]
@@ -507,9 +596,7 @@ namespace UnityEditor
 
         bool ShouldDisplayElement(Type currentRenderPipelineAssetType, Type[] renderPipelineAssetTypes)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderPipelineAssetTypes.Contains(currentRenderPipelineAssetType)
-#pragma warning restore UA2001
                    || Array.Exists(renderPipelineAssetTypes, t => t != null && t.IsAssignableFrom(currentRenderPipelineAssetType));
         }
 
@@ -630,6 +717,7 @@ namespace UnityEditor
             { "m_FogKeepLinear" , "Linear" },
             { "m_FogKeepExp" , "Exponential" },
             { "m_FogKeepExp2" , "Exponential Squared" },
+            { "m_DefaultLightBaker" , "Default Light Baker" },
             { "m_InstancingStripping" , "Instancing Variants" },
             { "m_BrgStripping" , "Batch Renderer Group Variants" },
             { "m_LogWhenShaderIsCompiled" , "Log Shader Compilation" },
@@ -638,6 +726,16 @@ namespace UnityEditor
             { "m_VideoShadersIncludeMode" , "Video" },
             { "m_AlwaysIncludedShaders" , "Always Included Shaders" },
             { "m_LightProbeOutsideHullStrategy" , "Renderer Light Probe Selection" },
+            { "m_GraphicsStateCollection" , "Load Graphics State Collection" },
+            { "m_CollectionStartupAction" , "Collection Startup Behavior" },
+            { "m_TraceSavePath" , "Save As" },
+            { "m_TraceSendToEditor" , "Send to Editor" },
+            { "m_AdditionalWarmupCollections" , "Additional Collections" },
+            { "m_WarmupAsync" , "Warmup Asynchronously" },
+            // Below: 1 serialized property is for 2 field of the inspector. Adding all to the search keys
+            { "m_WarmupProgressivelyLimit" , $"Warmup After Showing First Scene Progressive Count Limit Per Frame" },
+            { "m_EnableCacheMissTracing" , "Enable Cache Miss Tracing" },
+            { "m_CacheMissCollectionPath" , "Cache Miss Collection Save Path" },
             { "m_PreloadedShaders" , "Preload Shaders" },
             // Below: 1 serialized property is for 2 field of the inspector. Adding all to the search keys
             { "m_PreloadShadersBatchTimeLimit" , $"Preload Shaders After Showing First Scene Preload Time Limit Per Frame (ms)" },

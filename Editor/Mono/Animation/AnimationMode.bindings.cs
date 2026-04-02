@@ -54,7 +54,6 @@ namespace UnityEditor
 
         static private AnimationModeDriver s_DummyDriver;
 
-        static internal AnimationModeDriver GetDriver() => Internal_GetDriver() as AnimationModeDriver;
         static private AnimationModeDriver DummyDriver()
         {
             if (s_DummyDriver == null)
@@ -234,7 +233,5 @@ namespace UnityEditor
 
         [NativeMethod(ThrowsException = true)]
         extern private static void Internal_StartCandidateRecording(Object driver);
-
-        extern internal static Object Internal_GetDriver();
     }
 }

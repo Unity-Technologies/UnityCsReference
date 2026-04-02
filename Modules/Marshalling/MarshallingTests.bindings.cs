@@ -54,7 +54,6 @@ namespace UnityEngine
     // String tests
 
     [ExcludeFromDocs]
-    [RequiredByNativeCode(GenerateProxy = true, Name = "StructCoreStringManaged", Optional = true)]
     [NativeClass("StructCoreString", "struct StructCoreString;")]
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructCoreString
@@ -93,8 +92,6 @@ namespace UnityEngine
         [NativeMethod(ThrowsException = true)] public static extern void ParameterStructCoreString(StructCoreString param);
 
         [NativeMethod(ThrowsException = true)] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
-
-        [NativeMethod(ThrowsException = true)] public static extern StructCoreString TestCoreStringViaProxy(StructCoreString param);
 
         public static extern string ReturnCoreString();
         public static extern string ReturnCoreStringRef();
@@ -851,7 +848,7 @@ namespace UnityEngine
         public static extern void InOutArrayOfStringWhenItemIsDeletedWorks([In, Out] string[] array);
 
         public static extern void InOutArrayOfBlittableStructTypeWorks([In, Out] StructInt[] array, StructInt value);
-        public static extern void InOutArrayOfManagedTypeWorks([In, Out] object[] array, object value);
+
         public static extern void InOutArrayOfIntPtrObjectTypeWorks([In, Out] MyIntPtrObject[] array, MyIntPtrObject value);
         public static extern void InOutArrayOfIntPtrObjectTypeWhenItemIsDeletedWorks([In, Out] MyIntPtrObject[] array);
 
@@ -1430,6 +1427,51 @@ namespace UnityEngine
         [NativeMethod("BlittableStructTests::ParameterStructIntVector", IsFreeFunction = true, ThrowsException = true)]
         public extern static void PassClassWithPinnableInnerData_AsArray(ClassWithPinnableInnerData[] arr);
     }
+
+    internal class CustomNativeMarshallingTests
+    {
+        [NativeType(CodegenOptions.Custom, "CustomNativeMarshallingManagedStruct")]
+        public struct NonBlittableCustomStruct
+        {
+            [NativeName("stringValue")]
+            public string StringValue;
+            [NativeName("intValue")]
+            public int IntValue;
+        }
+
+        [NativeAsStruct]
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "CustomNativeMarshallingManagedClassNativeAsStruct")]
+        public class NonBlittableCustomClassNativeAsStruct
+        {
+            [NativeName("stringValue")]
+            public string StringValue;
+            [NativeName("intValue")]
+            public int IntValue;
+        }
+
+        [NativeType(CodegenOptions.Custom)]
+        public struct NonBlittableCustomStructNoIntermediateType
+        {
+            [NativeName("stringValue")]
+            public string StringValue;
+            [NativeName("intValue")]
+            public int IntValue;
+        }
+
+        [NativeMethod(ThrowsException = true)]
+        public static extern void ParameterNonBlittableCustomStruct(NonBlittableCustomStruct param, string expectedString, int expectedInt);
+        public static extern NonBlittableCustomStruct ReturnNonBlittableCustomStruct(string expectedString, int expectedInt);
+
+        [NativeMethod(ThrowsException = true)]
+        public static extern void ParameterNonBlittableCustomClassNativeAsStruct(NonBlittableCustomClassNativeAsStruct param, string expectedString, int expectedInt);
+        public static extern NonBlittableCustomClassNativeAsStruct ReturnNonBlittableCustomClassNativeAsStruct(string expectedString, int expectedInt);
+
+        [NativeMethod(ThrowsException = true)]
+        public static extern void ParameterNonBlittableCustomStructNoIntermediateType(NonBlittableCustomStructNoIntermediateType param, string expectedString, int expectedInt);
+        public static extern NonBlittableCustomStructNoIntermediateType ReturnNonBlittableCustomStructNoIntermediateType(string expectedString, int expectedInt);
+    }
+
     internal class BlittableNestedCollectionMarshallerTests
     {
         [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection", ThrowsException = true)]
@@ -1508,5 +1550,18 @@ namespace UnityEngine
     internal class CustomNativeMarshalingTests
     {
         public static extern void CallWithCustomNativeMarshallerAlwaysThrows(CustomNativeMarshallerAlwaysThrows param);
+    }
+
+    internal class NativeTypeSmallerThanManagedTypeTests
+    {
+        // Tests cases were the native type is smaller than the managed type.
+        // These tests ensure that when out marshalling an array we don't incorrect re-use the same buffer for the native & managed data
+
+
+        // In release mode PPtr is integer sized and the marshalled size is a pointer
+        public static extern void PPtrOutMarshalledBufferReuse([Out] MarshallingTestObject[] param);
+        public static extern void PPtrInOutMarshalledBufferReuse([In, Out] MarshallingTestObject[] param);
+
+
     }
 }

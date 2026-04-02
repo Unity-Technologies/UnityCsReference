@@ -18,7 +18,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// USS class id for toggle using icons instead of toggle checkbox.
         /// </summary>
-        public const string k_ToggleIcon = "toggle-icon";
+        public static readonly UniqueStyleString k_ToggleIcon = new("toggle-icon");
 
         /// <summary>
         /// USS class for Cell using a PropertyField.
@@ -48,7 +48,7 @@ namespace Unity.Hierarchy
         /// <returns></returns>
         public static HierarchyViewCellValueEditor<TModel, TEditor, TValue> BindCellToValueEditor<TModel, TEditor, TValue>(
             TModel model, HierarchyViewCell cell,
-            HierarchyViewColumnContextPool<HierarchyViewCellValueEditor<TModel, TEditor, TValue>> pool, params string[] classes) where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
+            HierarchyViewColumnContextPool<HierarchyViewCellValueEditor<TModel, TEditor, TValue>> pool, params UniqueStyleString[] classes) where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
         {
             var editor = GetOrCreateEditor<TEditor>(cell, classes);
             var cellValueEditor = pool.Get(cell.View.GetHashCode());
@@ -80,26 +80,17 @@ namespace Unity.Hierarchy
         /// <param name="cell">Cell to attach the editor to.</param>
         /// <param name="classes">List of USS classes to add to the newly created editor.</param>
         /// <returns></returns>
-        public static TEditor GetOrCreateEditor<TEditor>(HierarchyViewCell cell, params string[] classes) where TEditor : VisualElement, new()
+        public static TEditor GetOrCreateEditor<TEditor>(HierarchyViewCell cell, params UniqueStyleString[] classes) where TEditor : VisualElement, new()
         {
             var editor = cell.Q<TEditor>();
             if (editor == null)
             {
                 editor = new TEditor();
                 editor.focusable = false;
-                AddToClassList(editor, classes);
+                editor.AddToClassList(classes);
                 cell.Add(editor);
             }
             return editor;
-        }
-
-        internal static VisualElement AddToClassList(VisualElement element, params string[] classes)
-        {
-            foreach (var c in classes)
-            {
-                element.AddToClassList(c);
-            }
-            return element;
         }
 
         [VisibleToOtherModules]
@@ -109,7 +100,7 @@ namespace Unity.Hierarchy
                 Func<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> getModelValue,
                 Action<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> setModelValue,
                 Func<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue, bool> isDefaultValue,
-                params string[] classes) where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
+                params UniqueStyleString[] classes) where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
         {
             var editor = GetOrCreateEditor<TEditor>(cell, classes);
             var cellValueEditor = new HierarchyViewCellValueEditor<TModel, TEditor, TValue>(getModelValue, setModelValue, isDefaultValue);

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 namespace UnityEditor.SpeedTree.Importer
 {
@@ -27,6 +28,7 @@ namespace UnityEditor.SpeedTree.Importer
         /// <summary>
         /// Represents the wind configuration parameters.
         /// </summary>
+        [NonSerialized]
         public SpeedTreeWindConfig9 m_WindConfig = new SpeedTreeWindConfig9();
 
         /// <summary>

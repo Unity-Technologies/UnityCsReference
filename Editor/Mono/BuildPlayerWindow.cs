@@ -833,7 +833,10 @@ namespace UnityEditor
                     {
                         var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
                         bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
-                            apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard;
+                            apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard
+#pragma warning disable CS0618
+                            || apiCompatibilityLevel == ApiCompatibilityLevel.NET;
+#pragma warning restore CS0618
 
                         if (!isDebuggerUsable)
                             EditorGUILayout.HelpBox("Script debugging is only supported with IL2CPP on .NET 4.x and .NET Standard 2.0 API Compatibility Levels.", MessageType.Warning);
@@ -881,7 +884,7 @@ namespace UnityEditor
 
                 GUI.enabled = true;
 
-                if (postprocessor != null && postprocessor.SupportsLz4Compression())
+                if (postprocessor != null && postprocessor.SupportsCompression(Compression.Lz4))
                 {
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(namedBuildTarget.ToBuildTargetGroup()));
                     if (cmpIdx == -1)

@@ -7,26 +7,30 @@ using UnityEditor.Build.Profile;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using InstanceSettings = Unity.Multiplayer.PlayMode.Editor.LocalPlayerController.InstanceSettings;
+using UserSettings = Unity.Multiplayer.PlayMode.Editor.LocalPlayerController.UserSettings;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-[CustomPropertyDrawer(typeof(InstanceSettings))]
-class LocalPlayerSettingsDrawer : PropertyDrawer
+[CustomPropertyDrawer(typeof(InstanceItem<LocalPlayerController, InstanceSettings>))]
+class LocalPlayerSettingsDrawer : InstanceItemDrawer
 {
     const string k_AdvancedSettingsLabel = "Advanced Configuration";
 
     public override VisualElement CreatePropertyGUI(SerializedProperty property)
     {
-        var container = new VisualElement();
+        var instanceItem = (InstanceItem<LocalPlayerController, InstanceSettings>)property.boxedValue;
+        var scenario = property.serializedObject.targetObject as OrchestratedScenario;
+        var userSettingsProperty = OrchestratedScenarioUserSettings.GetSerializedSettingsProperty<UserSettings>(scenario, instanceItem);
+        var container = base.CreatePropertyGUI(property);
         var deviceContainer = new VisualElement();
 
-        var buildProfileProperty = property.FindPropertyRelative(nameof(InstanceSettings.BuildProfile));
-        var deviceNameProperty = property.FindPropertyRelative(nameof(InstanceSettings.DeviceName));
-        var deviceIdProperty = property.FindPropertyRelative(nameof(InstanceSettings.DeviceID));
+        var buildProfileProperty = property.FindPropertyRelative($"{IInstanceItem.k_SettingsPropertyPath}.{nameof(InstanceSettings.BuildProfile)}");
+        var deviceNameProperty = userSettingsProperty.FindPropertyRelative(nameof(UserSettings.DeviceName));
+        var deviceIdProperty = userSettingsProperty.FindPropertyRelative(nameof(UserSettings.DeviceID));
 
         container.Add(new BuildProfileField(buildProfileProperty));
         container.Add(deviceContainer);
-        container.Add(CreateAdvanceSettings(property));
+        container.Add(CreateAdvanceSettings(property.FindPropertyRelative(IInstanceItem.k_SettingsPropertyPath)));
 
         deviceContainer.TrackPropertyValue(
             buildProfileProperty,
@@ -35,6 +39,8 @@ class LocalPlayerSettingsDrawer : PropertyDrawer
         RefreshDeviceField(buildProfileProperty, deviceNameProperty, deviceIdProperty, deviceContainer);
         return container;
     }
+
+    protected override VisualElement CreateSettingsField(SerializedProperty property) => null;
 
     static VisualElement CreateAdvanceSettings(SerializedProperty property)
     {

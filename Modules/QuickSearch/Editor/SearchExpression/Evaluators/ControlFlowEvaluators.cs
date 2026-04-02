@@ -129,9 +129,7 @@ namespace UnityEditor.Search
             }
 
             // Pull on the last element to start the evaluation chain
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return exprs.Last().Execute(c);
-#pragma warning restore UA2001
+            return exprs[^1].Execute(c);
         }
     }
 }

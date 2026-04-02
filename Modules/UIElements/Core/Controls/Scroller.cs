@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
     /// The following example creates a scroller independently from a ScrollView:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Scroller_Example.cs"/>
     /// </example>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Scroller.png")]
     public partial class Scroller : VisualElement
     {
@@ -179,14 +180,14 @@ namespace UnityEngine.UIElements
                 if (value == SliderDirection.Horizontal)
                 {
                     style.flexDirection = FlexDirection.Row;
-                    AddToClassList(horizontalVariantUssClassName);
-                    RemoveFromClassList(verticalVariantUssClassName);
+                    AddToClassList(horizontalVariantUssClassNameUnique);
+                    RemoveFromClassList(verticalVariantUssClassNameUnique);
                 }
                 else
                 {
                     style.flexDirection = FlexDirection.Column;
-                    AddToClassList(verticalVariantUssClassName);
-                    RemoveFromClassList(horizontalVariantUssClassName);
+                    AddToClassList(verticalVariantUssClassNameUnique);
+                    RemoveFromClassList(horizontalVariantUssClassNameUnique);
                 }
                 if (previous != slider.direction)
                     NotifyPropertyChanged(directionProperty);
@@ -199,26 +200,37 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-scroller";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed horizontally.
         /// </summary>
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        internal static readonly UniqueStyleString horizontalVariantUssClassNameUnique = new(horizontalVariantUssClassName);
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed vertically.
         /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        internal static readonly UniqueStyleString verticalVariantUssClassNameUnique = new(verticalVariantUssClassName);
+
         /// <summary>
         /// USS class name of slider elements in elements of this type.
         /// </summary>
         public static readonly string sliderUssClassName = ussClassName + "__slider";
+        internal static readonly UniqueStyleString sliderUssClassNameUnique = new(sliderUssClassName);
+
         /// <summary>
         /// USS class name of low buttons in elements of this type.
         /// </summary>
         public static readonly string lowButtonUssClassName = ussClassName + "__low-button";
+        internal static readonly UniqueStyleString lowButtonUssClassNameUnique = new(lowButtonUssClassName);
+
         /// <summary>
         /// USS class name of high buttons in elements of this type.
         /// </summary>
         public static readonly string highButtonUssClassName = ussClassName + "__high-button";
+        internal static readonly UniqueStyleString highButtonUssClassNameUnique = new(highButtonUssClassName);
 
         /// <summary>
         /// Constructor.
@@ -231,18 +243,18 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, SliderDirection direction = SliderDirection.Vertical)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             // Add children in correct order
             slider = new ScrollerSlider(lowValue, highValue, direction, kDefaultPageSize) {name = "unity-slider", viewDataKey = "Slider"};
-            slider.AddToClassList(sliderUssClassName);
+            slider.AddToClassList(sliderUssClassNameUnique);
             slider.RegisterValueChangedCallback(OnSliderValueChange);
 
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
-            lowButton.AddToClassList(lowButtonUssClassName);
+            lowButton.AddToClassList(lowButtonUssClassNameUnique);
             Add(lowButton);
             highButton = new RepeatButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-high-button" };
-            highButton.AddToClassList(highButtonUssClassName);
+            highButton.AddToClassList(highButtonUssClassNameUnique);
             Add(highButton);
             Add(slider);
 

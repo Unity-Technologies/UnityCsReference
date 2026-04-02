@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -24,7 +23,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// <param name="category">The IssueCategory of the reported Issue</param>
         /// <param name="id">Identifies the Descriptor object containing information about the Issue</param>
         /// <param name="args">Arguments to be used in the message formatting</param>
-        public ReportItemBuilder(IssueCategory category, DescriptorId id, params object[] args)
+        public ReportItemBuilder(IssueCategory category, string id, params object[] args)
         {
             m_Issue = new ReportItem(category, id, args);
         }
@@ -37,6 +36,11 @@ namespace Unity.ProjectAuditor.Editor.Core
         public ReportItemBuilder(IssueCategory category, string description)
         {
             m_Issue = new ReportItem(category, description);
+        }
+
+        internal ReportItemBuilder(IssueCategory category, string id, string description, ReportItem srcItem)
+        {
+            m_Issue = srcItem.Clone(category, id, description);
         }
 
         /// <summary>
@@ -61,9 +65,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         public ReportItemBuilder WithCustomProperties(object[] properties)
         {
             if (properties != null)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Issue.CustomProperties = properties.Select(p => p != null ? p.ToString() : string.Empty).ToArray();
-#pragma warning restore UA2001
+                m_Issue.CustomProperties = System.Array.ConvertAll(properties, p => p?.ToString() ?? string.Empty);
             else
                 m_Issue.CustomProperties = null;
 
@@ -145,6 +147,17 @@ namespace Unity.ProjectAuditor.Editor.Core
         public ReportItemBuilder WithSeverity(Severity severity)
         {
             m_Issue.Severity = severity;
+            return this;
+        }
+
+        /// <summary>
+        /// Mark this issue as being an upgrade problem.
+        /// </summary>
+        /// <param name="properties">Upgrade properties</param>
+        /// <returns>The ReportItemBuilder object with the upgrade data added</returns>
+        public ReportItemBuilder WithUpgradeProperties(string[] properties)
+        {
+            m_Issue.UpgradeProperties = properties;
             return this;
         }
     }

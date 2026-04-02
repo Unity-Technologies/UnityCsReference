@@ -29,6 +29,7 @@ namespace UnityEditor.Overlays
         const string k_Floating = "overlay--floating";
         internal const string k_HeaderTitle = "overlay-header__title";
         internal const string k_HeaderIcon = "overlay-header__icon";
+        internal const string k_HeaderToggle = "overlay-header__toggle";
         const string k_Collapsed = "unity-overlay--collapsed";
         internal const string k_Header = "overlay-header";
         const string k_Expanded = "unity-overlay--expanded";
@@ -42,11 +43,14 @@ namespace UnityEditor.Overlays
         internal const string k_DraggerName = "unity-overlay-collapse__dragger";
         internal const string k_BoxBackground = "overlay-box-background";
 
+
+        static readonly string k_FoldedTooltip = L10n.Tr("Expend overlay");
+        static readonly string k_UnfoldedTooltip = L10n.Tr("Minimize overlay");
+
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;
 
         internal bool dontSaveInLayout {get; set;}
-        internal bool m_HasMenuEntry = true;
 
         [SerializeField]
         Layout m_Layout = Layout.Panel;
@@ -135,6 +139,7 @@ namespace UnityEditor.Overlays
         internal event Action sizeOverridenChanged;
         internal event Action sizeChanged;
         internal event Action canvasModeChanged;
+        internal event Action<bool> hasMenuEntryChanged;
 
         // Invoked in partial class OverlayPlacement.cs
 #pragma warning disable 67
@@ -153,9 +158,22 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
         VisualElement m_ContentRoot;
+        bool m_HasMenuEntry = true;
 
         // Properties
-        internal bool hasMenuEntry => m_HasMenuEntry;
+        internal bool hasMenuEntry
+        {
+            get => m_HasMenuEntry;
+            private set
+            {
+                if (m_HasMenuEntry != value)
+                {
+                    m_HasMenuEntry = value;
+                    hasMenuEntryChanged?.Invoke(value);
+                }
+            }
+        }
+
         internal Rect collapsedButtonRect => collapsedContent.worldBound;
 
         Texture2D m_CollapsedIcon = null;
@@ -299,12 +317,20 @@ namespace UnityEditor.Overlays
             }
         }
 
+        bool m_ForceHidden = false;
+        bool m_Displayed = true;
+
+        internal bool GetSerializedDisplayed()
+        {
+            return m_Displayed;
+        }
+
         public bool displayed
         {
-            get => rootVisualElement.style.display == DisplayStyle.Flex;
+            get => m_Displayed && !m_ForceHidden;
             set
             {
-                if (rootVisualElement.style.display != (value ? DisplayStyle.Flex : DisplayStyle.None))
+                if (m_Displayed != value)
                 {
                     if(m_DisableContentModification)
                     {
@@ -312,11 +338,33 @@ namespace UnityEditor.Overlays
                         return;
                     }
 
-                    rootVisualElement.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
-
-                    RebuildContent();
-                    displayedChanged?.Invoke(value);
+                    m_Displayed = value;
+                    UpdateDisplayState();
                 }
+            }
+        }
+
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal void SetForceHidden(bool hidden)
+        {
+            if (m_ForceHidden == hidden)
+                return;
+
+            m_ForceHidden = hidden;
+            hasMenuEntry = !hidden;
+            UpdateDisplayState();
+        }
+
+        void UpdateDisplayState()
+        {
+            var oldState = rootVisualElement.style.display == DisplayStyle.Flex;
+            if (oldState != displayed)
+            {
+                rootVisualElement.style.display = displayed ? DisplayStyle.Flex : DisplayStyle.None;
+
+                RebuildContent();
+                displayedChanged?.Invoke(displayed);
             }
         }
 
@@ -424,7 +472,7 @@ namespace UnityEditor.Overlays
             var contextClick = new ContextualMenuManipulator(BuildContextMenu);
 
             m_Header = m_RootVisualElement.Q(null, k_Header);
-            m_ToggleElement = m_RootVisualElement.Q<Toggle>("overlay-header__toggle");
+            m_ToggleElement = m_RootVisualElement.Q<Toggle>(k_HeaderToggle);
             m_ToggleElement.RegisterValueChangedCallback(evt => folded = !evt.newValue);
             header.AddManipulator(contextClick);
             header.AddManipulator(m_Dragger);
@@ -740,6 +788,7 @@ namespace UnityEditor.Overlays
                 // Folded styling should only be applied if the overlay is neither collapsed, nor being docked.
                 bool needsFoldedStyling = folded && !collapsed && m_ActiveLayout == Layout.Panel;
                 m_ToggleElement.SetValueWithoutNotify(!folded);
+                m_ToggleElement.tooltip = folded ? k_FoldedTooltip : k_UnfoldedTooltip;
                 var foldoutContent = m_RootVisualElement.Q("overlay-content");
                 if (foldoutContent == null)
                     return;

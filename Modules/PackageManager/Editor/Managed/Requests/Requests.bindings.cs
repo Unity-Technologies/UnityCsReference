@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -9,6 +10,7 @@ namespace UnityEditor.PackageManager.Requests
 {
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
+    [Serializable]
     public partial class Request
     {
         private static extern NativeStatusCode GetOperationStatus(long operationId);

@@ -24,26 +24,37 @@ namespace UnityEngine.UIElements
         /// USS Class Name used to style the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string ussClassName = "unity-progress-bar";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS Class Name used to style the container of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
+        internal static readonly UniqueStyleString containerUssClassNameUnique = new(containerUssClassName);
+
         /// <summary>
         /// USS Class Name used to style the title of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string titleUssClassName = ussClassName + "__title";
+        internal static readonly UniqueStyleString titleUssClassNameUnique = new(titleUssClassName);
+
         /// <summary>
         /// USS Class Name used to style the container of the title of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string titleContainerUssClassName = ussClassName + "__title-container";
+        internal static readonly UniqueStyleString titleContainerUssClassNameUnique = new(titleContainerUssClassName);
+
         /// <summary>
         /// USS Class Name used to style the progress bar of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string progressUssClassName = ussClassName + "__progress";
+        internal static readonly UniqueStyleString progressUssClassNameUnique = new(progressUssClassName);
+
         /// <summary>
         /// USS Class Name used to style the background of the <see cref="ProgressBar"/>.
         /// </summary>
         public static readonly string backgroundUssClassName = ussClassName + "__background";
+        internal static readonly UniqueStyleString backgroundUssClassNameUnique = new(backgroundUssClassName);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
@@ -150,27 +161,27 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public AbstractProgressBar()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             var container = new VisualElement() { name = ussClassName };
 
             m_Background = new VisualElement();
-            m_Background.AddToClassList(backgroundUssClassName);
+            m_Background.AddToClassList(backgroundUssClassNameUnique);
             container.Add(m_Background);
 
             m_Progress = new VisualElement();
-            m_Progress.AddToClassList(progressUssClassName);
+            m_Progress.AddToClassList(progressUssClassNameUnique);
             m_Background.Add(m_Progress);
 
             var titleContainer = new VisualElement();
-            titleContainer.AddToClassList(titleContainerUssClassName);
+            titleContainer.AddToClassList(titleContainerUssClassNameUnique);
             m_Background.Add(titleContainer);
 
             m_Title = new Label();
-            m_Title.AddToClassList(titleUssClassName);
+            m_Title.AddToClassList(titleUssClassNameUnique);
             titleContainer.Add(m_Title);
 
-            container.AddToClassList(containerUssClassName);
+            container.AddToClassList(containerUssClassNameUnique);
             hierarchy.Add(container);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -307,6 +318,7 @@ namespace UnityEngine.UIElements
     /// </code>
     /// </example>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/ProgressBar.png")]
     public partial class ProgressBar : AbstractProgressBar
     {

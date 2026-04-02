@@ -207,7 +207,23 @@ namespace Unity.GraphToolkit.Editor
                     if (variableNodePort == null)
                         continue;
 
-                    allPortPairsToCreateWires.Add(subgraphPortInfo.IsInput ? (subgraphNodePort, variableNodePort) : (variableNodePort, subgraphNodePort));
+                    var otherPort = variableNodePort;
+
+                    // If the variable node port is expandable, we need to find the correct subport to connect to the subgraph node port.
+                    if (otherPort.IsExpandable && subgraphPortInfo.SourceWires != null)
+                    {
+                        foreach (var oldWire in subgraphPortInfo.SourceWires)
+                        {
+                            var oldPort = subgraphPortInfo.IsInput ? oldWire.FromPort : oldWire.ToPort;
+                            if (oldPort == null)
+                                continue;
+
+                            otherPort = oldPort;
+                            break;
+                        }
+                    }
+
+                    AddPortPairToCreateWires(allPortPairsToCreateWires, subgraphNodePort, otherPort, subgraphPortInfo.IsInput);
                 }
                 // 2. Any node connected to the subgraph node with a wire
                 else if (subgraphPortInfo.SourceWires != null)
@@ -217,7 +233,8 @@ namespace Unity.GraphToolkit.Editor
                         var oldPort = subgraphPortInfo.IsInput ? oldWire.FromPort : oldWire.ToPort;
                         if (oldPort == null)
                             continue;
-                        allPortPairsToCreateWires.Add(subgraphPortInfo.IsInput ? (subgraphNodePort, oldPort) : (oldPort, subgraphNodePort));
+
+                        AddPortPairToCreateWires(allPortPairsToCreateWires, subgraphNodePort, oldPort, subgraphPortInfo.IsInput);
                     }
                 }
                 // 3. A portal that needs to be created and connected to the subgraph node
@@ -228,10 +245,10 @@ namespace Unity.GraphToolkit.Editor
                     switch (portalToCreate)
                     {
                         case ISingleInputPortNodeModel entryPortal:
-                            allPortPairsToCreateWires.Add((entryPortal.InputPort, subgraphNodePort));
+                            AddPortPairToCreateWires(allPortPairsToCreateWires, subgraphNodePort, entryPortal.InputPort, subgraphPortInfo.IsInput);
                             break;
                         case ISingleOutputPortNodeModel exitPortal:
-                            allPortPairsToCreateWires.Add((subgraphNodePort, exitPortal.OutputPort));
+                            AddPortPairToCreateWires(allPortPairsToCreateWires, subgraphNodePort, exitPortal.OutputPort, subgraphPortInfo.IsInput);
                             break;
                     }
                 }
@@ -247,6 +264,55 @@ namespace Unity.GraphToolkit.Editor
                     continue;
 
                 mainGraph.CreateWire(toPort, fromPort);
+            }
+        }
+
+        void AddPortPairToCreateWires(List<(PortModel, PortModel)> allPortPairsToCreateWires, PortModel subgraphNodePort, PortModel otherPort, bool isSubgraphNodeInput)
+        {
+            // If both the port on the subgraph node and the port on the other node are subports:
+            // The port on the subgraph node needs to be the same subport as the one on the other node.
+            // eg: If the other port is a Vec3.y, it needs to be connected to the Vec3.y subport on the subgraph node.
+            if ((subgraphNodePort.IsExpandable || subgraphNodePort.ParentPort is { IsExpandable: true }) && (otherPort.IsExpandable || otherPort.ParentPort is { IsExpandable: true }))
+            {
+                // Get the part of the other port unique name that represents the subport (eg: In "myUniqueName.my.subport.suffix.name", "my.subport.suffix.name" represents the subport).
+                var dotIndex = otherPort.UniqueName.IndexOf('.');
+                var subPortSuffix = dotIndex >= 0 ? otherPort.UniqueName[(dotIndex + 1)..] : otherPort.UniqueName;
+
+                if (TryRecursivelyGetSubPortWithSuffix(subgraphNodePort, subPortSuffix, out var subPort))
+                {
+                    allPortPairsToCreateWires.Add(isSubgraphNodeInput ? (subPort, otherPort) : (otherPort, subPort));
+                    return;
+                }
+            }
+
+            // Else, just connect the two ports directly.
+            allPortPairsToCreateWires.Add(isSubgraphNodeInput ? (subgraphNodePort, otherPort) : (otherPort, subgraphNodePort));
+
+            return;
+
+            // Local function to recursively find a subport with the given suffix.
+            bool TryRecursivelyGetSubPortWithSuffix(PortModel portModel, string subPortSuffix, out PortModel subPort)
+            {
+                subPort = null;
+
+                foreach (var currentSubPort in portModel.SubPorts)
+                {
+                    // Get the part of the port unique name that represents the subport (eg: In "myUniqueName.my.subport.suffix.name", "my.subport.suffix.name" represents the subport).
+                    var dotIndex = currentSubPort.UniqueName.IndexOf('.');
+                    var currentSubPortSuffixName = dotIndex >= 0 ? currentSubPort.UniqueName[(dotIndex + 1)..] : currentSubPort.UniqueName;
+
+                    if (subPortSuffix.Equals(currentSubPortSuffixName))
+                    {
+                        subPort = currentSubPort;
+                        return true;
+                    }
+
+                    // Recursively search in expandable subports.
+                    if (currentSubPort.IsExpandable && TryRecursivelyGetSubPortWithSuffix(currentSubPort, subPortSuffix, out subPort))
+                        return true;
+                }
+
+                return false;
             }
         }
 

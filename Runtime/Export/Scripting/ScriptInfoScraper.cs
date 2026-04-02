@@ -37,7 +37,23 @@ namespace UnityEngine
     internal class ScriptInfoScraper
     {
         [RequiredByNativeCode]
-        internal static MonoScriptData GetScrapedData(Type t)
+        internal static void GetScrapedData(
+            Type t,
+            out object filePathsData,
+            out object typesData,
+            out int totalTypes,
+            out int totalFiles,
+            out bool isEditorOnly)
+        {
+            var data = GetScrapedDataInternal(t);
+            filePathsData = data.FilePathsData;
+            typesData = data.TypesData;
+            totalTypes = data.TotalTypes;
+            totalFiles = data.TotalFiles;
+            isEditorOnly = data.IsEditorOnly;
+        }
+
+        private static MonoScriptData GetScrapedDataInternal(Type t)
         {
             if (t == null)
             {

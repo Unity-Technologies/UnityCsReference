@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Events;
+using Unity.Collections;
 using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<UnityEngine.EntityId>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<UnityEngine.EntityId>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<UnityEngine.EntityId>;
@@ -223,9 +223,7 @@ namespace UnityEditor
 
         void BottomBar(Rect bottomRect)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId currentID = m_TreeView.GetSelection().FirstOrDefault();   // 0 is none selected
-#pragma warning restore UA2001
 
             // Refresh cached string
             if (currentID != m_LastSelectedID)

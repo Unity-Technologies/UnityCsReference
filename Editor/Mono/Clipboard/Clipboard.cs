@@ -272,6 +272,27 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = value.ToString();
         }
 
+        public static bool hasLoadableReference
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLoadableReference();
+                return m_State.m_HasLoadableReference.Value;
+            }
+        }
+
+        public static LoadableReference loadableReferenceValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLoadableReference();
+                return m_State.m_ValueLoadableReference;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom(new LoadableReferenceWrapper(value));
+        }
+
         public static bool hasVector3
         {
             get

@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
@@ -600,7 +599,7 @@ namespace UnityEditor
             }
 
             var nodesCount = m_TransformMask.arraySize;
-            var nodeInfos = new List<SerializedNodeInfo>(nodesCount);
+            var nodeInfos = new List<TreeViewItem>(nodesCount);
             SerializedProperty prop = m_TransformMask.GetArrayElementAtIndex(0);
             prop.Next(false);
             Stack<string> depth = new Stack<string>(nodesCount);
@@ -665,9 +664,7 @@ namespace UnityEditor
                 prop.Next(false);
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            TreeViewUtility.SetChildParentReferences(nodeInfos.Cast<TreeViewItem>().ToList(), rootNode);
-#pragma warning restore UA2001
+            TreeViewUtility.SetChildParentReferences(nodeInfos, rootNode);
             return rootNode;
         }
 

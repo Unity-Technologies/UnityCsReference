@@ -11,10 +11,9 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.Modules;
 using UnityEditor.Build;
-using UnityEditor.Callbacks;
-using UnityEditor.Compilation;
 using UnityEditor.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -174,9 +173,7 @@ namespace UnityEditor
 
         private static bool IsStandaloneTarget(BuildTarget buildTarget)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return BuildTargetDiscovery.StandaloneBuildTargets.Contains(buildTarget);
-#pragma warning restore UA2001
         }
 
         private Compatibility compatibleWithStandalone
@@ -314,7 +311,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
+        [Obsolete("Please use DiscardChanges.")]
         protected override void ResetValues()
         {
             DiscardChanges();
@@ -750,9 +747,7 @@ namespace UnityEditor
             serializedObject.Update();
             using (new EditorGUI.DisabledScope(false))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var isManagedPlugin = importers.All(x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
-#pragma warning restore UA2001
+                var isManagedPlugin = Array.TrueForAll(importers, x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
                 if (isManagedPlugin)
                 {
                     ShowReferenceOptions();
@@ -806,9 +801,7 @@ namespace UnityEditor
                     m_DefineConstraints.DoLayoutList();
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (importers.All(imp => imp.isNativePlugin))
-#pragma warning restore UA2001
+                if (Array.TrueForAll(importers, imp => imp.isNativePlugin))
                 {
                     GUILayout.Space(10f);
                     GUILayout.Label(Styles.kLoadSettings, EditorStyles.boldLabel);

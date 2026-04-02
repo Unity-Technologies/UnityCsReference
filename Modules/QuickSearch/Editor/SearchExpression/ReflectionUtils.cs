@@ -28,9 +28,7 @@ namespace UnityEditor.Search
             var mi = typeof(TDelegate).GetMethod("Invoke");
             if (mi == null)
                 throw new Exception($"MethodInfo from delegate {typeof(TDelegate)} is null.");
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return new MethodSignature(mi.GetParameters().Select(p => p.ParameterType).ToArray(), mi.ReturnType, typeof(TDelegate));
-#pragma warning restore UA2001
+            return new MethodSignature(Array.ConvertAll(mi.GetParameters(), p => p.ParameterType), mi.ReturnType, typeof(TDelegate));
         }
     }
 

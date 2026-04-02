@@ -13,11 +13,11 @@ using UnityEngine.SceneManagement;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class OpenSceneNode : Node
+    class OpenSceneNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<SceneAsset> Scene;
 
-        public OpenSceneNode(string name) : base(name)
+        public OpenSceneNode()
         {
             Scene = new(this);
         }

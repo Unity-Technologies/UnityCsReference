@@ -92,8 +92,10 @@ namespace UnityEditor.PlatformSupport
             foreach (var subKindGroup in groupedBySubKind)
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var subKindIcons = subKindGroup.ToArray().Select(i => CreatePlatformIconField(i)).ToArray();
+                var subKindGroupArray = subKindGroup.ToArray();
 #pragma warning restore UA2001
+
+                var subKindIcons = Array.ConvertAll(subKindGroupArray, CreatePlatformIconField);
 
                 IconFieldGroupInfo subKindKey = new IconFieldGroupInfo();
                 subKindKey.m_Kind = null;
@@ -101,9 +103,7 @@ namespace UnityEditor.PlatformSupport
                 subKindKey.m_Label = subKindGroup.Key;
 #pragma warning restore UA2001
                 subKindKey.m_IconSlotCount = subKindIcons.Length;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                subKindKey.m_SetIconSlots = PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroup.ToArray());
-#pragma warning restore UA2001
+                subKindKey.m_SetIconSlots = PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroupArray);
 
                 if (!kindDictionary.ContainsKey(subKindKey))
                     subKindKey.m_State = false;

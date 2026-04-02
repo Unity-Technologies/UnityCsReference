@@ -104,6 +104,7 @@ namespace UnityEngine.Rendering
             public int mipLevel = 0;
             public CubemapFace face = CubemapFace.Unknown;
             public int slice = 0;
+            public bool isPreview = false;
         }
         
         //this should be in a dedicated editor class but there is none sadly to communicate between engine and SRP

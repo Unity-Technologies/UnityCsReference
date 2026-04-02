@@ -158,8 +158,7 @@ namespace UnityEditor
         public sealed partial class WSA
         {
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-            [NativeProperty("wsaTransparentSwapchain", TargetType.Field)]
-            public static extern bool transparentSwapchain { get; set; }
+            public static extern bool transparentSwapchain { [NativeMethod("GetWsaTransparentSwapchain")] get; [NativeMethod("SetWsaTransparentSwapchain")] set; }
 
             public static extern string packageName { get; set; }
 
@@ -295,8 +294,7 @@ namespace UnityEditor
             }
 
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-            [NativeProperty("metroInputSource", TargetType.Field)]
-            public static extern WSAInputSource inputSource { get; set; }
+            public static extern WSAInputSource inputSource { [NativeMethod("GetMetroInputSource")] get; [NativeMethod("SetMetroInputSource")] set; }
 
             [NativeProperty("metroSupportStreamingInstall", TargetType.Field)]
             public static extern bool supportStreamingInstall

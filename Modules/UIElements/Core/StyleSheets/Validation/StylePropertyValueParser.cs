@@ -27,24 +27,28 @@ namespace UnityEngine.UIElements.StyleSheets
             while (m_ParseIndex < m_PropertyValue.Length)
             {
                 var c = m_PropertyValue[m_ParseIndex];
-                switch (c)
+                if (char.IsWhiteSpace(c))
                 {
-                    case ' ':
-                        EatSpace();
-                        AddValuePart();
-                        break;
-                    case ',':
-                        EatSpace();
-                        AddValuePart();
-                        // comma is considered a literal value
-                        m_ValueList.Add(",");
-                        break;
-                    case '(':
-                        AppendFunction();
-                        break;
-                    default:
-                        m_StringBuilder.Append(c);
-                        break;
+                    EatSpace();
+                    AddValuePart();
+                }
+                else
+                {
+                    switch (c)
+                    {
+                        case ',':
+                            EatSpace();
+                            AddValuePart();
+                            // comma is considered a literal value
+                            m_ValueList.Add(",");
+                            break;
+                        case '(':
+                            AppendFunction();
+                            break;
+                        default:
+                            m_StringBuilder.Append(c);
+                            break;
+                    }
                 }
                 ++m_ParseIndex;
             }
@@ -76,7 +80,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         private void EatSpace()
         {
-            while (m_ParseIndex + 1 < m_PropertyValue.Length && m_PropertyValue[m_ParseIndex + 1] == ' ')
+            while (m_ParseIndex + 1 < m_PropertyValue.Length && char.IsWhiteSpace(m_PropertyValue[m_ParseIndex + 1]))
             {
                 ++m_ParseIndex;
             }

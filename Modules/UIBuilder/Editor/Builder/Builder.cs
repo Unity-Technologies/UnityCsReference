@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -14,6 +13,8 @@ namespace Unity.UI.Builder
 {
     sealed class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
+        public static Action<EditorWindow> onActiveBuilderWindowReady;
+
         static Builder()
         {
             EditorApplication.fileMenuSaved += () =>
@@ -108,9 +109,7 @@ namespace Unity.UI.Builder
                 var builderWindows =  Resources.FindObjectsOfTypeAll<Builder>();
                 if (builderWindows.Length > 0)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return builderWindows.First();
-#pragma warning restore UA2001
+                    return builderWindows[0];
                 }
 
                 return null;
@@ -421,6 +420,8 @@ namespace Unity.UI.Builder
 
             // We don't want the Builder to live reload anything except text elements.
             panel.liveReloadSystem.enabledTrackers = LiveReloadTrackers.Text;
+
+            onActiveBuilderWindowReady?.Invoke(this);
         }
 
         [OnOpenAsset(0)]

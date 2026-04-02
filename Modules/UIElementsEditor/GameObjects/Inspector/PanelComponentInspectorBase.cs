@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.UIElements.GameObjects;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -23,6 +22,10 @@ namespace UnityEditor.UIElements.Inspector
         internal const string k_EditorElementsError = "The VisualTreeAsset contains editor-only elements that cannot be used at runtime.\nPlease remove the following elements:";
         const string k_InspectorEditSourceAssetButtonTooltip = "Edit the Visual Tree Asset (UXML) in the UI Builder.";
         const string k_InspectorNewSourceAssetButtonTooltip = "Create a new Visual Tree Asset (UXML).";
+
+        // Flags set by PresetEditor on temporary preview GameObjects
+        const HideFlags k_PresetPreviewFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable |
+                                                HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
         private static StyleSheet s_DefaultStyleSheet;
         private static VisualTreeAsset s_InspectorUxml;
@@ -113,18 +116,20 @@ namespace UnityEditor.UIElements.Inspector
             // Since PanelRenderer doesn't have OnValidate() calls, we need to update
             // the size fields when they change.
             m_WorldSpaceWidthField = m_RootVisualElement.MandatoryQ<FloatField>("width-field");
-            m_WorldSpaceWidthField.isDelayed = true;
+            m_WorldSpaceWidthField.SetValueWithoutNotify(pc.worldSpaceSize.x);
             m_WorldSpaceWidthField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Width");
                 var size = pc.worldSpaceSize;
                 size.x = evt.newValue;
                 pc.worldSpaceSize = size;
             });
 
             m_WorldSpaceHeightField = m_RootVisualElement.MandatoryQ<FloatField>("height-field");
-            m_WorldSpaceHeightField.isDelayed = true;
+            m_WorldSpaceHeightField.SetValueWithoutNotify(pc.worldSpaceSize.y);
             m_WorldSpaceHeightField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Height");
                 var size = pc.worldSpaceSize;
                 size.y = evt.newValue;
                 pc.worldSpaceSize = size;
@@ -206,6 +211,11 @@ namespace UnityEditor.UIElements.Inspector
             m_SourceAssetButton.text = hasVisualTreeAsset ? "Edit..." : "New";
             m_SourceAssetButton.tooltip = hasVisualTreeAsset ? k_InspectorEditSourceAssetButtonTooltip : k_InspectorNewSourceAssetButtonTooltip;
 
+            // Hide button for preset previews (temporary GameObjects created by PresetEditor)
+            // These temporary objects are destroyed during asset creation which causes exceptions
+            bool isPresetPreview = (panelComponent.gameObject.hideFlags & k_PresetPreviewFlags) == k_PresetPreviewFlags;
+            m_SourceAssetButton.style.display = isPresetPreview ? DisplayStyle.None : DisplayStyle.Flex;
+
             panelComponent.PerformValidation(true);
 
             // Let the component update its rendering properties (UUM-105765)
@@ -271,7 +281,7 @@ namespace UnityEditor.UIElements.Inspector
         private void UpdateInputConfigurationOptions()
         {
             var panelComp = (IPanelComponent)target;
-            if (panelComp == null)
+            if ((panelComp as Object) == null)
                 return;
 
             bool isWorldSpace = panelComp.panelSettings?.renderMode == PanelRenderMode.WorldSpace;

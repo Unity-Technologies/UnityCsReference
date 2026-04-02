@@ -35,7 +35,7 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Mono/AssemblyFullName.h")]
-    [RequiredByNativeCode(GenerateProxy = true)]
+    [RequiredByNativeCode]
     struct AssemblyVersion
     {
         public ushort major;
@@ -112,7 +112,7 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Mono/AssemblyFullName.h")]
-    [RequiredByNativeCode(GenerateProxy = true)]
+    [RequiredByNativeCode]
     struct AssemblyFullName
     {
         [NativeName("name")]

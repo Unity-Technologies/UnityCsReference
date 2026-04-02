@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.AssetImporters;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Presets
 {
@@ -47,9 +48,7 @@ namespace UnityEditor.Presets
             foreach (var presetType in presetTypes)
             {
                 var menuPath = presetType.GetManagedTypeName();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var paths = menuPath.Split('.').Last();
-#pragma warning restore UA2001
+                var paths = menuPath.Split('.')[^1];
                 var element = new PresetTypeDropdownItem(paths, presetType);
                 importersRoot.AddChild(element);
                 m_SearchableElements.Add(element);
@@ -131,9 +130,7 @@ namespace UnityEditor.Presets
         {
             foreach (var type in TypeCache.GetTypesWithAttribute<CreateAssetMenuAttribute>())
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attr = type.GetCustomAttributes(typeof(CreateAssetMenuAttribute), false).FirstOrDefault() as CreateAssetMenuAttribute;
-#pragma warning restore UA2001
                 if (attr == null)
                     continue;
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Unity.Collections;
 using Unity.GraphToolkit.CSO;
 using UnityEditor;
 using UnityEngine;
@@ -42,7 +43,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if a field should be displayed in the node options section of the inspector. False otherwise.</returns>
         public static bool NodeOptionsFilter(FieldInfo f)
         {
-            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.HasAny(a => a.AttributeType == typeof(NodeOptionAttribute));
+            return SerializedFieldsInspector.CanBeInspected(f) && f.GetCustomAttributesData().Exists(a => a.AttributeType == typeof(NodeOptionAttribute));
         }
 
         /// <summary>
@@ -52,9 +53,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if a field should be displayed in the advanced settings section of the inspector. False otherwise.</returns>
         public static bool AdvancedSettingsFilter(FieldInfo f)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.All(a => a.AttributeType != typeof(NodeOptionAttribute));
-#pragma warning restore UA2001
+            return SerializedFieldsInspector.CanBeInspected(f) && f.GetCustomAttributesData().TrueForAll(a => a.AttributeType != typeof(NodeOptionAttribute));
         }
 
         static readonly List<ChildView> k_UpdateAllUIs = new();
@@ -373,7 +372,7 @@ namespace Unity.GraphToolkit.Editor
 
             // We need to recreate the m_InspectorContainer to be able to set the scroll offset to any value.
             // If we reuse the existing m_InspectorContainer, offset will be clamped according to the last layout of the scrollView.
-            m_InspectorContainer = new ScrollView(ScrollViewMode.Vertical);
+            m_InspectorContainer = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             m_InspectorContainer.AddToClassList(containerUssClassName);
 
             if (ModelInspectorViewModel == null)

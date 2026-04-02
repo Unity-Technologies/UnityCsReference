@@ -41,18 +41,18 @@ namespace UnityEditor.Modules
             EditorGUIUtility.TrTextContent("LZ4HC"),
         };
         static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
-        SerializedProperty m_Development;
-        SerializedProperty m_ConnectProfiler;
-        SerializedProperty m_BuildWithDeepProfilingSupport;
-        SerializedProperty m_BuildWithCodeCoverage;
-        SerializedProperty m_AllowDebugging;
-        SerializedProperty m_WaitForManagedDebugger;
-        SerializedProperty m_ManagedDebuggerFixedPort;
-        SerializedProperty m_ExplicitNullChecks;
-        SerializedProperty m_ExplicitDivideByZeroChecks;
-        SerializedProperty m_ExplicitArrayBoundsChecks;
-        SerializedProperty m_CompressionType;
-        SerializedProperty m_InstallInBuildFolder;
+        SerializedProperty m_Development = null;
+        SerializedProperty m_ConnectProfiler = null;
+        SerializedProperty m_BuildWithDeepProfilingSupport = null;
+        SerializedProperty m_BuildWithCodeCoverage = null;
+        SerializedProperty m_AllowDebugging = null;
+        SerializedProperty m_WaitForManagedDebugger = null;
+        SerializedProperty m_ManagedDebuggerFixedPort = null;
+        SerializedProperty m_ExplicitNullChecks = null;
+        SerializedProperty m_ExplicitDivideByZeroChecks = null;
+        SerializedProperty m_ExplicitArrayBoundsChecks = null;
+        SerializedProperty m_CompressionType = null;
+        SerializedProperty m_InstallInBuildFolder = null;
 
         BuildTarget m_BuildTarget;
         BuildTargetGroup m_BuildTargetGroup;
@@ -95,6 +95,7 @@ namespace UnityEditor.Modules
         {
             return BuildTargetDiscovery.TryGetBuildTarget(m_BuildTarget, out var buildTarget) && buildTarget.BuildPlatformProperties?.SupportLinkTimeOptimization == true;
         }
+
         public virtual bool ShouldDrawCodeCoverageCheckbox()
         {
             return BuildProfileModuleUtil.IsCoverageSupported(m_BuildTarget);
@@ -168,23 +169,38 @@ namespace UnityEditor.Modules
 
         public VisualElement CreateCommonSettingsGUI(SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
-            m_Development = FindPlatformSettingsPropertyAssert(rootProperty, "m_Development");
-            m_ConnectProfiler = FindPlatformSettingsPropertyAssert(rootProperty, "m_ConnectProfiler");
-            m_BuildWithDeepProfilingSupport = FindPlatformSettingsPropertyAssert(rootProperty, "m_BuildWithDeepProfilingSupport");
-            m_BuildWithCodeCoverage = FindPlatformSettingsPropertyAssert(rootProperty, "m_BuildWithCodeCoverage");
-            m_AllowDebugging = FindPlatformSettingsPropertyAssert(rootProperty, "m_AllowDebugging");
-            m_WaitForManagedDebugger = FindPlatformSettingsPropertyAssert(rootProperty, "m_WaitForManagedDebugger");
-            m_ManagedDebuggerFixedPort = FindPlatformSettingsPropertyAssert(rootProperty, "m_ManagedDebuggerFixedPort");
-            m_ExplicitNullChecks = FindPlatformSettingsPropertyAssert(rootProperty, "m_ExplicitNullChecks");
-            m_ExplicitDivideByZeroChecks = FindPlatformSettingsPropertyAssert(rootProperty, "m_ExplicitDivideByZeroChecks");
-            m_ExplicitArrayBoundsChecks = FindPlatformSettingsPropertyAssert(rootProperty, "m_ExplicitArrayBoundsChecks");
-            m_CompressionType = FindPlatformSettingsPropertyAssert(rootProperty, "m_CompressionType");
-            m_InstallInBuildFolder = FindPlatformSettingsPropertyAssert(rootProperty, "m_InstallInBuildFolder");
+            void AssignPropertiesIfNeeded()
+            {
+                Debug.Assert(rootProperty != null, "Root property cannot be null");
+                Debug.Assert(rootProperty.isValid, "Root property is not valid");
+
+                void AssignPropertyIfNeeded(ref SerializedProperty target, string name)
+                {
+                    if (target == null || !target.isValid)
+                        target = FindPlatformSettingsPropertyAssert(rootProperty, name);
+                }
+
+                AssignPropertyIfNeeded(ref m_Development, "m_Development");
+                AssignPropertyIfNeeded(ref m_ConnectProfiler, "m_ConnectProfiler");
+                AssignPropertyIfNeeded(ref m_BuildWithDeepProfilingSupport, "m_BuildWithDeepProfilingSupport");
+                AssignPropertyIfNeeded(ref m_BuildWithCodeCoverage, "m_BuildWithCodeCoverage");
+                AssignPropertyIfNeeded(ref m_AllowDebugging, "m_AllowDebugging");
+                AssignPropertyIfNeeded(ref m_WaitForManagedDebugger, "m_WaitForManagedDebugger");
+                AssignPropertyIfNeeded(ref m_ManagedDebuggerFixedPort, "m_ManagedDebuggerFixedPort");
+                AssignPropertyIfNeeded(ref m_ExplicitNullChecks, "m_ExplicitNullChecks");
+                AssignPropertyIfNeeded(ref m_ExplicitDivideByZeroChecks, "m_ExplicitDivideByZeroChecks");
+                AssignPropertyIfNeeded(ref m_ExplicitArrayBoundsChecks, "m_ExplicitArrayBoundsChecks");
+                AssignPropertyIfNeeded(ref m_CompressionType, "m_CompressionType");
+                AssignPropertyIfNeeded(ref m_InstallInBuildFolder, "m_InstallInBuildFolder");
+            }
+
+            AssignPropertiesIfNeeded();
 
             m_BuildProfile = serializedObject.targetObject as BuildProfile;
             Debug.Assert(m_BuildProfile != null, "Build profile cannot be null");
-            m_BuildTarget = m_BuildProfile.buildTarget;
-            var subtarget = m_BuildProfile.subtarget;
+            m_BuildTarget = m_BuildProfile.selectedBuildTarget;
+            var subtarget = m_BuildProfile.selectedSubtarget;
+
             m_BuildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_BuildTarget);
             m_NamedBuildTarget = (subtarget == StandaloneBuildSubtarget.Server) ? NamedBuildTarget.Server : NamedBuildTarget.FromBuildTargetGroup(m_BuildTargetGroup);
             m_IsClassicProfile = BuildProfileContext.IsClassicPlatformProfile(m_BuildProfile);
@@ -201,7 +217,11 @@ namespace UnityEditor.Modules
                     var oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = labelWidth;
                     serializedObject.UpdateIfRequiredOrScript();
+
+                    AssignPropertiesIfNeeded();
+
                     ShowCommonBuildOptions(workflowState);
+
                     serializedObject.ApplyModifiedProperties();
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                 });
@@ -230,6 +250,8 @@ namespace UnityEditor.Modules
             {
                 ShowLinkTimeOptimization();
             }
+
+            ShowPlatformBuildOptions();
 
             using (new EditorGUI.DisabledScope(!m_Development.boolValue))
             {
@@ -266,7 +288,7 @@ namespace UnityEditor.Modules
 
             var postprocessor = ModuleManager.GetBuildPostProcessor(m_BuildTarget);
 
-            if (postprocessor != null && postprocessor.SupportsLz4Compression())
+            if (postprocessor != null && postprocessor.SupportsCompression(Compression.Lz4))
             {
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_CompressionType))
@@ -327,6 +349,13 @@ namespace UnityEditor.Modules
         }
 
         /// <summary>
+        /// Show platform-specific build options. Platforms can override this method to show/customize the UI.
+        /// </summary>
+        public virtual void ShowPlatformBuildOptions()
+        {
+        }
+
+        /// <summary>
         /// Show profiler checkboxes, including Autoconnect Profiler and Deep Profiling Support checkboxes.
         /// Platforms can override this method to hide/customize the UI.
         /// </summary>
@@ -374,7 +403,10 @@ namespace UnityEditor.Modules
             {
                 var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(m_NamedBuildTarget);
                 bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
-                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard;
+                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard
+#pragma warning disable CS0618
+                    || apiCompatibilityLevel == ApiCompatibilityLevel.NET;
+#pragma warning restore CS0618
 
                 if (!isDebuggerUsable)
                     EditorGUILayout.HelpBox("Script debugging is only supported with IL2CPP on .NET 4.x and .NET Standard 2.0 API Compatibility Levels.", MessageType.Warning);

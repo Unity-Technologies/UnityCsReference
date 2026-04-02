@@ -9,15 +9,15 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class StyleMaterialDefinitionField : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionField, MaterialDefinition>
+    internal class StyleMaterialDefinitionField : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionField, MaterialDefinition>.UxmlSerializedData
+        public new class UxmlSerializedData : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                StylePropertyField<StyleMaterialDefinition, MaterialDefinitionField, MaterialDefinition>.UxmlSerializedData.Register();
+                StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>.UxmlSerializedData.Register();
             }
 
             public override object CreateInstance() => new StyleMaterialDefinitionField();
@@ -38,16 +38,23 @@ namespace Unity.UIToolkit.Editor
 
         public StyleMaterialDefinitionField() : this(null) { }
 
-        public StyleMaterialDefinitionField(string label) : base(label, new MaterialDefinitionField())
+        public StyleMaterialDefinitionField(string label) : base(label, new MaterialDefinitionStyleField())
         {
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+
+            // If label is null, remove the labelElement added with the affordance
+            if (Contains(labelElement) && string.IsNullOrEmpty(labelElement.text))
+            {
+                AddToClassList(noLabelVariantUssClassName);
+                labelElement.RemoveFromHierarchy();
+            }
         }
 
-        protected override MaterialDefinitionField CreateValueField()
+        protected override MaterialDefinitionStyleField CreateValueField()
         {
-            return new MaterialDefinitionField();
+            return new MaterialDefinitionStyleField();
         }
 
         protected override StyleMaterialDefinition CreateStyleValue(MaterialDefinition v)

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
@@ -16,6 +15,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    #pragma warning disable CS0618  // Type or member is obsolete
     [CustomEditor(typeof(LightProbeProxyVolume))]
     [CanEditMultipleObjects]
     internal class LightProbeProxyVolumeEditor : Editor
@@ -60,24 +60,12 @@ namespace UnityEditor
             public static GUIContent refreshModeText = EditorGUIUtility.TrTextContent("Refresh Mode", "An enum describing the way a Light Probe Proxy Volume refreshes in the Player.");
             public static GUIContent qualityText = EditorGUIUtility.TrTextContent("Quality", "Affects the total number of evaluated Spherical Harmonics(SH) bands for Renderers that use a Light Probe Proxy Volume:\n\nLow Quality - uses only 2 bands (L0 and L1) sampled from a LPPV texture. This option might improve the performance by not breaking batching.\n\nNormal Quality - uses all the bands to evaluate the SH. L0 and L1 are sampled from a LPPV texture and L2 is constant per Renderer.");
             public static GUIContent dataFormatText = EditorGUIUtility.TrTextContent("Data Format", "Affects the format of the LPPV texture.");
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] bbMode = (Enum.GetNames(typeof(LightProbeProxyVolume.BoundingBoxMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] resMode = (Enum.GetNames(typeof(LightProbeProxyVolume.ResolutionMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] probePositionMode = (Enum.GetNames(typeof(LightProbeProxyVolume.ProbePositionMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] refreshMode = (Enum.GetNames(typeof(LightProbeProxyVolume.RefreshMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] qualityMode = (Enum.GetNames(typeof(LightProbeProxyVolume.QualityMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] dataFormat = (Enum.GetNames(typeof(LightProbeProxyVolume.DataFormat)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
+            public static GUIContent[] bbMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.BoundingBoxMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] resMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.ResolutionMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] probePositionMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.ProbePositionMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] refreshMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.RefreshMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] qualityMode = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.QualityMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] dataFormat = Array.ConvertAll(Enum.GetNames(typeof(LightProbeProxyVolume.DataFormat)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static GUIContent resProbesPerUnit = EditorGUIUtility.TrTextContent("Density", "Density in probes per world unit.");
             public static GUIContent componentUnusedNote = EditorGUIUtility.TrTextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer.");
             public static GUIContent noRendererNode = EditorGUIUtility.TrTextContent("The component is unused by this game object because there is no Renderer component attached.");
@@ -85,9 +73,7 @@ namespace UnityEditor
             public static GUIContent componentUnsuportedOnTreesNote = EditorGUIUtility.TrTextContent("Tree rendering doesn't support Light Probe Proxy Volume components.");
 
             public static int[] volTextureSizesValues = { 1, 2, 4, 8, 16, 32 };
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] volTextureSizes = volTextureSizesValues.Select(n => new GUIContent(n.ToString())).ToArray();
-#pragma warning restore UA2001
+            public static GUIContent[] volTextureSizes = Array.ConvertAll(volTextureSizesValues, n => new GUIContent(n.ToString()));
 
             public static GUIContent[] toolContents =
             {

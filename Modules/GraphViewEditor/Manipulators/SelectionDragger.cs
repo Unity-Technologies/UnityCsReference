@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -47,9 +48,9 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (dropTarget != null)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (exclusionList.Contains(picked))
-#pragma warning restore UA2001
+#pragma warning restore UA2007
                     {
                         dropTarget = null;
                     }
@@ -572,9 +573,7 @@ namespace UnityEditor.Experimental.GraphView
                         var graphView = target as GraphView;
                         if (graphView != null && graphView.graphViewChanged != null)
                         {
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             KeyValuePair<GraphElement, OriginalPos> firstPos = m_OriginalPos.First();
-#pragma warning restore UA2001
                             m_GraphViewChange.moveDelta = firstPos.Key.GetPosition().position - firstPos.Value.pos.position;
                             graphView.graphViewChanged(m_GraphViewChange);
                         }

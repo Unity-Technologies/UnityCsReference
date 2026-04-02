@@ -9,7 +9,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Shaders
 {
-    [RequiredByNativeCode (GenerateProxy = true)]
+    [RequiredByNativeCode (GenerateProxy = false)]
     [Serializable]
     public struct ShaderBuildSettings
     {
@@ -35,7 +35,7 @@ namespace UnityEditor.Shaders
             return isEmptyKeyword;
         }
 
-        [RequiredByNativeCode(GenerateProxy = true)]
+        [RequiredByNativeCode(GenerateProxy = false)]
         [Serializable]
         public struct KeywordOverrideInfo
         {
@@ -74,9 +74,25 @@ namespace UnityEditor.Shaders
 
             [SerializeField] public string name;
             [SerializeField] public bool keepInBuild;
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void DeconstructKeywordOverrideInfoArrayElementRaw(KeywordOverrideInfo[] array, int index, out string name, out bool keepInBuild)
+            {
+                ref KeywordOverrideInfo tmp = ref array[index];
+                name = tmp.name;
+                keepInBuild = tmp.keepInBuild;
+            }
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void ReconstructKeywordOverrideInfoArrayElementRaw(KeywordOverrideInfo[] array, int index, string name, bool keepInBuild)
+            {
+                ref KeywordOverrideInfo tmp = ref array[index];
+                tmp.name = name;
+                tmp.keepInBuild = keepInBuild;
+            }
         }
 
-        [RequiredByNativeCode (GenerateProxy = true)]
+        [RequiredByNativeCode (GenerateProxy = false)]
         [Serializable]
         public struct KeywordDeclarationOverride
         {
@@ -164,6 +180,22 @@ namespace UnityEditor.Shaders
 
             [SerializeField] public KeywordOverrideInfo[] keywords = Array.Empty<KeywordOverrideInfo>();
             [SerializeField] public ShaderVariantGenerationMode variantGenerationMode = ShaderVariantGenerationMode.Default;
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void DeconstructKeywordDeclarationOverrideArrayElementRaw(KeywordDeclarationOverride[] array, int index, out KeywordOverrideInfo[] keywords, out int variantGenerationMode)
+            {
+                ref KeywordDeclarationOverride tmp = ref array[index];
+                keywords = tmp.keywords;
+                variantGenerationMode = (int)tmp.variantGenerationMode;
+            }
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void ReconstructKeywordDeclarationOverrideArrayElementRaw(KeywordDeclarationOverride[] array, int index, KeywordOverrideInfo[] keywords, int variantGenerationMode)
+            {
+                ref KeywordDeclarationOverride tmp = ref array[index];
+                tmp.keywords = keywords;
+                tmp.variantGenerationMode = (ShaderVariantGenerationMode)variantGenerationMode;
+            }
         }
 
         public static bool ValidateKeywordDeclarationOverrides(KeywordDeclarationOverride[] overrides, out string msg)
@@ -199,7 +231,7 @@ namespace UnityEditor.Shaders
             return true;
         }
 
-        [SerializeField] private KeywordDeclarationOverride[] keywordDeclarationOverrides;
+        [SerializeField] internal KeywordDeclarationOverride[] keywordDeclarationOverrides;
         public KeywordDeclarationOverride[] KeywordDeclarationOverrides
         {
             set
@@ -217,8 +249,8 @@ namespace UnityEditor.Shaders
             return (KeywordDeclarationOverride[])keywordDeclarationOverrides.Clone();
         }
 
-        [SerializeField] private string[] defines;
-        [SerializeField] private uint numInternalDefines;
+        [SerializeField] internal string[] defines;
+        [SerializeField] internal uint numInternalDefines;
 
         internal string[] GetDefinesCopy()
         {

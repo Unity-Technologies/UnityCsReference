@@ -10,6 +10,7 @@ using UnityEngine.Bindings;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Build;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -101,9 +102,7 @@ namespace UnityEditor
 
         internal bool IsEmpty()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Textures.Count(t => t != null) == 0;
-#pragma warning restore UA2001
+            return m_Textures.TrueForAll(t => t == null);
         }
 
         internal static PlatformIcon[] GetRequiredPlatformIconsByType(PlatformIconKind kind, IReadOnlyDictionary<PlatformIconKind, PlatformIcon[]> requiredIcons)
@@ -169,9 +168,7 @@ namespace UnityEditor
 
         public void SetTextures(params Texture2D[] textures)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (textures == null || textures.Length == 0 || textures.Count(t => t != null) == 0)
-#pragma warning restore UA2001
+            if (textures == null || textures.Length == 0 || textures.TrueForAll(t => t == null))
             {
                 m_Textures.Clear();
                 return;
@@ -338,18 +335,16 @@ namespace UnityEditor
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
+            {
                 iconStructs = Array.Empty<PlatformIconStruct>();
+            }
             else if (requiredIconCount != icons.Length)
             {
                 throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {buildTarget.TargetName} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
             }
             else
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                iconStructs = icons.Select(
-#pragma warning restore UA2001
-                    i => i.GetPlatformIconStruct()
-                    ).ToArray();
+                iconStructs = Array.ConvertAll(icons, i => i.GetPlatformIconStruct());
             }
 
             SetPlatformIconsInternal(buildTarget.TargetName, iconStructs, kind.kind);
@@ -472,9 +467,7 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconsForPlatform(iBuildTarget.TargetName, kind) :
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();
-#pragma warning restore UA2001
+                    Array.ConvertAll(GetPlatformIcons(buildTarget, platformIconKind), t => t.GetTexture(0));
             }
             return PlayerSettings.GetIconsForPlatform(buildTarget.TargetName, kind);
         }
@@ -524,9 +517,7 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconWidthsForPlatform(iBuildTarget.TargetName, kind) :
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray();
-#pragma warning restore UA2001
+                    Array.ConvertAll(GetPlatformIcons(buildTarget, platformIconKind), s => s.width);
             }
             return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
         }

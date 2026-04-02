@@ -129,15 +129,11 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
         {
             var graphicsSettings = new PropertyField(settingsInfo.property)
             {
-                name = settingsInfo.type.Name,
-                classList =
-                {
-                    ProjectSettingsSection.Styles.content,
-                    k_GraphicsSettingsClass,
-                }
-            };
+                name = settingsInfo.type.Name
+            }.WithClassList(ProjectSettingsSection.Styles.content,
+                    k_GraphicsSettingsClass);
             if (!first)
-                graphicsSettings.classList.Add(k_GraphicsSettingsContentFollowupClass);
+                graphicsSettings.AddToClassList(k_GraphicsSettingsContentFollowupClass);
             root.Add(graphicsSettings);
         }
 

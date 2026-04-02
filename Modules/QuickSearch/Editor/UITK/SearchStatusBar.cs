@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,46 +14,42 @@ namespace UnityEditor.Search
     {
         private readonly Label m_StatusMessage;
         private readonly Slider m_ItemSizeSlider;
-        private readonly Button m_ListButton;
-        private readonly Button m_GridButton;
-        private readonly Button m_TableButton;
+        private readonly List<Button> m_DisplayModeButtons;
         private readonly Button m_PrefButton;
         private readonly Button m_SpinnerButton;
+        private VisualElement m_ButtonContainer;
 
         public static readonly string prefButtonTooltip = L10n.Tr("Open search preferences...");
-        public static readonly string listModeTooltip = L10n.Tr("List View");
-        public static readonly string gridModeTooltip = string.Format(L10n.Tr("Grid View ({0}x{0})"), (int)DisplayMode.Grid);
-        public static readonly string tableModeTooltip = L10n.Tr("Table View");
 
         public static readonly string ussClassName = "search-statusbar";
+        public static readonly string modeButtonClassName = ussClassName + "-mode-button";
         public static readonly string messageLabelClassName = ussClassName.WithUssElement("message");
         public static readonly string itemSizeSliderClassName = ussClassName.WithUssElement("item-size-slider");
         public static readonly string hiddenClassName = ussClassName.WithUssModifier("hidden");
         public static readonly string preferencesButtonClassName = ussClassName.WithUssElement("preferences-button");
-        public static readonly string listModeButtonClassName = ussClassName.WithUssElement("list-mode-button");
-        public static readonly string gridModeButtonClassName = ussClassName.WithUssElement("grid-mode-button");
-        public static readonly string tableModeButtonClassName = ussClassName.WithUssElement("table-mode-button");
-
 
         public SearchStatusBar(string name, ISearchView viewModel)
             : base(name, viewModel, ussClassName)
         {
             m_StatusMessage = Create<Label>("SearchStatusMessage", messageLabelClassName);
+            m_DisplayModeButtons = new();
+            m_ButtonContainer = new VisualElement();
+            m_ButtonContainer.style.flexDirection = FlexDirection.Row;
 
-            m_ItemSizeSlider = new Slider(0f, (float)DisplayMode.Limit, SliderDirection.Horizontal, 0f);
+            CreateDisplayModeButtons(out var minSlider, out var maxSlider);
+            m_ItemSizeSlider = new Slider(minSlider, maxSlider, SliderDirection.Horizontal, 0f);
             m_ItemSizeSlider.name = "SearchItemSizeSlider";
             m_ItemSizeSlider.AddToClassList(itemSizeSliderClassName);
-            UpdateItemSizeSlider(viewModel.itemIconSize);
 
-            m_ListButton = CreateButton("SearchListButton", listModeTooltip, SelectListMode, baseIconButtonClassName, listModeButtonClassName);
-            m_GridButton = CreateButton("SearchGridButton", gridModeTooltip, SelectGridMode, baseIconButtonClassName, gridModeButtonClassName);
-            m_TableButton = CreateButton("SearchTableButton", tableModeTooltip, SelectTableMode, baseIconButtonClassName, tableModeButtonClassName);
+            UpdateItemSizeSlider(viewModel.itemIconSize);
 
             Add(m_StatusMessage);
             Add(m_ItemSizeSlider);
-            Add(m_ListButton);
-            Add(m_GridButton);
-            Add(m_TableButton);
+
+            Add(m_ButtonContainer);
+
+            foreach (var button in m_DisplayModeButtons)
+                m_ButtonContainer.Add(button);
 
             if (!m_ViewModel.IsPicker())
             {
@@ -67,34 +64,78 @@ namespace UnityEditor.Search
             UpdateSelectedItemSizeButton();
         }
 
+        void CreateDisplayModeButtons(out float minSlider, out float maxSlider)
+        {
+            minSlider = float.MaxValue;
+            maxSlider = float.MinValue;
+            foreach (var desc in m_ViewModel.state.resultViewDescriptorList)
+            {
+                var btn = CreateButton(desc.Id, desc.Description, () => SetResultView(desc), baseIconButtonClassName, modeButtonClassName, desc.ButtonClassName);
+                btn.style.backgroundImage = desc.FetchIcon();
+                
+                btn.userData = desc.Id;
+                m_DisplayModeButtons.Add(btn);
+
+                if (desc.SupportsSizeSlider)
+                {
+                    if (desc.SizeMin < minSlider)
+                    {
+                        minSlider = desc.SizeMin;
+                    }
+                    if (desc.SizeMax > maxSlider)
+                    {
+                        maxSlider = desc.SizeMax;
+                    }
+                }
+                m_ButtonContainer.Add(btn);
+            }
+            if (minSlider == float.MaxValue)
+                minSlider = 0f;
+            if (maxSlider == float.MinValue)
+                maxSlider = 100f;
+            if (maxSlider < minSlider)
+            {
+                var temp = minSlider;
+                minSlider = maxSlider;
+                maxSlider = temp;
+            }
+        }
+
+        bool NeedUpdateDisplayModeButtons()
+        {
+            if (m_DisplayModeButtons.Count != m_ViewModel.state.resultViewDescriptorList.Count)
+                return true;
+
+            for(var i = 0; i < m_DisplayModeButtons.Count; ++i)
+            {
+                var desc = m_ViewModel.state.resultViewDescriptorList[i];
+                if ((string)m_DisplayModeButtons[i].userData != desc.Id)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal void UpdateDisplayModeButtons()
+        {
+            if (!NeedUpdateDisplayModeButtons())
+                return;
+
+            m_ButtonContainer.Clear();
+            m_DisplayModeButtons.Clear();
+
+            CreateDisplayModeButtons(out var minSlider, out var maxSlider);
+            m_ItemSizeSlider.lowValue = minSlider;
+            m_ItemSizeSlider.highValue = maxSlider;
+        }
+
         private void UpdateSelectedItemSizeButton()
         {
-            switch (m_ViewModel.displayMode)
+            var viewId = m_ViewModel.state.resultViewDescriptorList.CurrentViewId;
+            foreach (var btn in m_DisplayModeButtons)
             {
-                case DisplayMode.Compact:
-                case DisplayMode.List:
-                    m_ListButton.SetCheckedPseudoState(true);
-                    m_GridButton.SetCheckedPseudoState(false);
-                    m_TableButton.SetCheckedPseudoState(false);
-                    break;
-
-                case DisplayMode.Grid:
-                    m_ListButton.SetCheckedPseudoState(false);
-                    m_GridButton.SetCheckedPseudoState(true);
-                    m_TableButton.SetCheckedPseudoState(false);
-                    break;
-
-                case DisplayMode.Table:
-                    m_ListButton.SetCheckedPseudoState(false);
-                    m_GridButton.SetCheckedPseudoState(false);
-                    m_TableButton.SetCheckedPseudoState(true);
-                    break;
-
-                default:
-                    m_ListButton.SetCheckedPseudoState(false);
-                    m_GridButton.SetCheckedPseudoState(false);
-                    m_TableButton.SetCheckedPseudoState(false);
-                    break;
+                var isCurrent = (string)btn.userData == viewId;
+                btn.SetCheckedPseudoState(isCurrent);
             }
         }
 
@@ -121,26 +162,19 @@ namespace UnityEditor.Search
             base.OnDetachFromPanel(evt);
         }
 
-        private void SelectListMode() => SetItemSize(DisplayMode.List);
-        private void SelectGridMode() => SetItemSize(DisplayMode.Grid);
-        private void SelectTableMode() => SetItemSize(DisplayMode.Table);
-
-        private void SetItemSize(DisplayMode displayMode)
-        {
-            if ((float)displayMode == m_ViewModel.itemIconSize)
-                return;
-
-            SetItemSize((float)displayMode);
-            SearchAnalytics.SendEvent(viewState.sessionId,
-                SearchAnalytics.GenericEventType.QuickSearchSizeRadioButton,
-                displayMode.ToString());
-        }
-
         private void SetItemSize(float itemSize)
         {
             m_ViewModel.itemIconSize = itemSize;
             SearchSettings.itemIconSize = itemSize;
             UpdateItemSizeSlider(itemSize);
+            UpdateSelectedItemSizeButton();
+        }
+
+        private void SetResultView(SearchResultViewDescriptor desc)
+        {
+            m_ViewModel.currentResultViewId = desc.Id;
+            SearchSettings.itemIconSize = m_ViewModel.itemIconSize;
+            UpdateItemSizeSlider(m_ViewModel.itemIconSize);
             UpdateSelectedItemSizeButton();
         }
 
@@ -151,7 +185,9 @@ namespace UnityEditor.Search
 
             if (itemSize <= (float)DisplayMode.Limit)
                 m_ItemSizeSlider.SetValueWithoutNotify(itemSize);
-            m_ItemSizeSlider.EnableInClassList(hiddenClassName, m_ViewModel.displayMode == DisplayMode.Table);
+
+            var currentViewDesc = m_ViewModel.state.resultViewDescriptorList.Current;
+            m_ItemSizeSlider.EnableInClassList(hiddenClassName, !currentViewDesc.SupportsSizeSlider);
         }
 
         private void OpenPreferences()
@@ -190,7 +226,7 @@ namespace UnityEditor.Search
             }
 
             UpdateSelectedItemSizeButton();
-            UpdateItemSizeSlider(viewState.itemSize);
+            UpdateItemSizeSlider(viewState.itemIconSize);
         }
 
         private bool TryGetCurrentError(out SearchQueryError error)
@@ -199,18 +235,21 @@ namespace UnityEditor.Search
             var currentGroup = m_ViewModel.currentGroup;
             var hasProgress = context.searchInProgress;
             var ignoreErrors = m_ViewModel.results.Count > 0 || hasProgress;
+            if (ignoreErrors)
+                return false;
+
             var alwaysPrintError = currentGroup == null ||
                 !string.IsNullOrEmpty(context.filterId) ||
                 (m_ViewModel.totalCount == 0 && string.Equals(GroupedSearchList.allGroupId, currentGroup, StringComparison.Ordinal));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!ignoreErrors && m_ViewModel.GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_ViewModel.currentGroup) is SearchQueryError err)
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            error = m_ViewModel.GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_ViewModel.currentGroup);
 #pragma warning restore UA2001
-            {
-                error = err;
-                return true;
-            }
+            if (error == null)
+                return false;
 
-            return false;
+            var displayErrorsFunctor = m_ViewModel.state.displaySearchErrors;
+            return displayErrorsFunctor != null ?
+                displayErrorsFunctor(m_ViewModel, currentGroup, error) : true;
         }
 
         void HandleStatusMessageClicked(PointerDownEvent evt)

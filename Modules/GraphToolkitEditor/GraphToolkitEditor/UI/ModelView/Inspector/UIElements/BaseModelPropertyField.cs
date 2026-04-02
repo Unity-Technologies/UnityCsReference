@@ -102,11 +102,9 @@ namespace Unity.GraphToolkit.Editor
             if (LabelElement == null)
                 return;
 
-            LabelElement.PreallocForMoreClasses(2);
             LabelElement.AddToClassList(labelUssClassName);
             LabelElement.tooltip = fieldTooltip;
             var baseField = Field.SafeQ(null, BaseField<string>.inputUssClassName);
-            baseField?.PreallocForMoreClasses(2);
             baseField?.AddToClassList(inputUssClassName);
 
             // Style this like a PropertyField

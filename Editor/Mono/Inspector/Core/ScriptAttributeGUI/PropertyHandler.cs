@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -531,9 +530,7 @@ namespace UnityEditor
                 }
 
                 if (type.IsArray) type = type.GetElementType();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (type.IsArrayOrList()) type = type.GetGenericArguments().Single();
-#pragma warning restore UA2001
 
                 FieldInfo field = type.GetField(propertyName.Dequeue(), fieldFilter);
                 if (field != null) listInfo = field;

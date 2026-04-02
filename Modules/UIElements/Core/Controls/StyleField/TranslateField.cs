@@ -31,18 +31,25 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-translate-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of the composite field in elements of this type.
         /// </summary>
         static readonly string compositeUssClassName = "unity-composite-field";
+        static readonly UniqueStyleString compositeUssClassNameUnique = new(compositeUssClassName);
+
         /// <summary>
         /// USS class name of the visual input in elements of this type.
         /// </summary>
         static readonly string compositeFieldInputUssClassName = compositeUssClassName + "__input";
+        static readonly UniqueStyleString compositeFieldInputUssClassNameUnique = new(compositeFieldInputUssClassName);
+
         /// <summary>
         /// USS class name of the fields that make up the composite field in elements of this type.
         /// </summary>
         static readonly string compositeFieldUssClassName = compositeUssClassName + "__field";
+        static readonly UniqueStyleString compositeFieldUssClassNameUnique = new(compositeFieldUssClassName);
 
         LengthField m_XField;
         LengthField m_YField;
@@ -74,13 +81,13 @@ namespace UnityEngine.UIElements
         public TranslateField(string label)
             : base(label, null)
         {
-            AddToClassList(ussClassName);
-            AddToClassList(compositeUssClassName);
-            visualInput.AddToClassList(compositeFieldInputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            AddToClassList(compositeUssClassNameUnique);
+            visualInput.AddToClassList(compositeFieldInputUssClassNameUnique);
 
-            m_XField = new LengthField("X") { classList = { compositeFieldUssClassName } };
-            m_YField = new LengthField("Y") { classList = { compositeFieldUssClassName } };
-            m_ZField = new FloatField("Z")  { classList = { compositeFieldUssClassName } };
+            m_XField = new LengthField("X").WithClassList(compositeFieldUssClassNameUnique);
+            m_YField = new LengthField("Y").WithClassList(compositeFieldUssClassNameUnique);
+            m_ZField = new FloatField("Z").WithClassList(compositeFieldUssClassNameUnique);
             visualInput.Add(m_XField);
             visualInput.Add(m_YField);
             visualInput.Add(m_ZField);

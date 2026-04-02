@@ -256,7 +256,7 @@ namespace UnityEditor.MPE
 
         public static extern byte[] SerializeObject(UnityEngine.EntityId entityId);
 
-        [Obsolete("SerializeObject(int) is obsolete. Use SerializeObject(EntityId) instead.")]
+        [Obsolete("SerializeObject(int) is obsolete. Use SerializeObject(EntityId) instead.", true)]
         public static byte[] SerializeObject(int instanceId) => SerializeObject((UnityEngine.EntityId)instanceId);
 
         public static extern UnityEngine.Object DeserializeObject(byte[] bytes);

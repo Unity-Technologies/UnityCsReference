@@ -15,3 +15,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")] // PropertyBag.AddJobToWaitQueue
 
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")] // ReflectedPropertyBag<TContainer>
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")] // ConversionRegistry

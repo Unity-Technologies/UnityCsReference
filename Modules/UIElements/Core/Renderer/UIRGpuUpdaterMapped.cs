@@ -8,7 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class GpuUpdaterMapped<T> : IDisposable where T : unmanaged
+    class GpuUpdaterMapped<T>: GpuUpdater<T> where T : unmanaged
     {
         CircularRangeBuffer<GfxUpdateBufferRange> m_UpdateRangesPool;
         int m_CurrentFrameIndex;
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements.UIR
             m_UpdateRangesPool = new CircularRangeBuffer<GfxUpdateBufferRange>(128);
         }
 
-        public void SendChanges(DataSet<T> dataSet)
+        public override void ProcessDataSet(DataSet<T> dataSet)
         {
             if (dataSet.dirtyRanges.Count == 0)
                 return;
@@ -34,11 +34,15 @@ namespace UnityEngine.UIElements.UIR
             dataSet.ResetDirtyRanges();
         }
 
+        public override void CompleteUpdate() {}
+
         unsafe void UploadDirtyRanges(DataSet<T> dataSet)
         {
             ref PerFrameData frameData = ref m_FrameDataArray[m_CurrentFrameIndex];
 
-            int rangeCount = dataSet.dirtyRanges.Count;
+            dataSet.ConsolidateRanges();
+            var dirtyRanges = dataSet.dirtyRanges;
+            int rangeCount = dirtyRanges.Count;
 
             // Allocate ranges from the pool for this frame
             NativeSlice<GfxUpdateBufferRange> updateRanges = m_UpdateRangesPool.Allocate(rangeCount);
@@ -49,15 +53,15 @@ namespace UnityEngine.UIElements.UIR
             T* source = (T*)NativeArrayUnsafeUtility.GetUnsafePtr(dataSet.cpuData);
 
             // Use the pre-computed bounds from the DataSet
-            int writeStart = (int)(dataSet.updateRangeMin * dataSet.elemStride);
-            int writeEnd = (int)(dataSet.updateRangeMax * dataSet.elemStride);
+            int writeStart = (int)(dataSet.dirtyRangeMin * dataSet.elemStride);
+            int writeEnd = (int)(dataSet.dirtyRangeMax * dataSet.elemStride);
 
             // Populate each update range from the dirty ranges
             for (int i = 0; i < rangeCount; i++)
             {
-                var dirtyRange = dataSet.dirtyRanges[i];
+                var dirtyRange = dirtyRanges[i];
                 uint offsetBytes = dirtyRange.start * dataSet.elemStride;
-                uint sizeBytes = dirtyRange.size * dataSet.elemStride;
+                uint sizeBytes = dirtyRange.count * dataSet.elemStride;
 
                 updateRanges[i] = new GfxUpdateBufferRange
                 {
@@ -71,7 +75,7 @@ namespace UnityEngine.UIElements.UIR
             dataSet.gpuData.UpdateRanges(updateRanges, writeStart, writeEnd);
         }
 
-        public void AdvanceFrame()
+        public override void AdvanceFrame()
         {
             ++m_CurrentFrameIndex;
             if (m_CurrentFrameIndex >= UIRenderDevice.k_MaxQueuedFrameCount)
@@ -82,18 +86,7 @@ namespace UnityEngine.UIElements.UIR
             frameData.rangesToFree = 0;
         }
 
-        #region Dispose Pattern
-
-        protected bool disposed { get; private set; }
-
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposed)
                 return;
@@ -103,11 +96,8 @@ namespace UnityEngine.UIElements.UIR
                 m_UpdateRangesPool?.Dispose();
                 m_UpdateRangesPool = null;
             }
-            else DisposeHelper.NotifyMissingDispose(this);
 
-            disposed = true;
+            base.Dispose(disposing);
         }
-
-        #endregion
     }
 }

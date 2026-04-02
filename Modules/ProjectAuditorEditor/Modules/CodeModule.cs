@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
@@ -18,7 +19,6 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
-using UnityEngine.Profiling;
 using PropertyDefinition = Unity.ProjectAuditor.Editor.Core.PropertyDefinition;
 using ThreadPriority = System.Threading.ThreadPriority;
 
@@ -52,6 +52,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
         CodeLocation,
         Num
     }
+
+    internal enum ObsoleteApiProperty
+    {
+        Recommendation,
+        AutoUpgradable,
+        WarningSince,
+        ErrorSince,
+        RemovedIn,
+        ObsoleteSince,
+        Num
+    };
 
     class CodeModule : ModuleWithAnalyzers<CodeModuleInstructionAnalyzer>
     {
@@ -126,6 +137,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
+        static readonly IssueLayout k_ObsoleteApiLayout = new IssueLayout
+        {
+            Category = IssueCategory.ObsoleteAPI,
+            Properties =
+            [
+                new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.AutoUpgradable), Format = PropertyFormat.Bool, Name = "Upgradable", LongName = "Automatically upgradable" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.ObsoleteSince), Format = PropertyFormat.String, Name = "Obsolete", LongName = "Obsolete since version", IsDefaultGroup = true },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(ObsoleteApiProperty.RemovedIn), Format = PropertyFormat.String, Name = "Removed", LongName = "Removed in version" }
+            ]
+        };
+
         List<OpCode> m_OpCodes;
         List<int>[] m_OpCodeAnalyzers = new List<int>[ushort.MaxValue];
         CodeModuleInstructionAnalyzer[] m_CompatibleAnalyzers;
@@ -143,7 +166,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_AssemblyLayout,
             k_PrecompiledAssemblyLayout,
             k_CompilerMessageLayout,
-            k_DomainReloadIssueLayout
+            k_DomainReloadIssueLayout,
+            k_ObsoleteApiLayout
         };
 
         public override void Initialize()
@@ -191,9 +215,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var opCodeAnalyzers = new List<int>();
                 for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
-#pragma warning restore UA2001
                         opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
@@ -335,42 +357,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsReadOnly).ToArray();
 #pragma warning restore UA2001
             var foundIssues = new List<ReportItem>();
-            var callCrawler = new CallCrawler();
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
-
-            var onCompleteInternal = new Action<IProgress, long>((bar, threadExecutionTimeMs) =>
-            {
-                // remove issues if platform does not match
-                foundIssues.RemoveAll(i => i.Id.IsValid() &&
-                    !i.Id.GetDescriptor().IsApplicable(analysisParams));
-
-                compilationPipeline.Dispose();
-                callCrawler.BuildCallHierarchies(foundIssues, bar);
-
-                foreach (var d in foundIssues)
-                {
-                    // bump severity if issue is found in a hot-path
-                    if (!d.IsMajorOrCritical() && d.Dependencies != null && d.Dependencies.PerfCriticalContext)
-                    {
-                        switch (d.Severity)
-                        {
-                            case Severity.Minor:
-                                d.Severity = Severity.Moderate;
-                                break;
-                            case Severity.Moderate:
-                                d.Severity = Severity.Major;
-                                break;
-                        }
-                    }
-                }
-
-                // workaround for empty 'relativePath' strings which are not all available when 'onIssueFoundInternal' is called
-                if (foundIssues.Count > 0)
-                    analysisParams.OnIncomingIssues(foundIssues);
-
-                bar?.Clear(progressState);
-                analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
-            });
 
             var assemblyDirectories = new List<string>();
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
@@ -388,8 +375,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // Run analysis on the background thread
                 var startTime = DateTime.UtcNow;
 
-                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, progress, progressState);
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, progress, progressState);
+                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, progressState);
+                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, progressState);
 
                 executionTimeMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
@@ -397,10 +384,22 @@ namespace Unity.ProjectAuditor.Editor.Modules
             m_AssemblyAnalysisThread.Priority = ThreadPriority.BelowNormal;
             m_AssemblyAnalysisThread.Start();
 
+            // wait for thread
             while (m_AssemblyAnalysisThread.IsAlive)
                 yield return new WaitForEndOfFrame();
 
-            onCompleteInternal?.Invoke(progress, executionTimeMs);
+            // remove issues if platform does not match
+            foundIssues.RemoveAll(i => i.Id.IsValid() &&
+                !i.Id.GetDescriptor().IsApplicable(analysisParams));
+
+            compilationPipeline.Dispose();
+
+            // workaround for empty 'relativePath' strings which are not all available when 'onIssueFoundInternal' is called
+            if (foundIssues.Count > 0)
+                analysisParams.OnIncomingIssues(foundIssues);
+
+            progress?.Clear(progressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, executionTimeMs);
         }
 
         bool AssemblyPackageFilter(AssemblyInfo assemblyInfo, AnalysisParams analysisParams)
@@ -458,7 +457,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return true;
         }
 
-        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, CallCrawler callCrawler, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
+        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
         {
             using (var assemblyResolver = new DefaultAssemblyResolver())
             {
@@ -483,12 +482,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     }
 
                     var onIssueFoundFiltered = (analysisParams.AssemblyNames == null) || (Array.IndexOf(analysisParams.AssemblyNames, assemblyInfo.Name) != -1) ? onIssueFound : null;
-                    AnalyzeAssembly(assemblyInfo, analysisParams, assemblyResolver, callCrawler, onIssueFoundFiltered);
+                    AnalyzeAssembly(assemblyInfo, analysisParams, assemblyResolver, onIssueFoundFiltered);
                 }
             }
         }
 
-        void AnalyzeAssembly(AssemblyInfo assemblyInfo, AnalysisParams analysisParams, IAssemblyResolver assemblyResolver, CallCrawler callCrawler, Action<ReportItem> onIssueFound)
+        void AnalyzeAssembly(AssemblyInfo assemblyInfo, AnalysisParams analysisParams, IAssemblyResolver assemblyResolver, Action<ReportItem> onIssueFound)
         {
             try
             {
@@ -530,7 +529,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                             var isPerformanceCriticalContext = isPerformanceCriticalType && IsPerformanceCriticalMethod(methodDefinition);
 
-                            AnalyzeMethodBody(assemblyInfo, methodDefinition, assemblyUserData, isPerformanceCriticalContext, callCrawler, onIssueFound);
+                            AnalyzeMethodBody(assemblyInfo, methodDefinition, assemblyUserData, isPerformanceCriticalContext, analysisParams.DependencyCrawler, onIssueFound);
                         }
                     }
                 }
@@ -543,7 +542,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         }
 
-        void AnalyzeMethodBody(AssemblyInfo assemblyInfo, MethodDefinition caller, object[] assemblyUserData, bool perfCriticalContext, CallCrawler callCrawler, Action<ReportItem> onIssueFound)
+        void AnalyzeMethodBody(AssemblyInfo assemblyInfo, MethodDefinition caller, object[] assemblyUserData, bool perfCriticalContext, DependencyCrawler callCrawler, Action<ReportItem> onIssueFound)
         {
             var callerNode = new CallTreeNode(caller)
             {
@@ -618,7 +617,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 if (inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt)
                 {
-                    callCrawler.Add(
+                    callCrawler.AddToCodeCache(
                         (MethodReference)inst.Operand,
                         caller,
                         location,
@@ -640,14 +639,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foreach (var analyzer in analyzers)
                 {
                     context.AssemblyUserData = assemblyUserData[analyzer];
-                    var reportItemBuilder = m_CompatibleAnalyzers[analyzer].Analyze(context);
-                    if (reportItemBuilder != null)
+                    foreach (var reportItemBuilder in m_CompatibleAnalyzers[analyzer].Analyze(context))
                     {
-                        reportItemBuilder.WithDependencies(callerNode); // set root
-                        reportItemBuilder.WithLocation(location);
-                        reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]);
+                        onIssueFound(reportItemBuilder
+                            .WithDependencies(callerNode) // set root
+                            .WithLocation(location)
+                            .WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]));
 
-                        onIssueFound(reportItemBuilder);
                     }
                 }
             }

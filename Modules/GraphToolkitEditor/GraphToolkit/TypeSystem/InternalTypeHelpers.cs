@@ -5,12 +5,18 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace Unity.GraphToolkit
 {
     static class InternalTypeHelpers
     {
+        static InternalTypeHelpers()
+        {
+            TypeSerializerHelper.EnsureStaticConstructorIsCalled();
+        }
+
         public static Func<string, Type> GetMovedFromType { private get; set; }
 
         static Regex s_GenericTypeExtractionRegex = new(@"(?<=\[\[)(.*?)(?=\]\])");

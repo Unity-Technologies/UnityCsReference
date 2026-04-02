@@ -308,6 +308,15 @@ namespace UnityEditor.LightBaking
         public bool aoEnabled;
         public float aoDistance;
         public bool useHardwareRayTracing;
+
+        public LightSamplingMode directLightSamplingMode;
+        public uint directRISCandidateCount;
+        public LightSamplingMode indirectLightSamplingMode;
+        public UInt32 indirectRISCandidateCount;
+        public LightAccelerationStructure lightAccelerationStructure;
+        public uint lightGridMaxCells;
+        public EmissiveSamplingMode directEmissiveSamplingMode;
+        public EmissiveSamplingMode indirectEmissiveSamplingMode;
     }
 
     [RequiredByNativeCode]
@@ -553,6 +562,7 @@ namespace UnityEditor.LightBaking
         }
 
         public extern uint albedoTextureCount { get; }
+        public extern uint albedoTexturePropertiesCount { get; }
         extern TextureData Internal_GetAlbedoTextureData(uint index);
         extern void Internal_SetAlbedoTextureData(uint index, TextureData textureData);
 
@@ -568,8 +578,23 @@ namespace UnityEditor.LightBaking
                 throw new ArgumentException($"index must be between 0 and {albedoTextureCount - 1}, but was {index}");
             Internal_SetAlbedoTextureData(index, textureData);
         }
+        extern TextureProperties Internal_GetAlbedoTextureProperties(uint index);
+        public TextureProperties GetAlbedoTextureProperties(uint index)
+        {
+            if (index >= albedoTexturePropertiesCount)
+                throw new ArgumentException($"index must be between 0 and {albedoTexturePropertiesCount - 1}, but was {index}");
+            return Internal_GetAlbedoTextureProperties(index);
+        }
+        extern void Internal_SetAlbedoTextureProperties(uint index, TextureProperties textureProperties);
+        public void SetAlbedoTextureProperties(uint index, TextureProperties textureProperties)
+        {
+            if (index >= albedoTexturePropertiesCount)
+                throw new ArgumentException($"index must be between 0 and {albedoTexturePropertiesCount - 1}, but was {index}");
+            Internal_SetAlbedoTextureProperties(index, textureProperties);
+        }
 
         public extern uint emissiveTextureCount { get; }
+        public extern uint emissiveTexturePropertiesCount { get; }
         public extern uint transmissiveTextureCount { get; }
         public extern uint transmissiveTexturePropertiesCount { get; }
         extern TextureData Internal_GetEmissiveTextureData(uint index);
@@ -585,6 +610,20 @@ namespace UnityEditor.LightBaking
             if (index >= emissiveTextureCount)
                 throw new ArgumentException($"index must be between 0 and {emissiveTextureCount - 1}, but was {index}");
             Internal_SetEmissiveTextureData(index, textureData);
+        }
+        extern TextureProperties Internal_GetEmissiveTextureProperties(uint index);
+        public TextureProperties GetEmissiveTextureProperties(uint index)
+        {
+            if (index >= emissiveTexturePropertiesCount)
+                throw new ArgumentException($"index must be between 0 and {emissiveTexturePropertiesCount - 1}, but was {index}");
+            return Internal_GetEmissiveTextureProperties(index);
+        }
+        extern void Internal_SetEmissiveTextureProperties(uint index, TextureProperties textureProperties);
+        public void SetEmissiveTextureProperties(uint index, TextureProperties textureProperties)
+        {
+            if (index >= emissiveTexturePropertiesCount)
+                throw new ArgumentException($"index must be between 0 and {emissiveTexturePropertiesCount - 1}, but was {index}");
+            Internal_SetEmissiveTextureProperties(index, textureProperties);
         }
 
         extern TextureData Internal_GetTransmissiveTextureData(uint index);

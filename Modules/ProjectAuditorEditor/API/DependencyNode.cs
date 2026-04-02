@@ -2,8 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.ProjectAuditor.Editor.Core;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -13,6 +14,8 @@ namespace Unity.ProjectAuditor.Editor
     /// </summary>
     internal abstract class DependencyNode
     {
+        internal const int k_MaxDepth = 10;
+
         /// <summary>
         /// A list of this node's children in the dependency tree
         /// </summary>
@@ -73,11 +76,11 @@ namespace Unity.ProjectAuditor.Editor
         /// Adds multiple children to this node
         /// </summary>
         /// <param name="children">An array of nodes to add as children of this one.</param>
-        public void AddChildren(DependencyNode[] children)
+        protected void AddChildren(IReadOnlyList<DependencyNode> children)
         {
             // if any child is critical, make parent critical too
             // this is to propagate perfCriticalContext up to the root of the hierarchy
-            if (Array.Exists(children, c => c.PerfCriticalContext))
+            if (children.Exists(c => c.PerfCriticalContext))
                 PerfCriticalContext = true;
             m_Children.AddRange(children);
         }
@@ -99,6 +102,11 @@ namespace Unity.ProjectAuditor.Editor
         {
             m_Children.Sort((p1, p2) => string.Compare(p1.PrettyName, p2.PrettyName));
         }
+
+        /// <summary>
+        /// Called at the end of analysis to build the dependency hierarchy
+        /// </summary>
+        public virtual void BuildHierarchy(int depth, DependencyBuildContext context) {}
 
         /// <summary>
         /// Gets the node's "raw" name

@@ -141,7 +141,7 @@ namespace UnityEditor.Overlays
         {
             // The drop zone before the element should place after the next overlay when after the spacer.
             // Overlay after the spacer are listed from bottom to spacer instead of spacer to bottom.
-            return targetSection == OverlayContainerSection.BeforeSpacer && m_Placement == Placement.After
+            return targetSection != OverlayContainerSection.AfterSpacer && m_Placement == Placement.After
                 || targetSection == OverlayContainerSection.AfterSpacer && m_Placement == Placement.Before;
         }
     }

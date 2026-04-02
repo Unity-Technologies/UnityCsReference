@@ -48,7 +48,7 @@ struct LayoutCacheData
         if(CachedLayout.NextMeasurementCache == null)
             return;
 
-        fixed (void* cachePtr = &(CachedLayout))
+        fixed (LayoutCacheData* cachePtr = &(this))
         {
             LayoutCacheData.ClearCachedMeasurements(cachePtr);
         }

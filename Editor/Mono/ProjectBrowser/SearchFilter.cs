@@ -6,7 +6,6 @@ using System;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using UnityEngine.Bindings;
@@ -14,7 +13,7 @@ using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
-    [System.Serializable]
+    [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule")]
     [DataContract]
     internal class SearchFilter
@@ -352,12 +351,8 @@ namespace UnityEditor
             AddToString(FormatFilterTokenForSearchEngine("t"), m_ClassNames, ref result);
             AddToString(FormatFilterTokenForSearchEngine("l"), m_AssetLabels, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            AddToString("glob:", m_Globs.Select(a => $"\"{a}\"").ToArray(), ref result);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            AddToString("assetorigin.productid:", m_ProductIds.Select(o => $"\"{o}\"").ToArray(), ref result);
-#pragma warning restore UA2001
+            AddToString("glob:", Array.ConvertAll(m_Globs, a => $"\"{a}\""), ref result);
+            AddToString("assetorigin.productid:", Array.ConvertAll(m_ProductIds, o => $"\"{o}\""), ref result);
 
             if (m_ImportLogFlags == (ImportLogFlags.Error | ImportLogFlags.Warning))
             {

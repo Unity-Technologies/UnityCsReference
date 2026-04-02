@@ -36,7 +36,7 @@ namespace UnityEngine.Animations
         public uint transformPathHash => m_Path;
         public uint propertyNameHash => m_PropertyName;
         public EntityId scriptEntityId => m_ScriptEntityId;
-        [Obsolete("scriptInstanceID is deprecated. Use scriptEntityId instead.", false)]
+        [Obsolete("scriptInstanceID is deprecated. Use scriptEntityId instead.", true)]
         public int scriptInstanceID => m_ScriptEntityId;
         public int typeID => m_TypeID;
         public byte customTypeID => m_CustomType;
@@ -86,7 +86,7 @@ namespace UnityEngine.Animations
         extern public static GenericBinding[] GetCurveBindings([NotNull] AnimationClip clip);
 
         // Bind animatable properties
-        [Obsolete("This version of BindProperties is deprecated. Use the overload which includes `out instanceIDProperties` instead.", false)]
+        [Obsolete("This version of BindProperties is deprecated. Use the overload which includes `out instanceIDProperties` instead.", true)]
         public static unsafe void BindProperties(GameObject rootGameObject, NativeArray<GenericBinding> genericBindings, out NativeArray<BoundProperty> floatProperties, out NativeArray<BoundProperty> discreteProperties, Allocator allocator)
             => BindProperties(rootGameObject, genericBindings, out floatProperties, out discreteProperties, out _, allocator);
 

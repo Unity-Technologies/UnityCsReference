@@ -42,7 +42,6 @@ namespace Unity.UIToolkit.Editor
         static readonly ProviderConfig[] s_ProviderConfigs =
         {
             new(k_EngineProviderId, "Engine", typeKey => typeKey.id.StartsWith("UnityEngine")),
-            new(k_EditorProviderId, "Editor", typeKey => typeKey.id.StartsWith("UnityEditor")),
             new(k_CustomProviderId, "Custom", typeKey => !typeKey.id.StartsWith("UnityEngine") && !typeKey.id.StartsWith("UnityEditor")),
         };
 
@@ -52,7 +51,6 @@ namespace Unity.UIToolkit.Editor
         static int s_CachedTypesHash;
         const int k_MenuPriority = 3030;
         const string k_CustomProviderId = "uicustom";
-        const string k_EditorProviderId = "uieditor";
         const string k_EngineProviderId = "uiengine";
         const string k_MenuPath = "Window/UI Toolkit/UI Library";
         const string k_WindowTitle = "UI Library";
@@ -80,16 +78,19 @@ namespace Unity.UIToolkit.Editor
             var providers = new List<SearchProvider>
             {
                 SearchService.GetProvider(k_EngineProviderId),
-                SearchService.GetProvider(k_EditorProviderId),
                 SearchService.GetProvider(k_CustomProviderId)
             };
 
             var searchContext = SearchService.CreateContext(providers, string.Empty);
             searchContext.useExplicitProvidersAsNormalProviders = true;
-            var state = SearchViewState.CreatePickerState(k_WindowTitle, searchContext, null);
-            state.excludeClearItem = true;
-            state.windowTitle = new GUIContent("UI Library");
-            state.flags |= SearchViewFlags.OpenInspectorPreview;
+
+            var state = new SearchViewState(searchContext)
+            {
+                excludeClearItem = true,
+                windowTitle = new GUIContent(k_WindowTitle),
+                flags = SearchViewFlags.DisableSavedSearchQuery | SearchViewFlags.DisableBuilderModeToggle | SearchViewFlags.OpenInBuilderMode,
+                resultViewDescriptorList = new SearchResultViewDescriptorList([SearchTreeView.GetDescriptor()])
+            };
 
             SearchService.ShowWindow(state);
         }
@@ -101,15 +102,9 @@ namespace Unity.UIToolkit.Editor
         }
 
         [SearchItemProvider]
-        internal static SearchProvider CreateEditorControlsProvider()
-        {
-            return CreateProvider(s_ProviderConfigs[1]);
-        }
-
-        [SearchItemProvider]
         internal static SearchProvider CreateCustomControlsProvider()
         {
-            return CreateProvider(s_ProviderConfigs[2]);
+            return CreateProvider(s_ProviderConfigs[1]);
         }
 
         static SearchProvider CreateProvider(ProviderConfig config)
@@ -117,14 +112,15 @@ namespace Unity.UIToolkit.Editor
             return new SearchProvider(config.Id, config.Name, config.CreateFetchFunction())
             {
                 fetchLabel = FetchElementLabel,
-                fetchDescription = FetchElementDescription,
                 fetchThumbnail = FetchElementThumbnail,
                 startDrag = StartElementDrag,
                 toObject = ToObject,
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Preview,
                 actions = [CreateAddElementAction(config.Id)],
-                isExplicitProvider = true
+                isExplicitProvider = true,
+                fetchParentDescriptor = FetchParentDescriptor,
+                fetchParentsTokenSeparatedIds = FetchParentsTokenSeparatedIds
             };
         }
 
@@ -133,20 +129,6 @@ namespace Unity.UIToolkit.Editor
             if (item.data is LibraryItem libItem)
                 return libItem.name;
             return item.label;
-        }
-
-        static string FetchElementDescription(SearchItem item, SearchContext context)
-        {
-            if (item.data is LibraryItem libItem)
-            {
-                var parts = new List<string>();
-
-                if (libItem.libraryType.type != null)
-                    parts.Add($"Type: {libItem.name}");
-
-                return string.Join(" | ", parts);
-            }
-            return item.description;
         }
 
         static Texture2D FetchElementThumbnail(SearchItem item, SearchContext context)
@@ -231,22 +213,27 @@ namespace Unity.UIToolkit.Editor
 
             foreach (var typeKey in filteredTypes)
             {
-                var searchText = $"{typeKey.name} {typeKey.type?.Name}";
-                if (string.IsNullOrEmpty(context.searchQuery) ||
-                    FuzzySearch.FuzzyMatch(context.searchQuery, searchText, ref score))
+                if (!string.IsNullOrEmpty(context.searchQuery))
                 {
-                    var item = new LibraryItem(typeKey.name, typeKey);
-                    var searchItem = provider.CreateItem(
-                        context,
-                        id: $"{idPrefix}/{typeKey.name}/{typeKey.type?.FullName}",
-                        score: ~(int)score,
-                        label: typeKey.name,
-                        description: null, // TODO: Check types [tooltip] or [description] attribute
-                        thumbnail: item.icon.texture,
-                        data: item
-                    );
-                    yield return searchItem;
+                    var searchText = $"{typeKey.name} {typeKey.type?.Name}";
+                    if (searchText.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
                 }
+
+                var item = LibraryContent.GetLibraryItemByLibraryKey(typeKey);
+                if (item == null)
+                    continue;
+
+                var searchItem = provider.CreateItem(
+                    context,
+                    id: $"{idPrefix}/{typeKey.name}/{typeKey.type?.FullName}",
+                    score: ~(int)score,
+                    label: typeKey.name,
+                    description: null, // TODO: Check types [tooltip] or [description] attribute
+                    thumbnail: item.icon.texture,
+                    data: item
+                );
+                yield return searchItem;
                 score++;
             }
         }
@@ -282,6 +269,33 @@ namespace Unity.UIToolkit.Editor
 
             s_CachedTypesByCategory[categoryId] = filtered;
             return filtered;
+        }
+
+        static string GetParentNamespace(Type type)
+        {
+            var fullName = type?.Namespace;
+            return string.IsNullOrEmpty(fullName) ? null : fullName;
+        }
+
+        static SearchItemParentDescriptor FetchParentDescriptor(SearchItem searchItem, SearchContext context)
+        {
+            if (searchItem.data is not LibraryItem libItem)
+                return default;
+
+            // Use libraryPath if available, otherwise fall back to namespace
+            var parentId = !string.IsNullOrEmpty(libItem.libraryPath) ? libItem.libraryPath : libItem.libraryType.type?.Namespace;
+
+            return new SearchItemParentDescriptor(parentId, SearchItemParentType.TokenSeparatedId);
+        }
+
+        static void FetchParentsTokenSeparatedIds(SearchItem searchItem, SearchContext context, List<StringView> idsSubstrings)
+        {
+            var descriptor = searchItem.GetParentDescriptor(context);
+            if (string.IsNullOrEmpty(descriptor.Id))
+                return;
+
+            var separator = descriptor.Id.Contains('/') ? '/' : '.';
+            descriptor.Id.GetStringView().Split(stackalloc char[1] { separator }, StringSplitOptions.RemoveEmptyEntries, idsSubstrings);
         }
 
         static SearchAction CreateAddElementAction(string providerId)

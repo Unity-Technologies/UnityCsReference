@@ -488,9 +488,7 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int[] lightmappingDeviceIndices = Enumerable.Range(0, devicesAndPlatforms.Length).ToArray();
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
-#pragma warning restore UA2001
+                    GUIContent[] lightmappingDeviceStrings = Array.ConvertAll(devicesAndPlatforms, x => new GUIContent(x.name));
 
                     int bakingDeviceAndPlatform = -1;
                     string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndexKey);
@@ -639,7 +637,8 @@ namespace UnityEditor
 
             void DrawEnableHardwareRayTracing()
             {
-                if (!Lightmapping.UnifiedBaker)
+                var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+                if (!usingComputeLightBaker)
                     return;
 
                 bool useHardwareRayTracing = SystemInfo.supportsRayTracing;
@@ -692,7 +691,8 @@ namespace UnityEditor
 
         private void DoBake()
         {
-            if (Lightmapping.UnifiedBaker && !IsCoreRenderPipelinesPackageAvailable())
+            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+            if (usingComputeLightBaker && !IsCoreRenderPipelinesPackageAvailable())
             {
                 CoreRenderPipelinesPackageInstallAndRunBake();
                 return;

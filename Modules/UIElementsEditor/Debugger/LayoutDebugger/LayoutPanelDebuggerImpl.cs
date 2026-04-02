@@ -442,7 +442,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Toolbar.Add(m_RecordLayoutToggle);
 
             m_StopRecordingOnError = new ToolbarToggle();
-            m_StopRecordingOnError.text = "Stop recording on 'Layout update is struggling' error";
+            m_StopRecordingOnError.text = "Stop recording on layout instability error";
             m_StopRecordingOnError.RegisterValueChangedCallback((e) =>
             {
                 if (e.newValue)

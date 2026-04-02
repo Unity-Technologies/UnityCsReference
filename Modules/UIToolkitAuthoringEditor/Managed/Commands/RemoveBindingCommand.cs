@@ -31,6 +31,13 @@ internal readonly record struct RemoveBindingCommand
         BindingId = $"style.{csharpName}";
     }
 
+    public RemoveBindingCommand(VisualElement visualElement, string bindingPath)
+    {
+        Element = visualElement;
+        BindingId = bindingPath;
+        StylePropertyId = StylePropertyId.Unknown;
+    }
+
     public void Execute()
     {
         var visualElementAsset = Element.visualElementAsset;
@@ -54,12 +61,14 @@ internal readonly record struct RemoveBindingCommand
             var attribute = uxmlSerializedDataDescription.FindAttributeWithUxmlName("Bindings");
             attribute?.SyncSerializedData(Element, visualElementAsset.serializedData);
 
-            ResetInlineStyle();
+            if (StylePropertyId != StylePropertyId.Unknown)
+                ResetInlineStyle();
 
             Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
 
             Element.IncrementVersion(VersionChangeType.Bindings);
             EditorUtility.SetDirty(visualTreeAsset);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
         }
     }
 

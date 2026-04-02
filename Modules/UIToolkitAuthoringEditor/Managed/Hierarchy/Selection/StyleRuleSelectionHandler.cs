@@ -111,10 +111,33 @@ internal sealed class StyleRuleSelectionHandler : IStyleRuleSelectionHandler
         {
             if (SelectionMapping.TryGetValue(remap.Previous, out var selection))
             {
-                SelectionMapping[remap.Previous] = selection.Kill();
-                Remap(remap.Remapped, selection.SelectionObject);
-                Release(remap.Previous);
+                if (!ReferenceEquals(remap.Previous, remap.Remapped))
+                {
+                    SelectionMapping[remap.Previous] = selection.Kill();
+                    Remap(remap.Remapped, selection.SelectionObject);
+                    Release(remap.Previous);
+                }
+
+                // Force the selection object to notify observers
+                if (selection.SelectionObject is not StyleRuleSelection styleRuleSelection)
+                    continue;
+                
+                styleRuleSelection.StyleRule = null;
+                styleRuleSelection.StyleRule = remap.Remapped;
             }
         }
+    }
+
+    public void Clear()
+    {
+        foreach (var kvp in SelectionMapping)
+        {
+            if (kvp.Value.Alive)
+            {
+                Undo.ClearUndo(kvp.Value.SelectionObject);
+                Object.DestroyImmediate(kvp.Value.SelectionObject);
+            }
+        }
+        SelectionMapping.Clear();
     }
 }

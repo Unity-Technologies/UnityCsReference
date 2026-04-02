@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
+using Unity.Collections;
 using System.Linq;
 using System;
 
@@ -180,9 +181,7 @@ namespace UnityEditor
                 }
 
                 m_TableTabs =  m_CurrentLightingExplorerExtension.GetContentTabs();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_TabTitles = m_TableTabs != null ? m_TableTabs.Select(item => item.title).ToArray() : null;
-#pragma warning restore UA2001
+                m_TabTitles = m_TableTabs != null ? Array.ConvertAll(m_TableTabs, item => item.title) : null;
             }
         }
 
@@ -196,9 +195,7 @@ namespace UnityEditor
             if (currentSRPType == null)
                 return GetDefaultLightingExplorerExtension();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<ILightingExplorerExtension>().FirstOrDefault();
-#pragma warning restore UA2001
             if (extensionType == null)
                 return GetDefaultLightingExplorerExtension();
 

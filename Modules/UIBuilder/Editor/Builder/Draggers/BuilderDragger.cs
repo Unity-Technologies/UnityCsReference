@@ -294,7 +294,7 @@ namespace Unity.UI.Builder
         void OnDragEnter(DragEnterEvent evt)
         {
             m_WeStartedTheDrag = true;
-            DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+            DragAndDrop.visualMode = DragAndDropVisualMode.Move;
             DragAndDrop.AcceptDrag();
         }
 

@@ -36,9 +36,7 @@ namespace UnityEditor
             serializationUID += $"_{rpName.Replace(" ", string.Empty)}";
 
             m_LightTable = new SerializedPropertyTable(serializationUID, new SerializedPropertyDataStore.GatherDelegate(objects), () => {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return columns().Select(item => item.internalColumn).ToArray();
-#pragma warning restore UA2001
+                return Array.ConvertAll(columns(), item => item.internalColumn);
             }, showFilterGUI);
             m_Title = EditorGUIUtility.TrTextContent(title);
         }

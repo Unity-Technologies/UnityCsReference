@@ -2,193 +2,251 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
     static class LightingSearchDataAccessors
     {
-            internal static uint GetRenderingLayers(GameObject go)
+        internal static SimplifiedLightType? GetLightType(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return ToSimplifiedLightType(light.type);
+        }
+
+        internal static SimplifiedLightType ToSimplifiedLightType(LightType type)
+        {
+            switch (type)
             {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return 0;
-
-                return meshRenderer.renderingLayerMask;
+                case LightType.Spot:
+                case LightType.Pyramid:
+                case LightType.Box:
+                    return SimplifiedLightType.Spot;
+                case LightType.Directional:
+                    return SimplifiedLightType.Directional;
+                case LightType.Point:
+                    return SimplifiedLightType.Point;
+                case LightType.Rectangle:
+                case LightType.Disc:
+                case LightType.Tube:
+                    return SimplifiedLightType.Area;
+                default:
+                    return SimplifiedLightType.Point;
             }
-
-            internal static void SetRenderingLayers(GameObject go, uint value)
+        }
+        
+        internal static SimplifiedLightType? ToSimplifiedLightTypeFromValue(object value)
+        {
+            if (value is SimplifiedLightType simplified)
+                return simplified;
+            if (value is LightType raw)
+                return ToSimplifiedLightType(raw);
+            if (value is int i)
             {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return;
-
-                meshRenderer.renderingLayerMask = value;
+                if (Enum.IsDefined(typeof(LightType), i))
+                    return ToSimplifiedLightType((LightType)i);
             }
+            return null;
+        }
 
-            internal static bool GetContributeGI(GameObject go)
-            {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return false;
+        internal static void SetLightType(GameObject go, SimplifiedLightType value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            light.type = (LightType)value;
+            EditorUtility.SetDirty(light);
+        }
 
-                return GameObjectUtility.AreStaticEditorFlagsSet(go, StaticEditorFlags.ContributeGI);
-            }
+        internal static LightmapBakeType? GetLightMode(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return light.lightmapBakeType;
+        }
 
-            internal static void SetContributeGI(GameObject go, bool value)
-            {
-                var flag = GameObjectUtility.GetStaticEditorFlags(go);
-                if (value)
-                    flag |= StaticEditorFlags.ContributeGI;
-                else
-                    flag &= ~StaticEditorFlags.ContributeGI;
+        internal static void SetLightMode(GameObject go, LightmapBakeType value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            if (IsAreaLight(light.type))
+                return;
+            light.lightmapBakeType = value;
+            EditorUtility.SetDirty(light);
+        }
 
-                GameObjectUtility.SetStaticEditorFlags(go, flag);
-            }
+        internal static float? GetColorTemperature(GameObject go)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return null;
+            return light.colorTemperature;
+        }
+        
+        internal static void SetColorTemperature(GameObject go, float value)
+        {
+            if (!go.TryGetComponent<Light>(out var light))
+                return;
+            light.colorTemperature = value;
+            EditorUtility.SetDirty(light);
+        }
 
-            internal static ReceiveGI GetReceiveGI(GameObject go)
-            {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return ReceiveGI.Lightmaps;
+        internal static bool IsAreaLight(LightType type)
+        {
+            return type == LightType.Rectangle || type == LightType.Disc || type == LightType.Tube;
+        }
 
-                return meshRenderer.receiveGI;
-            }
+        internal static uint GetRenderingLayers(GameObject go)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return 0;
 
-            internal static void SetReceiveGI(GameObject go, ReceiveGI value)
-            {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer)) return;
+            return meshRenderer.renderingLayerMask;
+        }
 
-                meshRenderer.receiveGI = value;
-            }
+        internal static void SetRenderingLayers(GameObject go, uint value)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return;
 
-            internal static ReflectionProbeUsage GetReflectionProbeUsage(GameObject go)
-            {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return ReflectionProbeUsage.Off;
+            meshRenderer.renderingLayerMask = value;
+        }
 
-                return meshRenderer.reflectionProbeUsage;
-            }
+        internal static bool GetContributeGI(GameObject go)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return false;
 
-            internal static void SetReflectionProbeUsage(GameObject go, ReflectionProbeUsage value)
-            {
-                if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    return;
+            return GameObjectUtility.AreStaticEditorFlagsSet(go, StaticEditorFlags.ContributeGI);
+        }
 
-                meshRenderer.reflectionProbeUsage = value;
-            }
+        internal static void SetContributeGI(GameObject go, bool value)
+        {
+            var flag = GameObjectUtility.GetStaticEditorFlags(go);
+            if (value)
+                flag |= StaticEditorFlags.ContributeGI;
+            else
+                flag &= ~StaticEditorFlags.ContributeGI;
 
-            internal static int? GetReflectionProbeResolution(GameObject go)
-            {
-                if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
-                    return null;
+            GameObjectUtility.SetStaticEditorFlags(go, flag);
+        }
 
-                return reflectionProbe.resolution;
-            }
+        internal static ReceiveGI GetReceiveGI(GameObject go)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return ReceiveGI.Lightmaps;
 
-            internal static void SetReflectionProbeResolution(GameObject go, int value)
-            {
-                if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
-                    return;
+            return meshRenderer.receiveGI;
+        }
 
-                reflectionProbe.resolution = value;
-            }
+        internal static void SetReceiveGI(GameObject go, ReceiveGI value)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer)) return;
 
-            internal static MixedLightingMode GetMixedLightingMode(LightingSettings lightingSettings)
-            {
-                return lightingSettings.mixedBakeMode;
-            }
+            meshRenderer.receiveGI = value;
+        }
 
-            internal static void SetMixedLightingMode(LightingSettings lightingSettings, MixedLightingMode value)
-            {
-                lightingSettings.mixedBakeMode = value;
-            }
+        internal static ReflectionProbeUsage GetReflectionProbeUsage(GameObject go)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return ReflectionProbeUsage.Off;
 
-            internal static LightmapCompression GetLightmapCompression(LightingSettings lightingSettings)
-            {
-                return lightingSettings.lightmapCompression;
-            }
+            return meshRenderer.reflectionProbeUsage;
+        }
 
-            internal static void SetLightmapCompression(LightingSettings lightingSettings, LightmapCompression value)
-            {
-                lightingSettings.lightmapCompression = value;
-            }
+        internal static void SetReflectionProbeUsage(GameObject go, ReflectionProbeUsage value)
+        {
+            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                return;
 
-            internal static LightingSettings GetSceneLightingSettingsFromAsset(SceneAsset sceneAsset)
-            {
-                if (sceneAsset == null)
-                    return null;
+            meshRenderer.reflectionProbeUsage = value;
+        }
 
-                string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
-                if (string.IsNullOrEmpty(scenePath))
-                    return null;
+        internal static ReflectionProbeMode? GetReflectionProbeMode(GameObject go)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return null;
 
-                Scene scene = SceneManager.GetSceneByPath(scenePath);
-                if (!scene.IsValid())
-                {
-                    Debug.LogWarning($"Cannot set lighting settings on scene '{scenePath}' because it is not loaded.");
-                    return null;
-                }
+            return reflectionProbe.mode;
+        }
 
-                return Lightmapping.GetLightingSettingsForScene(scene);
-            }
+        internal static void SetReflectionProbeMode(GameObject go, ReflectionProbeMode value)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return;
 
-            internal static void SetSceneLightingSettingsFromAsset(SceneAsset sceneAsset, LightingSettings lightingSettings)
-            {
-                if (sceneAsset == null)
-                    return;
+            reflectionProbe.mode = value;
+        }
 
-                string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
-                if (string.IsNullOrEmpty(scenePath))
-                    return;
+        internal static int? GetReflectionProbeResolution(GameObject go)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return null;
 
-                Scene scene = SceneManager.GetSceneByPath(scenePath);
-                if (!scene.IsValid())
-                {
-                    Debug.LogWarning($"Cannot set lighting settings on scene '{scenePath}' because it is not loaded.");
-                    return;
-                }
+            return reflectionProbe.resolution;
+        }
 
-                Lightmapping.SetLightingSettingsForScene(scene, lightingSettings);
-            }
+        internal static void SetReflectionProbeResolution(GameObject go, int value)
+        {
+            if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
+                return;
 
-            internal static bool IsLightingGenerated(GameObject go)
-            {
-                if (go == null)
-                    return false;
+            reflectionProbe.resolution = value;
+        }
 
-                return Lightmapping.GetLightingDataAssetForScene(go.scene) != null;
-            }
+        internal static MixedLightingMode GetMixedLightingMode(LightingSettings lightingSettings)
+        {
+            return lightingSettings.mixedBakeMode;
+        }
 
-            static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
-            internal static Color? GetEmissionColor(Material material)
-            {
-                if (material == null || !material.HasProperty(k_EmissionColor))
-                    return null;
+        internal static void SetMixedLightingMode(LightingSettings lightingSettings, MixedLightingMode value)
+        {
+            lightingSettings.mixedBakeMode = value;
+        }
 
-                return material.GetColor(k_EmissionColor);
-            }
+        internal static LightmapCompression GetLightmapCompression(LightingSettings lightingSettings)
+        {
+            return lightingSettings.lightmapCompression;
+        }
 
-            internal static void SetEmissionColor(Material material, Color color)
-            {
-                if (material == null || !material.HasProperty(k_EmissionColor))
-                    return;
+        internal static void SetLightmapCompression(LightingSettings lightingSettings, LightmapCompression value)
+        {
+            lightingSettings.lightmapCompression = value;
+        }
 
-                material.SetColor(k_EmissionColor, color);
-            }
+        static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
+        internal static Color? GetEmissionColor(Material material)
+        {
+            if (material == null || !material.HasProperty(k_EmissionColor))
+                return null;
 
-            internal static MaterialGlobalIlluminationFlags GetMaterialGlobalIlluminationFlags(Material material)
-            {
-                if (material == null)
-                    return MaterialGlobalIlluminationFlags.None;
+            return material.GetColor(k_EmissionColor);
+        }
 
-                return material.globalIlluminationFlags;
-            }
+        internal static void SetEmissionColor(Material material, Color color)
+        {
+            if (material == null || !material.HasProperty(k_EmissionColor))
+                return;
 
-            internal static void SetMaterialGlobalIlluminationFlags(Material material, MaterialGlobalIlluminationFlags flags)
-            {
-                if (material == null)
-                    return;
+            material.SetColor(k_EmissionColor, color);
+        }
 
-                material.globalIlluminationFlags = flags;
-            }
+        internal static MaterialGlobalIlluminationFlags GetMaterialGlobalIlluminationFlags(Material material)
+        {
+            if (material == null)
+                return MaterialGlobalIlluminationFlags.None;
+
+            return material.globalIlluminationFlags;
+        }
+
+        internal static void SetMaterialGlobalIlluminationFlags(Material material, MaterialGlobalIlluminationFlags flags)
+        {
+            if (material == null)
+                return;
+
+            material.globalIlluminationFlags = flags;
+        }
     }
 }

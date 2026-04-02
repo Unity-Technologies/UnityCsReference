@@ -7,7 +7,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IModalManager : IService
     {
         public bool ShowModal(ModalContent content);
-        public bool ShowExportModal(IPackageVersion version);
+        public bool ShowExportModal(IPackageVersion version, OrganizationInfo[] organizationInfos);
     }
 
     internal class ModalManager : BaseService<IModalManager>, IModalManager
@@ -32,9 +32,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return ModalWindowContainer.ShowModal(content);
         }
 
-        public bool ShowExportModal(IPackageVersion version)
+        public bool ShowExportModal(IPackageVersion version, OrganizationInfo[] organizationInfos)
         {
             var content = new ExportWindowContent(m_ApplicationProxy, m_IOProxy, m_ResourceLoader, m_UnityConnectProxy, m_UpmClient, version);
+            content.SetOrganizationInfos(organizationInfos);
             return ModalWindowContainer.ShowModal(content);
         }
     }

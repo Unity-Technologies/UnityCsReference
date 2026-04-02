@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-Toggle|UXML element Toggle]].
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Toggle.png")]
     public partial class Toggle : BaseBoolField
     {
@@ -66,6 +67,8 @@ namespace UnityEngine.UIElements
         /// this class affects every Toggle located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-toggle";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name for Labels in Toggle elements.
         /// </summary>
@@ -73,6 +76,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the <see cref="Label"/> sub-element of the <see cref="Toggle"/> if the Toggle has a Label.
         /// </remarks>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in Toggle elements.
         /// </summary>
@@ -81,6 +86,8 @@ namespace UnityEngine.UIElements
         /// responses to the manipulator.
         /// </remarks>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of Toggle elements that have no text.
         /// </summary>
@@ -96,6 +103,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the Image sub-element of the <see cref="Toggle"/> that contains the checkmark image.
         /// </remarks>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        internal static readonly UniqueStyleString checkmarkUssClassNameUnique = new(checkmarkUssClassName);
+
         /// <summary>
         /// USS class name of Text elements in Toggle elements.
         /// </summary>
@@ -103,6 +112,8 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to Text sub-elements of the <see cref="Toggle"/>.
         /// </remarks>
         public static readonly string textUssClassName = ussClassName + "__text";
+        internal static readonly UniqueStyleString textUssClassNameUnique = new(textUssClassName);
+
         /// <summary>
         /// USS class name of Toggle elements that have mixed values
         /// </summary>
@@ -110,6 +121,7 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to checkmark of the <see cref="Toggle"/> when it has mixed values.
         /// </remarks>
         public static readonly string mixedValuesUssClassName = ussClassName + "__mixed-values";
+        internal static readonly UniqueStyleString mixedValuesUssClassNameUnique = new(mixedValuesUssClassName);
 
         /// <summary>
         /// Creates a <see cref="Toggle"/> with no label.
@@ -127,18 +139,18 @@ namespace UnityEngine.UIElements
         public Toggle(string label)
             : base(label)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
-            visualInput.AddToClassList(inputUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
 
-            m_CheckMark.AddToClassList(checkmarkUssClassName);
+            m_CheckMark.AddToClassList(checkmarkUssClassNameUnique);
         }
 
         protected override void InitLabel()
         {
             base.InitLabel();
-            m_Label.AddToClassList(textUssClassName);
+            m_Label.AddToClassList(textUssClassNameUnique);
         }
 
         protected override void UpdateMixedValueContent()
@@ -147,11 +159,11 @@ namespace UnityEngine.UIElements
             {
                 visualInput.SetCheckedPseudoState(false);
                 SetCheckedPseudoState(false);
-                m_CheckMark.AddToClassList(mixedValuesUssClassName);
+                m_CheckMark.AddToClassList(mixedValuesUssClassNameUnique);
             }
             else
             {
-                m_CheckMark.RemoveFromClassList(mixedValuesUssClassName);
+                m_CheckMark.RemoveFromClassList(mixedValuesUssClassNameUnique);
 
                 visualInput.SetCheckedPseudoState(value);
                 SetCheckedPseudoState(value);

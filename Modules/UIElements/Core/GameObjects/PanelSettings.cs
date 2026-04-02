@@ -10,6 +10,8 @@ using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -53,9 +55,29 @@ namespace UnityEngine.UIElements
         Expand
     }
 
-    internal enum PanelRenderMode
+    /// <summary>
+    /// Determines how a panel is rendered.
+    /// </summary>
+    public enum PanelRenderMode
     {
+        /// <summary>
+        /// Renders the panel as a 2D overlay on top of the screen, independent of any camera or world geometry.
+        /// </summary>
+        /// <remarks>
+        /// The panel is drawn last in the rendering order and always appears on top of the scene.
+        /// This mode is suitable for HUDs and other UI that should always be visible to the player.
+        /// </remarks>
         ScreenSpaceOverlay,
+        /// <summary>
+        /// Renders the panel as an object within the 3D world.
+        /// </summary>
+        /// <remarks>
+        /// The panel is rendered by one or more cameras at a specified world-space position and can be
+        /// occluded by other objects in the scene. This mode is suitable for in-world UI such as
+        /// interactive screens, billboards, or diegetic interfaces. Depending on camera order, it can
+        /// also be used as an overlay if, for example, you only want to add the ability to have a 3D
+        /// rotation to the UI.
+        /// </remarks>
         WorldSpace
     }
 
@@ -102,6 +124,25 @@ namespace UnityEngine.UIElements
         MatchDocumentRect = 2,
     }
 
+    internal interface IPanelSettings
+    {
+        BindingLogLevel bindingLogLevel { get; }
+        Color colorClearValue { get; }
+        bool clearColor { get; }
+        bool clearDepthStencil { get; }
+        DynamicAtlasSettings dynamicAtlasSettings { get; }
+        bool forceGammaRendering { get; }
+        float pixelsPerUnit { get; }
+        float referenceSpritePixelsPerUnit { get; }
+        PanelRenderMode renderMode { get; }
+        float resolvedScale { get; }
+        float ScreenDPI { get; }
+        int targetDisplay { get; }
+        Rect targetRect { get; }
+        TextureSlotCount textureSlotCount { get; }
+        uint vertexBudget { get; set; }
+    }
+
     /// <summary>
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
@@ -115,7 +156,7 @@ namespace UnityEngine.UIElements
     /// For more information on the different properties of the PanelSettings object, refer to [[wiki:UIE-Runtime-Panel-Settings|Panel Settings properties reference]].
     /// </remarks>
     [HelpURL("UIE-Runtime-Panel-Settings")]
-    public class PanelSettings : ScriptableObject
+    public class PanelSettings : ScriptableObject, IPanelSettings
     {
         private const int k_DefaultSortingOrder = 0;
 
@@ -232,6 +273,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void CacheDisplayRectAndScale()
+        {
+
+            m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
+
+            if (renderMode == PanelRenderMode.WorldSpace)
+                m_ResolvedScale = 1.0f; // No panel scaling for world-space
+            else
+                m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
+        }
 
         [SerializeField]
         private ThemeStyleSheet themeUss;
@@ -292,12 +343,15 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Determines how the panel is rendered.
+        /// Defaults to <see cref="PanelRenderMode.ScreenSpaceOverlay"/>.
         /// </summary>
-        internal PanelRenderMode renderMode
+        public PanelRenderMode renderMode
         {
             get => m_RenderMode;
             set => m_RenderMode = value;
         }
+
+        PanelRenderMode IPanelSettings.renderMode => renderMode;
 
         [SerializeField, FormerlySerializedAs("m_WorldInputMode")]
         private ColliderUpdateMode m_ColliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
@@ -352,6 +406,8 @@ namespace UnityEngine.UIElements
             get { return m_PixelsPerUnit; }
             set { m_PixelsPerUnit = value; }
         }
+
+        float IPanelSettings.pixelsPerUnit => pixelsPerUnit;
 
         [SerializeField]
         private float m_PixelsPerUnit = 100;
@@ -735,6 +791,8 @@ namespace UnityEngine.UIElements
         [SerializeField]
         public bool forceGammaRendering;
 
+        bool IPanelSettings.forceGammaRendering => forceGammaRendering;
+
         /// <summary>
         /// Specifies a <see cref="PanelTextSettings"/> that will be used by every UI Document attached to the panel.
         /// </summary>
@@ -742,7 +800,9 @@ namespace UnityEngine.UIElements
         public PanelTextSettings textSettings;
 
         private Rect m_TargetRect;
+        Rect IPanelSettings.targetRect => m_TargetRect;
         private float m_ResolvedScale; // panel scaling factor (pixels <-> points)
+        float IPanelSettings.resolvedScale => m_ResolvedScale;
 
         private StyleSheet m_OldThemeUss;
 
@@ -787,6 +847,7 @@ namespace UnityEngine.UIElements
         }
 
         private float ScreenDPI { get; set; }
+        float IPanelSettings.ScreenDPI => ScreenDPI;
 
         private IDebugPanelChangeReceiver m_PanelChangeReceiver = null;
 
@@ -906,55 +967,8 @@ namespace UnityEngine.UIElements
 
         internal void ApplyPanelSettings()
         {
-            Rect oldTargetRect = m_TargetRect;
-            float oldResolvedScaling = m_ResolvedScale;
-
-            m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
-
-            if (renderMode == PanelRenderMode.WorldSpace)
-                m_ResolvedScale = 1.0f; // No panel scaling for world-space
-            else
-                m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
-
-            var p = panel;
-
-            if (renderMode != PanelRenderMode.WorldSpace)
-            {
-                if (visualTree.style.width.value == 0 || // TODO is this check valid? This prevents having to resize the game view!
-                    m_ResolvedScale != oldResolvedScaling ||
-                    m_TargetRect.width != oldTargetRect.width ||
-                    m_TargetRect.height != oldTargetRect.height)
-                {
-                    p.scale = m_ResolvedScale == 0.0f ? 0.0f : 1.0f / m_ResolvedScale;
-                    visualTree.style.left = 0;
-                    visualTree.style.top = 0;
-                    visualTree.style.width = m_TargetRect.width * m_ResolvedScale;
-                    visualTree.style.height = m_TargetRect.height * m_ResolvedScale;
-                }
-
-                p.panelRenderer.forceGammaRendering = targetTexture != null && forceGammaRendering;
-            }
-
-            p.targetTexture = targetTexture;
-            p.targetDisplay = targetDisplay;
-            p.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
-            p.pixelsPerUnit = pixelsPerUnit;
-            p.isFlat = renderMode != PanelRenderMode.WorldSpace;
-            p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
-            p.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
-            p.panelRenderer.vertexBudget = m_VertexBudget;
-            p.panelRenderer.textureSlotCount = m_TextureSlotCount;
-            p.dataBindingManager.logLevel = m_BindingLogLevel;
-
-            var atlas = p.atlas as DynamicAtlas;
-            if (atlas != null)
-            {
-                atlas.minAtlasSize = dynamicAtlasSettings.minAtlasSize;
-                atlas.maxAtlasSize = dynamicAtlasSettings.maxAtlasSize;
-                atlas.maxSubTextureSize = dynamicAtlasSettings.maxSubTextureSize;
-                atlas.activeFilters = dynamicAtlasSettings.activeFilters;
-                atlas.customFilter = dynamicAtlasSettings.customFilter;
-            }
+            CacheDisplayRectAndScale();
+            PanelSettingsUtility.ApplyPanelSettingsToPanel(this);
         }
 
         /// <summary>
@@ -1006,7 +1020,7 @@ namespace UnityEngine.UIElements
 
         private Func<Vector2, Vector3> m_AssignedScreenToPanel;
 
-        internal float ResolveScale(Rect targetRect, float screenDpi)
+        internal float ResolveScale(Rect currentTargetRect, float screenDpi)
         {
             // Calculate scaling
             float resolvedScale = 1.0f;
@@ -1025,7 +1039,7 @@ namespace UnityEngine.UIElements
                     if (referenceResolution.x * referenceResolution.y != 0)
                     {
                         var refSize = (Vector2)referenceResolution;
-                        var sizeRatio = new Vector2(targetRect.width / refSize.x, targetRect.height / refSize.y);
+                        var sizeRatio = new Vector2(currentTargetRect.width / refSize.x, currentTargetRect.height / refSize.y);
 
                         var denominator = 0.0f;
                         switch (screenMatchMode)
@@ -1171,3 +1185,5 @@ namespace UnityEngine.UIElements
 
     }
 }
+
+#pragma warning restore CS0618

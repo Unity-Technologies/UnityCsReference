@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.UIElements.Cursor;
@@ -49,6 +50,76 @@ internal class StyleFloatAttributeConverter : UxmlAttributeStyleConverter<StyleF
 internal class StyleIntAttributeConverter : UxmlAttributeStyleConverter<StyleInt, int, IntAttributeConverter> {};
 
 internal class StyleLengthAttributeConverter : UxmlAttributeStyleConverter<StyleLength, Length, LengthAttributeConverter> {};
+
+internal class StyleListAttributeConverter<T> : IUxmlAttributeConverter
+{
+    public object FromString(string value, CreationContext cc)
+    {
+        if (value == null)
+            return null;
+
+        if (value.AsSpan().Trim().Equals("none", StringComparison.OrdinalIgnoreCase))
+            return StyleKeyword.None;
+
+        var items = value.Split(',');
+        if (typeof(T) == typeof(Color) && value.Contains("("))
+        {
+            // Using the lookahead assertion to split the string by commas that are not inside parentheses
+            items = Regex.Split(value, @"(?<=\)),");
+        }
+
+        if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
+            return null;
+
+        var result = new StyleList<T>();
+        for (var i = 0; i < items.Length; i++)
+        {
+            var s = items[i].Trim();
+            if (string.IsNullOrEmpty(s))
+                continue;
+
+            var decoded = UxmlUtility.DecodeListItem(s);
+            result.value.Add((T)converter.FromString(decoded, cc));
+        }
+
+        return result;
+    }
+
+    public string ToString(object value, VisualTreeAsset visualTreeAsset)
+    {
+        var list = (StyleList<T>) value;
+        if (!UxmlAttributeConverter.TryGetConverter<T>(out var converter))
+            return string.Empty;
+
+        if (list.keyword != StyleKeyword.Undefined)
+            return list.keyword.ToString().ToLower();
+
+        if (list.value == null)
+            return "none";
+
+        var sb = StringBuilderPool.Get();
+        for (int i = 0; i < list.value.Count; i++)
+        {
+            var s = converter.ToString(list.value[i], visualTreeAsset);
+            if (typeof(T) == typeof(Color) && s.Contains("("))
+            {
+                sb.Append(s);
+            }
+            else
+            {
+                var encoded = UxmlUtility.EncodeListItem(s);
+                sb.Append(encoded);
+            }
+
+            if (i + 1 != list.value.Count)
+                sb.Append(",");
+        }
+
+        var result = sb.ToString();
+        StringBuilderPool.Release(sb);
+        return result;
+    }
+}
 
 internal class StyleRotateAttributeConverter : UxmlAttributeStyleConverter<StyleRotate, Rotate, RotateAttributeConverter> {};
 

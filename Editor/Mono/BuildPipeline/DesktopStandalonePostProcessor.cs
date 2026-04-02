@@ -13,7 +13,15 @@ using UnityEngine;
 
 internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 {
-    public override bool SupportsLz4Compression() => true;
+    protected override Compression[] GetSupportedCompressionsForPlatform()
+    {
+        return new Compression[]
+        {
+            Compression.Lz4,
+            Compression.Lz4HC
+        };
+    }
+
     public override bool SupportsInstallInBuildFolder() => true;
     protected abstract string GetPlatformString(BuildPostProcessArgs args);
     protected override IPluginImporterExtension GetPluginImpExtension() => new DesktopPluginImporterExtension();
@@ -46,6 +54,8 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.AddKey("nolog");
         if (PlayerSettings.GetCaptureStartupLogs(NamedBuildTarget.FromActiveSettings(target)))
             config.Set("capture-startup-logs", "1");
+        if (PlayerSettings.enableDirectStorage)
+            config.Set("enable-directstorage", PlayerSettings.enableDirectStorage.ToString()); // Shared naming with other DirectStorage supported platforms
     }
 
     public override ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args)

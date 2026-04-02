@@ -105,6 +105,9 @@ namespace UnityEngine
 
             throw new ArgumentException($"{nameof(speakerMode)}");
         }
+
+        [NativeMethod(Name = "AudioSpeakerModeBindings::InternaIAudioSpeakerModeIsCapped", IsFreeFunction = true)]
+        internal static extern bool InternalAudioSpeakerModeIsCapped(AudioSpeakerMode speakerMode);
     }
 
     public enum AudioDataLoadState
@@ -528,6 +531,7 @@ namespace UnityEngine
 
         extern private string GetName();
         extern private void CreateUserSound(string name, int lengthSamples, int channels, int frequency, bool stream);
+        extern private bool IsLegacyFormat();
 
         // The length of the audio clip in seconds (read-only)
         [NativeProperty("LengthSec")]
@@ -706,13 +710,58 @@ namespace UnityEngine
 
         #region Generator.IAudioGenerator
 
-        bool GeneratorInstance.ICapabilities.isRealtime => throw new NotImplementedException();
-        bool GeneratorInstance.ICapabilities.isFinite => throw new NotImplementedException();
-        DiscreteTime? GeneratorInstance.ICapabilities.length => throw new NotImplementedException();
-
-        GeneratorInstance IAudioGenerator.CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters parameters)
+        void CheckIsNotPersistent()
         {
-            throw new NotImplementedException();
+            if (IsLegacyFormat())
+                throw new NotSupportedException($"AudioClip {name} is not a valid {nameof(IAudioGenerator)}. Only persistent {nameof(AudioClip)} can be used, not runtime created ones.");
+        }
+
+        bool GeneratorInstance.ICapabilities.isRealtime
+        {
+            get
+            {
+                CheckIsNotPersistent();
+                return false;
+            }
+        }
+
+        bool GeneratorInstance.ICapabilities.isFinite
+        {
+            get
+            {
+                CheckIsNotPersistent();
+                return true;
+            }
+        }
+
+        DiscreteTime? GeneratorInstance.ICapabilities.length
+        {
+            get
+            {
+                CheckIsNotPersistent();
+                return DiscreteTime.FromTicks(GeneratorInstance.Configuration.FramesAndSampleRateToDiscreteTimeTicks(samples, (uint)frequency));
+            }
+        }
+        
+        public GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters)
+        {
+            CheckIsNotPersistent();
+
+            unsafe
+            {
+                AudioConfiguration* configPtr = null;
+
+                if (nestedFormat.HasValue)
+                {
+                    var config = nestedFormat.Value.audioConfiguration;
+                    configPtr = &config;
+                }
+
+                var header = (GeneratorInstance.GeneratorHeader*)
+                    SampleProviderBindings.CreateGeneratorHeader(this, context.Header, configPtr);
+
+                return new GeneratorInstance(header);
+            }
         }
 
         #endregion

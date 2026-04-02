@@ -36,20 +36,23 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-popup-window";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
+        internal static readonly UniqueStyleString contentUssClassNameUnique = new(contentUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of PopupWindow.
         /// </summary>
         public PopupWindow()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             m_ContentContainer = new VisualElement() { name = "unity-content-container"};
-            m_ContentContainer.AddToClassList(contentUssClassName);
+            m_ContentContainer.AddToClassList(contentUssClassNameUnique);
             hierarchy.Add(m_ContentContainer);
         }
 

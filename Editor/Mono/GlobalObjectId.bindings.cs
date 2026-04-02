@@ -34,16 +34,19 @@ namespace UnityEditor
         [FreeFunction]
         extern public static void GetGlobalObjectIdsSlow(UnityEngine.Object[] objects, [Out] GlobalObjectId[] outputIdentifiers);
 
-        [Obsolete("GlobalObjectId.GetGlobalObjectIdSlow(int) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId) instead.")]
+        [Obsolete("GlobalObjectId.GetGlobalObjectIdSlow(int) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId) instead.", true)]
         public static GlobalObjectId GetGlobalObjectIdSlow(int instanceId)
         {
             return GetGlobalObjectIdSlow((EntityId)instanceId);
         }
 
-        [Obsolete("GlobalObjectId.GetGlobalObjectIdSlow(int[], [Out] GlobalObjectId[]) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId[], [Out] GlobalObjectId[]) is obsolete instead.")]
+        [Obsolete(
+            "GlobalObjectId.GetGlobalObjectIdSlow(int[], [Out] GlobalObjectId[]) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId[], [Out] GlobalObjectId[]) is obsolete instead.",
+            true)]
         public static void GetGlobalObjectIdsSlow(int[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers)
         {
-            GetGlobalObjectIdsSlow(instanceIds.ToEntityIdArray(), outputIdentifiers);
+            throw new InvalidOperationException(
+                "GlobalObjectId.GetGlobalObjectIdSlow(int[], [Out] GlobalObjectId[]) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId[], [Out] GlobalObjectId[]).");
         }
 
         // Converts an Object reference to a global unique ID
@@ -120,11 +123,16 @@ namespace UnityEditor
 
         // Converting one object at a time is incredibly slow. (Have to iterate whole scene to grab one object...)
         // Always prefer using batch API when multiple objects need to be looked up.
-        [Obsolete("GlobalObjectIdentifierToInstanceIDSlow is obsolete. Use GlobalObjectIdentifierToEntityIdSlow instead.")]
-        public static int GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id) => GlobalObjectIdentifierToEntityIdSlow(id);
-        [Obsolete("GlobalObjectIdentifiersToInstanceIDsSlow is obsolete. Use GlobalObjectIdentifiersToEntityIdsSlow instead.")]
-        [FreeFunction]
-        extern public static void GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, [Out] int[] outputInstanceIDs);
+        [Obsolete("GlobalObjectIdentifierToInstanceIDSlow is obsolete. Use GlobalObjectIdentifierToEntityIdSlow instead.", true)]
+        public static int GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id)
+        {
+            throw new System.NotImplementedException("GlobalObjectIdentifierToInstanceIDSlow is obsolete. Use GlobalObjectIdentifierToEntityIdSlow instead.");
+        }
+        [Obsolete("GlobalObjectIdentifiersToInstanceIDsSlow is obsolete. Use GlobalObjectIdentifiersToEntityIdsSlow instead.", true)]
+        public static void GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, [Out] int[] outputInstanceIDs)
+        {
+            throw new System.NotImplementedException("GlobalObjectIdentifiersToInstanceIDsSlow is obsolete. Use GlobalObjectIdentifiersToEntityIdsSlow instead.");
+        }
 
         [FreeFunction]
         extern public static EntityId GlobalObjectIdentifierToEntityIdSlow(GlobalObjectId id);

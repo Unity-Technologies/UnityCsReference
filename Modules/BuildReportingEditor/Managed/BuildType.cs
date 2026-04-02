@@ -8,14 +8,13 @@ namespace UnityEditor.Build.Reporting
 {
     ///<summary>Build type.</summary>
     ///<seealso cref="BuildSummary.buildType" />
-    [Flags]
     public enum BuildType
     {
         ///<summary>Indicates a Player build.</summary>
         Player = 1,
         ///<summary>Indicates an Asset Bundle build.</summary>
         AssetBundle = 2,
-
-		// UCBP-Backport CBD-1597: Add ContentDirectory = 3
+        ///<summary>Indicates a ContentDirectory build.</summary>
+		ContentDirectory = 3,
     }
 }

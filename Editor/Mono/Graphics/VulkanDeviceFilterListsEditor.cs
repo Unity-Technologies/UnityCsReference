@@ -184,6 +184,8 @@ namespace UnityEditor
         bool m_ShowDeny = false;
         bool m_ShowGfxJobs = false;
 
+        bool m_HardwareProfilesUsed = false;
+
         private void DrawDeviceFilterListElement(ReorderableList list, Rect rect, int index, bool isActive, bool isFocused)
         {
             var filterListProp = list.serializedProperty.GetArrayElementAtIndex(index);
@@ -251,6 +253,9 @@ namespace UnityEditor
             var gfxJobsElementHeight = DeviceFilterUI.Styles.kElementHeighWithSpace * (DeviceFilterUI.Styles.kNumItemsInFilter + 1) + DeviceFilterUI.Styles.kHeightBetweenFields;
             m_GfxJobsReorderableFilterList = new ReorderableFilterList(
                 serializedObject,  "m_GfxJobFilterList", DrawGfxJobsFilterListElement, AddGfxJobsFilterListElement, gfxJobsElementHeight);
+
+            m_HardwareProfilesUsed = BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget)
+                                     && (iBuildTarget?.GraphicsPlatformProperties?.HardwareProfilesUsed ?? false);
         }
 
         struct ErrorInfo
@@ -278,6 +283,7 @@ namespace UnityEditor
         {
             var height = startingHeight;
             showPosition = EditorGUILayout.BeginFoldoutHeaderGroup(showPosition, name);
+            EditorGUI.BeginDisabled(m_HardwareProfilesUsed);
             if (showPosition)
             {
                 using (var scopedHeight = new IndentLevelScope())
@@ -287,6 +293,7 @@ namespace UnityEditor
                     height += onAfterListDraw?.Invoke(height) ?? 0.0f;
                 }
             }
+            EditorGUI.EndDisabled();
             EditorGUILayout.EndFoldoutHeaderGroup();
             return height;
         }
@@ -319,6 +326,15 @@ namespace UnityEditor
             using (var changed = new ChangeCheckScope())
             {
                 var height = 0.0f;
+
+                if (m_HardwareProfilesUsed)
+                {
+                    EditorGUILayout.HelpBox(
+                        EditorGUIUtility.TrTextContent(
+                            "Vulkan Device Filtering changes do not take effect because hardware profiles are enabled and override these settings. To use device filtering, remove hardware profile scripts.",
+                            EditorGUIUtility.GetHelpIcon(MessageType.Warning))
+                        );
+                }
 
 // Disable obsolete warning. Users should see obsolete warnings when trying to use the API but
 // this is to ensure the user is warned that the settings are going to be ignored and that they

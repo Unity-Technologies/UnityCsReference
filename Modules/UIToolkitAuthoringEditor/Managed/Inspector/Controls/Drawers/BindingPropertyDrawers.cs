@@ -9,6 +9,40 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
+    [CustomPropertyDrawer(typeof(Binding.UxmlSerializedData))]
+    class BindingPropertyDrawer : UxmlSerializedDataPropertyDrawer
+    {
+        const string k_BindingMainContentUxmlPath = "UIToolkitAuthoring/Inspector/Binding/BindingPropertyDrawer.uxml";
+        const string k_DataBindingMainContentUxmlPath = "UIToolkitAuthoring/Inspector/Binding/DataBindingPropertyDrawer.uxml";
+
+        protected override void CreatePropertyGUI(VisualElement container, SerializedProperty property)
+        {
+            CreateChildPropertiesGUI(container, property);
+        }
+
+        protected override void CreateChildPropertiesGUI(VisualElement container, SerializedProperty property)
+        {
+            var uxmlSerializedData = property.managedReferenceValue as Binding.UxmlSerializedData;
+            var mainContentUxmlPath = k_BindingMainContentUxmlPath;
+
+            // Only generate data binding fields for inheritors of DataBinding type.
+            var isDataBinding = typeof(DataBinding.UxmlSerializedData).IsAssignableFrom(uxmlSerializedData.GetType());
+            if (isDataBinding)
+            {
+                mainContentUxmlPath = k_DataBindingMainContentUxmlPath;
+            }
+
+            var visualTreeAsset = EditorGUIUtility.LoadRequired(mainContentUxmlPath) as VisualTreeAsset;
+
+            var mainContent = visualTreeAsset.CloneTree();
+            container.Add(mainContent);
+
+            var additionalSettingsContainer = container.Q("AdditionalSettingsContainer");
+
+            base.CreateChildPropertiesGUI(additionalSettingsContainer, property);
+        }
+    }
+
     /// <summary>
     /// Property drawer for DataSourceDrawerAttribute
     /// </summary>

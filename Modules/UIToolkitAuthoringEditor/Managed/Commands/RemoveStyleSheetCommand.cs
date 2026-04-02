@@ -13,30 +13,31 @@ internal readonly record struct RemoveStyleSheetCommand
     const string CommandUndoName = "Remove style sheet";
 
     readonly VisualTreeAsset VisualTreeAsset;
-    readonly int Index;
+    readonly StyleSheet StyleSheet;
 
-    public RemoveStyleSheetCommand(VisualTreeAsset visualTreeAsset, int index)
+    public RemoveStyleSheetCommand(VisualTreeAsset visualTreeAsset, StyleSheet styleSheet)
     {
         VisualTreeAsset = visualTreeAsset;
-        Index = index;
+        StyleSheet = styleSheet;
     }
 
-    public bool Execute()
+    public void Execute()
     {
         Assert.IsNotNull(VisualTreeAsset);
+        Assert.IsNotNull(StyleSheet);
 
         var rootElement = VisualTreeAsset.visualTreeNoAlloc;
-        var actualIndex = Index == -1 ? rootElement.stylesheets.Count - 1 : Index;
-        if (rootElement?.stylesheets == null || actualIndex < 0 || actualIndex >= rootElement.stylesheets.Count)
+
+        if (rootElement == null || rootElement.stylesheets.Count == 0)
         {
-            return false;
+            return;
         }
 
         Undo.RegisterCompleteObjectUndo(VisualTreeAsset, CommandUndoName);
 
-        rootElement.stylesheets.RemoveAt(actualIndex);
-        EditorUtility.SetDirty(VisualTreeAsset);
+        rootElement.stylesheets.Remove(StyleSheet);
 
-        return true;
+        EditorUtility.SetDirty(VisualTreeAsset);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
     }
 }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Pool;
+using Unity.Collections;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -177,7 +178,7 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>Provides a way to create a node option without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
             public NodeOption AddNodeOption(string optionName, TypeHandle dataType, string optionId = null, string tooltip = null, bool showInInspectorOnly = false, int order = 0, Attribute[] attributes = null, Action<Constant> initializationCallback = null, Action<object> setterAction = null)
             {
-                if (dataType == TypeHandle.Unknown || dataType == TypeHandle.ExecutionFlow || dataType == TypeHandle.MissingType || dataType == TypeHandle.MissingPort)
+                if (dataType == TypeHandle.Unknown || dataType == TypeHandle.Untyped || dataType == TypeHandle.MissingType || dataType == TypeHandle.MissingPort)
                     throw new ArgumentException("Invalid type for node option");
 
                 optionId ??= optionName;
@@ -223,12 +224,12 @@ namespace Unity.GraphToolkit.Editor
                 Action<Constant> initializationCallback = null;
                 if (defaultValue != null)
                     initializationCallback = c => c.ObjectValue = defaultValue;
-                return AddInputPort(portName, dataType?.GenerateTypeHandle() ?? TypeHandle.ExecutionFlow, null, portId, orientation, PortModelOptions.Default, attributes, initializationCallback);
+                return AddInputPort(portName, dataType?.GenerateTypeHandle() ?? TypeHandle.Untyped, null, portId, orientation, PortModelOptions.Default, attributes, initializationCallback);
             }
 
             IPort IPortsDefinition.AddOutputPort(string portName, Type dataType, string portId, PortOrientation orientation, Attribute[] attributes)
             {
-                return AddOutputPort(portName, dataType?.GenerateTypeHandle() ?? TypeHandle.ExecutionFlow, null, portId, orientation, PortModelOptions.Default, attributes);
+                return AddOutputPort(portName, dataType?.GenerateTypeHandle() ?? TypeHandle.Untyped, null, portId, orientation, PortModelOptions.Default, attributes);
             }
 
             public INodeOption AddNodeOption(string optionName, Type dataType, string optionDisplayName = null, string tooltip = null,
@@ -328,7 +329,7 @@ namespace Unity.GraphToolkit.Editor
                 m_MustSpecifySubPorts = ParentPort.IsExpandedSelf && ParentPort.AreAncestorsExpanded || RecurseHasWire(ParentPort);
                 bool RecurseHasWire(PortModel portModel)
                 {
-                    return portModel.SubPorts.HasAny(sp => sp.IsConnected() || RecurseHasWire(sp));
+                    return portModel.SubPorts.Exists(sp => sp.IsConnected() || RecurseHasWire(sp));
                 }
             }
         }
@@ -417,6 +418,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override bool UseColorAlpha => true;
 
+        /// <summary>
+        /// Whether the node can have expandable ports.
+        /// </summary>
+        public virtual bool CanHaveExpandablePorts => true;
+
         /// <inheritdoc />
         public override IReadOnlyDictionary<string, PortModel> InputsById => m_InputPortInfos.portsById;
 
@@ -502,9 +508,7 @@ namespace Unity.GraphToolkit.Editor
         public int CurrentModeIndex
         {
             get => m_CurrentModeIndex;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             set => m_CurrentModeIndex = Modes.ElementAtOrDefault(m_CurrentModeIndex) != null ? value : 0;
-#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -568,9 +572,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="newModeIndex">The index of the mode to change to.</param>
         public virtual void ChangeMode(int newModeIndex)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Modes.ElementAtOrDefault(newModeIndex) == null)
-#pragma warning restore UA2001
                 return;
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -627,7 +629,7 @@ namespace Unity.GraphToolkit.Editor
                         return;
                     }
 
-                    if (newModePort.Capacity == PortCapacity.Multi || !connectedWires.HasAny())
+                    if (newModePort.Capacity == PortCapacity.Multi || connectedWires.Count == 0)
                         compatiblePorts.Add(newModePort);
                 }
 
@@ -637,7 +639,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     // Second choice: Connect to the first compatible port that is not taken.
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    newPort = compatiblePorts.FirstOrDefault(p => !p.GetConnectedWires().HasAny());
+                    newPort = compatiblePorts.FirstOrDefault(p => p.GetConnectedWires().Count == 0);
 #pragma warning restore UA2001
                 }
                 else
@@ -734,7 +736,7 @@ namespace Unity.GraphToolkit.Editor
 
         void CallOnDefineSubPorts(ref PortInfos portInfos, PortModel singlePort = null)
         {
-            if (GraphModel == null) return;
+            if (GraphModel == null || !CanHaveExpandablePorts) return;
 
             m_SubPortDefinition ??= new SubPortDefinition(this);
 
@@ -922,10 +924,8 @@ namespace Unity.GraphToolkit.Editor
             // remove input constants that aren't used
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var idsToDeletes = m_InputConstantsById
-#pragma warning restore UA2001
                 .Select(kv => kv.Key)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Where(id => !m_InputPortInfos.portsById.ContainsKey(id) && m_NodeOptions.All(o => o.PortModel.UniqueName != id)).ToList();
+                .Where(id => !m_InputPortInfos.portsById.ContainsKey(id) && m_NodeOptions.TrueForAll(o => o.PortModel.UniqueName != id)).ToList();
 #pragma warning restore UA2001
             foreach (var id in idsToDeletes)
             {
@@ -1122,10 +1122,17 @@ namespace Unity.GraphToolkit.Editor
 
             if (port.Direction == PortDirection.Input)
             {
-                if (port.ComputedConstant is not SubPortFieldInfoConstant spfic)
-                    port.ComputedConstant = new SubPortFieldInfoConstant(port, fieldInfo);
+                if (parent.EmbeddedValue != null)
+                {
+                    if (port.ComputedConstant is not SubPortFieldInfoConstant spfic)
+                        port.ComputedConstant = new SubPortFieldInfoConstant(port, fieldInfo);
+                    else
+                        spfic.SetMemberInfo(fieldInfo);
+                }
                 else
-                    spfic.SetMemberInfo(fieldInfo);
+                {
+                    port.ComputedConstant = null;
+                }
             }
 
             return port;
@@ -1137,10 +1144,17 @@ namespace Unity.GraphToolkit.Editor
 
             if (port.Direction == PortDirection.Input)
             {
-                if (port.ComputedConstant is not SubPortPropertyInfoConstant sppic)
-                    port.ComputedConstant = new SubPortPropertyInfoConstant(port, propertyInfo);
+                if (parent.EmbeddedValue != null)
+                {
+                    if (port.ComputedConstant is not SubPortPropertyInfoConstant sppic)
+                        port.ComputedConstant = new SubPortPropertyInfoConstant(port, propertyInfo);
+                    else
+                        sppic.SetMemberInfo(propertyInfo);
+                }
                 else
-                    sppic.SetMemberInfo(propertyInfo);
+                {
+                    port.ComputedConstant = null;
+                }
             }
 
             return port;
@@ -1392,9 +1406,7 @@ namespace Unity.GraphToolkit.Editor
                 else
                 {
                     // Second choice: constant at the same index
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var constantAtSameIndex = otherInputConstants.ElementAtOrDefault(index).Value;
-#pragma warning restore UA2001
                     if (constantAtSameIndex != null && m_InputConstantsById[id].IsAssignableFrom(constantAtSameIndex.Type))
                         m_InputConstantsById[id] = constantAtSameIndex;
                 }
@@ -1405,7 +1417,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override bool RemoveUnusedMissingPort(PortModel portModel)
         {
-            if (portModel.PortType != PortType.MissingPort || portModel.GetConnectedWires().HasAny())
+            if (portModel.PortType != PortType.MissingPort || portModel.GetConnectedWires().Count > 0)
                 return false;
 
             // If a port is hidden but is a missing port, it is still visible on the node because it has connections. We redefine the node to see if the port should stay visible as a missing port or be hidden.
@@ -1448,7 +1460,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Appends all ports that are not connected or which parents is not collapsed.
+        /// Appends all ports that are not connected or which parent is not collapsed.
         /// </summary>
         void BuildVisiblePorts(ref PortInfos portInfos)
         {
@@ -1456,7 +1468,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var port in portInfos.portsById.Values)
                 {
-                    if (port.ParentPort == null || port.AreAncestorsExpanded || port.IsConnected())
+                    if (port.ParentPort == null || port.AreAncestorsExpanded || port.IsConnected() || port.ParentPort.IsConnected() && port.ParentPort.IsExpandedSelf)
                         portInfos.orderedVisiblePorts.Add(port);
                 }
             }

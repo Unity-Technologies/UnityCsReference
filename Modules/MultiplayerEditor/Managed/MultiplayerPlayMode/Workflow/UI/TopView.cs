@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
 using UnityEditor.Multiplayer.Internal;
 using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 
 using PopupWindow = UnityEditor.PopupWindow;
 using Toolbar = UnityEditor.UIElements.Toolbar;

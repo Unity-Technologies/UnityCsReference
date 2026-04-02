@@ -19,7 +19,7 @@ namespace Unity.U2D.Physics.Editor
         {
             var root = new VisualElement();
 
-            var foldout = new Foldout { text = property.displayName, viewDataKey = typeof(PhysicsUserDataPropertyDrawer).ToString() };
+            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(PhysicsUserDataPropertyDrawer).ToString() };
             root.Add(foldout);
 
             // Special handling for Entity Id.
@@ -27,11 +27,15 @@ namespace Unity.U2D.Physics.Editor
                 m_EntityIdProperty = property.FindPropertyRelative(nameof(PhysicsUserData.m_EntityId));
 
                 var objectField = new ObjectField("Object") { value = PhysicsGlobal_GetObject(m_EntityIdProperty.entityIdValue) };
+                objectField.tooltip = GetEntityTooltip(m_EntityIdProperty.entityIdValue);
                 objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
                 objectField.RegisterValueChangedCallback(evt =>
                 {
                     m_EntityIdProperty.entityIdValue = evt.newValue != null ? evt.newValue.GetEntityId() : EntityId.None;
                     m_EntityIdProperty.serializedObject.ApplyModifiedProperties();
+
+                    // Update the tooltip.
+                    objectField.tooltip = GetEntityTooltip(m_EntityIdProperty.entityIdValue);
                 });
                 foldout.Add(objectField);
             }
@@ -52,6 +56,18 @@ namespace Unity.U2D.Physics.Editor
             }
 
             return root;
+        }
+
+        private string GetEntityTooltip(EntityId entityID)
+        {
+            if (entityID == EntityId.None)
+                return "None";
+
+            var obj = PhysicsGlobal_GetObject(m_EntityIdProperty.entityIdValue);
+            if (obj == null)
+                return "Invalid EntityId";
+
+            return $"EntityId: {m_EntityIdProperty.entityIdValue.ToString()} - \"{obj.name}\" ({obj.GetType()})";
         }
     }
 }

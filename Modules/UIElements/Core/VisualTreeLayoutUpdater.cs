@@ -86,6 +86,146 @@ namespace UnityEngine.UIElements
         static int s_MainLoopCount = 0;
         static int s_PassIndex = 0;
 
+        private void LogLayoutStabilityError(VisualElement root, int maxIterations)
+        {
+            var sb = new System.Text.StringBuilder();
+
+            // Problem
+            sb.AppendLine($"Layout update failed to stabilize after {maxIterations} iterations.");
+            sb.AppendLine();
+
+            // Cause
+            sb.AppendLine($"One or more elements are responding to GeometryChangedEvent by modifying layout properties, creating a recursive loop where layout changes trigger new layout changes.");
+            sb.AppendLine($"Panel: {panel.ownerObject.name}");
+            sb.AppendLine();
+
+            // Solution
+            sb.AppendLine("Identify elements that modify layout in response to geometry changes and refactor them to:");
+            sb.AppendLine("  1. Avoid modifying layout properties (size, position, flex) in GeometryChangedEvent callbacks");
+            sb.AppendLine("  2. Use static sizing instead of dynamic calculations that depend on current layout");
+            sb.AppendLine("  3. Break circular dependencies between parent and child size calculations");
+            sb.AppendLine();
+            sb.AppendLine("Elements involved in the layout instability:");
+
+            // Collect dirty elements from the recorded layout items
+            var dirtyElements = new List<VisualElement>();
+            CollectDirtyElements(root, dirtyElements);
+
+            int count = 0;
+            foreach (var element in dirtyElements)
+            {
+                if (count >= 10) // Limit to first 10 elements to avoid excessive logging
+                {
+                    sb.AppendLine($"  ... and {dirtyElements.Count - count} more elements");
+                    break;
+                }
+
+                sb.AppendLine($"  [{count + 1}] {element.GetType().Name}");
+                if (!string.IsNullOrEmpty(element.name))
+                    sb.AppendLine($"      Name: {element.name}");
+
+                sb.AppendLine($"      Layout: {element.layout}");
+
+                // Try to get UXML asset source information
+                var sourceAsset = element.visualTreeAssetSource;
+                if (sourceAsset != null)
+                {
+                    sb.AppendLine($"      Source Asset: {sourceAsset.name}");
+                }
+
+                // Check for geometry change event listeners and log their source location
+                if (element.HasSelfEventInterests(GeometryChangedEvent.EventCategory))
+                {
+                    LogGeometryChangedCallbacks(element, sb);
+                }
+
+                count++;
+            }
+
+            Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, sb.ToString());
+        }
+
+        private void CollectDirtyElements(VisualElement element, List<VisualElement> dirtyElements)
+        {
+            if (element.layoutNode.IsDirty)
+            {
+                dirtyElements.Add(element);
+            }
+
+            var childCount = element.hierarchy.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                CollectDirtyElements(element.hierarchy[i], dirtyElements);
+            }
+        }
+
+        private void LogGeometryChangedCallbacks(VisualElement element, System.Text.StringBuilder sb)
+        {
+            if (element.m_CallbackRegistry == null)
+                return;
+
+            long geometryChangedEventTypeId = EventBase<GeometryChangedEvent>.TypeId();
+            bool foundCallbacks = false;
+
+            // Check both trickle down and bubble up callbacks
+            var trickleDownCallbacks = element.m_CallbackRegistry.m_TrickleDownCallbacks.GetCallbackListForReading();
+            var bubbleUpCallbacks = element.m_CallbackRegistry.m_BubbleUpCallbacks.GetCallbackListForReading();
+
+            foreach (var functor in trickleDownCallbacks.Span)
+            {
+                if (functor.eventTypeId == geometryChangedEventTypeId)
+                {
+                    if (!foundCallbacks)
+                    {
+                        sb.AppendLine("      GeometryChangedEvent callbacks:");
+                        foundCallbacks = true;
+                    }
+                    LogCallbackInfo(functor.GetCallback(), sb);
+                }
+            }
+
+            foreach (var functor in bubbleUpCallbacks.Span)
+            {
+                if (functor.eventTypeId == geometryChangedEventTypeId)
+                {
+                    if (!foundCallbacks)
+                    {
+                        sb.AppendLine("      GeometryChangedEvent callbacks:");
+                        foundCallbacks = true;
+                    }
+                    LogCallbackInfo(functor.GetCallback(), sb);
+                }
+            }
+        }
+
+        private void LogCallbackInfo(System.Delegate callback, System.Text.StringBuilder sb)
+        {
+            if (callback == null)
+                return;
+
+            var method = callback.Method;
+            var declaringType = method.DeclaringType;
+
+            sb.Append($"        - {declaringType?.FullName ?? "Unknown"}.{method.Name}");
+
+            // Try to get assembly information
+            try
+            {
+                var assembly = declaringType?.Assembly;
+                if (assembly != null && !assembly.IsDynamic)
+                {
+                    var assemblyName = assembly.GetName().Name;
+                    sb.Append($" [Assembly: {assemblyName}]");
+                }
+            }
+            catch
+            {
+                // Silently ignore if we can't get assembly info
+            }
+
+            sb.AppendLine();
+        }
+
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -116,6 +256,8 @@ namespace UnityEngine.UIElements
 
             if (visualTree.layoutNode.IsDirty)
             {
+                bool wasRecording = recordLayout;// Layout instabilities might enable the recording and need to restore the state afterwards
+                bool layoutError = false;
                 if (recordLayout)
                 {
                     if (s_OldMainLoopCount == s_MainLoopCount)
@@ -193,12 +335,44 @@ namespace UnityEngine.UIElements
 
                     if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                     {
-                        Debug.LogError("Layout update is struggling to process current layout (consider simplifying to avoid recursive layout): " + visualTree);
-                        if (s_StopRecording != null)
+                        int debugCycles = validateLayoutCount - kMaxValidateLayoutCount - 1;
+
+                        if (debugCycles == 0)
                         {
-                            s_StopRecording.StopRecording();
+                            // Start recording debug information for the next two cycles
+                            if (!wasRecording)
+                            {
+                                recordLayout = true;
+                                // Initialize currentDirtyVE if it wasn't already
+                                if (currentDirtyVE == null)
+                                {
+                                    currentDirtyVE = new List<VisualElement>();
+                                }
+                            }
+                            layoutError = true;
                         }
-                        break;
+                        else if (debugCycles > 2)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+
+
+                if (layoutError)
+                {
+                    // Log detailed error information
+                    LogLayoutStabilityError(visualTree, kMaxValidateLayoutCount);
+
+                    if (s_StopRecording != null)
+                    {
+                        s_StopRecording.StopRecording();
+                    }
+
+                    if (!wasRecording)
+                    {
+                        recordLayout = false;
                     }
                 }
             }

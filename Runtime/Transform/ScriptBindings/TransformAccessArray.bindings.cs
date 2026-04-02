@@ -8,10 +8,211 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using System.Runtime.InteropServices;
+
+[assembly: InternalsVisibleTo("Unity.Entities")]
+[assembly: InternalsVisibleTo("Unity.Transforms")]
 
 namespace UnityEngine.Jobs
 {
+    // Provides an efficient interface to TransformHierarchy data from C#, with no job safety whatsoever.
+    // It is intended to be used from an ECS transform component, where the ECS safety system has already determined
+    // that the calling code has the necessary read or read/write access to the transform data.
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Transform/ScriptBindings/TransformHierarchy.bindings.h")]
+    internal unsafe struct UnsafeTransformAccess : IEquatable<UnsafeTransformAccess>
+    {
+        // Points to a native TransformHierarchy* object. We can't access it directly from C#.
+        // The TransformHierarchy object associated with this object may be changed by native code (e.g. in Transform.SetParent())
+        // For this reason, we must store an array of Entity references inside the TransformHierarchy, so
+        // that the hierarchy pointers can be updated during a reparenting operation. This is analogous to the
+        // TransformHierarchy.mainThreadOnlyTransformPointers array. See the Transform::UpdateTransformAccessors() function.
+        private IntPtr hierarchy;
+        // Index of this object within the TransformHierarchy's buffers.
+        private int index;
+
+        public bool Equals(UnsafeTransformAccess other)
+            => hierarchy == other.hierarchy && index == other.index;
+        public override bool Equals(object obj) => obj is UnsafeTransformAccess other && Equals(other);
+        public static bool operator ==(UnsafeTransformAccess lhs, UnsafeTransformAccess rhs) => lhs.Equals(rhs);
+        public static bool operator !=(UnsafeTransformAccess lhs, UnsafeTransformAccess rhs) => !lhs.Equals(rhs);
+        public override int GetHashCode() =>
+            HashCode.Combine(hierarchy, index);
+
+        public Matrix4x4 localToWorldMatrix
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalToWorldMatrix(ref this, out var m);
+                return m;
+            }
+        }
+
+        public Matrix4x4 worldToLocalMatrix
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetWorldToLocalMatrix(ref this, out var m);
+                return m;
+            }
+        }
+
+        public Vector3 localPosition
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalPosition(ref this, out var t);
+                return t;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                SetLocalPosition(ref this, ref value);
+            }
+        }
+
+        public Quaternion localRotation
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalRotation(ref this, out var r);
+                return r;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                SetLocalRotation(ref this, ref value);
+            }
+        }
+
+        public Vector3 localScale
+        {
+            get
+            {
+                CheckHierarchyValid();
+                GetLocalScale(ref this, out var s);
+                return s;
+            }
+            set
+            {
+                CheckHierarchyValid();
+                SetLocalScale(ref this, ref value);
+            }
+        }
+
+        public void SetWorldPositionAndRotation(Vector3 position, Quaternion rotation)
+        {
+            CheckHierarchyValid();
+            SetWorldPositionAndRotation_Internal(ref this, ref position, ref rotation);
+        }
+
+        public void SetLocalPositionAndRotation(Vector3 localPosition, Quaternion localRotation)
+        {
+            CheckHierarchyValid();
+            SetLocalPositionAndRotation_Internal(ref this, ref localPosition, ref localRotation);
+        }
+
+        public void GetWorldPositionAndRotation(out Vector3 position, out Quaternion rotation)
+        {
+            CheckHierarchyValid();
+            GetWorldPositionAndRotation_Internal(ref this, out position, out rotation);
+        }
+
+        public void GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation)
+        {
+            CheckHierarchyValid();
+            GetLocalPositionAndRotation_Internal(ref this, out localPosition, out localRotation);
+        }
+
+        internal JobHandle GetHierarchyDependency()
+        {
+            CheckHierarchyValid();
+            return GetHierarchyDependency(ref this);
+        }
+
+        internal void QueueTransformDispatch()
+        {
+            QueueTransformDispatch(ref this);
+        }
+
+        // Temporary native bindings until access through hierarchy IntPtr is implemented in C# DOTS-10291
+        // HACK: These should work as long as UnsafeTransformAccess does not add any fields.
+        //  access pointer is reinterpret_cast to TransformAccess.
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalToWorldMatrix", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalToWorldMatrix(ref UnsafeTransformAccess access, out Matrix4x4 m);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetWorldToLocalMatrix", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetWorldToLocalMatrix(ref UnsafeTransformAccess access, out Matrix4x4 m);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalPosition", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalPosition(ref UnsafeTransformAccess access, out Vector3 p);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalPositionUnchecked", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetLocalPosition(ref UnsafeTransformAccess access, ref Vector3 p);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalRotation(ref UnsafeTransformAccess access, out Quaternion r);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalRotationUnchecked", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetLocalRotation(ref UnsafeTransformAccess access, ref Quaternion r);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalScale", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalScale(ref UnsafeTransformAccess access, out Vector3 r);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalScaleUnchecked", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetLocalScale(ref UnsafeTransformAccess access, ref Vector3 r);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetPositionAndRotationUnchecked", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetWorldPositionAndRotation_Internal(ref UnsafeTransformAccess access, ref Vector3 position, ref Quaternion rotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalPositionAndRotationUnchecked", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetLocalPositionAndRotation_Internal(ref UnsafeTransformAccess access, ref Vector3 localPosition, ref Quaternion localRotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetWorldPositionAndRotation_Internal(ref UnsafeTransformAccess access, out Vector3 position, out Quaternion rotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalPositionAndRotation_Internal(ref UnsafeTransformAccess access, out Vector3 localPosition, out Quaternion localRotation);
+
+        // END Temporary native bindings -------
+
+        [NativeMethod(Name = "TransformAccessBindings::GetHierarchyDependency", IsThreadSafe = true, IsFreeFunction = true)]
+        private static extern JobHandle GetHierarchyDependency(ref UnsafeTransformAccess access);
+
+        [NativeMethod(Name = "TransformAccessBindings::QueueTransformDispatch", IsThreadSafe = false, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void QueueTransformDispatch(ref UnsafeTransformAccess access);
+
+        [NativeMethod(Name = "TransformHierarchyBindings::BatchQueueTransformDispatch", IsThreadSafe = false, IsFreeFunction = true, ThrowsException = true)]
+        public static extern void BatchQueueTransformDispatch(IntPtr hierarchyPtrs, int count);
+
+        public bool isValid => hierarchy != IntPtr.Zero;
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal void CheckHierarchyValid()
+        {
+            if (!isValid)
+                throw new NullReferenceException("The TransformAccess is not valid and points to an invalid hierarchy");
+        }
+
+        internal IntPtr Hierarchy
+        {
+            get => hierarchy;
+            set => hierarchy = value;
+        }
+
+        internal int Index
+        {
+            get => index;
+            set => index = value;
+        }
+    }
+
     //@TODO: Static code analysis needs to prevent creation of TransformAccess
     //       except through what is passed into the job function.
     //       Code below assumes this to be true since it doesn't check if the index is valid
@@ -354,7 +555,7 @@ namespace UnityEngine.Jobs
             Add(m_TransformArray, transform);
         }
 
-        [Obsolete("TransformAccessArray.Add(int) is obsolete. Use TransformAccessArray.Add(EntityId) instead.")]
+        [Obsolete("TransformAccessArray.Add(int) is obsolete. Use TransformAccessArray.Add(EntityId) instead.", true)]
         public void Add(int instanceId)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

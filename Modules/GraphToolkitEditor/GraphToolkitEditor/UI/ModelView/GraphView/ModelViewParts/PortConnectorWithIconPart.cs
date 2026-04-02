@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -84,12 +83,24 @@ namespace Unity.GraphToolkit.Editor
                 m_CurrentTypeHandle = portModel.DataTypeHandle;
 
                 // Use registered style for the type if any.
-                var typeStyle = portModel.GraphModel?.GetDataTypeStyle(portModel.PortDataType);
+                bool overrideIcon = true;
+                Type elementStyle = portModel.PortDataType;
+                var typeStyle = portModel.GraphModel?.GetDataTypeStyle(elementStyle);
+
+                if (!typeStyle.HasValue && portModel.PortDataType.IsListOrArray())
+                {
+                    typeStyle = portModel.GraphModel?.GetDataTypeStyle(elementStyle.GetCollectionElementType());
+                    overrideIcon = false;
+                }
+
                 if (typeStyle.HasValue)
                 {
-                    m_IconIsInline = true;
                     m_Icon.tintColor = typeStyle.Value.color;
-                    m_Icon.image = typeStyle.Value.icon;
+                    if (overrideIcon)
+                    {
+                        m_IconIsInline = true;
+                        m_Icon.image = typeStyle.Value.icon;
+                    }
                 }
                 else
                 {
@@ -106,9 +117,8 @@ namespace Unity.GraphToolkit.Editor
                         Root.Insert(index, m_Icon);
                         m_IconIsInline = false;
                     }
-
-                    m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
                 }
+                m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
             }
         }
     }

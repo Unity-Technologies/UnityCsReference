@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(4)
             {
                 AddProperty(new TextureProperty());
                 AddProperty(new SpriteProperty());

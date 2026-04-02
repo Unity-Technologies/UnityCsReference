@@ -79,9 +79,9 @@ namespace UnityEngine.UIElements
             if (list1 == null || list2 == null)
                 return false;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return list1.Count == list2.Count && list1.SequenceEqual(list2);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
         }
 
         /// <undoc/>

@@ -11,6 +11,7 @@ using UnityEditor.Audio;
 using System.Globalization;
 using UnityEngine.Audio;
 using Object = UnityEngine.Object;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -965,9 +966,7 @@ namespace UnityEditor
             foreach (var group in m_Controller.CachedSelection)
                 selectedIDs.Add(group.GetEntityId());
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            EntityId lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : EntityId.None;
-#pragma warning restore UA2001
+            EntityId lastClickedID = selectedIDs.Count > 0 ? selectedIDs[^1] : EntityId.None;
             bool allowMultiselection = true;
             bool keepMultiSelection = Event.current.shift || clickedControlInGroup;
 
@@ -1179,10 +1178,7 @@ namespace UnityEditor
 
             List<Rect> GetBackgroundRects(Rect r, AudioMixerGroupController group, int maxNumGroups)
             {
-                List<float> heights = new List<float>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                heights.AddRange(Enumerable.Repeat(0f, kEffectStartIndex));
-#pragma warning restore UA2001
+                List<float> heights = ListExtensions.CreateWithDefaultValue(0f, kEffectStartIndex);
                 heights[kHeaderIndex] = headerHeight;
                 heights[kVUMeterFaderIndex] = vuHeight;
                 heights[kTotalVULevelIndex] = dbHeight;

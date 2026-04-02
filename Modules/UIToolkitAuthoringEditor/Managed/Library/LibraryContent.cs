@@ -15,47 +15,6 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class LibraryContent
     {
-        const string k_StandardElementsPath = "Standard Elements";
-        const string k_ProjectElementsPath = "Project Elements";
-
-        internal static readonly string[] k_BaseLibraryPaths = new[]
-        {
-            k_StandardElementsPath,
-            k_ProjectElementsPath
-        };
-
-        static readonly Dictionary<string, HashSet<string>> s_CategoriesByType = new()
-        {
-            ["Numeric Fields"] = new(new[]
-            {
-                nameof(IntegerField),
-                nameof(FloatField),
-                nameof(LongField),
-                nameof(DoubleField)
-            })
-        };
-
-        /// <summary>
-        /// Unity core controls to display in "Standard Elements".
-        /// Only these controls will appear (unless they have subcategories defined in s_Categories).
-        /// </summary>
-        static readonly HashSet<string> s_StandardElementControls = new(new[]
-        {
-            nameof(VisualElement),
-            nameof(ScrollView),
-            nameof(Image),
-            nameof(Label),
-            nameof(Button),
-            nameof(Toggle),
-            nameof(DropdownField),
-            nameof(TextField),
-            nameof(Slider),
-            nameof(IntegerField),
-            nameof(FloatField),
-            nameof(DoubleField),
-            nameof(LongField),
-        });
-
         static readonly Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes = GenerateLibraryTypeFromSerializedDataTypes();
 
         static Dictionary<LibraryTypeKey, LibraryItem> GenerateLibraryTypeFromSerializedDataTypes()
@@ -150,47 +109,12 @@ namespace Unity.UIToolkit.Editor
                 return null;
 
             // Look for existing libraryPath value, this means they have opt-in for their control to appear in the menu.
-            if (!string.IsNullOrEmpty(uxmlAttr?.libraryPath))
+            if (uxmlAttr is { libraryPath: not null })
             {
-                // Check if it's a Unity control with explicit path
-                if (type.Namespace == "UnityEngine.UIElements")
-                {
-                    return $"{k_StandardElementsPath}/{uxmlAttr.libraryPath}";
-                }
-
-                // "Non-Core" controls
-                return $"{k_ProjectElementsPath}/{uxmlAttr.libraryPath}";
-            }
-
-            if (type.Namespace == "UnityEngine.UIElements")
-            {
-                if (!s_StandardElementControls.Contains(type.Name))
-                    return null;
-
-                var category= GetCategoryForType(type.Name);
-                return category != null ? $"{k_StandardElementsPath}/{category}" : k_StandardElementsPath;
+                return uxmlAttr.libraryPath == "" ? string.Empty : uxmlAttr.libraryPath;
             }
 
             return null;
-        }
-
-        static string GetCategoryForType(string typeName)
-        {
-            foreach (var (category, types) in s_CategoriesByType)
-            {
-                if (types.Contains(typeName))
-                    return category;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Checks if a control is a container type that should appear at the top.
-        /// </summary>
-        internal static bool IsContainer(string typeName)
-        {
-            return typeName == nameof(VisualElement) || typeName == nameof(ScrollView);
         }
     }
 }

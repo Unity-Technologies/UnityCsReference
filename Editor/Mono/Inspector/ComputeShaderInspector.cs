@@ -89,7 +89,7 @@ namespace UnityEditor
             foreach (var ki in kernelInfo)
             {
                 ki.platforms.Sort();
-                var sorted = System.String.Join(" ", ki.platforms.ToArray());
+                var sorted = string.Join(" ", ki.platforms);
                 EditorGUILayout.LabelField(ki.name, sorted, EditorStyles.wordWrappedLabel);
             }
         }

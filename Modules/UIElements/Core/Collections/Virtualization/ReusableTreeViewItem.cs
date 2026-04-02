@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
             base.Init(item);
 
             var container = new VisualElement() { name = BaseTreeView.itemUssClassName };
-            container.AddToClassList(BaseTreeView.itemUssClassName);
+            container.AddToClassList(BaseTreeView.itemUssClassNameUnique);
 
             InitExpandHierarchy(container, item);
         }
@@ -63,11 +63,11 @@ namespace UnityEngine.UIElements
                 name = BaseTreeView.itemToggleUssClassName,
                 userData = this
             };
-            m_Toggle.AddToClassList(Foldout.toggleUssClassName);
-            m_Toggle.AddToClassList(BaseTreeView.itemToggleUssClassName);
-            m_Toggle.visualInput.AddToClassList(Foldout.inputUssClassName);
+            m_Toggle.AddToClassList(Foldout.toggleUssClassNameUnique);
+            m_Toggle.AddToClassList(BaseTreeView.itemToggleUssClassNameUnique);
+            m_Toggle.visualInput.AddToClassList(Foldout.inputUssClassNameUnique);
             m_Checkmark = m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName);
-            m_Checkmark.AddToClassList(Foldout.checkmarkUssClassName);
+            m_Checkmark.AddToClassList(Foldout.checkmarkUssClassNameUnique);
             m_Container.hierarchy.Add(m_Toggle);
 
             m_BindableContainer = new VisualElement()
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
                 style = { flexGrow = 1 },
             };
 
-            m_BindableContainer.AddToClassList(BaseTreeView.itemContentContainerUssClassName);
+            m_BindableContainer.AddToClassList(BaseTreeView.itemContentContainerUssClassNameUnique);
             m_Container.Add(m_BindableContainer);
             m_BindableContainer.Add(item);
         }
@@ -84,7 +84,7 @@ namespace UnityEngine.UIElements
         public override void PreAttachElement()
         {
             base.PreAttachElement();
-            rootElement.AddToClassList(BaseTreeView.itemUssClassName);
+            rootElement.AddToClassList(BaseTreeView.itemUssClassNameUnique);
             m_Container?.RegisterCallback(m_PointerUpCallback);
             m_Toggle?.visualInput.Q(className: Toggle.checkmarkUssClassName).RegisterCallback(m_ToggleGeometryChangedCallback);
             m_Toggle?.RegisterValueChangedCallback(m_ToggleValueChangedCallback);
@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
         public override void DetachElement()
         {
             base.DetachElement();
-            rootElement.RemoveFromClassList(BaseTreeView.itemUssClassName);
+            rootElement.RemoveFromClassList(BaseTreeView.itemUssClassNameUnique);
             m_Container?.UnregisterCallback(m_PointerUpCallback);
             m_Toggle?.visualInput.Q(className: Toggle.checkmarkUssClassName).UnregisterCallback(m_ToggleGeometryChangedCallback);
             m_Toggle?.UnregisterValueChangedCallback(m_ToggleValueChangedCallback);
@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
         void UpdateIndentLayout()
         {
             m_IndentElement.style.width = indentWidth * m_Depth;
-            m_IndentElement.EnableInClassList(BaseTreeView.itemIndentUssClassName, m_Depth > 0);
+            m_IndentElement.EnableInClassList(BaseTreeView.itemIndentUssClassNameUnique, m_Depth > 0);
         }
 
         void OnPointerUp(PointerUpEvent evt)

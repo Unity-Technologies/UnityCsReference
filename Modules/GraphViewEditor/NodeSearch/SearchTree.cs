@@ -13,7 +13,11 @@ namespace UnityEditor.Experimental.GraphView
         public int level;
         public GUIContent content;
 
+#pragma warning disable UAC1001
+        // https://jira.unity3d.com/browse/UUM-132826
+        // Should this be SerializeReference or not serialized at all
         public object userData;
+#pragma warning restore UAC1001
 
         public SearchTreeEntry(GUIContent content)
         {

@@ -40,9 +40,9 @@ namespace UnityEditor.Search
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
 #pragma warning restore UA2002
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return empty ? System.Array.Empty<T>() : [enumerable.First()];
-#pragma warning restore UA2001
+#pragma warning restore UA2010
         }
     }
 
@@ -53,9 +53,9 @@ namespace UnityEditor.Search
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
 #pragma warning restore UA2002
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2009 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return empty ? System.Array.Empty<T>() : [enumerable.Last()];
-#pragma warning restore UA2001
+#pragma warning restore UA2009
         }
     }
 }

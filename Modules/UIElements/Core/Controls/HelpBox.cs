@@ -55,6 +55,7 @@ namespace UnityEngine.UIElements
     /// }
     /// </code>
     /// </example>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/HelpBox.png")]
     public partial class HelpBox : VisualElement
     {
@@ -68,34 +69,50 @@ namespace UnityEngine.UIElements
         /// The USS class name for Elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-help-box";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name for the top content container of this Elements type.
         /// </summary>
         public static readonly string topContainerUssClassName = ussClassName + "__top-container";
+        internal static readonly UniqueStyleString topContainerUssClassNameUnique = new(topContainerUssClassName);
+
         /// <summary>
         /// The USS class name for the bottom content container of this Elements type.
         /// </summary>
         public static readonly string bottomContainerUssClassName = ussClassName + "__bottom-container";
+        internal static readonly UniqueStyleString bottomContainerUssClassNameUnique = new(bottomContainerUssClassName);
+
         /// <summary>
         /// The USS class name for the action link for this Elements type.
         /// </summary>
         public static readonly string linkUssClassName = ussClassName + "__link";
+        internal static readonly UniqueStyleString linkUssClassNameUnique = new(linkUssClassName);
+
         /// <summary>
         /// The USS class name for the action button of this Elements type.
         /// </summary>
         public static readonly string buttonUssClassName = ussClassName + "__button";
+        internal static readonly UniqueStyleString buttonUssClassNameUnique = new(buttonUssClassName);
+
         /// <summary>
         /// The USS class name for labels in Elements of this type.
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// The USS class name for images in Elements of this type.
         /// </summary>
         public static readonly string iconUssClassName = ussClassName + "__icon";
+        internal static readonly UniqueStyleString iconUssClassNameUnique = new(iconUssClassName);
+
         /// <summary>
         /// The USS class name for the <see cref="HelpBoxMessageType.Info"/> state in Elements of this type.
         /// </summary>
         public static readonly string iconInfoUssClassName = iconUssClassName + "--info";
+        internal static readonly UniqueStyleString iconInfoUssClassNameUnique = new(iconInfoUssClassName);
+
         /// <summary>
         /// The USS class name for the <see cref="HelpBoxMessageType.Warning"/> state in Elements of this type.
         /// </summary>
@@ -105,10 +122,13 @@ namespace UnityEngine.UIElements
         /// The USS class name for the <see cref="HelpBoxMessageType.Warning"/> state in Elements of this type.
         /// </summary>
         public static readonly string iconWarningUssClassName = iconUssClassName + "--warning";
+        internal static readonly UniqueStyleString iconWarningUssClassNameUnique = new(iconWarningUssClassName);
+
         /// <summary>
         /// The USS class name for the <see cref="HelpBoxMessageType.Error"/> state in Elements of this type.
         /// </summary>
         public static readonly string iconErrorUssClassName = iconUssClassName + "--error";
+        internal static readonly UniqueStyleString iconErrorUssClassNameUnique = new(iconErrorUssClassName);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -160,13 +180,13 @@ namespace UnityEngine.UIElements
         }
 
         // This class is used to push the label down a few pixels when an icon is present.
-        static readonly string k_LabelWithIconClassName = labelUssClassName + "--with-icon";
+        static readonly UniqueStyleString labelWithIconClassNameUnique = new(labelUssClassName + "--with-icon");
 
         HelpBoxMessageType m_HelpBoxMessageType;
         VisualElement m_Icon;
         VisualElement m_TopContainer;
         VisualElement m_BottomContainer;
-        string m_IconClass;
+        UniqueStyleString? m_IconClass;
         Label m_Label;
 
         /// <summary>
@@ -338,36 +358,38 @@ namespace UnityEngine.UIElements
         /// <param name="messageType">The type of message.</param>
         public HelpBox(string text, HelpBoxMessageType messageType)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             m_HelpBoxMessageType = messageType;
 
             m_TopContainer = new VisualElement();
-            m_TopContainer.AddToClassList(topContainerUssClassName);
+            m_TopContainer.AddToClassList(topContainerUssClassNameUnique);
 
             m_Label = new Label(text);
-            m_Label.AddToClassList(labelUssClassName);
+            m_Label.AddToClassList(labelUssClassNameUnique);
+            m_Label.selection.isSelectable = true;
             m_TopContainer.Add(m_Label);
 
             m_Icon = new VisualElement();
-            m_Icon.AddToClassList(iconUssClassName);
+            m_Icon.AddToClassList(iconUssClassNameUnique);
             UpdateIcon(messageType);
 
             m_BottomContainer = new VisualElement();
-            m_BottomContainer.AddToClassList(bottomContainerUssClassName);
+            m_BottomContainer.AddToClassList(bottomContainerUssClassNameUnique);
 
             Add(m_TopContainer);
             Add(m_BottomContainer);
         }
 
-        string GetIconClass(HelpBoxMessageType messageType)
+        UniqueStyleString? GetIconClass(HelpBoxMessageType messageType)
         {
             switch (messageType)
             {
-                case HelpBoxMessageType.Info:    return iconInfoUssClassName;
-                case HelpBoxMessageType.Warning: return iconWarningUssClassName;
-                case HelpBoxMessageType.Error:   return iconErrorUssClassName;
+                case HelpBoxMessageType.Info:    return iconInfoUssClassNameUnique;
+                case HelpBoxMessageType.Warning: return iconWarningUssClassNameUnique;
+                case HelpBoxMessageType.Error:   return iconErrorUssClassNameUnique;
             }
+
             return null;
         }
 
@@ -375,9 +397,9 @@ namespace UnityEngine.UIElements
         void UpdateIcon(HelpBoxMessageType messageType)
         {
             // Remove the old style
-            if (!string.IsNullOrEmpty(m_IconClass))
+            if (m_IconClass.HasValue)
             {
-                m_Icon.RemoveFromClassList(m_IconClass);
+                m_Icon.RemoveFromClassList(m_IconClass.Value);
             }
 
             m_IconClass = GetIconClass(messageType);
@@ -385,12 +407,12 @@ namespace UnityEngine.UIElements
             if (m_IconClass == null)
             {
                 m_Icon.RemoveFromHierarchy();
-                m_Label.RemoveFromClassList(k_LabelWithIconClassName);
+                m_Label.RemoveFromClassList(labelWithIconClassNameUnique);
             }
             else
             {
-                m_Label.AddToClassList(k_LabelWithIconClassName);
-                m_Icon.AddToClassList(m_IconClass);
+                m_Label.AddToClassList(labelWithIconClassNameUnique);
+                m_Icon.AddToClassList(m_IconClass.Value);
                 if (m_Icon.parent == null)
                 {
                     m_TopContainer.Insert(0, m_Icon);
@@ -410,7 +432,7 @@ namespace UnityEngine.UIElements
             if (m_CallToActionLink == null)
             {
                 m_CallToActionLink = new Label();
-                m_CallToActionLink.AddToClassList(linkUssClassName);
+                m_CallToActionLink.AddToClassList(linkUssClassNameUnique);
                 m_BottomContainer.Add(m_CallToActionLink);
             }
 
@@ -434,7 +456,7 @@ namespace UnityEngine.UIElements
         void CreateAndInsertButtonToBottomContainer(string labelText = "Action Button")
         {
             m_CallToActionButton = new Button() { text = labelText };
-            m_CallToActionButton.AddToClassList(buttonUssClassName);
+            m_CallToActionButton.AddToClassList(buttonUssClassNameUnique);
             m_BottomContainer.Insert(0, m_CallToActionButton);
         }
     }

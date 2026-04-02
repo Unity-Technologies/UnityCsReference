@@ -85,18 +85,16 @@ partial class StyleSheetHeader : UISelectionObjectHeader
 
             m_StyleSheetName.dataSource = StyleSheet;
 
+            TypeName = nameof(StyleSheet);
+            TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
+
             if (m_StyleSheet == null)
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
                 StyleSheetName = null;
-                TypeName = nameof(StyleSheet);
-
                 m_StyleSheetName.value = null;
             }
             else
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
-                TypeName = TypeUtility.GetTypeDisplayName(m_StyleSheet.GetType());
                 StyleSheetName = m_StyleSheet.name;
             }
             NotifyPropertyChanged(StyleSheetProperty);
@@ -107,7 +105,7 @@ partial class StyleSheetHeader : UISelectionObjectHeader
     {
         AddToClassList(UssClass);
 
-        TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
+        TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
         TypeName = nameof(StyleSheet);
 
         m_StyleSheetName = this.Q<TextField>(className: StyleSheetNameUssClass);

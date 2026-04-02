@@ -12,6 +12,7 @@ namespace Unity.Scripting
         public static void Log(string message) => scriptingCoreDebug?.Log(message);
         public static void LogError(string message) => scriptingCoreDebug?.LogError(message);
         public static void LogError(string message, Exception exception) => scriptingCoreDebug?.LogError($"{message}\nException:\n{exception}");
+        public static void LogException(Exception exception) => scriptingCoreDebug?.LogException(exception);
         public static void Assert(bool condition) => scriptingCoreDebug?.Assert(condition);
         public static void AssertMsg(bool condition, string message) => scriptingCoreDebug?.AssertMsg(condition, message);
         public static bool RunAssemblyLoadContextLeakDetection(List<IntPtr> assemblyLoadContextWeakHandles) => scriptingCoreDebug != null && scriptingCoreDebug.RunAssemblyLoadContextLeakDetection(assemblyLoadContextWeakHandles);

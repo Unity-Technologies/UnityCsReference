@@ -73,6 +73,40 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
+        /// Gets target GameObjects for the cell, filtered to only editable objects.
+        /// </summary>
+        internal static RentSpan<GameObject> GetEditableTargetGameObjects(HierarchyViewCell cell, out int length)
+        {
+            using var allTargets = GetTargetGameObjects(cell, out var totalLength);
+
+            if (totalLength == 1)
+            {
+                var go = allTargets.Span[0];
+                if (IsGameObjectEditable(go))
+                {
+                    var result = new RentSpan<GameObject>(1);
+                    result.Span[0] = go;
+                    length = 1;
+                    return result;
+                }
+                length = 0;
+                return new RentSpan<GameObject>(0);
+            }
+
+            // Multi-selection path: filter in-place
+            var rentSpan = new RentSpan<GameObject>(totalLength);
+            length = 0;
+
+            foreach (var go in allTargets.Span[..totalLength])
+            {
+                if (IsGameObjectEditable(go))
+                    rentSpan.Span[length++] = go;
+            }
+
+            return rentSpan;
+        }
+
+        /// <summary>
         /// If a Cell is bound to HierarchySceneHandler it returns the corresponding Scene.
         /// </summary>
         /// <param name="cell">The Cell encapsulating a Scene</param>
@@ -184,5 +218,12 @@ namespace Unity.Hierarchy.Editor
             cell.Add(propField);
             return propField;
         }
+
+        /// <summary>
+        /// Determines whether the specified GameObject is editable.
+        /// </summary>
+        /// <param name="gameObject">The GameObject to check.</param>
+        /// <returns>True if the GameObject is not null and does not have the NotEditable flag set; otherwise, false.</returns>
+        public static bool IsGameObjectEditable(GameObject gameObject) => gameObject != null && (gameObject.hideFlags & HideFlags.NotEditable) == 0;
     }
 }

@@ -31,15 +31,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ShowAllButton = new Button
             {
                 name = "showAllButton",
-                classList = { "moreless" },
                 text = "Show all"
-            };
+            }.WithClassList("moreless");
             m_ShowLessButton = new Button
             {
                 name = "showLessButton",
-                classList = { "moreless" },
                 text = "Show less"
-            };
+            }.WithClassList("moreless");
             m_ShowAllButton.clickable.clicked += ShowAllClicked;
             m_ShowLessButton.clickable.clicked += ShowLessClicked;
         }
@@ -50,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_TagsList.Clear();
             foreach (var tagName in tagNames)
-                m_TagsList.Add(new Label { text = tagName, classList = { PackageBaseTagLabel.ussClassName } });
+                m_TagsList.Add(new Label { text = tagName }.WithClassList(PackageBaseTagLabel.ussClassName));
 
             if (tagNames.Count < 5)
                 return;

@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -15,26 +14,24 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class VisualStateList : ISerializationCallbackReceiver, IVisualStateList
     {
         [SerializeField]
-        protected List<VisualState> m_OrderedVisualStates = new();
-        protected virtual IEnumerable<VisualState> orderedListBeforeGrouping => m_OrderedVisualStates;
+        protected VisualState[] m_OrderedVisualStates = Array.Empty<VisualState>();
+        protected virtual IEnumerable<VisualState> orderedList => m_OrderedVisualStates;
 
         [SerializeField]
-        private string[] m_OrderedGroups = Array.Empty<string>();
-        public virtual IList<string> orderedGroups => m_OrderedGroups;
+        private List<string> m_OrderedGroups = new();
+        public virtual IReadOnlyCollection<string> orderedGroupNames => m_OrderedGroups;
 
-        public virtual long countLoaded => m_OrderedVisualStates.Count;
-        public virtual long countTotal => m_OrderedVisualStates.Count;
+        public virtual long countLoaded => m_OrderedVisualStates.Length;
+        public virtual long countTotal => m_OrderedVisualStates.Length;
 
-        // a reverse look up table such that we can find an visual state easily through package unique id
+        // a reverse look up table such that we can find a visual state easily through unique id
         protected Dictionary<string, int> m_UniqueIdToIndexLookup = new();
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public VisualStateList() : this(Array.Empty<string>()) {}
-#pragma warning restore UA2001
 
-        public VisualStateList(IEnumerable<string> packageUniqueIds)
+        public VisualStateList(IReadOnlyCollection<string> itemUniqueIds)
         {
-            Rebuild(packageUniqueIds ?? Array.Empty<string>());
+            Rebuild(itemUniqueIds ?? Array.Empty<string>());
         }
 
         [ExcludeFromCodeCoverage]
@@ -48,57 +45,48 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupLookupTable();
         }
 
-        public void Rebuild(IEnumerable<string> packageUniqueIds)
+        public void Rebuild(IReadOnlyCollection<string> itemUniqueIds)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Rebuild(packageUniqueIds.Select(id => Get(id) ?? new VisualState(id)));
-#pragma warning restore UA2001
+            Rebuild(itemUniqueIds.SelectToNewArray(id => Get(id) ?? new VisualState(id)));
         }
 
-        public void Rebuild(IEnumerable<VisualState> orderedVisualStates, IEnumerable<string> orderedGroupNames = null)
+        public void Rebuild(VisualState[] orderedVisualStates)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_OrderedVisualStates = orderedVisualStates.ToList();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_OrderedGroups = orderedGroupNames?.ToArray() ?? Array.Empty<string>();
-#pragma warning restore UA2001
+            m_OrderedVisualStates = orderedVisualStates;
+            m_OrderedGroups = new List<string>(m_OrderedVisualStates.SelectAsEnumerable(v => v.groupName).EnumerateDistinct());
             SetupLookupTable();
         }
 
-        public virtual VisualState Get(string packageUniqueId)
+        public virtual VisualState Get(string itemUniqueId)
         {
-            if (!string.IsNullOrEmpty(packageUniqueId) && m_UniqueIdToIndexLookup.TryGetValue(packageUniqueId, out var index))
+            if (!string.IsNullOrEmpty(itemUniqueId) && m_UniqueIdToIndexLookup.TryGetValue(itemUniqueId, out var index))
                 return m_OrderedVisualStates[index];
             return null;
         }
 
-        public virtual bool Contains(string packageUniqueId)
+        public virtual bool Contains(string itemUniqueId)
         {
-            return !string.IsNullOrEmpty(packageUniqueId) && m_UniqueIdToIndexLookup.ContainsKey(packageUniqueId);
+            return !string.IsNullOrEmpty(itemUniqueId) && m_UniqueIdToIndexLookup.ContainsKey(itemUniqueId);
+        }
+
+        public virtual VisualState GetNext(string itemUniqueId, bool reverseOrder = false)
+        {
+            if (string.IsNullOrEmpty(itemUniqueId) || !m_UniqueIdToIndexLookup.TryGetValue(itemUniqueId, out var index))
+                return null;
+            var nextIndex = reverseOrder ? index - 1 : index + 1;
+            return nextIndex >= 0 && nextIndex < m_OrderedVisualStates.Length ? m_OrderedVisualStates[nextIndex] : null;
         }
 
         protected void SetupLookupTable()
         {
             m_UniqueIdToIndexLookup.Clear();
-            for (var i = 0; i < m_OrderedVisualStates.Count; i++)
-                m_UniqueIdToIndexLookup[m_OrderedVisualStates[i].packageUniqueId] = i;
+            for (var i = 0; i < m_OrderedVisualStates.Length; i++)
+                m_UniqueIdToIndexLookup[m_OrderedVisualStates[i].itemUniqueId] = i;
         }
 
         public virtual IEnumerator<VisualState> GetEnumerator()
         {
-            // The final ordering of the visual states is decided by the order of the group and the order of the items
-            // We prioritize the order of the groups, i.e. items matching the first group name will always be enumerated first
-            // The order of items within each group is kept untouched
-            if (m_OrderedGroups.Length > 1)
-                foreach (var groupName in m_OrderedGroups)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var v in orderedListBeforeGrouping.Filter(v => v.groupName == groupName))
-#pragma warning restore UA2001
-                        yield return v;
-            else
-                foreach (var v in orderedListBeforeGrouping)
-                    yield return v;
+            return orderedList.GetEnumerator();
         }
 
         [ExcludeFromCodeCoverage]

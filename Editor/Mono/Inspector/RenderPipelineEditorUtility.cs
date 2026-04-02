@@ -302,7 +302,7 @@ namespace UnityEditor.Rendering
 
         internal static bool SupportPreview(Camera camera, out string reason)
         {
-            if (!RenderPipelineManager.isCurrentPipelineValid)
+            if (!RenderPipelineManager.IsCurrentRenderPipelineValid())
             {
                 //Thus we are in Built-in Render Pipeline. Preview are supported here.
                 if (camera == null || camera.Equals(null))

@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEngine.Scripting.APIUpdating;
 using UnityEngine;
 using UnityEngine.Internal;
 
@@ -36,7 +34,7 @@ namespace UnityEditor
 
         // This is only used internally for deleting curves
         internal int  classID;
-        internal int  scriptInstanceID;
+        internal EntityId  scriptInstanceID;
 
         public AnimationClipCurveData()
         {
@@ -410,9 +408,7 @@ namespace UnityEditor
         public static AnimationEvent[] GetAnimationEvents(AnimationClip clip)
         {
             var blittableEvents = GetAnimationEventsInternal(clip);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var animationEvents = blittableEvents.Select(AnimationEventBlittable.ToAnimationEvent).ToArray();
-#pragma warning restore UA2001
+            var animationEvents = Array.ConvertAll(blittableEvents, AnimationEventBlittable.ToAnimationEvent);
             foreach (var blittableEvent in blittableEvents)
                 blittableEvent.Dispose();
             return animationEvents;
@@ -421,9 +417,7 @@ namespace UnityEditor
         extern internal static AnimationEventBlittable[] GetAnimationEventsInternal([NotNull] AnimationClip clip);
         public static void SetAnimationEvents(AnimationClip clip, AnimationEvent[] events)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var blittableEvents = events.Select(AnimationEventBlittable.FromAnimationEvent).ToArray();
-#pragma warning restore UA2001
+            var blittableEvents = Array.ConvertAll(events, AnimationEventBlittable.FromAnimationEvent);
             SetAnimationEventsInternal(clip, blittableEvents);
             foreach (var blittableEvent in blittableEvents)
                 blittableEvent.Dispose();

@@ -9,6 +9,7 @@ using UnityEditor.Build.Profile;
 using UnityEngine.Assertions;
 using UnityEngine.Multiplayer.Internal;
 using Unity.Multiplayer.PlayMode.Editor;
+using Unity.Multiplayer;
 
 namespace UnityEditor.Multiplayer.Internal
 {

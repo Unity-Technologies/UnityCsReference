@@ -163,6 +163,10 @@ namespace UnityEditor
                     case SerializedPropertyType.EntityId:
                         propertyValue = $"{property.entityIdValue}";
                         break;
+
+                    case SerializedPropertyType.LoadableReference:
+                        propertyValue = $"{property.loadableReferenceValue}";
+                        break;
                 }
 
                 if (property.prefabOverride)

@@ -17,7 +17,7 @@ namespace UnityEditor
     {
         public static void CreateAndSetTreeView(ObjectTreeForSelector.TreeSelectorData data)
         {
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update data.userData to use long instead of int");
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
             var ignoreController = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)data.userData)) as AudioMixerController;
 
             // Create treeview

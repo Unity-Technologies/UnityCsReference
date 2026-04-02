@@ -5,7 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 
@@ -549,7 +551,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements with the specified class in the class list, as specified with the `class` attribute in a UXML file or added with <see cref="VisualElement.AddToClassList(string)"/> method.
+        /// Selects all elements with the specified class in the class list, as specified with the `class` attribute in a UXML file or added with <see cref="VisualElement.AddToClassList(UniqueStyleString)"/> method.
         /// </summary>
         /// <param name="classname">The class to use in the query.</param>
         /// <remarks>
@@ -557,6 +559,20 @@ namespace UnityEngine.UIElements
         /// To select elements by their C# type, use <see cref="OfType{T2}(string,string[])"/>.
         /// </remarks>
         public UQueryBuilder<T> Class(string classname)
+        {
+            AddClass(classname);
+            return this;
+        }
+
+        /// <summary>
+        /// Selects all elements with the specified class in the class list, as specified with the `class` attribute in a UXML file or added with <see cref="VisualElement.AddToClassList(UniqueStyleString)"/> method.
+        /// </summary>
+        /// <param name="classname">The class to use in the query.</param>
+        /// <remarks>
+        /// This method can be called multiple times in order to select elements with multiple classes.
+        /// To select elements by their C# type, use <see cref="OfType{T2}(string,string[])"/>.
+        /// </remarks>
+        public UQueryBuilder<T> Class(UniqueStyleString classname)
         {
             AddClass(classname);
             return this;
@@ -612,6 +628,45 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Selects all elements, recursively, that are descendants of currently matching ancestors.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Descendents<Button>(classname: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public UQueryBuilder<T2> Descendents<T2>(UniqueStyleString classname) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddClass(classname);
+            return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
+        }
+
+        /// <summary>
+        /// Selects all elements, recursively, that are descendants of currently matching ancestors.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Descendents<Button>(classname: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public UQueryBuilder<T2> Descendents<T2>(string name, UniqueStyleString classname) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClass(classname);
+            return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
+        }
+
+        /// <summary>
         /// Selects all direct child elements of elements matching the previous rules.
         /// </summary>
         /// <example>
@@ -623,6 +678,26 @@ namespace UnityEngine.UIElements
         /// </code>
         /// </example>
         public UQueryBuilder<T2> Children<T2>(string name = null, params string[] classes) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClasses(classes);
+            return AddRelationship<T2>(StyleSelectorRelationship.Child);
+        }
+
+        /// <summary>
+        /// Selects all direct child elements of elements matching the previous rules.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all direct children of root that are buttons and have classes "health-button" or "unity-button".
+        /// var buttons = root.Query().Children<Button>(classes: new[] { "health-button", "unity-button" });
+        /// ]]>
+        /// </code>
+        /// </example>
+        public UQueryBuilder<T2> Children<T2>(string name = null, params UniqueStyleString[] classes) where T2 : VisualElement
         {
             FinishCurrentSelector();
             AddType<T2>();
@@ -652,6 +727,45 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Selects all direct child elements of elements matching the previous rules.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Children<Button>(className: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public UQueryBuilder<T2> Children<T2>(UniqueStyleString className) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.Child);
+        }
+
+        /// <summary>
+        /// Selects all direct child elements of elements matching the previous rules.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Children<Button>(className: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public UQueryBuilder<T2> Children<T2>(string name, UniqueStyleString className) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.Child);
+        }
+
+        /// <summary>
         /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
         /// </summary>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -669,9 +783,50 @@ namespace UnityEngine.UIElements
         /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
         /// </summary>
         /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
+        public UQueryBuilder<T2> OfType<T2>(string name = null, params UniqueStyleString[] classes) where T2 : VisualElement
+        {
+            AddType<T2>();
+            AddName(name);
+            AddClasses(classes);
+            return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        /// <summary>
+        /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
+        /// </summary>
+        /// <param name="name">If specified, will select elements with this name.</param>
         /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public UQueryBuilder<T2> OfType<T2>(string name = null, string className = null) where T2 : VisualElement
+        {
+            AddType<T2>();
+            AddName(name);
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        /// <summary>
+        /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
+        /// </summary>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
+        public UQueryBuilder<T2> OfType<T2>(UniqueStyleString className) where T2 : VisualElement
+        {
+            AddType<T2>();
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        /// <summary>
+        /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
+        /// </summary>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
+        public UQueryBuilder<T2> OfType<T2>(string name, UniqueStyleString className) where T2 : VisualElement
         {
             AddType<T2>();
             AddName(name);
@@ -704,7 +859,22 @@ namespace UnityEngine.UIElements
                 parts.Add(StyleSelectorPart.CreateClass(c));
         }
 
+        private void AddClass(UniqueStyleString c)
+        {
+            // Unfortunately, StyleSelectorPart.CreateClass isn't ready for UniqueStyleStrings yet.
+            parts.Add(StyleSelectorPart.CreateClass(c.value));
+        }
+
         private void AddClasses(params string[] classes)
+        {
+            if (classes != null)
+            {
+                for (int i = 0; i < classes.Length; i++)
+                    AddClass(classes[i]);
+            }
+        }
+
+        private void AddClasses(params UniqueStyleString[] classes)
         {
             if (classes != null)
             {

@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -225,6 +227,11 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         visitor.Reset();
     }
 
+    public static readonly string k_AddBindingText = L10n.Tr("Add Binding");
+    public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding");
+    public static readonly string k_EditBindingText = L10n.Tr("Edit Binding");
+    public static readonly string k_ViewBindingText = L10n.Tr("View Binding");
+
     private readonly Dictionary<BindingInfoKey, State> m_State = new ();
     private UpdateFlags m_UpdateFlags;
     private string m_StyleProperty;
@@ -359,6 +366,53 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     {
         fieldAffordanceElement.populateMenuItems = menu =>
         {
+            var ve = authoringContext.StyleDiff.currentTarget;
+            var bindingPath = "style." + m_StylePropertyCSharpName;
+            var isBindableElement = UxmlSerializedDataRegistry.GetDescription(ve.GetType().FullName) != null;
+            var isBindableProperty = PropertyContainer.IsPathValid(ve, bindingPath);
+
+            if (isBindableElement && isBindableProperty)
+            {
+                var hasDataBinding = false;
+                var vea = ve.visualElementAsset;
+
+                if (vea != null)
+                {
+                    hasDataBinding = ve.TryGetBinding(bindingPath, out _);
+                }
+
+                if (hasDataBinding)
+                {
+                    if (authoringContext.IsReadOnly)
+                    {
+                        menu.AppendAction(k_ViewBindingText,
+                            (a) => BindingWindow.OpenToView(ve, bindingPath, fieldAffordanceElement),
+                            (a) => DropdownMenuAction.Status.Normal,
+                            this);
+                    }
+                    else
+                    {
+                        menu.AppendAction(k_EditBindingText,
+                            (a) =>  BindingWindow.OpenToEdit(ve, bindingPath, fieldAffordanceElement),
+                            (a) => DropdownMenuAction.Status.Normal,
+                            this);
+
+                        menu.AppendAction(k_RemoveBindingText, (a) => {
+                            var cmd = new RemoveBindingCommand(ve, stylePropertyId);
+                            cmd.Execute();
+                        }, (a) => DropdownMenuAction.Status.Normal, this);
+                    }
+                }
+                else
+                {
+                    if (!authoringContext.IsReadOnly)
+                    {
+                        menu.AppendAction(k_AddBindingText,
+                            _ => { BindingWindow.OpenToCreate(ve, bindingPath, fieldAffordanceElement); });
+                    }
+                }
+            }
+
             var isOverridden = value.uxmlValue.isInlined || value.binding != null || value.uxmlValue.requireVariableResolve;
 
             var status = isOverridden && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
@@ -484,6 +538,8 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         var inlineValue = value.inlineValue;
         var computedValue = value.computedValue;
 
+        var shouldBeEnabled = true;
+
         var fieldAffordanceElement = (targetElement as IAffordanceField)?.affordanceElement;
         if (fieldAffordanceElement != null)
         {
@@ -491,8 +547,10 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value);
             SetupContextMenu(fieldAffordanceElement, authoringContext, value);
             var hasResolvedBinding = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding;
-            targetElement.SetEnabled(!hasResolvedBinding);
+            shouldBeEnabled &= !hasResolvedBinding;
         }
+        shouldBeEnabled &= !authoringContext.IsReadOnly;
+        targetElement.enabledSelf = shouldBeEnabled;
 
         using var _ = new IgnoreChangeScope(this);
         switch (targetElement)

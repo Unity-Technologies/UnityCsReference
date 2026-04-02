@@ -14,8 +14,8 @@ namespace UnityEngine.UIElements
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct ComputedStyle
     {
-        public Dictionary<string, StylePropertyValue> customProperties => customData.Read().customProperties;
-        public int customPropertiesCount => customProperties?.Count ?? 0;
+        public CustomPropertyListRef customProperties => m_CustomProperties;
+        public int customPropertiesCount => customProperties.Count;
 
         public static ComputedStyle Create()
         {
@@ -35,6 +35,12 @@ namespace UnityEngine.UIElements
 
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
+            if (reader.valueCount == 0)
+            {
+                ApplyInitialValue(reader);
+                return true;
+            }
+
             var handle = reader.GetValue(0).handle;
             if (handle.valueType == StyleValueType.Keyword)
             {
@@ -65,8 +71,8 @@ namespace UnityEngine.UIElements
 
         private void RemoveCustomStyleProperty(StylePropertyReader reader)
         {
-            var name = reader.property.name;
-            if (customProperties?.ContainsKey(name) != true)
+            var name = (UniqueStyleString)reader.property.name;
+            if (customProperties.ContainsKey(name) != true)
                 return;
 
             customProperties.Remove(name);
@@ -75,35 +81,14 @@ namespace UnityEngine.UIElements
         private void ApplyCustomStyleProperty(StylePropertyReader reader)
         {
             dpiScaling = reader.dpiScaling;
-            customData.Write().customProperties ??= new();
+            if (!m_CustomProperties.IsCreated())
+                m_CustomProperties = CustomPropertyList.Create();
 
             var styleProperty = reader.property;
 
             // Custom property only support one value
             StylePropertyValue customProp = reader.GetValue(0);
-            customProperties[styleProperty.name] = customProp;
-        }
-
-        private static bool AreListPropertiesEqual<T>(List<T> a, List<T> b)
-        {
-            if (a == b)
-                return true;
-
-            if (a == null || b == null)
-                return false;
-
-            if (a.Count != b.Count)
-                return false;
-
-            for (int i = 0; i < a.Count; ++i)
-            {
-                var aVal = a[i];
-                var bVal = b[i];
-                if (!aVal.Equals(bVal))
-                    return false;
-            }
-
-            return true;
+            m_CustomProperties[(UniqueStyleString)styleProperty.name] = customProp;
         }
 
         private void ApplyAllPropertyInitial()

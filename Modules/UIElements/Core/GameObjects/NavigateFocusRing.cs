@@ -71,13 +71,13 @@ namespace UnityEngine.UIElements
             // Check for world-space navigation special rules
             if (m_Root?.elementPanel?.isFlat == false)
             {
-                if (!IsWorldSpaceNavigationValid(currentFocusable, out var document))
+                if (!IsWorldSpaceNavigationValid(currentFocusable, out var panelComponent))
                     return null;
 
                 if (direction == Next || direction == Previous)
-                    return document.focusRing?.GetNextFocusableInSequence(currentFocusable, direction);
+                    return panelComponent.focusRing?.GetNextFocusableInSequence(currentFocusable, direction);
 
-                root = document.rootVisualElement;
+                root = panelComponent.GetRootVisualElement();
             }
 
             if (direction == Up || direction == Down || direction == Right || direction == Left)
@@ -88,9 +88,9 @@ namespace UnityEngine.UIElements
             return m_Ring.GetNextFocusableInSequence(currentFocusable, direction);
         }
 
-        private bool IsWorldSpaceNavigationValid(Focusable currentFocusable, out UIDocument document)
+        private bool IsWorldSpaceNavigationValid(Focusable currentFocusable, out IPanelComponent panelComponent)
         {
-            document = null;
+            panelComponent = null;
 
             // No jumping in from out-of-focus
             if (currentFocusable is not VisualElement ve)
@@ -99,9 +99,8 @@ namespace UnityEngine.UIElements
             }
 
             // Find document root as a replacement for m_Root. Assume ve is in a document.
-            // TODO: IPanelComponent
-            document = (ve.FindRootPanelComponent() as UIDocument);
-            if (document == null || document.rootVisualElement == null)
+            panelComponent = ve.FindRootPanelComponent();
+            if (panelComponent == null || panelComponent.GetRootVisualElement() == null)
                 return false;
 
             return true;

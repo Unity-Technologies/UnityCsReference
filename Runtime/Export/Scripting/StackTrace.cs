@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Text;
-using System.Reflection;
 using System.Runtime.Serialization;
 using UnityEngine.Scripting;
 
@@ -15,17 +14,6 @@ namespace UnityEngine
 {
     public static class StackTraceUtility
     {
-        static string projectFolder = "";
-
-        [RequiredByNativeCode]
-        static internal void SetProjectFolder(string folder)
-        {
-            projectFolder = folder;
-
-            if (!string.IsNullOrEmpty(projectFolder))
-                projectFolder = projectFolder.Replace("\\", "/");
-        }
-
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
         [RequiredByNativeCode]
         static unsafe public string ExtractStackTrace()
@@ -33,157 +21,33 @@ namespace UnityEngine
             int bufMax = 16384;
             byte* buf = stackalloc byte[bufMax];
 
-            int quickSize = Debug.ExtractStackTraceNoAlloc(buf, bufMax, projectFolder);
+            int quickSize = Debug.ExtractStackTraceNoAlloc(buf, bufMax, Unity.Scripting.StackTrace.BasePath);
             if (quickSize > 0)
             {
                 return new string((sbyte*)buf, 0, quickSize, Encoding.UTF8);
             }
 
             var trace = new StackTrace(1, true);
-            string traceString = ExtractFormattedStackTrace(trace);
+            string traceString = Unity.Scripting.StackTrace.Format(trace);
             return traceString;
         }
 
         static public string ExtractStringFromException(System.Object exception)
         {
-            string message, stackTrace;
-            ExtractStringFromExceptionInternal(exception, out message, out stackTrace);
+            Unity.Scripting.StackTrace.GetMessageAndStackTrace(exception as Exception, out var message, out var stackTrace);
             return message + "\n" + stackTrace;
         }
 
+        // As this class is part of UnityEngine, it might not be available during CoreCLR code loading operations.
+        // On CoreCLR use the StackTraceInterop directly as it is part of Scripting Core, which doesn't get unloaded.
+
         [RequiredByNativeCode]
-        [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
-        static internal void ExtractStringFromExceptionInternal(System.Object exceptiono, out string message, out string stackTrace)
-        {
-            if (exceptiono == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with null exception");
-            var exception = exceptiono as System.Exception;
-            if (exception == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with an exception that was not of type System.Exception");
+        static void SetProjectFolder(string folder)
+            => Unity.Scripting.StackTrace.BasePath = folder;
 
-            // StackTrace might not be available
-            StringBuilder sb = new StringBuilder(exception.StackTrace == null ? 512 : exception.StackTrace.Length * 2);
-            message = "";
-            string traceString = "";
-            while (exception != null)
-            {
-                if (traceString.Length == 0)
-                    traceString = exception.StackTrace;
-                else
-                    traceString = exception.StackTrace + "\n" + traceString;
-
-                string thisMessage = exception.GetType().Name;
-                string exceptionMessage = "";
-                if (exception.Message != null) exceptionMessage = exception.Message;
-                if (exceptionMessage.Trim().Length != 0)
-                {
-                    thisMessage += ": ";
-                    thisMessage += exceptionMessage;
-                }
-                message = thisMessage;
-                if (exception.InnerException != null)
-                {
-                    traceString = "Rethrow as " + thisMessage + "\n" + traceString;
-                }
-                exception = exception.InnerException;
-            }
-
-            sb.Append(traceString + "\n");
-
-            var trace = new StackTrace(1, true);
-            sb.Append(ExtractFormattedStackTrace(trace));
-
-            stackTrace = sb.ToString();
-        }
-
-        // NB if you change this formatting/code there is a separate Mono quick path in MonoManager.cpp that must be updated as well.
-        [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
-        static internal string ExtractFormattedStackTrace(StackTrace stackFrames)
-        {
-            StringBuilder sb = new StringBuilder(255);
-            int iIndex;
-
-            // need to skip over "n" frames which represent the
-            // System.Diagnostics package frames
-            for (iIndex = 0; iIndex < stackFrames.FrameCount; iIndex++)
-            {
-                StackFrame frame = stackFrames.GetFrame(iIndex);
-
-                MethodBase mb = frame.GetMethod();
-                if (mb == null)
-                    continue;
-
-                Type classType = mb.DeclaringType;
-                if (classType == null)
-                    continue;
-
-                // Add namespace.classname:MethodName
-                String ns = classType.Namespace;
-                if (!string.IsNullOrEmpty(ns))
-                {
-                    sb.Append(ns);
-                    sb.Append(".");
-                }
-
-                sb.Append(classType.Name);
-                sb.Append(":");
-                sb.Append(mb.Name);
-                sb.Append("(");
-
-                // Add parameters
-                int j = 0;
-                ParameterInfo[] pi = mb.GetParameters();
-                bool fFirstParam = true;
-                while (j < pi.Length)
-                {
-                    if (fFirstParam == false)
-                        sb.Append(", ");
-                    else
-                        fFirstParam = false;
-
-                    sb.Append(pi[j].ParameterType.Name);
-                    j++;
-                }
-                sb.Append(")");
-
-                // Add path name and line number - unless it is a Debug.Log call, then we are only interested
-                // in the calling frame.
-                string path = frame.GetFileName();
-                if (path != null)
-                {
-                    // Stripping does not exclude line entries entirely but only the
-                    // part that allows us to generate hyperlinks and code pointers.
-                    bool shouldStripLineNumbers =
-                        mb.IsDefined(typeof(HideInCallstackAttribute), true) ||
-                        (classType.Name == "Debug" && classType.Namespace == "UnityEngine") ||
-                        (classType.Name == "Logger" && classType.Namespace == "UnityEngine") ||
-                        (classType.Name == "DebugLogHandler" && classType.Namespace == "UnityEngine") ||
-                        (classType.Name == "Assert" && classType.Namespace == "UnityEngine.Assertions") ||
-                        (mb.Name == "print" && classType.Name == "MonoBehaviour" && classType.Namespace == "UnityEngine")
-                    ;
-
-                    if (!shouldStripLineNumbers)
-                    {
-                        sb.Append(" (at ");
-
-                        if (!string.IsNullOrEmpty(projectFolder))
-                        {
-                            if (path.Replace("\\", "/").StartsWith(projectFolder))
-                            {
-                                path = path.Substring(projectFolder.Length, path.Length - projectFolder.Length);
-                            }
-                        }
-
-                        sb.Append(path);
-                        sb.Append(":");
-                        sb.Append(frame.GetFileLineNumber().ToString());
-                        sb.Append(")");
-                    }
-                }
-
-                sb.Append("\n");
-            }
-
-            return sb.ToString();
-        }
+        [RequiredByNativeCode]
+        static void ExtractStringFromExceptionInternal(System.Object exceptiono, out string message, out string stackTrace)
+            => Unity.Scripting.StackTrace.GetMessageAndStackTrace(exceptiono as Exception, out message, out stackTrace);
     }
 
     [Serializable]

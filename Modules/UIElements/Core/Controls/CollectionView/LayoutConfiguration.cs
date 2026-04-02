@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         VisualElement DefaultMakeCellItem()
         {
             var label = new Label();
-            label.AddToClassList(MultiColumnController.cellUssClassName);
+            label.AddToClassList(MultiColumnController.cellUssClassNameUnique);
             return label;
         }
 
@@ -85,12 +85,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
 
             var container = new VisualElement() { name = MultiColumnController.rowContainerUssClassName };
-            container.AddToClassList(MultiColumnController.rowContainerUssClassName);
+            container.AddToClassList(MultiColumnController.rowContainerUssClassNameUnique);
 
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 var cellContainer = new VisualElement();
-                cellContainer.AddToClassList(MultiColumnController.cellUssClassName);
+                cellContainer.AddToClassList(MultiColumnController.cellUssClassNameUnique);
 
                 var cellItem = column.makeCell?.Invoke() ?? DefaultMakeCellItem();
                 cellContainer.SetProperty(bindableElementPropertyName, cellItem);
@@ -186,7 +186,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             // Create the header to the multi column view.
             m_HeaderContainer = new VisualElement { name = MultiColumnController.headerContainerUssClassName };
-            m_HeaderContainer.AddToClassList(MultiColumnController.headerContainerUssClassName);
+            m_HeaderContainer.AddToClassList(MultiColumnController.headerContainerUssClassNameUnique);
             m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
             m_HeaderContainer.Add(m_MultiColumnHeader);
             return m_HeaderContainer;

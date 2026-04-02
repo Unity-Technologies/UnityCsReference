@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
@@ -203,9 +202,7 @@ namespace Unity.UI.Builder
                 return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement);
 
             if (m_TargetElementToReparent.IsSelector())
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement).Children().Last();
-#pragma warning restore UA2001
+                return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement).children[^1];
 
             if (m_TargetElementToReparent.IsStyleSheet())
                 return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement);

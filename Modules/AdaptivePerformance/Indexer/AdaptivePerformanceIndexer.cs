@@ -39,58 +39,68 @@ namespace UnityEngine.AdaptivePerformance
         private float warningTemp = 1.0f;
         private float throttlingTemp = 1.0f;
 
-        public ThermalStateTracker()
-        {
-        }
-
         public StateAction Update()
         {
-            // Do not perform action if thermal level is not supported.
-            if(!Holder.Instance.SupportedFeature(Provider.Feature.TemperatureLevel))
+            var ap = Holder.Instance;
+            if (ap == null)
                 return StateAction.Stale;
-            float thermalTrend = Holder.Instance.ThermalStatus.ThermalMetrics.TemperatureTrend;
 
-            var thermalLevel = Holder.Instance.ThermalStatus.ThermalMetrics.TemperatureLevel;
-            var warning = Holder.Instance.ThermalStatus.ThermalMetrics.WarningLevel;
-
-            if (warning == WarningLevel.ThrottlingImminent && warningTemp == 1.0f)
-                warningTemp = thermalLevel; // remember throttling imminent level
-
-            if (warning == WarningLevel.Throttling && throttlingTemp == 1.0f)
-                throttlingTemp = thermalLevel; // remember throttling level
-
-            // Throttling needs to cool down a lot before changing to no warning
-            if (warning == WarningLevel.Throttling || thermalLevel >= throttlingTemp)
-                return StateAction.FastDecrease;
-
-            // warm device
-            if (warning == WarningLevel.ThrottlingImminent || thermalLevel >= warningTemp)
+            if(ap.SupportedFeature(Provider.Feature.WarningLevel))
             {
-                // halfway to throttling?
-                if (thermalLevel > (warningTemp + throttlingTemp) / 2)
-                    return StateAction.Decrease;
+                var thermalMetrics = ap.ThermalStatus.ThermalMetrics;
+                var warning = thermalMetrics.WarningLevel;
 
-                if (thermalTrend <= 0)
-                    return StateAction.Stale;
-                else if (thermalTrend > 0.5)
-                    return StateAction.FastDecrease;
-                else
-                    return StateAction.Decrease;
-            }
+                if(ap.SupportedFeature(Provider.Feature.TemperatureLevel))
+                {
+                    var thermalTrend = thermalMetrics.TemperatureTrend;
+                    var thermalLevel = thermalMetrics.TemperatureLevel;
+                    
+
+                    if (warning == WarningLevel.ThrottlingImminent && warningTemp == 1.0f)
+                        warningTemp = thermalLevel; // remember throttling imminent level
+
+                    if (warning == WarningLevel.Throttling && throttlingTemp == 1.0f)
+                        throttlingTemp = thermalLevel; // remember throttling level
+
+                    // Throttling needs to cool down a lot before changing to no warning
+                    if (warning == WarningLevel.Throttling || thermalLevel >= throttlingTemp)
+                        return StateAction.FastDecrease;
+
+                    // warm device
+                    if (warning == WarningLevel.ThrottlingImminent || thermalLevel >= warningTemp)
+                    {
+                        // halfway to throttling?
+                        if (thermalLevel > (warningTemp + throttlingTemp) / 2)
+                            return StateAction.Decrease;
+
+                        if (thermalTrend <= 0)
+                            return StateAction.Stale;
+                        else if (thermalTrend > 0.5)
+                            return StateAction.FastDecrease;
+                        else
+                            return StateAction.Decrease;
+                    }
 
 
-            // normal operating conditions
-            if (warning == WarningLevel.NoWarning && thermalLevel < warningTemp)
-            {
-                if (thermalTrend <= 0)
-                    return StateAction.Increase;
-                else if (thermalTrend > 0.5)
-                    return StateAction.FastDecrease;
-                else if (thermalTrend > 0.1)
-                    return StateAction.Decrease;
-            }
-
-
+                    // normal operating conditions
+                    if (warning == WarningLevel.NoWarning && thermalLevel < warningTemp)
+                    {
+                        if (thermalTrend <= 0)
+                            return StateAction.Increase;
+                        else if (thermalTrend > 0.5)
+                            return StateAction.FastDecrease;
+                        else if (thermalTrend > 0.1)
+                            return StateAction.Decrease;
+                    }
+                } else {
+                    if (warning == WarningLevel.Throttling)
+                        return StateAction.FastDecrease;
+                    else if (warning == WarningLevel.ThrottlingImminent)
+                        return StateAction.Decrease;
+                    else if (warning == WarningLevel.NoWarning)
+                        return StateAction.Increase;
+                }
+            } 
             return StateAction.Stale;
         }
     }
@@ -113,7 +123,11 @@ namespace UnityEngine.AdaptivePerformance
 
         public StateAction Update()
         {
-            var frameMs = Holder.Instance.PerformanceStatus.FrameTiming.AverageFrameTime;
+            var ap = Holder.Instance;
+            if (ap == null)
+                return StateAction.Stale;
+
+            var frameMs = ap.PerformanceStatus.FrameTiming.AverageFrameTime;
             if (frameMs > 0)
             {
                 var targetMs = 1f / GetEffectiveTargetFrameRate();
@@ -159,22 +173,35 @@ namespace UnityEngine.AdaptivePerformance
         private float m_LastAverageGpuFrameTime;
         private float m_LastAverageCpuFrameTime;
         private bool m_IsApplied;
+        private IAdaptivePerformance m_AP;
+
+        public AdaptivePerformanceScalerEfficiencyTracker()
+        {
+            m_AP = Holder.Instance;
+        }
 
         public bool IsRunning { get => m_Scaler != null; }
 
         public void Start(AdaptivePerformanceScaler scaler, bool isApply)
         {
             Debug.Assert(!IsRunning, "AdaptivePerformanceScalerEfficiencyTracker is already running");
+            if (m_AP == null)
+                return;
             m_Scaler = scaler;
-            m_LastAverageGpuFrameTime = Holder.Instance.PerformanceStatus.FrameTiming.AverageGpuFrameTime;
-            m_LastAverageCpuFrameTime = Holder.Instance.PerformanceStatus.FrameTiming.AverageCpuFrameTime;
+            m_LastAverageGpuFrameTime = m_AP.PerformanceStatus.FrameTiming.AverageGpuFrameTime;
+            m_LastAverageCpuFrameTime = m_AP.PerformanceStatus.FrameTiming.AverageCpuFrameTime;
             m_IsApplied = true;
         }
 
         public void Stop()
         {
-            var gpu = Holder.Instance.PerformanceStatus.FrameTiming.AverageGpuFrameTime - m_LastAverageGpuFrameTime;
-            var cpu = Holder.Instance.PerformanceStatus.FrameTiming.AverageCpuFrameTime - m_LastAverageCpuFrameTime;
+            if (m_AP == null)
+            {
+                m_Scaler = null;
+                return;
+            }
+            var gpu = m_AP.PerformanceStatus.FrameTiming.AverageGpuFrameTime - m_LastAverageGpuFrameTime;
+            var cpu = m_AP.PerformanceStatus.FrameTiming.AverageCpuFrameTime - m_LastAverageCpuFrameTime;
             var sign = m_IsApplied ? 1 : -1;
             m_Scaler.GpuImpact = sign * (int)(gpu * 1000);
             m_Scaler.CpuImpact = sign * (int)(cpu * 1000);

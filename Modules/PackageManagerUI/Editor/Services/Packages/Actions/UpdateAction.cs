@@ -29,7 +29,7 @@ internal class UpdateAction : UpdateActionBase
         foreach (var version in primaryVersions)
             updateTargets.Add(GetUpdateTarget(version));
 
-        if (!m_OperationDispatcher.Install(updateTargets))
+        if (!m_OperationDispatcher.Install(updateTargets, OperationType.Update))
             return false;
 
         // The current multi-select UI does not allow users to install non-recommended versions

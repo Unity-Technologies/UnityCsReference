@@ -466,7 +466,7 @@ namespace UnityEditor
             m_PreviewWindow.RebuildContentsContainers();
             m_PreviewWindow.Show();
             Repaint();
-            UIElementsIMGUIUtility.MakeCurrentIMGUIContainerDirty();
+            IMGUIContainer.MakeCurrentIMGUIContainerDirty();
             if (exitGUI)
                 GUIUtility.ExitGUI();
         }

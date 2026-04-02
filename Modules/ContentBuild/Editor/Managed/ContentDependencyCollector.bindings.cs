@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Loading;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace UnityEditor.Build.Content
     {
         public EntityId[] references;
         public LoadableReference[] loadableReferences;
-        public LoadableScene[] loadableScenes;
+        public LoadableSceneId[] loadableSceneIds;
     }
 
     [NativeHeader("Modules/ContentBuild/Editor/Public/ContentDependencyCollector.h")]

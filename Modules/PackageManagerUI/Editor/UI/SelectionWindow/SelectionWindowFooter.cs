@@ -20,13 +20,13 @@ internal class SelectionWindowFooter : VisualElement
 
     public SelectionWindowFooter()
     {
-        var separator = new VisualElement { name = "separator", classList = { "separator" } };
+        var separator = new VisualElement { name = "separator" }.WithClassList("separator");
         Add(separator);
 
-        var footer = new VisualElement { name = "footer", classList = { "footer" } };
+        var footer = new VisualElement { name = "footer" }.WithClassList("footer");
         Add(footer);
 
-        var leftSection = new VisualElement { name = "leftSection", classList = { "left-section" } };
+        var leftSection = new VisualElement { name = "leftSection" }.WithClassList("left-section");
         footer.Add(leftSection);
 
         m_AllButton = new Button { name = "allButton", text = "All", tabIndex = -1, displayTooltipWhenElided = true };
@@ -37,7 +37,7 @@ internal class SelectionWindowFooter : VisualElement
         m_NoneButton.clicked += () => onNoneButtonClicked?.Invoke();
         leftSection.Add(m_NoneButton);
 
-        var rightSection = new VisualElement { name = "rightSection", classList = { "right-section" } };
+        var rightSection = new VisualElement { name = "rightSection" }.WithClassList("right-section");
         footer.Add(rightSection);
 
         m_ActionButton = new Button { name = "actionButton", text = "Action", tabIndex = -1, displayTooltipWhenElided = true };

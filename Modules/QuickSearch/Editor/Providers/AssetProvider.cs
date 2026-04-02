@@ -932,7 +932,7 @@ namespace UnityEditor.Search.Providers
                         }
                         else if (paths.Length > 1)
                         {
-                            var pathsStr = string.Join(",", paths);
+                            var pathsStr = string.Join("\n", paths);
                             EditorGUIUtility.systemCopyBuffer = pathsStr;
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, pathsStr);
                         }
@@ -1022,9 +1022,9 @@ namespace UnityEditor.Search.Providers
         {
             if (items.Count != 1)
                 return false;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2009 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleItem = items.Last();
-#pragma warning restore UA2001
+#pragma warning restore UA2009
             var info = GetInfo(singleItem);
             if (info.gid.identifierType != (int)IdentifierType.kImportedAsset)
                 return false;

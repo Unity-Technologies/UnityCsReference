@@ -12,7 +12,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor;
 
 [Serializable]
-class StartProcessNode : Node
+class StartProcessNode : ExecutionNode
 {
     [SerializeReference] private NodeInput<string> m_ExecutablePath;
     [SerializeReference] private NodeInput<string> m_Arguments;
@@ -22,7 +22,7 @@ class StartProcessNode : Node
     public NodeInput<string> Arguments => m_Arguments;
     public NodeOutput<int> ProcessId => m_ProcessId;
 
-    public StartProcessNode(string name) : base(name)
+    public StartProcessNode()
     {
         m_ExecutablePath = new(this);
         m_Arguments = new(this);

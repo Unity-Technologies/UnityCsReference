@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -25,9 +24,7 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public static string GetPlatformsSummary(this Descriptor descriptor)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return (descriptor.Platforms == null || descriptor.Platforms.Length == 0) ? "Any" : Formatting.CombineStrings(descriptor.Platforms.Select(p => p.ToString()).ToArray());
-#pragma warning restore UA2001
+            return (descriptor.Platforms == null || descriptor.Platforms.Length == 0) ? "Any" : Formatting.CombineStrings(descriptor.Platforms);
         }
 
         public static string GetFullTypeName(this Descriptor descriptor)

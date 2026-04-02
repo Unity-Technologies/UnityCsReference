@@ -53,6 +53,21 @@ static class VisualElementReferenceTools
     /// </returns>
     public static bool TryCreateReference(VisualElement element, out PanelRenderer panelRenderer, out AuthoringIdPath authoringIdPath)
     {
+        return TryCreateReference(element, out panelRenderer, out authoringIdPath, true);
+    }
+
+    /// <summary>
+    /// Attempts to create a reference to a <see cref="VisualElement"/> within a <see cref="PanelRenderer"/>.
+    /// </summary>
+    /// <param name="element">The element to reference.</param>
+    /// <param name="panelRenderer">The <see cref="PanelRenderer"/> that contains the target visual element.</param>
+    /// <param name="authoringIdPath">The resolved path to the element.</param>
+    /// <param name="addMissingAuthoringIds">If <see langword="true"/>, missing authoring IDs are added to the UXML. If <see langword="false"/>, the method returns false when authoring IDs are missing.</param>
+    /// <returns>
+    /// <see langword="true"/> if the reference was successfully created; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryCreateReference(VisualElement element, out PanelRenderer panelRenderer, out AuthoringIdPath authoringIdPath, bool addMissingAuthoringIds)
+    {
         panelRenderer = default;
         authoringIdPath = default;
 
@@ -73,8 +88,7 @@ static class VisualElementReferenceTools
         }
 
         panelRenderer = renderer;
-        CreateReference(panelRenderer, element, out authoringIdPath);
-        return true;
+        return TryCreateReference(panelRenderer, element, out authoringIdPath, addMissingAuthoringIds);
     }
 
     /// <summary>
@@ -98,7 +112,7 @@ static class VisualElementReferenceTools
             return true;
 
         using var _ = ListPool<VisualElementAsset>.Get(out var pathToElement);
-        var foundElement = panelRenderer.visualTreeAsset.FindElementByPath(authoringIdPath, pathToElement);
+        var foundElement = panelRenderer.visualTreeAsset.FindElementByPath(authoringIdPath.path, pathToElement);
         if (foundElement == null)
             return false;
 
@@ -122,6 +136,21 @@ static class VisualElementReferenceTools
     /// <param name="authoringIdPath">The resolved path to the element.</param>
     public static void CreateReference(PanelRenderer panelRenderer, VisualElement visualElement, out AuthoringIdPath authoringIdPath)
     {
+        TryCreateReference(panelRenderer, visualElement, out authoringIdPath, true);
+    }
+
+    /// <summary>
+    /// Attempts to create a reference to a <see cref="VisualElement"/> within a <see cref="PanelRenderer"/>.
+    /// </summary>
+    /// <param name="panelRenderer">The <see cref="PanelRenderer"/> that contains the target visual element.</param>
+    /// <param name="visualElement">The element to reference.</param>
+    /// <param name="authoringIdPath">The resolved path to the element.</param>
+    /// <param name="addMissingAuthoringIds">If <see langword="true"/>, missing authoring IDs are added to the UXML. If <see langword="false"/>, the method returns false when authoring IDs are missing.</param>
+    /// <returns>
+    /// <see langword="true"/> if the reference was successfully created; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryCreateReference(PanelRenderer panelRenderer, VisualElement visualElement, out AuthoringIdPath authoringIdPath, bool addMissingAuthoringIds)
+    {
         authoringIdPath = default;
 
         if (panelRenderer == null)
@@ -135,7 +164,7 @@ static class VisualElementReferenceTools
         {
             // We use id 0 to represent the root.
             authoringIdPath = new AuthoringIdPath([0]);
-            return;
+            return true;
         }
 
         var rootComponent = visualElement.FindRootPanelComponent();
@@ -172,8 +201,16 @@ static class VisualElementReferenceTools
                 missingAuthoringIds.Add(vea);
         }
 
-        AddMissingAuthoringIds(missingAuthoringIds);
+        if (missingAuthoringIds.Count > 0)
+        {
+            if (!addMissingAuthoringIds)
+                return false;
+
+            AddMissingAuthoringIds(missingAuthoringIds);
+        }
+
         authoringIdPath = new AuthoringIdPath(pathIds);
+        return true;
     }
 
     static void AddMissingAuthoringIds(List<VisualElementAsset> missingAuthoringIds)

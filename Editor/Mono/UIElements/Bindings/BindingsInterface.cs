@@ -19,6 +19,9 @@ namespace UnityEditor.UIElements
         void Bind(VisualElement element, object bindingContext, SerializedProperty parentProperty);
 
         void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback);
+
+        void UntrackPropertyValue(VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback);
+
         void TrackSerializedObjectValue(VisualElement element, SerializedObject property, Action<SerializedObject> callback);
 
         void HandleStyleUpdate(VisualElement element);
@@ -114,10 +117,22 @@ namespace UnityEditor.UIElements
             bindingImpl.TrackPropertyValue(element, property, callback == null ? null : (e, p) => callback(p));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             bindingImpl.TrackPropertyValue(element, property, callback);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static void UntrackPropertyValue(this VisualElement element, SerializedProperty property)
+        {
+            bindingImpl.UntrackPropertyValue(element, property, null);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static void UntrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
+        {
+            bindingImpl.UntrackPropertyValue(element, property, callback);
         }
 
         /// <summary>

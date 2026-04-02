@@ -18,7 +18,6 @@ namespace Unity.GraphToolkit.Editor
     /// <see cref="NeedsContainer"/>, <see cref="Disableable"/>, and <see cref="Editable"/>.
     /// </remarks>
     // ReSharper disable InconsistentNaming
-    [InitializeOnLoad]
     [UnityRestricted]
     internal class Capabilities : Enumeration
     {

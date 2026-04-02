@@ -89,13 +89,13 @@ namespace UnityEditorInternal
             get;
         }
 
-        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
+        [Obsolete("Use entityId instead, this will be removed in a future version", true)]
         public int id
         {
             get { return instanceId; }
         }
 
-        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
+        [Obsolete("Use entityId instead, this will be removed in a future version", true)]
         public int instanceId => entityId;
 
         public extern EntityId entityId

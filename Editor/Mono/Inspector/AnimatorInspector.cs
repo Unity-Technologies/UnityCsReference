@@ -110,7 +110,6 @@ namespace UnityEditor
                     controllers.Add(animator.runtimeAnimatorController);
                 }
                 serializedObject.ApplyModifiedProperties();
-                AnimationWindowUtility.ControllerChanged();
             }
 
             EditorGUILayout.PropertyField(m_Avatar);

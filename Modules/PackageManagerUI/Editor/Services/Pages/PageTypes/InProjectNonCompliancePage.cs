@@ -15,7 +15,21 @@ internal class InProjectNonCompliancePage: InProjectPage
     public override string displayName => L10n.Tr("Restricted Packages");
     public override Icon icon => Icon.Error;
 
+    public override bool visible => visualStates.countTotal > 0;
+
+    protected override bool updateWhenInactive => true;
+
     public InProjectNonCompliancePage(IPackageDatabase packageDatabase) : base(packageDatabase) { }
+
+    protected override void RebuildVisualStateList()
+    {
+        var oldVisibility = visible;
+
+        base.RebuildVisualStateList();
+
+        if (oldVisibility != visible)
+            TriggerOnStateChange();
+    }
 
     public override bool ShouldInclude(IPackage package)
     {

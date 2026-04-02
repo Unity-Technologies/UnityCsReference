@@ -72,9 +72,7 @@ namespace UnityEditor
 
         protected override void SelectionChanged(IList<int> selectedIds)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SettingsProvider selectedProvider = GetFirstValidProvider(selectedIds.Count > 0 ? selectedIds.First() : -1);
-#pragma warning restore UA2001
+            SettingsProvider selectedProvider = GetFirstValidProvider(selectedIds.Count > 0 ? selectedIds[0] : -1);
             if (currentProviderChanged?.Invoke(currentProvider, selectedProvider) ?? true)
                 currentProvider = selectedProvider;
         }
@@ -91,9 +89,7 @@ namespace UnityEditor
                 if (treeViewItem.children.Count <= 0)
                     break;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                treeViewItem = treeViewItem.children.First();
-#pragma warning restore UA2001
+                treeViewItem = treeViewItem.children[0];
                 provider = FindProviderById(treeViewItem.id);
             }
 

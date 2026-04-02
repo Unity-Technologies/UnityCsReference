@@ -21,15 +21,11 @@ namespace UnityEditor.UIElements
         internal class UssExportOptions
         {
             public string propertyIndent { get; set; } = "    ";
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal string[] ignoreSelectorList { get; set; } = Array.Empty<string>();
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-            internal string[] ignoreSelectorPrefixList { get; set; } = Array.Empty<string>();
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal string[] ignorePropertyList { get; set; } = Array.Empty<string>();
+            public string[] ignoreSelectorList { get; set; } = Array.Empty<string>();
+            public string[] ignoreSelectorPrefixList { get; set; } = Array.Empty<string>();
+            public string[] ignorePropertyList { get; set; } = Array.Empty<string>();
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-            internal bool IsSelectorIgnored(StyleComplexSelector selector)
+            public bool IsSelectorIgnored(StyleComplexSelector selector)
             {
                 if (selector.selectors.Length == 0 ||
                     selector.selectors[0].parts.Length == 0)
@@ -52,8 +48,7 @@ namespace UnityEditor.UIElements
                 return false;
             }
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal bool IsPropertyIgnored(string propertyName)
+            public bool IsPropertyIgnored(string propertyName)
             {
                 if (ignorePropertyList == null)
                     return false;

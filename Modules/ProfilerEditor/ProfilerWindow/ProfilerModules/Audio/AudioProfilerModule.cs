@@ -35,12 +35,12 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         bool m_DSPGraphHorizontalLayout = false;
 
-        [SerializeField]
+        // NOTE: This was originally tagged [SerializeField], but the type was not serializable. UUM-132549
         private AudioProfilerGroupTreeViewState m_AudioProfilerGroupTreeViewState;
         private AudioProfilerGroupView m_AudioProfilerGroupView = null;
         private AudioProfilerGroupViewBackend m_AudioProfilerGroupViewBackend;
 
-        [SerializeField]
+        // NOTE: This was originally tagged [SerializeField], but the type was not serializable. UUM-132549
         private AudioProfilerClipTreeViewState m_AudioProfilerClipTreeViewState;
         private AudioProfilerClipView m_AudioProfilerClipView = null;
         private AudioProfilerClipViewBackend m_AudioProfilerClipViewBackend;

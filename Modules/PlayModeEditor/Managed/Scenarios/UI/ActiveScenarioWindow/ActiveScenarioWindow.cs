@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -9,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.PlayMode.Editor;
 
-class ActiveScenarioWindow : EditorWindow
+class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
 {
     const string k_Stylesheet = "PlayMode/UI/Framework.uss";
     const string k_WindowTitle = "Active Scenario";
@@ -36,6 +39,7 @@ class ActiveScenarioWindow : EditorWindow
         ScenarioManagerProvider.instance.ConfigAssetChanged += Refresh;
     }
 
+
     void OnDisable()
     {
         ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
@@ -46,6 +50,20 @@ class ActiveScenarioWindow : EditorWindow
     {
         rootVisualElement.styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
         Refresh();
+    }
+    public void AddItemsToMenu(GenericMenu menu)
+    {
+        foreach (var method in TypeCache.GetMethodsWithAttribute<ActiveScenarioWindowMenuAttribute>())
+        {
+            try
+            {
+                method.Invoke(null, new object[] { menu });
+            }
+            catch(Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
     }
 
     internal void Refresh()

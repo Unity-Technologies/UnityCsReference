@@ -101,7 +101,7 @@ namespace UnityEngine.UIElements.Internal
 
             var value = property.GetValue(ref container);
 
-            var isValueNull = TypeTraits<TValue>.CanBeNull && EqualityComparer<TValue>.Default.Equals(value, default);
+            var isValueNull = TypeTraits.CanBeNull(typeof(TValue)) && EqualityComparer<TValue>.Default.Equals(value, default);
             if (!isValueNull && PropertyBag.TryGetPropertyBagForValue(ref value, out var valuePropertyBag))
             {
                 switch (valuePropertyBag)

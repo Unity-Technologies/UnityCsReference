@@ -32,7 +32,7 @@ namespace UnityEditor.SceneTemplate
         public const string classFoldoutHelpButton = "scene-template-asset-inspector-foldout-help-button";
         public const string unityThemeVariables = "unity-theme-env-variables";
         public const string sceneTemplateThemeVariables = "scene-template-variables";
-        public const string sceneTemplateNoTemplateHelpBox = "scene-template-no-template-help-box";
+        public const string sceneTemplateHelpBox = "scene-template-help-box";
         public const string sceneTemplateDialogFooter = "scene-template-dialog-footer";
         public const string sceneTemplateDialogBorder = "scene-template-dialog-border";
 

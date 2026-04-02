@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
+#pragma warning disable CS0618 // glyphTable is obsolete; used for internal lookup
 
 namespace UnityEditor.TextCore.Text
 {
@@ -210,3 +211,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

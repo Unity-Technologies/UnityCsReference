@@ -174,6 +174,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private class AttributesSection : DebuggerFoldout
         {
+            private const string k_NewClassName = "newStyle";
+
             readonly TextField m_name;
             readonly IntegerField m_IdField;
             readonly ObjectField m_VisualTreeAsset;
@@ -190,8 +192,7 @@ namespace UnityEditor.UIElements.Debugger
             readonly IntegerField m_tabIndex;
             readonly TextField m_bindingPath;
             private ListView m_ClassList;
-
-
+            private readonly List<string> m_ClassesCopy = new();
 
             public AttributesSection(DebuggerSelection debuggerSelection):base("Attributes", debuggerSelection, false)
             {
@@ -247,19 +248,50 @@ namespace UnityEditor.UIElements.Debugger
                         {
                             m_SelectedElement.RemoveFromClassList(t.previousValue);
                             m_SelectedElement.AddToClassList(t.newValue);
+                            SyncClassList();
                         });
                         return item;
                     },
                     bindItem = (e, i) =>
                     {
                         var tf = e as TextField;
-                        tf.SetValueWithoutNotify( m_SelectedElement.classList[i]);
+                        tf.SetValueWithoutNotify(m_ClassesCopy[i]);
                     },
 
-                    onAdd = (t) => m_SelectedElement.AddToClassList("newStyle"),
+                    onAdd = (t) =>
+                    {
+                        AddNewClass();
+                        SyncClassList();
+                    },
 
+                    onRemove = _ =>
+                    {
+                        RemoveLastClass();
+                        SyncClassList();
+                    },
+
+                    // Don't use the classList directly. It's unreliable, can be reassigned, etc.
+                    // Instead we maintain a local copy and properly monitor the content we set on the element.
+                    itemsSource = m_ClassesCopy
                 });
 
+                m_ClassList.viewController.itemsSourceSizeChanged += () =>
+                {
+                    if (m_ClassesCopy.Count < m_SelectedElement.classListCount)
+                    {
+                        int toRemove = m_SelectedElement.classListCount - m_ClassesCopy.Count;
+                        for (int i = 0; i < toRemove; i++)
+                            RemoveLastClass();
+                    }
+                    else
+                    {
+                        int toAdd = m_ClassesCopy.Count - m_SelectedElement.classListCount;
+                        for (int i = 0; i < toAdd; i++)
+                            AddNewClass();
+                    }
+
+                    SyncClassList();
+                };
             }
 
             protected override void Refresh()
@@ -297,8 +329,39 @@ namespace UnityEditor.UIElements.Debugger
                 else
                     m_bindingPath.style.display = DisplayStyle.None;
 
-                m_ClassList.itemsSource = selectedElement.classList;
+                SyncClassList();
                 m_ClassList.RefreshItems();
+            }
+
+            private void SyncClassList()
+            {
+                m_ClassesCopy.Clear();
+                m_ClassesCopy.AddRange(m_SelectedElement.GetClasses());
+            }
+
+            private void AddNewClass()
+            {
+                // Attempt to add a new unique class name using a simple suffix
+                // - newStyle
+                // - newStyle1
+                // - newStyle2
+                // ...
+                // until the class count is effectively changed.
+
+                int suffix = 0;
+                int originalCount = m_SelectedElement.classListCount;
+                while (m_SelectedElement.classListCount == originalCount)
+                {
+                    var className = suffix > 0 ? k_NewClassName + suffix : k_NewClassName;
+                    m_SelectedElement.AddToClassList(className);
+                    suffix++;
+                }
+            }
+
+            private void RemoveLastClass()
+            {
+                var classes = m_SelectedElement.GetClassesForIteration();
+                m_SelectedElement.RemoveFromClassList(classes[^1]);
             }
         }
 

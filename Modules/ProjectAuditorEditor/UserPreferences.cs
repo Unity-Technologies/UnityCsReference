@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Unity.ProjectAuditor.Editor.Utils;
@@ -158,23 +157,32 @@ namespace Unity.ProjectAuditor.Editor
 
         static UserPreferences()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var buildTargets = Enum.GetValues(typeof(BuildTarget)).Cast<BuildTarget>();
-            var supportedBuildTargets = buildTargets.Where(bt =>
-#pragma warning restore UA2001
-                BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)).ToList();
-            supportedBuildTargets.Sort((t1, t2) =>
-                string.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
+            var buildTargets = Enum.GetValues(typeof(BuildTarget));
 
-            // Add at the beginning of the list, after sorting the other options
-            supportedBuildTargets.Insert(0, BuildTarget.NoTarget);
+            var supportedBuildTargets = new List<BuildTarget>(buildTargets.Length + 1)
+            {
+                BuildTarget.NoTarget
+            };
+
+            foreach (BuildTarget bt in buildTargets)
+            {
+                if (BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt))
+                    supportedBuildTargets.Add(bt);
+            }
+
+            supportedBuildTargets.Sort(
+                1,
+                supportedBuildTargets.Count - 1,
+                Comparer<BuildTarget>.Create((t1, t2) => string.Compare(
+                    t1.ToString(),
+                    t2.ToString(),
+                    StringComparison.Ordinal
+                )));
 
             s_SupportedBuildTargets = supportedBuildTargets.ToArray();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            s_PlatformContents = s_SupportedBuildTargets
-#pragma warning restore UA2001
-                .Select(t => new GUIContent((t == BuildTarget.NoTarget) ? k_UseBuildSettings : Formatting.GetModernBuildTargetName(t))).ToArray();
+            s_PlatformContents = Array.ConvertAll(s_SupportedBuildTargets,
+                t => new GUIContent((t == BuildTarget.NoTarget) ? k_UseBuildSettings : Formatting.GetModernBuildTargetName(t)));
         }
 
         public static EditorWindow OpenPreferencesWindow()

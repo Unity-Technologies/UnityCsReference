@@ -5,23 +5,35 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class MyAssetsPage : BasePage
+    internal class MyAssetsPage : BasePage, IPage<IPackage>
     {
         public static readonly PageSortOption[] k_SupportedSortOptions = { PageSortOption.PurchasedDateDesc, PageSortOption.UpdateDateDesc, PageSortOption.NameAsc, PageSortOption.NameDesc };
-        public static readonly PageFilters.Status[] k_SupportedStatusFilters =
+        public static readonly PageFilterStatus[] k_SupportedStatusFilters =
         {
-            PageFilters.Status.Downloaded,
-            PageFilters.Status.Imported,
-            PageFilters.Status.UpdateAvailable,
-            PageFilters.Status.Unlabeled,
-            PageFilters.Status.Hidden,
-            PageFilters.Status.Deprecated
+            PageFilterStatus.Downloaded,
+            PageFilterStatus.Imported,
+            PageFilterStatus.UpdateAvailable,
+            PageFilterStatus.Unlabeled,
+            PageFilterStatus.Hidden,
+            PageFilterStatus.Deprecated
+        };
+
+        public static readonly string[] k_SupportedCategories =
+        {
+            "3D",
+            "Add-Ons",
+            "2D",
+            "Audio",
+            "Essentials",
+            "Templates",
+            "Tools",
+            "VFX",
+            "Decentralization"
         };
 
         public const string k_Id = "MyAssets";
@@ -30,56 +42,87 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string displayName => L10n.Tr("My Assets");
         public override Icon icon => Icon.MyAssetsPage;
 
-        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
-        public override IReadOnlyList<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
         public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
         public override PageCapability capability => PageCapability.RequireNetwork | PageCapability.RequireUserLoggedIn;
 
         [SerializeField]
         private PaginatedVisualStateList m_VisualStateList = new();
-
         public override IVisualStateList visualStates => m_VisualStateList;
 
+        [NonSerialized]
+        private IPackageDatabase m_PackageDatabase;
         [NonSerialized]
         private IUnityConnectProxy m_UnityConnect;
         [NonSerialized]
         private IAssetStoreClient m_AssetStoreClient;
+        [NonSerialized]
+        private IAssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
         private IPackageManagerPrefs m_PackageManagerPrefs;
         [ExcludeFromCodeCoverage]
         public void ResolveDependencies(IPackageDatabase packageDatabase,
                                         IPackageManagerPrefs packageManagerPrefs,
                                         IUnityConnectProxy unityConnect,
-                                        IAssetStoreClient assetStoreClient)
+                                        IAssetStoreClient assetStoreClient,
+                                        IAssetStoreRestAPI assetStoreRestAPI)
         {
-            ResolveDependencies(packageDatabase);
+            m_PackageDatabase = packageDatabase;
             m_UnityConnect = unityConnect;
             m_AssetStoreClient = assetStoreClient;
             m_PackageManagerPrefs = packageManagerPrefs;
+            m_AssetStoreRestAPI = assetStoreRestAPI;
         }
 
         public MyAssetsPage(IPackageDatabase packageDatabase,
                             IPackageManagerPrefs packageManagerPrefs,
                             IUnityConnectProxy unityConnect,
-                            IAssetStoreClient assetStoreClient)
-            : base(packageDatabase)
+                            IAssetStoreClient assetStoreClient,
+                            IAssetStoreRestAPI assetStoreRestAPI)
         {
-            ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);
+            ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient, assetStoreRestAPI);
+
+            UpdateSupportedSortOptions(k_SupportedSortOptions, false);
+            UpdateSupportedStatuses(k_SupportedStatusFilters, false);
+            UpdateSupportedCategories(k_SupportedCategories, false);
         }
 
-        public override bool ShouldInclude(IPackage package)
+        public override void OnEnable()
+        {
+            m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
+
+            m_AssetStoreClient.onProductListFetched += OnProductListFetched;
+            m_AssetStoreClient.onProductExtraFetched += OnProductExtraFetched;
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+        }
+
+        public override void OnDisable()
+        {
+            m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
+
+            m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
+            m_AssetStoreClient.onProductExtraFetched -= OnProductExtraFetched;
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+        }
+
+        public bool ShouldInclude(IPackage package)
         {
             return package?.product != null;
         }
 
-        public override bool UpdateFilters(PageFilters newFilters)
+        protected override void UpdateFiltersInternal(PageFilters newFilters, PageFilters.ChangedTypes changedTypes, bool triggerEvent = true)
         {
-            if (!base.UpdateFilters(newFilters))
-                return false;
-
+            base.UpdateFiltersInternal(newFilters, changedTypes, triggerEvent);
+            if (!changedTypes.AnyFilterValuesChanged())
+                return;
             ListPurchases();
             ClearAllAndTriggerRebuildEvent();
-            return true;
+        }
+
+        public override void UpdateSupportedFiltersAsync()
+        {
+            m_AssetStoreRestAPI.ListLabels(
+                labels => UpdateSupportedLabels(labels, true),
+                error => Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}"), error.message)));
         }
 
         protected override void RefreshListOnSearchTextChange()
@@ -101,12 +144,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerListRebuild();
         }
 
-        public override void OnActivated()
+        protected void OnPackagesChanged(PackagesChangeArgs args)
         {
-            base.OnActivated();
-            TriggerListRebuild();
-            FilterPackagesBySearchText();
-            TriggerOnSelectionChanged();
+            // We don't need to worry about packages change when the page is not active, because when an inactive page
+            // becomes active, it will rebuild its visual states from scratch anyway.
+            if (!isActive)
+                return;
+
+            // Since MyAssets page's list is not affected by package change, we only check if any items has been updated.
+            var updateList = new List<string>(args.added.Join(args.updated, args.removed).SelectAsEnumerable(i => i.uniqueId).Filter(i => visualStates.Contains(i)));
+            if (updateList.Count > 0)
+                TriggerOnListUpdate(updated: updateList);
         }
 
         public override void LoadMore(long numberOfPackages)
@@ -120,12 +168,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.ListPurchases(queryArgs);
         }
 
-        public override void Load(string packageUniqueId)
+        public override void Load(string itemUniqueId)
         {
-            if (string.IsNullOrEmpty(packageUniqueId) || !long.TryParse(packageUniqueId, out var productId))
+            if (string.IsNullOrEmpty(itemUniqueId) || !long.TryParse(itemUniqueId, out var productId))
                 return;
 
-            var package = m_PackageDatabase.GetPackage(packageUniqueId);
+            var package = m_PackageDatabase.GetPackage(itemUniqueId);
             if (package == null || package.versions.primary.HasTag(PackageTag.Placeholder))
             {
                 if (m_UnityConnect.isUserLoggedIn)
@@ -136,23 +184,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!visualStates.Contains(package.uniqueId))
                 {
                     m_VisualStateList.AddExtraItem(package.uniqueId);
-                    TriggerOnListUpdate(added: new[] { package });
+                    TriggerOnListUpdate(added: new[] { package.uniqueId });
                 }
                 else
-                    TriggerOnListUpdate(updated: new[] { package });
+                    TriggerOnListUpdate(updated: new[] { package.uniqueId });
 
-                SetNewSelection(new[] { package.uniqueId });
+                SetNewSelection(new[] { package.uniqueId }, false);
             }
         }
 
-        public override void LoadExtraItems(IEnumerable<IPackage> packages)
+        public override void LoadExtraItems(IEnumerable<string> itemUniqueIds)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var addedPackages = packages.Filter(p => !visualStates.Contains(p.uniqueId)).ToArray();
-#pragma warning restore UA2001
-            foreach (var package in addedPackages)
-                m_VisualStateList.AddExtraItem(package.uniqueId);
-            TriggerOnListUpdate(added: addedPackages);
+            var addedItems = new List<string>(itemUniqueIds.Filter(p => !visualStates.Contains(p)));
+            foreach (var item in addedItems)
+                m_VisualStateList.AddExtraItem(item);
+            TriggerOnListUpdate(added: addedItems);
         }
 
         public virtual void OnProductExtraFetched(long productId)
@@ -163,7 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isNewItem)
                 m_VisualStateList.AddExtraItem(productId.ToString());
 
-            if (!isActivePage)
+            if (!isActive)
                 return;
 
             var package = m_PackageDatabase.GetPackage(uniqueId);
@@ -172,10 +218,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             if (isNewItem)
-                TriggerOnListUpdate(added: new[] { package });
+                TriggerOnListUpdate(added: new[] { package.uniqueId });
             else
-                TriggerOnListUpdate(updated: new[] { package });
-            SetNewSelection(new[] { package.uniqueId });
+                TriggerOnListUpdate(updated: new[] { package.uniqueId });
+            SetNewSelection(new[] { package.uniqueId }, false);
         }
 
         public void OnProductListFetched(AssetStorePurchases purchases)
@@ -194,10 +240,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var oldPackageIds = new HashSet<string>(visualStates.Select(v => v.packageUniqueId));
-#pragma warning restore UA2001
-            var newPackageIds = purchases.list.SelectToNewArray(i => i.productId.ToString());
+            var oldPackageIds = new HashSet<string>(visualStates.SelectAsEnumerable(v => v.itemUniqueId));
+            var newPackageIds = purchases.list.ConvertAll(i => i.productId.ToString());
             if (purchases.startIndex == 0)
             {
                 // override the result if the new list starts from index 0 (meaning it's a refresh)
@@ -213,97 +257,47 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                // if the content is neither starting from zero or next page, we simply discard it
+                // if the content is neither starting from zero nor next page, we simply discard it
                 return;
             }
 
             // only try to rebuild the list immediately if we are already on the `AssetStore` page.
             // if not we'll just wait for page switch which will trigger the rebuild as well
-            if (isActivePage)
+            if (isActive)
             {
                 HashSet<string> removed = null;
-                IList<string> added = null;
+                IReadOnlyCollection<string> added = null;
                 if (purchases.startIndex == 0)
                 {
                     removed = oldPackageIds;
-                    added = new List<string>();
+                    var addedList = new List<string>();
                     foreach (var packageId in newPackageIds)
                     {
                         if (removed.Contains(packageId))
                             removed.Remove(packageId);
                         else
-                            added.Add(packageId);
+                            addedList.Add(packageId);
                     }
+                    added = addedList;
                 }
                 else if (purchases.startIndex == oldPackageIds.Count)
                 {
                     added = newPackageIds;
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var addedPackages = added?.Select(i => m_PackageDatabase.GetPackage(i)).ToArray();
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var removedPackages = removed?.Select(i => m_PackageDatabase.GetPackage(i)).ToArray();
-#pragma warning restore UA2001
-                TriggerOnListUpdate(added: addedPackages, removed: removedPackages);
+                TriggerOnListUpdate(added: added, removed: removed);
             }
-
-            FilterPackagesBySearchText();
-        }
-
-        [ExcludeFromCodeCoverage]
-        public override void FilterPackagesBySearchText()
-        {
-            // For My Assets page, the packages we received from the API is already filtered by the search algorithm on the backend side.
-            // Since we want to have the same search experience as the Asset Store website, we don't apply any local search text filtering
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
+            searchText = string.Empty;
+            ClearFilters(true);
             if (!loggedIn)
             {
                 // When users log out, even when we are not on `My Assets` page we should still clear the Asset Store page properly
                 ClearAllAndTriggerRebuildEvent();
             }
         }
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-
-            m_AssetStoreClient.onProductListFetched += OnProductListFetched;
-            m_AssetStoreClient.onProductExtraFetched += OnProductExtraFetched;
-            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
-        }
-
-        public override void OnDisable()
-        {
-            base.OnDisable();
-
-            m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
-            m_AssetStoreClient.onProductExtraFetched -= OnProductExtraFetched;
-            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
-        }
-
-        [ExcludeFromCodeCoverage]
-        public override void RebuildAndReorderVisualStates()
-        {
-            // do nothing because for paginated pages, the order of visual states is pre-determined
-        }
-
-        [ExcludeFromCodeCoverage]
-        public override void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
-        {
-            // do nothing, only simple page needs implementation right now
-        }
-
-        [ExcludeFromCodeCoverage]
-        public override void ResetUserUnlockedState()
-        {
-            // do nothing, only simple page needs implementation right now
-        }
-
-        public override bool GetDefaultLockState(IPackage package) => false;
     }
 }

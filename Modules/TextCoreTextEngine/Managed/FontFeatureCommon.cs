@@ -10,6 +10,7 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     /// Enumeration of currently supported OpenType Layout features.
     /// </summary>
+    [Obsolete("Font feature tables and OTL feature tags are obsolete. OpenType layout is now handled natively by Advanced Text Generator (ATG).", false)]
     public enum OTL_FeatureTag : uint
     {
         kern = 'k' << 24 | 'e' << 16 | 'r' << 8 | 'n',

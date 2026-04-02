@@ -114,6 +114,31 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                     }
                 }
             });
+            
+            packages.Add(new KnownPackage() {
+                metadata = new KnownPackageMetadata(){
+                    packageName = "Adaptive Performance Apple",
+                    packageId = "com.unity.adaptiveperformance.apple",
+                    settingsType = "UnityEngine.AdaptivePerformance.Apple.AppleProviderSettings",
+                    licenseURL = "https://docs.unity3d.com/Packages/com.unity.adaptiveperformance.apple@latest?subfolder=/license/LICENSE.html",
+                    isDefaultPlatformProvider = "true",
+                    isDeprecated = "false",
+                    loaderMetadata = new List<IAdaptivePerformanceLoaderMetadata>()
+                    {
+                        new KnownLoaderMetadata() {
+                            loaderName = "Apple Provider",
+                            loaderType = "UnityEngine.AdaptivePerformance.Apple.AppleProviderLoader",
+                            supportedBuildTargets = new List<BuildTargetGroup>()
+                            {
+                                BuildTargetGroup.iOS,
+                                BuildTargetGroup.tvOS,
+                                BuildTargetGroup.VisionOS
+                            },
+                            priority = Int32.MaxValue,
+                        },
+                    }
+                }
+            });
 
             packages.Add(new KnownPackage()
             {
@@ -141,7 +166,11 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                                 BuildTargetGroup.PS5,
                                 BuildTargetGroup.XboxOne,
                                 BuildTargetGroup.GameCoreXboxSeries,
-                                BuildTargetGroup.GameCoreXboxOne
+                                BuildTargetGroup.GameCoreXboxOne,
+                                BuildTargetGroup.Switch,
+                                BuildTargetGroup.Switch2,
+                                BuildTargetGroup.QNX,
+                                BuildTargetGroup.EmbeddedLinux
                             },
                             priority = 5,
                         },

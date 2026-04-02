@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -121,12 +122,12 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Whether there is any model to paste.
         /// </summary>
-        public bool IsEmpty() => (!m_Nodes.HasAny() && !m_Wires.HasAny() &&
-            !m_VariableDeclarations.HasAny() && !m_StickyNotes.HasAny() && !m_Placemats.HasAny() && !m_VariableGroupPaths.HasAny());
+        public bool IsEmpty() => (m_Nodes.Count == 0 && m_Wires.Count == 0 &&
+            m_VariableDeclarations.Count == 0 && m_StickyNotes.Count == 0 && m_Placemats.Count == 0 && m_VariableGroupPaths.Count == 0);
 
         internal bool HasVariableContent()
         {
-            return m_VariableDeclarations.HasAny() || m_VariableGroupPaths.HasAny();
+            return m_VariableDeclarations.Count > 0 || m_VariableGroupPaths.Count > 0;
         }
 
         public CopyPasteData(List<Constant> constants)
@@ -269,11 +270,9 @@ namespace Unity.GraphToolkit.Editor
             }
 
             var inGroupDeclarations = new List<VariableDeclaration>();
-            if (groups.HasAny())
+            if (groups.Count > 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var graphModel = groups.First().GraphModel;
-#pragma warning restore UA2001
+                var graphModel = groups[0].GraphModel;
 
                 foreach (var variable in graphModel.VariableDeclarations)
                 {
@@ -454,9 +453,7 @@ namespace Unity.GraphToolkit.Editor
                 for (int i = 0; i < copyPasteData.m_VariableGroupPaths.Count; ++i)
                 {
                     var groupPath = copyPasteData.m_VariableGroupPaths[i];
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var newGroup = graphModel.CreateGroup(groupPath.m_Path.Last());
-#pragma warning restore UA2001
+                    var newGroup = graphModel.CreateGroup(groupPath.m_Path[^1]);
                     if (groupPath.m_Path.Length == 2)
                     {
                         if (operation == PasteOperation.Duplicate)
@@ -470,17 +467,13 @@ namespace Unity.GraphToolkit.Editor
                             }
                             else
                             {
-                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-#pragma warning restore UA2001
+                                var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels[0];
                                 parentGroup.InsertItem(newGroup);
                             }
                         }
                         else
                         {
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-#pragma warning restore UA2001
+                            var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels[0];
                             parentGroup.InsertItem(newGroup);
                             bbUpdater?.SetGroupModelExpanded(parentGroup, true);
                         }
@@ -501,7 +494,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            if (copyPasteData.m_VariableDeclarations.HasAny())
+            if (copyPasteData.m_VariableDeclarations.Count > 0)
             {
                 var variableDeclarationModels = copyPasteData.m_VariableDeclarations;
                 var duplicatedModels = new List<VariableDeclarationModelBase>();
@@ -515,26 +508,18 @@ namespace Unity.GraphToolkit.Editor
                     duplicatedModels.Add(newDeclaration);
                     if (source.m_GroupIndex >= 0) // if we have a valid groupIndex, it means we are in a duplicated group
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        createdGroups[source.m_GroupIndex].InsertItem(duplicatedModels.Last(), source.m_IndexInGroup);
-#pragma warning restore UA2001
+                        createdGroups[source.m_GroupIndex].InsertItem(duplicatedModels[^1], source.m_IndexInGroup);
                     }
                     else if (operation == PasteOperation.Duplicate && graphModel.TryGetModelFromGuid(source.m_GroupGUID, out GroupModel group)) // If we duplicate in the same graph, put the new variable in the same group, after the original.
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        group.InsertItem(duplicatedModels.Last());
-#pragma warning restore UA2001
+                        group.InsertItem(duplicatedModels[^1]);
                     }
                     else
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        selectedGroup?.InsertItem(duplicatedModels.Last());
-#pragma warning restore UA2001
+                        selectedGroup?.InsertItem(duplicatedModels[^1]);
                     }
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    declarationMapping[source.m_Model.Guid.ToString()] = duplicatedModels.Last();
-#pragma warning restore UA2001
+                    declarationMapping[source.m_Model.Guid.ToString()] = duplicatedModels[^1];
 
                     (newDeclaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
@@ -555,7 +540,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
-            if (copyPasteData.m_ImplicitVariableDeclarations.HasAny())
+            if (copyPasteData.m_ImplicitVariableDeclarations.Count > 0)
             {
                 var variableDeclarationModels =
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -571,9 +556,7 @@ namespace Unity.GraphToolkit.Editor
                         {
                             var newDeclaration = graphModel.DuplicateGraphVariableDeclaration(source, true);
                             duplicatedModels.Add(newDeclaration);
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            declarationMapping[source.Guid.ToString()] = duplicatedModels.Last();
-#pragma warning restore UA2001
+                            declarationMapping[source.Guid.ToString()] = duplicatedModels[^1];
 
                             (newDeclaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                         }
@@ -586,6 +569,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
+            var copyStr = shouldAddCopyStr ? "Copy of " : string.Empty;
             Dictionary<Hash128, DeclarationModel> portalDeclarations = new Dictionary<Hash128, DeclarationModel>();
             List<WirePortalModel> portalModels = new List<WirePortalModel>();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -641,7 +625,7 @@ namespace Unity.GraphToolkit.Editor
                     // If the node can not have another portal with the same direction and declaration ( is a data input ) and there is already
                     // one portal node with the same direction and the same Declaration.
                     else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() &&
-                             graphModel.NodeModels.HasAny(t => t is WirePortalModel tWirePortalModel &&
+                             graphModel.NodeModels.Exists(t => t is WirePortalModel tWirePortalModel &&
                                  tWirePortalModel != pastedNode &&
                                  tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
                                  tWirePortalModel is ISingleOutputPortNodeModel == portalNodeModel is ISingleOutputPortNodeModel)
@@ -649,13 +633,14 @@ namespace Unity.GraphToolkit.Editor
                              // Or if there is in the pasted node, a node with the opposite direction that share the same declaration
                              ||
                              (
-                                 copyPasteData.m_Nodes.HasAny(t => t is WirePortalModel tWirePortalModel &&
+                                 copyPasteData.m_Nodes.Exists(t => t is WirePortalModel tWirePortalModel &&
                                      tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
                                      tWirePortalModel is ISingleOutputPortNodeModel != portalNodeModel is ISingleOutputPortNodeModel)
                              )
                     )
                     {
                         var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
+                        declaration.Title = copyStr + portalNodeModel.Title;
 
                         portalDeclarations[portalNodeModel.DeclarationModel.Guid] = declaration;
                         portalNodeModel.SetDeclarationModel(declaration);
@@ -742,8 +727,6 @@ namespace Unity.GraphToolkit.Editor
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
-
-            var copyStr = shouldAddCopyStr ? "Copy of " : string.Empty;
 
             // Keep placemats relative order
             foreach (var placemat in copyPasteData.m_Placemats)

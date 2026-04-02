@@ -56,5 +56,6 @@ internal readonly record struct AddTemplatesToElementCommand
         }
 
         EditorUtility.SetDirty(visualTreeAsset);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
     }
 }

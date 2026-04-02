@@ -22,16 +22,18 @@ namespace UnityEngine.UIElements
 
         const float k_FixedPaneInitialDimension = 100f;
 
-        static readonly string s_UssClassName = "unity-two-pane-split-view";
-        static readonly string s_ContentContainerClassName = "unity-two-pane-split-view__content-container";
-        static readonly string s_HandleDragLineClassName = "unity-two-pane-split-view__dragline";
-        static readonly string s_HandleDragLineVerticalClassName = s_HandleDragLineClassName + "--vertical";
-        static readonly string s_HandleDragLineHorizontalClassName = s_HandleDragLineClassName + "--horizontal";
-        static readonly string s_HandleDragLineAnchorClassName = "unity-two-pane-split-view__dragline-anchor";
-        static readonly string s_HandleDragLineAnchorVerticalClassName = s_HandleDragLineAnchorClassName + "--vertical";
-        static readonly string s_HandleDragLineAnchorHorizontalClassName = s_HandleDragLineAnchorClassName + "--horizontal";
-        static readonly string s_VerticalClassName = "unity-two-pane-split-view--vertical";
-        static readonly string s_HorizontalClassName = "unity-two-pane-split-view--horizontal";
+        const string handleDragLineClassName = "unity-two-pane-split-view__dragline";
+        const string handleDragLineAnchorClassName = "unity-two-pane-split-view__dragline-anchor";
+        static readonly UniqueStyleString s_UssClassName = new("unity-two-pane-split-view");
+        static readonly UniqueStyleString s_ContentContainerClassName = new("unity-two-pane-split-view__content-container");
+        static readonly UniqueStyleString s_HandleDragLineClassName = new("unity-two-pane-split-view__dragline");
+        static readonly UniqueStyleString s_HandleDragLineVerticalClassName = new(handleDragLineClassName + "--vertical");
+        static readonly UniqueStyleString s_HandleDragLineHorizontalClassName = new(handleDragLineClassName + "--horizontal");
+        static readonly UniqueStyleString s_HandleDragLineAnchorClassName = new("unity-two-pane-split-view__dragline-anchor");
+        static readonly UniqueStyleString s_HandleDragLineAnchorVerticalClassName = new(handleDragLineAnchorClassName + "--vertical");
+        static readonly UniqueStyleString s_HandleDragLineAnchorHorizontalClassName = new(handleDragLineAnchorClassName + "--horizontal");
+        static readonly UniqueStyleString s_VerticalClassName = new("unity-two-pane-split-view--vertical");
+        static readonly UniqueStyleString s_HorizontalClassName = new("unity-two-pane-split-view--horizontal");
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData

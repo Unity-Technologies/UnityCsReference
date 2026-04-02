@@ -123,9 +123,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (!AssetDatabase.MakeEditable(destFiles))
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Debug.LogError($"Failed to make VCS provider make the scripts to be update editable.{Environment.NewLine}" + string.Join(Environment.NewLine, destFiles.Select(d => d.ToString())));
-#pragma warning restore UA2001
+                Debug.LogError($"Failed to make VCS provider make the scripts to be update editable.{Environment.NewLine}" + string.Join(Environment.NewLine, destFiles));
                 return false;
             }
 

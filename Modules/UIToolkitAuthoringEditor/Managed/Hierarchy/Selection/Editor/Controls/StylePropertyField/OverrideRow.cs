@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
@@ -12,6 +14,8 @@ namespace Unity.UIToolkit.Editor
     {
         internal static readonly string ussClassName = "unity-override-row";
         internal static readonly string isOverriddenUssClassName = ussClassName + "--overridden";
+
+        internal static CustomStyleProperty<Color> s_OverrideBarColorProperty = new CustomStyleProperty<Color>("--unity-override-bar-color");
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -22,6 +26,33 @@ namespace Unity.UIToolkit.Editor
         private readonly OverrideBarManipulator m_OverrideBarManipulator;
 
         private VisualElement m_OverrideContainer;
+
+        public Color m_OverrideBarColor;
+        public bool m_OverrideBarColorIsInline = false;
+
+        public Color OverrideBarColor
+        {
+            get => m_OverrideBarColor;
+            set
+            {
+                SetOverrideBarColor(value, true);
+            }
+        }
+
+        void SetOverrideBarColor(Color color, bool isInline)
+        {
+            if (m_OverrideBarColor == color && m_OverrideBarColorIsInline == isInline)
+                return;
+            m_OverrideBarColor = color;
+            m_OverrideBarColorIsInline = isInline;
+            UpdateManipulatorColor();
+            MarkDirtyRepaint();
+        }
+
+        void UpdateManipulatorColor()
+        {
+            m_OverrideBarManipulator.Color = m_OverrideBarColor;
+        }
 
         protected VisualElement overrideContainer
         {
@@ -37,13 +68,28 @@ namespace Unity.UIToolkit.Editor
 
         protected virtual string GetIsOverriddenClassName() => isOverriddenUssClassName;
 
-        public bool IsOverridden => m_OverrideBarManipulator.isOverridden;
+        public bool IsOverridden => m_OverrideBarManipulator.IsOverridden;
 
         public OverrideRow()
         {
             RegisterCallback<TrackPropertyEvent>(Callback, TrickleDown.NoTrickleDown);
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             m_OverrideBarManipulator = new OverrideBarManipulator();
             overrideContainer = this;
+            m_OverrideBarColor = EditorGUIUtility.isProSkin ? Color.white : Color.black;
+            UpdateManipulatorColor();
+        }
+
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
+        {
+            // Ignore if the override bar color was set inline
+            if (m_OverrideBarColorIsInline)
+                return;
+
+            if (e.customStyle.TryGetValue(s_OverrideBarColorProperty, out Color color))
+            {
+                SetOverrideBarColor(color, false);
+            }
         }
 
         private void Track(ITrackablePropertyProvider provider, string propertyName = null)
@@ -115,7 +161,7 @@ namespace Unity.UIToolkit.Editor
         void UpdateOverriddenState()
         {
             var isOverridden = m_TrackedProviders.Count > 0;
-            m_OverrideBarManipulator.isOverridden = isOverridden;
+            m_OverrideBarManipulator.IsOverridden = isOverridden;
             EnableInClassList(GetIsOverriddenClassName(), isOverridden);
         }
     }

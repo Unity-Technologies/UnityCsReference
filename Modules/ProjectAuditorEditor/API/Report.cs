@@ -94,8 +94,8 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public sealed class Report
     {
-        const string k_CurrentVersion = "1.2";
-        const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
+        internal const string k_CurrentVersion = "1.2";
+        internal const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
 
         [SerializeField]
         string version = k_CurrentVersion;
@@ -120,6 +120,7 @@ namespace Unity.ProjectAuditor.Editor
 
             // this is used by HasCategory
             public SerializableEnum<IssueCategory>[] categories;
+            [NonSerialized]  // See comment for PostSerializeLayoutUpdate
             public IssueLayout[] layouts;
 
             public long durationMs;
@@ -367,9 +368,7 @@ namespace Unity.ProjectAuditor.Editor
                     return false;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Issues.All(i => i.IsValid()) && moduleMetadata.All(m => m.result != AnalysisResult.Cancelled);
-#pragma warning restore UA2001
+            return m_Issues.TrueForAll(i => i.IsValid()) && moduleMetadata.TrueForAll(m => m.result != AnalysisResult.Cancelled);
         }
 
         /// <summary>

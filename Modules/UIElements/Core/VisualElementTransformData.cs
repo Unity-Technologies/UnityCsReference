@@ -22,7 +22,7 @@ internal enum VisualElementTransformFlags
     BoundingBoxWithoutNestedDirty = 1 << 4,
     // Element uses 3-D transforms or contains children that do
     Needs3DBounds = 1 << 5,
-    // Element's 3-D transform local bounds need to be recalculated (with or without nested UIDocuments)
+    // Element's 3-D transform local bounds need to be recalculated (with or without nested panel components)
     LocalBounds3DDirty = 1 << 6,
     LocalBoundsWithoutNested3DDirty = 1 << 7,
     // Element or descendent received a GeometryChangedEvent since last Layout update

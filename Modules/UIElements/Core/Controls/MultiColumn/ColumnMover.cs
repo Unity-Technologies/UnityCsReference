@@ -16,12 +16,14 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         public static readonly string ussClassName = MultiColumnHeaderColumn.ussClassName + "__move-preview";
 
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// Constructor.
         /// </summary>
         public MultiColumnHeaderColumnMovePreview()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             pickingMode = PickingMode.Ignore;
         }
@@ -36,18 +38,21 @@ namespace UnityEngine.UIElements.Internal
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = MultiColumnHeaderColumn.ussClassName + "__move-location-preview";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string visualUssClassName = ussClassName + "__visual";
+        internal static readonly UniqueStyleString visualUssClassNameUnique = new(visualUssClassName);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public MultiColumnHeaderColumnMoveLocationPreview()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             pickingMode = PickingMode.Ignore;
 
             var visual = new VisualElement();
-            visual.AddToClassList(visualUssClassName);
+            visual.AddToClassList(visualUssClassNameUnique);
             visual.pickingMode = PickingMode.Ignore;
             Add(visual);
         }

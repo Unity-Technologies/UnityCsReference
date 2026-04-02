@@ -223,8 +223,6 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
         contentContainer = m_ContentContainer;
         ContentAsset = content;
-
-        BindAdvancedTextUI();
     }
 
     [EventInterest(typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent))]
@@ -257,7 +255,6 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                 dataSource = null;
                 m_Context.Dispose();
                 m_Context = null;
-                UnbindAdvancedTextUI();
                 break;
             }
         }
@@ -316,7 +313,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
             }
 
             UpdateFlexColumnGlobalState(m_Context.StyleDiff.flexDirection.computedValue);
-            UpdateAdvancedTextHelpBox(UIToolkitProjectSettings.enableAdvancedText);
+            UpdateTextGeneratorHelpBoxes();
         }
         else
         {
@@ -332,32 +329,22 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         EnableInClassList(InspectorFlexRowReverseModeClassName, newDirection == FlexDirection.RowReverse);
     }
 
-    void BindAdvancedTextUI()
+    internal void UpdateTextGeneratorHelpBoxes()
     {
-        UIToolkitProjectSettings.onEnableAdvancedTextChanged += UpdateAdvancedTextHelpBox;
-    }
-
-    void UnbindAdvancedTextUI()
-    {
-        UIToolkitProjectSettings.onEnableAdvancedTextChanged -= UpdateAdvancedTextHelpBox;
-    }
-
-    internal void UpdateAdvancedTextHelpBox(bool enable)
-    {
-        var atgWarningRow = contentContainer.Q<OverrideRow>("atg-warning-row");
+        var standardGeneratorWarningRow = contentContainer.Q<OverrideRow>("standard-generator-warning-row");
         var autoSizeWarningRow = contentContainer.Q<OverrideRow>("autosize-warning-row");
-
-        if (atgWarningRow == null || autoSizeWarningRow == null)
-            return;
 
         var isAdvanced = m_Context.StyleDiff.unityTextGenerator.computedValue == TextGeneratorType.Advanced;
 
-        var showAtgWarning = isAdvanced && !enable;
-        atgWarningRow.style.display = showAtgWarning ? DisplayStyle.Flex : DisplayStyle.None;
+        if (standardGeneratorWarningRow != null)
+            standardGeneratorWarningRow.style.display = !isAdvanced ? DisplayStyle.Flex : DisplayStyle.None;
 
-        var bestFit = m_Context.StyleDiff.unityTextAutoSize.computedValue.mode == TextAutoSizeMode.BestFit;
-        var showAutoSizeWarning = !isAdvanced && bestFit;
-        autoSizeWarningRow.style.display = showAutoSizeWarning ? DisplayStyle.Flex : DisplayStyle.None;
+        if (autoSizeWarningRow != null)
+        {
+            var bestFit = m_Context.StyleDiff.unityTextAutoSize.computedValue.mode == TextAutoSizeMode.BestFit;
+            var showAutoSizeWarning = !isAdvanced && bestFit;
+            autoSizeWarningRow.style.display = showAutoSizeWarning ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 
     private void RegenerateContent()

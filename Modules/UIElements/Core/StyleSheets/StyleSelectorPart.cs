@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct StyleSelectorPart
     {
         [SerializeField]
@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
             return string.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
         }
 
+        // Note that we still store class name as string for now instead of UniqueStyleString.
         public static StyleSelectorPart CreateClass(string className)
         {
             return new StyleSelectorPart()

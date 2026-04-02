@@ -14,6 +14,18 @@ using static Unity.Profiling.Editor.UI.TopMarkersModel;
 
 namespace Unity.Profiling.Editor.UI
 {
+    /// <summary>
+    /// Interface for visual elements that can be selected in the details view.
+    /// </summary>
+    interface ISelectedDetailsViewElement
+    {
+        /// <summary>
+        /// Sets the selected state of the element.
+        /// </summary>
+        /// <param name="value">True to select the element, false to deselect it.</param>
+        void SetSelected(bool value);
+    }
+
     /*  The BottlenecksDetailsViewController has two responsibilities:
      *      1. Allow a user to switch between the 'capture' summary and the 'selection' summary.
      *          - This is achieved by embedding the relevant child view controller in response to a switch.
@@ -26,6 +38,10 @@ namespace Unity.Profiling.Editor.UI
      */
     class BottlenecksDetailsViewController : ViewController, SummaryViewController.IResponder, IDetailsElementBinder
     {
+        const int    k_DetailsSplitViewFixedPaneMinSize = 270;
+        const string k_DetailsSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.Overview.DetailsPanel.Size";
+        const string k_DetailsSplitViewToggleIsVisibleStatePreferenceKey = "ProfilerWindow.Overview.DetailsPanel.Visible";
+
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
         readonly IProfilerPersistentSettingsService m_SettingsService;
@@ -34,19 +50,26 @@ namespace Unity.Profiling.Editor.UI
         ViewController m_SelectedViewController;
         bool m_CaptureSummaryRequiresReload;
         bool m_SelectionSummaryRequiresReload;
+        IDetailsProvider m_CaptureSummaryDetailsProvider;
+        IDetailsProvider m_SelectionSummaryDetailsProvider;
         double m_TimeOfLastNewProfilerFrame;
         bool m_IsWaitingForNoNewFramesToReloadData;
         protected readonly Dictionary<VisualElement, IDetailsProvider> m_DetailsProviders = new();
+        VisualElement m_SelectedDetailsElement;
 
         // View.
         ToolbarMenu m_SummaryTypeMenu;
         Label m_TitleLabel;
+        Button m_DetailsPanelButton;
+        TwoPaneSplitView m_DetailsSplitView;
         VisualElement m_ContentContainer;
+        VisualElement m_DetailsPanelContainer;
         Label m_RecordingLabel;
 
         // Children.
         RangeSummaryViewController m_CaptureSummaryViewController;
         SelectionSummaryViewController m_SelectionSummaryViewController;
+        BottlenecksDetailsPanelViewController m_DetailsPanelViewController;
 
         public BottlenecksDetailsViewController(
             IProfilerCaptureDataService dataService,
@@ -64,6 +87,7 @@ namespace Unity.Profiling.Editor.UI
             m_DataService.DataLoaded += OnProfilerDataClearedOrLoaded;
             m_DataService.NewFrameRecorded += OnNewProfilerFrameRecorded;
             m_ProfilerWindow.SelectedFrameIndexChanged += OnNewFrameIndexSelectedInProfilerWindow;
+            m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
         }
 
         protected override VisualElement LoadView()
@@ -108,6 +132,12 @@ namespace Unity.Profiling.Editor.UI
                    this);
             AddChild(m_SelectionSummaryViewController);
 
+            m_DetailsPanelViewController = new BottlenecksDetailsPanelViewController(
+                   m_DataService,
+                   m_SettingsService,
+                   m_ProfilerWindow);
+            AddChild(m_DetailsPanelViewController);
+
             m_RecordingLabel.text = "Recording...";
             SetRecordingLabelVisible(false);
 
@@ -120,14 +150,44 @@ namespace Unity.Profiling.Editor.UI
 
             ShowSummary(selectedSummaryType);
 
+            var detailsPanelVisible = EditorPrefs.GetBool(k_DetailsSplitViewToggleIsVisibleStatePreferenceKey, true);
+            m_DetailsSplitView.fixedPaneIndex = 1;
+            SetDetailsPanelVisible(detailsPanelVisible);
+            m_DetailsPanelButton.clicked += () => SetDetailsPanelVisible(m_DetailsSplitView.fixedPane.style.display == DisplayStyle.None);
+
+            // Save panel size when user finishes resizing
+            var dragLineAnchor = m_DetailsSplitView.Q("unity-dragline-anchor");
+            dragLineAnchor?.RegisterCallback<PointerUpEvent>(OnDetailsSplitViewResizeComplete);
+
             // Register mouse click handler
             View.RegisterCallback<PointerDownEvent>(OnPointerDown);
+        }
+
+        private void SetDetailsPanelVisible(bool visible)
+        {
+            if (visible)
+            {
+                // Restore saved size and show the panel.
+                var detailsPanelSize = EditorPrefs.GetFloat(k_DetailsSplitViewFixedPaneSizePreferenceKey);
+                detailsPanelSize = Mathf.Max(detailsPanelSize, k_DetailsSplitViewFixedPaneMinSize);
+                m_DetailsSplitView.fixedPaneInitialDimension = detailsPanelSize;
+                m_DetailsSplitView.UnCollapse();
+
+                if (!m_DetailsPanelViewController.IsViewLoaded)
+                    m_DetailsPanelContainer.Add(m_DetailsPanelViewController.View);
+            }
+            else
+            {
+                m_DetailsSplitView.CollapseChild(1);
+            }
+            EditorPrefs.SetBool(k_DetailsSplitViewToggleIsVisibleStatePreferenceKey, visible);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
                 m_ProfilerWindow.SelectedFrameIndexChanged -= OnNewFrameIndexSelectedInProfilerWindow;
                 m_DataService.NewFrameRecorded -= OnNewProfilerFrameRecorded;
                 m_DataService.DataLoaded -= OnProfilerDataClearedOrLoaded;
@@ -137,12 +197,28 @@ namespace Unity.Profiling.Editor.UI
             base.Dispose(disposing);
         }
 
+        void OnDetailsSplitViewResizeComplete(PointerUpEvent evt)
+        {
+            // Save the size of the details panel when the user finishes resizing it, so it can be restored next time it's shown.
+            if (m_DetailsSplitView?.fixedPane is { resolvedStyle: not null })
+            {
+                var currentSize = m_DetailsSplitView.fixedPane.resolvedStyle.width;
+                if (!float.IsNaN(currentSize) && currentSize >= k_DetailsSplitViewFixedPaneMinSize)
+                {
+                    EditorPrefs.SetFloat(k_DetailsSplitViewFixedPaneSizePreferenceKey, currentSize);
+                }
+            }
+        }
+
         void GatherReferencesInView(VisualElement view)
         {
             m_SummaryTypeMenu = view.Q<ToolbarMenu>("bottlenecks-details-view__summary-type-menu");
             m_TitleLabel = view.Q<Label>("bottlenecks-details-view__title-label");
+            m_DetailsSplitView = view.Q<TwoPaneSplitView>("bottlenecks-details-view-split");
             m_ContentContainer = view.Q<VisualElement>("bottlenecks-details-view__content");
             m_RecordingLabel = view.Q<Label>("bottlenecks-details-view__recording-label");
+            m_DetailsPanelButton = view.Q<Button>("bottlenecks-details-view__toolbar-details-panel-button");
+            m_DetailsPanelContainer = view.Q<VisualElement>("bottlenecks-details-view-details-panel__content");
         }
 
         void OnProfilerDataClearedOrLoaded()
@@ -174,7 +250,7 @@ namespace Unity.Profiling.Editor.UI
             CancelReloadDataIfNecessary();
 
             // Record the time at which we received this new profiler frame.
-            m_TimeOfLastNewProfilerFrame = UnityEngine.Time.realtimeSinceStartupAsDouble;
+            m_TimeOfLastNewProfilerFrame = Time.realtimeSinceStartupAsDouble;
 
             // If not already, start a timer to reload data when we stop receiving
             // new Profiler frames.
@@ -186,7 +262,7 @@ namespace Unity.Profiling.Editor.UI
                 const float k_ReloadDelayS = 1f;
                 View.schedule.Execute(() =>
                 {
-                    var now = UnityEngine.Time.realtimeSinceStartupAsDouble;
+                    var now = Time.realtimeSinceStartupAsDouble;
                     if (now >= m_TimeOfLastNewProfilerFrame + k_ReloadDelayS)
                     {
                         m_IsWaitingForNoNewFramesToReloadData = false;
@@ -224,7 +300,16 @@ namespace Unity.Profiling.Editor.UI
             }
         }
 
-        void ReloadData()
+        void OnTargetFrameDurationChanged()
+        {
+            if (IsViewLoaded == false)
+                return;
+
+            // Reload data to update details panel with new target frame duration
+            ReloadData();
+        }
+
+        protected virtual void ReloadData()
         {
             // Reload the active summary view and ensure the other is reloaded the
             // next time.
@@ -242,9 +327,39 @@ namespace Unity.Profiling.Editor.UI
             if (type == m_SelectedSummaryType)
                 return;
 
+            // Clear any previous selection when switching views
+            if (m_SelectedDetailsElement is ISelectedDetailsViewElement previousSelected)
+            {
+                previousSelected.SetSelected(false);
+            }
+            m_SelectedDetailsElement = null;
+
             SwitchToolbarTextForSummary(type);
             SwitchContentViewForSummary(type);
+
+            var needsReload = type switch
+            {
+                SummaryType.Capture => m_CaptureSummaryRequiresReload,
+                SummaryType.Selection => m_SelectionSummaryRequiresReload,
+                _ => false,
+            };
+
             ReloadDataForSummaryIfNecessary(type);
+
+            // If no async reload was triggered, apply the cached provider for this summary type
+            // so the details panel reflects the newly shown summary rather than the previous one.
+            if (!needsReload)
+            {
+                var cachedProvider = type switch
+                {
+                    SummaryType.Capture => m_CaptureSummaryDetailsProvider,
+                    SummaryType.Selection => m_SelectionSummaryDetailsProvider,
+                    _ => null,
+                };
+                if (cachedProvider != null)
+                    m_DetailsPanelViewController.SetDetailsProvider(cachedProvider);
+            }
+
             m_SelectedSummaryType = type;
 
             // Preserve selection choice across view lifecycle.
@@ -256,17 +371,10 @@ namespace Unity.Profiling.Editor.UI
             if (type == SummaryType.None)
                 throw new ArgumentException("Invalid summary type.");
 
-            m_TitleLabel.text = type switch
+            (m_TitleLabel.text, m_SummaryTypeMenu.text) = type switch
             {
-                SummaryType.Capture => "Capture Highlights",
-                SummaryType.Selection => "Selection Highlights",
-                _ => throw new NotImplementedException(),
-            };
-
-            m_SummaryTypeMenu.text = type switch
-            {
-                SummaryType.Capture => "Show highlights for: Capture",
-                SummaryType.Selection => "Show highlights for: Selection",
+                SummaryType.Capture => ("Capture Highlights", "Show highlights for: Capture"),
+                SummaryType.Selection => ("Selection Highlights", "Show highlights for: Selection"),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -323,14 +431,23 @@ namespace Unity.Profiling.Editor.UI
 
         void ReloadCaptureSummary()
         {
-            m_CaptureSummaryViewController.ReloadData(Range.All);
+            var frameRange = Range.All;
+            m_CaptureSummaryViewController.ReloadData(frameRange, detailsProvider =>
+            {
+                m_CaptureSummaryDetailsProvider = detailsProvider;
+                m_DetailsPanelViewController.SetDetailsProvider(detailsProvider);
+            });
             m_CaptureSummaryRequiresReload = false;
         }
 
         void ReloadSelectionSummary()
         {
             var selectedFrameRange = GetProfilerWindowSelectionRange();
-            m_SelectionSummaryViewController.ReloadData(selectedFrameRange);
+            m_SelectionSummaryViewController.ReloadData(selectedFrameRange, detailsProvider =>
+            {
+                m_SelectionSummaryDetailsProvider = detailsProvider;
+                m_DetailsPanelViewController.SetDetailsProvider(detailsProvider);
+            });
             m_SelectionSummaryRequiresReload = false;
         }
 
@@ -369,7 +486,7 @@ namespace Unity.Profiling.Editor.UI
         void SetRecordingLabelVisible(bool visible)
         {
             UIUtility.SetElementDisplay(m_RecordingLabel, visible);
-            UIUtility.SetElementDisplay(m_ContentContainer, !visible);
+            UIUtility.SetElementDisplay(m_DetailsSplitView, !visible);
         }
 
         void SummaryViewController.IResponder.OnTopMarkerSelected(Marker marker, TopMarkersViewController.Action action)
@@ -397,6 +514,7 @@ namespace Unity.Profiling.Editor.UI
                     //  2. We need to store/lookup more marker data than we currently do to use the API, including threadGroupName, threadName, and rawSampleIndex.
                     var cpuModule = m_ProfilerWindow.GetProfilerModuleByType<CPUProfilerModule>();
                     m_ProfilerWindow.selectedModule = cpuModule;
+                    m_ProfilerWindow.selectedFrameIndex = marker.FrameIndex;
 
                     var showFullScriptingMethodNames = cpuModule.ViewOptions.HasFlag(
                         CPUOrGPUProfilerModule.ProfilerViewFilteringOptions.ShowFullScriptingMethodNames);
@@ -417,6 +535,7 @@ namespace Unity.Profiling.Editor.UI
             Capture,
             Selection
         }
+
         public void BindDetailsElement(VisualElement detailsElement, IDetailsProvider detailsProvider)
         {
             m_DetailsProviders[detailsElement] = detailsProvider;
@@ -429,34 +548,45 @@ namespace Unity.Profiling.Editor.UI
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            // If no target, return early
             var target = evt.target as VisualElement;
             if (target == null)
                 return;
 
-            // If no right mouse button clicked, return early
-            if (evt.button != (int)MouseButton.RightMouse)
+            if (evt.button != (int)MouseButton.RightMouse && evt.button != (int)MouseButton.LeftMouse)
                 return;
 
             // Go up the hierarchy and try to find a bound details provider
-            IDetailsProvider detailsProvider = null;
-            VisualElement currentElement = target;
-            while (currentElement != null)
-            {
-                if (m_DetailsProviders.TryGetValue(currentElement, out detailsProvider))
-                    break;
-
-                currentElement = currentElement.parent;
-            }
-
+            var currentElement = FindElementWithDetailsProvider(target, out var detailsProvider);
             if (detailsProvider == null)
                 return;
 
-            // Show assistant popup window on right mouse click
+            // Always select the element (also before showing context menu)
+            SelectDetailsProviderElement(currentElement, detailsProvider);
+
+            if (evt.button == (int)MouseButton.RightMouse)
+            {
+                HandleRightClick(evt, target, detailsProvider);
+            }
+        }
+
+        VisualElement FindElementWithDetailsProvider(VisualElement startElement, out IDetailsProvider detailsProvider)
+        {
+            detailsProvider = null;
+            var currentElement = startElement;
+            while (currentElement != null)
+            {
+                if (m_DetailsProviders.TryGetValue(currentElement, out detailsProvider))
+                    return currentElement;
+                currentElement = currentElement.parent;
+            }
+            return null;
+        }
+
+        void HandleRightClick(PointerDownEvent evt, VisualElement target, IDetailsProvider detailsProvider)
+        {
             if (!((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).CpuProfilerAssistantSupported)
                 return;
 
-            // Create and show context menu
             var dropdownMenu = new DropdownMenu();
             dropdownMenu.AppendAction("Ask Assistant", (action) =>
             {
@@ -464,19 +594,22 @@ namespace Unity.Profiling.Editor.UI
                 {
                     IDetailsProvider.AssistantRequestContext context = detailsProvider.GetAssistantContext(m_DataService);
 
-                    // Invoke profiler assistant
                     var layout = target.localBound;
                     var worldPos = target.LocalToWorld(new Vector2());
                     var screenPos = GUIUtility.GUIToScreenPoint(worldPos);
                     var screenRect = new Rect(screenPos, layout.size);
 
-                    var attachment = new CpuProfilerAssistantController.CpuProfilerContext(m_ProfilerWindow.CurrentLoadedCaptureFile,
-                        context.Attachment.FrameRange, context.Attachment.ThreadName, context.Attachment.MarkerIdPath, context.Attachment.MarkerName);
-                    string prompt = context.Prompt;
+                    var attachment = new CpuProfilerAssistantController.CpuProfilerContext(
+                        m_ProfilerWindow.CurrentLoadedCaptureFile,
+                        context.Attachment.FrameRange,
+                        context.Attachment.ThreadName,
+                        context.Attachment.MarkerIdPath,
+                        context.Attachment.MarkerName);
 
-                    ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(screenRect, attachment, prompt);
+                    ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(
+                        screenRect, attachment, context.Prompt);
 
-                    const string k_LinkDescription_AskAssistant= "Ask Assistant (Context Menu)";
+                    const string k_LinkDescription_AskAssistant = "Ask Assistant (Context Menu)";
                     UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(k_LinkDescription_AskAssistant);
                 }
                 catch (Exception e)
@@ -487,6 +620,28 @@ namespace Unity.Profiling.Editor.UI
 
             View.panel.contextualMenuManager.DisplayMenu(evt, target, dropdownMenu);
             evt.StopPropagation();
+        }
+
+        void SelectDetailsProviderElement(VisualElement currentElement, IDetailsProvider detailsProvider)
+        {
+            // Clear previous selection
+            if (m_SelectedDetailsElement is ISelectedDetailsViewElement previousSelected)
+            {
+                previousSelected.SetSelected(false);
+            }
+
+            // Set new selection if element implements the interface
+            if (currentElement is ISelectedDetailsViewElement selectedElement)
+            {
+                selectedElement.SetSelected(true);
+                m_SelectedDetailsElement = currentElement;
+            }
+            else
+            {
+                m_SelectedDetailsElement = null;
+            }
+
+            m_DetailsPanelViewController.SetDetailsProvider(detailsProvider);
         }
     }
 }

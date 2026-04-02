@@ -203,9 +203,9 @@ namespace UnityEditor.UIElements.Samples
 #pragma warning restore UA2002
                     return;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sampleItem = treeView.GetItemDataForIndex<SampleTreeItem>(selectedIndices.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 m_ContentPanel.Clear();
                 m_ContentPanel.Add(sampleItem.makeItem(sampleItem));
             };
@@ -260,7 +260,7 @@ namespace UnityEditor.UIElements.Samples
             scrollView.Add(container);
             container.AddToClassList(k_CategoryPanelClassName);
 
-            container.Add(new Label("Controls") { classList = { k_CategoryTitleClassName } });
+            container.Add(new Label("Controls").WithClassList(k_CategoryTitleClassName));
 
             container.Add(new Label("Label"));
             container.Add(new Button() { text = "Button" });
@@ -310,7 +310,7 @@ namespace UnityEditor.UIElements.Samples
             scrollView.Add(container);
             container.AddToClassList(k_CategoryPanelClassName);
 
-            container.Add(new Label("Numeric Fields") { classList = { k_CategoryTitleClassName } });
+            container.Add(new Label("Numeric Fields").WithClassList(k_CategoryTitleClassName));
 
             container.Add(new IntegerField("Integer"));
             container.Add(new FloatField("Float"));
@@ -341,7 +341,7 @@ namespace UnityEditor.UIElements.Samples
             scrollView.Add(container);
             container.AddToClassList(k_CategoryPanelClassName);
 
-            container.Add(new Label("Value Fields") { classList = { k_CategoryTitleClassName } });
+            container.Add(new Label("Value Fields").WithClassList(k_CategoryTitleClassName));
 
             var curve = new AnimationCurve(new Keyframe[]
                 { new Keyframe(0, 0), new Keyframe(5, 8), new Keyframe(10, 4) });
@@ -369,7 +369,7 @@ namespace UnityEditor.UIElements.Samples
             scrollView.Add(container);
             container.AddToClassList(k_CategoryPanelClassName);
 
-            container.Add(new Label("Numeric Fields") { classList = { k_CategoryTitleClassName } });
+            container.Add(new Label("Numeric Fields").WithClassList(k_CategoryTitleClassName));
 
             var choices = new List<string> { "First", "Second", "Third" };
 

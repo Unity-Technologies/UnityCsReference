@@ -13,17 +13,17 @@ namespace UnityEditor.DeviceSimulation
     {
         public static string[] s_BuiltInDevices =
         {
-            "Apple iPad Mini 4.device",
-            "Apple iPad Pro 12.9 (2018).device",
-            "Apple iPhone 12 mini.device",
-            "Apple iPhone 12 Pro Max.device",
-            "Apple iPhone 12.device",
-            "Apple iPhone SE (2nd generation).device",
-            "Google Pixel 5.device",
-            "Huawei P40 Pro.device",
-            "Samsung Galaxy Note20 Ultra 5G.device",
-            "Samsung Galaxy S10e.device",
-            "Samsung Galaxy Z Fold2 5G.device"
+            "Tablet Small (1536x2048).device",
+            "Tablet Large (2048x2732).device",
+            "iOS Notch Device Small (1080x2338).device",
+            "iOS Notch Device Large (1284x2778).device",
+            "iOS Notch Device (1170x2532).device",
+            "iOS Classic (750x1334).device",
+            "Punch Hole Left (1080x2340).device",
+            "Wide Pill Cutout (1200x2640).device",
+            "Punch Hole Center (1440x3088).device",
+            "Punch Hole Right (1080x2280).device",
+            "Foldable Device (960x2658).device"
         };
 
         public static DeviceInfoAsset[] LoadDevices()

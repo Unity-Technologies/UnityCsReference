@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Core
@@ -47,7 +48,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             if (s_DescriptorAreaStrings.TryGetValue(areas, out string desc))
                 return desc;
 
-            desc = areas.ToString();
+            desc = ObjectNames.NicifyVariableName(areas.ToString());
             s_DescriptorAreaStrings[areas] = desc;
             return desc;
         }

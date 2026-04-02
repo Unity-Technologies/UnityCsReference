@@ -27,7 +27,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         private void MyToggleVisibility(object userData)
         {
-            this.ToggleVisibility((int)userData);
+            ToggleVisibility((int)userData);
         }
 
         protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)
@@ -386,21 +386,24 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                     cellRect.xMax -= labelStyle.CalcSize(guiContent).x;
 
+                    string itemString = item.NumVisibleChildren == 1 ? "Item" : "Items";
+                    itemString = $"{item.NumVisibleChildren} {itemString}";
+
                     if (showIgnoredIssues)
                     {
-                        string label = item.NumIgnoredChildren > 0 ? $"({item.NumVisibleChildren} Item(s), including {item.NumIgnoredChildren} Ignored)" : $"({item.NumVisibleChildren} Item(s))";
+                        string label = item.NumIgnoredChildren > 0 ? $"({itemString}, including {item.NumIgnoredChildren} Ignored)" : $"({itemString})";
                         EditorGUI.LabelField(new Rect(cellRect)
                         {
                             x = labelStyle.CalcSize(guiContent).x + contentIndent
-                        }, label, SharedStyles.LabelDarkWithDynamicSize);
+                        }, label, SharedStyles.LabelGreyWithDynamicSize);
                     }
                     else
                     {
-                        string label = item.NumIgnoredChildren > 0 ? $"({item.NumVisibleChildren} Item(s), {item.NumIgnoredChildren} Ignored and hidden)" : $"({item.NumVisibleChildren} Item(s))";
+                        string label = item.NumIgnoredChildren > 0 ? $"({itemString}, {item.NumIgnoredChildren} Ignored and hidden)" : $"({itemString})";
                         EditorGUI.LabelField(new Rect(cellRect)
                         {
                             x = labelStyle.CalcSize(guiContent).x + contentIndent
-                        }, label, SharedStyles.LabelDarkWithDynamicSize);
+                        }, label, SharedStyles.LabelGreyWithDynamicSize);
                     }
                 }
                 else if (PropertyTypeUtil.IsCustom(property.Type))
@@ -553,10 +556,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (m_Desc.OnOpenIssue == null)
                 return;
 
-            var rows = FindRows(new[] { id });
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var rows = FindRows([id]);
             var item = rows.FirstOrDefault();
-#pragma warning restore UA2001
 
             if (item == null)
                 return;

@@ -56,26 +56,37 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-style-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string timeValueFieldUssClassName = "unity-time-value-field";
+        internal static readonly UniqueStyleString timeValueFieldUssClassNameUnique = new(timeValueFieldUssClassName);
+
         /// <summary>
         /// USS class name of the visual input in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__visual-input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of options popup container in elements of this type.
         /// </summary>
         public static readonly string unitDropdownContainerUssClass = ussClassName + "__options-popup-container";
+        internal static readonly UniqueStyleString k_UnitDropdownContainerUssClass = new(unitDropdownContainerUssClass);
+
         /// <summary>
         /// USS class name of options popup in elements of this type.
         /// </summary>
         public static readonly string unitDropdownUssClass = ussClassName + "__options-popup";
+        internal static readonly UniqueStyleString k_UnitDropdownUssClass = new(unitDropdownUssClass);
+
         /// <summary>
         /// USS class name of the options dropdown element of this type when invisible.
         /// </summary>
         public static readonly string invisibleUnitDropdownUssClass = unitDropdownUssClass + "--invisible";
+        internal static readonly UniqueStyleString k_InvisibleUnitDropdownUssClass = new(invisibleUnitDropdownUssClass);
 
         // Keywords
         public static readonly string KeywordInitial = "initial";
@@ -134,24 +145,24 @@ namespace UnityEngine.UIElements
         public TimeValueField(string label, int maxTimeValue = kMaxValueFieldLength)
             : base(label, maxTimeValue, new TimeValueInput())
         {
-            AddToClassList(ussClassName);
-            AddToClassList(timeValueFieldUssClassName);
+            AddToClassList(ussClassNameUnique);
+            AddToClassList(timeValueFieldUssClassNameUnique);
 
             AddLabelDragger<TimeValue>();
 
             var popupContainer = new VisualElement();
             popupContainer.name = unitDropdownContainerUssClass;
-            popupContainer.AddToClassList(unitDropdownContainerUssClass);
+            popupContainer.AddToClassList(k_UnitDropdownContainerUssClass);
 
             m_AllOptionsList.AddRange(KLDefaultUnits);
             m_AllOptionsList.AddRange(AllKeywords);
             m_OptionsPopup = new PopupField<string>(m_AllOptionsList, 0, OnFormatSelectedValue);
-            m_OptionsPopup.AddToClassList(unitDropdownUssClass);
+            m_OptionsPopup.AddToClassList(k_UnitDropdownUssClass);
             popupContainer.Add(m_OptionsPopup);
 
             timeValueInput.parentField = this;
 
-            timeValueInput.AddToClassList(inputUssClassName);
+            timeValueInput.AddToClassList(inputUssClassNameUnique);
             timeValueInput.delegatesFocus = true;
             Add(popupContainer);
 
@@ -220,7 +231,7 @@ namespace UnityEngine.UIElements
         void UpdateFields()
         {
             text = ValueToString(value);
-            m_OptionsPopup.EnableInClassList(invisibleUnitDropdownUssClass, !showUnitAsDropdown);
+            m_OptionsPopup.EnableInClassList(k_InvisibleUnitDropdownUssClass, !showUnitAsDropdown);
         }
 
         static string OnFormatSelectedValue(string value)

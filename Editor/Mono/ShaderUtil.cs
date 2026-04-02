@@ -256,6 +256,7 @@ namespace UnityEditor
         public struct ConstantInfo
         {
             public string Name { get; }
+            [NativeName("m_OffsetInConstantBuffer")]
             public int Index { get; }
             public ShaderConstantType ConstantType { get; }
             public ShaderParamType DataType { get; }

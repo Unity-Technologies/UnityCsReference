@@ -106,7 +106,7 @@ namespace UnityEditor
             }
 
             var nodesCount = m_TransformPaths.Length;
-            var nodeInfos = new List<SerializedNodeInfo>(nodesCount - 1);
+            var nodeInfos = new List<TreeViewItem>(nodesCount - 1);
             Stack<string> depth = new Stack<string>(nodesCount);
             string currentPath = String.Empty;
 
@@ -142,9 +142,7 @@ namespace UnityEditor
                 nodeInfos.Add(newNode);
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            TreeViewUtility.SetChildParentReferences(nodeInfos.Cast<TreeViewItem>().ToList(), rootNode);
-#pragma warning restore UA2001
+            TreeViewUtility.SetChildParentReferences(nodeInfos, rootNode);
             return rootNode;
         }
 

@@ -771,6 +771,11 @@ namespace UnityEngine
             get { return SupportsDepthFetchInRenderPass(); }
         }
 
+        public static bool supportsDepthAttachmentAsInputAttachment
+        {
+            get { return SupportsDepthAttachmentAsInputAttachment(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+", true)]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -1137,6 +1142,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
         static extern bool SupportsDepthFetchInRenderPass();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsDepthAttachmentAsInputAttachment")]
+        static extern bool SupportsDepthAttachmentAsInputAttachment();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsVariableRateShading")]
         static extern bool SupportsVariableRateShading();

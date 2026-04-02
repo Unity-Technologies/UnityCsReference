@@ -73,13 +73,11 @@ namespace UnityEditorInternal
             var sb = new StringBuilder();
             sb.Append(" (");
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var types = methodInfo.GetParameters().Select(x => x.ParameterType).ToArray();
-#pragma warning restore UA2001
-            for (int i = 0; i < types.Length; i++)
+            var infos = methodInfo.GetParameters();
+            for (int i = 0; i < infos.Length; i++)
             {
-                sb.Append(types[i].Name);
-                if (i < types.Length - 1)
+                sb.Append(infos[i].ParameterType.Name);
+                if (i < infos.Length - 1)
                 {
                     sb.Append(", ");
                 }
@@ -256,7 +254,7 @@ namespace UnityEditorInternal
             var header = new Label();
             header.text = GetHeaderText();
             header.tooltip = property.tooltip;
-            BindingsStyleHelpers.RegisterRightClickMenu(header, property);
+            BindingsStyleHelpers.RegisterRightClickMenu(header, property.FindPropertyRelative(kCallsPath));
             header.AddToClassList(kHeaderClassName);
 
             var listView = CreateListView(property);
@@ -671,9 +669,7 @@ namespace UnityEditorInternal
 
             // check out the signature of invoke as this is the callback!
             MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var delegateArgumentsTypes = delegateMethod.GetParameters().Select(x => x.ParameterType).ToArray();
-#pragma warning restore UA2001
+            var delegateArgumentsTypes = Array.ConvertAll(delegateMethod.GetParameters(), x => x.ParameterType);
 
             var duplicateNames = DictionaryPool<string, int>.Get();
             var duplicateFullNames = DictionaryPool<string, int>.Get();
@@ -735,7 +731,7 @@ namespace UnityEditorInternal
                 if (methods.Count > 0)
                 {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    menu.AddDisabledItem(new GUIContent(targetName + "/Dynamic " + string.Join(", ", delegateArgumentsTypes.Select(e => GetTypeName(e)).ToArray())));
+                    menu.AddDisabledItem(new GUIContent(targetName + "/Dynamic " + string.Join(", ", delegateArgumentsTypes.Select(GetTypeName))));
 #pragma warning restore UA2001
                     AddMethodsToMenu(menu, listener, methods, targetName);
                     didAddDynamic = true;

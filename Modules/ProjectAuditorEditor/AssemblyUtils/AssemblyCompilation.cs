@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -307,9 +308,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 assemblyBuilder.additionalDefines = additionalDefines.ToArray();
 
                 // add references to assemblies we need to build
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                assemblyBuilder.additionalReferences = assembly.assemblyReferences.Select(r => Path.Combine(m_OutputFolder, Path.GetFileName(r.outputPath))).ToArray();
-#pragma warning restore UA2001
+                assemblyBuilder.additionalReferences = Array.ConvertAll(assembly.assemblyReferences, r => Path.Combine(m_OutputFolder, Path.GetFileName(r.outputPath)));
 
                 // exclude all assemblies that we are building ourselves to a Temp folder
                 assemblyBuilder.excludeReferences =
@@ -352,14 +351,17 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 if (progress?.IsCancelled ?? false)
                     break; // compilation of assemblies will continue but we won't wait for it
 
-#pragma warning disable UA2001
-                var pendingTasks = m_AssemblyCompilationTasks.Select(pair => pair.Value).Where(task => !task.IsCompleted).ToArray();
-#pragma warning restore UA2001
-                if (pendingTasks.Length == 0)
+                bool anyPendingTasks = false;
+                foreach (var task in m_AssemblyCompilationTasks.Values)
+                {
+                    if (!task.IsCompleted)
+                    {
+                        task.Update();
+                        anyPendingTasks = true;
+                    }
+                }
+                if (anyPendingTasks == false)
                     break;
-
-                foreach (var task in pendingTasks)
-                    task.Update();
 
                 System.Threading.Thread.Sleep(10);
                 yield return null;

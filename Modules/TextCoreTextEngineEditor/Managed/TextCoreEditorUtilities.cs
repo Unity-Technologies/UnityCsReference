@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEditor.TextCore.Text
 {
     internal static class TM_EditorStyles
@@ -297,3 +299,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

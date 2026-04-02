@@ -5,6 +5,7 @@
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Loading;
 using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -90,7 +91,7 @@ namespace UnityEngine.SceneManagement
         public static extern Scene GetSceneByName(string name);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        /*UCBP-PUBLIC*/ internal static extern Scene GetSceneByLoadableScene(LoadableScene loadableScene);
+        /*UCBP-PUBLIC*/ internal static extern Scene GetSceneByLoadableSceneId(LoadableSceneId loadableSceneId);
 
         public static Scene GetSceneByBuildIndex(int buildIndex)
         {
@@ -133,7 +134,7 @@ namespace UnityEngine.SceneManagement
         }
 
         /// <summary>
-        /// Asynchronously loads a Scene from built content using a LoadableScene reference.
+        /// Asynchronously loads a Scene from built content using a LoadableSceneId reference.
         /// </summary>
         /// <remarks>
         /// This overload of LoadSceneAsync enables loading scenes that have been built as part of a Content Directory. The scene
@@ -142,8 +143,8 @@ namespace UnityEngine.SceneManagement
         ///
         /// This method works in both the Editor (when content directories are registered) and at runtime.
         /// </remarks>
-        /// <param name="loadableScene">
-        /// The LoadableScene reference identifying which scene to load.
+        /// <param name="loadableSceneId">
+        /// The LoadableSceneId identifying which scene to load.
         /// </param>
         /// <param name="parameters">
         /// Various parameters used during the loading operation, such as load mode.
@@ -152,19 +153,19 @@ namespace UnityEngine.SceneManagement
         /// A ContentLoadSceneOperation that can be used to track the progress of the scene loading operation. Returns null if
         /// scene loading is not allowed in the current context.
         /// </returns>
-        /// <seealso cref="LoadableScene"/>
+        /// <seealso cref="Unity.Loading.LoadableSceneId"/>
         /// <seealso cref="Loading.ContentLoadManager"/>
-        /*UCBP-PUBLIC*/ internal static AsyncOperation LoadSceneAsync(LoadableScene loadableScene, LoadSceneParameters parameters = new LoadSceneParameters())
+        /*UCBP-PUBLIC*/ internal static AsyncOperation LoadSceneAsync(LoadableSceneId loadableSceneId, LoadSceneParameters parameters = new LoadSceneParameters())
         {
             if (!s_AllowLoadScene)
                 return null;
 
-            return LoadSceneByLoadableAsync(loadableScene, parameters, false);
+            return LoadSceneByLoadableSceneIdAsync(loadableSceneId, parameters, false);
         }
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
-        private static extern AsyncOperation LoadSceneByLoadableAsync(LoadableScene loadableScene, LoadSceneParameters parameters, bool mustCompleteNextFrame);
+        private static extern AsyncOperation LoadSceneByLoadableSceneIdAsync(LoadableSceneId loadableSceneId, LoadSceneParameters parameters, bool mustCompleteNextFrame);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
@@ -178,19 +179,9 @@ namespace UnityEngine.SceneManagement
         [NativeMethod(ThrowsException = true)]
         private extern static void MoveGameObjectsToSceneByInstanceId(IntPtr instanceIds, int instanceCount, Scene scene);
 
-        [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", false)]
-        public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene)
-        {
-            if (!instanceIDs.IsCreated)
-                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
-
-            if (instanceIDs.Length == 0)
-                return;
-
-            Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. This method should be removed, as it relies on this size.");
-
-            MoveGameObjectsToSceneByInstanceId((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, scene);
-        }
+        [System.Obsolete("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.", true)]
+        public static unsafe void MoveGameObjectsToScene(NativeArray<int> instanceIDs, Scene scene) =>
+            throw new NotImplementedException("Please use MoveGameObjectsToScene(NativeArray<EntityId>, Scene scene) with the EntityId parameter type instead.");
 
         public static unsafe void MoveGameObjectsToScene(NativeArray<EntityId> entityIds, Scene scene)
         {

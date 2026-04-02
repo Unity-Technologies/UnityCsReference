@@ -53,6 +53,11 @@ namespace UnityEditor.TerrainTools
                     // texture splats are serialized separately
                     if (0 != (newActions & (int)PaintContext.ToolAction.PaintTexture))
                     {
+                        // TerrainData must be registered for undo so that restoring it triggers
+                        // SplatDatabase dirty flags and basemap regeneration. Without this, undoing
+                        // a texture paint restores the alphamap pixel data but the basemap (used at
+                        // far distances and by the surface cache) stays stale.
+                        undoObjects.Add(tile.terrain.terrainData);
                         undoObjects.AddRange(tile.terrain.terrainData.alphamapTextures);
                         recordedActions |= (int)PaintContext.ToolAction.PaintTexture;
                     }

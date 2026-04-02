@@ -82,18 +82,6 @@ namespace UnityEditor
         public string name;
     };
 
-
-    [InitializeOnLoad]
-    internal class SetLightmappingUnifiedBaker
-    {
-        static SetLightmappingUnifiedBaker()
-        {
-            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-            PlayerSettings.GetScriptingDefineSymbols(buildTarget, out string[] defines);
-            Lightmapping.UnifiedBaker = Array.Exists(defines, d => d == "UNIFIED_BAKER");
-        }
-    }
-
     [NativeHeader("Editor/Mono/GI/Lightmapping.bindings.h")]
     public static partial class Lightmapping
     {
@@ -163,7 +151,6 @@ namespace UnityEditor
             get { return GetLightingSettingsOrDefaultsFallback().albedoBoost; }
             set { GetOrCreateLightingsSettings().albedoBoost = value; }
         }
-        internal static bool UnifiedBaker { get; set; } = false;
 
         [RequiredByNativeCode]
         internal static bool ShouldBakeInteractively()
@@ -831,6 +818,18 @@ namespace UnityEditor
 
             // Return true if we have baked lighting data that the native side doesn't know about, such as APV.
             return (bool)apvMethod.Invoke(null, null);
+        }
+
+        [RequiredByNativeCode]
+        internal static bool NeedsMetaPass()
+        {
+            var surfaceCacheEnabledMethod = Type.GetType("UnityEditor.Rendering.SurfaceCacheStripperUtility, Unity.RenderPipelines.Universal.Editor")?
+                .GetMethod("IsSurfaceCacheEnabledForBuild", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            if (surfaceCacheEnabledMethod == null)
+                return false;
+
+            return (bool)surfaceCacheEnabledMethod.Invoke(null, null);
         }
     }
 }

@@ -21,6 +21,7 @@ using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 using System;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
 
 namespace UnityEditor.TextCore.Text
 {
@@ -562,7 +563,9 @@ namespace UnityEditor.TextCore.Text
                         if (EditorGUI.EndChangeCheck() || hasSelectionChanged)
                         {
                             if (m_ReferencedFontAsset != null)
-                                m_CharacterSequence = TextCoreEditorUtilities.GetDecimalCharacterSequence(FontAsset.GetCharactersArray(m_ReferencedFontAsset));
+                            {
+                                    m_CharacterSequence = TextCoreEditorUtilities.GetDecimalCharacterSequence(FontAsset.GetCharactersArray(m_ReferencedFontAsset));
+                            }
 
                             m_IsFontAtlasInvalid = true;
                         }
@@ -594,7 +597,9 @@ namespace UnityEditor.TextCore.Text
                         if (EditorGUI.EndChangeCheck() || hasSelectionChanged)
                         {
                             if (m_ReferencedFontAsset != null)
-                                m_CharacterSequence = TextCoreEditorUtilities.GetUnicodeCharacterSequence(FontAsset.GetCharactersArray(m_ReferencedFontAsset));
+                            {
+                                    m_CharacterSequence = TextCoreEditorUtilities.GetUnicodeCharacterSequence(FontAsset.GetCharactersArray(m_ReferencedFontAsset));
+                            }
 
                             m_IsFontAtlasInvalid = true;
                         }
@@ -626,7 +631,9 @@ namespace UnityEditor.TextCore.Text
                         if (EditorGUI.EndChangeCheck() || hasSelectionChanged)
                         {
                             if (m_ReferencedFontAsset != null)
-                                m_CharacterSequence = FontAsset.GetCharacters(m_ReferencedFontAsset);
+                            {
+                                    m_CharacterSequence = FontAsset.GetCharacters(m_ReferencedFontAsset);
+                            }
 
                             m_IsFontAtlasInvalid = true;
                         }
@@ -2092,3 +2099,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

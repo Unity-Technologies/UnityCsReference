@@ -91,7 +91,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         // stephenm TODO - This seems wildly more complex than it needs to be... UNLESS assemblies can have sub-assemblies?
         // If that's the case, we need to test for that. Otherwise we need to strip a bunch of this complexity out.
-        public string[] GetSelectedStrings(string[] names, bool summarize)
+        public string[] GetSelectedStrings(string[] names, bool summarize, bool removeWhitespace)
         {
             if (selection == null || selection.Count == 0)
             {
@@ -122,8 +122,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             // Count all the items we have 'selected' in a group
-            foreach (var nameWithIndex in selection)
+            foreach (var name in selection)
             {
+                var nameWithIndex = removeWhitespace ? name.Replace(" ", "") : name;
                 var identifier = new TreeItemIdentifier(nameWithIndex);
 
                 if (dict.ContainsKey(identifier.name) &&

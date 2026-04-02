@@ -50,7 +50,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// All the <see cref="SelectionStateComponent"/> present in the state.
         /// </summary>
-        public IEnumerable<SelectionStateComponent> SelectionStates => m_AllSelectionStates;
+        public IReadOnlyList<SelectionStateComponent> SelectionStates => m_AllSelectionStates;
 
         /// <summary>
         /// The <see cref="SelectionStateComponent.StateUpdater"/> for each of the <see cref="SelectionStateComponent"/> present in the state.

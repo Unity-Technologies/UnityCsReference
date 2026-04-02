@@ -10,8 +10,9 @@ using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.Search;
 using UnityEngine;
-
+using UnityEngine.Search;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -61,10 +62,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         Vector2 m_LastVerticalScrollViewSize;
         Vector2 m_DetailsScrollPos;
 
+        private Action m_NextSearchOffDelegate;
+        private string m_PendingSearchString;
+
         public ViewDescriptor Desc => m_Desc;
 
         public virtual string Description => $"A list of {m_Desc.DisplayName} found in the project.";
         public virtual bool OnlyCriticalIssues() { return false; }
+        public virtual bool OnlyFixableIssues() { return false; }
 
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public string DocumentationUrl => Documentation.GetPageUrl(new string(m_Desc.DisplayName.Where(char.IsLetterOrDigit).ToArray()));
@@ -500,18 +505,48 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             EditorGUILayout.BeginHorizontal();
 
             // note that we don't need to detect string changes (with EditorGUI.Begin/EndChangeCheck(), because the TreeViewController already triggers a BuildRows() when the text changes
-            EditorGUILayout.LabelField(Contents.SearchStringLabel, GUILayout.Width(80));
-
-            m_TextFilter.searchString = EditorGUILayout.DelayedTextField(m_TextFilter.searchString, GUILayout.Width(280));
-            m_Table.searchString = m_TextFilter.searchString;
+            EditorGUILayout.LabelField(Contents.SearchStringLabel, ProjectAuditorWindow.LayoutSize.FilterOptionsLabelWidth);
 
             EditorGUI.BeginChangeCheck();
+
+            m_PendingSearchString = EditorGUILayout.ToolbarSearchField(m_PendingSearchString ?? m_TextFilter.searchString, GUILayout.Width(280));
+            m_Table.searchString = m_TextFilter.searchString;
+
             if (EditorGUI.EndChangeCheck())
-                MarkDirty();
+            {
+                m_NextSearchOffDelegate?.Invoke();
+                m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, UnityEditor.SearchUtils.debounceThresholdMs / 1000f);
+            }
+            else if (m_PendingSearchString == m_TextFilter.searchString)
+            {
+                m_PendingSearchString = null;
+            }
+
+            if (GUILayout.Button(Contents.SearchJumpButton, SharedStyles.OpenSearchWindowButton, GUILayout.Height(18), GUILayout.Width(18)))
+            {
+                var provider = SearchService.GetProvider(IssueSearchProvider.kProviderId);
+                var searchContext = SearchService.CreateContext(provider);
+                var viewState = new SearchViewState(searchContext, SearchViewFlags.TableView)
+                {
+                    title = "Project Auditor Report",
+                };
+                var searchView = SearchService.ShowWindow(viewState);
+            }
+
 
             GUILayout.FlexibleSpace();
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        void UpdateSearchDelayed()
+        {
+            if (m_PendingSearchString != null)
+            {
+                m_TextFilter.searchString = m_PendingSearchString;
+                m_PendingSearchString = null;
+                m_Window.Repaint();
+            }
         }
 
         void DrawToolbar()
@@ -617,7 +652,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                                 m_Table.AddIssues(m_Issues);
                                 m_Table.Reload();
                             }
-                        }, GUILayout.Width(ToolbarButtonSize * 3));
+                        }, GUILayout.MinWidth(ToolbarButtonSize * 2));
 
                     // collapse/expand buttons
                     DrawToolbarButton(Contents.CollapseAllButton, () => SetRowsExpanded(false));
@@ -689,7 +724,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     }
                     else
                     {
-                        EditorGUILayout.LabelField(k_AnalysisIsRequiredText, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
+                        var label = selection.HasDependencies ? k_AnalysisIsRequiredText : k_NoDependenciesText;
+                        EditorGUILayout.LabelField(label, SharedStyles.TextAreaWithDynamicSize, GUILayout.MaxHeight(LayoutSize.FoldoutMaxHeight));
                     }
                 }
             }
@@ -760,16 +796,24 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        protected virtual IReadOnlyCollection<ReportItem> GetIssuesToExport()
+        {
+            return m_ViewManager.Report.FindByCategory(m_Layout.Category);
+        }
+
         protected virtual void Export(Func<ReportItem, bool> predicate = null)
         {
-            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category.ToString()).ToLower(),
+            var path = EditorUtility.SaveFilePanel("Save to CSV file", UserPreferences.LoadSavePath, string.Format("project-auditor-{0}.csv", m_Desc.Category).ToLower(),
                 "csv");
             if (path.Length != 0)
             {
                 using (var exporter = new CsvExporter(m_ViewManager.Report))
                 {
-                    exporter.Export(path, m_Layout.Category, (issue) =>
+                    var issues = GetIssuesToExport();
+                    exporter.Export(path, m_Layout.Category, issues, (issue) =>
                     {
+                        if (!Match(issue))
+                            return false;
                         if (predicate != null && !predicate(issue))
                             return false;
 
@@ -974,6 +1018,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         // UI strings
         protected const string k_NoSelectionText = "<No selection>";
+        protected const string k_NoDependenciesText = "<No dependencies>";
         protected const string k_AnalysisIsRequiredText = "<Missing Data: Please Analyze>";
         protected const string k_MultipleSelectionText = "<Multiple selection>";
 
@@ -1016,8 +1061,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent CollapseAllButton = new GUIContent("Collapse All");
 
             public static readonly GUIContent InfoFoldout = new GUIContent("Information");
-            public static readonly GUIContent SearchStringLabel = new GUIContent("Search: ", "Text search options");
+            public static readonly GUIContent SearchStringLabel = new GUIContent("Search:", "Text search options");
             public static readonly GUIContent Dependencies = new GUIContent("Dependencies");
+
+            public static readonly GUIContent SearchJumpButton = EditorGUIUtility.TrIconContent("SearchJump Icon", "Open in Search");
         }
         protected static class SharedContents
         {
@@ -1028,6 +1075,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
             public static readonly GUIContent DocumentationInternal = EditorGUIUtility.TrTextContent(string.Empty, "Open the Unity documentation");
             public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
+            public static readonly GUIContent Show = new GUIContent("Show:");
+            public static readonly GUIContent ShowIgnoredIssues = new GUIContent("Show Ignored Issues");
         }
     }
 }

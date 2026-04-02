@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements
     ///
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/TreeView.png")]
     public partial class TreeView : BaseTreeView
     {

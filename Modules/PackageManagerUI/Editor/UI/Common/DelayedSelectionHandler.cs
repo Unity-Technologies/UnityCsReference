@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SelectPackage(string packageToSelect, string pageId = null);
 
         void SelectPage(string pageId, string searchText = null);
+        void SelectSamplePageWithPackageFilters(IReadOnlyList<string> packagesToSelect);
     }
 
     [Serializable]
@@ -68,10 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var package = m_PackageDatabase.GetPackageByIdOrName(packageToSelect) ?? m_PackageDatabase.GetPackageByDisplayName(packageToSelect);
-            var page = m_PageManager.GetPage(pageId);
-            if (package != null && page?.ShouldInclude(package) != true)
-                page = m_PageManager.FindPage(package);
-
+            var page = package != null ? m_PageManager.FindPage(package, pageId) : m_PageManager.GetPage(pageId);
             if (page is { id: MyAssetsPage.k_Id })
             {
                 m_PageManager.activePage = page;
@@ -79,10 +78,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (package != null && page != null && page.ShouldInclude(package))
+            if (package != null && page != null)
             {
                 m_PageManager.activePage = page;
-                page.SetNewSelection(package);
+                page.SetNewSelection(package.uniqueId, false);
                 return;
             }
 
@@ -99,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             page ??= m_PageManager.activePage;
-            if (!m_PageRefreshHandler.IsInitialFetchingDone(page) || m_PackageDatabase.allPackages.Count == 0)
+            if (m_PackageDatabase.allPackages.Count == 0 || !m_PageRefreshHandler.IsInitialFetchingDone(page))
                 m_PageRefreshHandler.Refresh(page);
 
             if (m_PageRefreshHandler.IsRefreshInProgress(RefreshOptions.UpmSearch | RefreshOptions.UpmSearchOffline | RefreshOptions.UpmList | RefreshOptions.UpmListOffline))
@@ -124,6 +123,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             page.searchText = searchText ?? string.Empty;
             m_PageManager.activePage = page;
+        }
+
+        public void SelectSamplePageWithPackageFilters(IReadOnlyList<string> packagesToSelect)
+        {
+            var page = m_PageManager.GetPage(SamplesPage.k_Id);
+            if (page == null)
+                return;
+            m_PageManager.activePage = page;
+
+            if (packagesToSelect == null || packagesToSelect.Count == 0)
+                return;
+
+            var newPageFilters = new PageFilters(page.filters);
+            var validPackages = new List<string>();
+            foreach (var id in packagesToSelect)
+                if (page.filters.supportedPackageUniqueIds.ContainsMatches(id))
+                    validPackages.Add(id);
+            newPageFilters.UpdatePackages(validPackages);
+
+            page.UpdateFilters(newPageFilters);
         }
     }
 }

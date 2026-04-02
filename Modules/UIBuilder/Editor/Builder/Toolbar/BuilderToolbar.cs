@@ -423,7 +423,7 @@ namespace Unity.UI.Builder
 
                 if (BuilderAssetUtilities.IsPathInProject(path))
                 {
-                    path = BuilderAssetUtilities.GetPathRelativeToProject(path);
+                    path = BuilderAssetUtilities.GetPathRelativeToProject(path, false);
                 }
                 else
                 {

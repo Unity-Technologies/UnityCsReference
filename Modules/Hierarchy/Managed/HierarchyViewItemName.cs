@@ -9,10 +9,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
 {
-    [UxmlElement, VisibleToOtherModules("UnityEditor.HierarchyModule")]
+    [UxmlElement, VisibleToOtherModules]
     sealed class HierarchyViewItemName : VisualElement
     {
-        internal const string k_StyleName = "hierarchy-item__name";
+        internal static readonly UniqueStyleString k_StyleName = new("hierarchy-item__name");
 
         public string Text
         {

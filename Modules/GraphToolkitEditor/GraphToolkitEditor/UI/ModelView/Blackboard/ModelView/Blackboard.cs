@@ -458,9 +458,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ItemToInfos[item] = new ItemInfo() { id = id,  childrenIds = children?.Select(t => t.id).ToList()};
-#pragma warning restore UA2001
+            m_ItemToInfos[item] = new ItemInfo() { id = id,  childrenIds = children?.ConvertAll(t => t.id)};
             return new TreeViewItemData<IGroupItemModel>(id++, item, children);
         }
 
@@ -532,7 +530,8 @@ namespace Unity.GraphToolkit.Editor
             }
             else
             {
-                var selection = BlackboardView.GetSelection();
+                var selection = GetBlackboardSelection(evt);
+
                 foreach (var elementModel in selection)
                 {
                     if (elementModel is VariableDeclarationModelBase vdm)
@@ -552,6 +551,49 @@ namespace Unity.GraphToolkit.Editor
             var menuActionMap = new Dictionary<string, Action>();
             PopulateMenuActionMap(menuActionMap, evt);
             ViewSelection.BuildContextualMenu(categorizedMenuItems, evt, menuActionMap);
+        }
+
+        /// <summary>
+        /// Gets the selection from the blackboard based on the <see cref="ContextualMenuPopulateEvent"/>.
+        /// If the user right-clicked on an unselected element, that element will be selected.
+        /// </summary>
+        /// <param name="evt"></param>
+        /// <returns>List of <see cref="ContextualMenuPopulateEvent"/> currently selected in the Blackboard</returns>
+        IReadOnlyList<GraphElementModel> GetBlackboardSelection(ContextualMenuPopulateEvent evt)
+        {
+            var selection = BlackboardView.GetSelection();
+            BlackboardElement blackboardElement = evt.target as BlackboardElement;
+
+            if (blackboardElement == null)
+            {
+                // Some VisualElement inputs will handle the pointer event and we need to find the first parent that has a model
+                if (evt.target is BindableElement bindableElement)
+                {
+                    var elementParent = bindableElement.parent;
+                    while (elementParent != null)
+                    {
+                        blackboardElement = elementParent as BlackboardElement;
+                        if (blackboardElement != null)
+                        {
+                            break;
+                        }
+
+                        elementParent = elementParent.parent;
+                    }
+                }
+            }
+
+            if (blackboardElement != null )
+            {
+                if (!selection.Contains(blackboardElement.GraphElementModel))
+                {
+                    // User context clicked on a row that is not selected, select it first.
+                    BlackboardView.Dispatch(
+                        new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, blackboardElement.GraphElementModel));
+                    selection = BlackboardView.GetSelection();
+                }
+            }
+            return selection;
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -591,9 +633,9 @@ namespace Unity.GraphToolkit.Editor
                 {
                     int index = (int)s_GetIndexFromPositionMethod.Invoke(s_VirtualizationControllerProperty.GetValue(m_TreeView), new object[] {m_TreeView.Q<ScrollView>().contentContainer.WorldToLocal(evt.mousePosition)});
                     var model = m_TreeView.GetItemDataForIndex<IGroupItemModel>(index);
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (model != null && model.ParentGroup is GroupModel && !BlackboardView.GetSelection().OfType<IGroupItemModel>().HasAny(t => t.GetSection() != model.GetSection() || t.ParentGroup is not GroupModel))
-#pragma warning restore UA2001
+                    #pragma warning disable UA2001, UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    if (model != null && model.ParentGroup is GroupModel && !BlackboardView.GetSelection().OfType<IGroupItemModel>().Any(t => t.GetSection() != model.GetSection() || t.ParentGroup is not GroupModel))
+#pragma warning restore UA2001, UA2006
                     {
                         groupModel = model;
                     }

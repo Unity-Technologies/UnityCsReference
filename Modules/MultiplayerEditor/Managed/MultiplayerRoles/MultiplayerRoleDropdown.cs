@@ -4,7 +4,7 @@
 
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 
 namespace UnityEditor.Multiplayer.Internal
 {

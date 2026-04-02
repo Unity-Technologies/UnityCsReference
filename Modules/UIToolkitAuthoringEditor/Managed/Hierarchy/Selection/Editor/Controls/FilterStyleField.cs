@@ -44,9 +44,11 @@ namespace Unity.UIToolkit.Editor
 
         internal ListView filterListView => m_FilterListView;
 
-        public FilterStyleField() : this(null) { }
+        public FilterStyleField()
+            : this(null) { }
 
-        public FilterStyleField(string label) : base(label)
+        public FilterStyleField(string label)
+            : base(label)
         {
             AddToClassList(k_InspectorContainerClassName);
             AddToClassList(k_FieldClassName);
@@ -55,13 +57,17 @@ namespace Unity.UIToolkit.Editor
             template.CloneTree(this);
 
             styleSheets.Add(EditorGUIUtility.Load(k_UssPathNoExt + ".uss") as StyleSheet);
-            styleSheets.Add(EditorGUIUtility.Load(k_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss") as StyleSheet);
+            styleSheets.Add(
+                EditorGUIUtility.Load(k_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss") as
+                    StyleSheet);
 
             m_FilterListView = this.Q<ListView>(k_FilterListViewName);
             m_FilterListView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             m_FilterListView.selectionType = SelectionType.Multiple;
-            m_FilterListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText)) { classList = { k_EmptyListClassName } };
-            m_FilterListView.makeItem = () => {
+            m_FilterListView.makeNoneElement =
+                () => new Label(L10n.Tr(k_EmptyListText)).WithClassList(k_EmptyListClassName);
+            m_FilterListView.makeItem = () =>
+            {
                 return new FilterFunctionListViewItem();
             };
             m_FilterListView.bindItem = (e, i) =>
@@ -98,6 +104,7 @@ namespace Unity.UIToolkit.Editor
             // The set icons for add/remove buttons
             var addButton = m_FilterListView.Q<Button>(BaseListView.footerAddButtonName);
             addButton.AddToClassList(k_AddMoreIconClassName);
+            SetValueWithoutNotify(new List<FilterFunction>());
         }
 
         public override void SetValueWithoutNotify(List<FilterFunction> newValue)
@@ -106,6 +113,18 @@ namespace Unity.UIToolkit.Editor
             m_FilterSource = newValue ?? new List<FilterFunction>();
             m_FilterListView.itemsSource = m_FilterSource;
             m_FilterListView.RefreshItems();
+        }
+
+        internal void SetValueWithoutRefresh(List<FilterFunction> newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+            // Update m_FilterSource in place to keep it in sync without reassigning itemsSource
+            // which could cause UI stutters during dragging
+            m_FilterSource.Clear();
+            if (newValue != null)
+            {
+                m_FilterSource.AddRange(newValue);
+            }
         }
 
         internal void OnFilterFunctionAdded(FilterFunctionType ffType)
@@ -119,10 +138,16 @@ namespace Unity.UIToolkit.Editor
                     f.AddParameter(def.parameters[i].defaultValue);
             }
 
-            using (var evt = FilterFunctionAddedEvent.GetPooled())
+            // Build the new filter list with the added filter
+            var newFilterList = new List<FilterFunction>(value ?? new List<FilterFunction>());
+            newFilterList.Add(f);
+            value = newFilterList;
+
+            using (var evt = FilterListChangedEvent.GetPooled())
             {
                 evt.elementTarget = this;
-                evt.filterFunction = f;
+                evt.newFilterList = newFilterList;
+                evt.refreshField = true;
                 SendEvent(evt);
             }
         }
@@ -130,17 +155,22 @@ namespace Unity.UIToolkit.Editor
         internal void FilterFunctionTypeChanged(FilterFunctionListViewItem item)
         {
             var currentIndex = item.index;
-            if (currentIndex >= 0 && currentIndex < m_FilterSource.Count)
+
+            // Build the new filter list with the changed filter
+            var newFilterList = new List<FilterFunction>(m_FilterSource ?? new List<FilterFunction>());
+            if (currentIndex >= 0 && currentIndex < newFilterList.Count)
             {
-                m_FilterSource[currentIndex] = item.filterFunction;
+                newFilterList[currentIndex] = item.filterFunction;
             }
 
-            using (var pooled = FilterFunctionChangedEvent.GetPooled())
+            // Update the field's value immediately so it's not stale for subsequent changes
+            value = newFilterList;
+
+            using (var pooled = FilterListChangedEvent.GetPooled())
             {
                 pooled.elementTarget = this;
-                pooled.item = item;
-                pooled.filterFunction = item.filterFunction;
-                pooled.index = currentIndex;
+                pooled.newFilterList = newFilterList;
+                pooled.refreshField = true;
                 SendEvent(pooled);
             }
         }
@@ -148,17 +178,21 @@ namespace Unity.UIToolkit.Editor
         internal void FilterFunctionValueChanged(FilterFunctionListViewItem item, int paramIndex)
         {
             var currentIndex = item.index;
-            if (currentIndex >= 0 && currentIndex < m_FilterSource.Count)
+
+            // Build the new filter list with the changed filter
+            var newFilterList = new List<FilterFunction>(m_FilterSource ?? new List<FilterFunction>());
+            if (currentIndex >= 0 && currentIndex < newFilterList.Count)
             {
-                m_FilterSource[currentIndex] = item.filterFunction;
+                newFilterList[currentIndex] = item.filterFunction;
             }
-            using (var pooled = FilterFunctionValueChangedEvent.GetPooled())
+
+            value = newFilterList;
+
+            using (var pooled = FilterListChangedEvent.GetPooled())
             {
                 pooled.elementTarget = this;
-                pooled.item = item;
-                pooled.filterFunction = item.filterFunction;
-                pooled.index = currentIndex;
-                pooled.paramIndex = paramIndex;
+                pooled.newFilterList = newFilterList;
+                pooled.refreshField = false;
                 SendEvent(pooled);
             }
         }
@@ -168,31 +202,47 @@ namespace Unity.UIToolkit.Editor
             var indicesToRemove = new List<int>();
 
             // If no items are selected, remove last item
-            if (listView.selectedIndex == -1 && m_FilterSource.Count > 0)
+            if (listView.selectedIndex == -1 && value.Count > 0)
             {
-                indicesToRemove.Add(m_FilterSource.Count - 1);
+                indicesToRemove.Add(value.Count - 1);
             }
             else
             {
                 foreach (var selectedIndex in listView.selectedIndicesList)
                 {
-                    if (selectedIndex >= m_FilterSource.Count)
+                    if (selectedIndex >= value.Count)
                         continue;
 
                     indicesToRemove.Add(selectedIndex);
                 }
             }
 
-            using (var evt = FilterFunctionRemovedEvent.GetPooled())
+            // Build the new filter list with the removed filters
+            var newFilterList = new List<FilterFunction>(value ?? new List<FilterFunction>());
+            var sortedIndices = new List<int>(indicesToRemove);
+            sortedIndices.Sort((a, b) => b.CompareTo(a)); // Sort in descending order
+            foreach (var index in sortedIndices)
+            {
+                if (index >= 0 && index < newFilterList.Count)
+                    newFilterList.RemoveAt(index);
+            }
+
+            value = newFilterList;
+
+            using (var evt = FilterListChangedEvent.GetPooled())
             {
                 evt.elementTarget = this;
-                evt.indices = indicesToRemove;
+                evt.newFilterList = newFilterList;
+                evt.refreshField = true;
                 SendEvent(evt);
             }
         }
 
         void OnListReordered(int previousIndex, int newIndex)
         {
+            // Update the field's value to match m_FilterSource, which has been reordered by the ListView
+            SetValueWithoutNotify(new List<FilterFunction>(m_FilterSource));
+
             using (var evt = FilterFunctionReorderedEvent.GetPooled())
             {
                 evt.elementTarget = this;

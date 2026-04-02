@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine.Loading;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using Unity.Scripting.LifecycleManagement;
 using System.Runtime.InteropServices;
+using Unity.ContentLoad;
 
 #pragma warning disable CS1574 // XML comment with cref attribute to types in UnityEditor namespace
 
@@ -22,8 +24,10 @@ namespace UnityEngine.Loading
     /// information about the content directory, such as its path, and is returned from the RegisterContentDirectory operation
     /// in ContentLoadManager.
     /// </summary>
-    /// <seealso cref="ContentLoadManager.RegisterContentDirectory"/>
+    /// <seealso cref="ContentLoadManager.RegisterContentDirectory(string)"/>
+    /// <seealso cref="ContentLoadManager.RegisterContentDirectory(ContentManifest)"/>
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
     /*UCBP-PUBLIC*/ internal struct ContentDirectoryHandle
     {
         internal UInt64 m_Handle;
@@ -33,6 +37,19 @@ namespace UnityEngine.Loading
         /// A bool representing that the content directory handle is valid.
         /// </value>
         public readonly bool isValid => m_Handle != 0;
+
+        /// <summary> The build name of the content directory (e.g. from the Manifest build name).</summary>
+        public string buildName
+        {
+            get
+            {
+                return isValid ? GetBuildNameFromContentDirectoryHandleInternal(this) : string.Empty;
+            }
+        }
+
+
+        [FreeFunction("ContentLoad::GetBuildNameFromContentDirectoryHandle")]
+        static extern string GetBuildNameFromContentDirectoryHandleInternal(ContentDirectoryHandle handle);
     }
 
     /// <summary>
@@ -46,26 +63,13 @@ namespace UnityEngine.Loading
     /// output of your Content Directory build, directly inside the Editor.
     /// </remarks>
     /// <seealso cref="Loadable{T}"/>
-    /// <seealso cref="LoadableScene"/>
+    /// <seealso cref="LoadableSceneId"/>
     /// <seealso cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>
     [NativeHeader("Modules/ContentLoad/Public/ContentLoadManager.bindings.h")]
     [StaticAccessor("ContentLoad", StaticAccessorType.DoubleColon)]
+    /*UCBP-REMOVE*/ [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
     /*UCBP-PUBLIC*/ internal static partial class ContentLoadManager
     {
-        /// <summary>
-        /// Event that is invoked on the main thread just when a content directory is registered.
-        /// The path of the content directory is passed to the event.
-        /// </summary>
-        [AutoStaticsCleanupOnCodeReload]
-        internal static event Action<ContentDirectoryHandle> OnRegisterContentDirectory;
-
-        /// <summary>
-        /// Event that is invoked on the main thread just before a content directory is unregistered.
-        /// The path of the registered content directory is passed to the event.
-        /// </summary>
-        [AutoStaticsCleanupOnCodeReload]
-        internal static event Action<ContentDirectoryHandle> OnUnregisterContentDirectory;
-
         /// <summary>
         /// Add the built-content in a directory to the ContentLoadManager. This makes it possible to load the contained Scenes
         /// and Assets.
@@ -75,10 +79,16 @@ namespace UnityEngine.Loading
         /// distribute additional content.
         ///
         /// This can be called multiple times, with different paths, to expose the contents of additional content directories to
-        /// the editor/runtime. For a clean shutdown each call to RegisterContentDirectory should be matched with a call to
+        /// the editor/runtime. However, this method is bound to a specific directory structure and limited to one build per directory.
+        /// Use <see cref="RegisterContentDirectory(ContentManifest)"/> lower-level API when you need more flexibility in how content is
+        /// organized or when registering multiple builds from custom locations.
+        ///
+        /// For a clean shutdown, each call to RegisterContentDirectory should be matched with a call to
         /// UnregisterContentDirectory.
         ///
-        /// This method logs an error and returns an invalid handle if the specified path has already registered.
+        /// Throws <see cref="InvalidOperationException"/> if the path is already registered or if the content manifest cannot be loaded.
+        /// Throws <see cref="FileNotFoundException"/> if the required manifest hash file is not found.
+        /// Throws <see cref="DirectoryNotFoundException"/> if the directory does not exist.
         /// </remarks>
         /// <param name="contentDirectoryPath">
         /// A local path pointing to a directory that contains the output from a call to
@@ -86,22 +96,42 @@ namespace UnityEngine.Loading
         /// </param>
         public static ContentDirectoryHandle RegisterContentDirectory(string contentDirectoryPath)
         {
-            var handle = RegisterInternal(contentDirectoryPath);
+            return RegisterContentDirectoryFromPath(contentDirectoryPath);
+        }
+
+        /// <summary>
+        /// Register a content manifest with the ContentLoadManager. This makes it possible to load the contained Scenes
+        /// and Assets.
+        /// </summary>
+        /// <remarks>
+        /// This is a lower-level API that registers only the content manifest. Unlike <see cref="RegisterContentDirectory(string)"/>,
+        /// this method does NOT automatically register CAH artifact directories or mount archives. The caller is responsible for
+        /// registering any required CAH artifact directories and mounting any archives before calling this method.
+        ///
+        /// For most use cases, prefer <see cref="RegisterContentDirectory(string)"/> which handles these setup steps automatically.
+        ///
+        /// For a clean shutdown, each call to RegisterContentDirectory should be matched with a call to UnregisterContentDirectory.
+        /// </remarks>
+        /// <param name="manifest">The content manifest to register</param>
+        /// <returns>Handle to the registered content directory</returns>
+        public static ContentDirectoryHandle RegisterContentDirectory(ContentManifest manifest)
+        {
+            var handle = RegisterInternalFromContentManifest(manifest);
             if (!handle.isValid)
-                throw new Exception($"Failed to register content directory at path {contentDirectoryPath}. See log for details.");
-            OnRegisterContentDirectory?.Invoke(handle);
+                throw new InvalidOperationException("Failed to register content directory from manifest");
+
             return handle;
         }
 
-        [FreeFunction("ContentLoad::RegisterContentDirectory")]
-        static extern ContentDirectoryHandle RegisterInternal(string contentDirectoryPath);
+        [FreeFunction("ContentLoad::RegisterContentDirectoryFromContentManifest")]
+        static extern ContentDirectoryHandle RegisterInternalFromContentManifest([NotNull] ContentManifest contentManifest);
 
         /// <summary>
         /// Remove access to content that had been loaded from a content directory.
         /// </summary>
         /// <remarks>
         /// All Loadable&lt;T&gt; referencing the content of a directory must be explicitly released prior to calling this.
-        /// Similarly all LoadableScene must be Unloaded.
+        /// Similarly all LoadableSceneId must be Unloaded.
         /// </remarks>
         /// <param name="contentDirectory">
         /// Content directory handle to unregister
@@ -114,12 +144,12 @@ namespace UnityEngine.Loading
                 return;
             }
 
-            OnUnregisterContentDirectory?.Invoke(contentDirectory);
             UnregisterInternal(contentDirectory);
+            CleanupTrackedRegistration(contentDirectory);
         }
 
         [FreeFunction("ContentLoad::UnregisterContentDirectory")]
-        static extern void UnregisterInternal(ContentDirectoryHandle handle);
+        internal static extern void UnregisterInternal(ContentDirectoryHandle handle);
 
         public static extern Object[] GetRootAssets();
         extern private static Object[] GetRootAssetsFromRegisteredDirectory(ContentDirectoryHandle contentDirectory);
@@ -165,52 +195,6 @@ namespace UnityEngine.Loading
         /// </returns>
         [FreeFunction("ContentLoad::GetContentDirectories")]
         public static extern ContentDirectoryHandle[] GetContentDirectories();
-
-        /// <summary>
-        /// Returns all the scene paths that can be loaded from any of the registered content directories.
-        /// </summary>
-        /// <remarks>
-        /// The returned strings represent the project-relative paths of scenes available in registered content directories.
-        /// These paths can be used with <see cref="ContentLoadManager.GetLoadableSceneByPath"/> to obtain a LoadableScene.
-        /// </remarks>
-        /// <returns>Array of scene paths available across all registered content directories.</returns>
-        public static extern string[] GetLoadableScenePaths();
-
-        /// <summary>
-        /// Retrieves a list of loadable scene paths from the specified registered content directory.
-        /// </summary>
-        /// <param name="contentDirectory">
-        /// The registered content directory handle from which to retrieve loadable scene paths.
-        /// </param>
-        /// <returns>
-        /// An array of strings listing the scene paths available in the specified directory.
-        /// </returns>
-        public static string[] GetLoadableScenePaths(ContentDirectoryHandle contentDirectory)
-        {
-            return GetLoadableScenePathsFromRegisteredDirectory(contentDirectory);
-        }
-        extern private static string[] GetLoadableScenePathsFromRegisteredDirectory(ContentDirectoryHandle contentDirectory);
-
-        /// <summary>
-        /// Retrieve a LoadableScene from built content.
-        /// </summary>
-        /// <remarks>
-        /// This API makes it possible to retrieve an object that can
-        /// be used to load a Scene, based on its key. See <see cref="SceneManager.LoadSceneAsync(LoadableScene, LoadSceneParameters)"/>.
-        ///
-        /// In the runtime any Scene inside content that has been registered (through
-        /// <see cref="ContentLoadManager.RegisterContentDirectory"/>), can be retrieved through this API.
-        ///
-        /// In the Editor Playmode it is possible to use this API to retrieve scenes that were built into a content directory,
-        /// provided that <see cref="ContentLoadManager.RegisterContentDirectory"/> has been called.
-        /// </remarks>
-        /// <param name="path">
-        /// The key would typically be the project-relative Asset path.
-        /// </param>
-        /// <returns>
-        /// The returned object can be used to Load the scene.
-        /// </returns>
-        public static extern LoadableScene GetLoadableSceneByPath(string path);
 
         // For test and internal usage
         // This method loads the BuildManifest, which describe the content available inside a Content Directory.

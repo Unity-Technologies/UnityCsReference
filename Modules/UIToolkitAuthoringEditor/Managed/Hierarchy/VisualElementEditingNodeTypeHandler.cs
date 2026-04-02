@@ -118,6 +118,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (visualMode != DragVisualMode.None)
             return visualMode;
 
+        visualMode = HandleClassNameBeingDragged(in data, performDrop);
+        if (visualMode != DragVisualMode.None)
+            return visualMode;
+
         return DragVisualMode.None;
     }
 
@@ -597,6 +601,27 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         return DragVisualMode.Copy;
     }
 
+    DragVisualMode HandleClassNameBeingDragged(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
+    {
+        var className = DragAndDrop.GetGenericData(StyleSheetNodeTypeHandler.DraggedSelectorKey) as string;
+        if (string.IsNullOrEmpty(className))
+            return DragVisualMode.None;
+
+        if (data.DropPosition != DragAndDropPosition.OverItem)
+            return DragVisualMode.Rejected;
+
+        if (!TryGetElementFromNode(data.Target, out var element) || !IsFullyEditable(element))
+            return DragVisualMode.Rejected;
+
+        if (performDrop)
+        {
+            new AddClassToElementCommand(element.visualElementAsset, className).Execute();
+            element.AddToClassList(className);
+        }
+
+        return DragVisualMode.Copy;
+    }
+
     protected override bool CanStartDrag(HierarchyView view, in SelectionContext selection) => true;
 
     protected override bool CanSetName(HierarchyView view, in HierarchyNode node, VisualElement element)
@@ -652,7 +677,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             toCopy.Add(elements[i].visualElementAsset);
         }
 
-        SystemCopyBuffer = m_Exporter.ToUxmlString(m_Stage.EditedVisualTreeAsset, toCopy);
+        Clipboard.SystemCopyBuffer = m_Exporter.ToUxmlString(m_Stage.EditedVisualTreeAsset, toCopy);
 
         return true;
     }
@@ -723,11 +748,11 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (Clipboard?.GetCutElements() != null)
             return true;
 
-        return IsSystemCopyBufferUxml();
+        return Clipboard.IsSystemCopyBufferUxml();
     }
 
     protected override bool OnPaste(HierarchyView view, in SelectionContext selection)
-   {
+    {
         var parentAsset = m_Stage.EditedVisualTreeAsset.visualTree;
 
         var parentElement = m_LocalRoot;
@@ -761,12 +786,12 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         }
 
         // Copy operation
-        if (!IsSystemCopyBufferUxml())
+        if (!Clipboard.IsSystemCopyBufferUxml())
             return false;
 
         try
         {
-            new PasteElementsCommand(SystemCopyBuffer, parentAsset).Execute();
+            new PasteElementsCommand(Clipboard.SystemCopyBuffer, parentAsset).Execute();
             m_Stage.RequestRefresh();
             view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
             return true;

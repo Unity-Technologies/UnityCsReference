@@ -51,13 +51,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 "StyleSheets/PackageManager/PackageDetailsDependenciesTab.uss",
                 "StyleSheets/PackageManager/PackageDetails.uss",
-                "StyleSheets/PackageManager/PackageItem.uss",
-                "StyleSheets/PackageManager/PackageList.uss",
+                "StyleSheets/PackageManager/ListItem.uss",
+                "StyleSheets/PackageManager/ListArea.uss",
                 "StyleSheets/PackageManager/PackageLoadBar.uss",
                 "StyleSheets/PackageManager/PackageDetailsSamplesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsReleasesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsVersionsTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsImportedAssetsTab.uss",
+                "StyleSheets/PackageManager/SampleDetails.uss",
                 "StyleSheets/PackageManager/PackageSearchBar.uss",
                 "StyleSheets/PackageManager/PackageStatusBar.uss",
                 "StyleSheets/PackageManager/PackageToolbar.uss",
@@ -67,7 +68,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/Sidebar.uss",
                 "StyleSheets/PackageManager/SignInBar.uss",
                 "StyleSheets/PackageManager/PartiallyNonCompliantRegistryMessage.uss",
-                "StyleSheets/PackageManager/MainContainerOverlay.uss"
+                "StyleSheets/PackageManager/MainContainerOverlay.uss",
+                "StyleSheets/PackageManager/MultiSelectDetails.uss"
             };
 
             public static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";

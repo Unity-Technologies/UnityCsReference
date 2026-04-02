@@ -45,7 +45,7 @@ namespace UnityEditor.Search
         internal SearchColumn FindColumnBySelector(string selector);
     }
 
-    [System.Obsolete("IMGUI is not support anymore. Use ITableView interface instead.", error: false)] // 2023.1
+    [System.Obsolete("IMGUI is not support anymore. Use ITableView interface instead.", error: true)] // 2023.1
     public class PropertyTable : TreeView, System.IDisposable
     {
         public PropertyTable(string serializationUID, ITableView tableView) : base(new TreeViewState()) => throw new System.NotSupportedException();

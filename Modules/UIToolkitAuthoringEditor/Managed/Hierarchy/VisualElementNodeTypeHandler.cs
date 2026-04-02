@@ -12,6 +12,7 @@ using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using Unity.Properties;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEngine;
@@ -27,7 +28,6 @@ internal abstract class VisualElementNodeTypeHandler :
     IHierarchyEntityIdConverter,
     IHierarchyEditorNodeTypeHandler
 {
-    static string s_BatchModeCopyBuffer;
     public const string NodeTypeName = "VisualElement";
     protected const string VisualElementDisabledUssClass = "unity-disabled";
 
@@ -67,31 +67,6 @@ internal abstract class VisualElementNodeTypeHandler :
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
 
     static readonly ManipulatorActivationFilter k_StageAltActivationFilter = new() { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt };
-
-    // [TODO] MP: Convenience struct until APIs are added to retrieve the selection from the HierarchyView
-    protected readonly ref struct SelectionContext
-    {
-        public enum SelectionType
-        {
-            None,
-            Mixed,
-            All
-        }
-
-        public SelectionContext(
-            Span<HierarchyNode> selection,
-            int selectionCount,
-            SelectionContext.SelectionType handlerType)
-        {
-            Selection = selection;
-            SelectionCount = selectionCount;
-            Type = handlerType;
-        }
-
-        public readonly Span<HierarchyNode> Selection;
-        public readonly int SelectionCount;
-        public readonly SelectionType Type;
-    }
 
     private class Mappings
     {
@@ -218,43 +193,6 @@ internal abstract class VisualElementNodeTypeHandler :
         /// do not create a node for the current VisualElement, but create nodes for its children.
         /// </summary>
         CreateChildren,
-    }
-
-    protected static string SystemCopyBuffer
-    {
-        get
-        {
-            if (Application.isBatchMode || !Application.isHumanControllingUs)
-                return s_BatchModeCopyBuffer;
-            return GUIUtility.systemCopyBuffer;
-        }
-        set
-        {
-            if (Application.isBatchMode || !Application.isHumanControllingUs)
-                s_BatchModeCopyBuffer = value;
-            else
-                GUIUtility.systemCopyBuffer = value;
-        }
-    }
-
-    protected static bool IsSystemCopyBufferUxml()
-    {
-        var buffer = SystemCopyBuffer;
-        if (string.IsNullOrWhiteSpace(buffer))
-            return false;
-
-        var trimmedBuffer = buffer.Trim();
-        return trimmedBuffer.StartsWith("<") && trimmedBuffer.EndsWith(">");
-    }
-
-    protected static bool IsSystemCopyBufferUss()
-    {
-        var buffer = SystemCopyBuffer;
-        if (string.IsNullOrWhiteSpace(buffer))
-            return false;
-
-        var trimmedBuffer = buffer.Trim();
-        return trimmedBuffer.EndsWith("}");
     }
 
     private readonly Mappings m_Mappings = new();
@@ -599,7 +537,7 @@ internal abstract class VisualElementNodeTypeHandler :
         if (parent == Hierarchy.Root)
             return AcceptRootAsParent();
 
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in parent);
+        var handler = view.ViewModel.GetNodeTypeHandlerBase(in parent);
         if (handler != this)
             return false;
 
@@ -629,7 +567,7 @@ internal abstract class VisualElementNodeTypeHandler :
         if (isReadonly)
             return false;
 
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in child);
+        var handler = view.ViewModel.GetNodeTypeHandlerBase(in child);
         if (handler != this)
             return false;
 
@@ -1022,7 +960,8 @@ internal abstract class VisualElementNodeTypeHandler :
 
     protected void SetStageNodeNavigation(HierarchyViewItem item, VisualTreeAssetEditingContext context)
     {
-        const string navigationTooltip = "Open Visual Tree Asset in context.\nPress the Alt modifier key to open in isolation.";
+        var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
+        var navigationTooltip = $"Open Visual Tree Asset in context.\nPress the {modifierKey} modifier key to open in isolation.";
 
         if (!m_EnableUIStages)
             return;
@@ -1054,24 +993,26 @@ internal abstract class VisualElementNodeTypeHandler :
         if (button.userData is not VisualTreeAssetEditingContext context)
             return;
 
-        if (obj is PointerUpEvent { altKey: true } && context.SubDocumentPath != null)
+        var isolationRequested = obj is PointerUpEvent { altKey: true };
+        if (isolationRequested && context.SubDocumentPath != null)
         {
             GoToStage(new VisualTreeAssetEditingContext(
                 context.RootVisualTreeAsset,
                 context.SubDocumentPath,
                 SubDocumentOptions.Isolation,
                 context.PanelSettings
-            ));
+            ), BreadcrumbBar.SeparatorStyle.Line);
         }
         else
         {
-            GoToStage(context);
+            GoToStage(context, isolationRequested ? BreadcrumbBar.SeparatorStyle.Line : BreadcrumbBar.SeparatorStyle.Arrow);
         }
     }
 
-    void GoToStage(VisualTreeAssetEditingContext context)
+    void GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle)
     {
         var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
+        stage.SeparatorStyle = separatorStyle;
         stage.SetContext(context);
         StageUtility.GoToStage(stage, false);
     }
@@ -1502,7 +1443,7 @@ internal abstract class VisualElementNodeTypeHandler :
         var onlyContainsElements = true;
         foreach (var node in selection)
         {
-            if (view.Source.GetNodeTypeHandlerBase(node) == this)
+            if (view.ViewModel.GetNodeTypeHandlerBase(node) == this)
                 containsElements = true;
             else
                 onlyContainsElements = false;

@@ -148,8 +148,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
     const string k_OrientationVisibilityOff = "orientation-visibility-off";
     void UpdateOverlayDisplay(bool visibility)
     {
-        m_HasMenuEntry = visibility;
-        rootVisualElement.EnableInClassList(k_OrientationVisibilityOff, !visibility);
+        SetForceHidden(!visibility);
     }
 
     void UpdateHeaderAndBackground()

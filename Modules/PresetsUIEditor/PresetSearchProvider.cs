@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Search;
 using UnityEngine;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 using SService = UnityEditor.Search.SearchService;
 
@@ -35,12 +36,8 @@ namespace UnityEditor.Presets
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Targets = targets.Where(t => t != null).ToArray();
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Target = Targets.FirstOrDefault();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Presets = Targets.Select(t => new Preset(t)).ToArray();
-#pragma warning restore UA2001
+            Presets = Array.ConvertAll(Targets, t => new Preset(t));
             PresetProperty = null;
             PresetType = new PresetType(Target);
             CurrentSelection = currentSelection;

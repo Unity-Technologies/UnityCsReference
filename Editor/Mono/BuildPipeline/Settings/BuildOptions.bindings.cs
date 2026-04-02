@@ -197,8 +197,8 @@ namespace UnityEditor
         ///However chunk-based compression is typically not as small as full-file compression, and it will not compress much further if another layer of compression is applied at packaging time.
         ///Hence the game installer might end up a bit larger when using this flag.
         ///
-        ///LZ4 compression can also be applied to AssetBundles. For more information, refer to <see cref="BuildAssetBundleOptions.ChunkBasedCompression" /> and <see href="xref:man:AssetBundles-Cache" />.</remarks>
-        ///<seealso href="xref:man:ReducingFilesize" />
+        ///LZ4 compression can also be applied to AssetBundles. For more information, refer to <see cref="BuildAssetBundleOptions.ChunkBasedCompression" /> and <see href="xref:um-asset-bundles-cache" />.</remarks>
+        ///<seealso href="xref:um-reducing-filesize" />
         ///<seealso cref="Unity.IO.Archive.ArchiveHandle.Compression" />
         CompressWithLz4 = 1 << 18,
 

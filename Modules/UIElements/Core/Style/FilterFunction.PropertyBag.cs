@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(2)
             {
                 AddProperty(new ParametersProperty());
                 AddProperty(new FilterFunctionDefinitionProperty());

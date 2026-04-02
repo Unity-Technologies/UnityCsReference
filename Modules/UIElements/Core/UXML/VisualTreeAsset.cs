@@ -67,6 +67,9 @@ namespace UnityEngine.UIElements
         [SerializeField]
         bool m_ImportedWithWarnings;
 
+        [SerializeField]
+        bool m_ImportedWithObsoleteAttributeNames;
+
         /// <summary>
         /// Whether there were warnings encountered while importing the UXML File
         /// </summary>
@@ -74,6 +77,12 @@ namespace UnityEngine.UIElements
         {
             get { return m_ImportedWithWarnings; }
             internal set { m_ImportedWithWarnings = value; }
+        }
+
+        internal bool importedWithObsoleteAttributeNames
+        {
+            get => m_ImportedWithObsoleteAttributeNames;
+            set => m_ImportedWithObsoleteAttributeNames = value;
         }
 
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
@@ -321,7 +330,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             if (string.IsNullOrEmpty(fieldUxmlName))
@@ -544,7 +553,7 @@ namespace UnityEngine.UIElements
         /// <param name="target"></param>
         /// <param name="referenceTable">A table to use to resolve references.</param>
         /// <example>
-        /// This example shows how to use the <see cref="VisualElementAssetReferenceTable"/> to resolve references to VisualElements after calling CloneTree.
+        /// This example shows how to use the `VisualElementAssetReferenceTable` to resolve references to VisualElements after calling CloneTree.
         /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementAssetReferenceTable_CloneTreeExample.cs"/>
         /// </example>
         public void CloneTree(VisualElement target, out VisualElementAssetReferenceTable referenceTable) => CloneTree(target, out _, out _, out referenceTable);
@@ -791,16 +800,17 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal VisualElementAsset FindElementByPath(AuthoringIdPath authoringPath, List<VisualElementAsset> pathToElement = null)
+        internal VisualElementAsset FindElementByPath(ReadOnlySpan<int> authoringPath, List<VisualElementAsset> pathToElement = null)
         {
-            if (authoringPath.isRootReference)
+            // Is this a root reference?
+            if (authoringPath.Length == 1 && authoringPath[0] == 0)
                 return visualTree;
 
             var currentTree = this;
             UxmlAsset uxmlAsset = null;
-            for (int i = 0; i < authoringPath.path.Length; i++)
+            for (int i = 0; i < authoringPath.Length; i++)
             {
-                var id = authoringPath.path[i];
+                var id = authoringPath[i];
                 var element = currentTree.FindElementById(id) as VisualElementAsset;
                 if (element == null)
                     return null;
@@ -820,7 +830,7 @@ namespace UnityEngine.UIElements
                         return null;
                     }
                 }
-                else if (i < authoringPath.path.Length - 1)
+                else if (i < authoringPath.Length - 1)
                 {
                     // Intermediate elements must be TemplateAssets
                     return null;
@@ -1051,10 +1061,7 @@ namespace UnityEngine.UIElements
         {
             if (asset.classes != null)
             {
-                for (int i = 0; i < asset.classes.Length; i++)
-                {
-                    element.AddToClassList(asset.classes[i]);
-                }
+                element.AddToClassList(asset.classes);
             }
         }
 
@@ -1087,20 +1094,6 @@ namespace UnityEngine.UIElements
         {
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
-        }
-
-        // Used for Live Reload.
-        internal int GetAttributePropertiesDirtyCount()
-        {
-            var dirtyCount = 0;
-            using var _ = ListPool<UxmlAsset>.Get(out var list);
-            list.AddRange(DepthFirstTraversal());
-            foreach (var vea in list)
-            {
-                dirtyCount += vea.GetPropertiesDirtyCount();
-            }
-
-            return dirtyCount;
         }
 
         internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)
@@ -1489,7 +1482,7 @@ namespace UnityEngine.UIElements
 
         internal bool hasOverrides => attributeOverrides?.Count > 0 || serializedDataOverrides?.Count > 0;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal CreationContext(VisualTreeAsset vta)
             : this((Dictionary<string, VisualElement>) null, vta, null)
         { }

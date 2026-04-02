@@ -30,7 +30,7 @@ namespace Unity.GraphToolkit.Editor
         GraphReference m_SubgraphReference;
 
         [SerializeField, NodeOption(true)]
-        string m_Subtitle;
+        new string m_Subtitle;
 
         // Used by the inspector to change the subgraph asset, when the node refers to an asset subgraph.
         [SerializeField, NodeOption(true)]
@@ -90,8 +90,18 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string Subtitle => m_Subtitle;
 
+        /// <summary>
+        /// The icon type string for subgraph nodes referencing a local subgraph.
+        /// </summary>
+        public static readonly string k_LocalSubgraphIconTypeString = "subgraph";
+
+        /// <summary>
+        /// The icon type string for subgraph nodes referencing an asset subgraph.
+        /// </summary>
+        public static readonly string k_AssetSubgraphIconTypeString = "graph-object";
+
         /// <inheritdoc />
-        public override string IconTypeString => IsReferencingLocalSubgraph ? "subgraph" : "graph-object";
+        public override string IconTypeString => IsReferencingLocalSubgraph ? k_LocalSubgraphIconTypeString : k_AssetSubgraphIconTypeString;
 
         /// <inheritdoc />
         public override bool UseColorAlpha => false;
@@ -298,7 +308,7 @@ namespace Unity.GraphToolkit.Editor
             if (isInput)
             {
                 var options = variableDeclaration.ShowOnInspectorOnly ? PortModelOptions.Hidden : PortModelOptions.Default;
-                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options,
+                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options, attributes: [new DelayedAttribute()],
                     initializationCallback: c =>
                     {
                         if (variableDeclaration.InitializationModel != null)
@@ -308,7 +318,8 @@ namespace Unity.GraphToolkit.Editor
             }
             else
             {
-                portModel = scope.AddOutputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: PortModelOptions.NoEmbeddedConstant);
+                portModel = scope.AddOutputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId,
+                    options: PortModelOptions.NoEmbeddedConstant, attributes: [new DelayedAttribute()]);
                 OutputPortToVariableDeclarationDictionary[portModel] = variableDeclaration;
             }
 

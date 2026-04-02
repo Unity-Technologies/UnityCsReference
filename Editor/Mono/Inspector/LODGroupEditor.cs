@@ -156,9 +156,7 @@ namespace UnityEditor
 
         void UpdateRendererMeshListCounts()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ReoderableMeshListCounts = m_RendererMeshLists.Select(i => i.count).ToArray();
-#pragma warning restore UA2001
+            m_ReoderableMeshListCounts = Array.ConvertAll(m_RendererMeshLists, i => i.count);
             UpdateEnabledMeshLods();
         }
 
@@ -696,6 +694,44 @@ namespace UnityEditor
 
             // Shows a combo box in the UI specifying which LOD level is used for baking (GFXFEAT-865)
             // This is disabled for now as the feature is only supported by the Unified Baker
+            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+            if (usingComputeLightBaker)
+            {
+                int[] lodContributeGIValues = new Span<int>(LODGUI.Styles.lodContributeGIValues, 0, m_NumberOfLODs + 1).ToArray();
+                GUIContent[] lodContributeGIStrings = new Span<GUIContent>(LODGUI.Styles.lodContributeGIStrings, 0, m_NumberOfLODs + 1).ToArray();
+
+                int lodGroupContributeGI = m_GlobalIlluminationLOD.intValue;
+                if (lodGroupContributeGI < -1 || lodGroupContributeGI >= m_NumberOfLODs)
+                    lodGroupContributeGI = -2; // This is outside the range and will result in a blank selection for LOD, a warning will be shown prompting the user to select an entry
+
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, LODGUI.Styles.m_LodContributeGITitle, m_GlobalIlluminationLOD);
+                EditorGUI.BeginChangeCheck();
+                // Draw the possible LOD group indices the user can select a global illumination contributor from
+                lodGroupContributeGI = EditorGUI.IntPopup(rect, LODGUI.Styles.m_LodContributeGITitle, lodGroupContributeGI, lodContributeGIStrings, lodContributeGIValues);
+                if (EditorGUI.EndChangeCheck())
+                    m_GlobalIlluminationLOD.intValue = lodGroupContributeGI;
+                EditorGUI.EndProperty();
+
+                if (m_GlobalIlluminationLOD.intValue != -1)
+                {
+                    // Check if the selected lod level has any contributing renderers
+                    var renderersProperty = serializedObject.FindProperty(string.Format(kRenderRootPath, m_GlobalIlluminationLOD.intValue));
+                    bool levelHasContributor = false;
+                    if (renderersProperty != null)
+                    {
+                        for (int i = 0; i < renderersProperty.arraySize && !levelHasContributor; ++i)
+                        {
+                            var rendererRef = renderersProperty.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
+                            var renderer = rendererRef.objectReferenceValue as Renderer;
+                            if (renderer != null && renderer.gameObject != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
+                                levelHasContributor |= GameObjectUtility.AreStaticEditorFlagsSet(renderer.gameObject, StaticEditorFlags.ContributeGI);
+                        }
+                    }
+                    if (!levelHasContributor)
+                        EditorGUILayout.HelpBox("The selected global illumination LOD has no renderers contributing to global illumination. If the LODGroup should not contribute to global illumination select 'None'.", MessageType.Warning);
+                }
+            }
 
             if (targets.Length > 1)
             {
@@ -838,7 +874,7 @@ namespace UnityEditor
                 LODGUI.kRenderersButtonHeight - LODGUI.kButtonPadding * 2), buttons, drawArea);
         }
 
-        private void HandleAddRenderer(Rect position, IEnumerable<Rect> alreadyDrawn, Rect drawArea)
+        private void HandleAddRenderer(Rect position, IReadOnlyList<Rect> alreadyDrawn, Rect drawArea)
         {
             Event evt = Event.current;
             switch (evt.type)
@@ -856,9 +892,7 @@ namespace UnityEditor
                     bool dragArea = false;
                     if (drawArea.Contains(evt.mousePosition))
                     {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (alreadyDrawn.All(x => !x.Contains(evt.mousePosition)))
-#pragma warning restore UA2001
+                        if (alreadyDrawn.TrueForAll(x => !x.Contains(evt.mousePosition)))
                             dragArea = true;
                     }
 

@@ -32,20 +32,20 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_Container = root;
-                m_Container.AddToClassList(BaseListView.reorderableItemUssClassName);
+                m_Container.AddToClassList(BaseListView.reorderableItemUssClassNameUnique);
 
                 m_DragHandle = new VisualElement { name = BaseListView.reorderableItemHandleUssClassName };
-                m_DragHandle.AddToClassList(BaseListView.reorderableItemHandleUssClassName);
+                m_DragHandle.AddToClassList(BaseListView.reorderableItemHandleUssClassNameUnique);
 
                 var handle1 = new VisualElement { name = BaseListView.reorderableItemHandleBarUssClassName };
-                handle1.AddToClassList(BaseListView.reorderableItemHandleBarUssClassName);
+                handle1.AddToClassList(BaseListView.reorderableItemHandleBarUssClassNameUnique);
                 m_DragHandle.Add(handle1);
                 var handle2 = new VisualElement { name = BaseListView.reorderableItemHandleBarUssClassName };
-                handle2.AddToClassList(BaseListView.reorderableItemHandleBarUssClassName);
+                handle2.AddToClassList(BaseListView.reorderableItemHandleBarUssClassNameUnique);
                 m_DragHandle.Add(handle2);
 
                 m_ItemContainer = new VisualElement { name = BaseListView.reorderableItemContainerUssClassName };
-                m_ItemContainer.AddToClassList(BaseListView.reorderableItemContainerUssClassName);
+                m_ItemContainer.AddToClassList(BaseListView.reorderableItemContainerUssClassNameUnique);
                 m_ItemContainer.Add(item);
 
                 m_Container.Add(m_DragHandle);
@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
                 if (m_DragHandle.parent == null)
                 {
                     rootElement.Insert(0, m_DragHandle);
-                    rootElement.AddToClassList(BaseListView.reorderableItemUssClassName);
+                    rootElement.AddToClassList(BaseListView.reorderableItemUssClassNameUnique);
                 }
             }
             else
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
                 if (m_DragHandle?.parent != null)
                 {
                     m_DragHandle.RemoveFromHierarchy();
-                    rootElement.RemoveFromClassList(BaseListView.reorderableItemUssClassName);
+                    rootElement.RemoveFromClassList(BaseListView.reorderableItemUssClassNameUnique);
                 }
             }
         }
@@ -93,13 +93,13 @@ namespace UnityEngine.UIElements
         public override void PreAttachElement()
         {
             base.PreAttachElement();
-            rootElement.AddToClassList(BaseListView.itemUssClassName);
+            rootElement.AddToClassList(BaseListView.itemUssClassNameUnique);
         }
 
         public override void DetachElement()
         {
             base.DetachElement();
-            rootElement.RemoveFromClassList(BaseListView.itemUssClassName);
+            rootElement.RemoveFromClassList(BaseListView.itemUssClassNameUnique);
         }
 
         public override void SetDragGhost(bool dragGhost)
@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements
             base.SetDragGhost(dragGhost);
             if (m_DragHandle != null)
             {
-                m_DragHandle.EnableInClassList(UIElementsUtility.hiddenClassName, isDragGhost);
+                m_DragHandle.EnableInClassList(UIElementsUtility.hiddenClassNameUnique, isDragGhost);
             }
         }
 

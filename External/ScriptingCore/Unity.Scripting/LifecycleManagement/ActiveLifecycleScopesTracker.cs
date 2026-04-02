@@ -686,7 +686,7 @@ namespace Unity.Scripting.LifecycleManagement
         /// Drops ClassAutoCleanup instances which were registered from assemblies which are now unloading.
         /// </summary>
         /// <param name="unloadingAssemblies">HashSet of unloading assemblies</param>
-        internal void ClearUnloadingAutoStaticsCleanupCallbacks(IReadonlyOrderedAssemblyList unloadingAssemblies)
+        internal void ClearUnloadingAutoStaticsCleanupCallbacks(ReadOnlyAssemblyList unloadingAssemblies)
         {
             lock (_autoCleanupsLock)
             {
@@ -710,7 +710,7 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        static bool IsTypeInUnloadingAssembly(Type type, IReadonlyOrderedAssemblyList unloadingAssemblies)
+        static bool IsTypeInUnloadingAssembly(Type type, ReadOnlyAssemblyList unloadingAssemblies)
         {
             if (unloadingAssemblies.Contains(type.Assembly.GetName()))
             {

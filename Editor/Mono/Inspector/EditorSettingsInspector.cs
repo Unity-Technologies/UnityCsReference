@@ -38,6 +38,7 @@ namespace UnityEditor
             public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix", "The namespace used for looking up and storing values on the cache server");
+            public static GUIContent cacheServerEnableImportResultCachingLabel = EditorGUIUtility.TrTextContent("Import Result Caching", "Enables import result caching on the cache server.");
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download", "Enables downloads from the cache server.");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload", "Enables uploads to the cache server.");
             public static GUIContent cacheServerEnableTlsLabel = EditorGUIUtility.TrTextContent("TLS/SSL", "Enabled encryption on the cache server connection.");
@@ -46,7 +47,6 @@ namespace UnityEditor
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to Unity Accelerator documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
-            public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Reduce version control noise", "Forces Unity to write references and similar YAML structures on one line, which reduces version control noise.");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
@@ -272,7 +272,6 @@ namespace UnityEditor
         SerializedProperty m_UnlockBlockShaders;
         SerializedProperty m_DefaultBehaviorMode;
         SerializedProperty m_SerializationMode;
-        SerializedProperty m_SerializeInlineMappingsOnOneLine;
         SerializedProperty m_PrefabRegularEnvironment;
         SerializedProperty m_PrefabUIEnvironment;
         SerializedProperty m_PrefabModeAllowAutoSave;
@@ -328,9 +327,6 @@ namespace UnityEditor
 
             m_SerializationMode = serializedObject.FindProperty("m_SerializationMode");
             Assert.IsNotNull(m_SerializationMode);
-
-            m_SerializeInlineMappingsOnOneLine = serializedObject.FindProperty("m_SerializeInlineMappingsOnOneLine");
-            Assert.IsNotNull(m_SerializeInlineMappingsOnOneLine);
 
             m_PrefabRegularEnvironment = serializedObject.FindProperty("m_PrefabRegularEnvironment");
             Assert.IsNotNull(m_PrefabRegularEnvironment);
@@ -457,16 +453,6 @@ namespace UnityEditor
 
             int index = m_SerializationMode.intValue;
             CreatePopupMenu("Mode", serializationPopupList, index, SetAssetSerializationMode);
-
-            if (m_SerializationMode.intValue != (int)SerializationMode.ForceBinary)
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_SerializeInlineMappingsOnOneLine, Content.textSerializeMappingsOnOneLine);
-                if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
-                {
-                    EditorSettings.serializeInlineMappingsOnOneLine = m_SerializeInlineMappingsOnOneLine.boolValue;
-                }
-            }
 
             GUILayout.Space(10);
 
@@ -767,7 +753,18 @@ namespace UnityEditor
             GUILayout.Label(Content.buildProfileSettings, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_HideBuildProfileClassicPlatforms, Content.buildProfileClassicPlatforms);
+
+            bool isActiveProfileClassic = BuildProfile.GetActiveBuildProfile() == null;
+            if (isActiveProfileClassic && !m_HideBuildProfileClassicPlatforms.boolValue)
+                EditorGUILayout.HelpBox("This setting cannot be enabled while a Classic Build Profile is Active.", MessageType.Warning);
+
+            // Don't allow 'Hide Classic Platforms' to be enabled while a classic platform is active.
+            //  Disabling is still allowed to cover an edge case where a hidden classic platform would activate.
+            using (new EditorGUI.DisabledScope(isActiveProfileClassic && !m_HideBuildProfileClassicPlatforms.boolValue))
+            {
+                EditorGUILayout.PropertyField(m_HideBuildProfileClassicPlatforms, Content.buildProfileClassicPlatforms);
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
@@ -803,6 +800,7 @@ namespace UnityEditor
                     isCacheServerEnabled = false;
                     if (AssetPipelinePreferences.IsCacheServerEnabled)
                     {
+
                         var cacheServerIP = AssetPipelinePreferences.CacheServerAddress;
                         cacheServerIP = string.IsNullOrEmpty(cacheServerIP) ? "Not set in preferences" : cacheServerIP;
                         EditorGUILayout.HelpBox(cacheServerIP, MessageType.None, false);
@@ -827,26 +825,30 @@ namespace UnityEditor
                     if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                     {
                         var address = EditorSettings.cacheServerEndpoint.Split(':');
-                        var ip = address[0];
-                        UInt16 port = 0; // If 0, will use the default set port
-                        if (address.Length == 2)
-                            port = Convert.ToUInt16(address[1]);
-
-                        bool canConnect = AssetDatabase.CanConnectToCacheServer(ip, port);
-                        bool isConnected = AssetDatabase.IsConnectedToCacheServer();
-                        if (canConnect)
-                            m_CacheServerConnectionState = CacheServerConnectionState.Success;
-                        else
-                            m_CacheServerConnectionState = CacheServerConnectionState.Failure;
-
-                        //We have to check if we're out of sync. here.
-                        //If we can connect, but we're not connected, we need to update some UI
-                        //If we CANNOT connect, but we are connected, we are out of sync. too and
-                        //need to update some UI.
-                        //Calling RefreshSettings here fixes that, and this check encapsulates the
-                        //above 2 conditions.
-                        if (canConnect != isConnected)
-                            AssetDatabase.RefreshSettings();
+                        if(address.Length > 0)
+                        {
+                            var ip = address[0];
+                            UInt16 port = 0; // If 0, will use the default set port
+                            if (address.Length == 2 && UInt16.TryParse(address[1], out var parsedPort)) 
+                                port = parsedPort;
+    
+                            bool canConnect = AssetDatabase.CanConnectToCacheServer(ip, port);
+                            bool isConnected = AssetDatabase.IsConnectedToCacheServer();
+                            if (canConnect)
+                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
+                            else
+                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+    
+                            //We have to check if we're out of sync. here.
+                            //If we can connect, but we're not connected, we need to update some UI
+                            //If we CANNOT connect, but we are connected, we are out of sync. too and
+                            //need to update some UI.
+                            //Calling RefreshSettings here fixes that, and this check encapsulates the
+                            //above 2 conditions.
+                            if (canConnect != isConnected)
+                                AssetDatabase.RefreshSettings();
+                        }
+                        
                     }
 
                     GUILayout.Space(25);
@@ -876,6 +878,14 @@ namespace UnityEditor
                     }
 
                     EditorGUI.BeginChangeCheck();
+                    bool enableImportResultCaching = EditorSettings.cacheServerImportResultCachingEnabled;
+                    enableImportResultCaching = EditorGUILayout.Toggle(Content.cacheServerEnableImportResultCachingLabel, enableImportResultCaching);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        EditorSettings.cacheServerImportResultCachingEnabled = enableImportResultCaching;
+                    }
+
+                    EditorGUI.BeginChangeCheck();
                     bool enableDownload = EditorSettings.cacheServerEnableDownload;
                     enableDownload = EditorGUILayout.Toggle(Content.cacheServerEnableDownloadLabel, enableDownload);
                     if (EditorGUI.EndChangeCheck())
@@ -893,7 +903,7 @@ namespace UnityEditor
                     enableTls = EditorGUILayout.Toggle(Content.cacheServerEnableTlsLabel, enableTls);
                     if (EditorGUI.EndChangeCheck())
                         EditorSettings.cacheServerEnableTls = enableTls;
-   
+
                     int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
                     EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
 
@@ -910,6 +920,13 @@ namespace UnityEditor
                             EditorSettings.cacheServerDownloadBatchSize = newDownloadBatchSize;
                     }
                 }
+            }
+            else
+            {
+                if (AssetDatabase.IsConnectedToCacheServer())
+                    AssetDatabase.CloseCacheServerConnection();
+
+                m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
             }
         }
 
@@ -1180,7 +1197,16 @@ namespace UnityEditor
 
         private void SetCacheServerMode(object data)
         {
-            EditorSettings.cacheServerMode = (CacheServerMode)data;
+            var oldMode = EditorSettings.cacheServerMode;
+            var newMode = (CacheServerMode)data;
+
+            if (oldMode != newMode)
+            {
+                EditorSettings.cacheServerMode = newMode;
+                // Trigger refresh to connect/disconnect based on new mode
+                if (!string.IsNullOrEmpty(EditorSettings.cacheServerEndpoint))
+                    AssetDatabase.RefreshSettings();
+            }
         }
 
         private void SetCacheServerAuthMode(object data)

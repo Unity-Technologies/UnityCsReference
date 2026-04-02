@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
@@ -47,8 +49,8 @@ namespace UnityEditor
     ///<remarks>The BuildPipeline class in the Unity Editor namespace provides essential tools to programmatically <see cref="BuildPipeline.BuildPlayer">Build Players</see> and <see cref="BuildPipeline.BuildAssetBundles">Build AssetBundles</see>.
     ///AssetBundles can be loaded from external sources such as the web, enhancing the flexibility and scalability of content delivery in Unity applications.
     ///The class contains several static properties and methods to facilitate building workflows.</remarks>
-    ///<seealso href="xref:AssetBundlesIntro">AssetBundles</seealso>
-    ///<seealso href="xref:BuildPlayerPipeline">Build Player Pipeline</seealso>
+    ///<seealso href="xref:um-asset-bundles-intro">AssetBundles</seealso>
+    ///<seealso href="xref:um-build-player-pipeline">Build Player Pipeline</seealso>
     [NativeHeader("Editor/Mono/BuildPipeline/BuildPipeline.bindings.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public class BuildPipeline
@@ -102,8 +104,9 @@ namespace UnityEditor
         public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
 
         [RequiredByNativeCode]
-        internal static BuildPlayerContext PreparePlayerBuild(BuildPlayerOptions buildPlayerOptions)
+        internal static BuildPlayerContext PreparePlayerBuild(IntPtr buildPlayerOptionsPtr)
         {
+            var buildPlayerOptions = BuildPlayerOptions.GetBuildPlayerOptions(buildPlayerOptionsPtr);
             var buildPlayerContext = new BuildPlayerContext(buildPlayerOptions);
             BuildPipelineInterfaces.PreparePlayerBuild(buildPlayerContext);
             return buildPlayerContext;
@@ -117,7 +120,7 @@ namespace UnityEditor
                 return Array.Empty<string>();
             return BuildPlayerContext.ActiveInstance.RetrieveAdditionalMetadataLocations();
         }
-      
+
         ///<summary>Builds a player from a specific build profile.</summary>
         ///<param name="buildPlayerWithProfileOptions">Provide various options to control the behavior of <see cref="BuildPipeline.BuildPlayer" /> when using a <see cref="BuildProfile">build profile</see>.</param>
         ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
@@ -141,7 +144,7 @@ namespace UnityEditor
         // Do not add any more overloads of BuildPlayer, or arguments to this method.  Functionality should be added by extending BuildPlayerOptions
         ///<summary>Builds a Player. These overloads are still supported, but will be replaced. Please use BuildPlayer(<see cref="BuildPlayerOptions" /> buildPlayerOptions) and BuildPlayer(<see cref="BuildPlayerWithProfileOptions" /> buildPlayerWithProfileOptions) instead.</summary>
         ///<param name="levels">The scenes to include in the build. If empty, the build includes only the current open scene. Paths are relative to the project folder, for example <c>Assets/MyLevels/MyScene.unity</c>.</param>
-        ///<param name="locationPathName">The path where the application will be built. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:build-path-requirements).</param>
+        ///<param name="locationPathName">The path where the application will be built. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:um-build-path-requirements).</param>
         ///<param name="target">The <see cref="BuildTarget" /> to build.</param>
         ///<param name="options">Additional <see cref="BuildOptions" />, like whether to run the built player.</param>
         ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
@@ -175,11 +178,13 @@ namespace UnityEditor
         ///<summary>Builds a player.</summary>
         ///<remarks>Use this function to programatically create a build of your project.
         ///
+        ///When working with <see cref="BuildProfile"/>, use the overload of <see cref="BuildPipeline.BuildPlayer(UnityEditor.BuildPlayerWithProfileOptions)"/> that accepts <see cref="BuildPlayerWithProfileOptions"/> instead. That overload applies the settings from the specified build profile to the build process.
+        ///
         ///Calling this method will invalidate any variables in the editor script that reference GameObjects, so they will need to be reacquired after the call.
         ///
         ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" />, <see cref="IProcessSceneWithReport" /> and <see cref="IPostprocessBuildWithContext" />.
         ///
-        ///Note: Be aware that changes to [scripting symbols](xref:platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
+        ///Note: Be aware that changes to [scripting symbols](xref:um-platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
         ///
         ///This means if you make changes to the defined scripting symbols via code using <see cref="PlayerSettings.SetDefineSymbolsForGroup" /> without a domain reload before calling this function, those changes won't take effect.
         ///
@@ -444,20 +449,23 @@ namespace UnityEditor
             // Default the build name to the output folder leaf if not explicitly set
             if (string.IsNullOrEmpty(buildParameters.name))
                 buildParameters.name = Path.GetFileName(buildParameters.outputPath.TrimEnd('/'));
-            
-            var report = BuildContentDirectoryInternal(buildParameters);
 
-            // Write BuildReportSummary.json to metadata directory
-            BuildReportSummary.WriteJson(report);
+            // Create the build session GUID and set up the metadata folder
+            var buildSessionGuid = GUID.Generate();
+            buildParameters.metadataPath = BuildHistory.ReserveBuildMetadataPath(buildSessionGuid.ToString());
+
+            var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
+
+            BuildHistory.FinalizeBuild(report);
 
             return report;
         }
 
         [NativeMethod(ThrowsException = true)]
-        private static extern BuildReport BuildContentDirectoryInternal(BuildContentDirectoryParameters buildParameters);
+        private static extern BuildReport BuildContentDirectoryInternal(BuildContentDirectoryParameters buildParameters, GUID buildSessionGuid);
 
         ///<summary>Build all AssetBundles.</summary>
-        ///<remarks>Use this function to build AssetBundles based on the AssetBundle and Label settings you have configured in the Editor. (See the Manual page about [AssetBundles workflow](xref:AssetBundles-Workflow) for further details.)
+        ///<remarks>Use this function to build AssetBundles based on the AssetBundle and Label settings you have configured in the Editor. (See the Manual page about [AssetBundles workflow](xref:um-asset-bundles-workflow) for further details.)
         ///
         ///Set <c>outputPath</c> to the folder within your project folder where you want to save the built
         ///bundles (for example: "Assets/MyBundleFolder"). The folder is not created automatically
@@ -556,7 +564,7 @@ namespace UnityEditor
         ///
         ///                    * The main ".manifest" file, which is a text format file.  It has the same name as the output folder, but using ".manifest" as its extension (for example: "MyBundleFolder.manifest").
         ///                    Assign the path to this manifest file to
-        ///                    <see cref="BuildPlayerOptions.assetBundleManifestPath" /> before calling <see cref="BuildPipeline.BuildPlayer" /> to make sure that any types appearing in the AssetBundles are not stripped from the build. (See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.)
+        ///                    <see cref="BuildPlayerOptions.assetBundleManifestPath" /> before calling <see cref="BuildPipeline.BuildPlayer" /> to make sure that any types appearing in the AssetBundles are not stripped from the build. (See [Managed code stripping](xref:um-managed-code-stripping) for more information about code stripping.)
         ///
         ///                    * There is also a separate ".manifest" file written for each AssetBundle, based on the name of the AssetBundle.
         ///
@@ -687,7 +695,7 @@ namespace UnityEditor
         ///}
         ///]]></code>
         ///</example>
-        ///<seealso href="xref:AssetBundlesIntro">AssetBundles</seealso>
+        ///<seealso href="xref:um-asset-bundles-intro">AssetBundles</seealso>
         public static AssetBundleManifest BuildAssetBundles(BuildAssetBundlesParameters buildParameters)
         {
             if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
@@ -749,7 +757,7 @@ namespace UnityEditor
         ///}
         ///]]></code>
         ///</example>
-        ///<seealso href="xref:AssetBundles-Integrity">CRC Checksums</seealso>
+        ///<seealso href="xref:um-asset-bundles-integrity">CRC Checksums</seealso>
         ///<seealso cref="AssetBundleManifest.GetAssetBundleHash" />
         [FreeFunction("ExtractCRCFromAssetBundleManifestFile")]
         public static extern bool GetCRCForAssetBundle(string targetPath, out uint crc);
@@ -805,6 +813,86 @@ namespace UnityEditor
 
         [FreeFunction]
         internal static extern string GetMonoRuntimeLibDirectory(BuildTarget target);
+
+        [RequiredByNativeCode]
+        static string[] GetSystemAssemblies(BuildTarget target, BuildOptions buildOptions)
+        {
+            var namedTarget = NamedBuildTarget.FromActiveSettings(target);
+            var scriptingBackend = PlayerSettings.GetScriptingBackend(namedTarget);
+
+            var directories = GetBclReferenceDirectoriesForBackend(target, namedTarget, buildOptions, scriptingBackend);
+            var assemblies = new List<string>();
+            foreach (var directory in directories)
+                assemblies.AddRange(Directory.GetFiles(directory, "*.dll"));
+            string[] result = new string[assemblies.Count];
+            for (var index = 0; index < assemblies.Count; index++)
+            {
+                // The native side expects all paths to be using forward slashes
+                result[index] = assemblies[index].Replace("\\", "/");
+            }
+
+            return result;
+        }
+
+        static List<string> GetBclReferenceDirectoriesForBackend(BuildTarget target, NamedBuildTarget namedTarget, BuildOptions buildOptions, ScriptingImplementation scriptingBackend)
+        {
+#pragma warning disable CS0618
+            if (scriptingBackend == ScriptingImplementation.CoreCLR)
+#pragma warning restore CS0618
+                return GetCoreCLRReferenceDirectories(target, namedTarget, buildOptions);
+            return GetMonoReferenceDirectories(target);
+        }
+
+        static List<string> GetCoreCLRReferenceDirectories(BuildTarget target, NamedBuildTarget namedTarget, BuildOptions buildOptions)
+        {
+            var result = new List<string>();
+            result.Add(BCLExtensions.CoreCLRRuntimeDirectory());
+
+            string arch = HackGetArchitectureForBclPath(namedTarget);
+
+            string engineDirectory = GetPlaybackEngineDirectory(target, buildOptions, true);
+            string coreCLRSharedDirectory = Path.Combine(engineDirectory,
+                $"Variations/CoreCLRShared/{arch}");
+
+            if (Directory.Exists(coreCLRSharedDirectory))
+            {
+                result.Add(Path.Combine(coreCLRSharedDirectory, "CoreCLR/lib"));
+            }
+            else
+            {
+                Debug.LogError($"Unable to find CoreCLRShared directory: {coreCLRSharedDirectory}");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// This logic is flawed and needs to be reworked
+        /// </summary>
+        /// <param name="namedTarget"></param>
+        /// <returns></returns>
+        internal static string HackGetArchitectureForBclPath(NamedBuildTarget namedTarget)
+        {
+            var arch = EditorUserBuildSettings.GetPlatformSettings(namedTarget.TargetName, "Architecture");
+            if (string.IsNullOrEmpty(arch))
+                arch = "x64";
+            return arch;
+        }
+
+        private static List<string> GetMonoReferenceDirectories(BuildTarget target)
+        {
+            var result = new List<string>();
+            result.Add(BCLExtensions.NetstandardRuntimeDirectory());
+
+            string monoLibDirectory = GetMonoRuntimeLibDirectory(target);
+            result.Add(monoLibDirectory);
+
+            string facadeDirectory = Path.Combine(monoLibDirectory, "Facades");
+            if (Directory.Exists(facadeDirectory))
+                result.Add(facadeDirectory);
+
+            return result;
+        }
 
         [RequiredByNativeCode]
         internal static string CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel compatibilityLevel)

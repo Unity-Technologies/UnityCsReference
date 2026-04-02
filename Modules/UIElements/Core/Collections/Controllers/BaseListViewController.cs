@@ -188,7 +188,7 @@ namespace UnityEngine.UIElements
             if (baseListView.autoAssignSource)
             {
                 reusableItem.rootElement.dataSource = itemsSource;
-                reusableItem.rootElement.dataSourcePath = PropertyPath.FromIndex(index);
+                reusableItem.rootElement.dataSourcePath = PropertyPath.FromIndex(GetIdForIndex(index));
             }
         }
 

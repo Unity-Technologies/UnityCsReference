@@ -129,6 +129,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [Serializable]
     abstract class UxmlSerializableAdapterBase
     {
         public abstract object dataBoxed { get; set; }

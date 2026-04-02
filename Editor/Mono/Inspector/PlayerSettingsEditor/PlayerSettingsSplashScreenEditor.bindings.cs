@@ -22,3 +22,13 @@ namespace UnityEditor
         internal static extern Rect GetSplashScreenActualUVs(Rect windowRect);
     }
 }
+
+namespace UnityEngine.Rendering
+{
+    [NativeHeader("Runtime/Graphics/DrawSplashScreenAndWatermarks.h")]
+    internal class SplashScreenPreview
+    {
+        [FreeFunction("BeginSplashScreenPreview_Binding")]
+        extern public static void Begin(UnityEditor.PlayerSettings playerSettings);
+    }
+}

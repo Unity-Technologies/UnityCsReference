@@ -584,7 +584,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private static bool CompareVertexStreams(IEnumerable<ParticleSystemVertexStream> a, IEnumerable<ParticleSystemVertexStream> b)
+        private static bool CompareVertexStreams(IReadOnlyList<ParticleSystemVertexStream> a, IReadOnlyList<ParticleSystemVertexStream> b)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var differenceA = a.Except(b);
@@ -606,9 +606,9 @@ namespace UnityEditor
             if (difference.Count() == 1)
 #pragma warning restore UA2005
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (difference.First() == ParticleSystemVertexStream.Normal)
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                     return true;
             }
 

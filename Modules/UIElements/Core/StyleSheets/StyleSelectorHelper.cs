@@ -99,7 +99,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case StyleSelectorType.Wildcard:
                         break;
                     case StyleSelectorType.Class:
+#pragma warning disable RS0030
                         match = element.ClassListContains(parts[i].value);
+#pragma warning restore RS0030
                         break;
                     case StyleSelectorType.ID:
                         match = string.Equals(element.name, parts[i].value, StringComparison.Ordinal);
@@ -228,13 +230,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return false;
         }
 
-        static void TestSelectorLinkedList(StyleComplexSelector currentComplexSelector,
+        static void TestSelectorList(List<StyleComplexSelector> selectorList,
             List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, ref SelectorMatchRecord record)
         {
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
             {
-                while (currentComplexSelector != null)
+                for (int i = 0; i < selectorList.Count; i++)
                 {
+                    var currentComplexSelector = selectorList[i];
                     profiler.BeginMatchingSelector(currentComplexSelector);
                     bool isCandidate = true;
                     bool isMatchRightToLeft = false;
@@ -262,16 +265,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
-                    currentComplexSelector = currentComplexSelector.nextInTable;
                 }
             }
         }
 
-        static void FastLookup(IDictionary<string, StyleComplexSelector> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, ref SelectorMatchRecord record)
+        static void FastLookup(IDictionary<string, List<StyleComplexSelector>> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, ref SelectorMatchRecord record)
         {
-            if (table.TryGetValue(input, out StyleComplexSelector currentComplexSelector))
+            if (table.TryGetValue(input, out List<StyleComplexSelector> selectorList))
             {
-                TestSelectorLinkedList(currentComplexSelector, matchedSelectors, context, ref record);
+                TestSelectorList(selectorList, matchedSelectors, context, ref record);
             }
         }
 
@@ -300,10 +302,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
         struct SelectorWorkItem
         {
-            public StyleSheet.OrderedSelectorType type;
+            public SelectorAccelerationTableType type;
             public string input;
 
-            public SelectorWorkItem(StyleSheet.OrderedSelectorType type, string input)
+            public SelectorWorkItem(SelectorAccelerationTableType type, string input)
             {
                 this.type = type;
                 this.input = input;
@@ -325,15 +327,15 @@ namespace UnityEngine.UIElements.StyleSheets
             try
             {
                 var element = context.currentElement;
-                workItems.Add(new (StyleSheet.OrderedSelectorType.Type, element.typeName));
+                workItems.Add(new (SelectorAccelerationTableType.Type, element.typeName));
 
                 if (!string.IsNullOrEmpty(element.name))
-                    workItems.Add(new (StyleSheet.OrderedSelectorType.Name, element.name));
-                List<string> classList = element.GetClassesForIteration();
+                    workItems.Add(new (SelectorAccelerationTableType.Name, element.name));
+                var classList = element.GetClassesForIteration();
                 int classCount = classList.Count;
                 for (int i = 0; i < classCount; i++)
                 {
-                    workItems.Add(new (StyleSheet.OrderedSelectorType.Class, classList[i]));
+                    workItems.Add(new (SelectorAccelerationTableType.Class, (string)classList[i]));
                 }
 
                 int workItemsCount = workItems.Count;
@@ -345,9 +347,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (!processedStyleSheets.Add(styleSheet))
                         continue;
 
-                    styleSheet.RebuildIfNecessary();
+                    SelectorAccelerationCacheEntry accelerationCacheEntry = context.GetCacheEntryAt(i);
 
-                    profiler.BeginMatchingStyleSheet(styleSheet);
+                    profiler.BeginMatchingStyleSheet(styleSheet, accelerationCacheEntry);
 
                     // If the sheet is added on the element consider it as :root
                     if (i > parentSheetIndex)
@@ -364,20 +366,21 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         var item = workItems[j];
 
-                        if ((styleSheet.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
+                        if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
                             continue;
 
-                        var table = styleSheet.tables[(int)item.type];
+                        var table = accelerationCacheEntry.tables[(int)item.type];
 
                         FastLookup(table, matchedSelectors, context, item.input, ref record);
                     }
 
-                    if (toggleRoot)
+                    if (toggleRoot && accelerationCacheEntry.rootSelectors != null)
                     {
-                        TestSelectorLinkedList(styleSheet.firstRootSelector, matchedSelectors, context, ref record);
+                        TestSelectorList(accelerationCacheEntry.rootSelectors, matchedSelectors, context, ref record);
                     }
 
-                    TestSelectorLinkedList(styleSheet.firstWildCardSelector, matchedSelectors, context, ref record);
+                    if (accelerationCacheEntry.wildCardSelectors != null)
+                        TestSelectorList(accelerationCacheEntry.wildCardSelectors, matchedSelectors, context, ref record);
 
                     profiler.EndMatchingStyleSheet(styleSheet);
                 }

@@ -248,7 +248,7 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(true))
                     {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var value = string.Join(", ", extraDataTargets.Select(t => t.name).ToArray());
+                        var value = string.Join(", ", extraDataTargets.Select(t => t.name));
 #pragma warning restore UA2001
                         EditorGUILayout.TextField(Styles.name, value, EditorStyles.textField);
                     }
@@ -321,10 +321,10 @@ namespace UnityEditor
                         // so all states are either include or exclude.
                         var compatibleWithAny = m_CompatibleWithAnyPlatform.boolValue;
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var needToSwap = extraDataTargets.Cast<AssemblyDefinitionState>().Where(p => p.compatibleWithAnyPlatform != compatibleWithAny).ToList();
+                        var needToSwap = extraDataTargets.Where(p => ((AssemblyDefinitionState)p).compatibleWithAnyPlatform != compatibleWithAny).ToList();
 #pragma warning restore UA2001
                         extraDataSerializedObject.ApplyModifiedProperties();
-                        foreach (var state in needToSwap)
+                        foreach (AssemblyDefinitionState state in needToSwap)
                         {
                             InversePlatformCompatibility(state);
                         }
@@ -446,9 +446,7 @@ namespace UnityEditor
 
             // Do not write back to the asset if no asset can be found.
             if (targets != null)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
-#pragma warning restore UA2001
+                SaveAndUpdateAssemblyDefinitionStates(extraDataTargets);
         }
 
         static void InversePlatformCompatibility(AssemblyDefinitionState state)
@@ -555,9 +553,7 @@ namespace UnityEditor
             var definesFromAssemblyName = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? Array.Empty<string>();
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defines = definesFromAssemblyName.Concat(responseFileDefinesFromAssemblyName);
-#pragma warning restore UA2001
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return defines.Distinct().ToArray();
 #pragma warning restore UA2001
         }
@@ -568,11 +564,7 @@ namespace UnityEditor
             var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Values.ToList();
 #pragma warning restore UA2001
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Where(x => x.Name == preselectedResourceName).Any())
-#pragma warning restore UA2001
-#pragma warning restore UA2002
+            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Exists(x => x.Name == preselectedResourceName))
             {
                 versionDefineResourceOptions.Add(new VersionMetaData(preselectedResourceName));
             }
@@ -608,11 +600,7 @@ namespace UnityEditor
 
             int indexOfSelected = 0;
             if (!string.IsNullOrEmpty(nameProp.stringValue))
-            {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                indexOfSelected = versionedResourceOptions.IndexOf(versionedResourceOptions.Where(x => x.Name == nameProp.stringValue).First());
-#pragma warning restore UA2001
-            }
+                indexOfSelected = versionedResourceOptions.FindIndex(x => x.Name == nameProp.stringValue);
 
             bool mixed = versionDefineProp.hasMultipleDifferentValues;
             EditorGUI.showMixedValue = mixed;
@@ -680,9 +668,7 @@ namespace UnityEditor
 
         private void UpdatePrecompiledReferenceListEntry()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var precompiledAssemblyNames = CompilationPipeline.GetPrecompiledAssemblyNames().ToList();
-#pragma warning restore UA2001
+            var precompiledAssemblyNames = new List<string>(CompilationPipeline.GetPrecompiledAssemblyNames());
             var currentReferencesProp = extraDataSerializedObject.FindProperty("precompiledReferences");
             if (currentReferencesProp.arraySize > 0)
             {
@@ -697,10 +683,8 @@ namespace UnityEditor
                 while (prop.Next(false) && !SerializedProperty.EqualContents(prop, end));
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PrecompileReferenceListEntry = precompiledAssemblyNames
-#pragma warning restore UA2001
-                .OrderBy(x => x).ToList();
+            m_PrecompileReferenceListEntry = precompiledAssemblyNames;
+            m_PrecompileReferenceListEntry.Sort();
         }
 
         private void DrawPrecompiledReferenceListElement(Rect rect, int index, bool isactive, bool isfocused)
@@ -931,9 +915,9 @@ namespace UnityEditor
                 }
         }
 
-        static void SaveAndUpdateAssemblyDefinitionStates(AssemblyDefinitionState[] states)
+        static void SaveAndUpdateAssemblyDefinitionStates(Object[] states)
         {
-            foreach (var state in states)
+            foreach (AssemblyDefinitionState state in states)
             {
                 SaveAssemblyDefinitionState(state);
             }

@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -52,7 +53,7 @@ partial class StyleRuleHeader : UISelectionObjectHeader
     }
 
     public static readonly BindingId ElementProperty = nameof(Rule);
-    public static readonly BindingId RuleNamProperty = nameof(RuleName);
+    public static readonly BindingId RuleNameProperty = nameof(RuleName);
 
     public new const string UssClass = "unity-style-rule-header";
     public const string RuleNameUssClass = UssClass + "__rule-name";
@@ -75,7 +76,7 @@ partial class StyleRuleHeader : UISelectionObjectHeader
             if (string.CompareOrdinal(m_RuleName.value, value) == 0)
                 return;
             m_RuleName.value = value;
-            NotifyPropertyChanged(RuleNamProperty);
+            NotifyPropertyChanged(RuleNameProperty);
         }
     }
 
@@ -85,26 +86,21 @@ partial class StyleRuleHeader : UISelectionObjectHeader
         get => m_Rule;
         set
         {
-            if (m_Rule == value)
-                return;
             m_Rule = value;
 
             m_RuleName.dataSource = Rule;
 
+            TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
+            TypeName = "Rule";
+
             if (m_Rule == null)
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
                 RuleName = null;
-                TypeName = nameof(StyleSheet);
-
-                m_RuleName.ClearBinding(TextField.valueProperty);
                 m_RuleName.value = null;
             }
             else
             {
-                TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
-                TypeName = TypeUtility.GetTypeDisplayName(m_Rule.GetType());
-                RuleName = s_Exporter.ToUssString(m_Rule.styleSheet, m_Rule.complexSelectors);
+                RuleName = s_Exporter.ToUssString(m_Rule.styleSheet, m_Rule.complexSelectors, StyleSheetNodeTypeHandler.s_ExportOptions);
             }
             NotifyPropertyChanged(ElementProperty);
         }
@@ -114,11 +110,57 @@ partial class StyleRuleHeader : UISelectionObjectHeader
     {
         AddToClassList(UssClass);
 
-        TypeIcon = UIResources.GetIconForType(typeof(StyleSheet), UIResources.RequestSize.Px32);
+        TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
         TypeName = "Rule";
 
         m_RuleName = this.Q<TextField>(className: RuleNameUssClass);
-        m_RuleName.SetEnabled(false);
+        m_RuleName.isDelayed = true;
         m_RuleName.dataSource = this;
+
+        m_RuleName.RegisterValueChangedCallback(OnRuleNameChanged);
+
+        Undo.undoRedoPerformed += OnUndoRedo;
+        RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+    }
+
+    void OnDetachFromPanel(DetachFromPanelEvent evt)
+    {
+        Undo.undoRedoPerformed -= OnUndoRedo;
+    }
+
+    void OnUndoRedo()
+    {
+        // Refresh the rule name display after undo/redo
+        if (m_Rule != null)
+        {
+            RuleName = s_Exporter.ToUssString(m_Rule.styleSheet, m_Rule.complexSelectors, StyleSheetNodeTypeHandler.s_ExportOptions);
+        }
+    }
+
+    void OnRuleNameChanged(ChangeEvent<string> evt)
+    {
+        if (Rule == null || string.CompareOrdinal(evt.previousValue, evt.newValue) == 0)
+            return;
+
+        if (string.IsNullOrEmpty(evt.newValue))
+        {
+            m_RuleName.SetValueWithoutNotify(evt.previousValue);
+            return;
+        }
+
+        var selectorStrings = evt.newValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var selectorString in selectorStrings)
+        {
+            if (StyleSheetExtensions.ValidateSelector(selectorString, out var error))
+                continue;
+
+            Debug.LogError( $"Invalid selector string '{selectorString}': {error}.");
+
+            // Revert to previous valid value
+            m_RuleName.SetValueWithoutNotify(evt.previousValue);
+            return;
+        }
+
+        new RenameStyleRuleCommand(selectorStrings, Rule).Execute();
     }
 }

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
@@ -198,9 +197,7 @@ namespace UnityEditor.ShortcutManagement
         {
             m_PreviouslyFocusedView = previouslyFocusedView;
             m_ConflictResolver = conflictResolver;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Entries = entries.ToList();
-#pragma warning restore UA2001
+            m_Entries = new List<ShortcutEntry>(entries);
 
             var multiColumnHeader = new MultiColumnHeader(m_MulticolumnHeaderState);
             multiColumnHeader.ResizeToFit();
@@ -320,9 +317,7 @@ namespace UnityEditor.ShortcutManagement
                 {
                     ShortcutEntry entry = null;
                     if (hasSelection)
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        entry = m_Entries[m_ConflictListView.GetSelection().First()];
-#pragma warning restore UA2001
+                        entry = m_Entries[(m_ConflictListView.GetSelection())[0]];
 
                     using (new EditorGUI.DisabledScope(entry == null || (entry.type == ShortcutType.Clutch && !m_Rebind)))
                     {

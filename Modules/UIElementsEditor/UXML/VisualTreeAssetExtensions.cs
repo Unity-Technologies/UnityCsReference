@@ -161,5 +161,27 @@ namespace UnityEditor.UIElements
             vta.GetAllReferencedStyleSheets(result);
             return result;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
+        {
+            return vta.GetOrCreateInlineStyleRule(vea, out var _);
+        }
+
+        public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea, out bool wasCreated)
+        {
+            wasCreated = vea.ruleIndex < 0;
+            if (wasCreated)
+            {
+                var inlineSheet = vta.GetOrCreateInlineStyleSheet();
+                vea.ruleIndex = inlineSheet.rules.Length;
+                return inlineSheet.AddRule();
+            }
+
+            if (vta.inlineSheet.rules.Length <= vea.ruleIndex)
+                return null;
+
+            return vta.inlineSheet.rules[vea.ruleIndex];
+        }
     }
 }

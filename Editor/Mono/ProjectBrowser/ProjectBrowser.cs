@@ -24,8 +24,8 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Project", icon = "Project")]
     internal class ProjectBrowser : EditorWindow, IHasCustomMenu, ISearchableContainer, IFramableContainer
     {
-        public static readonly EntityId kPackagesFolderInstanceId = EntityId.FromULong(int.MaxValue);
-        public static readonly EntityId kAssetCreationInstanceID_ForNonExistingAssets = EntityId.FromULong(Int32.MaxValue - 1);
+        public static readonly EntityId kPackagesFolderInstanceId = EntityId.FromULong(int.MaxValue|0x7E25105ul<<32);
+        public static readonly EntityId kAssetCreationInstanceID_ForNonExistingAssets = EntityId.FromULong(((ulong)int.MaxValue-1)|0x7E25105ul<<32);
 
         internal static readonly SavedBool k_ShowFoldersFirst = new SavedBool("ShowFoldersFirst", Application.platform != RuntimePlatform.OSXEditor);
 
@@ -114,7 +114,9 @@ namespace UnityEditor
 
             public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
-            public GUIContent m_FilterByImportLog = EditorGUIUtility.TrIconContent("d_console.erroricon.inactive.sml", "Search by Import Log Type");
+            public GUIContent m_FilterByImportLogInactive = EditorGUIUtility.TrIconContent("ImportLogType_Inactive", "Search by Import Log Type");
+            public GUIContent m_FilterByImportLogError = EditorGUIUtility.TrIconContent("ImportLogType_Error", "Search by Import Log Type");
+            public GUIContent m_FilterByImportLogWarning = EditorGUIUtility.TrIconContent("ImportLogType_Warning", "Search by Import Log Type");
             public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new Asset");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackageContentDefault = new GUIContent("", "");
@@ -571,11 +573,11 @@ namespace UnityEditor
 
             InitViewMode(m_ViewMode);
 
+            InitListArea(); // UUM-137174 : InitList area is needed before EnsureValidSetup when loading layout with locked ProjectBrowser
             EnsureValidSetup();
 
             RefreshSearchText();
             SyncFilterGUI();
-            InitListArea();
         }
 
         public void SetSearch(string searchString)
@@ -782,8 +784,8 @@ namespace UnityEditor
 
             #pragma warning disable 618
             #pragma warning disable 612
-            if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-                EditorApplication.projectWindowItemInstanceOnGUI(entityId, rect);
+            if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
+                EditorApplication.projectWindowItemByEntityIdOnGUI(entityId, rect);
             #pragma warning restore 618
             #pragma warning restore 612
 
@@ -884,7 +886,7 @@ namespace UnityEditor
             var shouldAcceptChanges = !Undo.isProcessing;
             if (m_AssetTree != null)
                 m_AssetTree.EndNameEditing(shouldAcceptChanges);
-            
+
             if (m_FolderTree != null)
                 m_FolderTree.EndNameEditing(shouldAcceptChanges);
 
@@ -981,9 +983,7 @@ namespace UnityEditor
             // Toggle clicked element
             element.selected = !element.selected;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SearchFilter.importLogFlags = element.selected ? (UnityEditor.AssetImporters.ImportLogFlags)Enum.Parse(typeof(UnityEditor.AssetImporters.ImportLogFlags), element.types.First()) : ImportLogFlags.None;
-#pragma warning restore UA2001
+            m_SearchFilter.importLogFlags = element.selected ? (ImportLogFlags)Enum.Parse(typeof(ImportLogFlags), element.types[0]) : ImportLogFlags.None;
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
 
             TopBarSearchSettingsChanged();
@@ -1562,9 +1562,7 @@ namespace UnityEditor
                     int filterId = FavoritesEntityIds.instance.GetIdFor(selectedEntityId);
                     SearchFilter filter = SavedSearchFilters.GetFilter(filterId);
 
-                    // Check if the filter is valid (the root of filters are not an actual filter)
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    if (ValidateFilter((int)EntityId.ToULong(selectedEntityId), filter))
+                    if (ValidateFilter(filterId, filter))
                     {
                         m_SearchFilter = filter;
                         EnsureValidFolders();
@@ -2482,9 +2480,15 @@ namespace UnityEditor
 
         void LogTypeDropDown()
         {
+            var content = s_Styles.m_FilterByImportLogInactive;
+            if(m_SearchFilter.importLogFlags == ImportLogFlags.Error)
+                content = s_Styles.m_FilterByImportLogError;
+            if(m_SearchFilter.importLogFlags == ImportLogFlags.Warning)
+                content = s_Styles.m_FilterByImportLogWarning;
+
             //Log type button
-            Rect r = GUILayoutUtility.GetRect(s_Styles.m_FilterByImportLog, EditorStyles.toolbarButton);
-            if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByImportLog, FocusType.Passive, EditorStyles.toolbarButton))
+            Rect r = GUILayoutUtility.GetRect(content, EditorStyles.toolbarButton);
+            if (EditorGUI.DropdownButton(r, content, FocusType.Passive, EditorStyles.toolbarButton))
             {
                 PopupWindow.Show(r, new PopupList(m_LogTypes));
             }

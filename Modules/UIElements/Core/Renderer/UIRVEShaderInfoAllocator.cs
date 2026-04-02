@@ -392,10 +392,9 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_ColorAllocator, alloc);
 
-            if (m_ColorSpace == ColorSpace.Linear)
-                m_Storage.SetTexel(allocXY.x, allocXY.y, color.linear);
-            else
-                m_Storage.SetTexel(allocXY.x, allocXY.y, color);
+            // Dynamic colors are converted to linear colorspace (when needed) after
+            // being used as a tint on the vertex color. 
+            m_Storage.SetTexel(allocXY.x, allocXY.y, color);
         }
 
         public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
@@ -405,15 +404,17 @@ namespace UnityEngine.UIElements.UIR
             var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
             var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
 
+            // The face color is converted to linear colorspace (when needed) after
+            // being used as a tint on the vertex color. 
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor);
+
             if (m_ColorSpace == ColorSpace.Linear)
             {
-                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor.linear);
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor.linear);
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor.linear);
             }
             else
             {
-                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor);
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor);
                 m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor);
             }

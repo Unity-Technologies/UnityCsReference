@@ -307,9 +307,9 @@ namespace UnityEditor.Search.Providers
 
         private static bool IsHidden(IReadOnlyCollection<SearchItem> items)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var go = items.First().ToObject<GameObject>();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             if (!go)
                 return false;
             return SceneVisibilityManager.instance.IsHidden(go);
@@ -354,7 +354,7 @@ namespace UnityEditor.Search.Providers
             if (!go)
                 return null;
 
-            var entityId = go.GetEntityId();
+            var entityId = EntityId.ToULong(go.GetEntityId());
             var item = provider.CreateItem(context, entityId.ToString(), entityId.GetHashCode(), null, null, null, new GameObjectData(go));
             return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }
@@ -385,9 +385,7 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Selection.entityIds = objects.Select(o => o.GetEntityId()).ToArray();
-#pragma warning restore UA2001
+            Selection.entityIds = Array.ConvertAll(objects, o => o.GetEntityId());
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
         }
@@ -454,7 +452,7 @@ namespace UnityEditor.Search.Providers
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 sceneObjects = context.searchView.results.Select(r => r.ToObject()).Where(o => o);
-#pragma warning restore UA2001
+                #pragma warning restore UA2001
             }
             else
             {

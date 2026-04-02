@@ -328,7 +328,7 @@ internal class ATGTextJobSystem
 
         foreach (var entry in allUniqueMissingGlyphs)
         {
-            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(entry.Key);
+            var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
             if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
                 continue;
 
@@ -339,6 +339,7 @@ internal class ATGTextJobSystem
         }
 
         s_AggregatedMissingGlyphsPool.Release(allUniqueMissingGlyphs);
+        FontAsset.CreateHbFaceIfNeeded();
         FontAsset.UpdateFontAssetsInUpdateQueue();
 
         mgc.GetTempMeshAllocator(out var alloc);
@@ -389,7 +390,7 @@ internal class ATGTextJobSystem
             ATGMeshInfo meshInfo = meshInfos[i];
             FontAsset fa = null;
             SpriteAsset sa = null;
-            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+            var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
             if (textAsset == null)
                 continue;
             bool isSprite = false;
@@ -420,6 +421,7 @@ internal class ATGTextJobSystem
             {
                 var textElementInfoInAtlas = textElementIndicesByMesh[i][j];
                 int remainingVertexCount = textElementInfoInAtlas.Count * 4;
+                int vSrc = 0;
                 while (remainingVertexCount > 0)
                 {
                     int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
@@ -450,7 +452,7 @@ internal class ATGTextJobSystem
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
                     var pos = (visualElement).contentRect.min;
-                    for (int vDst = 0,vSrc = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
+                    for (int vDst = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
                     {
                         var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
                         Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;

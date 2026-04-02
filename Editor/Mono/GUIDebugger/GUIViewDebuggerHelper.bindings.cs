@@ -13,12 +13,29 @@ using System.Runtime.CompilerServices;
 using System;
 namespace UnityEditor
 {
+    // This needs to match the native StackFrame struct in GUIViewDebuggerHelper.bindings.h
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct StackFrame
+    {
+        public uint   lineNumber;
+        public string sourceFile;
+        public string methodName;
+        public string signature;
+        public string moduleName;
+    }
+
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUIDrawInstruction
     {
         public Rect         rect;
         public Rect         visibleRect;
+        [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public GUIStyle     usedGUIStyle;
+        [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public GUIContent   usedGUIContent;
         public string       label;
         public StackFrame[] stackframes;
@@ -31,7 +48,10 @@ namespace UnityEditor
             usedGUIContent = GUIContent.none;
         }
     }
+
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUIClipInstruction
     {
         public Rect screenRect;
@@ -45,7 +65,9 @@ namespace UnityEditor
         public StackFrame[] popStacktrace;
     }
 
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUILayoutInstruction
     {
         public int level;
@@ -56,6 +78,7 @@ namespace UnityEditor
         public int marginTop;
         public int marginBottom;
 
+        [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public GUIStyle style;
 
 
@@ -65,7 +88,9 @@ namespace UnityEditor
         public int isVertical;
     }
 
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUINamedControlInstruction
     {
         public string name;
@@ -73,7 +98,9 @@ namespace UnityEditor
         public int id;
     }
 
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUIPropertyInstruction
     {
         public string targetTypeName;
@@ -101,7 +128,9 @@ namespace UnityEditor
     //and even worse, we do it everyframe.
     //We should load the stacktrace info lazily.
 
+    [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMGUIInstruction
     {
         public InstructionType type;
@@ -120,7 +149,9 @@ namespace UnityEditor
         [NativeMethod(ThrowsException = true)]
         static internal extern void GetViews([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<GUIView> views);
 
-        static internal extern void DebugWindow([UnityMarshalAs(NativeType.ScriptingObjectPtr)] GUIView view);
+        static internal extern void DebugWindow(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(GUIView.NativeHandleMarshaller))]
+            GUIView view);
 
         [FreeFunction("GetGUIDebuggerManager().StopDebuggingAll")]
         static internal extern void StopDebugging();
@@ -131,17 +162,17 @@ namespace UnityEditor
             return new GUIContent(text, image, tooltip);
         }
 
-        internal static extern void GetDrawInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIDrawInstruction> drawInstructions, bool includeStackTraces = true);
+        internal static extern void GetDrawInstructions([Out] List<IMGUIDrawInstruction> drawInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetClipInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIClipInstruction> clipInstructions, bool includeStackTraces = true);
+        internal static extern void GetClipInstructions([Out] List<IMGUIClipInstruction> clipInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetNamedControlInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUINamedControlInstruction> namedControlInstructions);
+        internal static extern void GetNamedControlInstructions([Out] List<IMGUINamedControlInstruction> namedControlInstructions);
 
-        internal static extern void GetPropertyInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIPropertyInstruction> namedControlInstructions, bool includeStackTraces = true);
+        internal static extern void GetPropertyInstructions([Out] List<IMGUIPropertyInstruction> propertyInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetLayoutInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUILayoutInstruction> layoutInstructions, bool includeStackTraces = true);
+        internal static extern void GetLayoutInstructions([Out] List<IMGUILayoutInstruction> layoutInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetUnifiedInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIInstruction> layoutInstructions, bool includeStackTraces = true);
+        internal static extern void GetUnifiedInstructions([Out] List<IMGUIInstruction> instructions, bool includeStackTraces = true);
 
         [FreeFunction("GetGUIDebuggerManager().ClearInstructions")]
         internal static extern void ClearInstructions();

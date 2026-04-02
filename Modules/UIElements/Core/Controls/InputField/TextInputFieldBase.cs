@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly BindingId hideSoftKeyboardProperty = nameof(hideSoftKeyboard);
         internal static readonly BindingId hidePlaceholderOnFocusProperty = nameof(hidePlaceholderOnFocus);
         internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
         internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
@@ -63,6 +64,7 @@ namespace UnityEngine.UIElements
                     new (nameof(doubleClickSelectsWord), "select-word-by-double-click"),
                     new (nameof(tripleClickSelectsLine), "select-line-by-triple-click"),
                     new (nameof(emojiFallbackSupport), "emoji-fallback-support"),
+                    new (nameof(hideSoftKeyboard), "hide-soft-keyboard"),
                     new (nameof(hideMobileInput), "hide-mobile-input"),
                     new (nameof(keyboardType), "keyboard-type"),
                     new (nameof(autoCorrection), "auto-correction"),
@@ -90,6 +92,7 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("select-line-by-triple-click")]
             [SerializeField] bool tripleClickSelectsLine;
             [SerializeField] bool emojiFallbackSupport;
+            [SerializeField] bool hideSoftKeyboard;
             [SerializeField] bool hideMobileInput;
             [SerializeField] bool autoCorrection;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
@@ -105,6 +108,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideSoftKeyboard_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoCorrection_UxmlAttributeFlags;
@@ -143,6 +147,8 @@ namespace UnityEngine.UIElements
                     e.tripleClickSelectsLine = tripleClickSelectsLine;
                 if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
                     e.emojiFallbackSupport = emojiFallbackSupport;
+                if (ShouldWriteAttributeValue(hideSoftKeyboard_UxmlAttributeFlags))
+                    e.hideSoftKeyboard = hideSoftKeyboard;
                 if (ShouldWriteAttributeValue(hideMobileInput_UxmlAttributeFlags))
                     e.hideMobileInput = hideMobileInput;
                 if (ShouldWriteAttributeValue(keyboardType_UxmlAttributeFlags))
@@ -199,7 +205,7 @@ namespace UnityEngine.UIElements
         internal string placeholderText
         {
             get => textEdition.placeholder;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             set
             {
                 if (textEdition.placeholder == value) return;
@@ -230,42 +236,56 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-base-text-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// USS class name of the multiline container.
         /// </summary>
         internal static readonly string multilineContainerClassName = ussClassName + "__multiline-container";
+        internal static readonly UniqueStyleString multilineContainerClassNameUnique = new(multilineContainerClassName);
+
         /// <summary>
         /// USS class name of single line input elements in elements of this type.
         /// </summary>
         public static readonly string singleLineInputUssClassName = inputUssClassName + "--single-line";
+        internal static readonly UniqueStyleString singleLineInputUssClassNameUnique = new(singleLineInputUssClassName);
 
         /// <summary>
         /// USS class name of multiline input elements in elements of this type.
         /// </summary>
         public static readonly string multilineInputUssClassName = inputUssClassName + "--multiline";
+        internal static readonly UniqueStyleString multilineInputUssClassNameUnique = new(multilineInputUssClassName);
 
         /// <summary>
         /// USS class name of input elements when placeholder text is shown
         /// </summary>
         public static readonly string placeholderUssClassName = inputUssClassName + "--placeholder";
+        internal static readonly UniqueStyleString placeholderUssClassNameUnique = new(placeholderUssClassName);
 
         /// <summary>
         /// USS class name of multiline input elements with no scroll view.
         /// </summary>
         internal static readonly string multilineInputWithScrollViewUssClassName = multilineInputUssClassName + "--scroll-view";
+        internal static readonly UniqueStyleString multilineInputWithScrollViewUssClassNameUnique = new(multilineInputWithScrollViewUssClassName);
 
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public static readonly string textInputUssName = "unity-text-input";
+        internal static readonly UniqueStyleString k_TextInputUssName = new(textInputUssName);
+
         #endregion
 
         protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
@@ -278,10 +298,10 @@ namespace UnityEngine.UIElements
             delegatesFocus = true;
             labelElement.tabIndex = -1; // To delegate directly to text-input field
 
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
-            visualInput.AddToClassList(singleLineInputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
+            visualInput.AddToClassList(singleLineInputUssClassNameUnique);
 
             m_TextInputBase = textInputBase;
             m_TextInputBase.textEdition.maxLength = maxLength;
@@ -376,7 +396,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Hides or shows the mobile input field.
+        /// Prevents the OS soft keyboard from opening
+        /// </summary>
+        [CreateProperty]
+        public bool hideSoftKeyboard
+        {
+            get => textEdition.hideSoftKeyboard;
+            set
+            {
+                if (textEdition.hideSoftKeyboard == value)
+                    return;
+                textEdition.hideSoftKeyboard = value;
+                NotifyPropertyChanged(hideSoftKeyboardProperty);
+            }
+        }
+
+        /// <summary>
+        /// Hides the mobile input field shown in the OS soft keyboard.
         /// </summary>
         [CreateProperty]
         public bool hideMobileInput
@@ -730,7 +766,7 @@ namespace UnityEngine.UIElements
             // Preemptively set back the placeholder state if we're about to set to an empty string.
             if (textInputBase.textElement.needsPlaceholderIfTextIsEmpty && string.IsNullOrEmpty(ValueToString(newValue)))
             {
-                visualInput.AddToClassList(placeholderUssClassName);
+                visualInput.AddToClassList(placeholderUssClassNameUnique);
             }
         }
 
@@ -761,20 +797,20 @@ namespace UnityEngine.UIElements
                     ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
                 }
 
-                AddToClassList(mixedValueLabelUssClassName);
-                visualInput?.AddToClassList(mixedValueLabelUssClassName);
+                AddToClassList(mixedValueLabelUssClassNameUnique);
+                visualInput?.AddToClassList(mixedValueLabelUssClassNameUnique);
             }
             else
             {
                 UpdateTextFromValue();
-                visualInput?.RemoveFromClassList(mixedValueLabelUssClassName);
-                RemoveFromClassList(mixedValueLabelUssClassName);
+                visualInput?.RemoveFromClassList(mixedValueLabelUssClassNameUnique);
+                RemoveFromClassList(mixedValueLabelUssClassNameUnique);
             }
         }
 
         internal bool hasFocus
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => textInputBase.textElement.hasFocus;
         }
 
@@ -791,9 +827,9 @@ namespace UnityEngine.UIElements
         internal void UpdatePlaceholderClassList(ChangeEvent<TValueType> evt = null)
         {
             if (textInputBase.textElement.showPlaceholderText)
-                visualInput.AddToClassList(placeholderUssClassName);
+                visualInput.AddToClassList(placeholderUssClassNameUnique);
             else
-                visualInput.RemoveFromClassList(placeholderUssClassName);
+                visualInput.RemoveFromClassList(placeholderUssClassNameUnique);
         }
 
         // UpdateValueFromText and UpdateTextFromValue are overriden by TextValueField and potentially other
@@ -829,44 +865,56 @@ namespace UnityEngine.UIElements
             /// Modifier name of the inner components
             /// </summary>
             public static readonly string innerComponentsModifierName = "--inner-input-field-component";
+            internal static readonly UniqueStyleString k_InnerComponentsModifierName = new(innerComponentsModifierName);
 
             /// <summary>
             /// USS class name of the inner TextElement
             /// </summary>
             public static readonly string innerTextElementUssClassName = TextElement.ussClassName + innerComponentsModifierName;
+            internal static readonly UniqueStyleString innerTextElementUssClassNameUnique = new(innerTextElementUssClassName);
 
             /// <summary>
             /// USS class name of the inner TextElement
             /// </summary>
             internal static readonly string innerTextElementWithScrollViewUssClassName = TextElement.ussClassName + innerComponentsModifierName + "--scroll-view";
+            internal static readonly UniqueStyleString innerTextElementWithScrollViewUssClassNameUnique = new(innerTextElementWithScrollViewUssClassName);
 
             /// <summary>
             /// USS class name that's added when the inner TextElement if in horizontal.
             /// </summary>
             public static readonly string horizontalVariantInnerTextElementUssClassName = TextElement.ussClassName + innerComponentsModifierName + "--horizontal";
+            internal static readonly UniqueStyleString horizontalVariantInnerTextElementUssClassNameUnique = new(horizontalVariantInnerTextElementUssClassName);
+
             /// <summary>
             /// USS class name that's added when the inner TextElement if in vertical mode.
             /// </summary>
             public static readonly string verticalVariantInnerTextElementUssClassName = TextElement.ussClassName + innerComponentsModifierName + "--vertical";
+            internal static readonly UniqueStyleString verticalVariantInnerTextElementUssClassNameUnique = new(verticalVariantInnerTextElementUssClassName);
+
             /// <summary>
             /// USS class name that's added when the inner TextElement if in both horizontal and vertical mode.
             /// </summary>
             public static readonly string verticalHorizontalVariantInnerTextElementUssClassName = TextElement.ussClassName + innerComponentsModifierName + "--vertical-horizontal";
+            internal static readonly UniqueStyleString verticalHorizontalVariantInnerTextElementUssClassNameUnique = new(verticalHorizontalVariantInnerTextElementUssClassName);
 
             /// <summary>
             /// USS class name of the inner ScrollView
             /// </summary>
             public static readonly string innerScrollviewUssClassName = ScrollView.ussClassName + innerComponentsModifierName;
+            internal static readonly UniqueStyleString innerScrollviewUssClassNameUnique = new(innerScrollviewUssClassName);
 
             /// <summary>
             /// USS class name of the inner ContentContainer
             /// </summary>
             public static readonly string innerViewportUssClassName = ScrollView.viewportUssClassName + innerComponentsModifierName;
+            internal static readonly UniqueStyleString innerViewportUssClassNameUnique = new(innerViewportUssClassName);
 
             /// <summary>
             /// USS class name of the inner ContentContainer
             /// </summary>
             public static readonly string innerContentContainerUssClassName = ScrollView.contentUssClassName + innerComponentsModifierName;
+            internal static readonly UniqueStyleString innerContentContainerUssClassNameUnique = new(innerContentContainerUssClassName);
+
             #endregion
 
             internal TextInputBase()
@@ -890,7 +938,7 @@ namespace UnityEngine.UIElements
                 textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
                 textEdition.GetDefaultValueType = GetDefaultValueType;
 
-                AddToClassList(inputUssClassName);
+                AddToClassList(inputUssClassNameUnique);
                 name = TextField.textInputUssName;
 
                 SetSingleLine();
@@ -973,8 +1021,8 @@ namespace UnityEngine.UIElements
                 RemoveMultilineComponents();
 
                 Add(textElement);
-                AddToClassList(singleLineInputUssClassName);
-                textElement.AddToClassList(innerTextElementUssClassName);
+                AddToClassList(singleLineInputUssClassNameUnique);
+                textElement.AddToClassList(innerTextElementUssClassNameUnique);
 
                 textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
 
@@ -985,7 +1033,10 @@ namespace UnityEngine.UIElements
                    UpdateScrollOffset();
                 }
                 if (textElement.hasFocus)
+                {
                     textElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+                    textElement.editingManipulator?.editingUtilities.SyncStateToNative();
+                }
             }
 
             internal void SetMultiline()
@@ -1006,9 +1057,9 @@ namespace UnityEngine.UIElements
                     scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
                     scrollView.verticalScrollerVisibility = verticalScrollerVisibility;
 
-                    scrollView.AddToClassList(innerScrollviewUssClassName);
-                    scrollView.contentViewport.AddToClassList(innerViewportUssClassName);
-                    scrollView.contentContainer.AddToClassList(innerContentContainerUssClassName);
+                    scrollView.AddToClassList(innerScrollviewUssClassNameUnique);
+                    scrollView.contentViewport.AddToClassList(innerViewportUssClassNameUnique);
+                    scrollView.contentContainer.AddToClassList(innerContentContainerUssClassNameUnique);
                     scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
 
                     // The ScrollView's slider can send ChangeEvent<float>. This makes sure these do not leak.
@@ -1019,23 +1070,26 @@ namespace UnityEngine.UIElements
                     scrollView.horizontalScroller.slider.RegisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
                     scrollView.horizontalScroller.slider.focusable = false;
 
-                    AddToClassList(multilineInputWithScrollViewUssClassName);
-                    textElement.AddToClassList(innerTextElementWithScrollViewUssClassName);
+                    AddToClassList(multilineInputWithScrollViewUssClassNameUnique);
+                    textElement.AddToClassList(innerTextElementWithScrollViewUssClassNameUnique);
                 }
                 else if (multilineContainer == null)
                 {
                     textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
-                    multilineContainer = new VisualElement() { classList = { multilineContainerClassName } };
+                    multilineContainer = new VisualElement().WithClassList(multilineContainerClassName);
 
                     multilineContainer.Add(textElement);
                     Add(multilineContainer);
                     SetMultilineContainerStyle();
 
-                    AddToClassList(multilineInputUssClassName);
-                    textElement.AddToClassList(innerTextElementUssClassName);
+                    AddToClassList(multilineInputUssClassNameUnique);
+                    textElement.AddToClassList(innerTextElementUssClassNameUnique);
                 }
                 if (textElement.hasFocus)
+                {
                     textElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+                    textElement.editingManipulator?.editingUtilities.SyncStateToNative();
+                }
             }
 
             void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)
@@ -1180,23 +1234,23 @@ namespace UnityEngine.UIElements
                 if (scrollView == null)
                     return;
 
-                textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassName);
-                textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassName);
-                textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassName);
+                textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassNameUnique);
+                textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassNameUnique);
+                textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassNameUnique);
 
                 if (textEdition.multiline && (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap))
                 {
-                    textElement.AddToClassList(verticalVariantInnerTextElementUssClassName);
+                    textElement.AddToClassList(verticalVariantInnerTextElementUssClassNameUnique);
                     scrollView.mode = ScrollViewMode.Vertical;
                 }
                 else if (textEdition.multiline)
                 {
-                    textElement.AddToClassList(verticalHorizontalVariantInnerTextElementUssClassName);
+                    textElement.AddToClassList(verticalHorizontalVariantInnerTextElementUssClassNameUnique);
                     scrollView.mode = ScrollViewMode.VerticalAndHorizontal;
                 }
                 else
                 {
-                    textElement.AddToClassList(horizontalVariantInnerTextElementUssClassName);
+                    textElement.AddToClassList(horizontalVariantInnerTextElementUssClassNameUnique);
                     scrollView.mode = ScrollViewMode.Horizontal;
                 }
             }
@@ -1217,8 +1271,8 @@ namespace UnityEngine.UIElements
 
             void RemoveSingleLineComponents()
             {
-                RemoveFromClassList(singleLineInputUssClassName);
-                textElement.RemoveFromClassList(innerTextElementUssClassName);
+                RemoveFromClassList(singleLineInputUssClassNameUnique);
+                textElement.RemoveFromClassList(innerTextElementUssClassNameUnique);
                 textElement.RemoveFromHierarchy();
                 textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
             }
@@ -1233,12 +1287,12 @@ namespace UnityEngine.UIElements
                     scrollView.horizontalScroller.slider.UnregisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
                     scrollView = null;
 
-                    textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassName);
-                    textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassName);
-                    textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassName);
+                    textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassNameUnique);
+                    textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassNameUnique);
+                    textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassNameUnique);
 
-                    RemoveFromClassList(multilineInputWithScrollViewUssClassName);
-                    textElement.RemoveFromClassList(innerTextElementWithScrollViewUssClassName);
+                    RemoveFromClassList(multilineInputWithScrollViewUssClassNameUnique);
+                    textElement.RemoveFromClassList(innerTextElementWithScrollViewUssClassNameUnique);
                 }
 
                 if (multilineContainer != null)
@@ -1250,7 +1304,7 @@ namespace UnityEngine.UIElements
                     textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
                     multilineContainer = null;
 
-                    RemoveFromClassList(multilineInputUssClassName);
+                    RemoveFromClassList(multilineInputUssClassNameUnique);
                 }
             }
 

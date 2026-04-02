@@ -184,7 +184,11 @@ namespace UnityEditor
                 }
                 else if (index == count + 1)
                 {
+                    // On Linux, end the property before opening another window
+                    EditorGUI.EndProperty();
                     UnityEditor.AI.NavMeshEditorHelpers.OpenAgentSettings(-1);
+
+                    return;
                 }
             }
 

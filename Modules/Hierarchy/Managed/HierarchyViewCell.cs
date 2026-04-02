@@ -7,8 +7,8 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Cell Container for a value displayed in a HierarchyColumn. By default all cells that are displaying a default value won't have their
-    /// UI/editor be displayed except when their corresponding row is selected or mouse is hovered over the row.
+    /// Represents a cell container for a value displayed in a <see cref="HierarchyViewColumn"/>. By default, all cells that display a default value don't display their
+    /// UI or editor unless their corresponding row is selected or the mouse hovers over the row.
     /// </summary>
     public sealed class HierarchyViewCell : VisualElement
     {
@@ -16,12 +16,12 @@ namespace Unity.Hierarchy
         bool m_IsDefaultValue;
 
         /// <summary>
-        /// Parent Column of this Cell.
+        /// Gets the parent column of this <see cref="HierarchyViewCell"/>.
         /// </summary>
         public HierarchyViewColumn Column { get; }
 
         /// <summary>
-        /// HierarchyView owning this cell.
+        /// Gets the <see cref="HierarchyView"/> that owns this cell.
         /// </summary>
         public HierarchyView View { get; }
 
@@ -59,33 +59,33 @@ namespace Unity.Hierarchy
 
         #region Set During Bind
         /// <summary>
-        /// NodeHandler of the Node displayed in this column.
+        /// Gets the <see cref="HierarchyNodeTypeHandler"/> of the node displayed in this cell.
         /// </summary>
         public HierarchyNodeTypeHandler Handler { get; internal set; }
 
         /// <summary>
-        /// Node corresponding to this Cell.
+        /// Gets the <see cref="HierarchyNode"/> that corresponds to this cell.
         /// </summary>
         public HierarchyNode Node { get; internal set; }
 
         /// <summary>
-        /// Node Index in the HierarchyViewModel of the Node of this Cell.
+        /// Gets the index of the<see cref="HierarchyNode"/> of this cell in the <see cref="HierarchyViewModel"/>.
         /// </summary>
         public int NodeIndex { get; internal set; }
 
         /// <summary>
-        /// Cell descriptor that was used to create this Cell.
+        /// Gets the <see cref="HierarchyViewCellDescriptor"/> used to create this cell.
         /// </summary>
         public HierarchyViewCellDescriptor Descriptor { get; internal set; }
         #endregion
 
         /// <summary>
-        /// User Data that can be bound on that Cell. Usually a SerializedObject that acts as the Model of the Cell.
+        /// Gets or sets user data bound to this cell. Typically a serialized object that acts as the model for the cell.
         /// </summary>
         public object BoundObject { get; set; }
 
         /// <summary>
-        /// Is the Cell showing a default value.
+        /// Whether the cell shows a default value.
         /// </summary>
         public bool IsDefaultValue
         {

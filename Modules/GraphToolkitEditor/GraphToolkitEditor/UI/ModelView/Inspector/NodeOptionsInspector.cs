@@ -166,17 +166,13 @@ namespace Unity.GraphToolkit.Editor
                     }
 
                     // If multiple models are inspected, we only want to display the node options that are present in all models.
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var id in nodeOptionsDict.Keys.ToList())
-#pragma warning restore UA2001
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var otherOptions = nodeModel.NodeOptions.Where(o =>
-#pragma warning restore UA2001
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            id == o.Id && o.PortModel.DataTypeHandle == nodeOptionsDict[id].First().PortModel.DataTypeHandle).ToList();
-#pragma warning restore UA2001
-                        if (otherOptions.HasAny())
+                            id == o.Id && o.PortModel.DataTypeHandle == nodeOptionsDict[id][0].PortModel.DataTypeHandle);
+                        if (otherOptions.Any())
+#pragma warning restore UA2001, UA2002
                             nodeOptionsDict[id].AddRange(otherOptions);
                         else
                             nodeOptionsDict.Remove(id);

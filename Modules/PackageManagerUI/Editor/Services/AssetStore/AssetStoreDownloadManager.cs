@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Download(IEnumerable<long> productIds)
         {
-            return CheckTermsOfServiceAgreement(
+            CheckTermsOfServiceAgreement(
                 () =>
                 {
                     foreach (var productId in productIds)
@@ -177,6 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // show the error in the UI. It is to be addressed in https://jira.unity3d.com/browse/PAX-1994.
                     Debug.Log(error.message);
                 });
+            return true;
         }
 
         public void ClearCache()

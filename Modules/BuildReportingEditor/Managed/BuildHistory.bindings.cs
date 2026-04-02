@@ -1,0 +1,365 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
+using UnityEditor.Build.Reporting;
+using System.IO;
+
+namespace UnityEditor.Build
+{
+    /// <summary>
+    /// Provides access to the build history generated during builds.
+    /// </summary>
+    /// <remarks>
+    /// Unity stores the metadata files for Player and Content Directory builds in a sub-folder of the build history folder.
+    ///
+    /// By default, build history is stored in `Library/BuildHistory`. You can change this location, for example
+    /// to consolidate builds from multiple machines into a shared build history folder.
+    ///
+    /// The build metadata folder is populated with files with information about various aspects of the build
+    /// such as the <see cref="Build.Reporting.BuildReport"/>, profiling information, and type-usage information.
+    /// The precise content is influenced by the type of build, build options
+    /// and certain settings in the **Preferences** > **Build Pipeline** window.
+    ///
+    /// Unity assigns each build a unique GUID, which the `BuildHistory` API uses to precisely identify each build.
+    /// For more information, refer to <see cref="BuildReportSummary.BuildSessionGUID"/>.
+    ///
+    /// The files in the build history folder are for development and debugging purposes only. They are not meant to be shipped along with
+    /// the content and are not required by the runtime. Deleting build history does not impact the built content or the ability
+    /// to run the Player, but can limit the ability to analyze or debug the results of the build. Incorporate the collection
+    /// of the build history directory content into automated build pipelines.
+    ///
+    /// Build Lifecycle
+    ///
+    /// For Player builds, <see cref="BuildPlayerProcessor.PrepareForBuild"/> runs before the Player build is added to the
+    /// history. This allows any Content Directory builds triggered during that callback to appear in the
+    /// history before the Player build itself, resulting in a chronological ordering.
+    ///
+    /// Unity adds a build to the history early in the build process (but after <see cref="BuildPlayerProcessor.PrepareForBuild"/>) and
+    /// sets the result to <see cref="Build.Reporting.BuildResult.Pending"/>.
+    /// If the Editor process terminates during a build, the build remains in the history with its initial
+    /// `Pending` result.
+    ///
+    /// Some BuildHistory methods, for example <see cref="TryGetMetadataPath"/> and
+    /// <see cref="TryGetFilePath"/>, are available for use in the
+    /// <see cref="IPreprocessBuildWithReport"/> and <see cref="IPostprocessBuildWithReport"/> build callbacks.
+    ///
+    /// When the build completes, the <see cref="BuildReportSummary"/> is updated with the final result
+    /// (<see cref="Build.Reporting.BuildResult.Succeeded"/>, <see cref="Build.Reporting.BuildResult.Failed"/>,
+    /// or <see cref="Build.Reporting.BuildResult.Cancelled"/>).
+    /// </remarks>
+    /// <seealso cref="Build.BuildReportSummary"/>
+    /// <seealso cref="Build.Reporting.BuildReport"/>
+    /// <example>
+    /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/BuildHistoryStats.cs"/>
+    /// </example>
+    [VisibleToOtherModules]
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildHistory.h")]
+    public static class BuildHistory
+    {
+        // ==================== Configuration Properties ====================
+
+        /// <summary>
+        /// The default metadata directory path, regardless of the current build history directory.
+        /// </summary>
+        public static string DefaultRootDirectory
+        {
+            get { return GetDefaultRootDirectory(); }
+        }
+
+        /// <summary>
+        /// Gets or sets the path where the build history will be stored.
+        /// </summary>
+        /// <remarks>
+        /// The default location is `Library/BuildHistory`.  When setting a custom path, folders beneath the `Assets`
+        /// and `Temp` folders are not allowed. The path can also be changed in the **Preferences** > **Build Pipeline** window.
+        /// Changing this path doesn't move the existing build history and only affects where new builds are stored.
+        /// </remarks>
+        public static string BuildHistoryDirectory
+        {
+            get { return GetRootDirectory(); }
+            set
+            {
+                if (!SetRootDirectory(value))
+                {
+                    throw new System.ArgumentException($"Invalid build history directory path: {value}. Path cannot be inside Assets or Temp folders.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the path in the build history created by the most recent build.
+        /// </summary>
+        /// <returns>The path of the most recent build metadata directory</returns>
+        public static string LatestBuildDirectory
+        {
+            get { return GetDirectoryForLatestBuild(); }
+        }
+
+        // ==================== Query API - Collection Operations ====================
+
+        /// <summary>
+        /// Gets the total number of builds in the build history.
+        /// </summary>
+        /// <returns>Total count of all builds.</returns>
+        public static int GetBuildCount()
+        {
+            return BuildHistoryState.Instance.GetBuildCount();
+        }
+
+        /// <summary>
+        /// Returns the session GUIDs for all builds in the build history.
+        /// </summary>
+        /// <returns>Array of build session GUIDs, sorted by build start time (most recent to oldest).</returns>
+        public static GUID[] GetAllBuilds()
+        {
+            return BuildHistoryState.Instance.GetAllBuilds();
+        }
+
+        /// <summary>
+        /// Attempts to get the GUID of the most recent build.
+        /// </summary>
+        /// <param name="latestBuildSessionGuid">When this method returns, contains the GUID of the most recent build if found.</param>
+        /// <returns>`true` if a build was found; `false` if the build history is empty.</returns>
+        public static bool TryGetLatestBuild(out GUID latestBuildSessionGuid)
+        {
+            return BuildHistoryState.Instance.TryGetLatestBuild(out latestBuildSessionGuid);
+        }
+
+        // ==================== Query API - Single Build Operations ====================
+
+        /// <summary>
+        /// Gets the build summary for a specific build.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to retrieve from the history.</param>
+        /// <returns>The <see cref="BuildReportSummary"/> for the specified build.</returns>
+        /// <exception cref="System.ArgumentException">Thrown when the build is not tracked in the Build History.</exception>
+        /// <seealso cref="LoadBuildReport"/>
+        public static BuildReportSummary GetBuildSummary(GUID buildSessionGuid)
+        {
+            return BuildHistoryState.Instance.GetBuildSummary(buildSessionGuid);
+        }
+
+        /// <summary>
+        /// Loads the <see cref="Build.Reporting.BuildReport"/> for a specific build from its metadata folder.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to load the report for.</param>
+        /// <returns>The <see cref="Build.Reporting.BuildReport"/> object, or `null` if not found or failed to load.</returns>
+        /// <seealso cref="GetBuildSummary"/>
+        /// <seealso cref="Build.Reporting.BuildReport"/>
+        public static BuildReport LoadBuildReport(GUID buildSessionGuid)
+        {
+            return BuildHistoryState.Instance.LoadBuildReport(buildSessionGuid);
+        }
+
+        /// <summary>
+        /// Attempts to get the path to a specific file within a build's metadata folder.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to search within.</param>
+        /// <param name="filename">The name of the file to locate, for example `contentlayout.json`.</param>
+        /// <param name="filePath">When this method returns, contains the absolute path to the file if it exists.</param>
+        /// <returns>`true` if the build is tracked and the file exists on disk; otherwise `false`.</returns>
+        /// <example>
+        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/GetTepFile.cs"/>
+        /// </example>
+        public static bool TryGetFilePath(GUID buildSessionGuid, string filename, out string filePath)
+        {
+            return BuildHistoryState.Instance.TryGetFilePath(buildSessionGuid, filename, out filePath);
+        }
+
+        /// <summary>
+        /// Attempts to get the metadata directory path for a specific build.
+        /// </summary>
+        /// <param name="buildSessionGuid">The unique session GUID of the build to look up.</param>
+        /// <param name="metadataPath">When this method returns, contains the absolute path to the build metadata directory.</param>
+        /// <returns>`true` if the build is tracked in the build history; otherwise `false`.</returns>
+        /// <remarks>The metadata directory is guaranteed to exist on disk if this method returns `true`.
+        /// Use this to locate files written during the build, or to write additional metadata alongside the build output.</remarks>
+        public static bool TryGetMetadataPath(GUID buildSessionGuid, out string metadataPath)
+        {
+            return BuildHistoryState.Instance.TryGetMetadataPath(buildSessionGuid, out metadataPath);
+        }
+
+        // ==================== Query API - Search Operations ====================
+
+        /// <summary>
+        /// Attempts to get the build summary for the most recent build that produced a specific manifest hash.
+        /// </summary>
+        /// <param name="manifestHash">The manifest hash to search for.</param>
+        /// <param name="buildSummary">When this method returns, contains the build summary if found.</param>
+        /// <returns>`true` if a build with the specified manifest hash was found; otherwise `false`.</returns>
+        /// <remarks>This method is only applicable to Content Directory builds.</remarks>
+        public static bool TryGetBuildSummaryForManifestHash(Hash128 manifestHash, out BuildReportSummary buildSummary)
+        {
+            return BuildHistoryState.Instance.TryGetBuildSummaryForManifestHash(manifestHash, out buildSummary);
+        }
+
+        /// <summary>
+        /// Attempts to get the build summary for the most recent build that was made to a specific output path.
+        /// </summary>
+        /// <param name="buildOutputPath">The build output path to search for.</param>
+        /// <param name="buildSummary">When this method returns, contains the build summary if found.</param>
+        /// <returns>`true` if a build with the specified output path was found; otherwise `false`.</returns>
+        public static bool TryGetBuildSummaryForOutputPath(string buildOutputPath, out BuildReportSummary buildSummary)
+        {
+            return BuildHistoryState.Instance.TryGetBuildSummaryForOutputPath(buildOutputPath, out buildSummary);
+        }
+
+        // ==================== Mutation API ====================
+
+        /// <summary>
+        /// Updates the BuildHistory incrementally, detecting build directories that have been added or removed on disk.
+        /// </summary>
+        /// <remarks>This is useful when build folders have been added or removed externally, such as when downloading additional builds.
+        /// Existing cached build metadata is assumed to be unchanged. Use <see cref="RefreshFull"/> to force a complete reload.</remarks>
+        public static void Refresh()
+        {
+            BuildHistoryState.Instance.Refresh();
+        }
+
+        /// <summary>
+        /// Performs a full reload of the BuildHistory from disk, discarding all cached state.
+        /// </summary>
+        /// <remarks>Use this when the contents of existing build metadata directories may have changed on disk.
+        /// For detecting added or removed directories only, prefer <see cref="Refresh"/> which is less expensive.</remarks>
+        public static void RefreshFull()
+        {
+            BuildHistoryState.Instance.RefreshFull();
+        }
+
+        /// <summary>
+        /// Gets the current revision number of the build history.
+        /// </summary>
+        /// <returns>The revision number, which increments each time a build is added or removed.</returns>
+        /// <remarks>UI can cache this value to efficiently detect when a refresh is needed.</remarks>
+        public static int GetRevision()
+        {
+            return BuildHistoryState.Instance.GetRevision();
+        }
+
+        /// <summary>
+        /// Deletes all recorded build history.
+        /// </summary>
+        /// <returns>The number of build metadata directories successfully deleted.</returns>
+        public static int DeleteHistory()
+        {
+            return BuildHistoryState.Instance.DeleteAllHistory();
+        }
+
+        /// <summary>
+        /// Deletes specific build metadata directories.
+        /// </summary>
+        /// <param name="buildSessionGuids">The unique session GUIDs of the builds to delete from the history.</param>
+        /// <returns>The number of builds successfully deleted.</returns>
+        /// <example>
+        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/DeleteOldBuilds.cs"/>
+        /// </example>
+        public static int DeleteHistory(GUID[] buildSessionGuids)
+        {
+            return BuildHistoryState.Instance.DeleteHistory(buildSessionGuids);
+        }
+
+        // ==================== Build Lifecycle (called from C++ build pipeline) ====================
+
+        /// <summary>
+        /// Determine the metadata folder path and ensures the root BuildHistory directory exists.
+        /// This can happen very early in a build, as soon as the unique build session guid has been generated.
+        /// The folder itself is not created here; it is created later in BeginBuildTracking
+        /// when we are ready to write the initial BuildReportSummary.json is written.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static string ReserveBuildMetadataPath(string buildSessionGuidString)
+        {
+            try
+            {
+                string rootDirectory = BuildHistoryDirectory;
+
+                if (!Directory.Exists(rootDirectory))
+                    Directory.CreateDirectory(rootDirectory);
+
+                string metadataLocation = rootDirectory + "/" + buildSessionGuidString;
+
+                if (Directory.Exists(metadataLocation))
+                {
+                    Debug.LogError($"Build metadata folder already exists at: {metadataLocation}. The build session GUID should be unique.");
+                    return "";
+                }
+
+                return metadataLocation;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"BuildHistory.ReserveBuildMetadataPath failed: {e.Message}");
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Called early in a build after the BuildReport is initialized with info about the planned build.
+        /// Writes an initial BuildReportSummary.json with BuildResult.Pending
+        /// and registers the build in BuildHistoryState so that API methods
+        /// like TryGetMetadataPath() and TryGetFilePath() work during the build.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static void BeginBuildTracking(BuildReport report, string metadataPath)
+        {
+            try
+            {
+                if (report == null || string.IsNullOrEmpty(metadataPath))
+                    return;
+
+                Directory.CreateDirectory(metadataPath);
+
+                BuildReportSummary.Save(report, metadataPath);
+                BuildHistoryState.Instance.AddOrUpdateBuild(metadataPath);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"BuildHistory.BeginBuildTracking failed: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Called when the build completes (success, failure, or cancellation).
+        /// Rewrites BuildReportSummary.json with the final state, writes the
+        /// LatestBuild.link file, and updates BuildHistoryState.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static void FinalizeBuild(BuildReport report)
+        {
+            try
+            {
+                if (report == null)
+                    return;
+
+                if (!BuildHistoryState.Instance.TryGetMetadataPath(report.summary.buildSessionGuid, out string metadataPath))
+                    return;
+
+                // Rewrite BuildReportSummary.json with the final build state
+                BuildReportSummary.Save(report, metadataPath);
+
+                // Update the LatestBuild.link to point to this completed build
+                string latestLinkPath = System.IO.Path.Combine(BuildHistoryDirectory, "LatestBuild.link");
+                System.IO.File.WriteAllText(latestLinkPath, metadataPath);
+
+                // Update the cached state with the final summary
+                BuildHistoryState.Instance.AddOrUpdateBuild(metadataPath);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"BuildHistory.FinalizeBuild failed: {e.Message}");
+            }
+        }
+
+        // ==================== Native Bindings ====================
+
+        extern private static string GetDefaultRootDirectory();
+        extern private static string GetRootDirectory();
+        extern private static bool SetRootDirectory(string buildHistoryPath);
+        extern private static string GetDirectoryForLatestBuild();
+    }
+}

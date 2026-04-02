@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                     else
                     {
-                        var mdFiles = m_IOProxy.DirectoryGetFiles(docsFolder, "*.md");
+                        var mdFiles = m_IOProxy.GetFiles(docsFolder, "*.md");
                         if (mdFiles.Length == 0)
                             return string.Empty;
                         var docsMd = mdFiles.FirstMatch(d => IOUtils.GetFileName(d).ToLower() == "index.md")

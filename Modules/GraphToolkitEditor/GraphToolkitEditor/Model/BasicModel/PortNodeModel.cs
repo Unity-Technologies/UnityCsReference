@@ -24,7 +24,7 @@ namespace Unity.GraphToolkit.Editor
         /// Retrieves all port models of this node.
         /// </summary>
         /// <returns>The port models.</returns>
-        public abstract IReadOnlyCollection<PortModel> GetPorts();
+        public abstract IReadOnlyList<PortModel> GetPorts();
 
         /// <summary>
         /// Retrieves the ports of a node that satisfy the requested direction and type.

@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[CreateAssetMenu]
 internal class StyleRuleSelection : UISelectionObject
 {
     public static readonly BindingId StyleRuleProperty = nameof(StyleRule);

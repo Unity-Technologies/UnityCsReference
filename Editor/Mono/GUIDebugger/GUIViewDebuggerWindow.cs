@@ -445,16 +445,7 @@ namespace UnityEditor
         }
     }
 
-    //This needs to match ManagedStackFrameDetails in native
-    [StructLayout(LayoutKind.Sequential)]
-    struct StackFrame
-    {
-        public uint   lineNumber;
-        public string sourceFile;
-        public string methodName;
-        public string signature;
-        public string moduleName; //TODO: we only get "Mono JIT Code" or "wrapper something", can we get the actual assembly name?
-    }
+    // StackFrame struct is now defined in GUIViewDebuggerHelper.bindings.cs
 
     internal static partial class GUIViewDebuggerHelper
     {

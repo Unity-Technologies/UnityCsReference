@@ -60,11 +60,13 @@ namespace UnityEngine.UIElements
         // Element has capture on one or more pointerIds
         PointerCapture = 1 << 19,
         // Element is a root UIDocument
-        IsWorldSpaceRootUIDocument = 1 << 20,
+        IsWorldSpaceRootPanelComponent = 1 << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
         // Element has released the LayoutNode create in its constructor and can't be used anymore
         Released = 1 << 22,
+        // Element itself is disabled, independently of the disabled state of its parents
+        DisabledSelf = 1 << 23,
         // Element initial flags
         Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
     }
@@ -189,11 +191,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal class StringObjectListPool : ObjectListPool<string>
-    {
-    }
-
-
     /// <summary>
     /// Base class for objects that are part of the UIElements visual tree.
     /// </summary>
@@ -205,6 +202,7 @@ namespace UnityEngine.UIElements
     ///\\
     /// SA: [[wiki:UIE-uxml-element-VisualElement|UXML element VisualElement]], [[VisualElementExtensions]], [[UQueryExtensions]].
     /// </remarks>
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
@@ -385,16 +383,15 @@ namespace UnityEngine.UIElements
 
         internal static uint s_NextId;
 
-        private static List<string> s_EmptyClassList = new List<string>(0);
-
         internal static readonly PropertyName userDataPropertyKey = new PropertyName("--unity-user-data");
         /// <summary>
         /// USS class name of local disabled elements.
         /// </summary>
         public static readonly string disabledUssClassName = "unity-disabled";
+        internal static readonly UniqueStyleString disabledUssClassNameUnique = new(disabledUssClassName);
 
         string m_Name;
-        List<string> m_ClassList;
+        StyleClassList m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
 
         private VisualElementFlags m_Flags;
@@ -807,7 +804,6 @@ namespace UnityEngine.UIElements
 
         [Obsolete("scaledPixelsPerPoint_noChecks is deprecated. Use scaledPixelsPerPoint instead.")]
         internal float scaledPixelsPerPoint_noChecks => elementPanel?.scaledPixelsPerPoint ?? GUIUtility.pixelsPerPoint;
-
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => resolvedStyle.unityBackgroundScaleMode;
 
@@ -1281,12 +1277,12 @@ namespace UnityEngine.UIElements
         }
 
 
-        internal bool isWorldSpaceRootUIDocument
+        internal bool isWorldSpaceRootPanelComponent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_Flags & VisualElementFlags.IsWorldSpaceRootUIDocument) == VisualElementFlags.IsWorldSpaceRootUIDocument;
+            get => (m_Flags & VisualElementFlags.IsWorldSpaceRootPanelComponent) == VisualElementFlags.IsWorldSpaceRootPanelComponent;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => m_Flags = value ? m_Flags | VisualElementFlags.IsWorldSpaceRootUIDocument : m_Flags & ~VisualElementFlags.IsWorldSpaceRootUIDocument;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.IsWorldSpaceRootPanelComponent : m_Flags & ~VisualElementFlags.IsWorldSpaceRootPanelComponent;
         }
 
         internal bool isWorldTransformDirty
@@ -1714,20 +1710,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal List<string> classList
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-            get
-            {
-                if (ReferenceEquals(m_ClassList, s_EmptyClassList))
-                {
-                    m_ClassList = StringObjectListPool.Get();
-                }
-
-                return m_ClassList;
-            }
-        }
-
         internal string fullTypeName
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -1816,9 +1798,8 @@ namespace UnityEngine.UIElements
 
             hierarchy = new Hierarchy(this);
 
-            m_ClassList = s_EmptyClassList;
+            m_ClassList = StyleClassList.Empty;
             flags = VisualElementFlags.Init;
-            enabledSelf = true;
 
             focusable = false;
 
@@ -1857,7 +1838,7 @@ namespace UnityEngine.UIElements
         {
             try
             {
-                if (!resourcesReleased)
+                if (!resourcesReleased && LayoutManager.IsSharedManagerCreated)
                 {
                     LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
                 }
@@ -1894,6 +1875,10 @@ namespace UnityEngine.UIElements
         /// In most cases, it is more convenient to use <see cref="VisualElement.Clear(VisualElementClearOptions)"/> on a root element
         /// which will recursively remove all its descendants and call <code>ReleaseResources</code> on each of them.
         /// </remarks>
+        /// <example>
+        /// The following example shows how to release elements when implementing object pooling:
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+        /// </example>
         public void ReleaseResources()
         {
             if (parent != null)
@@ -1920,11 +1905,7 @@ namespace UnityEngine.UIElements
             // Put back some of the lists we own to their pools
             // Note: we already know the child list was pooled back when clearing the element
 
-            if (!ReferenceEquals(m_ClassList, s_EmptyClassList))
-            {
-                StringObjectListPool.Release(m_ClassList);
-                m_ClassList = s_EmptyClassList;
-            }
+            m_ClassList.Clear();
             m_CallbackRegistry?.Clear();
         }
 
@@ -2187,69 +2168,69 @@ namespace UnityEngine.UIElements
         [Obsolete("SetEnabledFromHierarchy is deprecated and will be removed in a future release. Please use SetEnabled instead.")]
         protected internal bool SetEnabledFromHierarchy(bool state)
         {
-            return SetEnabledFromHierarchyPrivate(state);
+            bool wasEnabledInHierarchy = enabledInHierarchy;
+            SetEnabled(state);
+            return enabledInHierarchy != wasEnabledInHierarchy;
         }
 
-        //TODO: rename to SetEnabledFromHierarchy once the protected version has been removed
-        private bool SetEnabledFromHierarchyPrivate(bool state)
+        private void ApplyDisableHierarchy()
         {
-            var initialState = enabledInHierarchy;
-            bool disable = false;
-            if (state)
+            // When disabling a hierarchy, we need to have everything disabled under the current element.
+            // However, when we remove the hierarchy disabling constraint, then each child may or may not get enabled
+            // depending on its own disabled state.
+            if (!enabledSelf)
             {
-                if (isParentEnabledInHierarchy)
-                {
-                    if (enabledSelf)
-                    {
-                        RemoveFromClassList(disabledUssClassName);
-                    }
-                    else
-                    {
-                        disable = true;
-                        AddToClassList(disabledUssClassName);
-                    }
-                }
-                else
-                {
-                    disable = true;
-                    RemoveFromClassList(disabledUssClassName);
-                }
-            }
-            else
-            {
-                disable = true;
-                EnableInClassList(disabledUssClassName, isParentEnabledInHierarchy);
+                RemoveFromClassList(disabledUssClassNameUnique);
+                return;
             }
 
-            if (disable)
+            pseudoStates |= PseudoStates.Disabled;
+
+            var count = m_Children.Count;
+            for (int i = 0; i < count; ++i)
             {
-                if (focusController != null && focusController.IsFocused(this))
-                {
-                    EventDispatcherGate? dispatcherGate = null;
-                    if (panel?.dispatcher != null)
-                    {
-                        dispatcherGate = new EventDispatcherGate(panel.dispatcher);
-                    }
-
-                    using (dispatcherGate)
-                    {
-                        BlurImmediately();
-                    }
-                }
-
-                pseudoStates |= PseudoStates.Disabled;
+                m_Children[i].ApplyDisableHierarchy();
             }
-            else
-            {
-                pseudoStates &= ~PseudoStates.Disabled;
-            }
-
-            return initialState != enabledInHierarchy;
         }
 
-        private bool isParentEnabledInHierarchy
+        private void RemoveDisableHierarchy()
         {
-            get { return hierarchy.parent == null || hierarchy.parent.enabledInHierarchy; }
+            if (!enabledSelf)
+            {
+                AddToClassList(disabledUssClassNameUnique);
+                return;
+            }
+
+            pseudoStates &= ~PseudoStates.Disabled;
+
+            var count = m_Children.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                m_Children[i].RemoveDisableHierarchy();
+            }
+        }
+
+        private void BlurHierarchyImmediately()
+        {
+            // If there's nothing to blur or the focused elements are not in this hierarchy, do nothing.
+            // Here we only check for the leaf element because if that one is not part of our hierarchy then the other
+            // focused elements, being all parent composite roots, will not either.
+            if (focusController == null ||
+                focusController.GetLeafFocusedElement() is not VisualElement leafFocused ||
+                this != leafFocused && !Contains(leafFocused)) return;
+
+            EventDispatcherGate? dispatcherGate = null;
+            if (panel?.dispatcher != null)
+            {
+                dispatcherGate = new EventDispatcherGate(panel.dispatcher);
+            }
+
+            using (dispatcherGate)
+            {
+                // No need to go up the hierarchy to blur each element. Blurring any focused element effectively
+                // makes the FocusController set its focus to no element at all.
+                leafFocused.BlurImmediately();
+            }
         }
 
         /// <summary>
@@ -2264,7 +2245,6 @@ namespace UnityEngine.UIElements
             get { return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled; }
         }
 
-        private bool m_EnabledSelf;
         /// <summary>
         /// Returns true if the <see cref="VisualElement"/> is enabled locally.
         /// </summary>
@@ -2274,15 +2254,15 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public bool enabledSelf
         {
-            get => m_EnabledSelf;
+            get => (m_Flags & VisualElementFlags.DisabledSelf) == 0;
             set
             {
-                if (m_EnabledSelf == value)
+                if (enabledSelf == value)
                     return;
 
-                m_EnabledSelf = value;
+                m_Flags = value ? m_Flags & ~VisualElementFlags.DisabledSelf : m_Flags | VisualElementFlags.DisabledSelf;
                 NotifyPropertyChanged(enabledSelfProperty);
-                PropagateEnabledToChildren(value);
+                PropagateSelfEnabled(value);
             }
         }
 
@@ -2308,14 +2288,56 @@ namespace UnityEngine.UIElements
             enabledSelf = value;
         }
 
-        void PropagateEnabledToChildren(bool value)
+        void PropagateParentEnabled(bool parentEnabled)
         {
-            if (SetEnabledFromHierarchyPrivate(value))
+            if (enabledInHierarchy == parentEnabled)
             {
+                // When we add an element that's already disabled to a disabled parent, we need to check if this
+                // element was potentially the root of its own disabled subtree. If so, it will no longer be that root,
+                // so we have to remove the disabled class from it.
+                if (!enabledSelf)
+                    RemoveFromClassList(disabledUssClassNameUnique);
+                return;
+            }
+
+            if (!parentEnabled)
+            {
+                BlurHierarchyImmediately();
+                ApplyDisableHierarchy();
+            }
+            else
+            {
+                RemoveDisableHierarchy();
+            }
+        }
+
+        void PropagateSelfEnabled(bool value)
+        {
+            // If parent is disabled, we assume that the element and its hierarchy are already properly disabled
+            if (hierarchy.parent != null && !hierarchy.parent.enabledInHierarchy)
+                return;
+
+            // We could call PropagateParentEnabled on each child, but the following saves a few redundant checks
+            // and has the same effect. Also BlurHierarchyImmediately doesn't need to be called multiple times.
+            if (!value)
+            {
+                AddToClassList(disabledUssClassNameUnique);
+                BlurHierarchyImmediately();
+                pseudoStates |= PseudoStates.Disabled;
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    m_Children[i].PropagateEnabledToChildren(value);
+                    m_Children[i].ApplyDisableHierarchy();
+                }
+            }
+            else
+            {
+                RemoveFromClassList(disabledUssClassNameUnique);
+                pseudoStates &= ~PseudoStates.Disabled;
+                var count = m_Children.Count;
+                for (int i = 0; i < count; ++i)
+                {
+                    m_Children[i].RemoveDisableHierarchy();
                 }
             }
         }
@@ -2808,15 +2830,41 @@ namespace UnityEngine.UIElements
         /// Retrieve the classes for this element.
         /// </summary>
         /// <returns>A class list.</returns>
+        /// <remarks>
+        /// The order of the classes will always be the same between two elements that have the same classes.
+        /// However, the ordering of the classes for a given element is not guaranteed to match between executions or
+        /// after a domain reload.
+        /// </remarks>
         public IEnumerable<string> GetClasses()
+        {
+            return m_ClassList.ToStringEnumerable();
+        }
+
+        /// <summary>
+        /// Retrieve the classes for this element.
+        /// </summary>
+        /// <returns>A class list.</returns>
+        /// <remarks>
+        /// The order of the classes will always be the same between two elements that have the same classes.
+        /// The returned classes are ordered by corresponding UniqueStyleString id. This implies that for a given
+        /// element the order is not guaranteed to match between executions or after a domain reload, depending on the
+        /// creation order of the UniqueStyleStrings involved.
+        /// </remarks>
+        public IEnumerable<UniqueStyleString> GetClassNames()
         {
             return m_ClassList;
         }
 
         // needed to avoid boxing allocation when iterating on the list.
-        internal List<string> GetClassesForIteration()
+        internal StyleClassListRef GetClassesForIteration()
         {
-            return m_ClassList;
+            return new(m_ClassList);
+        }
+
+        internal int classListCount
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            get => m_ClassList.Count;
         }
 
         /// <summary>
@@ -2831,8 +2879,7 @@ namespace UnityEngine.UIElements
         {
             if (m_ClassList.Count > 0)
             {
-                StringObjectListPool.Release(m_ClassList);
-                m_ClassList = s_EmptyClassList;
+                m_ClassList.Clear();
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
@@ -2846,26 +2893,54 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(className))
                 return;
 
-            if (m_ClassList == s_EmptyClassList)
-            {
-                m_ClassList = StringObjectListPool.Get();
-            }
-            else
-            {
-                if (m_ClassList.Contains(className))
-                {
-                    return;
-                }
+            AddToClassList(new UniqueStyleString(className));
+        }
 
-                // Avoid list size doubling when list is full.
-                if (m_ClassList.Capacity == m_ClassList.Count)
-                {
-                    m_ClassList.Capacity += 1;
-                }
+        /// <summary>
+        /// Adds a class to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
+        /// </summary>
+        /// <param name="className">The name of the class to add to the list.</param>
+        public void AddToClassList(UniqueStyleString className)
+        {
+            m_ClassList.Add(className, out var added);
+            if (added)
+                IncrementVersion(VersionChangeType.StyleSheet);
+        }
+
+        /// <summary>
+        /// Adds classes to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
+        /// </summary>
+        /// <param name="className">The name of the class to add to the list.</param>
+        /// <param name="className2">The name of a second class to add to the list.</param>
+        public void AddToClassList(string className, string className2)
+        {
+            if (string.IsNullOrEmpty(className))
+            {
+#pragma warning disable RS0030
+                AddToClassList(className2);
+#pragma warning restore RS0030
+                return;
             }
 
-            m_ClassList.Add(className);
-            IncrementVersion(VersionChangeType.StyleSheet);
+            if (string.IsNullOrEmpty(className2))
+            {
+                AddToClassList(new UniqueStyleString(className));
+                return;
+            }
+
+            AddToClassList(new UniqueStyleString(className), new UniqueStyleString(className2));
+        }
+
+        /// <summary>
+        /// Adds classes to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
+        /// </summary>
+        /// <param name="className">The name of the class to add to the list.</param>
+        /// <param name="className2">The name of a second class to add to the list.</param>
+        public void AddToClassList(UniqueStyleString className, UniqueStyleString className2)
+        {
+            m_ClassList.Add(className, className2, out var added);
+            if (added)
+                IncrementVersion(VersionChangeType.StyleSheet);
         }
 
         /// <summary>
@@ -2874,27 +2949,37 @@ namespace UnityEngine.UIElements
         /// <param name="classNames">The names of the classes to add to the list.</param>
         public void AddToClassList(params string[] classNames)
         {
-            if (classNames.Length == 0)
-                return;
-
-            if (m_ClassList == s_EmptyClassList)
-                m_ClassList = StringObjectListPool.Get();
-
-            // Reserve capacity assuming all class names are new.
-            if (m_ClassList.Capacity < m_ClassList.Count + classNames.Length)
-                m_ClassList.Capacity = m_ClassList.Count + classNames.Length;
-
-            var didAddAny = false;
-            foreach (var className in classNames)
+            var count = classNames.Length;
+            var nonEmptyCount = 0;
+            unsafe
             {
-                if (m_ClassList.Contains(className))
-                    continue;
-
-                m_ClassList.Add(className);
-                didAddAny = true;
+                var tmp = stackalloc UniqueStyleString[count];
+                for (var i = 0; i < count; i++)
+                {
+                    if (!string.IsNullOrEmpty(classNames[i]))
+                        tmp[nonEmptyCount++] = new UniqueStyleString(classNames[i]);
+                }
+                AddToClassList(new ReadOnlySpan<UniqueStyleString>(tmp, nonEmptyCount));
             }
+        }
 
-            if (didAddAny)
+        /// <summary>
+        /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
+        /// </summary>
+        /// <param name="classNames">The names of the classes to add to the list.</param>
+        public void AddToClassList(params UniqueStyleString[] classNames)
+        {
+            AddToClassList(new ReadOnlySpan<UniqueStyleString>(classNames));
+        }
+
+        /// <summary>
+        /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
+        /// </summary>
+        /// <param name="classNames">The names of the classes to add to the list.</param>
+        public void AddToClassList(ReadOnlySpan<UniqueStyleString> classNames)
+        {
+            m_ClassList.AddRange(classNames, out var added);
+            if (added)
                 IncrementVersion(VersionChangeType.StyleSheet);
         }
 
@@ -2904,15 +2989,19 @@ namespace UnityEngine.UIElements
         /// <param name="className">The name of the class to remove to the list.</param>
         public void RemoveFromClassList(string className)
         {
-            if (m_ClassList.Remove(className))
-            {
-                if (m_ClassList.Count == 0)
-                {
-                    StringObjectListPool.Release(m_ClassList);
-                    m_ClassList = s_EmptyClassList;
-                }
+            if (!string.IsNullOrEmpty(className) && UniqueStyleString.TryGet(className, out var ss))
+                RemoveFromClassList(ss);
+        }
+
+        /// <summary>
+        /// Removes a class from the class list of the element.
+        /// </summary>
+        /// <param name="className">The name of the class to remove to the list.</param>
+        public void RemoveFromClassList(UniqueStyleString className)
+        {
+            m_ClassList.Remove(className, out var removed);
+            if (removed)
                 IncrementVersion(VersionChangeType.StyleSheet);
-            }
         }
 
         /// <summary>
@@ -2924,10 +3013,21 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void ToggleInClassList(string className)
         {
-            if (ClassListContains(className))
-                RemoveFromClassList(className);
-            else
-                AddToClassList(className);
+            if (!string.IsNullOrEmpty(className))
+                ToggleInClassList(new UniqueStyleString(className));
+        }
+
+        /// <summary>
+        /// Toggles between adding and removing the given class name from the class list.
+        /// </summary>
+        /// <param name="className">The class name to add or remove from the class list.</param>
+        /// <remarks>
+        /// Checks for the given class name in the element class list. If the class name is found, it is removed from the class list. If the class name is not found, the class name is added to the class list.
+        /// </remarks>
+        public void ToggleInClassList(UniqueStyleString className)
+        {
+            m_ClassList.Toggle(className);
+            IncrementVersion(VersionChangeType.StyleSheet);
         }
 
         /// <summary>
@@ -2940,10 +3040,23 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void EnableInClassList(string className, bool enable)
         {
-            if (enable)
-                AddToClassList(className);
-            else
-                RemoveFromClassList(className);
+            if (!string.IsNullOrEmpty(className))
+                EnableInClassList(new UniqueStyleString(className), enable);
+        }
+
+        /// <summary>
+        /// Enables or disables the class with the given name.
+        /// </summary>
+        /// <param name="className">The name of the class to enable or disable.</param>
+        /// <param name="enable">A boolean flag that adds or removes the class name from the class list. If true, EnableInClassList adds the class name to the class list. If false, EnableInClassList removes the class name from the class list.</param>
+        /// <remarks>
+        /// If enable is true, EnableInClassList adds the class name to the class list. If enable is false, EnableInClassList removes the class name from the class list.
+        /// </remarks>
+        public void EnableInClassList(UniqueStyleString className, bool enable)
+        {
+            m_ClassList.Enable(className, enable, out var changed);
+            if (changed)
+                IncrementVersion(VersionChangeType.StyleSheet);
         }
 
         /// <summary>
@@ -2953,13 +3066,18 @@ namespace UnityEngine.UIElements
         /// <returns>Returns true if the class is part of the list. Otherwise, returns false.</returns>
         public bool ClassListContains(string cls)
         {
-            for (int i = 0; i < m_ClassList.Count; i++)
-            {
-                if (m_ClassList[i].Equals(cls, StringComparison.Ordinal))
-                    return true;
-            }
+            return !string.IsNullOrEmpty(cls) && UniqueStyleString.TryGet(cls, out var className) &&
+                   ClassListContains(className);
+        }
 
-            return false;
+        /// <summary>
+        /// Searches for a class in the class list of this element.
+        /// </summary>
+        /// <param name="cls">The name of the class for the search query.</param>
+        /// <returns>Returns true if the class is part of the list. Otherwise, returns false.</returns>
+        public bool ClassListContains(UniqueStyleString cls)
+        {
+            return m_ClassList.Contains(cls);
         }
 
         /// <summary>
@@ -3147,6 +3265,83 @@ namespace UnityEngine.UIElements
             {
                 manipulator.target = null;
             }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className)
+            where TElement : VisualElement
+        {
+            ele.AddToClassList(className);
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className, UniqueStyleString className2)
+            where TElement : VisualElement
+        {
+            ele.AddToClassList(className, className2);
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className, UniqueStyleString className2, UniqueStyleString className3)
+            where TElement : VisualElement
+        {
+            unsafe
+            {
+                var classNames = stackalloc UniqueStyleString[3];
+                classNames[0] = className;
+                classNames[1] = className2;
+                classNames[2] = className3;
+                ele.AddToClassList(new ReadOnlySpan<UniqueStyleString>(classNames, 3));
+            }
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, params UniqueStyleString[] classNames)
+            where TElement : VisualElement
+        {
+            ele.AddToClassList(classNames);
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, string className)
+            where TElement : VisualElement
+        {
+#pragma warning disable RS0030
+            ele.AddToClassList(className);
+#pragma warning restore RS0030
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, string className, string className2)
+            where TElement : VisualElement
+        {
+            ele.AddToClassList(className, className2);
+            return ele;
+        }
+
+        private static readonly string[] k_ThreeStrings = new string[3];
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, string className, string className2, string className3)
+            where TElement : VisualElement
+        {
+            k_ThreeStrings[0] = className;
+            k_ThreeStrings[1] = className2;
+            k_ThreeStrings[2] = className3;
+            ele.AddToClassList(k_ThreeStrings);
+            return ele;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static TElement WithClassList<TElement>(this TElement ele, params string[] classNames)
+            where TElement : VisualElement
+        {
+            ele.AddToClassList(classNames);
+            return ele;
         }
     }
 

@@ -5,7 +5,6 @@
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.VersionControl
 {
@@ -66,9 +65,7 @@ namespace UnityEditor.VersionControl
 
             bool includeFolders = true;
             assetList = resolve.Filter(includeFolders, Asset.States.Conflicted);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            assetPaths = assetList.Select(asset => asset.path).ToList();
-#pragma warning restore UA2001
+            assetPaths = assetList.ConvertAll(asset => asset.path);
             RefreshList(selectAll);
         }
 

@@ -253,6 +253,7 @@ namespace UnityEditor.UIElements
             var panel = EditorPanel.FindOrCreate(m_VTA);
             var visualTree = panel.visualTree;
             visualTree.Add(m_VisualTree);
+            visualTree.style.unityTextGenerator = new StyleEnum<TextGeneratorType>(EditorTextSettings.GetEditorTextGeneratorType());
 
             Binding.SetPanelLogLevel(panel, BindingLogLevel.None); // We don't want preview to log errors.
             ApplyThemeToPreview(m_VisualTree);

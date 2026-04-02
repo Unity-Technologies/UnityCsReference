@@ -18,6 +18,7 @@ using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -118,6 +119,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+            var sortedAssembliesToScanForTypeDB = new string[assembliesToScanForTypeDB.Count];
+            assembliesToScanForTypeDB.CopyTo(sortedAssembliesToScanForTypeDB);
+            Array.Sort(sortedAssembliesToScanForTypeDB);
+
+            var sortedSearchPaths = new string[searchPaths.Count];
+            searchPaths.CopyTo(sortedSearchPaths);
+            Array.Sort(sortedSearchPaths);
+
             return new ScriptCompilationData()
             {
                 OutputDirectory = outputDirectory,
@@ -132,12 +141,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EnableDiagnostics = editorCompilation.EnableDiagnostics,
                 BuildPlayerDataOutput = $"Library/BuildPlayerData/{(buildingForEditor ? "Editor" : "Player")}",
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
-#pragma warning restore UA2001
+                AssembliesToScanForTypeDB = sortedAssembliesToScanForTypeDB,
+                SearchPaths = sortedSearchPaths,
                 EmitInfoForScriptUpdater = enableScriptUpdater,
                 TargetingPacks = new[]
                 {
@@ -175,10 +180,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static AssemblyData AssemblyDataFrom(ScriptAssembly a, ScriptAssembly[] allAssemblies, int index)
         {
             Array.Sort(a.Files, StringComparer.Ordinal);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
-#pragma warning restore UA2001
+
+            var references = Array.ConvertAll(a.ScriptAssemblyReferences, r => Array.IndexOf(allAssemblies, r));
             Array.Sort(references);
+
             return new AssemblyData
             {
                 Name = new NPath(a.Filename).FileNameWithoutExtension,
@@ -228,9 +233,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             int resultIndex = 0;
             if (hasBeeDriverMessages)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                result[resultIndex] = beeDriverMessages.Select(AsCompilerMessage).ToArray();
-#pragma warning restore UA2001
+                result[resultIndex] = Array.ConvertAll(beeDriverMessages, AsCompilerMessage);
                 ++resultIndex;
             }
             for (int i = 0; i != nodeResults.Length; i++)

@@ -107,6 +107,13 @@ namespace Unity.U2D.Physics
         public bool startMassUpdate { readonly get => m_StartMassUpdate; set => m_StartMassUpdate = value; }
 
         /// <summary>
+        /// Controls whether this shape is automatically drawn when the world is drawn.
+        ///
+        /// See <see cref="PhysicsShape.worldDrawing"/>.
+        /// </summary>
+        public bool worldDrawing { readonly get => m_WorldDrawing; set => m_WorldDrawing = value; }
+
+        /// <summary>
         /// The contact filter used to control which contacts this shape can participate in.
         /// </summary>
         /// <remarks>
@@ -133,6 +140,7 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_PreSolveCallbacks;
         [SerializeField] bool m_StartStaticContacts;
         [SerializeField] bool m_StartMassUpdate;
+        [SerializeField] bool m_WorldDrawing;
 
         #endregion
 

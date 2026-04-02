@@ -14,11 +14,12 @@ using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.HierarchyV2;
 
 namespace Unity.Hierarchy.Editor
 {
     /// <summary>
-    /// The hierarchy node type handler for scenes.
+    /// Provides a hierarchy node type handler for <see cref="Scene"/> instances in a <see cref="HierarchyView"/>.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySceneHandler.h")]
@@ -76,29 +77,29 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Gets or creates the hierarchy node corresponding to the given scene.
+        /// Gets or creates the <see cref="HierarchyNode"/> that corresponds to the specified <see cref="Scene"/>.
         /// </summary>
         /// <remarks>
-        /// If the node hasn't been created yet, returns the future node that will be used for the scene.
-        /// An update of the hierarchy will be necessary if you intend to query the hieararchy about this node.
+        /// If the node doesn't exist, this method returns a future node that will be used for the <see cref="Scene"/>.
+        /// To query the <see cref="Hierarchy"/> about this node, update the hierarchy first.
         /// </remarks>
-        /// <param name="scene">The scene.</param>
-        /// <returns>An hierarchy node.</returns>
+        /// <param name="scene">The <see cref="Scene"/> to get the <see cref="HierarchyNode"/> for.</param>
+        /// <returns>The <see cref="HierarchyNode"/> that corresponds to the specified <see cref="Scene"/>.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern HierarchyNode GetOrCreateNode(Scene scene);
 
         /// <summary>
-        /// Gets the scene corresponding to the given hierarchy node.
+        /// Gets the <see cref="Scene"/> that corresponds to the specified <see cref="HierarchyNode"/>.
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
+        /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="Scene"/> for.</param>
+        /// <returns>The <see cref="Scene"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern Scene GetScene(in HierarchyNode node);
 
         /// <summary>
-        /// Retrieves the hierarchy node type for this hierarchy node type handler.
+        /// Gets the <see cref="HierarchyNodeType"/> for this <see cref="HierarchySceneHandler"/>.
         /// </summary>
-        /// <returns>The type of the hierarchy node.</returns>
+        /// <returns>The <see cref="HierarchyNodeType"/> for <see cref="Scene"/> nodes.</returns>
         public new HierarchyNodeType GetNodeType()
         {
             if (m_NodeType == HierarchyNodeType.Null)
@@ -146,7 +147,7 @@ namespace Unity.Hierarchy.Editor
 
         string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
         {
-            var name = Hierarchy.GetName(in node);
+            var name = Hierarchy.Exists(node) ? Hierarchy.GetName(in node) : node.ToString();
             var scene = GetScene(node);
             if (scene.IsValid())
             {
@@ -179,6 +180,9 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
         {
+            if (!Hierarchy.Exists(in item.Node))
+                return;
+
             // By default only show tooltip when filtering
             if (!isFiltering)
                 return;
@@ -192,12 +196,47 @@ namespace Unity.Hierarchy.Editor
                 return;
 
             var scene = item == null ? default : GetScene(item.Node);
-            BuildSceneContextMenu(menu, scene);
+            BuildSceneContextMenu(menu, scene, GetSelectedScenes(view.ViewModel));
 
             // Let users add extra items.
             using var poolHandle = GenericMenu.Pool.Get(out var genericMenu);
             SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(genericMenu, scene);
             menu.AppendFromGenericMenu(genericMenu);
+        }
+
+        internal static Scene[] GetSelectedScenes(HierarchyViewModel viewModel)
+        {
+            var selectionCount = viewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+            using var _ = ListPool<Scene>.Get(out var selectedScenes);
+            if (selectionCount > 0)
+            {
+                foreach (var node in viewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+                {
+                    var handler = viewModel.GetNodeTypeHandler(in node);
+                    Scene scene = handler switch
+                    {
+                        HierarchySceneHandler sceneHandler => sceneHandler.GetScene(in node),
+                        HierarchySubSceneHandler subSceneHandler => subSceneHandler.GetScene(in node),
+                        _ => default
+                    };
+
+                    if (scene.IsValid())
+                        selectedScenes.Add(scene);
+                }
+            }
+
+            return selectedScenes.ToArray();
+        }
+
+        static int GetLoadedScenesCount(Scene[] scenes)
+        {
+            int loadedScenes = 0;
+            foreach (var scene in scenes)
+            {
+                if (scene.isLoaded)
+                    loadedScenes++;
+            }
+            return loadedScenes;
         }
 
         bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent) => parent == Hierarchy.Root;
@@ -206,7 +245,7 @@ namespace Unity.Hierarchy.Editor
         {
             var gameObjectNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
             var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var childNodeType = Hierarchy.GetNodeType(in child);
+            var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType == gameObjectNodeType || childNodeType == subSceneNodeType;
         }
 
@@ -218,7 +257,7 @@ namespace Unity.Hierarchy.Editor
             for (var i = 0; i < nodeSpan.Length; ++i)
             {
                 var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
+                if (node == HierarchyNode.Null || data.View.ViewModel.GetNodeTypeHandler(in node) != this)
                     continue;
                 var scene = GetScene(in node);
                 if (!string.IsNullOrEmpty(scene.path))
@@ -308,7 +347,7 @@ namespace Unity.Hierarchy.Editor
             PrefabUtility.RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem(userData);
         }
 
-        internal static void BuildSceneContextMenu(DropdownMenu menu, Scene scene)
+        internal static void BuildSceneContextMenu(DropdownMenu menu, Scene scene, Scene[] allSelectedScenes)
         {
             var hasMultipleScenes = EditorSceneManager.sceneCount > 1;
 
@@ -326,17 +365,18 @@ namespace Unity.Hierarchy.Editor
             // Save
             if (scene.isLoaded)
             {
+                var actionCondition = !EditorApplication.isPlaying || scene.isSubScene;
                 // Boxing once here instead of in each AppendAction
-                object userData = (scene, isNotPlayingAndSceneIsAuthoring: !EditorApplication.isPlaying || scene.isSubScene, hasMultipleScenes);
-
-                menu.AppendAction(L10n.Tr("Save Scene"), obj => SceneHierarchyHooks.SaveScene(obj.userData),
+                object userDataMulti = (allSelectedScenes, isNotPlayingAndSceneIsAuthoring: actionCondition, hasMultipleScenes);
+                menu.AppendAction(L10n.Tr("Save Scene"), obj => SceneHierarchyHooks.SaveScenes(obj.userData),
                                   a =>
                                   {
-                                      var (_, isNotPlayingAndSceneIsAuthoring, _) = ((Scene, bool, bool))a.userData;
+                                      var (_, isNotPlayingAndSceneIsAuthoring, _) = ((Scene[], bool, bool))a.userData;
                                       return isNotPlayingAndSceneIsAuthoring ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                                   },
-                                  userData);
+                                  userDataMulti);
 
+                object userData = (scene, isNotPlayingAndSceneIsAuthoring: actionCondition, hasMultipleScenes);
                 menu.AppendAction(L10n.Tr("Save Scene As"),
                                   obj => SceneHierarchyHooks.SaveSceneAs(obj.userData),
                                   a =>
@@ -358,41 +398,42 @@ namespace Unity.Hierarchy.Editor
 
             if (!scene.isSubScene)
             {
+                // Do not allow unloading or removing scenes if all loaded scenes are selected
+                var isUnloadOrRemoveValid = SceneManager.loadedSceneCount > GetLoadedScenesCount(allSelectedScenes);
+
                 if (scene.isLoaded)
                 {
                     // Unload
-                    object userData = (scene, canUnloadScenes: !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path) && hasMultipleScenes);
+                    object userData = (allSelectedScenes, canUnloadScenes: isUnloadOrRemoveValid && !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path) && hasMultipleScenes);
 
-                    menu.AppendAction(L10n.Tr("Unload Scene"), obj => SceneHierarchyHooks.UnloadScene(obj.userData), a =>
+                    menu.AppendAction(L10n.Tr("Unload Scene"), obj => SceneHierarchyHooks.UnloadScenes(obj.userData), a =>
                     {
-                        var (_, canUnloadScenes) = ((Scene, bool))a.userData;
+                        var (_, canUnloadScenes) = ((Scene[], bool))a.userData;
                         return canUnloadScenes ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                     }, userData);
                 }
                 else
                 {
                     // Load
-                    menu.AppendAction(L10n.Tr("Load Scene"), obj => SceneHierarchyHooks.LoadScene(obj.userData),
+                    menu.AppendAction(L10n.Tr("Load Scene"), obj => SceneHierarchyHooks.LoadScenes(obj.userData),
                                       a => EditorApplication.isPlaying ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
-                                      scene);
+                                      allSelectedScenes);
                 }
 
                 // Remove
-                menu.AppendAction(L10n.Tr("Remove Scene"), obj => SceneHierarchyHooks.RemoveScene(obj.userData),
-                                  a => EditorApplication.isPlaying || SceneManager.sceneCount == 1 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
-                                  scene);
+                bool allScenesSelected = allSelectedScenes.Length == EditorSceneManager.sceneCount;
+                menu.AppendAction(L10n.Tr("Remove Scene"), obj => SceneHierarchyHooks.RemoveScenes(obj.userData),
+                                  a => !isUnloadOrRemoveValid || allScenesSelected || EditorApplication.isPlaying || SceneManager.sceneCount == 1 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
+                                  allSelectedScenes);
             }
 
             // Discard changes
             if (scene.isLoaded)
             {
-                bool canReload = scene.isDirty && SceneHierarchyHooks.CanSceneBeReloaded(scene);
-                bool canDiscardChanges = !EditorApplication.isPlaying && canReload;
-                var userData = (scene, canDiscardChanges);
-
+                var userData = (allSelectedScenes, SceneHierarchyHooks.CanSceneChangesBeDiscarded(scene));
                 menu.AppendAction(L10n.Tr("Discard changes"), obj => SceneHierarchyHooks.DiscardChanges(obj.userData), a =>
                 {
-                    var (_, canDiscardChanges) = ((Scene, bool))a.userData;
+                    var (_, canDiscardChanges) = ((Scene[], bool))a.userData;
                     return canDiscardChanges ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                 }, userData);
             }
@@ -438,7 +479,7 @@ namespace Unity.Hierarchy.Editor
         DragVisualMode DoHandleDrop(in HierarchyViewDragAndDropHandlingData data, bool perform)
         {
             var target = data.Target;
-            var targetNodeType = target == HierarchyNode.Null ? HierarchyNodeType.Null : Hierarchy.GetNodeType(in target);
+            var targetNodeType = target == HierarchyNode.Null ? HierarchyNodeType.Null : data.View.ViewModel.GetNodeType(in target);
             var sceneNodeType = GetNodeType();
             var targetIndex = target == HierarchyNode.Null ? -1 : data.View.ViewModel.IndexOf(in target);
 
@@ -464,23 +505,39 @@ namespace Unity.Hierarchy.Editor
                 if (target == HierarchyNode.Null)
                     return DragVisualMode.Move;
 
-                Scene dstScene = GetParentScene(in target);
-                if (dstScene.IsValid())
-                {
-                    bool dropAbove = data.InsertAtIndex == targetIndex;
-                    if (targetNodeType != sceneNodeType || data.DropPosition == DragAndDropPosition.OverItem)
-                        dropAbove = false;
+                var dstScene = GetParentScene(data.View.ViewModel, in target);
+                var dropAbove = data.InsertAtIndex == targetIndex;
 
-                    if (dropAbove)
+                if (data.DropPosition == DragAndDropPosition.OutsideItems && data.InsertAtIndex > targetIndex)
+                {
+                    for (var i = data.InsertAtIndex - 1; i >= 0; i--)
                     {
-                        for (int i = 0; i < insertedOrMovedScenes.Count; i++)
-                            EditorSceneManager.MoveSceneBefore(insertedOrMovedScenes[i], dstScene);
+                        var nodeAtIndex = data.View.ViewModel[i];
+                        if (data.View.ViewModel.GetNodeType(nodeAtIndex) == sceneNodeType)
+                        {
+                            dstScene = GetScene(nodeAtIndex);
+                            dropAbove = false;
+                            break;
+                        }
                     }
-                    else
-                    {
-                        for (int i = insertedOrMovedScenes.Count - 1; i >= 0; i--)
-                            EditorSceneManager.MoveSceneAfter(insertedOrMovedScenes[i], dstScene);
-                    }
+                }
+                else if (targetNodeType != sceneNodeType || data.DropPosition == DragAndDropPosition.OverItem)
+                {
+                    dropAbove = false;
+                }
+
+                if (!dstScene.IsValid())
+                    return DragVisualMode.Move;
+
+                if (dropAbove)
+                {
+                    for (int i = 0; i < insertedOrMovedScenes.Count; i++)
+                        EditorSceneManager.MoveSceneBefore(insertedOrMovedScenes[i], dstScene);
+                }
+                else
+                {
+                    for (int i = insertedOrMovedScenes.Count - 1; i >= 0; i--)
+                        EditorSceneManager.MoveSceneAfter(insertedOrMovedScenes[i], dstScene);
                 }
             }
 
@@ -489,9 +546,24 @@ namespace Unity.Hierarchy.Editor
 
         void OpenDraggedScenes(in HierarchyViewDragAndDropHandlingData data, List<Scene> openedOrMovedScenes)
         {
+            using var _ = HashSetPool<string>.Get(out var processedPaths);
+
             void AddScene(in HierarchyViewDragAndDropHandlingData data, Scene draggedScene, string scenePath)
             {
-                if (!draggedScene.IsValid() || GetOrCreateNode(draggedScene) == HierarchyNode.Null)
+                // Prevent paths that have been already processed/opened to not go through it again
+                if (!processedPaths.Add(scenePath))
+                    return;
+
+                var sceneNode = GetOrCreateNode(draggedScene);
+                if (data.Source is not CollectionView && draggedScene.IsValid() && sceneNode != HierarchyNode.Null)
+                {
+                    // Need to further defer the call specially when dragging a new scene together with other existing scenes
+                    var view = data.View;
+                    view.schedule.Execute(() => view.Ping(sceneNode));
+                    return;
+                }
+
+                if (!draggedScene.IsValid() || sceneNode == HierarchyNode.Null)
                 {
                     var unloaded = data.EventModifiers.HasFlag(UnityEngine.EventModifiers.Alt);
                     if (unloaded)
@@ -523,9 +595,9 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        Scene GetParentScene(in HierarchyNode node)
+        Scene GetParentScene(HierarchyViewModel viewModel, in HierarchyNode node)
         {
-            var nodeType = Hierarchy.GetNodeType(in node);
+            var nodeType = viewModel.GetNodeType(in node);
             if (nodeType == GetNodeType())
                 return GetScene(in node);
             if (nodeType == Hierarchy.GetNodeType<HierarchyGameObjectHandler>())

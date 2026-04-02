@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// A body is contained within a world and has 3 degrees-of-freedom, two for position and one for rotation.
     /// A body can have forces, torques and impulses applied to it.
     /// A body has three distinct types:
-    /// 
+    ///
     ///- Static: This type of body does not move under simulation and behaves as if it has infinite mass, essentially an immovable object. Static bodies never interact with other Static or Kinematic bodies.
     ///- Dynamic: This type of body is fully simulated and moves according to forces and torques applied to its linear/angular velocities. It can interact with all other body types. It always has finite, non-zero mass.
     ///- Kinematic: This type of body moves under simulation and moves according to its linear/angular velocities and never uses forces or torques. It only interacts with Dynamic body types. It behaves as if it has infinite mass.
@@ -220,7 +220,7 @@ namespace Unity.U2D.Physics
             /// <param name="fast2D">Whether to perform fast 2D or slow 3D calculations. See <see cref="PhysicsWorld.TransformWriteMode"/>.</param>
             /// <param name="position">The calculated position.</param>
             /// <param name="rotation">The calculated rotation.</param>
-            public void GetPose(
+            public readonly void GetPose(
                 PhysicsWorld.TransformPlane transformPlane,
                 ref PhysicsWorld.TransformPlaneCustom transformPlaneCustom,
                 bool fast2D,
@@ -240,7 +240,7 @@ namespace Unity.U2D.Physics
                 }
 
                 // Custom plane projection.
-                transformPlaneCustom.PlaneProjection(ref m_PhysicsTransform, out position, out rotation);
+                transformPlaneCustom.PlaneProjection(in m_PhysicsTransform, out position, out rotation);
             }
 
             /// <summary>
@@ -252,7 +252,7 @@ namespace Unity.U2D.Physics
             /// <param name="interpolationTime">The interpolation time to use in the range [0, 1].</param>
             /// <param name="position">The calculated position.</param>
             /// <param name="rotation">The calculated rotation.</param>
-            public void GetInterpolatedPose(
+            public readonly void GetInterpolatedPose(
                 PhysicsWorld.TransformPlane transformPlane,
                 ref PhysicsWorld.TransformPlaneCustom transformPlaneCustom,
                 bool fast2D,
@@ -270,7 +270,7 @@ namespace Unity.U2D.Physics
                 else
                 {
                     // Custom plane projection.
-                    transformPlaneCustom.PlaneProjection(ref m_PhysicsTransform, out position, out rotation);
+                    transformPlaneCustom.PlaneProjection(in m_PhysicsTransform, out position, out rotation);
                 }
 
                 // Interpolation the pose.
@@ -286,7 +286,7 @@ namespace Unity.U2D.Physics
             /// <param name="extrapolationTime">The extrapolation time to use in the range [0, 1].</param>
             /// <param name="position">The calculated position.</param>
             /// <param name="rotation">The calculated rotation.</param>
-            public void GetExtrapolatedPose(
+            public readonly void GetExtrapolatedPose(
                 PhysicsWorld.TransformPlane transformPlane,
                 ref PhysicsWorld.TransformPlaneCustom transformPlaneCustom,
                 float extrapolationTime,
@@ -312,7 +312,7 @@ namespace Unity.U2D.Physics
                 };
 
                 // Custom plane projection.
-                transformPlaneCustom.PlaneProjection(ref newTransform, out position, out rotation);
+                transformPlaneCustom.PlaneProjection(in newTransform, out position, out rotation);
             }
 
             #region Internal
@@ -804,19 +804,13 @@ namespace Unity.U2D.Physics
         public readonly void SetTransformTarget(PhysicsTransform transform, float deltaTime) => PhysicsBody_SetTransformTarget(this, transform, deltaTime);
 
         /// <summary>
-        /// Get the full 3D position and rotation of the body given the specified <see cref="PhysicsWorld.TransformWriteMode"/> and <see cref="PhysicsWorld.TransformPlane"/>.
-        /// Usually both the write-mode and transform-plane of the world the body is in would be used.
-        /// This can only be called when a <see cref="PhysicsBody.transformObject"/> is assigned. Without this, an exception is thrown.
-        /// See <see cref="PhysicsWorld.transformWriteMode"/> and <see cref="PhysicsWorld.transformPlane"/>.
+        /// Read the full 3D position and rotation of the body given the specified <see cref="UnityEngine.Transform"/>.
         /// </summary>
-        /// <param name="transform">The Transform object to be used as a reference when converting from 2D position/rotation to 3D position/rotation, usually the same as the TransformObject assigned to the PhysicsBody.</param>
-        /// <param name="transformWriteMode">The transform write mode to use, usually the one currently assigned to the world is used.</param>
-        /// <param name="transformPlane">The transform plane to use, usually the one currently assigned to the world is used.</param>
+        /// <param name="transform">The Transform object to be used as a reference when converting from 2D position/rotation to 3D position/rotation, usually the same as any TransformObject assigned to the PhysicsBody.</param>
         /// <param name="position">The calculated output position.</param>
         /// <param name="rotation">The calculated output rotation.</param>
         /// <exception cref="System.ArgumentNullException">Thrown if the Transform argument is NULL.</exception>
-        /// <exception cref="System.InvalidOperationException">Thrown if the transform write mode is Off or there is no TransformObject assigned to the PhysicsBody.</exception>
-        public readonly void GetPositionAndRotation3D(Transform transform, PhysicsWorld.TransformWriteMode transformWriteMode, PhysicsWorld.TransformPlane transformPlane, out Vector3 position, out Quaternion rotation)
+        public readonly void ReadPose(Transform transform, out Vector3 position, out Quaternion rotation)
         {
             // Validate.
             if (transform == null)
@@ -828,44 +822,50 @@ namespace Unity.U2D.Physics
             // Fetch the world configuration.
             var bodyWorld = world;
 
-            // Handle the write mode appropriately.
-            switch (transformWriteMode)
+            // Fetch the transform plane.
+            var transformPlane = bodyWorld.transformPlane;
+
+            // Handle non-custom plane projection.
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
             {
-                // Write the fast case.
-                case PhysicsWorld.TransformWriteMode.Fast2D:
+                // Handle the write mode appropriately.
+                switch (bodyWorld.transformWriteMode)
                 {
-                    position = PhysicsMath.ToPosition3D(position: bodyTransform.position, reference: transform.position, transformPlane: transformPlane);
-                    rotation = PhysicsMath.ToRotationFast3D(angle: bodyTransform.rotation.radians, transformPlane: transformPlane);
-                    return;
-                }
+                    // Write the fast case.
+                    case PhysicsWorld.TransformWriteMode.Fast2D:
+                    {
+                        position = PhysicsMath.ToPosition3D(position: bodyTransform.position, reference: transform.position, transformPlane: transformPlane);
+                        rotation = PhysicsMath.ToRotationFast3D(angle: bodyTransform.rotation.radians, transformPlane: transformPlane);
+                        return;
+                    }
 
-                // Write the slow case.
-                case PhysicsWorld.TransformWriteMode.Slow3D:
-                {
-                    transform.GetPositionAndRotation(out var transformPosition, out var transformRotation);
-                    position = PhysicsMath.ToPosition3D(position: bodyTransform.position, reference: transformPosition, transformPlane: transformPlane);
-                    rotation = PhysicsMath.ToRotationSlow3D(angle: bodyTransform.rotation.radians, reference: transformRotation, transformPlane: transformPlane);
-                    return;
-                }
+                    // Write the slow case.
+                    case PhysicsWorld.TransformWriteMode.Slow3D:
+                    {
+                        transform.GetPositionAndRotation(out var transformPosition, out var transformRotation);
+                        position = PhysicsMath.ToPosition3D(position: bodyTransform.position, reference: transformPosition, transformPlane: transformPlane);
+                        rotation = PhysicsMath.ToRotationSlow3D(angle: bodyTransform.rotation.radians, reference: transformRotation, transformPlane: transformPlane);
+                        return;
+                    }
 
-                case PhysicsWorld.TransformWriteMode.Off:
-                default:
-                    throw new InvalidOperationException("Invalid Transform Write Mode.");
+                    default:
+                        position = transform.position;
+                        rotation = transform.rotation;
+                        return;
+                }
             }
+
+            // Custom plane projection.
+            bodyWorld.transformPlaneCustom.PlaneProjection(in bodyTransform, out position, out rotation);
         }
 
         /// <summary>
-        /// Set the full transform of the body composed of position and rotation and also write to the associated <see cref="PhysicsBody.transformObject"/>.
-        /// The <see cref="PhysicsBody.transformObject"/> won't be written to if it isn't assigned or the <see cref="PhysicsWorld.transformWriteMode"/> are off. The body will always be updated however.
-        /// See <see cref="PhysicsBody.transformObject"/>.
+        /// Write the full 3D position and rotation of the body to the currently set <see cref="PhysicsBody.transformObject"/>.
+        /// If no <see cref="PhysicsBody.transformObject"/> is assigned, this method will do nothing and false will be returned.
         /// </summary>
-        /// <param name="transform">The full transform of the body composed of position and rotation.</param>
         /// <returns>Whether the <see cref="PhysicsBody.transformObject"/> was written to.</returns>
-        public readonly bool SetAndWriteTransform(PhysicsTransform transform)
+        public readonly bool WritePose()
         {
-            // Set the transform.
-            this.transform = transform;
-
             // Fetch the transform object.
             var bodyTransformObject = transformObject;
             if (bodyTransformObject == null)
@@ -874,28 +874,33 @@ namespace Unity.U2D.Physics
             // Fetch the world configuration.
             var bodyWorld = world;
             var transformWriteMode = bodyWorld.transformWriteMode;
+            var physicsTransform = transform;
+            Vector3 position;
+            Quaternion rotation;
+
+            // Handle non-custom plane projection.
             var transformPlane = bodyWorld.transformPlane;
-
-            // Handle the write mode appropriately.
-            switch (transformWriteMode)
+            if (transformPlane != PhysicsWorld.TransformPlane.Custom)
             {
-                // Don't write.
-                case PhysicsWorld.TransformWriteMode.Off:
-                    return false;
+                // Fetch the body position and rotation.
+                physicsTransform.GetPositionAndRotation(out var bodyPosition, out var bodyRotation);
 
-                // Write both the fast and slow cases.
-                case PhysicsWorld.TransformWriteMode.Fast2D:
-                case PhysicsWorld.TransformWriteMode.Slow3D:
-                {
-                    // Set the transform pose.
-                    GetPositionAndRotation3D(transformObject, transformWriteMode, transformPlane, out var newPosition, out var newRotation);
-                    PhysicsWorld.SetTransform(bodyTransformObject, ref newPosition, ref newRotation);
-                    return true;
-                }
-
-                default:
-                    throw new InvalidOperationException("Invalid Transform Write Mode.");
+                // Calculate the pose as per the selected TransformPlane.
+                var fastWrite2D = transformWriteMode == PhysicsWorld.TransformWriteMode.Fast2D;
+                position = PhysicsMath.ToPosition3D(position: bodyPosition, reference: bodyTransformObject.position, transformPlane: transformPlane);
+                rotation = fastWrite2D ?
+                    PhysicsMath.ToRotationFast3D(angle: bodyRotation.radians, transformPlane: transformPlane) :
+                    PhysicsMath.ToRotationSlow3D(angle: bodyRotation.radians, reference: bodyTransformObject.rotation, transformPlane: transformPlane);
             }
+            else
+            {
+                // Custom plane projection.
+                bodyWorld.transformPlaneCustom.PlaneProjection(in physicsTransform, out position, out rotation);
+            }
+
+            // Set the transform pose.
+            PhysicsWorld.SetTransform(bodyTransformObject, ref position, ref rotation);
+            return true;
         }
 
         /// <summary>
@@ -952,38 +957,45 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The calculated mass of the body, usually in kilograms.
-        /// See <see cref="PhysicsBody.massConfiguration"/>.
+        /// This can be accessed as a union of <see cref="PhysicsBody.mass"/>, <see cref="PhysicsBody.rotationalInertia"/> and <see cref="PhysicsBody.localCenterOfMass"/> using <see cref="PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly float mass => PhysicsBody_GetMass(this);
+        public readonly float mass { get => PhysicsBody_GetMass(this); set => PhysicsBody_SetMass(this, value); }
 
         /// <summary>
         /// The rotational inertia of the body, usually in kg*m^2.
-        /// See <see cref="PhysicsBody.massConfiguration"/>.
+        /// This can be accessed as a union of <see cref="PhysicsBody.mass"/>, <see cref="PhysicsBody.rotationalInertia"/> and <see cref="PhysicsBody.localCenterOfMass"/> using <see cref="PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly float rotationalInertia => PhysicsBody_GetRotationalInertia(this);
+        public readonly float rotationalInertia { get => PhysicsBody_GetRotationalInertia(this); set => PhysicsBody_SetRotationalInertia(this, value); }
 
         /// <summary>
         /// The center of mass position of the body in local space.
+        /// This can be accessed as a union of <see cref="PhysicsBody.mass"/>, <see cref="PhysicsBody.rotationalInertia"/> and <see cref="PhysicsBody.localCenterOfMass"/> using <see cref="PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly Vector2 localCenterOfMass => PhysicsBody_GetLocalCenterOfMass(this);
+        public readonly Vector2 localCenterOfMass { get => PhysicsBody_GetLocalCenterOfMass(this); set => PhysicsBody_SetLocalCenterOfMass(this, value); }
 
         /// <summary>
-        /// The center of mass position of the body in world space.
+        /// Get the center of mass position of the body in world space.
+        /// This changes as the body moves i.e. as the <see cref="PhysicsBody.transform"/> is changed.
         /// </summary>
         public readonly Vector2 worldCenterOfMass => PhysicsBody_GetWorldCenterOfMass(this);
 
         /// <summary>
-        /// The body mass configuration. Normally this is computed automatically using the shape geometry and density.
-        /// This information changes if a shape is added or removed or if the body type changes.
-        /// See <see cref="PhysicsBody.MassConfiguration"/>.
+        /// The body mass configuration comprised of the <see cref="PhysicsBody.mass"/>, <see cref="PhysicsBody.rotationalInertia"/> and <see cref="PhysicsBody.localCenterOfMass"/>.
+        /// Normally this is computed automatically as each <see cref="PhysicsShape"/> is added, removed or changed on a body.
+        /// This will automatically change if the body type changes, for instance, a Static or Kinematic body always have zero mass and rotational inertia.
+        /// The individual properties of the <see cref="PhysicsBody.massConfiguration"/> and be accessed using <see cref="PhysicsBody.mass"/>, <see cref="PhysicsBody.rotationalInertia"/> and <see cref="PhysicsBody.localCenterOfMass"/>.
+        /// The <see cref="PhysicsBody.MassConfiguration"/> will be overwritten when setting this property or if <see cref="PhysicsBody.ApplyMassFromShapes"/> is called or when adding, removing or changing <see cref="PhysicsShape"/> with <see cref="PhysicsShapeDefinition.startMassUpdate"/> enabled.
         /// </summary>
         public readonly MassConfiguration massConfiguration { get => PhysicsBody_GetMassConfiguration(this); set => PhysicsBody_SetMassConfiguration(this, value); }
 
         /// <summary>
-        /// This updates the mass configuration to the sum of the mass configuration of all the attached shapes.
-        /// This normally does not need to be called unless you set the mass configuration to override the mass and you later want to reset the mass.
-        ///	You should call this regardless of body type.
-        /// Note that sensor shapes may have mass.
+        /// Typically a body will automatically calculate the <see cref="PhysicsBody.MassConfiguration"/> using all the attached shapes.
+        /// The <see cref="PhysicsBody.MassConfiguration"/> is automatically updated whenever a <see cref="PhysicsShape"/> is added, removed or modified.
+        /// When adding many shapes to a body, you can choose to stop this automatic calculation, therefore improving performance, by disabling <see cref="PhysicsShapeDefinition.startMassUpdate"/> for each shape being added to the body.
+        /// This call will result in the <see cref="PhysicsBody.MassConfiguration"/> being calculated using the currently added <see cref="PhysicsShape"/> so is typically called after many shapes are added if they have <see cref="PhysicsShapeDefinition.startMassUpdate"/> disabled.
+        /// Alternately, if you wish to assign your own <see cref="PhysicsBody.MassConfiguration"/> then disabling the automatic calculation also makes sense.
+        /// In either case, you must call this method or set <see cref="PhysicsBody.massConfiguration"/> before any simulation step occurs otherwise the <see cref="PhysicsBody"/> will exhibit unstable collision behaviour.
+        /// The <see cref="PhysicsBody.MassConfiguration"/> will be overwritten when calling <see cref="PhysicsBody.ApplyMassFromShapes"/>, if <see cref="PhysicsBody.massConfiguration"/> is set or when adding, removing or changing <see cref="PhysicsShape"/> with <see cref="PhysicsShapeDefinition.startMassUpdate"/> enabled.
         /// </summary>
         public readonly void ApplyMassFromShapes() => PhysicsBody_ApplyMassFromShapes(this);
 
@@ -1018,9 +1030,21 @@ namespace Unity.U2D.Physics
         public readonly bool sleepingAllowed { get => PhysicsBody_GetSleepingAllowed(this); set => PhysicsBody_SetSleepingAllowed(this, value); }
 
         /// <summary>
-        /// The threshold below which the body will sleep, usually in m/s.
+        /// The threshold below which the body will sleep, in meters/sec.
         /// </summary>
         public readonly float sleepThreshold { get => PhysicsBody_GetSleepThreshold(this); set => PhysicsBody_SetSleepThreshold(this, value); }
+
+        /// <summary>
+        /// A threshold used to control when continuous collision detection is used when a body moves.
+        /// The value is used to compare the body linear velocity movement against the extents of all the shapes added to the body scaled by this threshold.
+        /// If the movement exceeds the extents scaled by the threshold then continuous collision detection is used to stop tunneling.
+        /// Lower values reduce the distance the body must move before continuous collision detection is used and can have a considerable impact on performance!
+        /// Higher values increase the distance the body must move before continuous collision detection is used.
+        /// Too low a threshold will result in continuous collision detection being used more often therefore affecting performance so this should be limited to specific bodies only.
+        /// The default threshold is 0.5 which equates to half the total shape extents.
+        /// The threshold is clamped to a range of 0.0 to 1.0 with 0.0 meaning continuous collision detection will always be used.
+        /// </summary>
+        public readonly float collisionThreshold { get => PhysicsBody_GetCollisionThreshold(this); set => PhysicsBody_SetCollisionThreshold(this, value); }
 
         /// <summary>
         /// The enabled state of the body. If false, the body and anything attached to it will not participate in the simulation.
@@ -1120,15 +1144,46 @@ namespace Unity.U2D.Physics
         public readonly void SetHitEvents(bool hitEvents) => PhysicsBody_SetHitEvents(this, hitEvents);
 
         /// <summary>
-        /// Set the (optional) owner object associated with this body and return an owner key that must be specified when destroying the body with <see cref="PhysicsBody.Destroy(int)"/>.   
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
-        /// The lifetime of the specified owner object is not linked to this body i.e. this body will still be owned by the owner object, even if it is destroyed.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="bodies">The bodies to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsBody> bodies, UnityEngine.Object owner, int ownerKey) => PhysicsBody_SetOwner(bodies, owner, ownerKey);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this body. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsBody.Destroy(int)"/> when destroying the body.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsBody_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var body = this;
+            SetOwner(new ReadOnlySpan<PhysicsBody>(&body, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = PhysicsWorld.CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this body as specified using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.
@@ -1147,9 +1202,9 @@ namespace Unity.U2D.Physics
         /// Care should be taken with any <see cref="System.Object"/> assigned as a callback target that isn't a <see cref="UnityEngine.Object"/> as this assignment will not in itself keep the object alive and can be garbage collected.
         /// To avoid this, you should have at least a single reference to the object in your code.
         /// To remove the object assigned here, set the callback target to NULL.
-        /// 
+        ///
         /// This includes the following events:
-        /// 
+        ///
         ///- A <see cref="PhysicsEvents.BodyUpdateEvent"/> with call <see cref="PhysicsCallbacks.IBodyUpdateCallback"/>.
         /// </summary>
         public readonly System.Object callbackTarget { get => PhysicsBody_GetCallbackTarget(this); set => PhysicsBody_SetCallbackTarget(this, value); }
@@ -1159,6 +1214,18 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsBody_GetUserData(this); set => PhysicsBody_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsBody_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsBody_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
         /// Get/Set the transform object associated with the body.
@@ -1354,6 +1421,11 @@ namespace Unity.U2D.Physics
         #endregion
 
         #region Debugging
+
+        /// <summary>
+        /// Controls whether this body is automatically drawn when the world is drawn.
+        /// </summary>
+        public readonly bool worldDrawing { get => PhysicsBody_GetWorldDrawing(this); set => PhysicsBody_SetWorldDrawing(this, value); }
 
         /// <summary>
         /// Draw a body that visually represents its current state in the world.

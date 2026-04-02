@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -152,9 +151,7 @@ namespace UnityEditor.SceneManagement
         internal virtual BreadcrumbBar.Item CreateBreadcrumbItem()
         {
             var history = StageNavigationManager.instance.stageHistory;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool isLastCrumb = this == history.Last();
-#pragma warning restore UA2001
+            bool isLastCrumb = this == history[^1];
             var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
 
             return new BreadcrumbBar.Item

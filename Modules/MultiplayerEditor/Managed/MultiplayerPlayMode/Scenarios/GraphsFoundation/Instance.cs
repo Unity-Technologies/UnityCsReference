@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.PlayMode.Editor;
@@ -26,11 +27,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         [SerializeReference] private IInstanceItem m_InstanceItem;
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
+
         private CancellationTokenSource m_FreeRunCancelTokenSource;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] private bool m_Drifted;
         [SerializeField] private InstanceStatusData m_StatusData;
         [SerializeField] private InstanceController m_InstanceController;
+        [SerializeField] private List<InstanceControllerDecorator> m_DecoratorsControllers;
         private Task m_FreeRunningTask;
 
         internal event Action<Instance, InstanceStatusData> StatusRefreshed;
@@ -38,6 +41,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal string Name => m_InstanceItem.GetName();
         internal GUID Id => m_InstanceItem.GetId();
         internal InstanceController Controller => m_InstanceController;
+        internal IEnumerable<InstanceControllerDecorator> DecoratorsControllers => m_DecoratorsControllers;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
         internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
@@ -77,18 +81,26 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal static Instance Create(IInstanceItem instanceItem, InstanceController playModeController)
+        internal static Instance Create(
+            IInstanceItem instanceItem,
+            InstanceController playModeController,
+            List<InstanceControllerDecorator> decorators,
+            ExecutionGraph executionGraph)
         {
             Assert.IsNotNull(instanceItem, "InstanceItem cannot be null");
             Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
+            Assert.IsNotNull(executionGraph, "ExecutionGraph cannot be null");
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
-            var executionGraph = new ExecutionGraph();
-            executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
             instance.m_InstanceItem = instanceItem;
             instance.m_InstanceController = playModeController;
             instance.m_ExecutionGraph = executionGraph;
+            instance.m_DecoratorsControllers = decorators;
+
+            executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
+            instance.OnGraphStatusRefreshed();
+
             return instance;
         }
 
@@ -125,6 +137,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsFreeRunMode()
         {
+            // TODO only local instances support free running currently, we should move this to a decorator
+            if (m_InstanceController is not LocalPlayerController)
+                return false;
             return RunModeState == RunModeState.ManualControl;
         }
 
@@ -146,16 +161,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var executionGraph = GetExecutionGraph();
             var isFreeRun = IsFreeRunMode();
 
-            var durationMs = Node.ComputeExecutionDuration(executionGraph.GetAllNodes());
-            var prepareStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Prepare));
-            var deployStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Deploy));
-            var runStageDurationMs = Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Run))
-                + Node.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Start));
+            var durationMs = ExecutionNode.ComputeExecutionDuration(executionGraph.GetAllNodes());
+            var prepareStageDurationMs = ExecutionNode.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Prepare));
+            var deployStageDurationMs = ExecutionNode.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Deploy));
+            var runStageDurationMs = ExecutionNode.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Run))
+                + ExecutionNode.ComputeExecutionDuration(executionGraph.GetNodes(ExecutionStage.Start));
 
             var runningMode = isFreeRun
                 ? RunModeState.ManualControl.ToString()
                 : RunModeState.ScenarioControl.ToString();
-            
+
             var hasBeenActive = IsActive() || durationMs > 0;
 
             return new InstanceData

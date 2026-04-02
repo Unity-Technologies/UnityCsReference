@@ -55,6 +55,7 @@ internal readonly record struct ClearAllStylePropertyBindingsCommand
 
             Element.IncrementVersion(VersionChangeType.Bindings | VersionChangeType.Styles);
             EditorUtility.SetDirty(visualTreeAsset);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
         }
     }
 

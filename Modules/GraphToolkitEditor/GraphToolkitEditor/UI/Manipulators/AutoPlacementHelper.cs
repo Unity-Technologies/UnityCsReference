@@ -105,7 +105,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 Rect otherBoundingRect = otherRect.Item1;
                 List<Model> otherBoundingRectElements = otherRect.Item2;
-                if (otherBoundingRectElements.HasAny(element => IsOnPlacemats(element.GetView<GraphElement>(m_GraphView), placematsOnBoundingRect)))
+                if (otherBoundingRectElements.Exists(element => IsOnPlacemats(element.GetView<GraphElement>(m_GraphView), placematsOnBoundingRect)))
                 {
                     AdjustBoundingRect(ref boundingRect, otherBoundingRect);
                     elementsOnBoundingRect.AddRange(otherBoundingRectElements);
@@ -204,7 +204,7 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsOnPlacemats(GraphElement element, List<Placemat> placemats)
         {
-            return placemats.HasAny(placemat => !element.Equals(placemat) && element.layout.Overlaps(placemat.layout));
+            return placemats.Exists(placemat => !element.Equals(placemat) && element.layout.Overlaps(placemat.layout));
         }
     }
 }

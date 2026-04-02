@@ -3,12 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Presets
 {
@@ -173,9 +173,7 @@ namespace UnityEditor.Presets
 
                     EventCallback<DragPerformEvent> dragPerformCallback = evt =>
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore UA2001
                         if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
                         {
                             presetField.value = preset;
@@ -190,9 +188,7 @@ namespace UnityEditor.Presets
 
                     EventCallback<DragUpdatedEvent> dragUpdatedCallback = evt =>
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore UA2001
                         if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
                         {
                             DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -282,9 +278,7 @@ namespace UnityEditor.Presets
         void OnPresetTypeWindowSelection(PresetType type)
         {
             Undo.RecordObjects(targets, "Preset Manager");
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var manager in targets.Cast<PresetManager>())
-#pragma warning restore UA2001
+            foreach (PresetManager manager in targets)
             {
                 manager.AddPresetType(type);
             }

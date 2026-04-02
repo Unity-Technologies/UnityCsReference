@@ -258,7 +258,7 @@ namespace UnityEditor
 
         private EntityId OnValidateValue(EntityId value)
         {
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Contemplate using GetIndex instead of GetRawData if EntityId size changes. And get the full EntityId from the index instead");
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "Contemplate using GetIndex instead of GetRawData if EntityId size changes. And get the full EntityId from the index instead");
             return EntityId.FromULong((ulong)Mathf.Max((int)minAttribute.min, (int)EntityId.ToULong(value)));
         }
     }

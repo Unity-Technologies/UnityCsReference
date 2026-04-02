@@ -143,6 +143,24 @@ namespace UnityEngine.TextCore.Text
                         temp.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
                     }
 
+                    // Search the alternative typeface's fallback list before falling back to the source font asset.
+                    if (temp.fallbackFontAssetTable != null && temp.fallbackFontAssetTable.Count > 0)
+                    {
+                        for (int i = 0; i < temp.fallbackFontAssetTable.Count; i++)
+                        {
+                            FontAsset tempFallback = temp.fallbackFontAssetTable[i];
+                            if (tempFallback == null)
+                                continue;
+
+                            character = GetCharacterFromFontAsset_Internal(unicode, tempFallback, false, fontStyle, fontWeight, out isAlternativeTypeface, populateLigatures);
+                            if (character != null)
+                            {
+                                isAlternativeTypeface = true;
+                                return character;
+                            }
+                        }
+                    }
+
                     // At this point, we were not able to find the requested character in the alternative typeface
                     // so we check the source font asset and its potential fallbacks.
                 }

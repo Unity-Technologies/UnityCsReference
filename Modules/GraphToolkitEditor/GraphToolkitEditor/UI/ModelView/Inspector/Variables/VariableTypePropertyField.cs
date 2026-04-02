@@ -50,6 +50,7 @@ namespace Unity.GraphToolkit.Editor
             var label = new Label() { text = "Data Type" };
             label.AddToClassList(labelUssClassName);
             label.AddToClassList(BaseField<int>.labelUssClassName);
+            label.AddToClassList(BaseModelPropertyField.labelUssClassName);
             Add(label);
             LabelElement = label;
 

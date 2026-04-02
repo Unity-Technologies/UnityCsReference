@@ -12,12 +12,12 @@ using Unity.Scripting;
 namespace Unity.Scripting.LifecycleManagement
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class OnCodeInitializingAttribute : LifecycleAttributeBase
+    public sealed class OnCodeInitializingAttribute : LifecycleAttributeBase
     {
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class OnCodeDeinitializingAttribute : LifecycleAttributeBase
+    public sealed class OnCodeDeinitializingAttribute : LifecycleAttributeBase
     {
     }
 

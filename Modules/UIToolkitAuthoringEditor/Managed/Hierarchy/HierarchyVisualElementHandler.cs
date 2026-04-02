@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using System.IO;
@@ -172,6 +173,19 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                     AssetDatabase.OpenAsset(vtaSource.GetEntityId());
                     SessionState.EraseString(LoadUIDocumentCommand.CommandId);
                 });
+
+            if (VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false) && authoringIdPath.path.Length > 0)
+            {
+                menu.AppendAction(
+                "Find References In Scene",
+                a =>
+                {
+                    var prId = pr.GetEntityId().GetHashCode();
+                    var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
+                    var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
+                    SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
+                });
+            }
         }
 
         if (vtaSource != null && ancestorVTAs.Count > 0 && ancestorInstances.Count > 0 && !isPanelComponentRootElement)
@@ -253,16 +267,16 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
             UnregisterAllPanels();
     }
 
-    private void RegisterPanelIfEnabled(Panel panel)
+    private void RegisterPanelIfEnabled( IRuntimePanel panel)
     {
         if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
-            RegisterPanel(panel);
+            RegisterPanel((Panel)panel);
     }
 
-    private void UnregisterPanelIfEnabled(Panel panel)
+    private void UnregisterPanelIfEnabled(IRuntimePanel panel)
     {
         if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
-            UnregisterPanel(panel);
+            UnregisterPanel((Panel)panel);
     }
 
     private void RegisterExistingRuntimePanels()

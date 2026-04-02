@@ -12,6 +12,8 @@ using UnityEngine.UIElements.UIR;
 using System.Collections.Generic;
 using Unity.Profiling;
 
+#pragma warning disable CS0618 // UnicodeLineBreakingRules is obsolete; handled natively by ATG
+
 namespace UnityEngine.UIElements
 {
     class UITKTextJobSystem
@@ -283,10 +285,10 @@ namespace UnityEngine.UIElements
 
                     for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
                     {
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor, false, true);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor, false, true);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor, false, true);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor, false, true);
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);
@@ -331,3 +333,5 @@ namespace UnityEngine.UIElements
         }
     }
 }
+
+#pragma warning restore CS0618

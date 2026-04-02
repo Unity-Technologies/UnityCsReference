@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -72,8 +73,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (context.IsDescriptorEnabled(dimensionAppropriateDescriptor) &&
                 TextureUtils.IsTextureSolidColorTooBig(context.Importer, context.Texture))
             {
+                var location = new Location(context.Importer.assetPath);
+                var dependencyNode = new TextureDependencyNode { Location = location };
+
                 yield return context.CreateIssue(IssueCategory.AssetIssue, dimensionAppropriateDescriptor.Id, context.Name)
-                    .WithLocation(context.Importer.assetPath);
+                    .WithDependencies(dependencyNode)
+                    .WithLocation(location);
             }
 
             var texture2D = context.Texture as Texture2D;
@@ -82,8 +87,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 TextureUtils.GetEmptyPixelsPercent(texture2D, out var emptyPercent, out var emptyBytes);
                 if (emptyPercent > m_EmptySpaceLimit)
                 {
+                    var location = new Location(context.Importer.assetPath);
+                    var dependencyNode = new TextureDependencyNode { Location = location };
+
                     yield return context.CreateIssue(IssueCategory.AssetIssue, k_TextureAtlasEmptyDescriptor.Id, context.Name, Formatting.FormatPercentage(emptyPercent / 100.0f), Formatting.FormatSize(emptyBytes))
-                        .WithLocation(context.Importer.assetPath);
+                        .WithDependencies(dependencyNode)
+                        .WithLocation(location);
                 }
             }
         }

@@ -394,17 +394,17 @@ namespace UnityEditor.UIElements
             if (m_AlphaElement != null)
                 m_AlphaElement.value = color.a * 100.0f;
 
-            color = new Color(color.r, color.g, color.b, 1.0f);
+            var colorWithoutAlpha = new Color(color.r, color.g, color.b);
 
-            if(Color.defaultColorNames.TryGetValue(color, out var name))
+            if(Color.defaultColorNames.TryGetValue(colorWithoutAlpha, out var name))
                 m_ColorContainer.tooltip = $"{ObjectNames.CapitaliseFirstLetter(name)} {color.ToString()}";
             else
                 m_ColorContainer.tooltip = color.ToString();
 
             if (hdr)
             {
-                color = color.gamma;
-                ColorMutator.DecomposeHdrColor(color.linear, out var baseColor, out _);
+                colorWithoutAlpha = colorWithoutAlpha.gamma;
+                ColorMutator.DecomposeHdrColor(colorWithoutAlpha.linear, out var baseColor, out _);
                 Color gradientColor = ((Color)baseColor).gamma;
 
                 if (m_LeftGradient != null)
@@ -416,19 +416,19 @@ namespace UnityEditor.UIElements
                 {
                     var leftAlphaTex = ColorPicker.GetGradientTextureWithAlpha0To1();
                     m_LeftAlphaGradient.style.backgroundImage = leftAlphaTex;
-                    m_LeftAlphaGradient.style.unityBackgroundImageTintColor = color;
+                    m_LeftAlphaGradient.style.unityBackgroundImageTintColor = colorWithoutAlpha;
                 }
 
                 if (m_RightAlphaGradient != null)
                 {
                     var rightAlphaTex = ColorPicker.GetGradientTextureWithAlpha1To0();
                     m_RightAlphaGradient.style.backgroundImage = rightAlphaTex;
-                    m_RightAlphaGradient.style.unityBackgroundImageTintColor = color;
+                    m_RightAlphaGradient.style.unityBackgroundImageTintColor = colorWithoutAlpha;
                 }
             }
 
             if (m_ColorElement != null)
-                m_ColorElement.style.backgroundColor = color;
+                m_ColorElement.style.backgroundColor = colorWithoutAlpha;
         }
 
         void OnAttach(AttachToPanelEvent evt)

@@ -19,6 +19,7 @@ namespace UnityEngine.Analytics
 
     [RequiredByNativeCode(GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public class AnalyticsEventBase
     {
         string eventName;
@@ -28,10 +29,10 @@ namespace UnityEngine.Analytics
         string eventPrefix;
 
        SendEventOptions sendEventOptions;
-        
+
         public string EventName() { return eventName; }
         public int EventVersion() { return eventVersion; }
-        
+
         public string EventPrefix() { return eventPrefix; }
 
         public AnalyticsEventBase(string eventName, int eventVersion, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone, string eventPrefix = "") {this.eventName = eventName; this.eventVersion = eventVersion; this.sendEventOptions = sendEventOptions; this.eventPrefix = eventPrefix; }

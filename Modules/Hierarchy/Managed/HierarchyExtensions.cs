@@ -5,35 +5,56 @@
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Extension methods on <see cref="Hierarchy"/>.
+    /// Provides extension methods for <see cref="Hierarchy"/> to access and enumerate node type handlers.
     /// </summary>
     public static partial class HierarchyExtensions
     {
         /// <summary>
-        /// Get an hierarchy node type handler instance from this hierarchy.
+        /// Gets a <see cref="HierarchyNodeTypeHandler"/> instance from this hierarchy.
         /// </summary>
-        /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
-        /// <returns>The hierarchy node the handler.</returns>
+        /// <remarks>
+        /// Use this method to retrieve a specific <see cref="HierarchyNodeTypeHandler"/> when you know the exact type at compile time. 
+        /// </remarks>
+        /// <typeparam name="T">The type of the <see cref="HierarchyNodeTypeHandler"/>.</typeparam>
+        /// <returns>The <see cref="HierarchyNodeTypeHandler"/>.</returns>
         public static T GetNodeTypeHandler<T>(this Hierarchy hierarchy) where T : HierarchyNodeTypeHandler => hierarchy.GetNodeTypeHandlerBase<T>();
+
+        /// <summary>
+        /// Gets the <see cref="HierarchyNodeTypeHandler"/> instance for the specified node from this hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// Use this method to retrieve a specific <see cref="HierarchyNodeTypeHandler"/> instance from a specific <see cref="HierarchyNode"/>. 
+        /// </remarks>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> to get the <see cref="HierarchyNodeTypeHandler"/> from.</param>
+        /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="HierarchyNodeTypeHandler"/> for.</param>
+        /// <returns>The <see cref="HierarchyNodeTypeHandler"/>.</returns>
+        public static HierarchyNodeTypeHandler GetNodeTypeHandler(this Hierarchy hierarchy, in HierarchyNode node)
+        {
+            var handlerBase = hierarchy.GetNodeTypeHandlerBase(in node);
+            return handlerBase as HierarchyNodeTypeHandler;
+        }
 
         /// <summary>
         /// Get the node type handler instance for the specified node from this hierarchy.
         /// </summary>
-        /// <param name="hierarchy">The hierarchy.</param>
+        /// <param name="hierarchyViewModel">The hierarchy view model.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The hierarchy node the handler.</returns>
-        public static HierarchyNodeTypeHandler GetNodeTypeHandler(this Hierarchy hierarchy, in HierarchyNode node)
+        public static HierarchyNodeTypeHandler GetNodeTypeHandler(this HierarchyViewModel hierarchyViewModel, in HierarchyNode node)
         {
-            var handlerBase = hierarchy.GetNodeTypeHandlerBase(in node);
-            return handlerBase is HierarchyNodeTypeHandler handler ? handler : null;
+            var handlerBase = hierarchyViewModel.GetNodeTypeHandlerBase(in node);
+            return handlerBase as HierarchyNodeTypeHandler;
         }
 
         /// <summary>
-        /// Get the node type handler instance for the specified node type name from this hierarchy.
+        /// Gets the <see cref="HierarchyNodeTypeHandler"/> instance for the specified node type name from this hierarchy.
         /// </summary>
-        /// <param name="hierarchy">The hierarchy.</param>
-        /// <param name="nodeTypeName">The node type name.</param>
-        /// <returns>The hierarchy node the handler.</returns>
+        /// <remarks>
+        /// Use this method to retrieve a specific <see cref="HierarchyNodeTypeHandler"/> instance from a node type name. 
+        /// </remarks>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> to get the <see cref="HierarchyNodeTypeHandler"/> from.</param>
+        /// <param name="nodeTypeName">The node type name to get the <see cref="HierarchyNodeTypeHandler"/> for.</param>
+        /// <returns>The <see cref="HierarchyNodeTypeHandler"/>.</returns>
         public static HierarchyNodeTypeHandler GetNodeTypeHandler(this Hierarchy hierarchy, string nodeTypeName)
         {
             var handlerBase = hierarchy.GetNodeTypeHandlerBase(nodeTypeName);
@@ -41,9 +62,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Enumerate all the node type handlers used by this hierarchy.
+        /// Enumerates all the <see cref="HierarchyNodeTypeHandler"/> instances used by this hierarchy.
         /// </summary>
-        /// <returns>An enumerable of hierarchy node type handler.</returns>
+        /// <remarks>
+        /// Use this method to enumerate all the <see cref="HierarchyNodeTypeHandler"/> instances used by this hierarchy.
+        /// </remarks>
+        /// <returns>The enumerable of <see cref="HierarchyNodeTypeHandler"/> instances.</returns>
         public static HierarchyNodeTypeHandlerEnumerable EnumerateNodeTypeHandlers(this Hierarchy hierarchy) => new HierarchyNodeTypeHandlerEnumerable(hierarchy);
     }
 }

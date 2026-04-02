@@ -29,9 +29,7 @@ namespace UnityEditor.Presets
         internal void Init(Object[] targets)
         {
             m_Targets = targets;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_InitialValues = targets.Select(a => new Preset(a)).ToArray();
-#pragma warning restore UA2001
+            m_InitialValues = Array.ConvertAll(targets, a => new Preset(a));
         }
 
         public override void OnSelectionChanged(Preset selection)

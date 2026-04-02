@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -18,14 +17,14 @@ internal class UnlockAction : PackageAction
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         var packageUniqueIds = packages.SelectToNewArray(p => p.uniqueId);
-        m_PageManager.activePage.SetPackagesUserUnlockedState(packageUniqueIds, true);
+        m_PageManager.activePage.SetUserUnlockedState(packageUniqueIds, true);
         PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: packageUniqueIds);
         return true;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        m_PageManager.activePage.SetPackagesUserUnlockedState(new string[1] { version.package.uniqueId }, true);
+        m_PageManager.activePage.SetUserUnlockedState(new string[1] { version.package.uniqueId }, true);
         PackageManagerWindowAnalytics.SendEvent("unlock", version.package.uniqueId);
         return true;
     }

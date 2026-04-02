@@ -18,7 +18,7 @@ namespace Unity.U2D.Physics.Editor
         {
             var root = new VisualElement();
 
-            var foldout = new Foldout { text = property.displayName, viewDataKey = typeof(ContactFilterPropertyDrawer).ToString() };
+            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(ContactFilterPropertyDrawer).ToString() };
             root.Add(foldout);
 
             const string categoriesTypeName = nameof(PhysicsShape.ContactFilter.m_Categories);
@@ -31,7 +31,6 @@ namespace Unity.U2D.Physics.Editor
 
             var categoriesBindingPath = $"{categoriesTypeName}.{nameof(PhysicsShape.ContactFilter.categories.bitMask)}";
             var contactsBindingPath = $"{contactsTypeName}.{nameof(PhysicsShape.ContactFilter.contacts.bitMask)}";
-            var groupIndexBindingPath = $"{contactsTypeName}.{nameof(PhysicsShape.ContactFilter.m_GroupIndex)}";
 
             // Find if we need to show as a basic 64-bit mask.
             var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsShape.ContactFilter>(property);
@@ -70,8 +69,7 @@ namespace Unity.U2D.Physics.Editor
                 contacts.AddToClassList(Mask64Field.alignedFieldUssClassName);
                 foldout.Add(contacts);
 
-                var groupIndex = new IntegerField(groupIndexProperty.displayName) { bindingPath = groupIndexBindingPath };
-                groupIndex.AddToClassList(IntegerField.alignedFieldUssClassName);
+                var groupIndex = new PropertyField(groupIndexProperty);
                 foldout.Add(groupIndex);
 
                 return root;
@@ -81,11 +79,10 @@ namespace Unity.U2D.Physics.Editor
             {
                 var categories = new LayerMaskField(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
                 var contacts = new LayerMaskField(contactsProperty.displayName) { bindingPath = contactsBindingPath };
-                var groupIndex = new IntegerField(groupIndexProperty.displayName) { bindingPath = groupIndexBindingPath };
+                var groupIndex = new PropertyField(groupIndexProperty);
 
                 categories.AddToClassList(LayerMaskField.alignedFieldUssClassName);
                 contacts.AddToClassList(LayerMaskField.alignedFieldUssClassName);
-                groupIndex.AddToClassList(IntegerField.alignedFieldUssClassName);
 
                 foldout.Add(categories);
                 foldout.Add(contacts);

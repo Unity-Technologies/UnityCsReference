@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
@@ -61,6 +62,13 @@ namespace UnityEditor.Search
         /// Unique id of this item among this provider items.
         /// </summary>
         public readonly string id;
+
+        SearchAsyncResult<SearchItemParentDescriptor> m_ParentDescriptor = SearchAsyncResult<SearchItemParentDescriptor>.Unresolved;
+        internal SearchItemParentDescriptor parentDescriptor
+        {
+            [VisibleToOtherModules]
+            get => m_ParentDescriptor.Value;
+        }
 
         /// <summary>
         /// The item score can affect how the item gets sorted within the same provider.
@@ -159,6 +167,47 @@ namespace UnityEditor.Search
         {
             id = _id;
             provider = defaultProvider;
+        }
+
+        /// <summary>
+        /// Get the <see cref="SearchItemParentDescriptor"/> for this item.
+        /// </summary>
+        /// <param name="context">Any search context for the item provider.</param>
+        /// <returns>A <see cref="SearchItemParentDescriptor"/>.</returns>
+        [VisibleToOtherModules]
+        internal SearchItemParentDescriptor GetParentDescriptor(SearchContext context)
+        {
+            if (m_ParentDescriptor.State is SearchAsyncResolutionState.Failed or SearchAsyncResolutionState.Resolved)
+                return m_ParentDescriptor.Value;
+
+            if (provider?.fetchParentDescriptor != null)
+                m_ParentDescriptor = new SearchAsyncResult<SearchItemParentDescriptor>(provider.fetchParentDescriptor(this, context), SearchAsyncResolutionState.Resolved);
+            else
+                m_ParentDescriptor = new SearchAsyncResult<SearchItemParentDescriptor>(default, SearchAsyncResolutionState.Resolved);
+
+            return m_ParentDescriptor.Value;
+        }
+
+        /// <summary>
+        /// Set the parent descriptor result.
+        /// </summary>
+        /// <param name="parentDescriptorResult">A <see cref="SearchItemParentDescriptor"/> for this item.</param>
+        internal void SetParentDescriptor(SearchItemParentDescriptor parentDescriptorResult)
+        {
+            m_ParentDescriptor = new SearchAsyncResult<SearchItemParentDescriptor>(parentDescriptorResult, SearchAsyncResolutionState.Resolved);
+        }
+
+        /// <summary>
+        /// Split a parent id into hierarchical parents for parent descriptors with the type <see cref="SearchItemParentType.TokenSeparatedId"/>.
+        /// The list must be populated with <see cref="StringView"/>s that correspond to each parent's label, ordered by ancestry (root to leaf, or left to right in the id string).
+        /// </summary>
+        /// <returns></returns>
+        internal void GetParentsTokenSeparatedIds(SearchContext ctx, List<StringView> idsList)
+        {
+            if (provider?.fetchParentsTokenSeparatedIds != null)
+                provider.fetchParentsTokenSeparatedIds(this, ctx, idsList);
+            else
+                parentDescriptor.Id.GetStringView().Split(SearchItemParentDescriptor.DefaultSeparatorTokens, idsList);
         }
 
         /// <summary>
@@ -289,7 +338,7 @@ namespace UnityEditor.Search
         {
             if (provider != null && provider.toEntityId != null)
                 return provider.toEntityId(this);
-            return EntityId.None;
+            return EntityId.FromULong((ulong)GetHashCode());
         }
 
         /// <summary>

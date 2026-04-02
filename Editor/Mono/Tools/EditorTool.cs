@@ -66,12 +66,12 @@ namespace UnityEditor.EditorTools
         
         internal static event Action<EditorTool> stateChanged;
 
-        internal void Activate()
+        internal void Activate(Type toolOwnerType)
         {
             if(m_Active
                 // Prevent to reenable the tool if this is not the active one anymore
                 // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
-                || this != EditorToolManager.activeTool)
+                || this != EditorToolManager.GetActiveTool(toolOwnerType))
                 return;
 
             OnActivated();

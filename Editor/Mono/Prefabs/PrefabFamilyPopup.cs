@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEditor.SceneManagement;
-using System.Linq;
 using System;
 using UnityEngine.Assertions;
 
@@ -206,9 +205,7 @@ namespace UnityEditor
                     m_NamesWidth = Mathf.Max(GUI.skin.label.CalcSize(EditorGUIUtility.TempContent(prefabName)).x + 40, m_NamesWidth);
                 }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_OverridesCounter = new OverridesCounterForPrefabAssets(m_AncestorItems.Select(x => AssetDatabase.LoadAssetAtPath<GameObject>(x.assetPath)).ToList());
-#pragma warning restore UA2001
+                m_OverridesCounter = new OverridesCounterForPrefabAssets(Array.ConvertAll(m_AncestorItems, x => AssetDatabase.LoadAssetAtPath<GameObject>(x.assetPath)));
                 EditorApplication.update += CalculateOverrideCountsTimeSliced;
 
                 float scrollBarWidthOffset = numRows >= k_MaxTableRows ? k_ScrollbarWidth : 0;
@@ -639,7 +636,7 @@ namespace UnityEditor
 
     class OverridesCounterForPrefabAssets
     {
-        List<GameObject> m_PrefabAssetRoots;
+        GameObject[] m_PrefabAssetRoots;
         List<int> m_OverridesCount;
         int m_CurrentAssetIndex;
         int m_CurrentStep;
@@ -647,11 +644,11 @@ namespace UnityEditor
 
         bool m_Debug = false;
 
-        public OverridesCounterForPrefabAssets(List<GameObject> prefabInstanceRoots)
+        public OverridesCounterForPrefabAssets(GameObject[] prefabInstanceRoots)
         {
             m_PrefabAssetRoots = prefabInstanceRoots;
             m_OverridesCount = new List<int>();
-            m_OverridesCount.AddRange(new int[prefabInstanceRoots.Count]);
+            m_OverridesCount.AddRange(new int[prefabInstanceRoots.Length]);
         }
 
         public bool changedCount => m_ChangedCount;
@@ -663,7 +660,7 @@ namespace UnityEditor
 
         bool IsDone()
         {
-            return m_CurrentAssetIndex >= m_PrefabAssetRoots.Count -1; // No more prefabs to process (last prefab is the root prefab which does not have overrides)
+            return m_CurrentAssetIndex >= m_PrefabAssetRoots.Length - 1; // No more prefabs to process (last prefab is the root prefab which does not have overrides)
         }
 
         // Returns true if overrides count changed during the update

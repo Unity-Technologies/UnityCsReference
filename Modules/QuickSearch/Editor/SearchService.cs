@@ -4,16 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEditor.Profiling;
 using Unity.Collections;
-
-
 
 using System.Reflection;
 
@@ -652,7 +647,7 @@ namespace UnityEditor.Search
         private static void RefreshProviderActions()
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
+            foreach (SearchAction action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
 #pragma warning restore UA2001
                      .Select(methodInfo => {
                          try
@@ -666,7 +661,7 @@ namespace UnityEditor.Search
                          }
                      }).Where(actionArray => actionArray != null)
                      .SelectMany(actionArray => actionArray)
-                     .Where(action => action != null).Cast<SearchAction>())
+                     .Where(action => action != null))
             {
                 var provider = Providers.Find(p => p.id == action.providerId);
                 if (provider == null)
@@ -850,9 +845,8 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static bool IsIndexReady(string name)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001, UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SearchDatabase.EnumerateAll().Where(db =>
-#pragma warning restore UA2001
             {
                 if (string.IsNullOrEmpty(name))
                     return true;
@@ -862,6 +856,7 @@ namespace UnityEditor.Search
                     return true;
                 return false;
             }).All(db => db.ready && !db.updating);
+#pragma warning restore UA2001, UA2008
         }
 
         static bool TryParseExpression(SearchContext context, out SearchExpression expression)
@@ -956,7 +951,7 @@ namespace UnityEditor.Search
             context.options |= flags | SearchFlags.OpenPicker;
             var state = SearchViewState.CreatePickerState(title, context, selectHandler, trackingHandler, filterHandler);
             state.position = new Rect(0, 0, defaultWidth, defaultHeight);
-            state.itemSize = itemSize;
+            state.itemIconSize = itemSize;
             return state;
         }
     }

@@ -7,95 +7,31 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     [CustomPropertyDrawer(typeof(Loadable<>))]
     internal sealed class LoadableDrawer : PropertyDrawer
     {
-        static readonly string kAssetGUIDPropName = "m_LoadableRef.m_GUID";
-        static readonly string kIdentifierTypePropName = "m_LoadableRef.m_Type";
-        static readonly string kLfidPropName = "m_LoadableRef.m_FileID";
-
         // Override CreatePropertyGUI and OnGUI to support both UI tech.
         // If only CreatePropertyGUI is overriden the property drawer wouldn't work in an IMGUI context (CBD-841).
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var loadableRef = ReadReference(property, out var guidProperty, out var fileIdentifierProperty, out var localIdentifierInFileProperty);
+            var loadableRefProp = property.FindPropertyRelative("m_LoadableRef");
             var loadableType = FindLoadableType(property);
+            var loadableReferenceField = new LoadableReferenceField(preferredLabel, loadableType);
+            loadableReferenceField.BindProperty(loadableRefProp);
 
-            var objectField = new ObjectField(property.displayName)
-            {
-                allowSceneObjects = false,
-                objectType = loadableType
-            };
-            objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
-            objectField.labelElement.AddToClassList(PropertyField.labelUssClassName);
+            PropertyField.ConfigureFieldStyles<LoadableReferenceField, LoadableReference>(loadableReferenceField);
 
-            if (!loadableRef.m_GUID.Empty())
-                objectField.value = LoadableReferenceEditorUtility.LoadableReferenceToObject(loadableRef);
-
-            objectField.RegisterValueChangedCallback(evt => OnValueChanged(evt.newValue, property, guidProperty, fileIdentifierProperty, localIdentifierInFileProperty));
-            return objectField;
+            return loadableReferenceField;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var loadableRef = ReadReference(property, out var guidProperty, out var fileIdentifierProperty, out var localIdentifierInFileProperty);
+            var loadableRefProp = property.FindPropertyRelative("m_LoadableRef");
             var loadableType = FindLoadableType(property);
-
-            Object value = null;
-            if (!loadableRef.m_GUID.Empty())
-                value = LoadableReferenceEditorUtility.LoadableReferenceToObject(loadableRef);
-
-            EditorGUI.BeginChangeCheck();
-            label = EditorGUI.BeginProperty(position, label, property);
-            value = EditorGUI.ObjectField(position, label, value, loadableType, false);
-
-            if (EditorGUI.EndChangeCheck())
-                OnValueChanged(value, property, guidProperty, fileIdentifierProperty, localIdentifierInFileProperty);
-        }
-
-        private static LoadableReference ReadReference(SerializedProperty property, out SerializedProperty guidProp, out SerializedProperty fileIdentifierProp, out SerializedProperty lfidProp)
-        {
-            guidProp = property.FindPropertyRelative(kAssetGUIDPropName);
-            fileIdentifierProp = property.FindPropertyRelative(kIdentifierTypePropName);
-            lfidProp = property.FindPropertyRelative(kLfidPropName);
-
-            if (guidProp == null || fileIdentifierProp == null || lfidProp == null)
-            {
-                Debug.LogError($"{nameof(LoadableDrawer)} cannot find required properties. GUID: {guidProp != null}, Type: {fileIdentifierProp != null}, FileID: {lfidProp != null}");
-                return LoadableReferenceEditorUtility.CreateLoadableReference(new GUID(), FileIdentifierType.NonAsset, 0);
-            }
-            return LoadableReferenceEditorUtility.CreateLoadableReference(guidProp.guidValue, (FileIdentifierType)fileIdentifierProp.intValue, lfidProp.longValue);
-        }
-
-        private static void OnValueChanged(Object value, SerializedProperty property, SerializedProperty guidProp, SerializedProperty fileIdentifierProp, SerializedProperty lfidProp)
-        {
-            if (value == null)
-            {
-                guidProp.guidValue = default;
-                fileIdentifierProp.intValue = default;
-                lfidProp.longValue = default;
-            }
-            else
-            {
-                LoadableReference lRef = LoadableReferenceEditorUtility.ObjectToLoadableReference(value);
-                if (lRef.isValid)
-                {
-                    guidProp.guidValue = lRef.m_GUID;
-                    fileIdentifierProp.intValue = (int)lRef.m_FileIdentifierType;
-                    lfidProp.longValue = lRef.m_LocalIdentifierInFile;
-                }
-                else
-                {
-                    Debug.LogWarning("Unable to assign Loadable. Only objects from Assets can be assigned.", value);
-                    return;
-                }
-            }
-
-            property.serializedObject.ApplyModifiedProperties();
+            LoadableReferenceEditorUtility.DrawLoadableReferenceField(position, loadableRefProp, label, loadableType);
         }
 
         private static Type FindLoadableType(SerializedProperty property)
@@ -138,7 +74,7 @@ namespace UnityEditor
             if (genericType.IsGenericType && genericType.GetGenericTypeDefinition() == typeof(Loadable<>))
                 return genericType.GetGenericArguments()[0];
 
-            return typeof(Object);
+            return typeof(UnityEngine.Object);
         }
     }
 }

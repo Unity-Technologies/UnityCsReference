@@ -423,9 +423,7 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.entityIds = insertedScenes.Select(x => x.handle).ToArray().ToEntityIdArray();
 #pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        m_TreeView.Frame(insertedScenes.Last().handle.ToEntityId(), true, false);
-#pragma warning restore UA2001
+                        m_TreeView.Frame(insertedScenes[^1].handle.ToEntityId(), true, false);
                     }
                 }
                 else // reorderExistingScenes

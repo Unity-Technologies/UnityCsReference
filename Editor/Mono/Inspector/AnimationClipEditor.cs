@@ -12,7 +12,6 @@ using System.Globalization;
 using AnimatorController = UnityEditor.Animations.AnimatorController;
 using AnimatorControllerLayer = UnityEditor.Animations.AnimatorControllerLayer;
 using UnityEditorInternal;
-using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor
 {
@@ -20,6 +19,15 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class AnimationClipEditor : Editor
     {
+        internal enum WrapModeFixed
+        {
+            Default = (int)WrapMode.Default,
+            Once = (int)WrapMode.Once,
+            Loop = (int)WrapMode.Loop,
+            ClampForever = (int)WrapMode.ClampForever,
+            PingPong = (int)WrapMode.PingPong
+        }
+
         internal static void EditWithImporter(AnimationClip clip)
         {
             ModelImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(clip)) as ModelImporter;
@@ -1099,7 +1107,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clips[0].wrapMode;
-            wrap = (int)(WrapModeFixedCurve)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixedCurve)wrap);
+            wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixed)wrap);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_ClipInfo != null)
@@ -1783,10 +1791,10 @@ namespace UnityEditor
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
 
         private bool[] m_EventsSelected;
-        private UnityEditor.AnimationWindowBuiltin.AnimationWindowEvent[] m_Events;
+        private UnityEditor.AnimationEventWrapper[] m_Events;
 
         private TimeArea m_Timeline;
-        private UnityEditor.AnimationWindowBuiltin.AnimationEventEditorState m_EventEditorState = new();
+        private UnityEditor.AnimationEventEditorState m_EventEditorState = new();
 
         public EventManipulationHandler(TimeArea timeArea)
         {
@@ -1900,7 +1908,7 @@ namespace UnityEditor
                         hasChanged = DeleteEvents(ref events, m_EventsSelected);
                         break;
                     case HighLevelEvent.Copy:
-                        AnimationWindowEventsClipboard.CopyEvents(events, m_EventsSelected);
+                        AnimationEventsClipboard.CopyEvents(events, m_EventsSelected);
                         break;
                     case HighLevelEvent.Paste:
                         hasChanged = PasteEvents(ref events, ref m_EventsSelected, currentTime);
@@ -1921,7 +1929,7 @@ namespace UnityEditor
                         {
                             order[i] = i;
                         }
-                        System.Array.Sort(m_EventsAtMouseDown, order, new AnimationEventTimeLine.EventComparer());
+                        System.Array.Sort(m_EventsAtMouseDown, order, new AnimationEventComparer());
                         bool[] selectedOld = (bool[])m_EventsSelected.Clone();
                         float[] timesOld = (float[])m_EventTimes.Clone();
                         for (int i = 0; i < order.Length; i++)
@@ -1976,7 +1984,7 @@ namespace UnityEditor
                 menu.AddDisabledItem(AnimationClipEditor.Styles.DeleteEvents);
                 menu.AddDisabledItem(AnimationClipEditor.Styles.CopyEvents);
             }
-            if (AnimationWindowEventsClipboard.CanPaste())
+            if (AnimationEventsClipboard.CanPaste())
                 menu.AddItem(AnimationClipEditor.Styles.PasteEvents, false, EventLineContextMenuPaste, ctx);
             else
                 menu.AddDisabledItem(AnimationClipEditor.Styles.PasteEvents);
@@ -2030,7 +2038,7 @@ namespace UnityEditor
         static void EventLineContextMenuCopy(object obj)
         {
             var ctx = (EventModificationContextMenuObject)obj;
-            AnimationWindowEventsClipboard.CopyEvents(ctx.m_Info.GetEvents(), ctx.m_Selected, ctx.m_Index);
+            AnimationEventsClipboard.CopyEvents(ctx.m_Info.GetEvents(), ctx.m_Selected, ctx.m_Index);
         }
 
         void EventLineContextMenuPaste(object obj)
@@ -2077,9 +2085,9 @@ namespace UnityEditor
         {
             EditorGUI.indentLevel++;
             if (m_Events != null && m_Events.Length > 0)
-                AnimationWindowEventInspector.OnEditAnimationEvents(m_Events, m_EventEditorState);
+                AnimationEventWrapperInspector.OnEditAnimationEvents(m_Events, m_EventEditorState);
             else
-                AnimationWindowEventInspector.OnDisabledAnimationEvent();
+                AnimationEventWrapperInspector.OnDisabledAnimationEvent();
 
             EditorGUI.indentLevel--;
 
@@ -2122,7 +2130,7 @@ namespace UnityEditor
 
         static bool PasteEvents(ref AnimationEvent[] eventList, ref bool[] selected, float time)
         {
-            var newEvents = AnimationWindowEventsClipboard.AddPastedEvents(eventList, time, out var newSelected);
+            var newEvents = AnimationEventsClipboard.AddPastedEvents(eventList, time, out var newSelected);
             if (newEvents == null)
                 return false;
             eventList = newEvents;
@@ -2132,12 +2140,12 @@ namespace UnityEditor
 
         public void EditEvents(AnimationClipInfoProperties clipInfo, bool[] selectedIndices)
         {
-            List<AnimationWindowEvent> awEvents = new List<AnimationWindowEvent>();
+            List<AnimationEventWrapper> awEvents = new List<AnimationEventWrapper>();
 
             for (int index = 0; index < selectedIndices.Length; ++index)
             {
                 if (selectedIndices[index])
-                    awEvents.Add(AnimationWindowEvent.Edit(clipInfo, index));
+                    awEvents.Add(AnimationEventWrapper.Edit(clipInfo, index));
             }
 
             m_Events = awEvents.ToArray();
@@ -2148,7 +2156,7 @@ namespace UnityEditor
             if (m_Events == null)
                 return;
 
-            foreach (AnimationWindowEvent awEvent in m_Events)
+            foreach (AnimationEventWrapper awEvent in m_Events)
             {
                 awEvent.clipInfo = clipInfo;
             }

@@ -164,7 +164,7 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Tries to return the InstanceID that represents this ObjectIdentifier.</summary>
         ///<remarks>Returns 0 if the ObjectIdentifier is invalid.</remarks>
-        [Obsolete("Deprecated, use ToEntityId instead.")]
+        [Obsolete("Deprecated, use ToEntityId instead.", true)]
         public static int ToInstanceID(ObjectIdentifier objectId) => ToEntityId(objectId);
         ///<summary>Tries to return the EntityId that represents this ObjectIdentifier.</summary>
         ///<remarks>Returns EntityId.None if the ObjectIdentifier is invalid.</remarks>

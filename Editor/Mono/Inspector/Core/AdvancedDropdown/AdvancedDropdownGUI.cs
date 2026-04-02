@@ -27,6 +27,8 @@ namespace UnityEditor.IMGUI.Controls
                 margin = new RectOffset(5, 4, 4, 5)
             };
             public static SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
+            public static GUIStyle helpBox;
+            public static GUIStyle helpBoxText;
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
 
@@ -36,6 +38,16 @@ namespace UnityEditor.IMGUI.Controls
             {
                 headerEllipsis.padding.left = 20;
                 headerEllipsis.clipping = TextClipping.Ellipsis;
+                helpBox = new GUIStyle(EditorStyles.helpBox)
+                {
+                    padding = new RectOffset(8, 8, 8, 8),
+                    margin = new RectOffset(6, 6, 6, 6)
+                };
+
+                helpBoxText = new GUIStyle(EditorStyles.label)
+                {
+                    wordWrap = true,
+                };
             }
         }
 
@@ -144,6 +156,46 @@ namespace UnityEditor.IMGUI.Controls
             GUI.color = GUI.color * tintColor;
             GUI.DrawTexture(rect, EditorGUIUtility.whiteTexture);
             GUI.color = orgColor;
+        }
+
+        internal virtual void DrawHelpBox(AdvancedDropdownItem.HelpBoxDropdownItem helpBoxItem)
+        {
+            // Height must be computed with the same style as the calculate height
+            float height = CalcHelpBoxHeight(helpBoxItem);
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.helpBox, GUILayout.ExpandWidth(true), GUILayout.Height(height));
+
+            // Compute inner rect (respects helpbox padding)
+            var inner = Styles.helpBox.padding.Remove(rect);
+
+            // Icon settings
+            const float iconSize = 24f;
+            const float gap = 6f;
+
+            var icon = EditorGUIUtility.GetHelpIcon(helpBoxItem.type);
+
+            // Center icon vertically within the inner rect
+            float iconY = inner.y + (inner.height - iconSize) * 0.5f;
+            var iconRect = new Rect(inner.x, iconY, iconSize, iconSize);
+
+            // Text rect starts after icon
+            float textX = iconRect.xMax + gap;
+            var textRect = new Rect(textX, inner.y, inner.xMax - textX, inner.height);
+
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            // Background
+            GUI.Label(rect, GUIContent.none, Styles.helpBox);
+
+            // Icon + Text
+            GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true);
+            GUI.Label(textRect, helpBoxItem.message, Styles.helpBoxText);
+        }
+
+        internal float CalcHelpBoxHeight(AdvancedDropdownItem.HelpBoxDropdownItem helpBoxItem)
+        {
+            float contentWidth = EditorGUIUtility.currentViewWidth;
+            return Styles.helpBoxText.CalcHeight(new GUIContent(helpBoxItem.message), contentWidth) + Styles.helpBox.padding.vertical * 2;
         }
 
         internal void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed, bool hasParent)
@@ -293,6 +345,10 @@ namespace UnityEditor.IMGUI.Controls
                 if (child.IsSeparator())
                 {
                     maxHeight += Styles.lineSeparator.CalcHeight(content, maxWidth) + Styles.lineSeparator.margin.vertical;
+                }
+                else if (child is AdvancedDropdownItem.HelpBoxDropdownItem helpBox)
+                {
+                    maxHeight += CalcHelpBoxHeight(helpBox);
                 }
                 else
                 {

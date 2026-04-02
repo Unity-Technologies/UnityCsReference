@@ -24,9 +24,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
         UndoStateComponent m_CurrentUndoStateComponent;
 
         [NonSerialized]
-        GraphModelStateComponent.StateUpdater m_CurrentGraphModelStateUpdater;
-
-        [NonSerialized]
         List<INode> m_Nodes;
 
         public Graph Graph => m_Graph;
@@ -122,8 +119,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanAssignTo(PortModel destination, PortModel source)
         {
-            if(destination.DataTypeHandle == TypeHandle.ExecutionFlow)
-                return source.DataTypeHandle == TypeHandle.ExecutionFlow;
+            if(destination.PortDataType == typeof(Untyped))
+                return source.PortDataType == typeof(Untyped);
             return destination.PortDataType.IsAssignableFrom(source.PortDataType);
         }
 
@@ -168,24 +165,26 @@ namespace Unity.GraphToolkit.Editor.Implementation
             return true;
         }
 
-        public void RegisterUndo(string actionName )
+        public void UndoBeginRecordGraph(string actionName )
         {
-            if (m_CurrentUndoStateComponent != null)
-                return;
+            CheckModificationLock();
 
             var window = GraphViewEditorWindowImp.GetOpenedWindow((GraphObjectImp)GraphObject);
 
             if (window?.GraphTool?.UndoState != null && window.GraphView?.GraphModel == this)
             {
+                if (m_CurrentUndoStateComponent != null)
+                {
+                    throw new InvalidOperationException("An undo operation has already been registered to the Graph.");
+                }
+
                 m_CurrentUndoStateComponent = window.GraphTool.UndoState;
                 m_CurrentUndoStateComponent.BeginOperation(actionName);
                 using (var undoStateUpdater = m_CurrentUndoStateComponent.UpdateScope)
                 {
                     undoStateUpdater.SaveState(window.GraphView.GraphViewModel.GraphModelState);
                 }
-
                 PushNewGraphChangeDescription();
-                m_CurrentGraphModelStateUpdater = window.GraphView.GraphViewModel.GraphModelState.UpdateScope;
             }
             else
             {
@@ -206,21 +205,32 @@ namespace Unity.GraphToolkit.Editor.Implementation
             return null;
         }
 
-        public void EndUndo()
+        public void UndoEndRecordGraph()
         {
-            try
+            CheckModificationLock();
+
+            var window = GraphViewEditorWindowImp.GetOpenedWindow((GraphObjectImp)GraphObject);
+
+            if (window != null && window.GraphView?.GraphModel == this)
             {
-                if (m_CurrentUndoStateComponent != null)
+                try
                 {
-                    m_CurrentGraphModelStateUpdater.MarkUpdated(CurrentGraphChangeDescription);
-                    m_CurrentGraphModelStateUpdater.Dispose();
+                    if (m_CurrentUndoStateComponent == null)
+                    {
+                        throw new InvalidOperationException(
+                            "There is no undo operation currently registered to the Graph. Use RegisterUndo to begin recording an undo operation.");
+                    }
+
+                    var currentGraphModelStateUpdater = window.GraphView.GraphViewModel.GraphModelState.UpdateScope;
+                    currentGraphModelStateUpdater.MarkUpdated(CurrentGraphChangeDescription);
+                    currentGraphModelStateUpdater.Dispose();
                     PopGraphChangeDescription();
                     m_CurrentUndoStateComponent.EndOperation();
                 }
-            }
-            finally
-            {
-                m_CurrentUndoStateComponent = null;
+                finally
+                {
+                    m_CurrentUndoStateComponent = null;
+                }
             }
         }
 
@@ -242,9 +252,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             if (valueType == null)
             {
                 if (defaultValue != null)
-                    throw new ArgumentException("Cannot provide a default value for an Execution Flow variable (valueType is null).", nameof(defaultValue));
+                    throw new ArgumentException("Cannot provide a default value for an Untyped variable (valueType is null).", nameof(defaultValue));
 
-                typeHandle = TypeHandle.ExecutionFlow;
+                typeHandle = TypeHandle.Untyped;
             }
             else
             {
@@ -663,6 +673,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 case ConstantNodeModel constantNodeModel:
                     return SupportedTypes.Contains(constantNodeModel.Type);
 
+                case WirePortalModel portalNodeModel:
+                    return SupportedTypes.Contains(portalNodeModel.GetPortDataTypeHandle().Resolve());
+
                 case SubgraphNodeModel subgraphNodeModel:
                     var subgraph = (subgraphNodeModel.GetSubgraphModel() as GraphModelImp)?.Graph ??
                                    (GraphReference.ResolveGraphModel(subgraphNodeModel.SubgraphReference) as GraphModelImp)?.Graph;
@@ -711,7 +724,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanPasteVariable(VariableDeclarationModelBase originalModel)
         {
-            return originalModel is VariableDeclarationModel && SupportedTypes.Contains(originalModel.DataType.Resolve());
+            return originalModel is VariableDeclarationModel && 
+                   SupportedTypes.Contains(originalModel.DataType.Resolve());
         }
 
         public override bool CanBeDroppedInOtherGraph(GraphModel otherGraph)
@@ -766,6 +780,17 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        void RemoveNodeFromNodeModel(AbstractNodeModel nodeModel)
+        {
+            if (nodeModel is IUserNodeModelImp imp)
+            {
+                m_Nodes.Remove(imp.Node);
+                imp.CallOnDisable();
+            }
+            else if( nodeModel is IVariableNode || nodeModel is IConstantNode || nodeModel is ISubgraphNode )
+                m_Nodes.Remove((INode)nodeModel);
+        }
+
         protected override void AddNode(AbstractNodeModel nodeModel)
         {
             BuildNodesFromNodeModels();
@@ -780,17 +805,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override void RemoveNode(AbstractNodeModel nodeModel)
         {
-            if (m_Nodes != null)
-            {
-                if (nodeModel is IUserNodeModelImp imp)
-                {
-                    m_Nodes.Remove(imp.Node);
-                    imp.CallOnDisable();
-                }
-                else if( nodeModel is IVariableNode || nodeModel is IConstantNode || nodeModel is ISubgraphNode )
-                    m_Nodes.Remove((INode)nodeModel);
-            }
-
+            BuildNodesFromNodeModels();
+            RemoveNodeFromNodeModel(nodeModel);
             base.RemoveNode(nodeModel);
         }
 
@@ -905,14 +921,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             foreach (var input in node.GetInputPorts())
             {
-                if (input.DataType != null)
-                    hashSet.Add(input.DataType);
+                hashSet.Add(input.DataType ?? typeof(Untyped));
             }
 
             foreach (var output in node.GetOutputPorts())
             {
-                if (output.DataType != null)
-                    hashSet.Add(output.DataType);
+                hashSet.Add(output.DataType ?? typeof(Untyped));
             }
         }
 
@@ -986,6 +1000,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
             base.OnAfterDeserialize();
 
             m_Graph?.SetImplementation(this);
+        }
+
+        public override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            // Clear the nodes list so that it is rebuilt next time it is accessed
+            m_Nodes = null;
         }
     }
 }

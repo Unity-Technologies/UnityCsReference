@@ -362,18 +362,28 @@ namespace UnityEditorInternal
         extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1, Scene destScene = default);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
-        extern public static DragAndDropVisualMode ProjectWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, bool perform);
+        extern public static DragAndDropVisualMode ProjectWindowDragV2(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(HierarchyIterator.BindingsMarshaller))]
+            HierarchyIterator iterator, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
-        [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead")]
-        extern public static DragAndDropVisualMode ProjectWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, bool perform);
+
+        [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead", true)]
+        extern public static DragAndDropVisualMode ProjectWindowDrag(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(HierarchyPropertyCustomMarshaller))]
+            HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        extern public static DragAndDropVisualMode HierarchyWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDragV2(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(HierarchyIterator.BindingsMarshaller))]
+            HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead")]
-        extern public static DragAndDropVisualMode HierarchyWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
-        [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead")]
+        [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead", true)]
+        extern public static DragAndDropVisualMode HierarchyWindowDrag(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(HierarchyPropertyCustomMarshaller))]
+            HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+
+        [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead", true)]
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
             => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
         public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
@@ -515,19 +525,19 @@ namespace UnityEditorInternal
         [FreeFunction("PPtr<Object>::FromEntityId")]
         extern public static Object GetObjectFromEntityId(EntityId entityId);
 
-        [Obsolete("GetObjectFromInstanceID(int) is obsolete. Use GetObjectFromEntityId(EntityId) instead")]
+        [Obsolete("GetObjectFromInstanceID(int) is obsolete. Use GetObjectFromEntityId(EntityId) instead", true)]
         public static Object GetObjectFromInstanceID(int instanceID) => GetObjectFromEntityId(instanceID);
 
         [FreeFunction("GetTypeWithoutLoadingObject")]
         extern public static Type GetTypeWithoutLoadingObject(EntityId entityId);
 
-        [Obsolete("GetTypeWithoutLoadingObject(int) is obsolete. Use GetTypeWithoutLoadingObject(EntityId) instead.")]
+        [Obsolete("GetTypeWithoutLoadingObject(int) is obsolete. Use GetTypeWithoutLoadingObject(EntityId) instead.", true)]
         public static Type GetTypeWithoutLoadingObject(int instanceID) => GetTypeWithoutLoadingObject((EntityId)instanceID);
 
         [FreeFunction("Object::IDToPointer")]
         extern public static Object GetLoadedObjectFromEntityId(EntityId entityId);
 
-        [System.Obsolete("GetLoadedObjectFromInstanceID(int) is obsolete. Use GetLoadedObjectFromEntityId(EntityId) instead.")]
+        [System.Obsolete("GetLoadedObjectFromInstanceID(int) is obsolete. Use GetLoadedObjectFromEntityId(EntityId) instead.", true)]
         public static Object GetLoadedObjectFromInstanceID(int instanceID) => GetLoadedObjectFromEntityId(instanceID);
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
@@ -636,7 +646,7 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::GetGameObjectEntityIdFromComponent")]
         public static extern EntityId GetGameObjectEntityIdFromComponent(EntityId entityId);
-        [Obsolete("GetGameObjectInstanceIDFromComponent(int) is obsolete. Use GetGameObjectEntityIdFromComponent(EntityId) instead.")]
+        [Obsolete("GetGameObjectInstanceIDFromComponent(int) is obsolete. Use GetGameObjectEntityIdFromComponent(EntityId) instead.", true)]
         public static int GetGameObjectInstanceIDFromComponent(int instanceID) => GetGameObjectEntityIdFromComponent(instanceID);
 
         [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixel")]
@@ -744,28 +754,24 @@ namespace UnityEditorInternal
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultScreenWidth", TargetType.Field)]
         extern public static float defaultScreenWidth
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultScreenHeight", TargetType.Field)]
         extern public static float defaultScreenHeight
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultWebScreenWidth", TargetType.Field)]
         extern public static float defaultWebScreenWidth
         {
             get;
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        [NativeProperty("defaultWebScreenHeight", TargetType.Field)]
         extern public static float defaultWebScreenHeight
         {
             get;
@@ -1077,7 +1083,7 @@ namespace UnityEditorInternal
         }
 
         [FreeFunction("InternalEditorUtilityBindings::PrepareDragAndDropTestingInternal")]
-        extern internal static void PrepareDragAndDropTestingInternal(GUIView guiView);
+        extern internal static void PrepareDragAndDropTestingInternal([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(GUIView.NativeHandleMarshaller))]GUIView guiView);
 
         [FreeFunction("InternalEditorUtilityBindings::LayerMaskToConcatenatedLayersMaskInternal")]
         extern private static int LayerMaskToConcatenatedLayersMaskInternal(int mask);

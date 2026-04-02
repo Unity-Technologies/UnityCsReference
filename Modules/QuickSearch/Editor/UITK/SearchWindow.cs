@@ -64,6 +64,7 @@ namespace UnityEditor.Search
         private const string k_RightSplitterViewDataKey = "search-right-splitter__view-data-key";
         private SearchView m_SearchView = default;
         private SearchToolbar m_SearchToolbar;
+        private SearchGroupBar m_GroupBar;
         private SearchAutoCompleteWindow m_SearchAutoCompleteWindow;
         private VisualElement m_SearchQueryPanelContainer;
         private VisualElement m_DetailsPanelContainer;
@@ -72,6 +73,7 @@ namespace UnityEditor.Search
         private List<SearchProvider> m_AvailableProviders;
         private bool m_HasAssetProvider;
         Dictionary<string, (ShortcutBinding, Action)> m_ShortcutBindings;
+        private SearchStatusBar m_StatusBar;
         [SerializeField] protected int m_ContextHash;
         [SerializeField] private float m_PreviousItemSize = -1;
         [SerializeField] protected SearchViewState m_ViewState = null;
@@ -116,6 +118,7 @@ namespace UnityEditor.Search
         public ISearchList results => m_SearchView.results;
         public DisplayMode displayMode => m_SearchView.displayMode;
         public float itemIconSize { get => m_SearchView?.itemSize ?? 0; set => m_SearchView.itemSize = value; }
+        public string currentResultViewId { get => m_SearchView?.currentResultViewId ?? "empty"; set => m_SearchView.currentResultViewId = value; }
 
         public bool multiselect { get => m_SearchView.multiselect; set => m_SearchView.multiselect = value; }
         public bool guiCreated { get; private set; } = false;
@@ -139,7 +142,7 @@ namespace UnityEditor.Search
             else
                 m_SearchView?.RegisterCallback<AttachToPanelEvent>(SetFocusOnViewAttached);
             body.Add(CreateContent(m_SearchView));
-            body.Add(new SearchStatusBar("SearchStatusBar", this));
+            body.Add(m_StatusBar = new SearchStatusBar("SearchStatusBar", this));
 
             m_SearchView?.Refresh(); // Call Refresh after it is attached.
 
@@ -161,10 +164,11 @@ namespace UnityEditor.Search
 
         public void Update()
         {
-            if (guiCreated && m_SearchView != null)
-                m_SearchView.UpdateIncrementalTimed(k_MaxUpdateTime);
+            if (!guiCreated)
+                return;
 
-            if (m_HasAssetProvider && !m_IsWarningWindowDismissed)
+            m_SearchView?.UpdateIncrementalTimed(k_MaxUpdateTime);
+            if (m_HasAssetProvider && !m_IsWarningWindowDismissed && m_IndexingWarningWindow != null)
             {
                 m_IsWarningWindowDismissed = m_IndexingWarningWindow.CheckIndexing();
             }
@@ -199,9 +203,15 @@ namespace UnityEditor.Search
         {
             var e = evt.target as VisualElement;
 
-            if (HandleKeyboardNavigation(e, evt, evt.imguiEvent))
+            var focusedElement = rootVisualElement.focusController.focusedElement;
+            var globalNavigationResult = HandleKeyboardNavigation(e, evt, evt.imguiEvent);
+            if (globalNavigationResult.Handled)
             {
                 evt.StopImmediatePropagation();
+
+                // Restore focus in case we lost it because we sent another event.
+                if (globalNavigationResult.KeepFocusOnOriginalElement)
+                    focusedElement.Focus();
             }
         }
 
@@ -225,7 +235,7 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private bool HandleKeyboardNavigation(VisualElement target, KeyDownEvent evt, Event imguiEvt)
+        private SearchGlobalEventHandlerResult HandleKeyboardNavigation(VisualElement target, KeyDownEvent evt, Event imguiEvt)
         {
             // Note: Inspector done with IMGUI (ex: transform, Light...) can allow TextField editing that is not done through a UIElements.TextElement so
             // assume all KeyDownEvent coming from UIElements.InspectorElement needs to be handle by the Embedded Inspector.
@@ -240,8 +250,9 @@ namespace UnityEditor.Search
             if (HandleShortcuts(evt))
                 return true;
 
-            if (SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt))
-                return true;
+            var globalHandlerResult = SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt);
+            if (globalHandlerResult.Handled)
+                return globalHandlerResult;
 
             if (imguiEvt != null && HandleDefaultPressEnter(imguiEvt))
                 return true;
@@ -284,7 +295,7 @@ namespace UnityEditor.Search
                     }
                     return true;
                 }
-                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None)
+                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None && !viewState.queryBuilderEnabled)
                 {
                     m_SearchAutoCompleteWindow.Show(m_SearchToolbar);
                     return true;
@@ -314,11 +325,14 @@ namespace UnityEditor.Search
 
         private VisualElement CreateContent(SearchView resultView)
         {
-            var groupBar = !viewState.hideTabs ? new SearchGroupBar("SearchGroupbar", this) : null;
+            m_GroupBar = !viewState.hideTabs ? new SearchGroupBar("SearchGroupbar", this) : null;
 
             var resultContainer = SearchElement.Create<VisualElement>("SearchResultContainer", "search-panel", "search-result-container", "search-splitter__flexed-pane");
-            if (groupBar != null)
-                resultContainer.Add(groupBar);
+            if (m_GroupBar != null)
+            {
+                m_GroupBar.SortingChanged += OnGroupBarSortingChanged;
+                resultContainer.Add(m_GroupBar);
+            }
 
             m_IndexingWarningWindow = new SearchIndexingWarningWindow(this, m_IsWarningWindowDismissed);
             resultContainer.Add(m_IndexingWarningWindow);
@@ -355,6 +369,11 @@ namespace UnityEditor.Search
 
             m_RightSplitter.RegisterCallback<GeometryChangedEvent>(UpdateLayout);
             return m_RightSplitter;
+        }
+
+        private void OnGroupBarSortingChanged(ISearchListComparer comparer)
+        {
+            m_SearchView?.SetSearchItemComparer(comparer);
         }
 
         private void UpdateLayout(GeometryChangedEvent evt)
@@ -461,6 +480,7 @@ namespace UnityEditor.Search
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;
 
+            m_StatusBar.UpdateDisplayModeButtons();
             // TODO OptimSearchEvents: this might rebuild the table + RefreshViewContent
             m_SearchView.UpdateViewAndEmitDisplayModeChange();
 
@@ -524,8 +544,8 @@ namespace UnityEditor.Search
             // Execute default action
             var item = selection.First();
             if (item.provider.actions.Count > actionIndex)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), true);
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                ExecuteAction(item.provider.actions[actionIndex], selection.ToArray(), true);
 #pragma warning restore UA2001
         }
 
@@ -627,6 +647,11 @@ namespace UnityEditor.Search
             if (m_CustomPanelContainer != null)
                 m_CustomPanelContainer.config = null;
 
+            if (m_GroupBar != null)
+                m_GroupBar.SortingChanged -= OnGroupBarSortingChanged;
+
+            UnregisterSearchEventHandlers();
+
             ClearShortcutBindings();
             s_FocusedWindow = null;
 
@@ -635,9 +660,9 @@ namespace UnityEditor.Search
 
             try
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
-#pragma warning restore UA2001
+#pragma warning restore UA2011
             }
             catch
             {
@@ -659,6 +684,15 @@ namespace UnityEditor.Search
 
             // End search session
             context.Dispose();
+        }
+
+        void UnregisterSearchEventHandlers()
+        {
+            foreach (var eventOff in m_SearchEventOffs)
+            {
+                eventOff?.Invoke();
+            }
+            m_SearchEventOffs.Clear();
         }
 
         internal protected virtual bool IsSavedSearchQueryEnabled()
@@ -751,7 +785,7 @@ namespace UnityEditor.Search
 
         bool HasAssetProvider()
         {
-            foreach (var provider in context.GetProviders()) 
+            foreach (var provider in context.GetProviders())
             {
                 if (provider.id == AssetProvider.type)
                     return true;
@@ -999,11 +1033,9 @@ namespace UnityEditor.Search
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allEnabledProviders = m_AvailableProviders.Where(p => context.IsEnabled(p.id));
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2005, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleProviderEnabled = allEnabledProviders.Count() == 1 ? allEnabledProviders.First() : null;
-#pragma warning restore UA2001
-#pragma warning restore UA2005
+#pragma warning restore UA2005, UA2010
             foreach (var p in m_AvailableProviders)
             {
                 var filterContent = new GUIContent($"{p.name} ({p.filterId})");
@@ -1186,13 +1218,16 @@ namespace UnityEditor.Search
         {
             args.group = SearchUtils.GetValidGroupForState(args, args.group);
             if (context?.options.HasAny(SearchFlags.Expression) ?? false)
-                args.itemSize = (int)DisplayMode.Table;
+            {
+                args.SetDisplayMode(DisplayMode.Table);
+            }
 
             if (args.queryTreeConfig == null || args.queryTreeConfig.NodeSources == null || args.queryTreeConfig.NodeSources == null || args.queryTreeConfig.NodeSources.Length == 0)
             {
                 args.queryTreeConfig = SearchQueryTreeConfig.CreateDefault();
             }
             m_HasAssetProvider = HasAssetProvider();
+            args.ValidateState();
         }
 
         protected virtual void LoadSessionSettings()
@@ -1252,7 +1287,7 @@ namespace UnityEditor.Search
             if (m_SearchView != null)
                 SearchSettings.SetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, currentGroup);
 
-            SearchSettings.itemIconSize = viewState.itemSize;
+            SearchSettings.itemIconSize = viewState.itemIconSize;
 
             SearchSettings.Save();
         }

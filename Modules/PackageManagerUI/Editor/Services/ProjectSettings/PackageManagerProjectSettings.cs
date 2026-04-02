@@ -217,7 +217,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return !string.IsNullOrWhiteSpace(info.id) && !string.IsNullOrWhiteSpace(info.name)
                 && !string.IsNullOrWhiteSpace(info.url) && info.scopes.Length > 0
-                && !info.scopes.AnyMatches(string.IsNullOrWhiteSpace);
+                && !Array.Exists(info.scopes, string.IsNullOrWhiteSpace);
         }
 
         void OnEnable()

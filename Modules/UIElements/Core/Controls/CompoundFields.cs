@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/RectField.png")]
     public partial class RectField : BaseCompositeField<Rect, FloatField, float>
     {
@@ -68,14 +69,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-rect-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of RectField.
@@ -90,10 +96,10 @@ namespace UnityEngine.UIElements
         public RectField(string label)
             : base(label, 2)
         {
-            AddToClassList(ussClassName);
-            AddToClassList(twoLinesVariantUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            AddToClassList(twoLinesVariantUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -101,6 +107,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/RectIntField.png")]
     public partial class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
@@ -156,14 +163,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-rect-int-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of RectIntField.
@@ -178,10 +190,10 @@ namespace UnityEngine.UIElements
         public RectIntField(string label)
             : base(label, 2)
         {
-            AddToClassList(ussClassName);
-            AddToClassList(twoLinesVariantUssClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            AddToClassList(twoLinesVariantUssClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -189,6 +201,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2Field|UXML element Vector2Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Vector2Field.png")]
     public partial class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
@@ -238,14 +251,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector2-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Vector2Field.
@@ -260,9 +278,9 @@ namespace UnityEngine.UIElements
         public Vector2Field(string label)
             : base(label, 2)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -270,6 +288,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3Field|UXML element Vector3Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Vector3Field.png")]
     public partial class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
@@ -322,14 +341,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector3-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Vector3Field.
@@ -344,9 +368,9 @@ namespace UnityEngine.UIElements
         public Vector3Field(string label)
             : base(label, 3)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -355,6 +379,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector4"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector4Field|UXML element Vector4Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Vector4Field.png")]
     public partial class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
@@ -410,14 +435,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector4-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Vector4Field.
@@ -432,9 +462,9 @@ namespace UnityEngine.UIElements
         public Vector4Field(string label)
             : base(label, 4)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -443,6 +473,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxml-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Vector2IntField.png")]
     public partial class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
@@ -493,14 +524,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector2-int-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Vector2IntField.
@@ -515,9 +551,9 @@ namespace UnityEngine.UIElements
         public Vector2IntField(string label)
             : base(label, 2)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 
@@ -525,6 +561,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3IntField|UXML element Vector3IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Vector3IntField.png")]
     public partial class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
@@ -577,14 +614,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector3-int-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Vector3IntField.
@@ -599,9 +641,9 @@ namespace UnityEngine.UIElements
         public Vector3IntField(string label)
             : base(label, 3)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
     }
 }

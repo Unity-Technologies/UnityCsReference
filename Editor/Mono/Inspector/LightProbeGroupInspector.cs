@@ -89,7 +89,7 @@ namespace UnityEditor
         private IEnumerable<Vector3> SelectedProbePositions()
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Selection.Select(t => m_SourcePositions[t]).ToList();
+            return m_Selection.Select(t => m_SourcePositions[t]);
 #pragma warning restore UA2001
         }
 
@@ -117,7 +117,7 @@ namespace UnityEditor
             var writer = new StringWriter();
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            serializer.Serialize(writer, localPositions.Select(pos => m_Group.transform.TransformPoint(pos)).ToArray());
+            serializer.Serialize(writer, localPositions.Select(m_Group.transform.TransformPoint).ToArray());
 #pragma warning restore UA2001
             writer.Close();
             GUIUtility.systemCopyBuffer = writer.ToString();

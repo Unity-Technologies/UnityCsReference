@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.Editor.Implementation;
+using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -60,6 +61,11 @@ namespace Unity.GraphToolkit.Editor
         /// The <see cref="Graph"/> that owns this variable.
         /// </summary>
         Graph Graph => (((VariableDeclarationModelBase)this).GraphModel as GraphModelImp)?.Graph;
+
+        /// <summary>
+        /// The globally unique identifier for this variable declaration.
+        /// </summary>
+        Hash128 Guid { get; }
 
         /// <summary>
         /// Retrieves the default value of the variable.

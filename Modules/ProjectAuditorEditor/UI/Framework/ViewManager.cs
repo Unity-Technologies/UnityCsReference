@@ -19,8 +19,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
-        [SerializeField] HashSet<IssueCategory> m_PendingCategories;
-        [SerializeField] HashSet<string> m_PendingModuleNames;
+        HashSet<IssueCategory> m_PendingCategories;
+        HashSet<string> m_PendingModuleNames;
 
         public Report Report => m_Report;
 
@@ -34,21 +34,21 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         // events that trigger future operations
         public Action<IssueCategory> OnAnalysisRequested { get; set; }
-        public Action<ReportItem[]>  OnSelectedIssuesIgnoreRequested { get; set; }
-        public Action<ReportItem[]>  OnSelectedIssuesDisplayRequested { get; set; }
-        public Action<ReportItem[]>  OnSelectedIssuesQuickFixRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesIgnoreRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesDisplayRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesQuickFixRequested { get; set; }
 
         // events based on past operations
         public Action OnViewExportCompleted { get; set; }
 
         public ViewManager()
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            : this(ViewDescriptor.GetAll().Select(d => d.Category).ToArray())
+            : this(ViewDescriptor.GetAll().Select(d => d.Category))
 #pragma warning restore UA2001
         {
         }
 
-        public ViewManager(IssueCategory[] categories)
+        public ViewManager(IEnumerable<IssueCategory> categories)
         {
             m_Categories = categories.ToSerializableArray();
             m_ActiveViewIndex = 0;

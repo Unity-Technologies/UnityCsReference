@@ -63,9 +63,7 @@ namespace UnityEditor
 
         internal ModuleUI GetParticleSystemRendererModuleUI()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Modules.Last();
-#pragma warning restore UA2001
+            return m_Modules[^1];
         }
 
         internal Bounds GetBounds()
@@ -103,14 +101,10 @@ namespace UnityEditor
             // Create RendererModuleUI
             if (renderers.Count > 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                System.Diagnostics.Debug.Assert(m_Modules.Last() == null); // If hitting this assert we have either not cleaned up the previous renderer or hitting another module
-#pragma warning restore UA2001
+                System.Diagnostics.Debug.Assert(m_Modules[^1] == null); // If hitting this assert we have either not cleaned up the previous renderer or hitting another module
 
                 m_RendererSerializedObject = new SerializedObject(renderers.ToArray());
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Modules[m_Modules.Length - 1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames.Last());
-#pragma warning restore UA2001
+                m_Modules[^1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames[^1]);
             }
         }
 
@@ -521,9 +515,7 @@ namespace UnityEditor
                 }
 
             // Default setup has a renderer
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_Modules.Last() == null)
-#pragma warning restore UA2001
+            if (m_Modules[^1] == null)
                 InitRendererUI();
 
             // Default setup has shape, emission and renderer

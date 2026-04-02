@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_Description;
-        public string description => m_Description ?? string.Empty;
+        public virtual string description => m_Description ?? string.Empty;
 
         [SerializeField]
         protected string m_MinimumUnityVersion;
@@ -136,44 +136,74 @@ namespace UnityEditor.PackageManager.UI.Internal
             SemVersionParser.TryParse(m_VersionString, out m_Version);
         }
 
-        public virtual bool MatchesSearchText(string searchText)
+        public virtual bool MatchesSearchText(string searchText, SearchTextParams searchParams = SearchTextParams.All)
         {
             if (string.IsNullOrEmpty(searchText))
                 return true;
 
-            if (name.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            if (searchParams.HasFlag(SearchTextParams.TechnicalName) &&
+                name.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                 return true;
 
-            if (!string.IsNullOrEmpty(displayName) && displayName.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            if (searchParams.HasFlag(SearchTextParams.Description) &&
+                !string.IsNullOrEmpty(description) && description.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                 return true;
 
-            var prerelease = searchText.StartsWith("-") ? searchText.Substring(1) : searchText;
-            if (version != null && ((SemVersion)version).Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            if (searchParams.HasFlag(SearchTextParams.DisplayName) &&
+                !string.IsNullOrEmpty(displayName) && displayName.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                 return true;
 
-            // searching for pre-release if search text matches with search term 'pre', case-insensitive
-            const string prereleaseSearchText = "Pre";
-            if (HasTag(PackageTag.PreRelease) && prereleaseSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                return true;
+            if (searchParams.HasFlag(SearchTextParams.VersionRelated) && version != null)
+            {
+                var prerelease = searchText.StartsWith('-') ? searchText.Substring(1) : searchText;
+                if (version.Value.Prerelease.Contains(prerelease, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+                if (version?.StripTag().StartsWith(searchText, StringComparison.CurrentCultureIgnoreCase) == true)
+                    return true;
+            }
 
-            // searching for experimental if search text matches with search term 'experimental', case-insensitive
-            const string experimentalSearchText = "Experimental";
-            if (HasTag(PackageTag.Experimental) && experimentalSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                return true;
+            // searching for pre-release, experimental, or release tags if search text matches, case-insensitive
+            if (searchParams.HasFlag(SearchTextParams.TagKeyword))
+            {
+                const string prereleaseSearchText = "Pre";
+                const string experimentalSearchText = "Experimental";
+                if (HasTag(PackageTag.PreRelease) &&
+                    prereleaseSearchText.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+                if (HasTag(PackageTag.Experimental) &&
+                    experimentalSearchText.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+                if (HasTag(PackageTag.Release) &&
+                    PackageTag.Release.ToString().Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+            }
 
-            if (HasTag(PackageTag.Release) && PackageTag.Release.ToString().IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                return true;
-
-            if (version?.StripTag().StartsWith(searchText, StringComparison.CurrentCultureIgnoreCase) == true)
-                return true;
-
-            if (!string.IsNullOrEmpty(category))
+            if (searchParams.HasFlag(SearchTextParams.Categories) &&
+                !string.IsNullOrEmpty(category))
             {
                 var words = searchText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 var categories =  category.Split('/');
                 if (words.AllMatches(word => word.Length >= 2 && Array.Exists(categories, c => c.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
                     return true;
             }
+
+            if (searchParams.HasFlag(SearchTextParams.Author))
+            {
+                var authorName = isFromUnity ? L10n.Tr("Unity Technologies") : author?.name;
+                if (!string.IsNullOrEmpty(authorName) &&
+                    authorName.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+            }
+
+            if (searchParams.HasFlag(SearchTextParams.SignatureOrgName))
+            {
+                var signatureOrg = (trustAndSignature == TrustAndSignature.FullTrustUnitySignature || trustAndSignature == TrustAndSignature.FullTrustBuiltInPackage)
+                    ? L10n.Tr("Unity Technologies") : signatureOrgName;
+                if (!string.IsNullOrEmpty(signatureOrg) &&
+                    signatureOrg.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+            }
+
             return false;
         }
     }

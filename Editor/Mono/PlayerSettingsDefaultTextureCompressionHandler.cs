@@ -270,9 +270,9 @@ namespace UnityEditor
 
         private bool UpdateTextureCompressionFormatSerialization(SerializedProperty serializedProperty, TextureCompressionFormat[] formats)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var same = m_LastSavedFormat != null && m_LastSavedFormat.Length == formats.Length && m_LastSavedFormat.SequenceEqual(formats);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
             if (same) return false;
             m_LastSavedFormat = formats;
             var intValues = Array.ConvertAll(formats, format => (int)format);

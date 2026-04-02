@@ -8,13 +8,13 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using System.Collections.Generic;
+using UnityEditor.Animations;
 using UnityEngine.SceneManagement;
 using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;
 using UnityTexture2D = UnityEngine.Texture2D;
 using UnityEditor.SceneManagement;
 using UnityEngine.Scripting;
-using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor
 {
@@ -262,8 +262,8 @@ namespace UnityEditor
             // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
             System.Array.Sort(frames, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
 
-            Animator animator = AnimationWindowWizard.EnsureActiveAnimationPlayer(gameObject)
-                ? AnimationWindowWizard.GetClosestAnimatorInParents(gameObject.transform)
+            Animator animator = MecanimUtilities.EnsureActiveAnimationPlayer(gameObject)
+                ? MecanimUtilities.GetClosestAnimatorInParents(gameObject.transform)
                 : null;
 
             bool createSuccess = animator != null;
@@ -283,11 +283,11 @@ namespace UnityEditor
                 }
                 else
                 {
-                    AnimationClip newClip = AnimationWindowWizard.CreateNewClipAtPath(newClipPath);
+                    AnimationClip newClip = MecanimUtilities.CreateNewClipAtPath(newClipPath);
                     if (newClip != null)
                     {
                         AddSpriteAnimationToClip(newClip, frames);
-                        createSuccess = AnimationWindowWizard.AddClipToAnimatorComponent(animator, newClip);
+                        createSuccess = MecanimUtilities.AddClipToAnimatorComponent(animator, newClip);
                     }
                 }
             }

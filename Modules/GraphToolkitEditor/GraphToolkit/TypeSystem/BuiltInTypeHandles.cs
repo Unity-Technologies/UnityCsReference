@@ -25,9 +25,9 @@ namespace Unity.GraphToolkit
         public static TypeHandle Unknown { get; } = TypeHandleHelpers.GenerateCustomTypeHandle(typeof(Unknown), "__UNKNOWN");
 
         /// <summary>
-        /// The ExecutionFlow type.
+        /// The Untyped type.
         /// </summary>
-        public static TypeHandle ExecutionFlow { get; } = TypeHandleHelpers.GenerateCustomTypeHandle(typeof(ExecutionFlow), "__EXECUTIONFLOW");
+        public static TypeHandle Untyped { get; } = TypeHandleHelpers.GenerateCustomTypeHandle(typeof(Untyped), "__EXECUTIONFLOW", "Untyped");
 
         /// <summary>
         /// The Subgraph type.

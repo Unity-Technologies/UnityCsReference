@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
@@ -25,6 +26,56 @@ namespace UnityEditor.UIElements
     {
         public object FromString(string value, CreationContext cc);
         public string ToString(object value, VisualTreeAsset visualTreeAsset);
+    }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal readonly struct UxmlAttributeConversionResult
+    {
+        public readonly bool success;
+        public readonly string error;
+        public readonly Object context;
+        public readonly Exception exception;
+
+        public bool hasError => !string.IsNullOrEmpty(error) || exception != null;
+
+        UxmlAttributeConversionResult(bool success, string error = null, Object context = null, Exception exception = null)
+        {
+            this.success = success;
+            this.error = error;
+            this.context = context;
+            this.exception = exception;
+        }
+
+        public string GenerateFullErrorMessage(string attributeName)
+        {
+            if (!hasError)
+                return null;
+
+            var message = error;
+            if (exception != null)
+                message = string.IsNullOrEmpty(message) ? exception.ToString() : $"{message}\n{exception}";
+
+            return $"{attributeName}: {message}";
+        }
+
+        public void DefaultErrorAction()
+        {
+            if (success || !hasError)
+                return;
+
+            if (exception == null)
+                Debug.LogError(error, context);
+            else if (string.IsNullOrEmpty(error))
+                Debug.LogException(exception, context);
+            else
+                Debug.LogException(new Exception(error, exception), context);
+        }
+
+        public static UxmlAttributeConversionResult Success()
+            => new(true);
+
+        public static UxmlAttributeConversionResult Failure(string error = null, Object context = null, Exception exception = null) 
+            => new(false, error, context, exception);
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -62,21 +113,25 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public static bool TryConvertFromString<T>(string value, CreationContext cc, out object result)
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        public static UxmlAttributeConversionResult TryConvertFromString(Type type, string value, CreationContext cc, out object result)
         {
-            return TryConvertFromString(typeof(T), value, cc, out result);
-        }
+            result = default;
 
-        public static bool TryConvertFromString(Type type, string value, CreationContext cc, out object result)
-        {
             if (TryGetConverter(type, out var converter))
             {
-                result = converter.FromString(value, cc);
-                return true;
+                try
+                {
+                    result = converter.FromString(value, cc);
+                    return UxmlAttributeConversionResult.Success();
+                }
+                catch (Exception e)
+                {
+                    return UxmlAttributeConversionResult.Failure($"Failed to convert value '{value}' to type {type.Name}", null, e);
+                }
             }
 
-            result = default;
-            return false;
+            return UxmlAttributeConversionResult.Failure();
         }
 
         public static bool TryConvertToString(object value, VisualTreeAsset visualTreeAsset, out string result)
@@ -91,7 +146,7 @@ namespace UnityEditor.UIElements
 
         static bool TryConvertToString(Type type, object value, VisualTreeAsset visualTreeAsset, out string result)
         {
-            Debug.Assert(type.IsInstanceOfType(value));
+            Assert.IsTrue(type.IsInstanceOfType(value));
 
             // Handle RuntimeType.
             if (typeof(Type).IsAssignableFrom(type))
@@ -133,6 +188,16 @@ namespace UnityEditor.UIElements
                     if (HasConverter(genericTypeArgument0))
                     {
                         converterType = typeof(ListAttributeConverter<>).MakeGenericType(genericTypeArgument0);
+                        s_RegisteredConverterTypes[type] = converterType;
+                        return true;
+                    }
+                }
+                else if (genericTypeDefinition == typeof(StyleList<>))
+                {
+                    var genericTypeArgument0 = type.GetGenericArguments()[0];
+                    if (HasConverter(genericTypeArgument0))
+                    {
+                        converterType = typeof(StyleListAttributeConverter<>).MakeGenericType(genericTypeArgument0);
                         s_RegisteredConverterTypes[type] = converterType;
                         return true;
                     }
@@ -186,7 +251,7 @@ namespace UnityEditor.UIElements
         {
             if (!s_Converters.TryGetValue(type, out var converter))
             {
-                Debug.Assert(s_RegisteredConverterTypes.ContainsKey(type));
+                Assert.IsTrue(s_RegisteredConverterTypes.ContainsKey(type));
                 var converterType = s_RegisteredConverterTypes[type];
                 converter = Activator.CreateInstance(converterType) as IUxmlAttributeConverter;
                 s_Converters[type] = converter;
@@ -272,6 +337,8 @@ namespace UnityEditor.UIElements
         /// </summary>
         /// <remarks>
         /// Returns an instance or value of a type from the string representation.
+        /// If the conversion fails, throw an exception with a clear error message
+        /// describing the issue. The UXML import process catches and reports the exception.
         /// </remarks>
         /// <param name="value">A string representation of the type.</param>
         /// <returns>Instance of type from the string value.</returns>
@@ -363,8 +430,8 @@ namespace UnityEditor.UIElements
     {
         public override Enum FromString(string value)
         {
-            if (Enum.TryParse(typeof(T), value, true, out var result))
-                return (Enum)result;
+            if (!string.IsNullOrEmpty(value))
+                return (Enum)Enum.Parse(typeof(T), value, true);
             return default;
         }
     }
@@ -434,7 +501,16 @@ namespace UnityEditor.UIElements
 
     internal class TypeAttributeConverter : UxmlAttributeConverter<Type>
     {
-        public override Type FromString(string value) => UxmlUtility.ParseType(value);
+        public override Type FromString(string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                var type = Type.GetType(value, true);
+                return type;
+            }
+            return null;
+        }
+
         public override string ToString(Type value) => UxmlUtility.TypeToString(value);
     }
 
@@ -445,7 +521,12 @@ namespace UnityEditor.UIElements
 
     internal class CharAttributeConverter : UxmlAttributeConverter<char>
     {
-        public override char FromString(string value) => value[0];
+        public override char FromString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return default;
+            return value[0];
+        }
     }
 
     internal class LengthAttributeConverter : UxmlAttributeConverter<Length>
@@ -472,7 +553,7 @@ namespace UnityEditor.UIElements
             // Expected format value="cx,cy,cz,sx,sy,sz"
             var items = value.Split(',');
             if (items.Length != 6)
-                return default;
+                throw new FormatException("Expected 6 comma-separated values for Bounds");
 
             return new Bounds(new Vector3(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]), UxmlUtility.ParseFloat(items[2])),
                 new Vector3(UxmlUtility.ParseFloat(items[3]), UxmlUtility.ParseFloat(items[4]), UxmlUtility.ParseFloat(items[5])));
@@ -488,7 +569,7 @@ namespace UnityEditor.UIElements
             // Expected format value="px,py,pz,sx,sy,sz"
             var items = value.Split(',');
             if (items.Length != 6)
-                return default;
+                throw new FormatException("Expected 6 comma-separated values for Bounds");
 
             return new BoundsInt(UxmlUtility.ParseInt(items[0]), UxmlUtility.ParseInt(items[1]), UxmlUtility.ParseInt(items[2]),
                 UxmlUtility.ParseInt(items[3]), UxmlUtility.ParseInt(items[4]), UxmlUtility.ParseInt(items[5]));
@@ -504,7 +585,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y,w,h"
             var items = value.Split(',');
             if (items.Length != 4)
-                return default;
+                throw new FormatException("Expected 4 comma-separated values for Rect");
 
             return new Rect(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]), UxmlUtility.ParseFloat(items[2]), UxmlUtility.ParseFloat(items[3]));
         }
@@ -519,7 +600,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y,w,h"
             var items = value.Split(',');
             if (items.Length != 4)
-                return default;
+                throw new FormatException("Expected 4 comma-separated values for Rect");
 
             return new RectInt(UxmlUtility.ParseInt(items[0]), UxmlUtility.ParseInt(items[1]), UxmlUtility.ParseInt(items[2]), UxmlUtility.ParseInt(items[3]));
         }
@@ -534,7 +615,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y"
             var items = value.Split(',');
             if (items.Length != 2)
-                return default;
+                throw new FormatException("Expected 2 comma-separated values for Vector2");
 
             return new Vector2(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]));
         }
@@ -549,7 +630,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y"
             var items = value.Split(',');
             if (items.Length != 2)
-                return default;
+                throw new FormatException("Expected 2 comma-separated values for Vector2");
 
             return new Vector2Int(UxmlUtility.ParseInt(items[0]), UxmlUtility.ParseInt(items[1]));
         }
@@ -564,7 +645,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y,z"
             var items = value.Split(',');
             if (items.Length != 3)
-                return default;
+                throw new FormatException("Expected 3 comma-separated values for Vector3");
 
             return new Vector3(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]), UxmlUtility.ParseFloat(items[2]));
         }
@@ -579,7 +660,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y,z"
             var items = value.Split(',');
             if (items.Length != 3)
-                return default;
+                throw new FormatException("Expected 3 comma-separated values for Vector3");
 
             return new Vector3Int(UxmlUtility.ParseInt(items[0]), UxmlUtility.ParseInt(items[1]), UxmlUtility.ParseInt(items[2]));
         }
@@ -594,7 +675,7 @@ namespace UnityEditor.UIElements
             // Expected format value="x,y,z,w"
             var items = value.Split(',');
             if (items.Length != 4)
-                return default;
+                throw new FormatException("Expected 4 comma-separated values for Vector4");
 
             return new Vector4(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]), UxmlUtility.ParseFloat(items[2]), UxmlUtility.ParseFloat(items[3]));
         }
@@ -749,15 +830,15 @@ namespace UnityEditor.UIElements
         public override AnimationCurve FromString(string value)
         {
             if (value == null)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Cannot parse a null string to an AnimationCurve.");
+                throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to an AnimationCurve.");
 
             var animationItems = value.Split('+');
             if (animationItems.Length < 2)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve does not have the correct format.");
+                throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
 
             var keyFrameItems = animationItems[0].Split(';');
             if (keyFrameItems.Length <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve does not have the correct format.");
+                throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve does not have the correct format.");
 
             using var pool = ListPool<Keyframe>.Get(out var keyFrames);
             foreach (var item in keyFrameItems)
@@ -765,7 +846,7 @@ namespace UnityEditor.UIElements
                 var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
                 var keyItems = valueList.Split(',');
                 if (keyItems.Length < 8)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's KeyFrame does not have enough values.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have enough values.");
 
                 var success = float.TryParse(keyItems[0], out var keyTime);
                 success &= float.TryParse(keyItems[1], out var keyValue);
@@ -779,7 +860,7 @@ namespace UnityEditor.UIElements
                 success &= Enum.TryParse<WeightedMode>(keyItems[9], out var gradientMode);
 
                 if (!success)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's KeyFrame does not have the correct format.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's KeyFrame does not have the correct format.");
 
                 var keyFrame = new Keyframe(keyTime, keyValue, inTangent, outTangent, inWeight, outWeight) { weightedMode = gradientMode };
                 AnimationUtility.SetKeyLeftTangentMode(ref keyFrame, leftTangent);
@@ -795,7 +876,7 @@ namespace UnityEditor.UIElements
             parsed &= Enum.TryParse<WrapMode>(wrapModes[1], out var postWrapMode);
 
             if (!parsed)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] AnimationCurve's wrap modes do not have the correct format.");
+                throw new ArgumentOutOfRangeException(nameof(value), "AnimationCurve's wrap modes do not have the correct format.");
 
             return new AnimationCurve(keyFrames.ToArray()) { preWrapMode = preWrapMode, postWrapMode = postWrapMode };
         }
@@ -836,21 +917,21 @@ namespace UnityEditor.UIElements
         public override Gradient FromString(string value)
         {
             if (value == null)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Cannot parse a null string to a Gradient.");
+                throw new ArgumentOutOfRangeException(nameof(value), "Cannot parse a null string to a Gradient.");
 
             var index = value.IndexOf(":");
             if (index == -1)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient mode does not have the correct format.");
+                throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode does not have the correct format.");
 
             var mode = value[..index];
             var keys = value.Remove(0, index + 1);
             var parsedMode = Enum.TryParse<GradientMode>(mode, out var gradientMode);
             if (!parsedMode)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient mode cannot be parsed correctly.");
+                throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode cannot be parsed correctly.");
 
             var gradientItems = keys.Split('+');
             if (gradientItems.Length <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's keys do not have the correct format.");
+                throw new ArgumentOutOfRangeException(nameof(value), "Gradient's keys do not have the correct format.");
 
             using var poolColor = ListPool<GradientColorKey>.Get(out var gradientColorKeys);
             var colorKeyItems = gradientItems[0].Split(';');
@@ -859,13 +940,13 @@ namespace UnityEditor.UIElements
                 var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
                 var colorKeys = valueList.Split(',');
                 if (colorKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's color key does not have enough values.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have enough values.");
 
                 var success = float.TryParse(colorKeys[0], out var time);
                 success &= ColorUtility.TryParseHtmlString(colorKeys[1], out var color);
 
                 if (!success)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's color key could not be parsed correctly.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key could not be parsed correctly.");
 
                 gradientColorKeys.Add(new GradientColorKey(color, time));
             }
@@ -877,13 +958,13 @@ namespace UnityEditor.UIElements
                 var valueList = item.Trim().Substring(1, item.Length - 2); // Remove brackets
                 var alphaKeys = valueList.Split(',');
                 if (alphaKeys.Length <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's alpha key does not have enough values.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key does not have enough values.");
 
                 var success = float.TryParse(alphaKeys[0], out var time);
                 success &= float.TryParse(alphaKeys[1], out var alpha);
 
                 if (!success)
-                    throw new ArgumentOutOfRangeException(nameof(value), "[UxmlAttributeConverter] Gradient's alpha key could not be parsed correctly.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Gradient's alpha key could not be parsed correctly.");
 
                 gradientAlphaKeys.Add(new GradientAlphaKey(alpha, time));
             }
@@ -1218,6 +1299,112 @@ namespace UnityEditor.UIElements
             return value.hotspot != Vector2.one ? $"{path} {value.hotspot.x} {value.hotspot.y}" : path;
         }
     }
+
+    internal class FilterFunctionAttributeConverter : UxmlAttributeConverter<FilterFunction>
+    {
+        public override FilterFunction FromString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return new FilterFunction();
+
+            value = value.Trim();
+            if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return new FilterFunction(FilterFunctionType.None);
+
+            var openParenIndex = value.IndexOf('(');
+            if (openParenIndex == -1)
+                return new FilterFunction();
+
+            var closeParenIndex = value.LastIndexOf(')');
+            if (closeParenIndex == -1 || closeParenIndex <= openParenIndex)
+                return new FilterFunction();
+
+            var functionName = value.Substring(0, openParenIndex).Trim().ToLower();
+            var argsString = value.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1).Trim();
+
+            FilterFunctionType functionType = functionName switch
+            {
+                "tint" => FilterFunctionType.Tint,
+                "opacity" => FilterFunctionType.Opacity,
+                "invert" => FilterFunctionType.Invert,
+                "grayscale" => FilterFunctionType.Grayscale,
+                "sepia" => FilterFunctionType.Sepia,
+                "blur" => FilterFunctionType.Blur,
+                "contrast" => FilterFunctionType.Contrast,
+                "hue-rotate" => FilterFunctionType.HueRotate,
+                _ => FilterFunctionType.None
+            };
+
+            if (functionType == FilterFunctionType.None)
+                return new FilterFunction();
+
+            var filterFunction = new FilterFunction(functionType);
+
+            if (string.IsNullOrEmpty(argsString))
+                return filterFunction;
+
+            var args = argsString.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var arg in args)
+            {
+                var trimmedArg = arg.Trim();
+                if (string.IsNullOrEmpty(trimmedArg))
+                    continue;
+
+                if (ColorUtility.TryParseHtmlString(trimmedArg, out var colorValue) ||
+                    trimmedArg.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+                {
+                    var colorConverter = new ColorAttributeConverter();
+                    colorValue = colorConverter.FromString(trimmedArg);
+                    filterFunction.AddParameter(new FilterParameter(colorValue));
+                }
+                else if (float.TryParse(trimmedArg, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
+                {
+                    filterFunction.AddParameter(new FilterParameter(floatValue));
+                }
+            }
+
+            return filterFunction;
+        }
+
+        public override string ToString(FilterFunction value)
+        {
+            var def = value.GetDefinition();
+            if (def == null || string.IsNullOrEmpty(def.filterName))
+            {
+                if (value.type == FilterFunctionType.None)
+                    return "none";
+                return string.Empty;
+            }
+
+            var sb = StringBuilderPool.Get();
+            sb.Append(def.filterName);
+            sb.Append("(");
+
+            for (int i = 0; i < value.parameterCount; i++)
+            {
+                if (i > 0)
+                    sb.Append(" ");
+
+                var param = value.GetParameter(i);
+                if (param.type == FilterParameterType.Color)
+                {
+                    sb.Append(StyleSheetToUss.ToUssString(param.colorValue));
+                }
+                else
+                {
+                    sb.Append(param.floatValue.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            sb.Append(")");
+
+            var result = sb.ToString();
+            StringBuilderPool.Release(sb);
+            return result;
+        }
+    }
+
 
     internal class FontAttributeConverter : UxmlAttributeConverter<Font>
     {
@@ -1621,8 +1808,9 @@ namespace UnityEditor.UIElements
                 return Length.None();
             }
 
-            if (char.IsLetter(value[0]) && Enum.TryParse<TransformOriginOffset>(value.Replace(",", ""), true, out var enumValue))
+            if (char.IsLetter(value[0]))
             {
+                var enumValue = Enum.Parse<TransformOriginOffset>(value.Replace(",", ""), true);
                 switch (enumValue)
                 {
                     case TransformOriginOffset.Left:

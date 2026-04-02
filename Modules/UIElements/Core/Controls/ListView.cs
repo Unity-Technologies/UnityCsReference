@@ -69,6 +69,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/ListView.png")]
     public partial class ListView : BaseListView
     {
@@ -276,7 +277,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public ListView()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             m_TemplateMakeItem = TemplateMakeItem;
         }
 
@@ -292,7 +293,7 @@ namespace UnityEngine.UIElements
         public ListView(IList itemsSource, float itemHeight = ItemHeightUnset, Func<VisualElement> makeItem = null, Action<VisualElement, int> bindItem = null)
             : base(itemsSource, itemHeight)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             m_TemplateMakeItem = TemplateMakeItem;
 
             this.makeItem = makeItem;

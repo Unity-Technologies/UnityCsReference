@@ -136,13 +136,13 @@ namespace UnityEditor
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
         public delegate void ProjectWindowItemCallback(string guid, Rect selectionRect);
-        [Obsolete("ProjectWindowItemInstanceCallback is obsolete. Use ProjectWindowItemByEntityIdCallback instead.")]
+        [Obsolete("ProjectWindowItemInstanceCallback is obsolete. Use ProjectWindowItemByEntityIdCallback instead.", true)]
         public delegate void ProjectWindowItemInstanceCallback(int instanceID, Rect selectionRect);
         public delegate void ProjectWindowItemByEntityIdCallback(EntityId entityId, Rect selectionRect);
 
         // Delegate for OnGUI events for every visible list item in the ProjectWindow.
         public static ProjectWindowItemCallback projectWindowItemOnGUI;
-        [Obsolete("projectWindowItemInstanceOnGUI is obsolete. Use projectWindowItemByEntityIdOnGUI instead.")]
+        [Obsolete("projectWindowItemInstanceOnGUI is obsolete. Use projectWindowItemByEntityIdOnGUI instead.", true)]
         public static ProjectWindowItemInstanceCallback projectWindowItemInstanceOnGUI;
         public static ProjectWindowItemByEntityIdCallback projectWindowItemByEntityIdOnGUI;
 
@@ -156,17 +156,18 @@ namespace UnityEditor
         // Can be used to ensure repaint of AnimationWindow
         public static void RepaintAnimationWindow()
         {
-            foreach (AnimEditor animEditor in AnimEditor.GetAllAnimationWindows())
-                animEditor.Repaint();
+            var allAnimationWindows = AnimationWindowCallbacks.GetAllAnimationWindows();
+            foreach (var window in allAnimationWindows)
+                window.Repaint();
         }
 
         // Delegate to be called for every visible list item in the HierarchyWindow on every OnGUI event.
-        [Obsolete("HierarchyWindowItemCallback is obsolete. Use HierarchyWindowItemByEntityIdCallback instead.")]
+        [Obsolete("HierarchyWindowItemCallback is obsolete. Use HierarchyWindowItemByEntityIdCallback instead.", true)]
         public delegate void HierarchyWindowItemCallback(int instanceID, Rect selectionRect);
         public delegate void HierarchyWindowItemByEntityIdCallback(EntityId entityId, Rect selectionRect);
 
         // Delegate for OnGUI events for every visible list item in the HierarchyWindow.
-        [Obsolete("hierarchyWindowItemOnGUI is obsolete. Use hierarchyWindowItemByEntityIdOnGUI instead.")]
+        [Obsolete("hierarchyWindowItemOnGUI is obsolete. Use hierarchyWindowItemByEntityIdOnGUI instead.", true)]
         public static HierarchyWindowItemCallback hierarchyWindowItemOnGUI;
         public static HierarchyWindowItemByEntityIdCallback hierarchyWindowItemByEntityIdOnGUI;
 
@@ -218,7 +219,7 @@ namespace UnityEditor
         public static CallbackFunction delayCall;
         private static DelegateWithPerformanceTracker<CallbackFunction> m_DelayCallEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(delayCall)}");
 
-        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        [VisibleToOtherModules("UnityEditor.BurstModule", "UnityEditor.ProjectAuditorModule")]
         internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
             var startTime = DateTime.UtcNow;
@@ -292,10 +293,19 @@ namespace UnityEditor
         }
         private static EventWithPerformanceTracker<Action<PlayModeStateChange>> m_PlayModeStateChangedEvent = new EventWithPerformanceTracker<Action<PlayModeStateChange>>($"{nameof(EditorApplication)}.{nameof(playModeStateChanged)}");
 
+        [VisibleToOtherModules]
+        internal static event Action enterPlayModePreStart
+        {
+            add => m_EnterPlayModePreStartEvent.Add(value);
+            remove => m_EnterPlayModePreStartEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action> m_EnterPlayModePreStartEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(enterPlayModePreStart)}");
+
         [Obsolete("Use EditorApplication.playModeStateChanged and/or EditorApplication.pauseStateChanged")]
         public static CallbackFunction playmodeStateChanged;
 
         // Global key up/down or mouse up/down/drag events that were not handled by anyone
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static CallbackFunction globalEventHandler;
         internal static CallbackFunction shortcutHelperBarEventHandler;
 
@@ -540,6 +550,16 @@ namespace UnityEditor
             {
                 evt(state);
             }
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_EnterPlayModePreStart()
+        {
+            if (!m_EnterPlayModePreStartEvent.hasSubscribers)
+                return;
+
+            foreach (var evt in m_EnterPlayModePreStartEvent)
+                evt();
         }
 
         [RequiredByNativeCode]

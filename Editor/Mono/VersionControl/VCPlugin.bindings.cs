@@ -53,6 +53,7 @@ namespace UnityEditor.VersionControl
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(ConfigField configField) => configField.m_Self;
+            public static ConfigField ConvertToManaged(IntPtr ptr) => new ConfigField { m_Self = ptr };
         }
     }
 
@@ -88,7 +89,6 @@ namespace UnityEditor.VersionControl
         static public extern Plugin[] availablePlugins
         {
             [FreeFunction("VersionControlBindings::Plugin::GetAvailablePlugins")]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 
@@ -102,7 +102,6 @@ namespace UnityEditor.VersionControl
         }
 
         [FreeFunction("VersionControlBindings::Plugin::GetConfigFields")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static extern ConfigField[] GetConfigFields(IntPtr plugin);
 
         internal static class BindingsMarshaller

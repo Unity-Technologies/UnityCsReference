@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// Makes a field for editing an <see cref="Hash128"/>. For more information, refer to [[wiki:UIE-uxml-element-Hash128Field|UXML element Hash128Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/Hash128Field.png")]
     public partial class Hash128Field : TextInputBaseField<Hash128>
     {
@@ -34,16 +35,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-hash128-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
 
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of Hash128Field.
@@ -67,9 +71,9 @@ namespace UnityEngine.UIElements
             : base(label, maxLength, Char.MinValue, new Hash128Input())
         {
             SetValueWithoutNotify(new Hash128());
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
         }
 
         public override Hash128 value

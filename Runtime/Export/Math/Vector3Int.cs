@@ -14,7 +14,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     [Serializable]
-    public struct Vector3Int : IEquatable<Vector3Int>, IFormattable
+    public partial struct Vector3Int : IEquatable<Vector3Int>, IFormattable
     {
         public int x
         {

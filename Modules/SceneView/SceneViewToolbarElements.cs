@@ -315,14 +315,19 @@ namespace UnityEditor.Toolbars
     [EditorToolbarElement("SceneView/Scene Visibility", typeof(SceneView))]
     sealed class SceneVisElement : EditorToolbarToggle, IAccessContainerWindow
     {
+        const int k_MaxHiddenObjectCount = 999;
+        static readonly string k_MaxHiddenObjectCountString = $"{k_MaxHiddenObjectCount}+";
+        
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
+
+        TextElement m_CountLabel;
 
         public SceneVisElement()
         {
             name = "SceneViewVisibility";
-            tooltip = "Number of hidden objects, click to toggle scene visibility";
-
+            m_CountLabel = this.Q<TextElement>(className: EditorToolbar.elementLabelClassName);
+            
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -332,12 +337,43 @@ namespace UnityEditor.Toolbars
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             sceneView.sceneVisActiveChanged += SceneViewOnsceneVisActiveChanged;
+            SceneVisibilityManager.visibilityChanged += OnSceneVisibilityChanged;
             value = sceneView.sceneVisActive;
+            UpdateHiddenObjectCount();
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.sceneVisActiveChanged -= SceneViewOnsceneVisActiveChanged;
+            SceneVisibilityManager.visibilityChanged -= OnSceneVisibilityChanged;
+        }
+
+        void OnSceneVisibilityChanged()
+        {
+            UpdateHiddenObjectCount();
+        }
+        
+        private void UpdateHiddenObjectCount()
+        {
+            var hiddenGOCount = SceneVisibilityState.GetHiddenObjectCount();
+            
+            tooltip = $"Number of hidden objects, click to toggle scene visibility\n\nCurrently hidden objects: {hiddenGOCount}";
+            text = hiddenGOCount <= k_MaxHiddenObjectCount ? hiddenGOCount.ToString() : k_MaxHiddenObjectCountString;
+            
+            if (m_CountLabel.resolvedStyle.display == DisplayStyle.Flex) // Label is only displayed in horizontal toolbars
+            {
+                // Keep the toggle's width at 4 fixed widths to prevent toolbar jitter as the text's width changes
+                if (hiddenGOCount < 10)
+                    style.width = 35;
+                else if (hiddenGOCount < 100)
+                    style.width = 45;
+                else if (hiddenGOCount < 1000)
+                    style.width = 50;
+                else 
+                    style.width = 55;
+            }
+            else
+                style.width = new StyleLength(StyleKeyword.Auto);
         }
 
         void SceneViewOnsceneVisActiveChanged(bool active)
@@ -393,7 +429,7 @@ namespace UnityEditor.Toolbars
             Add(m_GridSizeField);
 
             m_GridSettingsDropdown = new GridSettingsElement(sceneView);
-            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap settings");
+            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap Settings");
             Add(m_GridSettingsDropdown);
             
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
@@ -560,10 +596,7 @@ namespace UnityEditor.Toolbars
 
         void OnClickableOnclickedWithEventInfo(EventBase eventBase)
         {
-            if (eventBase.eventTypeId == ContextClickEvent.TypeId())
-                SceneViewCameraWindow.ShowContextMenu(sceneView);
-            else
-                PopupWindow.Show(worldBound, new SceneViewCameraWindow(sceneView));
+            PopupWindow.Show(worldBound, new SceneViewCameraWindow(sceneView));
         }
     }
 

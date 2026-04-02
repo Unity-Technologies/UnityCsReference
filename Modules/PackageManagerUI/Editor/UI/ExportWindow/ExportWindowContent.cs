@@ -45,18 +45,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageOrganizationDropdown.RegisterValueChangedCallback( _ => OnOrganizationDropdownChange());
         }
 
+        public void SetOrganizationInfos(OrganizationInfo[] organizationInfos)
+        {
+            m_OrganizationInfos = organizationInfos;
+        }
         public override void OnBeforeShowModal()
         {
             m_UpmClient.onPackOperation += OnPackOperation;
-            m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
-
+            
             Refresh();
         }
 
         public override void OnModalClosed()
         {
             m_UpmClient.onPackOperation -= OnPackOperation;
-            m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         private void OnPackOperation(IOperation operation)
@@ -89,8 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageVersionLabel.text = m_VersionToExport.version.ToString();
             packageTechnicalNameLabel.text = m_VersionToExport.name;
 
-            m_OrganizationInfos = m_UnityConnectProxy.ParseOrganizationInfos();
-            var orgNames = m_OrganizationInfos.SelectToNewArray(p => p.name);
+            var orgNames = System.Array.ConvertAll(m_OrganizationInfos, p => p.name);
             if (orgNames.Length > 0 && packageOrganizationDropdown.index == -1)
             {
                 packageOrganizationDropdown.choices = new List<string>(orgNames);
@@ -118,11 +119,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnOrganizationDropdownChange()
         {
             exportButton.SetEnabled(packageOrganizationDropdown.index != -1);
-        }
-
-        private void OnUserLoginStateChange(bool _, bool __)
-        {
-            Refresh();
         }
 
         private void OnExportButtonClicked()

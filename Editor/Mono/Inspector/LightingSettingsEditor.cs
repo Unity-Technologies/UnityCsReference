@@ -112,6 +112,16 @@ namespace UnityEditor
         SerializedProperty m_FilterMode;
         SerializedProperty m_RespectSceneVisibilityWhenBakingGI;
 
+        // unified baker
+        SerializedProperty m_DirectLightSamplingMode;
+        SerializedProperty m_DirectRISCandidateCount;
+        SerializedProperty m_IndirectLightSamplingMode;
+        SerializedProperty m_IndirectRISCandidateCount;
+        SerializedProperty m_LightAccelerationStructure;
+        SerializedProperty m_LightGridMaxCells;
+        SerializedProperty m_DirectEmissiveSamplingMode;
+        SerializedProperty m_IndirectEmissiveSamplingMode;
+
         enum DenoiserTarget
         {
             Direct = 0,
@@ -130,7 +140,7 @@ namespace UnityEditor
             };
             static readonly int[] k_BakeBackendValuesWithUnityComputeGPU =
                 k_BakeBackendValues.ConcatValue(3); // Cannot make LightingSettings.Lightmapper.UnityComputeGPU public just yet
-            public static int[] bakeBackendValues => Lightmapping.UnifiedBaker ? k_BakeBackendValuesWithUnityComputeGPU : k_BakeBackendValues;
+            public static int[] bakeBackendValues => (UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker) ? k_BakeBackendValuesWithUnityComputeGPU : k_BakeBackendValues;
 
             public static readonly GUIContent[] k_BakeBackendStrings =
             {
@@ -139,7 +149,7 @@ namespace UnityEditor
             };
             static readonly GUIContent[] k_BakeBackendStringsWithUnityComputeGPU =
                 k_BakeBackendStrings.ConcatValue(EditorGUIUtility.TrTextContent("Unity Compute (GPU)"));
-            public static GUIContent[] bakeBackendStrings => Lightmapping.UnifiedBaker ? k_BakeBackendStringsWithUnityComputeGPU : k_BakeBackendStrings;
+            public static GUIContent[] bakeBackendStrings => (UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker) ? k_BakeBackendStringsWithUnityComputeGPU : k_BakeBackendStrings;
 
             public static readonly int[] lightmapDirectionalModeValues = { (int)LightmapsMode.NonDirectional, (int)LightmapsMode.CombinedDirectional };
             public static readonly GUIContent[] lightmapDirectionalModeStrings =
@@ -211,6 +221,36 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TrTextContent("Unity"),
                 EditorGUIUtility.TrTextContent("XAtlas")
+            };
+
+            public static readonly int[] directLightSamplingModeValues = { 0, 1, 2 };
+            public static readonly GUIContent[] directLightSamplingModeStrings =
+            {
+                EditorGUIUtility.TrTextContent("RIS"),
+                EditorGUIUtility.TrTextContent("Uniform"),
+                EditorGUIUtility.TrTextContent("Round Robin"),
+            };
+
+            public static readonly int[] indirectLightSamplingModeValues = { 0, 1 };
+            public static readonly GUIContent[] indirectLightSamplingModeStrings =
+            {
+                EditorGUIUtility.TrTextContent("RIS"),
+                EditorGUIUtility.TrTextContent("Uniform"),
+            };
+
+            public static readonly int[] lightAccelerationStructureValues = { 0, 1 };
+            public static readonly GUIContent[] lightAccelerationStructureStrings =
+            {
+                EditorGUIUtility.TrTextContent("Light Grid"),
+                EditorGUIUtility.TrTextContent("None"),
+            };
+
+            public static readonly int[] emissiveSamplingModeValues = { 0, 1, 2 };
+            public static readonly GUIContent[] emissiveSamplingModeStrings =
+            {
+                EditorGUIUtility.TrTextContent("Light Sampling"),
+                EditorGUIUtility.TrTextContent("BRDF Sampling"),
+                EditorGUIUtility.TrTextContent("MIS"),
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
@@ -286,6 +326,16 @@ namespace UnityEditor
             public static readonly GUIContent xAtlasPackingAttempts = EditorGUIUtility.TrTextContent("Packing Iterations", "The number of packing attempts before determining the most efficient layout. Higher values may produce more efficient layouts but take longer to calculate.");
             public static readonly GUIContent xAtlasBlockAlign = EditorGUIUtility.TrTextContent("Block Aligned Packing", "Aligns UV charts in the lightmap to 4x4 texel boundaries. Mitigates artifacts caused by block texture compression but may reduce the efficiency of packing.");
             public static readonly GUIContent xAtlasRepackUnderutilizedLightmaps = EditorGUIUtility.TrTextContent("Repack Underused Lightmaps", "Repack low occupancy lightmaps into smaller sizes. Reduces memory usage but may increase baking time and the number of textures.");
+
+            public static readonly GUIContent lightSamplingSettings = EditorGUIUtility.TrTextContent("Light Sampling Settings", "Settings related to sampling of lights during baking.");
+            public static readonly GUIContent directLightSamplingMode = EditorGUIUtility.TrTextContent("Direct Light Sampling Mode", "The algorithm used to sample direct contribution from lights.");
+            public static readonly GUIContent directRisCandidateCount = EditorGUIUtility.TrTextContent("Direct RIS Candidate Count", "The amount of candidates to consider for each sample when using RIS for direct light sampling.");
+            public static readonly GUIContent indirectLightSamplingMode = EditorGUIUtility.TrTextContent("Indirect Light Sampling Mode", "The algorithm used to sample indirect contribution from lights.");
+            public static readonly GUIContent indirectRisCandidateCount = EditorGUIUtility.TrTextContent("Indirect RIS Candidate Count", "The amount of candidates to consider for each sample when using RIS for indirect light sampling.");
+            public static readonly GUIContent lightAccelerationStructure = EditorGUIUtility.TrTextContent("Light Acceleration Structure", "The type of acceleration structure to use for light picking.");
+            public static readonly GUIContent lightGridMaxCells = EditorGUIUtility.TrTextContent("Light Grid Max Cells", "The maximum amount of grid cells to use for the light grid. Higher numbers result in denser grids.");
+            public static readonly GUIContent directEmissiveSamplingMode = EditorGUIUtility.TrTextContent("Direct Emissive Sampling Mode", "The algorithm used to sample direct contribution from emissive meshes.");
+            public static readonly GUIContent indirectEmissiveSamplingMode = EditorGUIUtility.TrTextContent("Indirect Emissive Sampling Mode", "The algorithm used to sample indirect contribution from emissive meshes.");
 
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
         }
@@ -383,6 +433,16 @@ namespace UnityEditor
             m_FilterMode = lightingSettingsObject.FindProperty("m_FilterMode");
             m_BounceScale = lightingSettingsObject.FindProperty("m_BounceScale");
             m_RespectSceneVisibilityWhenBakingGI = lightingSettingsObject.FindProperty("m_RespectSceneVisibilityWhenBakingGI");
+
+            // unified baker
+            m_DirectLightSamplingMode = lightingSettingsObject.FindProperty("m_DirectLightSamplingMode");
+            m_DirectRISCandidateCount = lightingSettingsObject.FindProperty("m_DirectRISCandidateCount");
+            m_IndirectLightSamplingMode = lightingSettingsObject.FindProperty("m_IndirectLightSamplingMode");
+            m_IndirectRISCandidateCount = lightingSettingsObject.FindProperty("m_IndirectRISCandidateCount");
+            m_LightAccelerationStructure = lightingSettingsObject.FindProperty("m_LightAccelerationStructure");
+            m_LightGridMaxCells = lightingSettingsObject.FindProperty("m_LightGridMaxCells");
+            m_DirectEmissiveSamplingMode = lightingSettingsObject.FindProperty("m_DirectEmissiveSamplingMode");
+            m_IndirectEmissiveSamplingMode = lightingSettingsObject.FindProperty("m_IndirectEmissiveSamplingMode");
         }
 
         // Private methods
@@ -521,7 +581,9 @@ namespace UnityEditor
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
             bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
             bool lightmapperSupported = SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue);
-            if (Lightmapping.UnifiedBaker)
+
+            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+            if (usingComputeLightBaker)
                 lightmapperSupported = true;
 
             if (!bakedGISupported && !realtimeGISupported)
@@ -549,11 +611,11 @@ namespace UnityEditor
                             if (lightmapperSupported)
                             {
                                 EditorGUI.indentLevel++;
-                                if (!Lightmapping.UnifiedBaker)
+                                if (!usingComputeLightBaker)
                                     EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
                                 MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, 1 << 30);
                                 MultiEditableLogarithmicIntSlider(m_PVRSampleCount, Styles.indirectSampleCount, 1, maxIndirectSamples, 1, 1 << 30);
-                                if (!Lightmapping.UnifiedBaker)
+                                if (!usingComputeLightBaker)
                                     MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, 1 << 30);
 
                                 maxDirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxDirectSamples, m_PVRDirectSampleCount.intValue));
@@ -564,7 +626,17 @@ namespace UnityEditor
                                     EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
                                 }
 
-                                EditorGUILayout.PropertyField(m_PVRBounces, Styles.bounces);
+                                // We have a different mental model for 'bounce count' presented in the UI and 'bounce count'
+                                // passed to the baker. The user chooses a bounce count in the UI that represents how many bounces
+                                // a path from a light source needs to take to hit the eye. The fact that we use lightmapping, and
+                                // therefore have no primary rays, is an implementation detail. The bounce count passed to the baker
+                                // should represent how many bounces we actually calculate for each path.
+                                // We only use this separated mental model for the compute based baker, and leave the older
+                                // bakers as-is for compatibility.
+                                if (Rendering.EditorGraphicsSettings.defaultLightBaker == Rendering.LightBaker.UnityComputeLightBaker)
+                                    m_PVRBounces.intValue = EditorGUILayout.IntField(Styles.bounces, m_PVRBounces.intValue + 1) - 1;
+                                else
+                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.bounces);
 
                                 // Filtering
                                 EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);
@@ -758,11 +830,36 @@ namespace UnityEditor
             if (m_ShowInternalSettings.value)
             {
                 bool enableRealtimeGI = (m_EnableRealtimeGI.boolValue && !m_EnableRealtimeGI.hasMultipleDifferentValues);
+                var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+
                 EditorGUI.indentLevel++;
                 if (enableRealtimeGI)
                 {
                     EditorGUILayout.PropertyField(m_ForceWhiteAlbedo, Styles.forceWhiteAlbedo);
                     EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
+                }
+
+                // Unified-baker specific light sampling settings
+                if (usingComputeLightBaker)
+                {
+                    EditorGUILayout.PrefixLabel(Styles.lightSamplingSettings);
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.IntPopup(m_DirectLightSamplingMode, Styles.directLightSamplingModeStrings, Styles.directLightSamplingModeValues, Styles.directLightSamplingMode);
+                        using (new EditorGUI.IndentLevelScope())
+                            if (m_DirectLightSamplingMode.intValue == 0)
+                                EditorGUILayout.IntSlider(m_DirectRISCandidateCount, 1, 8, Styles.directRisCandidateCount);
+                        EditorGUILayout.IntPopup(m_IndirectLightSamplingMode, Styles.indirectLightSamplingModeStrings, Styles.indirectLightSamplingModeValues, Styles.indirectLightSamplingMode);
+                        using (new EditorGUI.IndentLevelScope())
+                            if (m_IndirectLightSamplingMode.intValue == 0)
+                                EditorGUILayout.IntSlider(m_IndirectRISCandidateCount, 1, 8, Styles.indirectRisCandidateCount);
+                        EditorGUILayout.IntPopup(m_LightAccelerationStructure, Styles.lightAccelerationStructureStrings, Styles.lightAccelerationStructureValues, Styles.lightAccelerationStructure);
+                        using (new EditorGUI.IndentLevelScope())
+                            if (m_LightAccelerationStructure.intValue == 0)
+                                EditorGUILayout.IntSlider(m_LightGridMaxCells, 1, 64 * 64 * 64 * 2, Styles.lightGridMaxCells);
+                        EditorGUILayout.IntPopup(m_DirectEmissiveSamplingMode, Styles.emissiveSamplingModeStrings, Styles.emissiveSamplingModeValues, Styles.directEmissiveSamplingMode);
+                        EditorGUILayout.IntPopup(m_IndirectEmissiveSamplingMode, Styles.emissiveSamplingModeStrings, Styles.emissiveSamplingModeValues, Styles.indirectEmissiveSamplingMode);
+                    }
                 }
 
                 EditorGUILayout.PropertyField(m_EnableWorkerProcessBaking, Styles.enableWorkerProcessBaking);
@@ -783,10 +880,10 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
                 }
 
-                    if (enableRealtimeGI)
-                        EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
+                if (enableRealtimeGI)
+                    EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
 
-                if (enableRealtimeGI || !Lightmapping.UnifiedBaker)
+                if (enableRealtimeGI || !usingComputeLightBaker)
                     Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
 
                 EditorGUILayout.BeginHorizontal();
@@ -799,7 +896,7 @@ namespace UnityEditor
                     Lightmapping.ClearDiskCache();
                 }
 
-                if (!Lightmapping.UnifiedBaker)
+                if (!usingComputeLightBaker)
                 {
                     if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.buttonWidth)))
                     {
@@ -980,19 +1077,18 @@ namespace UnityEditor
 
         void BakeBackendGUI()
         {
+            var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
-            if (!Lightmapping.UnifiedBaker)
+            if (!usingComputeLightBaker)
                 rect = EditorGUI.PrefixLabel(rect, Styles.bakeBackend);
             else
-            {
                 rect = EditorGUI.PrefixLabel(rect, Styles.generalBakingSettings);
-            }
 
             int index = Math.Max(0, Array.IndexOf(Styles.bakeBackendValues, m_BakeBackend.intValue));
 
-            if (!Lightmapping.UnifiedBaker)
+            if (!usingComputeLightBaker)
             {
                 if (EditorGUI.DropdownButton(rect, Styles.bakeBackendStrings[index], FocusType.Passive))
                 {

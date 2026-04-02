@@ -5,8 +5,8 @@
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
-using System.Linq;
 using Object = UnityEngine.Object;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -393,9 +393,7 @@ namespace UnityEditor
             }
 
             var options = names.ToArray();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var enabled = Enumerable.Repeat(true, options.Length).ToArray();
-#pragma warning restore UA2001
+            var enabled = ArrayExtensions.CreateWithDefaultValue(true, options.Length);
             EditorUtility.DisplayCustomMenu(r, options, enabled, null, MenuSelection, selectableScripts);
         }
 
@@ -884,9 +882,7 @@ namespace UnityEditor
         {
             var provider = new AssetSettingsProvider(
                 "Project/Script Execution Order",
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                () => Editor.CreateEditor(Resources.FindObjectsOfTypeAll(typeof(MonoManager)).First()),
-#pragma warning restore UA2001
+                () => Editor.CreateEditor((Resources.FindObjectsOfTypeAll(typeof(MonoManager)))[0]),
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }

@@ -287,7 +287,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         // -------------------------------------------------------------------------------------------------------------
 
-        static IssueStats[] CollectSelectionStats(ReportItem[] selectedIssues)
+        static IssueStats[] CollectSelectionStats(IReadOnlyList<ReportItem> selectedIssues)
         {
             var selectionsDict = new Dictionary<string, IssueStats>();
 
@@ -371,7 +371,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             return false;
         }
 
-        public static bool SendEventWithSelectionSummary(UIButton uiButton, Analytic analytic, ReportItem[] selectedIssues)
+        public static bool SendEventWithSelectionSummary(UIButton uiButton, Analytic analytic, IReadOnlyList<ReportItem> selectedIssues)
         {
             analytic.End();
 

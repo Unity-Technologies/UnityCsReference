@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
+using Unity.Collections;
 
 using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
@@ -144,9 +144,7 @@ namespace UnityEditor
             var visibleItems = m_TreeView.data.GetRows();
             foreach (var visibleItem in visibleItems)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selectedIDs.Contains(visibleItem.id))
-#pragma warning restore UA2001
                 {
                     var pitem = visibleItem as PackageExportTreeViewItem;
                     if (pitem != null)
@@ -319,9 +317,7 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Only change selection if we already have single selection (Keep multi-selection when toggling)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_TreeView.GetSelection().Length <= 1 || !m_TreeView.GetSelection().Contains(pitem.id))
-#pragma warning restore UA2001
                     {
                         m_TreeView.SetSelection(new int[] { pitem.id }, false);
                         m_TreeView.NotifyListenersThatSelectionChanged();

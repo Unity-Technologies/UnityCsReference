@@ -242,7 +242,7 @@ namespace Unity.GraphToolkit.Editor
                 if (nodeModel is WirePortalModel wirePortalModel)
                     m_PortalDependenciesByNode.TryGetValue(wirePortalModel.Guid, out dependencies);
 
-                if ((dependencies == null || !dependencies.HasAny()) &&
+                if ((dependencies == null || dependencies.Count == 0) &&
                     !m_DependenciesByNode.TryGetValue(nodeModel.Guid, out dependencies))
                     return;
 
@@ -426,7 +426,7 @@ namespace Unity.GraphToolkit.Editor
             if (anyWire && !follow)
                 return changedModels;
 
-            if (!topMostModels.HasAny())
+            if (topMostModels.Count == 0)
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var nodeModel in entryPoints.OfType<AbstractNodeModel>())

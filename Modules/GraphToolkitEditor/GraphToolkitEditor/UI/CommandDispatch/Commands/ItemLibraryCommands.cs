@@ -303,9 +303,7 @@ namespace Unity.GraphToolkit.Editor
                 return;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (command.CreationData.All(nodeData => nodeData.VariableDeclaration == null) && command.CreationData.All(nodeData => nodeData.NodeLibraryItem == null) && command.CreationData.All(nodeData => nodeData.VariableCreationInfos == null))
-#pragma warning restore UA2001
+            if (command.CreationData.TrueForAll(nodeData => nodeData.VariableDeclaration == null && nodeData.NodeLibraryItem == null && nodeData.VariableCreationInfos == null))
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -542,13 +540,13 @@ namespace Unity.GraphToolkit.Editor
                     }
 
                     // Delete old wires
-                    if (wiresToDelete.HasAny())
+                    if (wiresToDelete.Count > 0)
                         graphModel.DeleteWires(wiresToDelete);
                 }
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (elementsToSelect.HasAny())
+            if (elementsToSelect.Count > 0)
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var undoStateUpdater = undoState.UpdateScope)

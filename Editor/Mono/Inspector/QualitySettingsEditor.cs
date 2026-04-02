@@ -10,6 +10,7 @@ using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -457,10 +458,16 @@ namespace UnityEditor
         {
             if (m_DeleteLevel >= 0)
             {
+                using var scope = new QualitySettings.QualityLevelRemovalScope(m_DeleteLevel);
+
                 if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
                 {
                     selectedLevel = Mathf.Max(0, selectedLevel - 1);
                     QualitySettings.SetQualityLevel(selectedLevel);
+                }
+                else if (m_DeleteLevel == selectedLevel)
+                {
+                    scope.DeletingCurrentNonLastLevel();
                 }
 
                 //Always ensure there is one quality setting
@@ -648,6 +655,57 @@ namespace UnityEditor
             }
         }
 
+        void CheckBiRPDeprecationInfoBox(bool usingSRP)
+        {
+            if (usingSRP)
+                return;
+
+            bool installedSRP = false;
+            foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+            {
+                if (!type.IsAbstract)
+                {
+                    installedSRP = true;
+                    break;
+                }
+            }
+
+            // Workaround, as there is a bug in the documentation forwarder that causes links containing a / to be broken:
+            string linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
+
+            // Use this once the documentation forwarder has been fixed
+            // Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
+            // Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
+            //   linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var message = installedSRP ? "If you don't use a render pipeline asset, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead." :
+                                             "The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.";
+                var messageType = installedSRP ? MessageType.Warning : MessageType.Info;
+                // Copied from LabelField called by HelpBox - using so that label and button link are in the same helpbox
+                var infoLabel = EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(messageType));
+                Rect r = GUILayoutUtility.GetRect(infoLabel, EditorStyles.wordWrappedLabel);
+                int oldIndent = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
+                EditorGUI.LabelField(r, infoLabel, EditorStyles.wordWrappedLabel);
+                EditorGUI.indentLevel = oldIndent;
+
+                // Right align the Link
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    EditorGUI.indentLevel = 2;
+                    if (EditorGUILayout.LinkButton("Learn more..."))
+                    {
+                        Help.BrowseURL(linkHref);
+                    }
+                }
+                EditorGUI.indentLevel = oldIndent;
+                GUILayout.Space(3);
+            }
+        }
+
         private void ResetQualityLevelRenameTracking()
         {
             m_QualityLevelRenameJustStarted = true;
@@ -674,15 +732,7 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var buildProfiles = BuildProfile.GetAllBuildProfiles();
-            var profilesWithQualityLevelOverrides = 0;
-            foreach (var profile in buildProfiles)
-            {
-                if (profile.qualitySettings != null)
-                {
-                    profilesWithQualityLevelOverrides++;
-                }
-            }
+            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
             if (profilesWithQualityLevelOverrides > 0)
             {
                 if (profilesWithQualityLevelOverrides == 1)
@@ -825,6 +875,9 @@ namespace UnityEditor
             EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
             if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
                 EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
+
+            // Add Info Box for Built-In deprecation
+            CheckBiRPDeprecationInfoBox(usingSRP);
 
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
@@ -1109,9 +1162,7 @@ namespace UnityEditor
                         {
                             includePropertyMethod.Invoke(m_PresetEditor, new object[] { groupSettingsArrayPropertyPath });
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             if (m_QualitySettingsPreset.excludedProperties.Contains(groupNamesArrayPropertyPath))
-#pragma warning restore UA2001
                             {
                                 if (!System.Array.Exists(m_QualitySettingsPreset.excludedProperties, p => p == groupSettingsArrayPropertyPath || groupSettingsArrayPropertyPath.StartsWith(p + ".", System.StringComparison.Ordinal)))
                                 {
@@ -1140,9 +1191,7 @@ namespace UnityEditor
                             // If the group names array was included (it can be manually excluded!),
                             // then check if we've got all group settings arrays excluded. If that is
                             // the case, exclude the group names array too as described earlier.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             if (!m_QualitySettingsPreset.excludedProperties.Contains(groupNamesArrayPropertyPath))
-#pragma warning restore UA2001
                             {
                                 bool areAllGroupSettingsExcluded = true;
                                 int counter = 0;
@@ -1247,8 +1296,9 @@ namespace UnityEditor
                 // submits the user's new group name. (renaming is cancelled if the name didn't change)
                 else if (!EditorGUIUtility.editingTextField || GUI.GetNameOfFocusedControl() != controlName)
                 {
-                    // Cannot open a dialog box until a Repaint event if the user clicked away from the QualitySettingsEditor.
-                    if (e.type == EventType.Repaint)
+                    // Cannot open a dialog box until user is done with the text input or clicks away from the QualitySettingsEditor.
+                    // Also need to avoid it while view's DrawRect Method is in progress
+                    if ((e.type is EventType.KeyUp || !rect.Contains(e.mousePosition)) && e.type is not EventType.Repaint)
                     {
                         EndRenamingTextureMipmapLimitGroup(EditorGUI.s_DelayedTextEditor.text);
                         GUIUtility.ExitGUI(); // Prevents layout errors when clicking on certain other windows. (Hierarchy)

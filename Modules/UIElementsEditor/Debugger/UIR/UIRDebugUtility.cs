@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Linq;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
@@ -28,12 +26,10 @@ namespace UnityEditor.UIElements.Debugger
     {
         internal static string DebugName(this VisualElement ve)
         {
-            string t = ve.GetType() == typeof(VisualElement) ? String.Empty : (ve.GetType().Name + " ");
-            string n = String.IsNullOrEmpty(ve.name) ? String.Empty : ("#" + ve.name + " ");
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            string res = t + n + (ve.GetClassesForIteration().Count > 0 ? ("." + string.Join(",.", ve.GetClassesForIteration().ToArray())) : String.Empty);
-#pragma warning restore UA2001
-            if (res == String.Empty)
+            string t = ve.GetType() == typeof(VisualElement) ? string.Empty : (ve.GetType().Name + " ");
+            string n = string.IsNullOrEmpty(ve.name) ? string.Empty : ("#" + ve.name + " ");
+            string res = t + n + (ve.classListCount > 0 ? ("." + string.Join(",.", ve.GetClasses())) : string.Empty);
+            if (res == string.Empty)
                 return ve.GetType().Name;
             if (ve.renderHints != RenderHints.None)
                 res += $" [{ve.renderHints}]";

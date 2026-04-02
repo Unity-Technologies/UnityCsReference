@@ -52,7 +52,7 @@ namespace Unity.Properties.Internal
 
         public IPropertyBag<TContainer> CreatePropertyBag<TContainer>()
         {
-            if (!TypeTraits<TContainer>.IsContainer || TypeTraits<TContainer>.IsObject)
+            if (!TypeTraits.IsContainer(typeof(TContainer)) || TypeTraits.IsObject(typeof(TContainer)))
             {
                 throw new InvalidOperationException("Invalid container type.");
             }
@@ -69,16 +69,12 @@ namespace Unity.Properties.Internal
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>)))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateListPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
-#pragma warning restore UA2001
+                return (IPropertyBag<TContainer>) m_CreateListPropertyBagMethod.MakeGenericMethod((typeof(TContainer).GetGenericArguments())[0]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(HashSet<>)))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateHashSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
-#pragma warning restore UA2001
+                return (IPropertyBag<TContainer>) m_CreateHashSetPropertyBagMethod.MakeGenericMethod((typeof(TContainer).GetGenericArguments())[0]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
@@ -89,16 +85,12 @@ namespace Unity.Properties.Internal
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(IList<>)))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateIndexedCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
-#pragma warning restore UA2001
+                return (IPropertyBag<TContainer>) m_CreateIndexedCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer), (typeof(TContainer).GetGenericArguments())[0]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(ISet<>)))
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
-#pragma warning restore UA2001
+                return (IPropertyBag<TContainer>) m_CreateSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer), (typeof(TContainer).GetGenericArguments())[0]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(IDictionary<,>)))
@@ -141,9 +133,7 @@ namespace Unity.Properties.Internal
             return propertyBag;
         }
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         void CreateProperty<TContainer, TValue>(IMemberInfo member, ReflectedPropertyBag<TContainer> propertyBag)
         {
             if (typeof(TValue).IsPointer)
@@ -154,54 +144,38 @@ namespace Unity.Properties.Internal
             propertyBag.AddProperty(new ReflectedMemberProperty<TContainer, TValue>(member, member.Name));
         }
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TList> CreateIndexedCollectionPropertyBag<TList, TElement>() where TList : IList<TElement>
             => new IndexedCollectionPropertyBag<TList, TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TSet> CreateSetPropertyBag<TSet, TValue>() where TSet : ISet<TValue>
             => new SetPropertyBagBase<TSet, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TDictionary> CreateKeyValueCollectionPropertyBag<TDictionary, TKey, TValue>() where TDictionary : IDictionary<TKey, TValue>
             => new KeyValueCollectionPropertyBag<TDictionary, TKey, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<KeyValuePair<TKey, TValue>> CreateKeyValuePairPropertyBag<TKey, TValue>()
             => new KeyValuePairPropertyBag<TKey, TValue>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<TElement[]> CreateArrayPropertyBag<TElement>()
             => new ArrayPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<List<TElement>> CreateListPropertyBag<TElement>()
             => new ListPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<HashSet<TElement>> CreateHashSetPropertyBag<TElement>()
             => new HashSetPropertyBag<TElement>();
 
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         IPropertyBag<Dictionary<TKey, TValue>> CreateDictionaryPropertyBag<TKey, TValue>()
             => new DictionaryPropertyBag<TKey, TValue>();
-    
+
         static IEnumerable<MemberInfo> GetPropertyMembers(Type type)
         {
             do
@@ -297,9 +271,7 @@ namespace Unity.Properties.Internal
             if (type.IsPointer)
                 return false;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return !type.IsGenericType || type.GetGenericArguments().All(IsValidPropertyType);
-#pragma warning restore UA2001
+            return !type.IsGenericType || Array.TrueForAll(type.GetGenericArguments(), IsValidPropertyType);
         }
     }
 }

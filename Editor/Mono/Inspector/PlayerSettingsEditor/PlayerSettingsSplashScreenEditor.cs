@@ -354,7 +354,11 @@ namespace UnityEditor
             {
                 if (SplashScreen.isFinished)
                 {
-                    SplashScreen.Begin();
+                    m_Owner.serializedObject.ApplyModifiedProperties();
+                    var ps = m_Owner.target as PlayerSettings;
+
+                    SplashScreenPreview.Begin(ps);
+
                     PlayModeView.RepaintAll();
                     var playModeView = PlayModeView.GetMainPlayModeView();
                     if (playModeView)

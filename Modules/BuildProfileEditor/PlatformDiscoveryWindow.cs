@@ -50,8 +50,14 @@ namespace UnityEditor.Build.Profile
         Button m_PackageSelectAll;
         Button m_PackageDeselectAll;
 
+        VisualElement m_KeyFeaturesContainer;
+        Label m_KeyFeaturesContentLabel;
+        VisualElement m_ResourcesContainer;
+        Label m_ResourcesContentLabel;
         VisualElement m_PlatformConfigs;
         VisualElement m_NameLinks;
+
+        VisualElement m_SupportedPlatformStatusContainer;
 
         Label m_SelectedDescriptionLabel;
         Label m_ConfigLabel;
@@ -111,7 +117,7 @@ namespace UnityEditor.Build.Profile
 
         static void AddSingleBuildProfile(BuildProfileCard card, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileModuleUtil.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
@@ -147,6 +153,8 @@ namespace UnityEditor.Build.Profile
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     platformId = platformId,
                     description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    keyFeatures = BuildProfileModuleUtil.BuildPlatformKeyFeatures(platformId),
+                    resources = BuildProfileModuleUtil.BuildPlatformResources(platformId),
                     platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(platformId),
                     internalPackages = internalPackages,
                     partnerPackages = partnerPackages,
@@ -177,7 +185,7 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
             m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
-            m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
+            m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>(BuildProfileModuleUtil.platformRequirementWarningHelpboxName);
             m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
@@ -198,6 +206,18 @@ namespace UnityEditor.Build.Profile
 
             m_BuildProfileNameLabel = rootVisualElement.Q<Label>("build-profile-name-label");
             m_BuildProfileNameLabel.text = TrText.buildProfileNameLabel;
+
+            m_SupportedPlatformStatusContainer = rootVisualElement.Q<VisualElement>("supported-platform-status-container");
+
+            m_KeyFeaturesContainer = rootVisualElement.Q<VisualElement>("platform-key-features-container");
+            m_KeyFeaturesContentLabel = rootVisualElement.Q<Label>("platform-key-features-content");
+            var keyFeaturesTitle =  m_KeyFeaturesContainer.Q<Label>("platform-key-features-title");
+            keyFeaturesTitle.text = TrText.keyFeaturesTitle;
+
+            m_ResourcesContainer = rootVisualElement.Q<VisualElement>("platform-resources-container");
+            m_ResourcesContentLabel = rootVisualElement.Q<Label>("platform-resources-content");
+            var resourcesTitle =  m_ResourcesContainer.Q<Label>("platform-resources-title");
+            resourcesTitle.text = TrText.resourcesTitle;
 
             m_RenameOverlay = new BuildProfileRenameOverlay(m_BuildProfileNameTextField);
 
@@ -404,10 +424,18 @@ namespace UnityEditor.Build.Profile
             else
                 m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
 
-            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
+            m_SupportedPlatformStatusContainer.Hide();
+            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId)
+                && !string.IsNullOrEmpty(m_CardWarningHelpBox.text))
                 m_HelpBoxWrapper.Show();
             else
+            {
                 m_HelpBoxWrapper.Hide();
+
+                var supportedPlatformHelpBox = m_SupportedPlatformStatusContainer.Q<HelpBox>("supported-platform-status-helpbox");
+                if (Util.UpdateSupportedPlatformStatusHelpBox(supportedPlatformHelpBox, card.platformId))
+                    m_SupportedPlatformStatusContainer.Show();
+            }
 
             if (card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0)
             {
@@ -438,6 +466,22 @@ namespace UnityEditor.Build.Profile
             }
             else
                 m_SelectedDescription.Hide();
+
+            if (card.keyFeatures.Length > 0)
+            {
+                m_KeyFeaturesContentLabel.text = card.keyFeatures;
+                m_KeyFeaturesContainer.Show();
+            }
+            else
+                m_KeyFeaturesContainer.Hide();
+
+            if (card.resources.Length > 0)
+            {
+                m_ResourcesContentLabel.text = card.resources;
+                m_ResourcesContainer.Show();
+            }
+            else
+                m_ResourcesContainer.Hide();
 
             if (card.preconfiguredSettingsVariants.Length > 0)
             {

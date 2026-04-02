@@ -23,7 +23,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_TextArea;
 
         static GUIStyle s_LabelWithDynamicSize;
-        static GUIStyle s_LabelDarkWithDynamicSize;
+        static GUIStyle s_LabelGreyWithDynamicSizeDark;
+        static GUIStyle s_LabelGreyWithDynamicSizeLight;
         static GUIStyle s_TextAreaWithDynamicSize;
         static GUIStyle s_WelcomeTextArea;
 
@@ -51,6 +52,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_TabBackgroundLight;
 
         static GUIStyle s_MiniPulldown;
+        static GUIStyle s_OpenSearchWindowButton;
 
         public static GUIStyle s_DarkTextBoxBackground;
         public static GUIStyle s_LightTextBoxBackground;
@@ -394,17 +396,30 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
-        public static GUIStyle LabelDarkWithDynamicSize
+        public static GUIStyle LabelGreyWithDynamicSize
         {
             get
             {
-                if (s_LabelDarkWithDynamicSize == null)
-                    s_LabelDarkWithDynamicSize = new GUIStyle(EditorStyles.label)
-                    {
-                        normal = { textColor = Color.gray },
-                        wordWrap = false
-                    };
-                return s_LabelDarkWithDynamicSize;
+                if (IsDarkMode)
+                {
+                    if (s_LabelGreyWithDynamicSizeDark == null)
+                        s_LabelGreyWithDynamicSizeDark = new GUIStyle(EditorStyles.label)
+                        {
+                            normal = { textColor = Color.gray6 },
+                            wordWrap = false
+                        };
+                    return s_LabelGreyWithDynamicSizeDark;
+                }
+                else
+                {
+                    if (s_LabelGreyWithDynamicSizeLight == null)
+                        s_LabelGreyWithDynamicSizeLight = new GUIStyle(EditorStyles.label)
+                        {
+                            normal = { textColor = Color.gray3 },
+                            wordWrap = false
+                        };
+                    return s_LabelGreyWithDynamicSizeLight;
+                }
             }
         }
 
@@ -652,6 +667,24 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 return s_MiniPulldown;
+            }
+        }
+
+        public static GUIStyle OpenSearchWindowButton
+        {
+            get
+            {
+                if (s_OpenSearchWindowButton == null)
+                {
+                    s_OpenSearchWindowButton = new GUIStyle()
+                    {
+                        border = new RectOffset(0, 0, 0, 0),
+                        padding = new RectOffset(1, 1, 1, 1),
+                        alignment = TextAnchor.MiddleCenter
+                    };
+                }
+
+                return s_OpenSearchWindowButton;
             }
         }
     }

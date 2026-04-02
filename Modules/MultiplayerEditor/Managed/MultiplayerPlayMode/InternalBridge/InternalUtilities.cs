@@ -8,6 +8,7 @@ using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 using System;
 using Application = UnityEngine.Application;
 using UnityEditor.Multiplayer.Internal;

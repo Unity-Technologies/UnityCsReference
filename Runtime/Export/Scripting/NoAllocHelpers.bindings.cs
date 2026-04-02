@@ -44,9 +44,6 @@ namespace UnityEngine
         public static int SafeLength(System.Array values) { return values != null ? values.Length : 0; }
         public static int SafeLength<T>(List<T> values) { return values != null ? values.Count : 0; }
 
-        [Obsolete("Use ExtractArrayFromList", false)]
-        public static T[] ExtractArrayFromListT<T>(List<T> list) { return ExtractArrayFromList(list); }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T[] ExtractArrayFromList<T>(List<T> list)
         {
@@ -75,24 +72,6 @@ namespace UnityEngine
 
             var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
             return new ReadOnlySpan<T>(tListAccess._items, 0, tListAccess._size);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ResetListContents<T>(List<T> list, ReadOnlySpan<T> span)
-        {
-            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
-            tListAccess._items = span.ToArray();
-            tListAccess._size = span.Length;
-            tListAccess._version++;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ResetListContents<T>(List<T> list, T[] array)
-        {
-            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
-            tListAccess._items = array;
-            tListAccess._size = array.Length;
-            tListAccess._version++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -136,35 +115,11 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvalidateListEnumerators<T>(List<T> list)
         {
-            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
-            // Updating the version invalidates any active enumerators
-            tListAccess._version++;
-        }
+            if (list.Count == 0)
+                return;
 
-        [RequiredByNativeCode]
-        private static Array PrepareListForNativeFill(object list, Type elementType, int newSize)
-        {
-            var listPrivateFieldAccess = UnsafeUtility.As<ListPrivateFieldAccess<byte>>(list);
-            ref byte[] array = ref listPrivateFieldAccess._items;
-            int capacity = array.Length;
-            int previousCount = listPrivateFieldAccess._size;
-
-            // If there is less capacity than is required, create a new array of the required count.
-            if (capacity < newSize)
-            {
-                array = UnsafeUtility.As<byte[]>(Array.CreateInstance(elementType, newSize));
-            }
-            else if (previousCount > newSize)
-            {
-                // Otherwise it means that there is enough capacity. Then, if the previous count
-                // is greater than the current count, it means that elements in between them must be cleared.
-                Array.Clear(array as Array, newSize, previousCount - newSize); // Forcing the call to pass array as Array type. If an overload is introduced in the future, we want to avoid it as the element type is unknown
-            }
-
-            listPrivateFieldAccess._size = newSize;
-            listPrivateFieldAccess._version++;
-
-            return array;
+            // Updating an element causes the version to be updated
+            list[0] = list[0];
         }
 
         // This is a helper class to allow the binding code to manipulate the internal fields of

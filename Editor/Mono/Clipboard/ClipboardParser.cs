@@ -427,6 +427,9 @@ namespace UnityEditor
                     var bi = p.boundsIntValue;
                     res["val"] = WriteBounds(new Bounds(bi.center, bi.size));
                     break;
+                case SerializedPropertyType.LoadableReference:
+                    res["val"] = WriteCustom(new LoadableReferenceWrapper(p.loadableReferenceValue));
+                    break;
 
                 // Copy/Paste of these for generic serialized properties is not implemented yet.
                 case SerializedPropertyType.ExposedReference: break;
@@ -546,6 +549,10 @@ namespace UnityEditor
                                 new Vector3Int((int)biValue.center.x, (int)biValue.center.y, (int)biValue.center.z),
                                 new Vector3Int((int)biValue.size.x, (int)biValue.size.y, (int)biValue.size.z));
                         break;
+                    case SerializedPropertyType.LoadableReference:
+                        if (ParseCustom<LoadableReferenceWrapper>(Convert.ToString(oval), out var loadableRefWrapper))
+                            prop.loadableReferenceValue = loadableRefWrapper.ToLoadableReference();
+                        break;
 
                     // Copy/Paste of these for generic serialized properties is not implemented yet.
                     case SerializedPropertyType.FixedBufferSize: break;
@@ -651,5 +658,17 @@ namespace UnityEditor
         public AnimationCurveWrapper() { curve = new AnimationCurve(); }
         public AnimationCurveWrapper(AnimationCurve g) { curve = g; }
         public AnimationCurve curve;
+    }
+
+    [Serializable]
+    internal class LoadableReferenceWrapper
+    {
+        public LoadableReferenceWrapper() { }
+
+        public LoadableReferenceWrapper(LoadableReference r) { loadableReference = r; }
+
+        public LoadableReference loadableReference;
+
+        public LoadableReference ToLoadableReference() => loadableReference;
     }
 }

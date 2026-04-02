@@ -2,22 +2,23 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("Unity.ScriptingTests.CodeLoadedGeneration")]
+[assembly: InternalsVisibleTo("DomainReload-editor")]
 namespace Unity.Scripting.LifecycleManagement
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class OnCodeLoadedAttribute : LifecycleAttributeBase
+    public sealed class OnCodeLoadedAttribute : LifecycleAttributeBase
     {
         public OnCodeLoadedAttribute() { }
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class OnCodeUnloadingAttribute : LifecycleAttributeBase
+    public sealed class OnCodeUnloadingAttribute : LifecycleAttributeBase
     {
         public OnCodeUnloadingAttribute() { }
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class ClearCacheBetweenCodeLoadsAttribute : LifecycleAttributeBase
+    public sealed class ClearCacheBetweenCodeLoadsAttribute : LifecycleAttributeBase
     {
     }
 

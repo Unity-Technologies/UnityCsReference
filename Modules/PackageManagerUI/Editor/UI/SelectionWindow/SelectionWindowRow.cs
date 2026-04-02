@@ -28,28 +28,28 @@ internal class SelectionWindowRow : VisualElement
 
     public SelectionWindowRow()
     {
-        var rowContainer = new VisualElement { classList = { "row-container" } };
+        var rowContainer = new VisualElement().WithClassList("row-container");
         Add(rowContainer);
 
-        var toggleRow = new VisualElement { classList = { "toggle-row" } };
+        var toggleRow = new VisualElement().WithClassList("toggle-row");
         rowContainer.Add(toggleRow);
 
-        m_Toggle = new Toggle { name = "toggle", classList = { "toggle" }, label = "Toggle" };
+        m_Toggle = new Toggle { name = "toggle", label = "Toggle" }.WithClassList("toggle");
         toggleRow.Add(m_Toggle);
 
         m_NameLabel = m_Toggle.Q<Label>();
         m_NameLabel.name = "name";
 
-        m_InfoLabel = new Label { name = "info", classList = { "text", "label" } };
+        m_InfoLabel = new Label { name = "info" }.WithClassList("text", "label");
         m_Toggle.hierarchy.Insert(0, m_InfoLabel);
 
         m_FileIcon = new VisualElement { name = "icon" };
         m_Toggle.hierarchy.Insert(2, m_FileIcon);
 
-        var labels = new VisualElement { classList = { "labels" } };
+        var labels = new VisualElement().WithClassList("labels");
         rowContainer.Add(labels);
 
-        m_RemoveIcon = new Label { name = "remove", classList = { "icon", "label" }, tooltip = k_RemoveIconTooltip, displayTooltipWhenElided = true};
+        m_RemoveIcon = new Label { name = "remove", tooltip = k_RemoveIconTooltip, displayTooltipWhenElided = true}.WithClassList("icon", "label");
         labels.Add(m_RemoveIcon);
     }
 

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEditor;

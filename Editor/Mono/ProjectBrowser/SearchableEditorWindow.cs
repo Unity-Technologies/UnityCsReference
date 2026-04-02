@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -231,12 +232,18 @@ namespace UnityEditor
             else
                 searchFilter = "ref:" + instanceID + ":" + path;
 
+            SetSearchText(searchFilter, HierarchyType.GameObjects);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void SetSearchText(string text, HierarchyType hierarchyType)
+        {
             var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
             foreach (var win in windows)
             {
-                if (win is ISearchableContainer searchableWin && searchableWin.HierarchyType == HierarchyType.GameObjects)
+                if (win is ISearchableContainer searchableWin && searchableWin.HierarchyType == hierarchyType)
                 {
-                    searchableWin.SearchText = searchFilter;
+                    searchableWin.SearchText = text;
                 }
             }
         }

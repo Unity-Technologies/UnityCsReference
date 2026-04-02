@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Rendering
 {
@@ -13,9 +14,13 @@ namespace UnityEditor.Rendering
     [UsedByNativeCode]
     public struct ShaderSnippetData
     {
+        [NativeName("shaderType")]
         private readonly ShaderType m_ShaderType;
+        [NativeName("passType")]
         private readonly PassType m_PassType;
+        [NativeName("passName")]
         private readonly string m_PassName;
+        [NativeName("passIdentifer")]
         private readonly PassIdentifier m_PassIdentifier;
 
         internal ShaderSnippetData(ShaderType shaderType, PassType passType, string passName, PassIdentifier passIdentifier)
@@ -76,7 +81,8 @@ namespace UnityEditor.Rendering
     public enum ShaderCompilerPlatform
     {
         None            = 0, // For non initialized variable.
-        D3D             = 4, // Direct3D 11 (FL10.0 and up) and Direct3D 12, compiled with MS D3DCompiler
+        D3D11           = 4, // Direct3D 11 (FL10.0 and up), compiled with MS D3DCompiler
+        D3D             = 4, // Old name representing Direct3D 11, left for compatibility
         [System.Obsolete(@"OpenGL ES 2.0 is no longer supported since Unity 2023.1")]
         GLES20          = 5, // OpenGL ES 2.0 / WebGL 1.0, compiled with MS D3DCompiler + HLSLcc
         GLES3x          = 9, // OpenGL ES 3.0+ / WebGL 2.0, compiled with MS D3DCompiler + HLSLcc
@@ -94,7 +100,8 @@ namespace UnityEditor.Rendering
         [System.Obsolete(@"GameCore  is deprecated, please use GameCoreXboxOne (UnityUpgradable) -> GameCoreXboxOne ", true)]
         GameCore = 25, // Game Core deprecated as single platform
         WebGPU          = 26, // WebGPU
-        Switch2     = 27,
+        Switch2         = 27,
+        D3D12           = 28, // Direct3D12, compiled with dxcompiler
     }
 
     public enum ShaderCompilerMessageSeverity

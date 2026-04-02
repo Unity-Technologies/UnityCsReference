@@ -116,15 +116,23 @@ namespace Unity.Profiling
             internal AutoScope(IntPtr markerPtr)
             {
                 m_Ptr = markerPtr;
-                if (m_Ptr != IntPtr.Zero)
+                if (markerPtr != IntPtr.Zero)
                     ProfilerUnsafeUtility.BeginSample(markerPtr);
+            }
+
+            [MethodImpl(256)]
+            internal AutoScope(IntPtr markerPtr, Object contextUnityObject)
+            {
+                m_Ptr = markerPtr;
+                if (markerPtr != IntPtr.Zero)
+                    ProfilerUnsafeUtility.Internal_BeginWithObject(markerPtr, contextUnityObject);
             }
 
             [MethodImpl(256)]
             internal unsafe AutoScope(IntPtr markerPtr, string metadata)
             {
                 m_Ptr = markerPtr;
-                if (m_Ptr != IntPtr.Zero)
+                if (markerPtr != IntPtr.Zero)
                 {
                     if (String.IsNullOrEmpty(metadata))
                     {
@@ -156,6 +164,20 @@ namespace Unity.Profiling
         public AutoScope Auto()
         {
             return new AutoScope(m_Ptr);
+        }
+
+        [MethodImpl(256)]
+        [Pure]
+        public AutoScope Auto(Object contextUnityObject)
+        {
+            return new AutoScope(m_Ptr, contextUnityObject);
+        }
+
+        [MethodImpl(256)]
+        [Pure]
+        public AutoScope Auto(string metadata)
+        {
+            return new AutoScope(m_Ptr, metadata);
         }
     }
 

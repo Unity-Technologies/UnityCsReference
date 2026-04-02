@@ -17,7 +17,7 @@ namespace UnityEditor
         private static void ToggleVertexSnappingViaShortcut()
         {
             int id = GUIUtility.hotControl;
-            if (Tools.vertexDragging)
+            if (HandleUtility.vertexDragging)
                 DisableVertexSnapping(id);
             else
                 EnableVertexSnapping(id);
@@ -54,7 +54,7 @@ namespace UnityEditor
         public static void HandleMouseMove(int id)
         {
             var evt = Event.current;
-            if (evt.GetTypeForControl(id) == EventType.MouseMove && Tools.vertexDragging)
+            if (evt.GetTypeForControl(id) == EventType.MouseMove && HandleUtility.vertexDragging)
             {
                 EnableVertexSnapping(id);
                 evt.Use();

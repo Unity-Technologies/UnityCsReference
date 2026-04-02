@@ -11,6 +11,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using UnityEditor.Actions;
 using UnityEditor.AnimatedValues;
+using UnityEditor.Build.Profile;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Profiling;
@@ -35,7 +36,8 @@ namespace UnityEditor
 {
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
     [NativeHeader("Editor/Src/SceneView/SceneViewBindings.h")]
-    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays
+    [EditorToolOwner(typeof(GameObjectToolContext))]
+    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays, ISupportsToolsOverlays
     {
         [Serializable]
         public struct CameraMode
@@ -297,7 +299,7 @@ namespace UnityEditor
         static bool s_ActiveEditorsDirty;
         static bool s_SelectionCacheDirty;
 
-        internal static IEnumerable<Editor> activeEditors
+        internal static IReadOnlyList<Editor> activeEditors
         {
             get
             {
@@ -462,6 +464,7 @@ namespace UnityEditor
         internal event Action<bool> sceneVisActiveChanged;
         internal event Action<bool> drawGizmosChanged;
         internal event Action<bool> modeChanged2D;
+        public static event Action<SceneView> onCameraCreated;
 
         // used by tests
         internal bool m_WasFocused = false;
@@ -656,7 +659,7 @@ namespace UnityEditor
         }
 
         internal bool usesInteractiveLightBakingData => this.debugDrawModesUseInteractiveLightBakingData && this.currentDrawModeMayUseInteractiveLightBakingData;
-
+        
         [SerializeField]
         // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
         internal AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
@@ -834,6 +837,9 @@ namespace UnityEditor
             bool m_DynamicClip;
             [SerializeField]
             bool m_OcclusionCulling;
+
+            [SerializeField]
+            internal string m_LocalCopyBuffer; //local buffer used when Copy / Pasting for AdditionalData (see SceneViewCameraWindow)
 
             public CameraSettings()
             {
@@ -1021,6 +1027,8 @@ namespace UnityEditor
                 get => m_OcclusionCulling;
                 set => m_OcclusionCulling = value;
             }
+
+            internal CameraSettings Clone() => (CameraSettings)MemberwiseClone();
         }
 
         [SerializeField]
@@ -1030,6 +1038,138 @@ namespace UnityEditor
         {
             get => m_CameraSettings;
             set => m_CameraSettings = value;
+        }
+
+        // Interface is used for serialization of data into this SceneView ScriptableObject
+        // with [SerializeReference] while true type is defined in other assemblies.
+        public interface IAdditionalSettings : ICloneable
+        {
+            Component linkedComponent { get; set; }
+            void Reset();   // Called from Reset logic (SceneViewCameraWindow)
+            void Apply();   // Called from copy-past logic (SceneViewCameraWindow)
+            internal Type filteringRenderPipelineAssetType { get; }
+        }
+        
+        // Template class is implementing basic functionalities instead of doing all in final class
+        [Serializable]
+        public abstract class AdditionalSettings<TRenderPipelineAsset, TLinkedComponent> : IAdditionalSettings
+            where TRenderPipelineAsset : RenderPipelineAsset
+            where TLinkedComponent : Component
+        {
+            Component IAdditionalSettings.linkedComponent { get; set; }
+            protected TLinkedComponent linkedComponent
+            {
+                get => ((IAdditionalSettings)this).linkedComponent as TLinkedComponent;
+                set => ((IAdditionalSettings)this).linkedComponent = value;
+            }
+
+            Type IAdditionalSettings.filteringRenderPipelineAssetType
+                => typeof(TRenderPipelineAsset);
+
+            object ICloneable.Clone() => this.MemberwiseClone();
+
+            public abstract void Apply();
+            public abstract void Reset();
+        }
+
+        [SerializeReference]
+        List<IAdditionalSettings> m_AdditionalSettings = new();
+        
+        int FindAdditionalSettingsIndexForRenderPipelineType(Type rpType)
+        {
+            for (int i = m_AdditionalSettings.Count-1; i >= 0; --i)
+            {
+                if (m_AdditionalSettings[i] == null)
+                    continue;
+
+                var type = m_AdditionalSettings[i].filteringRenderPipelineAssetType;
+                if (type == rpType)
+                    return i;
+            }
+            return -1;
+        }
+
+        public T GetAdditionalSettings<T>()
+            where T : class, IAdditionalSettings
+        {
+            foreach (var settings in m_AdditionalSettings)
+                if (settings is T castedSettings)
+                    return castedSettings;
+            return null;
+        }
+
+        public void AddAdditionalSettings<T>(T settings)
+            where T : class, IAdditionalSettings
+        {
+            var index = FindAdditionalSettingsIndexForRenderPipelineType(settings.filteringRenderPipelineAssetType);
+            if (index == -1)
+            {
+                m_AdditionalSettings.Add(settings);
+            }
+            else
+            {
+                Debug.Log($"This SceneView already has a settings ({m_AdditionalSettings[index].GetType().FullName}) filtered for this pipeline ({settings.filteringRenderPipelineAssetType.FullName}). Replacing it.");
+                m_AdditionalSettings[index] = settings;
+            }
+        }
+
+        internal IAdditionalSettings currentPipelineAdditionalSettings
+        {
+            get
+            {
+                var index = FindAdditionalSettingsIndexForRenderPipelineType(GraphicsSettings.currentRenderPipelineAssetType);
+                if (index == -1) return null;
+                return m_AdditionalSettings[index];
+            }
+            private set
+            {
+                var index = FindAdditionalSettingsIndexForRenderPipelineType(GraphicsSettings.currentRenderPipelineAssetType);
+                if (index == -1)
+                    m_AdditionalSettings.Add(value);
+                else
+                    m_AdditionalSettings[index] = value;
+            }
+        }
+
+        // Keep dictionary static to share the search of containing packages of filtering types amongst all opened SceneViews
+        static Dictionary<Type, string> s_MapPackageNameToFilteringType = new();
+        void CleanAdditionalSettingsOnPackageRemoval(PackageManager.PackageRegistrationEventArgs args)
+        {
+            var removedPackages = args.removed;
+            bool IsPackageBeingRemoved(string packageName)
+            {
+                foreach (var package in removedPackages)
+                    if (package.name == packageName)
+                        return true;
+                return false;
+            }
+
+            for (int i = m_AdditionalSettings.Count - 1; i >= 0; --i)
+            {
+                var filteringType = m_AdditionalSettings[i]?.filteringRenderPipelineAssetType;
+
+                if (!s_MapPackageNameToFilteringType.ContainsKey(filteringType))
+                {
+                    var packageInfo = PackageManager.PackageInfo.FindForAssembly(filteringType.Assembly);
+                    var containingPackage = packageInfo?.name;
+                    if (string.IsNullOrEmpty(containingPackage))
+                        return;
+
+                    s_MapPackageNameToFilteringType[filteringType] = containingPackage;
+                }
+
+                if (IsPackageBeingRemoved(s_MapPackageNameToFilteringType[filteringType]))
+                    m_AdditionalSettings.RemoveAt(i);
+            }
+        }
+
+        [InitializeOnLoadMethod]
+        static void PreventAdditionalDataMissingTypeWarnings()
+        {
+            // Suppress missing type warning thrown by serialization for <RP>AdditionalData
+            // as this is saved into layout and can be opened into another project not having
+            // the relevant package...
+            SerializationUtility.SuppressMissingTypeWarning(nameof(SceneView));
         }
 
         internal Vector2 GetDynamicClipPlanes()
@@ -1047,6 +1187,7 @@ namespace UnityEditor
         public void ResetCameraSettings()
         {
             m_CameraSettings = new CameraSettings();
+            currentPipelineAdditionalSettings?.Reset();
         }
 
         // Thomas Tu: 2019-06-20. Will be marked as Obsolete.
@@ -1276,12 +1417,7 @@ namespace UnityEditor
             var win = mouseOverWindow;
             var ret = win != null && win.SendEvent(EditorGUIUtility.CommandEvent(command));
 
-            if (ret)
-            {
-                // In case the window under the mouse handle the Focus event, it should be focused on.
-                win.Focus();
-            }
-            else
+            if (!ret)
             {
                 // Otherwise get the current focused window to handle that event.
                 win = focusedWindow;
@@ -1486,6 +1622,8 @@ namespace UnityEditor
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleDark : k_StyleLight) as StyleSheet);
 
             s_SelectionCacheDirty = true;
+
+            PackageManager.Events.registeringPackages += CleanAdditionalSettingsOnPackageRemoval;
         }
 
         IMGUIContainer m_PrefabToolbar;
@@ -1617,6 +1755,9 @@ namespace UnityEditor
                 {
                     m_CameraSettings = new CameraSettings();
                 }
+
+                // AdditionalSettings cannot be added here. We dunno yet if it is required.
+                // It is added by SRP if needed in OnCameraCreated static event instead.
             }
 
 
@@ -1680,6 +1821,8 @@ namespace UnityEditor
 
         public override void OnDisable()
         {
+            PackageManager.Events.registeringPackages -= CleanAdditionalSettingsOnPackageRemoval;
+
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.visibilityChanged -= VisibilityChanged;
@@ -2224,9 +2367,7 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeSupported(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
-#pragma warning restore UA2001
+                Array.TrueForAll(onValidateCameraMode.GetInvocationList(), validate => ((Func<CameraMode, bool>)validate)(mode)));
         }
 
         public bool IsCameraDrawModeEnabled(CameraMode mode)
@@ -2234,9 +2375,7 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
-#pragma warning restore UA2001
+                Array.TrueForAll(onValidateCameraMode.GetInvocationList(), validate => ((Func<CameraMode, bool>)validate)(mode)));
         }
 
         internal bool IsSceneCameraDeferred()
@@ -3134,6 +3273,14 @@ namespace UnityEditor
                 if (!view.isRotationLocked)
                     view.m_OrientationGizmo?.ViewFromNiceAngle(view, false);
             }
+        }
+
+        [Shortcut("Scene View/Toggle Draw Gizmos", typeof(SceneView))]
+        static void ToggleGizmos(ShortcutArguments args)
+        {
+            var window = args.context as SceneView;
+            if (window != null)
+                window.drawGizmos = !window.drawGizmos;
         }
 
         void HandleMouseCursor()
@@ -4094,7 +4241,9 @@ namespace UnityEditor
         void CreateSceneCameraAndLights()
         {
             GameObject cameraGO = EditorUtility.CreateGameObjectWithHideFlags("SceneCamera", HideFlags.HideAndDontSave, typeof(Camera));
+#pragma warning disable CS0618  // Type or member is obsolete
             cameraGO.AddComponent<FlareLayer>();
+#pragma warning restore CS0618
 
             m_Camera = cameraGO.GetComponent<Camera>();
             m_Camera.enabled = false;
@@ -4127,6 +4276,8 @@ namespace UnityEditor
             HandleUtility.handleMaterial.SetColor("_SkyColor", kSceneViewUpLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_GroundColor", kSceneViewDownLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_Color", kSceneViewFrontLight * 1.5f);
+
+            onCameraCreated?.Invoke(this);
         }
 
         struct EditorActionCache
@@ -4473,6 +4624,7 @@ namespace UnityEditor
             sceneLighting = view.sceneLighting;
             m_SceneViewState = new SceneViewState(lastActiveSceneView.m_SceneViewState);
             m_CameraSettings = new CameraSettings(lastActiveSceneView.m_CameraSettings);
+            currentPipelineAdditionalSettings = (IAdditionalSettings)lastActiveSceneView.currentPipelineAdditionalSettings?.Clone();
             m_2DMode = view.m_2DMode;
             pivot = view.pivot;
             if(!m_2DMode)

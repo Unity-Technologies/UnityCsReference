@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Text;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -89,6 +89,11 @@ internal class UxmlAttributeField : VisualElement
     }
 
     /// <summary>
+    /// The UXML attributes authoring context associated with this field.
+    /// </summary>
+    public UxmlAttributesEditingContext Context => m_Decorator.context;
+
+    /// <summary>
     /// Constructor for UxmlAttributeField.
     /// </summary>
     public UxmlAttributeField() : this(null)
@@ -121,6 +126,11 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
     public const string affordanceElementUssClassName = ussClassName + "__affordance-element";
     public static readonly string s_InlineFieldUssClassName = "property-field__inline-value";
     public static readonly string s_BoundFieldUssClassName = "property-field__bound";
+
+    public static readonly string k_AddBindingText = L10n.Tr("Add Binding");
+    public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding");
+    public static readonly string k_EditBindingText = L10n.Tr("Edit Binding");
+    public static readonly string k_ViewBindingText = L10n.Tr("View Binding");
 
     class ContentContainer : VisualElement
     {
@@ -280,6 +290,11 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
             m_BoundField.RegisterCallback<DetachFromPanelEvent>(OnFieldDetachedFromPanel);
 
             m_BoundField.TrackPropertyValue(boundProperty, OnPropertyChanged);
+            var attributeFlagsProperty = boundProperty.serializedObject.FindProperty(boundProperty.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
+            if (attributeFlagsProperty != null)
+            {
+                m_BoundField.TrackPropertyValue(attributeFlagsProperty, OnPropertyChanged);
+            }
         }
     }
 
@@ -309,6 +324,68 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
         RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
         boundProperty = property;
+        SetupContextMenu();
+    }
+
+
+    void SetupContextMenu()
+    {
+        m_AffordanceElement.populateMenuItems = menu =>
+        {
+            var vea = context.element.visualElementAsset;
+
+            if (vea == null)
+                return;
+
+            var container = context.element;
+
+            var bindingPath = GetBindingPath();
+            var isBindableProperty = PropertyContainer.IsPathValid(ref container, bindingPath);
+
+            if (isBindableProperty)
+            {
+                var hasDataBinding = false;
+
+                if (vea != null)
+                {
+                    hasDataBinding = context.element.TryGetBinding(bindingPath, out _);
+                }
+
+                if (hasDataBinding)
+                {
+                    if (context.isInTemplateInstance || context.isReadOnly)
+                    {
+                        menu.AppendAction(k_ViewBindingText,
+                            (a) => BindingWindow.OpenToView(context.element, bindingPath, this),
+                            (a) => DropdownMenuAction.Status.Normal,
+                            this);
+                    }
+                    else
+                    {
+                        menu.AppendAction(k_EditBindingText,
+                            (a) => BindingWindow.OpenToEdit(context.element, bindingPath, this),
+                            (a) => DropdownMenuAction.Status.Normal,
+                            this);
+
+
+                        menu.AppendAction(k_RemoveBindingText, (a) => {
+                            var cmd = new RemoveBindingCommand(context.element, bindingPath);
+                            cmd.Execute();
+                            context.rootSerializedObject.UpdateIfRequiredOrScript();
+                            Refresh();
+                        }, (a) => DropdownMenuAction.Status.Normal, this);
+                    }
+                }
+                else
+                {
+                    if (!context.isInTemplateInstance && !context.isReadOnly)
+                    {
+                        menu.AppendAction(k_AddBindingText,
+                            _ => { BindingWindow.OpenToCreate(context.element, bindingPath, this); });
+                    }
+                }
+            }
+        };
     }
 
     void UpdateBoundAttribute()
@@ -390,9 +467,18 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
         }
 
         Binding binding = null;
+        bool isBindingSuccessful = false;
         if (context is { element: not null })
         {
             binding = context.element.GetBinding(GetBindingPath());
+            if (binding != null)
+            {
+                // Check if binding is actually successful
+                isBindingSuccessful = context.element.TryGetLastBindingToUIResult(
+                    GetBindingPath(),
+                    out var bindingResult) &&
+                    bindingResult.status == BindingStatus.Success;
+            }
             FieldAffordanceController.UpdateFieldAffordanceData(m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
             customFieldAffordanceDataUpdate?.Invoke(this, m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
         }
@@ -403,6 +489,11 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
 
         EnableInClassList(s_InlineFieldUssClassName, isInline);
         EnableInClassList(s_BoundFieldUssClassName, binding != null);
+
+        if (m_ContentContainer.bindable is VisualElement bindableElement)
+        {
+            bindableElement.SetEnabled(!isBindingSuccessful);
+        }
     }
 
     public BindingId GetBindingPath()

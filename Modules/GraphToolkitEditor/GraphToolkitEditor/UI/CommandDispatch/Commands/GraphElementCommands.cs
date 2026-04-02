@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using Unity.Collections;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
 
@@ -219,7 +220,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, AlignNodesCommand command)
         {
-            if (command.Nodes.HasAny())
+            if (command.Nodes.Count > 0)
             {
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
@@ -399,21 +400,13 @@ namespace Unity.GraphToolkit.Editor
                 switch (command.Mode)
                 {
                     case SelectionMode.Add:
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (command.Models.All(mainSelectionState.IsSelected))
-#pragma warning restore UA2001
-                        {
+                        if (command.Models.TrueForAll(mainSelectionState.IsSelected))
                             return;
-                        }
                         break;
 
                     case SelectionMode.Remove:
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (command.Models.All(m => !mainSelectionState.IsSelected(m)))
-#pragma warning restore UA2001
-                        {
+                        if (command.Models.TrueForAll(m => !mainSelectionState.IsSelected(m)))
                             return;
-                        }
                         break;
                 }
 
@@ -472,9 +465,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectionHelper.SelectionStates.All(s => s.IsSelectionEmpty))
-#pragma warning restore UA2001
+            if (selectionHelper.SelectionStates.TrueForAll(s => s.IsSelectionEmpty))
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

@@ -244,11 +244,11 @@ namespace UnityEngine.UIElements.HierarchyV2
         [CreateProperty]
         public bool showBorder
         {
-            get => m_ScrollView.contentContainer.ClassListContains(BaseVerticalCollectionView.borderUssClassName);
+            get => m_ScrollView.contentContainer.ClassListContains(BaseVerticalCollectionView.borderUssClassNameUnique);
             set
             {
                 var previous = showBorder;
-                m_ScrollView.contentContainer.EnableInClassList(BaseVerticalCollectionView.borderUssClassName, value);
+                m_ScrollView.contentContainer.EnableInClassList(BaseVerticalCollectionView.borderUssClassNameUnique, value);
 
                 if (previous != showBorder)
                     NotifyPropertyChanged(showBorderProperty);
@@ -342,7 +342,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             isCompositeRoot = true;
             delegatesFocus = true;
 
-            AddToClassList(BaseVerticalCollectionView.ussClassName);
+            AddToClassList(BaseVerticalCollectionView.ussClassNameUnique);
 
             m_ScrollView = new ScrollContainer { focusable = true };
             m_Container = m_ScrollView.contentContainer;
@@ -552,7 +552,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 UnbindItem(item);
 
             var useAlternateUss = showAlternatingRowBackgrounds != AlternatingRowBackground.None && index % 2 == 1;
-            item.element.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
+            item.element.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassNameUnique, useAlternateUss);
             item.isLastItem = index == itemsSource.Count - 1;
             item.SetSelected(m_Selection.ContainsIndex(index));
             item.ClearHoverState();
@@ -643,7 +643,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (elementUnderPointer == null)
                 return;
 
-            var element = elementUnderPointer.GetFirstAncestorWhere(p => p.ClassListContains(MultiColumnController.rowContainerUssClassName));
+            var element = elementUnderPointer.GetFirstAncestorWhere(p => p.ClassListContains(MultiColumnController.rowContainerUssClassNameUnique));
             if (element == null)
                 return;
 
@@ -1574,25 +1574,52 @@ namespace UnityEngine.UIElements.HierarchyV2
                     HandleSelectionAndScroll(itemsSource.Count - 1);
                     return true;
                 case KeyboardNavigationOperation.PageDown:
-                    if (m_Selection.indexCount > 0)
-                    {
-                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
-                            m_RangeSelectionDirection = RangeSelectionDirection.Down;
+                {
+                    if (m_DisplayedList.Count == 0)
+                        return true;
 
-                        var selectionDown = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
-                        HandleSelectionAndScroll(Mathf.Min(itemsSource.Count - 1, selectionDown + (m_DisplayedList.Count - 1)));
-                    }
+                    if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                        m_RangeSelectionDirection = RangeSelectionDirection.Down;
+
+                    var selectionDown = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
+                    var itemHeight = fixedItemHeight;
+                    var containerHeight = m_Container.layoutSize.y;
+                    var containerBottom = m_VerticalScroller.value + containerHeight;
+                    var maxIndex = itemsSource.Count - 1;
+                    var lastVisibleIndex = (int)(containerBottom / itemHeight);
+                    var pageSize = (int)(containerHeight / itemHeight);
+
+                    lastVisibleIndex = lastVisibleIndex > maxIndex ? maxIndex : lastVisibleIndex;
+
+                    // Determine target: if no selection or after first visible, select first visible; else jump page
+                    var targetIndex = (m_Selection.indexCount == 0 || selectionDown < lastVisibleIndex - 1) ? lastVisibleIndex : (selectionDown + pageSize > maxIndex ? maxIndex : selectionDown + pageSize);
+
+                    HandleSelectionAndScroll(targetIndex);
                     return true;
+                }
                 case KeyboardNavigationOperation.PageUp:
-                    if (m_Selection.indexCount > 0)
-                    {
-                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
-                            m_RangeSelectionDirection = RangeSelectionDirection.Up;
+                {
+                    if (m_DisplayedList.Count == 0)
+                        return true;
 
-                        var selectionUp = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
-                        HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (m_DisplayedList.Count - 1)));
-                    }
+                    if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                        m_RangeSelectionDirection = RangeSelectionDirection.Up;
+
+                    var selectionUp = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
+                    var scrollOffset = m_VerticalScroller.value;
+                    var itemHeight = fixedItemHeight;
+                    var containerHeight = m_Container.layoutSize.y;
+                    var firstVisibleIndex = (int)(scrollOffset / itemHeight);
+                    var pageSize = (int)(containerHeight / itemHeight);
+
+                    firstVisibleIndex = firstVisibleIndex < 0 ? 0 : firstVisibleIndex;
+
+                    // Determine target: if no selection or after first visible, select first visible; else jump page
+                    var targetIndex = (m_Selection.indexCount == 0 || selectionUp > firstVisibleIndex + 1) ? firstVisibleIndex : selectionUp - pageSize;
+
+                    HandleSelectionAndScroll(targetIndex < 0 ? 0 : targetIndex);
                     return true;
+                }
                 case KeyboardNavigationOperation.MoveRight:
                 case KeyboardNavigationOperation.MoveLeft:
                     break;
@@ -1606,7 +1633,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
             var shiftKey = sourceEvent is KeyDownEvent { shiftKey: true } or INavigationEvent { shiftKey: true };
-            Apply(op, shiftKey);
+            if (Apply(op, shiftKey))
+            {
+                sourceEvent.StopPropagation();
+            }
 
             focusController?.IgnoreEvent(sourceEvent);
         }

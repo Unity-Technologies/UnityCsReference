@@ -109,8 +109,10 @@ namespace UnityEditor
         public static Type defaultPivotModeType => typeof(CenterPivotMode);
         public static Type defaultPivotRotationType => typeof(LocalPivotRotation);
 
-        public static CustomPivotMode GetActivePivotMode() => EditorPivotManager.activePivotMode;
-        public static CustomPivotRotation GetActivePivotRotation() => EditorPivotManager.activePivotRotation;
+        public static CustomPivotMode GetActivePivotMode() => EditorPivotManager.GetActivePivotMode(typeof(SceneView));
+        internal static CustomPivotMode GetActivePivotMode(Type toolOwnerType) => EditorPivotManager.GetActivePivotMode(toolOwnerType);
+        public static CustomPivotRotation GetActivePivotRotation() => EditorPivotManager.GetActivePivotRotation(typeof(SceneView));
+        internal static CustomPivotRotation GetActivePivotRotation(Type toolOwnerType) => EditorPivotManager.GetActivePivotRotation(toolOwnerType);
         
         public static void SetActivePivotMode<T>() where T : CustomPivotMode
         {
@@ -119,10 +121,25 @@ namespace UnityEditor
         
         public static void SetActivePivotMode(Type pivotModeType)
         {
-            EditorPivotManager.SetActivePivotMode(pivotModeType);
-            
-            Tools.InvalidateHandlePosition();
-            activePivotModeChanged?.Invoke();
+            SetActivePivotMode(pivotModeType, typeof(SceneView));
+        }
+
+        internal static void SetActivePivotMode<T>(Type toolOwnerType) where T : CustomPivotMode
+        {
+            SetActivePivotMode(typeof(T), toolOwnerType);
+        }
+        
+        internal static void SetActivePivotMode(Type pivotModeType, Type toolOwnerType)
+        {
+            EditorPivotManager.SetActivePivotMode(pivotModeType, toolOwnerType);
+
+            if (toolOwnerType == typeof(SceneView))
+            {
+                Tools.InvalidateHandlePosition();
+                activePivotModeChanged?.Invoke();
+            }
+
+            activePivotModeChangedForOwner?.Invoke(toolOwnerType);
         }
         
         public static void SetActivePivotRotation<T>() where T : CustomPivotRotation
@@ -132,12 +149,27 @@ namespace UnityEditor
         
         public static void SetActivePivotRotation(Type pivotRotationType)
         {
-            EditorPivotManager.SetActivePivotRotation(pivotRotationType);
+            SetActivePivotRotation(pivotRotationType, typeof(SceneView));
+        }
+        
+        internal static void SetActivePivotRotation<T>(Type toolOwnerType) where T : CustomPivotRotation
+        {
+            SetActivePivotRotation(typeof(T), toolOwnerType);
+        }
+        
+        internal static void SetActivePivotRotation(Type pivotRotationType, Type toolOwnerType)
+        {
+            EditorPivotManager.SetActivePivotRotation(pivotRotationType, toolOwnerType);
             
-            activePivotRotationChanged?.Invoke();
+            if (toolOwnerType == typeof(SceneView))
+                activePivotRotationChanged?.Invoke();
+            
+            activePivotRotationChangedForOwner?.Invoke(toolOwnerType);
         }
         
         public static event Action activePivotModeChanged;
+        internal static event Action<Type> activePivotModeChangedForOwner;
         public static event Action activePivotRotationChanged;
+        internal static event Action<Type> activePivotRotationChangedForOwner;
     }
 }

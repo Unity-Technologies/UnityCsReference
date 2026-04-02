@@ -130,12 +130,11 @@ namespace UnityEditor
             tagsList.headerTitle = Styles.tags.text;
             tagsList.makeItem = () =>
             {
-                var tagListElement = new VisualElement { classList = { Styles.tagListElement } };
+                var tagListElement = new VisualElement().WithClassList(Styles.tagListElement);
                 tagListElement.Add(new Label()
                 {
-                    name = "Title",
-                    classList = { "tag-list__element__title" }
-                });
+                    name = "Title"
+                }.WithClassList("tag-list__element__title"));
                 tagListElement.Add(new Label
                 {
                     name = "Value"
@@ -196,10 +195,7 @@ namespace UnityEditor
             sortingLayers.fixedItemHeight = Styles.elementHeight;
             sortingLayers.headerTitle = Styles.sortingLayers.text;
             sortingLayers.allowRemove = CanEditSortLayerEntry(sortingLayers.selectedIndex);
-            sortingLayers.makeItem = () => new TextField
-            {
-                classList = { Styles.tagListElement }
-            };
+            sortingLayers.makeItem = () => new TextField().WithClassList(Styles.tagListElement);
 
             void SortingLayersChanged(ChangeEvent<string> evt)
             {
@@ -209,6 +205,9 @@ namespace UnityEditor
                 var index = (int)textField.userData;
                 tagManager.SetSortingLayerName(index, evt.newValue);
                 serializedObject.ApplyModifiedProperties();
+
+                if (SortingLayer.onLayerChanged != null)
+                    SortingLayer.onLayerChanged();
             }
 
             sortingLayers.bindItem = (ve, index) =>
@@ -283,10 +282,7 @@ namespace UnityEditor
             var layers = content.Q<ListView>("Layers");
             layers.fixedItemHeight = Styles.elementHeight;
             layers.headerTitle = Styles.layers.text;
-            layers.makeItem = () => new TextField
-            {
-                classList = { Styles.tagListElement }
-            };
+            layers.makeItem = () => new TextField().WithClassList(Styles.tagListElement);
 
             void LayersChanged(ChangeEvent<string> evt)
             {
@@ -380,9 +376,8 @@ namespace UnityEditor
         {
             var supportedLabel = new HelpBox(message, type)
             {
-                name = "MaximumSupportedRenderingLayers",
-                classList = { Styles.helperBox }
-            };
+                name = "MaximumSupportedRenderingLayers"
+            }.WithClassList(Styles.helperBox);
             viewport.Insert(0, supportedLabel);
         }
 
@@ -391,10 +386,7 @@ namespace UnityEditor
             var renderingLayers = content.Q<ListView>("RenderingLayers");
             renderingLayers.fixedItemHeight = Styles.elementHeight;
             renderingLayers.headerTitle = Styles.renderingLayers.text;
-            renderingLayers.makeItem = () => new TextField
-            {
-                classList = { Styles.tagListElement }
-            };
+            renderingLayers.makeItem = () => new TextField().WithClassList(Styles.tagListElement);
 
             void RenderingLayersChanged(ChangeEvent<string> evt)
             {

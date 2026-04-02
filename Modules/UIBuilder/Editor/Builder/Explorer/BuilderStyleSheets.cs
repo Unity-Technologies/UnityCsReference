@@ -9,7 +9,7 @@ using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Assertions;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<UnityEngine.UIElements.VisualElement>;
 
 namespace Unity.UI.Builder
 {
@@ -113,6 +113,12 @@ namespace Unity.UI.Builder
             m_EmptyStyleSheetsPaneLabel = new Label("Click the + icon to create a new StyleSheet.");
             m_EmptyStyleSheetsPaneLabel.AddToClassList(BuilderConstants.ExplorerDayZeroStateLabelClassName);
             m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
+
+            // Setup the search field
+            m_SearchField = this.Q<ToolbarSearchField>(kSearchFieldName);
+            m_SearchField.RegisterValueChangedCallback(e => UpdateSearchFilter(e.newValue));
+            m_NoResultsLabel = this.Q<Label>(kNoResultsName);
+            m_NoResultsLabel.style.display = DisplayStyle.None;
         }
 
         protected override void InitEllipsisMenu()

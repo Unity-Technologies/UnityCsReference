@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -101,17 +102,13 @@ internal readonly record struct VisualTreeAssetEditingContext
     /// </summary>
     /// <param name="context">The context to reimport</param>
     /// <returns>A new instance of the context, with the assets reloaded.</returns>
-    public static VisualTreeAssetEditingContext Reimport(VisualTreeAssetEditingContext context)
+    public static VisualTreeAssetEditingContext Reload(VisualTreeAssetEditingContext context)
     {
         var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
 
         var path = context.SubDocumentPath;
         if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
         {
-            var template = context.SubDocumentPath[^1];
-            var editedVisualTreeAsset = template.ResolveTemplate();
-            var editedPath = AssetDatabase.GetAssetPath(editedVisualTreeAsset);
-            AssetDatabase.ImportAsset(editedPath, ImportAssetOptions.ForceSynchronousImport);
             path = new TemplateAsset[context.SubDocumentPath.Length];
             var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
             for (var i = 0; i < context.SubDocumentPath.Length; ++i)
@@ -128,10 +125,6 @@ internal readonly record struct VisualTreeAssetEditingContext
                 }
             }
         }
-        else
-        {
-            AssetDatabase.ImportAsset(rootPath, ImportAssetOptions.ForceSynchronousImport);
-        }
 
         return new VisualTreeAssetEditingContext(
             AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
@@ -139,6 +132,68 @@ internal readonly record struct VisualTreeAssetEditingContext
             context.SubDocumentOptions,
             context.PanelSettings
         );
+    }
+
+    /// <summary>
+    /// Reimports the assets being used by the editing context.
+    /// </summary>
+    /// <param name="context">The context to reimport</param>
+    /// <returns>A new instance of the context, with the assets reloaded.</returns>
+    public static VisualTreeAssetEditingContext Reimport(VisualTreeAssetEditingContext context)
+    {
+        using (new AssetDatabase.AssetEditingScope())
+        {
+            var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
+
+            var path = context.SubDocumentPath;
+            if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
+            {
+                var template = context.SubDocumentPath[^1];
+                var editedVisualTreeAsset = template.ResolveTemplate();
+
+                ReimportReferencedStyleSheets(editedVisualTreeAsset);
+
+                var editedPath = AssetDatabase.GetAssetPath(editedVisualTreeAsset);
+                AssetDatabase.ImportAsset(editedPath, ImportAssetOptions.ForceSynchronousImport);
+                path = new TemplateAsset[context.SubDocumentPath.Length];
+                var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
+                for (var i = 0; i < context.SubDocumentPath.Length; ++i)
+                {
+                    var templateId = context.SubDocumentPath[i].id;
+                    foreach (var templateAsset in vta.DepthFirstTraversalOfType<TemplateAsset>())
+                    {
+                        if (templateAsset.id == templateId)
+                        {
+                            path[i] = templateAsset;
+                            vta = templateAsset.ResolveTemplate();
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ReimportReferencedStyleSheets(context.RootVisualTreeAsset);
+                AssetDatabase.ImportAsset(rootPath, ImportAssetOptions.ForceSynchronousImport);
+            }
+
+            return new VisualTreeAssetEditingContext(
+                AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
+                path,
+                context.SubDocumentOptions,
+                context.PanelSettings
+            );
+        }
+
+        static void ReimportReferencedStyleSheets(VisualTreeAsset vta)
+        {
+            var styleSheets = vta.GetAllReferencedStyleSheets();
+            foreach (var styleSheet in styleSheets)
+            {
+                var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
+                AssetDatabase.ImportAsset(styleSheetPath, ImportAssetOptions.ForceSynchronousImport);
+            }
+        }
     }
 
     public VisualElementEditFlags GetElementEditFlags(VisualElement element)

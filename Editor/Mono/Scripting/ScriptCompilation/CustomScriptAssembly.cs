@@ -6,11 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEditor.Build;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
-using UnityEditor.Scripting.Compilers;
-using UnityEditorInternal;
+using Unity.Collections;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -375,9 +373,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool IsCompatibleWithEditor()
         {
             if (ExcludePlatforms != null)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return ExcludePlatforms.All(p => p.BuildTarget != BuildTarget.NoTarget);
-#pragma warning restore UA2001
+                return Array.TrueForAll(ExcludePlatforms, p => p.BuildTarget != BuildTarget.NoTarget);
 
             if (IncludePlatforms != null)
                 return Array.Exists(IncludePlatforms, p => p.BuildTarget == BuildTarget.NoTarget);
@@ -390,9 +386,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isTestAssembly = DefineConstraints != null && DefineConstraints.Contains("UNITY_INCLUDE_TESTS");
-#pragma warning restore UA2001
             var isTestFrameworkAssembly = DefineConstraints != null && Array.Exists(DefineConstraints, x => x == "UNITY_TESTS_FRAMEWORK");
             if (!buildingForEditor && (isTestAssembly || isTestFrameworkAssembly) && !isBuildingWithTestAssemblies)
             {
@@ -441,9 +435,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 // build target is different
                 // OR build target matches, but subtarget for target assembly is both present and differs
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return ExcludePlatforms.All(p =>
-#pragma warning restore UA2001
+                return Array.TrueForAll(ExcludePlatforms, p =>
                     p.BuildTarget != buildTarget ||
                     (p.BuildTarget == buildTarget &&
                     (p.HasSubTarget && p.SubTarget != subTarget)));
@@ -459,9 +451,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var modifiedDirectory = AssetPath.ReplaceSeparators(directory);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (modifiedDirectory.Last() != AssetPath.Separator)
-#pragma warning restore UA2001
+            if (modifiedDirectory[^1] != AssetPath.Separator)
                 modifiedDirectory += AssetPath.Separator.ToString();
 
             customScriptAssembly.Name = name;
@@ -548,10 +538,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (string.Equals(platform.Name, name, System.StringComparison.OrdinalIgnoreCase))
                     return platform;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var platformNames = Platforms.Select(p => string.Format("\"{0}\"", p.Name)).ToArray();
-#pragma warning restore UA2001
-            System.Array.Sort(platformNames);
+            var platformNames = Platforms.ConvertAll(p => string.Format("\"{0}\"", p.Name));
+            platformNames.Sort();
 
             var platformsString = string.Join(",\n", platformNames);
 

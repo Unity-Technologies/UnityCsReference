@@ -40,8 +40,7 @@ internal class CameraScreenRaycaster : IScreenRaycaster
 
     private static bool MakeRay(Camera camera, Vector2 mousePosition, out Ray ray)
     {
-        var screenPosition =
-            UIElementsRuntimeUtility.PanelToScreenBottomLeftPosition(mousePosition, camera.targetDisplay);
+        var screenPosition = IRuntimePanel.uIElementsRuntimeUtility.PanelToScreenBottomLeftPosition(mousePosition, camera.targetDisplay);
         ray = camera.ScreenPointToRay(screenPosition);
         return camera.pixelRect.Contains(screenPosition);
     }

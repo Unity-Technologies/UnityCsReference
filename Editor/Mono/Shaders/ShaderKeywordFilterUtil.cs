@@ -20,8 +20,6 @@ namespace UnityEditor.ShaderKeywordFilter
     // The keyword arrays there tell which keywords need to be selected and which removed.
     // This data is used in the native code to prune the enumeration data, thus reducing
     // the size of enumerated variant space.
-    [RequiredByNativeCode (GenerateProxy = true)]
-    [StructLayout(LayoutKind.Sequential)]
     internal struct SettingsVariant
     {
         internal SettingsVariant(List<FilterRule> rules)
@@ -68,12 +66,27 @@ namespace UnityEditor.ShaderKeywordFilter
         readonly internal string[] removeKeywords;  // Keywords that have resolved to be removed from the build by a filter rule
         readonly internal string[] removeReasons;   // Human readable message on why the keyword was removed
         readonly internal int[] emptyKeywordRemovingKeywords; // Indices of keywords that will also remove "empty keyword" case
+
+        [UsedByNativeCode, RequiredMember]
+        internal static void DeconstructArrayElementRaw(SettingsVariant[] array,
+            int index,out string[] selectKeywords, out string[] selectReasons,
+            out object emptyKeywordSelectingKeywords, /* There is an error in the bindings generation for value type arrays. Treating as a object will work well enough */
+            out string[] removeKeywords, out string[] removeReasons,
+            out object emptyKeywordRemovingKeywords /* There is an error in the bindings generation for value type arrays. Treating as a object will work well enough*/)
+        {
+            ref SettingsVariant tmp = ref array[index];
+            selectKeywords = tmp.selectKeywords;
+            selectReasons = tmp.selectReasons;
+            emptyKeywordSelectingKeywords = tmp.emptyKeywordSelectingKeywords;
+            removeKeywords = tmp.removeKeywords;
+            removeReasons = tmp.removeReasons;
+            emptyKeywordRemovingKeywords = tmp.emptyKeywordRemovingKeywords;
+        }
     }
 
-    // This struct is for passing the constraint state of the currently compiled shader pass from C++ to C#.
+    // This struct is for passing the constraint state of the currently compiled shader.
     // It is used for comparing against the filter attribute constraints and this way
     // we can select only the filter rules that are meeting the constraint requirements.
-    [RequiredByNativeCode (GenerateProxy = true)]
     internal struct ConstraintState
     {
         internal string[] tags;
@@ -120,8 +133,14 @@ namespace UnityEditor.ShaderKeywordFilter
 
         // For the current build target with given constraint state, gets the list of active filter rule sets.
         [RequiredByNativeCode]
-        internal static SettingsVariant[] GetKeywordFilterVariants(string buildTargetGroupName, ConstraintState constraintState)
+        internal static SettingsVariant[] GetKeywordFilterVariants(string buildTargetGroupName, string[] tags, GraphicsDeviceType[] graphicsAPIs)
         {
+            ConstraintState constraintState = new ConstraintState
+            {
+                tags = tags,
+                graphicsAPIs = graphicsAPIs
+            };
+
             var rpAssets = new List<RenderPipelineAsset>();
             QualitySettings.GetAllRenderPipelineAssetsForPlatform(buildTargetGroupName, ref rpAssets);
 

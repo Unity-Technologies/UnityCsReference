@@ -11,7 +11,6 @@ using UnityEditor.Presets;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Reflection;
@@ -24,7 +23,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
-using UnityEditor.UIElements;
+using Unity.Collections;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -114,6 +113,7 @@ namespace UnityEditor
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
             public static readonly GUIContent runInBackground = EditorGUIUtility.TrTextContent("Run In Background*");
+            public static readonly GUIContent callOnDisableOnAssetBundleUnload = EditorGUIUtility.TrTextContent("Call OnDisable On AssetBundle Unload", "Call OnDisable on MonoBehaviours and ScriptableObjects when unloading AssetBundles");
             public static readonly GUIContent defaultIsNativeResolution = EditorGUIUtility.TrTextContent("Default Is Native Resolution");
             public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TrTextContent("Default Orientation*");
             public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TrTextContent("Portrait");
@@ -215,6 +215,8 @@ namespace UnityEditor
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
             public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Optimize for runtime speed"), EditorGUIUtility.TrTextContent("Optimize for code size and build time") };
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
+            public static readonly GUIContent il2CppLTOMode = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "Link Time Optimization mode. Full LTO produces smaller and faster code but takes longer to link. Thin LTO is faster to link with nearly equivalent optimization.");
+            public static readonly GUIContent[] il2CppLTOModeOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Full"), EditorGUIUtility.TrTextContent("Thin") };
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR (Internal only)");
@@ -231,6 +233,7 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = EditorGUIUtility.TrTextContent(".NET Framework");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard = EditorGUIUtility.TrTextContent(".NET Standard 2.1");
+            public static readonly GUIContent apiCompatibilityLevel_NET_10 = EditorGUIUtility.TrTextContent(".NET 10 (Internal only)");
             public static readonly GUIContent editorAssembliesCompatibilityLevel = EditorGUIUtility.TrTextContent("Editor Assemblies Compatibility Level*");
             public static readonly GUIContent editorAssembliesCompatibilityLevel_Default = EditorGUIUtility.TrTextContent("Default (.NET Framework)");
             public static readonly GUIContent editorAssembliesCompatibilityLevel_NET_Framework = EditorGUIUtility.TrTextContent(".NET Framework");
@@ -264,6 +267,7 @@ namespace UnityEditor
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
             public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
+            public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
@@ -438,6 +442,7 @@ namespace UnityEditor
         SerializedProperty m_UseFlipModelSwapchain;
 
         SerializedProperty m_RunInBackground;
+        SerializedProperty m_CallOnDisableOnAssetBundleUnload;
 
         SerializedProperty m_SkinOnGPU;
         SerializedProperty m_MeshDeformation;
@@ -482,6 +487,7 @@ namespace UnityEditor
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_Il2CppCodeGeneration;
         SerializedProperty m_Il2CppStacktraceInformation;
+        SerializedProperty m_Il2CppLTOMode;
         SerializedProperty m_ScriptingDefines;
         SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
@@ -662,6 +668,7 @@ namespace UnityEditor
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
             m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
             m_Il2CppStacktraceInformation   = FindPropertyAssert("il2cppStacktraceInformation");
+            m_Il2CppLTOMode                 = FindPropertyAssert("il2cppLTOMode");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
@@ -671,6 +678,7 @@ namespace UnityEditor
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
             m_RunInBackground               = FindPropertyAssert("runInBackground");
+            m_CallOnDisableOnAssetBundleUnload = FindPropertyAssert("callOnDisableOnAssetBundleUnload");
 
             m_DefaultScreenOrientation              = FindPropertyAssert("defaultScreenOrientation");
             m_AllowedAutoRotateToPortrait           = FindPropertyAssert("allowedAutorotateToPortrait");
@@ -780,7 +788,7 @@ namespace UnityEditor
 
             FindPlayerSettingsAttributeSections();
         }
-        
+
         public static void DiscardPendingChangesForAllEditors(PlayerSettings target)
         {
             foreach (var editor in Resources.FindObjectsOfTypeAll<PlayerSettingsEditor>())
@@ -817,40 +825,48 @@ namespace UnityEditor
             m_OnTrackSerializedObjectValueChanged = onTrackSerializedObjectChanged;
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
+            var profile = serializedProfile.targetObject as BuildProfile;
+            if (profile != null && profile.isMultiTarget)
+                buildProfilePlatformGuid = profile.selectedPlatformGuid;
+
             // We don't want to show other platform tabs that it's not the build profile one
-            var gotValidPlatform = false;
-            var buildProfileBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(buildProfilePlatformGuid);
-            var buildProfileSubtarget = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(buildProfileBasePlatformGuid).Item2;
-            var isBuildProfilePlatformStandalone = buildProfileSubtarget == StandaloneBuildSubtarget.Player;
-            var isBuildProfilePlatformServer = buildProfileSubtarget == StandaloneBuildSubtarget.Server;
-            for (int i = 0; i < validPlatforms.Length; i++)
-            {
-                var buildTarget = validPlatforms[i].defaultTarget;
-                var namedBuildTarget = validPlatforms[i].namedBuildTarget;
-                var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(namedBuildTarget, buildTarget);
-
-                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
-                // NamedBuildTarget in addition to the base platform guid for standalone and server platforms
-                var isStandalone = namedBuildTarget == NamedBuildTarget.Standalone && isBuildProfilePlatformStandalone;
-                var isServer = namedBuildTarget == NamedBuildTarget.Server && isBuildProfilePlatformServer;
-                if (basePlatformGuid != buildProfileBasePlatformGuid && !(isStandalone || isServer))
-                    continue;
-
-                var copy = (BuildPlatform)validPlatforms[i].Clone();
-                copy.tooltip = string.Empty;
-                validPlatforms[0] = copy;
-                gotValidPlatform = true;
-                break;
-            }
-
-            if (!gotValidPlatform)
+            var matchedPlatform = FindMatchingValidPlatform(buildProfilePlatformGuid);
+            if (matchedPlatform == null)
                 return;
 
+            validPlatforms[0] = matchedPlatform;
             Array.Resize(ref validPlatforms, 1);
             m_SettingsExtensions = new ISettingEditorExtension[1];
             m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(buildProfilePlatformGuid);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
+        }
+
+        /// <summary>
+        /// Finds the valid platform entry matching the given platform GUID, cloning it with the tooltip cleared.
+        /// </summary>
+        BuildPlatform FindMatchingValidPlatform(GUID platformGuid)
+        {
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var (_, subtarget) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
+            var isPlatformStandalone = subtarget == StandaloneBuildSubtarget.Player;
+            var isPlatformServer = subtarget == StandaloneBuildSubtarget.Server;
+
+            foreach (var platform in validPlatforms)
+            {
+                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
+                // NamedBuildTarget in addition to the base platform GUID for standalone and server platforms.
+                var platformBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(platform.namedBuildTarget, platform.defaultTarget);
+                var isStandalone = platform.namedBuildTarget == NamedBuildTarget.Standalone && isPlatformStandalone;
+                var isServer = platform.namedBuildTarget == NamedBuildTarget.Server && isPlatformServer;
+                if (platformBasePlatformGuid != basePlatformGuid && !(isStandalone || isServer))
+                    continue;
+
+                var copy = (BuildPlatform)platform.Clone();
+                copy.tooltip = string.Empty;
+                return copy;
+            }
+            return null;
         }
 
         /// <summary>
@@ -1129,6 +1145,10 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
+            // Add ellipsis truncation for labels
+            var previousTextClipping = EditorStyles.label.clipping;
+            EditorStyles.label.clipping = TextClipping.Ellipsis;
+
             int sectionIndex = 0;
 
             if (serializedObjectUpdated)
@@ -1167,6 +1187,9 @@ namespace UnityEditor
             {
                 RecompileScripts();
             }
+
+            // Resetting truncation of labels back
+            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()
@@ -1272,6 +1295,8 @@ namespace UnityEditor
                     GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
                     if (SupportsRunInBackground(namedBuildTarget))
                         EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
+
+                    EditorGUILayout.PropertyField(m_CallOnDisableOnAssetBundleUnload, SettingsContent.callOnDisableOnAssetBundleUnload);
 
                     // Resolution itself
                     if (settingsExtension != null)
@@ -1750,9 +1775,7 @@ namespace UnityEditor
 
             var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             // only available if we include ES3
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
-#pragma warning restore UA2001
             if (!hasMinES3)
                 return;
 
@@ -1881,9 +1904,22 @@ namespace UnityEditor
 
             deviceList.DoLayoutList();
 
+            // Entities Graphics does not support Web platforms, so no need to check
+            if (targetPlatform != BuildTarget.WebGL)
+            {
+                // When EG/GRD unification is done, EG will no longer support GLES
+                bool isEntitiesGraphicsPackageInstalled = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.entities.graphics");
+                bool deviceListContainsGLES = deviceList.list.Contains(GraphicsDeviceType.OpenGLES3);
+                if (isEntitiesGraphicsPackageInstalled && deviceListContainsGLES)
+                {
+                    EditorGUILayout.HelpBox(SettingsContent.glesWithEntitiesGraphicsDeprecationMessage.text,
+                        MessageType.Warning, true);
+                }
+            }
+
             bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
             if (containsDeprecatedAPIs)
-                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
+                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Warning, true);
 
             //@TODO: undo
 
@@ -2147,10 +2183,8 @@ namespace UnityEditor
                 using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, property))
                 {
                     var values = (T[])Enum.GetValues(typeof(T));
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var valueNames = Enum.GetNames(typeof(T)).Select(e => new GUIContent(e)).ToArray();
-#pragma warning restore UA2001
-                    PlayerSettingsEditor.BuildEnumPopup(property, name, values, valueNames);
+                    var valueNames = Array.ConvertAll(Enum.GetNames(typeof(T)), e => new GUIContent(e));
+                    BuildEnumPopup(property, name, values, valueNames);
                 }
             }
         }
@@ -2458,7 +2492,9 @@ namespace UnityEditor
                         api == GraphicsDeviceType.Metal ||
                         api == GraphicsDeviceType.Vulkan ||
                         api == GraphicsDeviceType.OpenGLES3 ||
-                        api == GraphicsDeviceType.Direct3D12)
+                        api == GraphicsDeviceType.Direct3D12 ||
+                        api == GraphicsDeviceType.GameCoreXboxOne ||
+                        api == GraphicsDeviceType.GameCoreXboxSeries )
                     {
                         platformSupportsBatching = true;
                         break;
@@ -2967,9 +3003,7 @@ namespace UnityEditor
         {
             foreach (var target in k_WebGPUSupportedBuildTargets)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_CurrentTarget.GetGraphicsAPIs_Internal(target).Contains(GraphicsDeviceType.WebGPU))
-#pragma warning restore UA2001
                 {
                     return true;
                 }
@@ -3213,6 +3247,14 @@ namespace UnityEditor
                 return Il2CppStacktraceInformation.MethodOnly;
         }
 
+        private Il2CppLTOMode GetCurrentIl2CppLTOModeForTarget(NamedBuildTarget namedBuildTarget)
+        {
+            if (m_Il2CppLTOMode.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (Il2CppLTOMode)entry.FindPropertyRelative("second").intValue;
+            else
+                return Il2CppLTOMode.Full;
+        }
+
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
         {
             if (m_ManagedStrippingLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
@@ -3323,7 +3365,25 @@ namespace UnityEditor
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
                         {
                             var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard };
+                            ApiCompatibilityLevel[] availableCompatibilityLevels;
+#pragma warning disable CS0618
+                            if (currentBackend == ScriptingImplementation.CoreCLR)
+#pragma warning restore CS0618
+                            {
+                                // CORECLR_FIXME - Add NET_10 when we are ready to let code compiled against net10
+                                availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Standard /*, ApiCompatibilityLevel.NET_10 */];
+                            }
+                            else if (currentBackend == ScriptingImplementation.IL2CPP)
+                            {
+                                if (Unsupported.IsSourceBuild())
+#pragma warning disable CS0618
+                                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard, ApiCompatibilityLevel.NET];
+#pragma warning restore CS0618
+                                else
+                                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard];
+                            }
+                            else
+                                availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard];
 
                             var newAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
@@ -3425,6 +3485,33 @@ namespace UnityEditor
                         }
                     }
                 }
+
+                // Il2Cpp LTO settings (e.g. thin LTO)
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                {
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_Il2CppLTOMode))
+                        {
+                            // Check if platform allows LTO configuration
+                            bool allowLtoConfigurationSelection = settingsExtension != null && settingsExtension.ShouldShowIl2CppLTOSettings();
+                            // Only allow if master is selected
+                            allowLtoConfigurationSelection &= GetCurrentIl2CppCompilerConfigurationForTarget(platform.namedBuildTarget) == Il2CppCompilerConfiguration.Master;
+
+                            // Only enable LTO selection if compiler selection is allowed
+                            using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection || !allowLtoConfigurationSelection))
+                            {
+                                Il2CppLTOMode currentMode = GetCurrentIl2CppLTOModeForTarget(platform.namedBuildTarget);
+                                var ltoModes = new[] { Il2CppLTOMode.Full, Il2CppLTOMode.Thin };
+                                var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, ltoModes, SettingsContent.il2CppLTOModeOptions);
+
+                                if (currentMode != newMode)
+                                    m_Il2CppLTOMode.SetMapValue(platform.namedBuildTarget.TargetName, (int)newMode);
+                            }
+                        }
+                    }
+                }
+
 
                 // Il2Cpp Stacktrace Configuration
                 using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP || platform.namedBuildTarget == NamedBuildTarget.WebGL))
@@ -3660,7 +3747,7 @@ namespace UnityEditor
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
-                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
+                            EditorGUIUtility.systemCopyBuffer = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
                         }
 
                         GUI.enabled = hasScriptingDefinesBeenModified;
@@ -3677,7 +3764,7 @@ namespace UnityEditor
                         {
                             // Make sure to remove focus from reorderable list text field on apply
                             GUI.FocusControl(null);
-
+                            scriptingDefinesList.RemoveAll(string.IsNullOrWhiteSpace);
                             SetScriptingDefineSymbolsForGroup(platform.namedBuildTarget, scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
@@ -3731,6 +3818,7 @@ namespace UnityEditor
 
                                 if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
+                                    additionalCompilerArgumentsList.RemoveAll(string.IsNullOrWhiteSpace);
                                     SetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget, additionalCompilerArgumentsList.ToArray());
 
                                     // Get Additional Compiler Arguments without duplicates
@@ -3837,22 +3925,36 @@ namespace UnityEditor
 
         void SetScriptingDefinesListDirty(ReorderableList list = null)
         {
-            if (m_SerializedScriptingDefinesArray == null ||
-                scriptingDefinesList.Count != m_SerializedScriptingDefinesArray.Length)
+            // m_SerializedScriptingDefinesArray contains the serialized scripting define values
+            // scriptingDefinesList is the list of all scripting define entries in memory, and is initialized with the list of serialized values
+            if (m_SerializedScriptingDefinesArray == null || scriptingDefinesList.Count < m_SerializedScriptingDefinesArray.Length)
             {
                 hasScriptingDefinesBeenModified = true;
                 return;
             }
 
-            for (int i = 0; i < m_SerializedScriptingDefinesArray.Length; i++)
+            // This loop updates hasScriptingDefinesBeenModified if there's a difference between the in-memory values and the serialized values
+            // For indices present in the serialized array, compare corresponding entries
+            // For extra in-memory entries (beyond the serialized array), any non-empty entry is considered a modification.
+            for (int i = 0; i < scriptingDefinesList.Count; i++)
             {
-                if (scriptingDefinesList[i] != m_SerializedScriptingDefinesArray[i])
+                if (i < m_SerializedScriptingDefinesArray.Length)
                 {
-                    hasScriptingDefinesBeenModified = true;
-                    return;
+                    if (!string.Equals(scriptingDefinesList[i], m_SerializedScriptingDefinesArray[i]))
+                    {
+                        hasScriptingDefinesBeenModified = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(scriptingDefinesList[i]))
+                    {
+                        hasScriptingDefinesBeenModified = true;
+                        return;
+                    }
                 }
             }
-
             hasScriptingDefinesBeenModified = false;
         }
 
@@ -3870,22 +3972,36 @@ namespace UnityEditor
 
         void SetAdditionalCompilerArgumentListDirty(ReorderableList list = null)
         {
-            if (serializedAdditionalCompilerArguments == null ||
-                additionalCompilerArgumentsList.Count != serializedAdditionalCompilerArguments.Length)
+            // serializedAdditionalCompilerArguments contains the serialized compiler arguments
+            // additionalCompilerArgumentsList is the list of all compiler arguments in memory, and is initialized with the list of serialized values
+            if (serializedAdditionalCompilerArguments == null || additionalCompilerArgumentsList.Count < serializedAdditionalCompilerArguments.Length)
             {
                 hasAdditionalCompilerArgumentsBeenModified = true;
                 return;
             }
 
+            // This loop updates hasAdditionalCompilerArgumentsBeenModified if there's a difference between the in-memory values and the serialized values
+            // For indices present in the serialized array, compare corresponding entries.
+            // For extra in-memory entries (beyond the serialized array), any non-empty entry is considered a modification.
             for (int i = 0; i < additionalCompilerArgumentsList.Count; i++)
             {
-                if (additionalCompilerArgumentsList[i] != serializedAdditionalCompilerArguments[i])
+                if (i < serializedAdditionalCompilerArguments.Length)
                 {
-                    hasAdditionalCompilerArgumentsBeenModified = true;
-                    return;
+                    if (!string.Equals(additionalCompilerArgumentsList[i], serializedAdditionalCompilerArguments[i]))
+                    {
+                        hasAdditionalCompilerArgumentsBeenModified = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(additionalCompilerArgumentsList[i]))
+                    {
+                        hasAdditionalCompilerArgumentsBeenModified = true;
+                        return;
+                    }
                 }
             }
-
             hasAdditionalCompilerArgumentsBeenModified = false;
         }
 
@@ -4024,11 +4140,6 @@ namespace UnityEditor
             return m_Il2cppStacktraceOptionNames;
         }
 
-        public static bool IsLatestApiCompatibility(ApiCompatibilityLevel level)
-        {
-            return (level == ApiCompatibilityLevel.NET_4_6 || level == ApiCompatibilityLevel.NET_Standard_2_0);
-        }
-
         private void OtherSectionLoggingGUI()
         {
             GUILayout.Label(SettingsContent.loggingTitle, EditorStyles.boldLabel);
@@ -4120,9 +4231,7 @@ namespace UnityEditor
 
         static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return scriptingBackends.Select(s => GetNiceScriptingBackendName(s)).ToArray();
-#pragma warning restore UA2001
+            return Array.ConvertAll(scriptingBackends, s => GetNiceScriptingBackendName(s));
         }
 
         static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
@@ -4151,6 +4260,7 @@ namespace UnityEditor
                     { ApiCompatibilityLevel.NET_2_0_Subset, SettingsContent.apiCompatibilityLevel_NET_2_0_Subset },
                     { ApiCompatibilityLevel.NET_Unity_4_8, SettingsContent.apiCompatibilityLevel_NET_FW_Unity },
                     { ApiCompatibilityLevel.NET_Standard, SettingsContent.apiCompatibilityLevel_NET_Standard },
+                    { ApiCompatibilityLevel.NET, SettingsContent.apiCompatibilityLevel_NET_10 },
                 };
             }
 

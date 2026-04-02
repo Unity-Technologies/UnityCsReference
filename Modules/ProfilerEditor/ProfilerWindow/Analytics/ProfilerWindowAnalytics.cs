@@ -18,8 +18,6 @@ using static UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics;
 
 namespace UnityEditor.Profiling.Analytics
 {
-    [RequiredByNativeCode(GenerateProxy = true)]
-    [StructLayout(LayoutKind.Sequential)]
     internal struct ProfilerAnalyticsSaveLoadData : IAnalytic.IData
     {
         public string extension;
@@ -33,8 +31,6 @@ namespace UnityEditor.Profiling.Analytics
         public bool isSave;
     }
 
-    [RequiredByNativeCode(GenerateProxy = true)]
-    [StructLayout(LayoutKind.Sequential)]
     internal struct ProfilerAnalyticsConnectionData : IAnalytic.IData
     {
         public bool success;

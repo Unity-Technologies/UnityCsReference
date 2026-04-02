@@ -9,7 +9,6 @@ using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.Unmanaged;
-using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEngine.UIElements
 {
@@ -473,6 +472,7 @@ namespace UnityEngine.UIElements
         public abstract GetViewDataDictionary getViewDataDictionary { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
         public abstract FocusController focusController { get; set; }
+
         public abstract IMGUIContainer rootIMGUIContainer { get; set; }
 
         internal event Action<BaseVisualElementPanel> panelDisposed;
@@ -698,7 +698,7 @@ namespace UnityEngine.UIElements
 
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
-            using var scope = new UITKScope();
+            using var scope = new IMGUIContainer.UITKScope();
             Debug.Assert(dispatcher != null, "dispatcher != null");
             e.AssignTimeStamp(TimeSinceStartupMs());
             dispatcher?.Dispatch(e, this, dispatchMode);
@@ -801,14 +801,22 @@ namespace UnityEngine.UIElements
 
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
-            // World-space panels can't compute element from only a 2-D position.
-            if (!isFlat)
-                return GetTopElementUnderPointer(pointerId);
-
             VisualElement element = null;
 
-            if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
-                !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
+            // World-space panels either set this field manually or compute it from a 3-D ray and don't rely on the
+            // PointerDeviceState.LocationFlag.OutsidePanel system.
+            if (!isFlat)
+            {
+                var panelRay = (triggerEvent as IPointerOrMouseEvent)?.panelRay;
+
+                // No ray, the elementUnderPointer is set from an outside process (e.g. DefaultEventSystem)
+                if (panelRay == null)
+                    return GetTopElementUnderPointer(pointerId);
+
+                element = WorldSpaceInput.Pick3D(this, panelRay.Value);
+            }
+            else if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
+                     !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
             {
                 element = Pick(pointerPos, pointerId);
             }
@@ -932,7 +940,7 @@ namespace UnityEngine.UIElements
 
         public virtual void Render() => panelRenderer.Render();
 
-        internal Func<AbstractGenericMenu> CreateMenuFunctor = () => new GenericDropdownMenu();
+        internal Func<AbstractGenericMenu> CreateMenuFunctor;
 
         internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
     }
@@ -1151,6 +1159,8 @@ namespace UnityEngine.UIElements
 
         internal static InitEditorUpdaterFunction initEditorUpdaterFunc { private get; set; }
 
+        internal static Func<Object, string> getAssetPathFunc { private get; set; }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
@@ -1174,6 +1184,10 @@ namespace UnityEngine.UIElements
             return obj;
         }
 
+        internal static string GetStyleSheetPath(StyleSheet styleSheet)
+        {
+            return getAssetPathFunc(styleSheet);
+        }
         private bool m_JustReceivedFocus;
         internal void Focus()
         {
@@ -1250,7 +1264,6 @@ namespace UnityEngine.UIElements
         public override int IMGUIContainersCount { get; set; }
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
-
         internal override uint version => m_Version;
         internal override uint repaintVersion => m_RepaintVersion;
         internal override uint hierarchyVersion => m_HierarchyVersion;
@@ -1345,13 +1358,13 @@ namespace UnityEngine.UIElements
         private static unsafe VisualElement PerformPickNative(VisualElement root, Vector2 point,
             List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
-            using var buffer = new UnmanagedHandleBuffer();
+            using var buffer = picked != null ? UnmanagedHandleBuffer.CreateTemporary() : UnmanagedHandleBuffer.None();
 
             // It's not impossible to have transforms directly on the panel.visualTree
             // See for instance VisualContainerTests.ElementUnderPointWithScrolledElementUnderReturnsTrue
             var localPoint = root.WorldToLocal3D(point);
 
-            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, picked != null ? &buffer : null);
+            var handle = NativeTransformUtils.PerformPick(root.layoutNode.Handle, localPoint, includeIgnoredElement, &buffer);
             if (handle.IsUndefined)
                 return null;
 
@@ -1400,7 +1413,7 @@ namespace UnityEngine.UIElements
 
         public override void ValidateLayout()
         {
-            using var scope = new UITKScope();
+            using var scope = new IMGUIContainer.UITKScope();
             // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
             // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
             // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
@@ -1436,7 +1449,7 @@ namespace UnityEngine.UIElements
 
         public override void TickSchedulingUpdaters()
         {
-            using var scope = new UITKScope();
+            using var scope = new IMGUIContainer.UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
 
             UIElementsUtility.RebuildDirtyStyleSheets();
@@ -1532,7 +1545,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            using var scope = new UITKScope();
+            using var scope = new IMGUIContainer.UITKScope();
             m_RepaintVersion = version;
 
             repaintData.repaintEvent = e;
@@ -1552,7 +1565,7 @@ namespace UnityEngine.UIElements
 
         public override void Render()
         {
-            using var scope = new UITKScope();
+            using var scope = new IMGUIContainer.UITKScope();
             m_MarkerRender.Begin();
             base.Render();
             m_MarkerRender.End();

@@ -151,9 +151,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var customAssembly in customScriptAssemblies)
             {
                 var lowerPathPrefix = Utility.FastToLower(customAssembly.PathPrefix);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var lowerAdditionalPathPrefixes = customAssembly.AdditionalPrefixes?.Select(Utility.FastToLower).ToArray();
-#pragma warning restore UA2001
+
+                var lowerAdditionalPathPrefixes = customAssembly.AdditionalPrefixes == null
+                    ? Array.Empty<string>()
+                    : Array.ConvertAll(customAssembly.AdditionalPrefixes, Utility.FastToLower);
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
                     customAssembly.AssemblyFlags,

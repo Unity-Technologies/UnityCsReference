@@ -16,7 +16,6 @@ namespace Unity.GraphToolkit.Editor
 
         NodeModel INode.NodeModel => GetImplementation();
 
-
         internal NodeModel GetImplementation()
         {
             if (m_Implementation == null)
@@ -48,7 +47,8 @@ namespace Unity.GraphToolkit.Editor
                 string m_DisplayName;
                 string m_Tooltip;
                 PortOrientation m_Orientation;
-                PortConnectorUI m_ConnectorUI;
+                PortConnectorUI? m_ConnectorUI;
+                PortCapacity? m_Capacity;
                 List<Attribute> m_Attributes = new();
 
                 internal Type m_PortType;
@@ -66,9 +66,10 @@ namespace Unity.GraphToolkit.Editor
                     m_PortType = null;
                     m_DefaultValue = null;
                     m_Orientation = PortOrientation.Horizontal;
-                    m_ConnectorUI = PortConnectorUI.Circle;
+                    m_ConnectorUI = null;
                     m_Attributes.Clear();
                     m_TypedBuilder = null;
+                    m_Capacity = null;
                 }
 
                 internal IInputPortBuilder AddInputPort(PortDefinitionContext portsDefinition, string portName)
@@ -121,6 +122,11 @@ namespace Unity.GraphToolkit.Editor
                 IInputPortBuilder IPortBuilder<IInputPortBuilder>.AsVertical() => AsVertical();
                 ITypedInputPortBuilder IPortBuilder<ITypedInputPortBuilder>.AsVertical() => AsVertical();
 
+                IOutputPortBuilder IPortBuilder<IOutputPortBuilder>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+                ITypedOutputPortBuilder IPortBuilder<ITypedOutputPortBuilder>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+                IInputPortBuilder IPortBuilder<IInputPortBuilder>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+                ITypedInputPortBuilder IPortBuilder<ITypedInputPortBuilder>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+
                 public PortBuilder WithDisplayName(string displayName)
                 {
                     this.m_DisplayName = displayName;
@@ -168,16 +174,22 @@ namespace Unity.GraphToolkit.Editor
                     return this;
                 }
 
+                public PortBuilder WithCapacity(PortCapacity capacity)
+                {
+                    m_Capacity = capacity;
+                    return this;
+                }
+
                 public PortBuilder Delayed()
                 {
-                    if (!m_Attributes.HasAny(t => t is DelayedAttribute))
+                    if (!m_Attributes.Exists(t => t is DelayedAttribute))
                         m_Attributes.Add(new DelayedAttribute());
                     return this;
                 }
 
                 public PortBuilder AsTextArea(int minLines, int maxLines)
                 {
-                    if (!m_Attributes.HasAny(t => t is TextAreaAttribute))
+                    if (!m_Attributes.Exists(t => t is TextAreaAttribute))
                         m_Attributes.Add(new TextAreaAttribute(minLines, maxLines));
                     return this;
                 }
@@ -197,7 +209,14 @@ namespace Unity.GraphToolkit.Editor
                         if (m_Tooltip != null)
                             portModel.ToolTip = m_Tooltip;
 
-                        portModel.ConnectorUI = m_ConnectorUI;
+                        // Use the arrowhead UI for untyped ports by default
+                        if (m_ConnectorUI != null)
+                            portModel.ConnectorUI = m_ConnectorUI.Value;
+                        else
+                            portModel.ConnectorUI = m_PortType == null ? PortConnectorUI.Arrowhead : PortConnectorUI.Circle;
+
+                        if (m_Capacity.HasValue)
+                            portModel.Capacity = m_Capacity.Value;
                     }
                     m_PortsDefinitionContext.ReleaseBuilder(this);
 
@@ -226,6 +245,9 @@ namespace Unity.GraphToolkit.Editor
                 IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.AsVertical() => AsVertical();
                 IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.AsVertical() => AsVertical();
 
+                IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+                IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.WithCapacity(PortCapacity capacity) => WithCapacity(capacity);
+
                 PortBuilder<TData> WithDisplayName(string displayName)
                 {
                     parent.WithDisplayName(displayName);
@@ -247,6 +269,12 @@ namespace Unity.GraphToolkit.Editor
                 PortBuilder<TData> WithConnectorUI(PortConnectorUI connectorUI)
                 {
                     parent.WithConnectorUI(connectorUI);
+                    return this;
+                }
+
+                PortBuilder<TData> WithCapacity(PortCapacity capacity)
+                {
+                    parent.WithCapacity(capacity);
                     return this;
                 }
 
@@ -384,6 +412,7 @@ namespace Unity.GraphToolkit.Editor
                     m_Order = 0;
                     m_Attributes.Clear();
                     m_OptionType = null;
+                    m_ShowInInspectorOnly = false;
                     m_DefaultValue = null;
                     m_TypedBuilder = null;
                 }
@@ -420,14 +449,14 @@ namespace Unity.GraphToolkit.Editor
 
                 public IOptionBuilder Delayed()
                 {
-                    if (!m_Attributes.HasAny(t => t is DelayedAttribute))
+                    if (!m_Attributes.Exists(t => t is DelayedAttribute))
                         m_Attributes.Add(new DelayedAttribute());
                     return this;
                 }
 
                 public IOptionBuilder AsTextArea(int minLines, int maxLines)
                 {
-                    if (!m_Attributes.HasAny(t => t is TextAreaAttribute))
+                    if (!m_Attributes.Exists(t => t is TextAreaAttribute))
                         m_Attributes.Add(new TextAreaAttribute(minLines, maxLines));
                     return this;
                 }

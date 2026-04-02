@@ -187,7 +187,7 @@ namespace UnityEngine
                 return (textSettings, null, 0);
 
             roundedFontSize = Mathf.RoundToInt(fontSize);
-            var shouldRenderBitmap = !style.isGizmo && fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isSDF && fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
                 roundedFontSize = (int)Math.Round(fontSize, MidpointRounding.AwayFromZero);
@@ -258,7 +258,6 @@ namespace UnityEngine
         static List<List<List<int>>> s_TextElementIndicesByMesh = new();
         static Dictionary<EntityId, HashSet<uint>> s_MissingGlyphsPerFontAsset = new();
         static List<bool> s_HasMultipleColors = null;
-        static Vector2 s_UV2 = new Vector2(1, 0);
         internal void ComputeMeshInfos(ref MeshInfoBindings[] meshInfos)
         {
             foreach (var listOfAtlases in s_TextElementIndicesByMesh)
@@ -276,63 +275,86 @@ namespace UnityEngine
                 PopulateGlyphs(s_MissingGlyphsPerFontAsset);
             }
             textLib.ProcessMeshInfos(nativeTextInfo, nativeSettingsIMGUI, ref s_TextElementIndicesByMesh, ref s_HasMultipleColors, false);
-            meshInfos = new MeshInfoBindings[nativeTextInfo.meshInfoCount];
+
+            // Count total number of atlases across all mesh infos
+            int totalAtlasCount = 0;
+            for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
+            {
+                ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
+                if (textAsset == null || textAsset is SpriteAsset)
+                    continue;
+                FontAsset fa = textAsset as FontAsset;
+                totalAtlasCount += fa.atlasTextures.Length;
+            }
+
+            meshInfos = new MeshInfoBindings[totalAtlasCount];
+            int meshInfoIndex = 0;
 
             for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
             {
-                int atlasCount = 0;
                 ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
                 FontAsset fa = null;
-                var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is SpriteAsset)
                     continue;
                 fa = textAsset as FontAsset;
-                atlasCount = fa.atlasTextures.Length;
+                int atlasCount = fa.atlasTextures.Length;
 
+                var sdfScale = 0;
+                if (!fa.IsBitmap())
+                    sdfScale = fa.atlasPadding + 1;
+
+                var textElementInfos = meshInfo.textElementInfos;
+
+                // Create a separate MeshInfoBindings for each atlas
                 for (int j = 0; j < atlasCount; ++j)
                 {
                     var textElementInfoInAtlas = s_TextElementIndicesByMesh[i][j];
                     int vertexCount = textElementInfoInAtlas.Count * 4;
-                    int quadCount = vertexCount >> 2;
-                    int indexCount = quadCount * 6;
 
-                    Texture2D atlas = null;
+                    if (vertexCount == 0)
+                        continue;
 
-                    atlas = fa.atlasTextures[j];
-                    meshInfos[i].material = fa.material;
+                    meshInfos[meshInfoIndex].vertexData = new TextCoreVertex[vertexCount];
+                    meshInfos[meshInfoIndex].vertexCount = vertexCount;
+                    // Get the correct material for this specific atlas texture
+                    meshInfos[meshInfoIndex].material = j == 0 ? fa.material : MaterialManager.GetFallbackMaterial(fa, fa.material, j);
 
-                    meshInfos[i].vertexData = new TextCoreVertex[meshInfo.textElementInfos.Length * 4];
-                    meshInfos[i].vertexCount = meshInfo.textElementInfos.Length * 4;
-
-                    var sdfScale = 0;
-                    if (!fa.IsBitmap())
-                        sdfScale = fa.atlasPadding + 1;
-
-                    s_UV2.y = sdfScale;
-                    var textElementInfos = meshInfo.textElementInfos;
-                    for (int vDst = 0, vSrc = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
+                    int vertexOffset = 0;
+                    // Iterate through the indices for this specific atlas
+                    for (int vSrc = 0; vSrc < textElementInfoInAtlas.Count; vSrc++)
                     {
-                        var te = textElementInfos[vSrc];
-                        meshInfos[i].vertexData[vDst + 0].position = te.bottomLeft.position * invScale;
-                        meshInfos[i].vertexData[vDst + 1].position = te.topLeft.position * invScale;
-                        meshInfos[i].vertexData[vDst + 2].position = te.topRight.position * invScale;
-                        meshInfos[i].vertexData[vDst + 3].position = te.bottomRight.position * invScale;
+                        int textElementIndex = textElementInfoInAtlas[vSrc];
+                        var te = textElementInfos[textElementIndex];
 
-                        meshInfos[i].vertexData[vDst + 0].uv0 = te.bottomLeft.uv0;
-                        meshInfos[i].vertexData[vDst + 1].uv0 = te.topLeft.uv0;
-                        meshInfos[i].vertexData[vDst + 2].uv0 = te.topRight.uv0;
-                        meshInfos[i].vertexData[vDst + 3].uv0 = te.bottomRight.uv0;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].position = te.bottomLeft.position * invScale;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].position = te.topLeft.position * invScale;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].position = te.topRight.position * invScale;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].position = te.bottomRight.position * invScale;
 
-                        meshInfos[i].vertexData[vDst + 0].uv2 = s_UV2;
-                        meshInfos[i].vertexData[vDst + 1].uv2 = s_UV2;
-                        meshInfos[i].vertexData[vDst + 2].uv2 = s_UV2;
-                        meshInfos[i].vertexData[vDst + 3].uv2 = s_UV2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv0 = te.bottomLeft.uv0;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv0 = te.topLeft.uv0;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv0 = te.topRight.uv0;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv0 = te.bottomRight.uv0;
 
-                        meshInfos[i].vertexData[vDst + 0].color = te.bottomLeft.color;
-                        meshInfos[i].vertexData[vDst + 1].color = te.topLeft.color;
-                        meshInfos[i].vertexData[vDst + 2].color = te.topRight.color;
-                        meshInfos[i].vertexData[vDst + 3].color = te.bottomRight.color;
+                        float nativeBold = te.bottomLeft.uv2.y;
+                        float signedSdfScale = nativeBold != 0 ? -sdfScale : sdfScale;
+                        var uv2 = new Vector2(1, signedSdfScale);
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv2 = uv2;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv2 = uv2;
+
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].color = te.bottomLeft.color;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].color = te.topLeft.color;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].color = te.topRight.color;
+                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].color = te.bottomRight.color;
+
+                        vertexOffset += 4;
                     }
+
+                    meshInfoIndex++;
                 }
             }
         }
@@ -345,7 +367,7 @@ namespace UnityEngine
             List<uint> missingGlyphs = new();
             foreach (var entry in missingGlyphsPerFontAsset)
             {
-                var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(entry.Key);
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
                 if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
                     continue;
 
@@ -375,6 +397,7 @@ namespace UnityEngine
         {
             ParseRichText(ref nativeSettingsIMGUI);
             m_Links = m_TempLinks;
+            FontAsset.CreateHbFaceIfNeeded();
             nativeTextInfo = textLib.GenerateText(nativeSettingsIMGUI, textGenerationInfo, ref isCached);
             pixelPreferedSize = new Vector2(nativeTextInfo.totalWidth / 64.0f, nativeTextInfo.totalHeight / 64.0f);
             m_IsElided = nativeTextInfo.isElided;

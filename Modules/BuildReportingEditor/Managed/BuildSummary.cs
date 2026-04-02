@@ -8,11 +8,19 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Reporting
 {
-    ///<summary>Contains overall summary information about a build.</summary>
-    [NativeType(CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildReportingEditor/Managed/BuildSummary.bindings.h")]
+    /// <summary>Contains overall summary information about a build.</summary>
+    /// <remarks>This struct is part of the <see cref="BuildReport"/> and is accessible via <see cref="BuildReport.summary"/>.
+    /// It contains detailed information such as build times, platform, options, and result.
+    ///
+    /// For a lightweight alternative that can be read without loading the full <see cref="BuildReport"/>,
+    /// use <see cref="Build.BuildReportSummary"/>, which is stored as JSON and tracked by the <see cref="Build.BuildHistory"/>.
+    /// </remarks>
+    /// <seealso cref="Build.BuildReportSummary"/>
+    /// <seealso cref="Build.BuildHistory"/>
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildSummary
     {
+        [NativeName("buildStartTime.ticks")]
         internal Int64 buildStartTimeTicks;
         ///<summary>The time the build was started.</summary>
         public DateTime buildStartedAt { get { return new DateTime(buildStartTimeTicks); } }
@@ -58,7 +66,7 @@ namespace UnityEditor.Build.Reporting
         ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this value of this will be identical to the output path.</summary>
         public string dataPath { get; }
 
-        ///<summary>For ContentDirectory builds this returns the build name. For other build types this returns an empty string.</summary>
+        ///<summary>For ContentDirectory builds this returns the build name. For Player builds this returns the product name from PlayerSettings.</summary>
         /*UCBP-PUBLIC*/
         internal string buildName { get; }
 

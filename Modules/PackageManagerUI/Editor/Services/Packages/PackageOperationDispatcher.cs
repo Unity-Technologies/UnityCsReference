@@ -16,9 +16,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsUninstallInProgress(IPackage package);
         bool IsInstallInProgress(IPackageVersion version);
 
-        bool Install(IPackageVersion version);
-        bool Install(IReadOnlyCollection<IPackageVersion> versions);
-        bool Install(string packageId);
+        bool Install(IPackageVersion version, OperationType operationType);
+        bool Install(IReadOnlyCollection<IPackageVersion> versions, OperationType operationType);
+        bool Install(string packageId, OperationType operationType);
         bool InstallFromUrl(string url);
         bool InstallFromPath(string path, out string tempPackageId);
         void Uninstall(IPackage package);
@@ -82,33 +82,33 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_UpmClient.IsAddInProgress(version?.packageId);
         }
 
-        public bool Install(IPackageVersion version)
+        public bool Install(IPackageVersion version, OperationType operationType)
         {
             if (version == null || version.isInstalled)
                 return false;
 
             // When there is an IPackageVersion, we know for sure that the packageId is in the PackageDatabase
-            m_UpmClient.AddById(version.packageId, false);
+            m_UpmClient.AddById(version.packageId, false, operationType);
             return true;
         }
 
-        public bool Install(IReadOnlyCollection<IPackageVersion> versions)
+        public bool Install(IReadOnlyCollection<IPackageVersion> versions, OperationType operationType)
         {
             if (versions == null || versions.Count == 0)
                 return false;
 
-            m_UpmClient.AddByIds(versions.SelectToNewArray(v => v.packageId));
+            m_UpmClient.AddByIds(versions.SelectToNewArray(v => v.packageId), operationType);
             return true;
         }
 
-        public bool Install(string packageId)
+        public bool Install(string packageId, OperationType operationType)
         {
             if (isInstallOrUninstallInProgress)
             {
                 Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
                 return false;
             }
-            m_UpmClient.AddById(packageId, true);
+            m_UpmClient.AddById(packageId, true, operationType);
             return true;
         }
 
@@ -119,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(url));
                 return false;
             }
-            m_UpmClient.AddByUrl(url);
+            m_UpmClient.AddByUrl(url, OperationType.Install);
             return true;
         }
 
@@ -131,31 +131,31 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(path));
                 return false;
             }
-            return m_UpmClient.AddByPath(path, out tempPackageId);
+            return m_UpmClient.AddByPath(path, OperationType.Install, out tempPackageId);
         }
 
         public void Uninstall(IPackage package)
         {
             if (package?.versions.installed == null)
                 return;
-            m_UpmClient.RemoveByName(package.name);
+            m_UpmClient.RemoveByName(package.name, OperationType.Remove);
         }
 
         public void Uninstall(IReadOnlyCollection<IPackage> packages)
         {
             if (packages == null || packages.Count == 0)
                 return;
-            m_UpmClient.RemoveByNames(packages.SelectToNewArray(p => p.name));
+            m_UpmClient.RemoveByNames(packages.SelectToNewArray(p => p.name), OperationType.Remove);
         }
 
         public void InstallAndResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
         {
-            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name));
+            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name), OperationType.Install);
         }
 
         public void ResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
         {
-            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name));
+            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name), OperationType.Reset);
         }
 
         public bool Embed(IPackage package)
@@ -226,7 +226,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void AbortDownload(IReadOnlyCollection<IPackage> packages)
         {
-            foreach (var package in packages)
+            // We use ToNewArray here as the original collection might be modified in the for loop
+            foreach (var package in packages.ToNewArray())
                 m_AssetStoreDownloadManager.AbortDownload(package.product?.id);
         }
 

@@ -108,7 +108,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
                 if (m_StackTrace != null)
                 {
-                    var stackTrace = UnityEngine.StackTraceUtility.ExtractFormattedStackTrace(m_StackTrace);
+                    var stackTrace = Unity.Scripting.StackTrace.Format(m_StackTrace);
                     var err = "A Native Collection has not been disposed, resulting in a memory leak. Allocated from:\n" + stackTrace;
 
                     if (m_StackTrace.FrameCount != 0)

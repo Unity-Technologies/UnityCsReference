@@ -31,15 +31,42 @@ namespace UnityEditor.Overlays
         void AttachToPanel(AttachToPanelEvent evt)
         {
             foreach (var overlay in m_Overlays)
+            {
                 overlay.displayedChanged += OnDisplayChanged;
+                overlay.hasMenuEntryChanged += OnHasMenuEntryChanged;
+            }
 
             UpdateToggleState();
+            UpdateEntryVisibility();
         }
 
         void DetachFromPanel(DetachFromPanelEvent evt)
         {
             foreach (var overlay in m_Overlays)
+            {
                 overlay.displayedChanged -= OnDisplayChanged;
+                overlay.hasMenuEntryChanged -= OnHasMenuEntryChanged;
+            }
+        }
+
+        void OnHasMenuEntryChanged(bool state)
+        {
+            UpdateEntryVisibility();
+        }
+
+        void UpdateEntryVisibility()
+        {
+            bool allHidden = true;
+            foreach (var overlay in m_Overlays)
+            {
+                if (overlay.hasMenuEntry)
+                {
+                    allHidden = false;
+                    break;
+                }
+            }
+
+            style.display = allHidden ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         void OnDisplayChanged(bool displayed)
@@ -125,12 +152,25 @@ namespace UnityEditor.Overlays
         void AttachToPanel(AttachToPanelEvent evt)
         {
             m_Overlay.displayedChanged += OnDisplayChanged;
+            m_Overlay.hasMenuEntryChanged += OnHasMenuEntryChanged;
             UpdateToggleState();
+            UpdateEntryVisibility();
         }
 
         void DetachFromPanel(DetachFromPanelEvent evt)
         {
+            m_Overlay.hasMenuEntryChanged -= OnHasMenuEntryChanged;
             m_Overlay.displayedChanged -= OnDisplayChanged;
+        }
+
+        void UpdateEntryVisibility()
+        {
+            style.display = m_Overlay.hasMenuEntry ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        void OnHasMenuEntryChanged(bool state)
+        {
+            UpdateEntryVisibility();
         }
 
         void OnDisplayChanged(bool displayed)

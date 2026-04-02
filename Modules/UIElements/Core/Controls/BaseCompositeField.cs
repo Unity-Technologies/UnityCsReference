@@ -69,7 +69,7 @@ namespace UnityEngine.UIElements
         private VisualElement GetSpacer()
         {
             var spacer = new VisualElement();
-            spacer.AddToClassList(spacerUssClassName);
+            spacer.AddToClassList(spacerUssClassNameUnique);
             spacer.visible = false;
             spacer.focusable = false;
             return spacer;
@@ -87,39 +87,56 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-composite-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// USS class name of spacers in elements of this type.
         /// </summary>
         public static readonly string spacerUssClassName = ussClassName + "__field-spacer";
+        internal static readonly UniqueStyleString spacerUssClassNameUnique = new(spacerUssClassName);
+
         /// <summary>
         /// USS class name of elements of this type when the fields are displayed on multiple lines.
         /// </summary>
         public static readonly string multilineVariantUssClassName = ussClassName + "--multi-line";
+        internal static readonly UniqueStyleString multilineVariantUssClassNameUnique = new(multilineVariantUssClassName);
+
         /// <summary>
         /// USS class name of field groups in elements of this type.
         /// </summary>
         public static readonly string fieldGroupUssClassName = ussClassName + "__field-group";
+        internal static readonly UniqueStyleString fieldGroupUssClassNameUnique = new(fieldGroupUssClassName);
+
         /// <summary>
         /// USS class name of fields in elements of this type.
         /// </summary>
         public static readonly string fieldUssClassName = ussClassName + "__field";
+        internal static readonly UniqueStyleString fieldUssClassNameUnique = new(fieldUssClassName);
+
         /// <summary>
         /// USS class name of the first field in elements of this type.
         /// </summary>
         public static readonly string firstFieldVariantUssClassName = fieldUssClassName + "--first";
+        internal static readonly UniqueStyleString firstFieldVariantUssClassNameUnique = new(firstFieldVariantUssClassName);
+
         /// <summary>
         /// USS class name of elements of this type when the fields are displayed on two lines.
         /// </summary>
         public static readonly string twoLinesVariantUssClassName = ussClassName + "--two-lines";
+        internal static readonly UniqueStyleString twoLinesVariantUssClassNameUnique = new(twoLinesVariantUssClassName);
+
 
         /// <summary>
         /// If set to true, the value property only updates after either the user presses Enter or moves focus away from one of the value fields.
@@ -128,7 +145,7 @@ namespace UnityEngine.UIElements
         public bool isDelayed
         {
             get => m_IsDelayed;
-            set 
+            set
             {
                 if (m_IsDelayed == value)
                     return;
@@ -149,9 +166,9 @@ namespace UnityEngine.UIElements
             delegatesFocus = false;
             visualInput.focusable = false;
 
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
 
             m_ShouldUpdateDisplay = true;
             m_Fields = new List<TField>();
@@ -167,7 +184,7 @@ namespace UnityEngine.UIElements
             if (numberOfLines > 1)
             {
                 isMultiLine = true;
-                AddToClassList(multilineVariantUssClassName);
+                AddToClassList(multilineVariantUssClassNameUnique);
             }
 
             for (int i = 0; i < numberOfLines; i++)
@@ -176,7 +193,7 @@ namespace UnityEngine.UIElements
                 if (isMultiLine)
                 {
                     newLineGroup = new VisualElement();
-                    newLineGroup.AddToClassList(fieldGroupUssClassName);
+                    newLineGroup.AddToClassList(fieldGroupUssClassNameUnique);
                 }
 
                 bool firstField = true;
@@ -189,10 +206,10 @@ namespace UnityEngine.UIElements
                         name = desc.ussName
                     };
                     field.delegatesFocus = true;
-                    field.AddToClassList(fieldUssClassName);
+                    field.AddToClassList(fieldUssClassNameUnique);
                     if (firstField)
                     {
-                        field.AddToClassList(firstFieldVariantUssClassName);
+                        field.AddToClassList(firstFieldVariantUssClassNameUnique);
                         firstField = false;
                     }
 

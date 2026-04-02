@@ -190,6 +190,14 @@ namespace Unity.Hierarchy
         {
         }
 
+        /// <summary>
+        /// Called after the <see cref="HierarchyViewModel"/> finishes setting its state.
+        /// </summary>
+        /// <param name="viewModel">The <see cref="HierarchyViewModel"/> for which the state was set.</param>
+        protected virtual void ViewModelPostSetState(HierarchyViewModel viewModel)
+        {
+        }
+
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyNodeTypeHandlerBase FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target : null;
@@ -263,7 +271,7 @@ namespace Unity.Hierarchy
         static int InvokeGetNodeHashCode(IntPtr handlePtr, in HierarchyNode node) => FromIntPtr(handlePtr).GetNodeHashCode(in node);
 
         [RequiredByNativeCode]
-        static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
+        static int InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => (int)FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
 
 #pragma warning disable 618 // Remove this pragma once the corresponding public APIs below are removed
         [RequiredByNativeCode]
@@ -281,6 +289,9 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static void InvokeViewModelPostUpdate(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostUpdate(HierarchyViewModel.FromIntPtr(viewModelPtr));
+
+        [RequiredByNativeCode]
+        static void InvokeViewModelPostSetState(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostSetState(HierarchyViewModel.FromIntPtr(viewModelPtr));
         #endregion
 
         #region Marked as obsolete warning in 6.0

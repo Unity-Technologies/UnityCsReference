@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor.Analytics;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
+using Unity.Collections;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
@@ -54,7 +54,7 @@ namespace UnityEditor
             public static readonly GUIContent editorTextRenderingMode = EditorGUIUtility.TrTextContent("Editor Default Text Rendering Mode");
             public static readonly GUIContent editorTextSharpness = EditorGUIUtility.TrTextContent("Editor Text Sharpness");
             public static readonly GUIContent editorTextGeneration = EditorGUIUtility.TrTextContent("Editor Text Generator Type");
-            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
+            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme","Choose between light and dark themes for the Editor.\nThe Editor theme cannot be changed while in Play mode.");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent useNewHierarchy = EditorGUIUtility.TrTextContent("Use new Hierarchy window");
             public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
@@ -98,6 +98,7 @@ namespace UnityEditor
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
             public static readonly GUIContent resetAllDialogBoxes = EditorGUIUtility.TrTextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.");
+            public static readonly GUIContent hideDeprecationWarnings = EditorGUIUtility.TrTextContent("Hide deprecation warnings", "Hides warning boxes for deprecated components in the Inspector window.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
 By default, Windows will combine these under a single taskbar item.");
@@ -293,6 +294,23 @@ By default, Windows will combine these under a single taskbar item.");
             }
         }
 
+        internal static Action<bool> hideDeprecationWarningsChanged;
+
+        internal static bool hideDeprecationWarnings
+        {
+            get
+            {
+                return EditorPrefs.GetBool("HideDeprecationWarnings", false);
+            }
+            set
+            {
+                if (value != EditorPrefs.GetBool("HideDeprecationWarnings", false))
+                {
+                    EditorPrefs.SetBool("HideDeprecationWarnings", value);
+                    hideDeprecationWarningsChanged?.Invoke(value);
+                }
+            }
+        }
 
         [SettingsProvider]
         internal static SettingsProvider CreateGeneralProvider()
@@ -529,9 +547,13 @@ By default, Windows will combine these under a single taskbar item.");
             CodeOptimization codeOptimization = (CodeOptimization)EditorGUILayout.EnumPopup(ExternalProperties.codeOptimizationOnStartup, m_ScriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
             m_ScriptDebugInfoEnabled = (codeOptimization == CodeOptimization.Debug ? true : false);
 
-            int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
-            if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
-                InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1,
+                    GeneralProperties.editorSkinOptions);
+                if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
+                    InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+            }
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
@@ -686,6 +708,8 @@ By default, Windows will combine these under a single taskbar item.");
                     EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
                 }
             }
+
+            hideDeprecationWarnings = EditorGUILayout.Toggle(GeneralProperties.hideDeprecationWarnings, hideDeprecationWarnings);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -893,8 +917,9 @@ By default, Windows will combine these under a single taskbar item.");
                 GUILayout.Label(category.Key, EditorStyles.boldLabel);
                 foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
                 {
+                    var displayName = ObjectNames.NicifyVariableName(kvp.Key);
                     EditorGUI.BeginChangeCheck();
-                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(kvp.Key, kvp.Key), kvp.Value.Color);
+                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
                     if (EditorGUI.EndChangeCheck())
                     {
                         ccolor = kvp.Value;
@@ -1488,9 +1513,7 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUILayout.PrefixLabel(label, style);
 
             int[] selected = Array.Empty<int>();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (paths.Contains(selectedString))
-#pragma warning restore UA2001
                 selected = new[] { Array.IndexOf(paths, selectedString) };
             GUIContent text = new GUIContent(selected.Length == 0 ? defaultString : names[selected[0]]);
             Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);

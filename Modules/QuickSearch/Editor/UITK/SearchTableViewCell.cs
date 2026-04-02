@@ -29,8 +29,7 @@ namespace UnityEditor.Search
         private SearchItem m_BindedItem;
         private Action m_DeferredUpdateOff;
         private SearchColumnEventArgs m_ColumnInvokeArgs;
-        private bool m_InitiateDrag = false;
-        private Vector3 m_InitiateDragPosition;
+        private SearchResultViewDragHandler m_DragHandler;
         private VisualElement m_ValueElement;
         private string m_LastProvider;
 
@@ -41,6 +40,13 @@ namespace UnityEditor.Search
             m_TableView = tableView;
 
             Create();
+
+            m_DragHandler = new SearchResultViewDragHandler(searchView, this)
+            {
+                CanStartDrag = CanStartDrag,
+                StartDrag = StartDrag,
+                GetDraggedItem = evt => m_BindedItem
+            };
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -91,9 +97,7 @@ namespace UnityEditor.Search
 
             if (m_SearchColumn.setter == null)
             {
-                RegisterCallback<PointerDownEvent>(OnItemPointerDown);
-                RegisterCallback<PointerUpEvent>(OnItemPointerUp);
-                RegisterCallback<DragExitedEvent>(OnDragExited);
+                m_DragHandler.RegisterDragCallbacks();
             }
         }
 
@@ -102,10 +106,7 @@ namespace UnityEditor.Search
             var pp = parent?.parent;
             pp?.UnregisterCallback<ContextClickEvent>(OnItemContextualClicked);
 
-            UnregisterCallback<PointerDownEvent>(OnItemPointerDown);
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerUpEvent>(OnItemPointerUp);
-            UnregisterCallback<DragExitedEvent>(OnDragExited);
+            m_DragHandler.UnregisterDragCallbacks();
         }
 
         public void Bind(SearchItem item)
@@ -264,7 +265,7 @@ namespace UnityEditor.Search
 
         public void Unbind()
         {
-            ResetDrag();
+            m_DragHandler.ResetDrag();
             UnbindEvents();
             m_BindedItem = null;
             m_DeferredUpdateOff?.Invoke();
@@ -279,60 +280,18 @@ namespace UnityEditor.Search
             m_ViewModel.ShowItemContextualMenu(m_BindedItem, new Rect(evt.mousePosition, worldBound.size));
         }
 
-        private void OnItemPointerDown(PointerDownEvent evt)
+        bool CanStartDrag(PointerDownEvent evt)
         {
-            // dragging is initiated only by left mouse clicks
-            if (evt.button != (int)MouseButton.LeftMouse)
-                return;
-
             var cell = evt.target as SearchTableViewCell;
             if (cell?.m_ValueElement is TextElement textElement && textElement.selection.isSelectable)
-                return;
-
-            m_InitiateDrag = m_BindedItem.provider.startDrag != null;
-            m_InitiateDragPosition = evt.localPosition;
-
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            RegisterCallback<PointerMoveEvent>(OnItemPointerMove);
-
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-            RegisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
+                return false;
+            return m_BindedItem != null && m_BindedItem.provider.startDrag != null;
         }
 
-        void OnItemPointerLeave(PointerLeaveEvent evt)
+        void StartDrag(SearchItem _)
         {
-            // If we enter here, it means the mouse left the element before any mouse
-            // move, so the item jumped around to be repositioned in the window.
-            // This will cause an issue with drag and drop
-            m_InitiateDrag = false;
-
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-        }
-
-        private void OnItemPointerMove(PointerMoveEvent evt)
-        {
-            if (!m_InitiateDrag)
-                return;
-
-            if ((evt.localPosition - m_InitiateDragPosition).sqrMagnitude < 5f)
-                return;
-
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
-
             DragAndDrop.PrepareStartDrag();
             m_BindedItem.provider.startDrag(m_BindedItem, m_ViewModel.context);
-            m_InitiateDrag = false;
-        }
-
-        private void OnDragExited(DragExitedEvent evt) => ResetDrag();
-        private void OnItemPointerUp(PointerUpEvent evt) => ResetDrag();
-
-        private void ResetDrag()
-        {
-            m_InitiateDrag = false;
-            UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
-            UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
         }
     }
 }

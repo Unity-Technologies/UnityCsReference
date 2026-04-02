@@ -16,7 +16,7 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class GraphAssetReference : ISerializationCallbackReceiver, IEquatable<GraphAssetReference>
     {
-        protected static readonly int k_InstanceIDNone = 0;
+        protected static readonly EntityId k_InstanceIDNone = EntityId.None;
 
         [SerializeField]
         protected string m_AssetGUID; // For serialization only. Otherwise use m_AssetGuid128.
@@ -31,7 +31,7 @@ namespace Unity.GraphToolkit.Editor
         protected string m_Title;
 
         [SerializeField]
-        protected int m_GraphAssetObjectInstanceID;
+        protected EntityId m_GraphAssetObjectInstanceID;
 
         protected GraphObject m_GraphAsset;
         protected GUID m_AssetGuid128;
@@ -73,7 +73,7 @@ namespace Unity.GraphToolkit.Editor
             // If it failed, try to retrieve object from its instance id (memory based asset).
             if (!GraphAsset && m_GraphAssetObjectInstanceID != k_InstanceIDNone)
             {
-                GraphAsset = EditorUtility.InstanceIDToObject(m_GraphAssetObjectInstanceID) as GraphObject;
+                GraphAsset = EditorUtility.EntityIdToObject(m_GraphAssetObjectInstanceID) as GraphObject;
             }
 
             if (!GraphAsset)

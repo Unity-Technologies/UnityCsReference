@@ -9,17 +9,22 @@ namespace UnityEditor.UIElements
     class EditorFocusMonitor
     {
         /// <summary>
-        /// Checks if any Editor windows have a bindable element currently focused.
+        /// Checks if any Editor windows have a focused element that is, or is
+        /// inside, an <see cref="IDelayedField"/>. Delayed fields
+        /// (TextInputBaseField, BaseCompositeField, etc.) have intermediate
+        /// editing state where the user types characters one at a time, so
+        /// prefab auto-save must be deferred until editing ends.
+        /// Non-delayed fields like Toggle, EnumField, or Slider commit their
+        /// values immediately and should not block auto-save.
         /// </summary>
-        /// <returns>True if a bindable element is focused; false otherwise.</returns>
-        public static bool AreBindableElementsSelected()
+        /// <returns>True if a delayed field is focused; false otherwise.</returns>
+        public static bool IsDelayableFieldFocused()
         {
             foreach (var window in EditorWindow.activeEditorWindows)
             {
                 var focusController = window.rootVisualElement?.panel?.focusController;
 
-                // We only care about elements that are bindable, as they are the only ones that could be making changes to the prefab.
-                if (focusController?.focusedElement is BindableElement)
+                if (focusController?.focusedElement is IDelayedField)
                     return true;
             }
             return false;

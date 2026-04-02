@@ -34,7 +34,9 @@ namespace UnityEngine.Networking
     public enum HttpForcedVersion
     {
         NotForced = 0,
-        HTTP2 = 1,
+        HTTP1_0 = 1,
+        HTTP1_1 = 2,
+        HTTP2 = 3,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -680,7 +682,7 @@ namespace UnityEngine.Networking
         private extern HttpForcedVersion GetHttpForcedVersion();
         private extern UnityWebRequestError SetHttpForcedVersion(HttpForcedVersion forceHttp2);
 
-        internal HttpForcedVersion httpForcedVersion
+        public HttpForcedVersion httpForcedVersion
         {
             get { return GetHttpForcedVersion(); }
             set

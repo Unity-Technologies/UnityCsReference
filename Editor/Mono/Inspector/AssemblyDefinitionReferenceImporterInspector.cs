@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEditorInternal;
@@ -98,9 +97,7 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SaveAndUpdateAssemblyDefinitionReferenceStates(extraDataTargets.Cast<AssemblyDefinitionReferenceState>().ToArray());
-#pragma warning restore UA2001
+            SaveAndUpdateAssemblyDefinitionReferenceStates(extraDataTargets);
         }
 
         void ShowLoadErrorExceptionGUI(Exception e)
@@ -162,9 +159,9 @@ namespace UnityEditor
             state.reference.Load(data.reference, state.useGUIDs);
         }
 
-        static void SaveAndUpdateAssemblyDefinitionReferenceStates(AssemblyDefinitionReferenceState[] states)
+        static void SaveAndUpdateAssemblyDefinitionReferenceStates(UnityEngine.Object[] states)
         {
-            foreach (var state in states)
+            foreach (AssemblyDefinitionReferenceState state in states)
             {
                 SaveAndUpdateAssemblyDefinitionReferenceState(state);
             }

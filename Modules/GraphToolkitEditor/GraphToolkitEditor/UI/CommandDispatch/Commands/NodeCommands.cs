@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using Unity.Collections;
 using Unity.GraphToolkit.CSO;
 
 namespace Unity.GraphToolkit.Editor
@@ -54,7 +55,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, CollapseNodeCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -121,7 +122,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ShowNodePreviewCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -333,7 +334,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateConstantsValueCommand command)
         {
-            if (command.Constants.HasAny())
+            if (command.Constants.Count > 0)
             {
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
@@ -392,7 +393,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectWiresCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -454,7 +455,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectWiresOnPortCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -584,7 +585,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeNodeStateCommand command)
         {
-            if (!command.Models.HasAny(t => t.IsDisableable()))
+            if (!command.Models.Exists(t => t.IsDisableable()))
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

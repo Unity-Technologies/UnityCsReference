@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEditor;
 
@@ -43,21 +41,18 @@ namespace Unity.GraphToolkit.Editor
             var types = TypeCache.GetTypesWithAttribute<LibraryItemAttribute>();
             foreach (var type in types)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var attributes = type.GetCustomAttributes<LibraryItemAttribute>().ToList();
-#pragma warning restore UA2001
-                if (!attributes.HasAny())
+                if (!Attribute.IsDefined(type, typeof(LibraryItemAttribute)))
                     continue;
 
                 if (!typeof(BlockNodeModel).IsAssignableFrom(type))
                     continue;
 
                 var blockInstance = Activator.CreateInstance(type) as BlockNodeModel;
-
                 if (blockInstance == null || !blockInstance.IsCompatibleWith(containerInstance))
                     continue;
 
-                foreach (var attribute in attributes)
+                var attributes = Attribute.GetCustomAttributes(type, typeof(LibraryItemAttribute));
+                foreach (LibraryItemAttribute attribute in attributes)
                 {
                     if (!attribute.GraphModelType.IsInstanceOfType(m_GraphModel))
                         continue;

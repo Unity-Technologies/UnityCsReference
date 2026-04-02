@@ -5,177 +5,119 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
-using UnityEngine.Scripting;
-using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
     partial class InlineStyleAccessPropertyBag : PropertyBag<InlineStyleAccess>, INamedProperties<InlineStyleAccess>
     {
-        static InlineStyleAccessPropertyBag()
-        {
-            ConverterGroups.RegisterGlobal((ref OverflowInternal v) => (Overflow)v);
-            ConverterGroups.RegisterGlobal((ref OverflowInternal v) => new StyleEnum<Overflow>((Overflow)v));
-            ConverterGroups.RegisterGlobal((ref Overflow v) => (OverflowInternal)v);
-            ConverterGroups.RegisterGlobal((ref StyleEnum<Overflow> v) => (OverflowInternal)v.value);
-        }
-
         readonly List<IProperty<InlineStyleAccess>> m_PropertiesList;
 
         readonly Dictionary<string, IProperty<InlineStyleAccess>> m_PropertiesHash;
 
-        abstract class InlineStyleProperty<TStyleValue, TValue> : Property<InlineStyleAccess, TStyleValue>
-            where TStyleValue : IStyleValue<TValue>, new()
+        internal interface IStyleProperty : IProperty<InlineStyleAccess>
         {
-            protected InlineStyleProperty()
-            {
-                // Defines basic conversions between value, keyword and StyleValue
-                ConverterGroups.RegisterGlobal((ref TStyleValue sv) => sv.value);
-                ConverterGroups.RegisterGlobal((ref TValue v) => new TStyleValue {value = v});
-                ConverterGroups.RegisterGlobal((ref TStyleValue sv) => sv.keyword);
-                ConverterGroups.RegisterGlobal((ref StyleKeyword kw) => new TStyleValue {keyword = kw});
-            }
+            string ussName { get; }
+        }
 
+        abstract class InlineStyleProperty<TStyleValue> : Property<InlineStyleAccess, TStyleValue>, IStyleProperty
+        {
             public abstract string ussName { get; }
         }
 
-        abstract class InlineStyleEnumProperty<TValue> : InlineStyleProperty<StyleEnum<TValue>, TValue>
+        abstract class InlineStyleEnumProperty<TValue> : InlineStyleProperty<StyleEnum<TValue>>
             where TValue : struct, IConvertible
         {
         }
 
-        abstract class InlineStyleColorProperty : InlineStyleProperty<StyleColor, Color>
+        abstract class InlineStyleColorProperty : InlineStyleProperty<StyleColor>
         {
-            protected InlineStyleColorProperty()
+        }
+
+        abstract class InlineStyleRatioProperty : InlineStyleProperty<StyleRatio>
+        {
+        }
+
+        abstract class InlineStyleBackgroundProperty : InlineStyleProperty<StyleBackground>
+        {
+        }
+
+        abstract class InlineStyleLengthProperty : InlineStyleProperty<StyleLength>
+        {
+        }
+
+        abstract class InlineStyleFloatProperty : InlineStyleProperty<StyleFloat>
+        {
+        }
+
+        abstract class InlineStyleListProperty<T> : InlineStyleProperty<StyleList<T>>
+        {
+        }
+
+        abstract class InlineStyleFontProperty : InlineStyleProperty<StyleFont>
+        {
+        }
+
+        abstract class InlineStyleFontDefinitionProperty : InlineStyleProperty<StyleFontDefinition>
+        {
+        }
+
+        abstract class InlineStyleIntProperty : InlineStyleProperty<StyleInt>
+        {
+        }
+
+        abstract class InlineStyleRotateProperty : InlineStyleProperty<StyleRotate>
+        {
+        }
+
+        abstract class InlineStyleScaleProperty : InlineStyleProperty<StyleScale>
+        {
+        }
+
+        abstract class InlineStyleCursorProperty : InlineStyleProperty<StyleCursor>
+        {
+        }
+
+        abstract class InlineStyleTextShadowProperty : InlineStyleProperty<StyleTextShadow>
+        {
+        }
+
+        abstract class InlineStyleTextAutoSizeProperty: InlineStyleProperty<StyleTextAutoSize>
+        {
+        }
+
+        abstract class InlineStyleTransformOriginProperty : InlineStyleProperty<StyleTransformOrigin>
+        {
+        }
+
+        abstract class InlineStyleTranslateProperty : InlineStyleProperty<StyleTranslate>
+        {
+        }
+
+        abstract class InlineStyleBackgroundPositionProperty : InlineStyleProperty<StyleBackgroundPosition>
+        {
+        }
+
+        abstract class InlineStyleBackgroundRepeatProperty : InlineStyleProperty<StyleBackgroundRepeat>
+        {
+        }
+
+        abstract class InlineStyleBackgroundSizeProperty : InlineStyleProperty<StyleBackgroundSize>
+        {
+        }
+
+        abstract class InlineStyleMaterialDefinitionProperty : InlineStyleProperty<StyleMaterialDefinition>
+        {
+        }
+
+        void AddPropertyRange(params IStyleProperty[] properties)
+        {
+            foreach (var property in properties)
             {
-                ConverterGroups.RegisterGlobal((ref Color32 v) => new StyleColor(v));
-                ConverterGroups.RegisterGlobal((ref StyleColor sv) => (Color32) sv.value);
+                m_PropertiesList.Add(property);
+                m_PropertiesHash.Add(property.Name, property);
+                if (string.CompareOrdinal(property.Name, property.ussName) != 0)
+                    m_PropertiesHash.Add(property.ussName, property);
             }
-        }
-
-        abstract class InlineStyleRatioProperty : InlineStyleProperty<StyleRatio, Ratio>
-        {
-            protected InlineStyleRatioProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref float v) => new StyleRatio(v));
-                ConverterGroups.RegisterGlobal((ref StyleRatio sv) => (float) sv.value);
-            }
-        }
-
-        abstract class InlineStyleBackgroundProperty : InlineStyleProperty<StyleBackground, Background>
-        {
-            protected InlineStyleBackgroundProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref Texture2D v) => new StyleBackground(v));
-                ConverterGroups.RegisterGlobal((ref Sprite v) => new StyleBackground(v));
-                ConverterGroups.RegisterGlobal((ref VectorImage v) => new StyleBackground(v));
-                ConverterGroups.RegisterGlobal((ref RenderTexture v) => new StyleBackground(Background.FromRenderTexture(v)));
-                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.texture);
-                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.sprite);
-                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.renderTexture);
-                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.vectorImage);
-            }
-        }
-
-        abstract class InlineStyleLengthProperty : InlineStyleProperty<StyleLength, Length>
-        {
-            protected InlineStyleLengthProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref float v) => new StyleLength(v));
-                ConverterGroups.RegisterGlobal((ref int v) => new StyleLength(v));
-                ConverterGroups.RegisterGlobal((ref StyleLength sv) => sv.value.value);
-                ConverterGroups.RegisterGlobal((ref StyleLength sv) => (int)sv.value.value);
-            }
-        }
-
-        abstract class InlineStyleFloatProperty : InlineStyleProperty<StyleFloat, float>
-        {
-            protected InlineStyleFloatProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref int v) => new StyleFloat(v));
-                ConverterGroups.RegisterGlobal((ref StyleFloat sv) => (int)sv.value);
-            }
-        }
-
-        abstract class InlineStyleListProperty<T> : InlineStyleProperty<StyleList<T>, List<T>>
-        {
-        }
-
-        abstract class InlineStyleFontProperty : InlineStyleProperty<StyleFont, Font>
-        {
-        }
-
-        abstract class InlineStyleFontDefinitionProperty : InlineStyleProperty<StyleFontDefinition, FontDefinition>
-        {
-            protected InlineStyleFontDefinitionProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref Font v) => new StyleFontDefinition(v));
-                ConverterGroups.RegisterGlobal((ref FontAsset v) => new StyleFontDefinition(v));
-                ConverterGroups.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.font);
-                ConverterGroups.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.fontAsset);
-            }
-        }
-
-        abstract class InlineStyleIntProperty : InlineStyleProperty<StyleInt, int>
-        {
-        }
-
-        abstract class InlineStyleRotateProperty : InlineStyleProperty<StyleRotate, Rotate>
-        {
-        }
-
-        abstract class InlineStyleScaleProperty : InlineStyleProperty<StyleScale, Scale>
-        {
-        }
-
-        abstract class InlineStyleCursorProperty : InlineStyleProperty<StyleCursor, Cursor>
-        {
-        }
-
-        abstract class InlineStyleTextShadowProperty : InlineStyleProperty<StyleTextShadow, TextShadow>
-        {
-        }
-
-        abstract class InlineStyleTextAutoSizeProperty: InlineStyleProperty<StyleTextAutoSize, TextAutoSize>
-        {
-        }
-
-        abstract class InlineStyleTransformOriginProperty : InlineStyleProperty<StyleTransformOrigin, TransformOrigin>
-        {
-        }
-
-        abstract class InlineStyleTranslateProperty : InlineStyleProperty<StyleTranslate, Translate>
-        {
-        }
-
-        abstract class InlineStyleBackgroundPositionProperty : InlineStyleProperty<StyleBackgroundPosition, BackgroundPosition>
-        {
-        }
-
-        abstract class InlineStyleBackgroundRepeatProperty : InlineStyleProperty<StyleBackgroundRepeat, BackgroundRepeat>
-        {
-        }
-
-        abstract class InlineStyleBackgroundSizeProperty : InlineStyleProperty<StyleBackgroundSize, BackgroundSize>
-        {
-        }
-
-        abstract class InlineStyleMaterialDefinitionProperty : InlineStyleProperty<StyleMaterialDefinition, MaterialDefinition>
-        {
-            protected InlineStyleMaterialDefinitionProperty()
-            {
-                ConverterGroups.RegisterGlobal((ref MaterialDefinition v) => new StyleMaterialDefinition(v));
-                ConverterGroups.RegisterGlobal((ref StyleMaterialDefinition sv) => sv.value);
-            }
-        }
-
-        void AddProperty<TStyleValue, TValue>(InlineStyleProperty<TStyleValue, TValue> property)
-            where TStyleValue : IStyleValue<TValue>, new()
-        {
-            m_PropertiesList.Add(property);
-            m_PropertiesHash.Add(property.Name, property);
-            if (string.CompareOrdinal(property.Name, property.ussName) != 0)
-                m_PropertiesHash.Add(property.ussName, property);
         }
 
         public override PropertyCollection<InlineStyleAccess> GetProperties()

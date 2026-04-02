@@ -14,11 +14,11 @@ namespace Unity.U2D.Physics.Editor
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
-            var foldout = new Foldout { text = property.displayName, viewDataKey = typeof(PolygonGeometryPropertyDrawer).ToString() };
+            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(PolygonGeometryPropertyDrawer).ToString() };
             root.Add(foldout);
             
-            foldout.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.m_Count))));
             foldout.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.vertices))));
+            foldout.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.m_Count))));
             foldout.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.m_Radius))));
 
             var readonlyElement = new VisualElement { enabledSelf = false, viewDataKey = typeof(PolygonGeometryPropertyDrawer).ToString() + "_hidden1" };

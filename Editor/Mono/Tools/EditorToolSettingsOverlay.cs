@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.Overlays;
@@ -13,12 +14,14 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    [Overlay(typeof(SceneView), "Tool Settings", true, priority = (int)OverlayPriority.ToolSettings, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
+    [Overlay(typeof(ISupportsToolsOverlays), "Tool Settings", true, priority = (int)OverlayPriority.ToolSettings, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ToolSettings.png")]
     sealed class EditorToolSettingsOverlay : Overlay, ICreateToolbar, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         Editor m_ToolEditor, m_ContextEditor;
         Editor m_DefaultToolEditor, m_DefaultContextEditor;
+
+        Type ownerType => containerWindow?.GetType() ?? typeof(SceneView);
 
         protected internal override Layout supportedLayouts
         {
@@ -43,13 +46,21 @@ namespace UnityEditor.EditorTools
 
         public EditorToolSettingsOverlay()
         {
-            ToolManager.activeToolChanged += OnToolChanged;
-            ToolManager.activeContextChanged += OnToolChanged;
+            ToolManager.activeToolChangedForOwner += OnToolChangedForOwner;
+            ToolManager.activeContextChangedForOwner += OnToolChangedForOwner;
+        }
+
+        public override void OnCreated()
+        {
+            base.OnCreated();
             CreateEditor();
         }
 
         public override void OnWillBeDestroyed()
         {
+            ToolManager.activeToolChangedForOwner -= OnToolChangedForOwner;
+            ToolManager.activeContextChangedForOwner -= OnToolChangedForOwner;
+
             UnityObject.DestroyImmediate(m_ToolEditor);
             UnityObject.DestroyImmediate(m_ContextEditor);
             UnityObject.DestroyImmediate(m_DefaultToolEditor);
@@ -61,20 +72,31 @@ namespace UnityEditor.EditorTools
             UnityObject.DestroyImmediate(m_ContextEditor);
             UnityObject.DestroyImmediate(m_ToolEditor);
 
-            m_ContextEditor = Editor.CreateEditor(EditorToolManager.activeToolContext);
-            m_ToolEditor = Editor.CreateEditor(EditorToolManager.activeTool);
-            
+            var activeContext = EditorToolManager.GetActiveToolContext(ownerType);
+            var activeTool = EditorToolManager.GetActiveTool(ownerType);
+
+            m_ContextEditor = Editor.CreateEditor(activeContext);
+            m_ToolEditor = Editor.CreateEditor(activeTool);
+            if (m_ToolEditor is ManipulationToolCustomEditor toolEditor)
+                toolEditor.containerWindow = containerWindow;
+
             UnityObject.DestroyImmediate(m_DefaultContextEditor);
             UnityObject.DestroyImmediate(m_DefaultToolEditor);
-            m_DefaultContextEditor = Editor.CreateEditor(EditorToolManager.activeToolContext, typeof(GameObjectToolContextCustomEditor));
+            
+            m_DefaultContextEditor = Editor.CreateEditor(EditorToolManager.GetActiveToolContext(ownerType), typeof(GameObjectToolContextCustomEditor));
             // ManipulationToolCustomEditor, despite its name, is the default editor for ALL EditorTools
-            m_DefaultToolEditor = Editor.CreateEditor(EditorToolManager.activeTool, typeof(ManipulationToolCustomEditor));
+            m_DefaultToolEditor = Editor.CreateEditor(EditorToolManager.GetActiveTool(ownerType), typeof(ManipulationToolCustomEditor));
+            if (m_DefaultToolEditor is ManipulationToolCustomEditor defaultToolEditor)
+                defaultToolEditor.containerWindow = containerWindow;
         }
 
-        void OnToolChanged()
+        void OnToolChangedForOwner(Type changedOwnerType)
         {
-            CreateEditor();
-            RebuildContent();
+            if (changedOwnerType == ownerType)
+            {
+                CreateEditor();
+                RebuildContent();
+            }
         }
 
         // As a rule, Overlays should be compatible with toolbars or not. This class is an exception, hence the
@@ -82,7 +104,11 @@ namespace UnityEditor.EditorTools
 
         public OverlayToolbar CreateHorizontalToolbarContent()
         {
+            if (m_ToolEditor == null && m_ContextEditor == null)
+                CreateEditor();
+
             var root = new OverlayToolbar();
+            root.userData = ownerType;
 
             if(m_ContextEditor is ICreateHorizontalToolbar ctx)
                 root.Add(ctx.CreateHorizontalToolbarContent());
@@ -103,13 +129,17 @@ namespace UnityEditor.EditorTools
                 var elements = EditorToolbarUtility.GetToolbarOverrideElementIds(m_ToolEditor, m_DefaultToolEditor, OverridableToolbar.ToolSettings);
                 root.Add(EditorToolbar.CreateOverlay(elements, containerWindow));
             }
-            
+
             return root;
         }
 
         public OverlayToolbar CreateVerticalToolbarContent()
         {
+            if (m_ToolEditor == null && m_ContextEditor == null)
+                CreateEditor();
+
             var root = new OverlayToolbar();
+            root.userData = ownerType;
 
             if (m_ContextEditor is ICreateVerticalToolbar ctx)
                 root.Add(ctx.CreateVerticalToolbarContent());
@@ -120,7 +150,7 @@ namespace UnityEditor.EditorTools
                 var elements = EditorToolbarUtility.GetToolbarOverrideElementIds(m_ContextEditor, m_DefaultContextEditor, OverridableToolbar.ToolSettings);
                 root.Add(EditorToolbar.CreateOverlay(elements, containerWindow));
             }
-            
+
             if (m_ToolEditor is ICreateVerticalToolbar tool)
                 root.Add(tool.CreateVerticalToolbarContent());
             else if (m_ToolEditor is ICreateToolbar toolToolbar)
@@ -133,7 +163,7 @@ namespace UnityEditor.EditorTools
 
             return root;
         }
-        
+
         public IEnumerable<string> toolbarElements
         {
             get
@@ -170,7 +200,10 @@ namespace UnityEditor.EditorTools
             var root = editor.CreateInspectorGUI();
 
             if (root != null)
+            {
+                root.userData = ownerType;
                 return root;
+            }
 
             // If the Editor does not provide an OnInspectorGUI, try to fall back to a toolbar.
             var inspector = editor.GetType().GetMethod("OnInspectorGUI",
@@ -180,7 +213,7 @@ namespace UnityEditor.EditorTools
             {
                 if (editor is ICreateToolbar toolbar)
                     return EditorToolbar.CreateOverlay(toolbar.toolbarElements, containerWindow);
-                
+
                 if (editor is IOverrideToolbar)
                 {
                     var elements = EditorToolbarUtility.GetToolbarOverrideElementIds(editor, defaultEditor, OverridableToolbar.ToolSettings);
@@ -199,11 +232,17 @@ namespace UnityEditor.EditorTools
 
         public override VisualElement CreatePanelContent()
         {
+            if (m_ToolEditor == null && m_ContextEditor == null)
+                CreateEditor();
+
             var context = GetPanelContent(m_ContextEditor, m_DefaultContextEditor);
             var tool = GetPanelContent(m_ToolEditor, m_DefaultToolEditor);
             var root = context is OverlayToolbar && tool is OverlayToolbar
                 ? new OverlayToolbar()
                 : new VisualElement();
+            
+            root.userData = ownerType;
+
             root.Add(context);
             root.Add(tool);
             return root;

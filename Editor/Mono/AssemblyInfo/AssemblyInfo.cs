@@ -35,6 +35,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImportingPipeline")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImportingProcessing")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.BuildPipeline")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Builds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Insights")]
@@ -66,6 +68,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.PerformanceIntegrationTests")]
+[assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
@@ -172,6 +175,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProBuilder.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
@@ -253,6 +257,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderCompilation.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderUtil.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.Rendering.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 
@@ -268,6 +273,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.BootConfig.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.BootConfig.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]

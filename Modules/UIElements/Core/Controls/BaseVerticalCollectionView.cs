@@ -499,12 +499,13 @@ namespace UnityEngine.UIElements
         public IEnumerable<int> selectedIds => m_Selection.selectedIds;
 
         internal ReadOnlySpan<int> selectedIndicesSpan => NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
+        internal bool HasAnySelectedIds() => m_Selection.selectedIds.Count > 0;
 
         internal IReadOnlyList<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? Array.Empty<ReusableCollectionItem>();
 
         internal ScrollView scrollView
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_ScrollView;
         }
 
@@ -512,11 +513,11 @@ namespace UnityEngine.UIElements
 
         internal CollectionVirtualizationController virtualizationController
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => GetOrCreateVirtualizationController();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool allowSingleClickChoice = false;
 
         /// <summary>
@@ -548,11 +549,11 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public bool showBorder
         {
-            get => m_ScrollView.ClassListContains(borderUssClassName);
+            get => m_ScrollView.ClassListContains(borderUssClassNameUnique);
             set
             {
                 var previous = showBorder;
-                m_ScrollView.EnableInClassList(borderUssClassName, value);
+                m_ScrollView.EnableInClassList(borderUssClassNameUnique, value);
 
                 if (previous != showBorder)
                     NotifyPropertyChanged(showBorderProperty);
@@ -986,6 +987,8 @@ namespace UnityEngine.UIElements
         /// this class affects every BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string ussClassName = "unity-collection-view";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name for BaseVerticalCollectionView elements with a border.
         /// </summary>
@@ -995,6 +998,8 @@ namespace UnityEngine.UIElements
         /// affects every such BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string borderUssClassName = ussClassName + "--with-border";
+        internal static readonly UniqueStyleString borderUssClassNameUnique = new(borderUssClassName);
+
         /// <summary>
         /// The USS class name of item elements in BaseVerticalCollectionView elements.
         /// </summary>
@@ -1003,6 +1008,8 @@ namespace UnityEngine.UIElements
         /// this class affects every item element located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemUssClassName = ussClassName + "__item";
+        internal static readonly UniqueStyleString itemUssClassNameUnique = new(itemUssClassName);
+
         /// <summary>
         /// The USS class name of the drag hover bar.
         /// </summary>
@@ -1012,6 +1019,8 @@ namespace UnityEngine.UIElements
         /// visual tree.
         /// </remarks>
         public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
+        [VisibleToOtherModules] internal static readonly UniqueStyleString dragHoverBarUssClassNameUnique = new(dragHoverBarUssClassName);
+
         /// <summary>
         /// The USS class name of the drag hover circular marker used to indicate depth.
         /// </summary>
@@ -1020,6 +1029,8 @@ namespace UnityEngine.UIElements
         /// every BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string dragHoverMarkerUssClassName = ussClassName + "__drag-hover-marker";
+        [VisibleToOtherModules] internal static readonly UniqueStyleString dragHoverMarkerUssClassNameUnique = new(dragHoverMarkerUssClassName);
+
         /// <summary>
         /// The USS class name applied to an item element on drag hover.
         /// </summary>
@@ -1028,6 +1039,8 @@ namespace UnityEngine.UIElements
         /// every BaseVerticalCollectionView item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemDragHoverUssClassName = itemUssClassName + "--drag-hover";
+        internal static readonly UniqueStyleString itemDragHoverUssClassNameUnique = new(itemDragHoverUssClassName);
+
         /// <summary>
         /// The USS class name of selected item elements in the BaseVerticalCollectionView.
         /// </summary>
@@ -1037,6 +1050,8 @@ namespace UnityEngine.UIElements
         /// this class affects every BaseVerticalCollectionView item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
+        internal static readonly UniqueStyleString itemSelectedVariantUssClassNameUnique = new(itemSelectedVariantUssClassName);
+
         /// <summary>
         /// The USS class name for odd rows in the BaseVerticalCollectionView.
         /// </summary>
@@ -1049,6 +1064,7 @@ namespace UnityEngine.UIElements
         /// <c>None</c>, the USS class is not added, and any styling or behavior that relies on it's invalidated.
         /// </remarks>
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
+        internal static readonly UniqueStyleString itemAlternativeBackgroundUssClassNameUnique = new(itemAlternativeBackgroundUssClassName);
         /// <summary>
         /// The USS class name of the scroll view in the BaseVerticalCollectionView.
         /// </summary>
@@ -1057,8 +1073,10 @@ namespace UnityEngine.UIElements
         /// this class affects every BaseVerticalCollectionView scroll view located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string listScrollViewUssClassName = ussClassName + "__scroll-view";
+        internal static readonly UniqueStyleString listScrollViewUssClassNameUnique = new(listScrollViewUssClassName);
 
         internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
+        internal static readonly UniqueStyleString backgroundFillUssClassNameUnique = new(backgroundFillUssClassName);
 
         /// <summary>
         /// Enum for current pointer processing state.
@@ -1095,7 +1113,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public BaseVerticalCollectionView()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             m_Selection = new Selection { selectedIds = m_SelectedIds };
             m_RangeSelectionDirection = RangeSelectionDirection.None;
@@ -1103,7 +1121,7 @@ namespace UnityEngine.UIElements
             selectionType = SelectionType.Single;
 
             m_ScrollView = new ScrollView();
-            m_ScrollView.AddToClassList(listScrollViewUssClassName);
+            m_ScrollView.AddToClassList(listScrollViewUssClassNameUnique);
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
 
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
@@ -1123,7 +1141,6 @@ namespace UnityEngine.UIElements
             m_ScrollView.viewDataKey = "unity-vertical-collection-scroll-view";
             m_ScrollView.verticalScroller.viewDataKey = null;
             m_ScrollView.horizontalScroller.viewDataKey = null;
-            m_ScrollView.m_TouchDraggingAllowed = false;
 
             focusable = true;
             isCompositeRoot = true;
@@ -1335,6 +1352,12 @@ namespace UnityEngine.UIElements
                 foreach (var id in m_Selection.selectedIds)
                 {
                     var index = viewController.GetIndexForId(id);
+                    if (index >= viewController.GetItemsCount())
+                    {
+                        selectedIndicesChanged = true; // Out of bounds.
+                        continue;
+                    }
+
                     if (index < 0)
                     {
                         selectedIndicesChanged = true; // Item is not there anymore.

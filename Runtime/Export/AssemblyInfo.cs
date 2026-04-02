@@ -44,6 +44,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.TagManager.Tests.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
+[assembly: InternalsVisibleTo("ObjectSelector")] /*UCBP-REMOVE*/
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectNames.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TreeViewExamples.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectFactory.Tests.Editor")]
@@ -131,6 +132,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetBundles")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImportingPipeline")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImportingProcessing")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Builds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.CommandLine")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorUI")]
@@ -172,6 +175,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Editor.Overrides")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
 [assembly: InternalsVisibleTo("UnityEngine.TestTools.Graphics.Contexts")]
 [assembly: InternalsVisibleTo("Unity.2D.Common.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
@@ -197,11 +201,15 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Subsystems.Tests")]
 
+[assembly: InternalsVisibleTo("Unity.UIElements.TestComponents")]/*UCBP-REMOVE*/
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI")]
 
 [assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")] // com.unity.graphtoolsauthoringframework
+
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ComputeShaders.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.Rendering.Tests.Playmode")]
 
 // Needed for Baselib CSharp binding access.
 [assembly: InternalsVisibleTo("Unity.Networking.Transport")]
@@ -280,6 +288,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("com.unity.quicksearch.tests.runtime")] // /*UCBP-REMOVE*/ LoadableReference for SearchColumnTestComponent
 // Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
 

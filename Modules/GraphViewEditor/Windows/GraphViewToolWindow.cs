@@ -143,7 +143,7 @@ namespace UnityEditor.Experimental.GraphView
                         continue;
 
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var graphViewTool in dockArea.m_Panes.Where(p => p.GetType() == currentWindowType).Cast<GraphViewToolWindow>())
+                    foreach (GraphViewToolWindow graphViewTool in dockArea.m_Panes.Where(p => p.GetType() == currentWindowType))
 #pragma warning restore UA2001
                     {
                         if (graphViewTool.m_SelectedGraphView != null)

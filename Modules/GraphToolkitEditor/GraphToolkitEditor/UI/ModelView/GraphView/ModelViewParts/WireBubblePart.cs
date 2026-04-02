@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -72,7 +73,7 @@ namespace Unity.GraphToolkit.Editor
                 && model.FromPort.HasReorderableWires
                 && model.FromPort.GetConnectedWires().Count > 1
                 && (selectionStateComponent.IsSelected(model.FromPort.NodeModel)
-                    || model.FromPort.GetConnectedWires().HasAny(selectionStateComponent.IsSelected));
+                    || model.FromPort.GetConnectedWires().Exists(selectionStateComponent.IsSelected));
         }
 
         /// <inheritdoc />

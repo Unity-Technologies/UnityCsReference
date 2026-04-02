@@ -533,15 +533,30 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_layout;
             TextField m_isManual;
             TextField m_cache;
+            Button m_ClearMeasurementCacheButton;
+
             public LayoutDebuggerTab(DebuggerSelection debuggerSelection) : base("Layout", debuggerSelection, true)
             {
                 Add(m_layout = new TextField("Layout") { isReadOnly = true, multiline = true });
                 Add(m_isManual = new TextField("Is Manual") { isReadOnly = true });
                 Add(m_cache = new TextField("Cache") { isReadOnly = true, multiline = true });
+                Add(m_ClearMeasurementCacheButton = new Button(OnClearMeasurementCacheClicked) { text = "Clear Measurement Cache" });
+            }
+
+            void OnClearMeasurementCacheClicked()
+            {
+                if (selectedElement == null || selectedElement.layoutNode.IsUndefined)
+                    return;
+                selectedElement.layoutNode.Cache.ClearCachedMeasurements();
+                selectedElement.layoutNode.MarkDirty();
+                Refresh();
             }
 
             protected override void Refresh()
             {
+                var canClearCache = selectedElement != null && !selectedElement.layoutNode.IsUndefined;
+                m_ClearMeasurementCacheButton.SetEnabled(canClearCache);
+
                 if (selectedElement == null)
                 {
                     m_layout.text = "No Element selected";
@@ -1340,16 +1355,14 @@ namespace UnityEditor.UIElements.Debugger
 
                     foreach (var panelComponent in runtimePanel.panelComponents)
                     {
-                        var document = panelComponent as UIDocument;
-
-                        if (document == null) // The UIdocument might have been expliclty disposed.
+                        if (panelComponent == null) // The panelComponent might have been expliclty disposed.
                             continue;
 
                         // We don't account for PanelInputConfiguration settings, but we do only want visible content.
-                        if ((camera.cullingMask & (1 << document.gameObject.layer)) == 0)
+                        if ((camera.cullingMask & (1 << panelComponent.gameObject.layer)) == 0)
                             continue;
 
-                        var candidate = WorldSpaceInput.Pick3D(document, worldRay, out float distance);
+                        var candidate = WorldSpaceInput.Pick3D(panelComponent, worldRay, out float distance);
                         if (candidate != null && (pickedElement == null || distance < bestDistanceSoFar))
                         {
                             pickedElement = candidate;

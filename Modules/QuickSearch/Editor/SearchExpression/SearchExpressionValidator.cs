@@ -152,9 +152,7 @@ namespace UnityEditor.Search
                 return true;
 
             var mandatoryArgumentNumber = signature.mandatoryArgumentNumber;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (actualArgsCount > expectedArgsCount && (expectedArgsCount == 0 || !signature.arguments.Last().variadic))
-#pragma warning restore UA2001
+            if (actualArgsCount > expectedArgsCount && (expectedArgsCount == 0 || !signature.arguments[^1].variadic))
             {
                 errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.nil);
                 return false;

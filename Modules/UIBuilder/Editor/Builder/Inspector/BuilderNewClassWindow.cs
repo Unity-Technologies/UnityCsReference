@@ -14,7 +14,7 @@ namespace Unity.UI.Builder
     /// <summary>
     ///  Window used to create a new class.
     /// </summary>
-    class BuilderNewClassWindow : EditorWindow, IBuilderWindowResizeTracker
+    class BuilderNewClassWindow : EditorWindow
     {
         static readonly string ussClassName = "unity-builder-new-class-view";
         static readonly string containerUssName = "unity-builder-new-class-input";
@@ -81,12 +81,6 @@ namespace Unity.UI.Builder
             s_Window = null;
 
             AssemblyReloadEvents.beforeAssemblyReload -= Close;
-        }
-
-        internal override void OnResized()
-        {
-            base.OnResized();
-            m_OnRectChanged?.Invoke(this, null);
         }
 
         private void CreateGUI()
@@ -187,14 +181,6 @@ namespace Unity.UI.Builder
             }
 
             return true;
-        }
-
-        event EventHandler m_OnRectChanged;
-
-        public event EventHandler onRectChanged
-        {
-            add => m_OnRectChanged += value;
-            remove => m_OnRectChanged -= value;
         }
     }
 }

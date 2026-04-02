@@ -65,6 +65,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_SpecialUniqueId = string.Empty;
         public bool isSpecialInstall => !string.IsNullOrEmpty(m_SpecialUniqueId);
 
+        [SerializeField]
+        private OperationType m_OperationType;
+        public OperationType operationType => m_OperationType;
+
         public override string packageIdOrName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageIdOrName : m_SpecialUniqueId;
         public override string packageName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageName : m_SpecialUniqueId;
         public override bool isInProgress => base.isInProgress || m_DryRun?.isInProgress == true;
@@ -90,17 +94,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.IsNullOrEmpty(nameToMatch) ? null : result.FirstMatch(p => p.name == nameToMatch);
         }
 
-        public void AddByPathOrUrl(string pathOrUrl)
+        public void AddByPathOrUrl(string pathOrUrl, OperationType operationType)
         {
             m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new [] {pathOrUrl};
             m_PackagesNamesToRemove = Array.Empty<string>();
             m_PackageIdOrName = pathOrUrl;
             m_SpecialUniqueId = pathOrUrl;
+            m_OperationType = operationType;
             Start();
         }
 
-        public void AddById(string versionId, bool isUnlistedPackage)
+        public void AddById(string versionId, bool isUnlistedPackage, OperationType operationType)
         {
             m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new  [] {versionId};
@@ -108,46 +113,51 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdOrName = versionId;
             // Unlisted packages potentially can't be found in the package database so we treat it the same way as if it's from git/url/path
             m_SpecialUniqueId = isUnlistedPackage ? versionId : string.Empty;
+            m_OperationType = operationType;
             Start();
         }
 
-        public void AddByIds(string[] versionIds)
+        public void AddByIds(string[] versionIds, OperationType operationType)
         {
             m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = versionIds ?? Array.Empty<string>();
             m_PackagesNamesToRemove = Array.Empty<string>();
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
+            m_OperationType = operationType;
             Start();
         }
 
-        public void RemoveByNames(string[] packagesNames)
+        public void RemoveByNames(string[] packagesNames, OperationType operationType)
         {
             m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = Array.Empty<string>();
             m_PackagesNamesToRemove = packagesNames ?? Array.Empty<string>();
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
+            m_OperationType = operationType;
             Start();
         }
 
-        public void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames)
+        public void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType)
         {
             m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new [] { packageId };
             m_PackagesNamesToRemove = dependencyPackagesNames ?? Array.Empty<string>();
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;
+            m_OperationType = operationType;
             Start();
         }
 
-        public void ResetDependencies(string packageId, string[] dependencyPackagesNames)
+        public void ResetDependencies(string packageId, string[] dependencyPackagesNames, OperationType operationType)
         {
             m_PackageIdsToReset = new [] { packageId };
             m_PackageIdsToAdd = Array.Empty<string>();
             m_PackagesNamesToRemove = dependencyPackagesNames ?? Array.Empty<string>();
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;
+            m_OperationType = operationType;
             Start();
         }
 

@@ -339,7 +339,7 @@ namespace Unity.U2D.Physics
             /// <param name="position">The 3D transformed position.</param>
             /// <param name="rotation">The 3D transformed rotation.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal readonly void PlaneProjection(ref PhysicsTransform physicsTransform, out Vector3 position, out Quaternion rotation)
+            internal readonly void PlaneProjection(in PhysicsTransform physicsTransform, out Vector3 position, out Quaternion rotation)
             {
                 position = ToPosition(physicsTransform.position);
 
@@ -592,6 +592,16 @@ namespace Unity.U2D.Physics
         public static RenderingMode renderingMode => PhysicsGlobal_GetRenderingMode();
 
         /// <summary>
+        /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
+        /// </summary>
+        public static PhysicsShape.ContactFilterMode contactFilterMode => PhysicsGlobal_GetContactFilterMode();
+
+        /// <summary>
+        /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterGroupMode"/>.
+        /// </summary>
+        public static PhysicsShape.ContactFilterGroupMode contactFilterGroupMode => PhysicsGlobal_GetContactFilterGroupMode();
+
+        /// <summary>
         /// Gets what physics considers a large extent in the world.
         /// Positions greater than approximately 16km will have precision problems, so 100km as a limit should be fine in all cases. This is used to detect bad values.
         /// This value is 100000.0f * <see cref="PhysicsWorld.lengthUnitsPerMeter"/>.
@@ -762,15 +772,54 @@ namespace Unity.U2D.Physics
         public PhysicsWorldDefinition definition { get => PhysicsWorld_ReadDefinition(this); set => PhysicsWorld_WriteDefinition(this, value, false); }
 
         /// <summary>
-        /// Set the (optional) owner object associated with this world and return an owner key that must be specified when destroying the world with <see cref="PhysicsWorld.Destroy(int)"/>.
-        /// The physics system provides access to all objects, including the ability to destroy them so this feature can be used to stop accidental destruction of objects that are owned by other objects.
+        /// Create an owner key.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended as the owner key can use the hash-code of the object to generate a more unique key.</param>
+        /// <returns>The new owner key.</returns>
+        public static int CreateOwnerKey(UnityEngine.Object owner) => PhysicsWorld_CreateOwnerKey(owner);
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
         /// You can only set the owner once, multiple attempts will produce a warning.
-        /// The lifetime of the specified owner object is not linked to this world i.e. this world will still be owned by the owner object, even if it is destroyed.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
+        /// </summary>
+        /// <param name="worlds">The worlds to set ownership for.</param>
+        /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
+        /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public static void SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object owner, int ownerKey) => PhysicsWorld_SetOwner(worlds, owner, ownerKey);
+
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
-        /// <param name="owner">The object that owns this world. This can be NULL if not required.</param>
-        /// <returns>An owner key that must be passed to <see cref="PhysicsWorld.Destroy(int)"/> when destroying the body.</returns>
-        public readonly int SetOwner(UnityEngine.Object owner) => PhysicsWorld_SetOwner(this, owner);
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
+        /// <returns>The owner key assigned.</returns>
+        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
+        {
+            var world = this;
+            SetOwner(new ReadOnlySpan<PhysicsWorld>(&world, 1), owner, ownerKey);
+        }
+
+        /// <summary>
+        /// Set the owner object using the specified owner key.
+        /// You can only set the owner once, multiple attempts will produce a warning.
+        /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
+        /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
+        /// </summary>
+        /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
+        /// <returns>The owner key assigned.</returns>
+        public readonly int SetOwner(UnityEngine.Object owner)
+        {
+            var ownerKey = CreateOwnerKey(owner);
+            SetOwner(owner, ownerKey);
+            return ownerKey;
+        }
 
         /// <summary>
         /// Get the owner object associated with this world as specified using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.
@@ -790,6 +839,18 @@ namespace Unity.U2D.Physics
         /// The physics system doesn't use this data, it is entirely for custom use.
         /// </summary>
         public readonly PhysicsUserData userData { get => PhysicsWorld_GetUserData(this); set => PhysicsWorld_SetUserData(this, value); }
+
+        /// <summary>
+        /// Get <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        public readonly PhysicsUserData ownerUserData { get => PhysicsWorld_GetOwnerUserData(this); }
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="physicsUserData">The user data to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsWorld_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
         /// Reset the world to a canonical state so that it will reproduce identical results each time. The world must be empty for this to be called otherwise a warning is produced.
@@ -1096,13 +1157,22 @@ namespace Unity.U2D.Physics
         #region PhysicsEvents
 
         /// <summary>
-        /// Get all <see cref="PhysicsUserData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// Get all <see cref="PhysicsBody.userData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
         /// The Native Array returned will be of the same length and be ordered the same as the <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
         /// Any <see cref="PhysicsBody"/> that are not valid will return a default <see cref="PhysicsUserData"/>.
         /// </summary>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A Native Array containing all <see cref="PhysicsUserData"/> for each <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.</returns>
-        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, allocator).ToNativeArray<PhysicsUserData>();
+        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, false, allocator).ToNativeArray<PhysicsUserData>();
+
+        /// <summary>
+        /// Get all <see cref="PhysicsBody.ownerUserData"/> assigned to each <see cref="PhysicsBody"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// The Native Array returned will be of the same length and be ordered the same as the <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.
+        /// Any <see cref="PhysicsBody"/> that are not valid will return a default <see cref="PhysicsUserData"/>.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A Native Array containing all <see cref="PhysicsUserData"/> for each <see cref="PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="PhysicsWorld.bodyUpdateEvents"/>.</returns>
+        public NativeArray<PhysicsUserData> GetBodyUpdateOwnerUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, true, allocator).ToNativeArray<PhysicsUserData>();
 
         /// <summary>
         /// Get the body events from the last simulation.
@@ -1331,28 +1401,15 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Tests if the provided shape overlaps any shapes.
-        /// This first converts the shape to a <see cref="PhysicsShape.ShapeProxy"/> and uses <see cref="PhysicsWorld.TestOverlapShapeProxy(PhysicsShape.ShapeProxy, PhysicsQuery.QueryFilter)"/>.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// </summary>
         /// <param name="shape">The shape used to check overlap.</param>
         /// <param name="filter">The filter to control the result returned.</param>
         /// <returns>If the query overlaps anything.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used.</exception>
-        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter)
-        {
-            return shape.shapeType switch
-            {
-                PhysicsShape.ShapeType.Circle => TestOverlapGeometry(shape.circleGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Capsule => TestOverlapGeometry(shape.capsuleGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Polygon => TestOverlapGeometry(shape.polygonGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.Segment => TestOverlapGeometry(shape.segmentGeometry.Transform(shape.body.transform), filter),
-                PhysicsShape.ShapeType.ChainSegment => TestOverlapGeometry(shape.chainSegmentGeometry.Transform(shape.body.transform), filter),
-                _ => throw new ArgumentException("Invalid shape type used.", nameof(shape)),
-            };
-        }
+        public readonly bool TestOverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter) => PhysicsWorld_TestOverlapShape(this, shape.CreateShapeProxy(true), filter, shape);
 
         /// <summary>
         /// Test if the provided shape proxy overlaps any shapes.
-        /// This first converts the shape to a <see cref="PhysicsShape.ShapeProxy"/> and uses <see cref="PhysicsWorld.TestOverlapShapeProxy(PhysicsShape.ShapeProxy, PhysicsQuery.QueryFilter)"/>.
         /// </summary>
         /// <param name="shapeProxy">The shape proxy to use. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
@@ -1361,7 +1418,6 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Test if the provided shape proxies overlaps any shapes.
-        /// This first converts the shape to a <see cref="PhysicsShape.ShapeProxy"/> and uses <see cref="PhysicsWorld.TestOverlapShapeProxy(PhysicsShape.ShapeProxy, PhysicsQuery.QueryFilter)"/>.
         /// </summary>
         /// <param name="shapeProxies">The shape proxy to use. This must be in world-space.</param>
         /// <param name="filter">The filter to control the result returned.</param>
@@ -1502,25 +1558,13 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Returns all shapes that overlap the provided shape.
-        /// See <see cref="PolygonGeometry"/>, <see cref="PhysicsQuery.QueryFilter"/>, see cref="Unity.U2D.Physics.PhysicsQuery.WorldOverlapResult"/> and <see cref="Unity.Collections.Allocator"/>.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// </summary>
         /// <param name="shape">The shape used to check overlap.</param>
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used.</exception>
-        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp)
-        {
-            return shape.shapeType switch
-            {
-                PhysicsShape.ShapeType.Circle => OverlapGeometry(shape.circleGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Capsule => OverlapGeometry(shape.capsuleGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Polygon => OverlapGeometry(shape.polygonGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.Segment => OverlapGeometry(shape.segmentGeometry.Transform(shape.body.transform), filter, allocator),
-                PhysicsShape.ShapeType.ChainSegment => OverlapGeometry(shape.chainSegmentGeometry.segment.Transform(shape.body.transform), filter, allocator),
-                _ => throw new ArgumentException("Invalid shape type used.", nameof(shape)),
-            };
-        }
+        public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapShape(PhysicsShape shape, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapShape(this, shape.CreateShapeProxy(true), filter, allocator, shape).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
 
         /// <summary>
         /// Returns all shapes that overlap the shape proxy.
@@ -1680,6 +1724,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Returns the shape(s) that intersect the specified shape as it is cast through the world.
+        /// The selected shape is excluded from any results and must be in this world otherwise a warning will be produced.
         /// Neither <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are supported.
         /// See <see cref="PhysicsQuery.QueryFilter"/>, <see cref="PhysicsQuery.WorldCastMode"/>, <see cref="PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
         /// </summary>
@@ -1689,16 +1734,18 @@ namespace Unity.U2D.Physics
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query cast results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if an invalid shape type is used, specifically if <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are used.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if an invalid shape or shape type is used, specifically if <see cref="PhysicsShape.ShapeType.Segment"/> or <see cref="PhysicsShape.ShapeType.ChainSegment"/> shape types are used.</exception>
         public readonly NativeArray<PhysicsQuery.WorldCastResult> CastShape(PhysicsShape shape, Vector2 translation, PhysicsQuery.QueryFilter filter, PhysicsQuery.WorldCastMode castMode = PhysicsQuery.WorldCastMode.Closest, Allocator allocator = Unity.Collections.Allocator.Temp)
         {
-            return shape.shapeType switch
+            if (shape.isValid)
             {
-                PhysicsShape.ShapeType.Circle => CastGeometry(shape.circleGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                PhysicsShape.ShapeType.Capsule => CastGeometry(shape.capsuleGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                PhysicsShape.ShapeType.Polygon => CastGeometry(shape.polygonGeometry.Transform(shape.body.transform), translation, filter, castMode, allocator),
-                _ => throw new ArgumentException("Invalid shape type used for cast.", nameof(shape)),
-            };
+                // Validate shape type and perform cast.
+                var shapeType = shape.shapeType;
+                if (shapeType != PhysicsShape.ShapeType.Segment && shapeType != PhysicsShape.ShapeType.ChainSegment)
+                    return PhysicsWorld_CastShape(this, shape.CreateShapeProxy(true), translation, filter, castMode, allocator, shape).ToNativeArray<PhysicsQuery.WorldCastResult>();
+            }
+
+            throw new ArgumentException("Invalid shape or shape-type used for cast.");
         }
 
         /// <summary>
@@ -2342,6 +2389,8 @@ namespace Unity.U2D.Physics
 
             /// <summary>
             /// Draw all the custom drawing.
+            /// 
+            /// NOTE: This is only used in a player build as custom drawing is permanently enabled in the Unity Editor.
             /// </summary>
             AllCustom = 1 << 12,
 
@@ -3051,11 +3100,16 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Set the element depth using the specified 3D position. The relevant axis will be extracted using the current <see cref="PhysicsWorld.transformPlane"/>.
+        /// If <see cref="PhysicsWorld.TransformPlane.Custom"/> is used, the element depth is always set to zero.
         ///
         /// For more details, see <see cref="PhysicsWorld.elementDepth"/>.
         /// </summary>
         /// <param name="position">The 3D position to extract the element depth from.</param>
-        public readonly void SetElementDepth3D(Vector3 position) => elementDepth = PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane);
+        public readonly void SetElementDepth3D(Vector3 position)
+        {
+            var worldTransformPlane = transformPlane;
+            elementDepth = worldTransformPlane != TransformPlane.Custom ? PhysicsMath.GetTranslationIgnoredAxis(position, transformPlane) : 0.0f;
+        }
 
         /// <summary>
         /// Clear all the custom drawn items.

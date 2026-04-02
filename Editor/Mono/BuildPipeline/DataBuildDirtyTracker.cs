@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NiceIO;
+using Unity.Collections;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -97,9 +98,9 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!scenes.SequenceEqual(buildData.scenes.Select(f => f.path)))
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2014
             {
                 Console.WriteLine("Rebuilding Data files because the scene list is dirty");
                 return true;
@@ -111,9 +112,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!assemblyNames.SequenceEqual(buildData.assemblyNames))
-#pragma warning restore UA2001
+            if (!assemblyNames.AsSpan().SequenceEqual(buildData.assemblyNames))
             {
                 Console.WriteLine("Rebuilding Data files because the assembly list is dirty");
                 return true;
@@ -122,12 +121,10 @@ namespace UnityEditor.Mono.BuildPipeline
             if (Array.Exists(buildData.inputFiles, CheckAssetDirty))
                 return true;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!resourcePaths.SequenceEqual(buildData.resourcePaths))
-#pragma warning restore UA2001
+            var resourcePaths = ResourcesAPIInternal.GetAllPaths("");
+            Array.Sort(resourcePaths);
+
+            if (!resourcePaths.AsSpan().SequenceEqual(buildData.resourcePaths))
             {
                 for (int i = 0; i < resourcePaths.Length || i < buildData.resourcePaths.Length; i++)
                 {
@@ -150,9 +147,9 @@ namespace UnityEditor.Mono.BuildPipeline
             var enabledModules = ModuleMetadata.GetModuleNames()
 #pragma warning restore UA2001
                 .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!enabledModules.SequenceEqual(buildData.enabledModules))
-#pragma warning restore UA2001
+#pragma warning restore UA2014
             {
                 Console.WriteLine($"Rebuilding Data files because enabled modules have changed");
                 return true;
@@ -191,6 +188,12 @@ namespace UnityEditor.Mono.BuildPipeline
             foreach (var projectSetting in new NPath("ProjectSettings").Files("*.asset", true))
                 inputFiles.Add(new BuildDataInputFile(projectSetting, developmentBuild));
 
+            var resourcePaths = ResourcesAPIInternal.GetAllPaths("");
+            Array.Sort(resourcePaths);
+
+            var sortedAssemblyNames = (string[])assemblyNames.Clone();
+            Array.Sort(sortedAssemblyNames);
+
             var buildData = new BuildData()
             {
                 scenes = inputScenes.ToArray(),
@@ -198,17 +201,13 @@ namespace UnityEditor.Mono.BuildPipeline
                 activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath, developmentBuild),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray(),
-#pragma warning restore UA2001
+                resourcePaths = resourcePaths,
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 enabledModules = ModuleMetadata.GetModuleNames()
-#pragma warning restore UA2001
                     .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude)
                     .ToArray(),
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
 #pragma warning restore UA2001
+                assemblyNames = sortedAssemblyNames
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }
@@ -222,15 +221,16 @@ namespace UnityEditor.Mono.BuildPipeline
 
             try
             {
+                var sortedAssemblyNames = (string[])assemblyNames.Clone();
+                Array.Sort(sortedAssemblyNames);
+
                 DataBuildDirtyTracker tracker = new DataBuildDirtyTracker()
                 {
                     buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
                     scenes = scenes,
                     activeBuildProfilePath = activeBuildProfilePath,
                     buildOptions = buildOptions,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
-#pragma warning restore UA2001
+                    assemblyNames = sortedAssemblyNames
                 };
                 return tracker.DoCheckDirty();
             }

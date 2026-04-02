@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum PopupLocation
     {
         Below,

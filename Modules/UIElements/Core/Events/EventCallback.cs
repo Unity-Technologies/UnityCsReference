@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements
         public abstract void Dispose();
         // The eventTypeId is necessary because we allow the same callback to be registered for multiple event types
         public abstract bool IsEquivalentTo(long eventTypeId, Delegate callback);
+        public abstract Delegate GetCallback();
     }
 
     internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase
@@ -77,6 +78,11 @@ namespace UnityEngine.UIElements
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback)
         {
             return this.eventTypeId == eventTypeId && (Delegate)m_Callback == callback;
+        }
+
+        public override Delegate GetCallback()
+        {
+            return m_Callback;
         }
     }
 
@@ -124,6 +130,11 @@ namespace UnityEngine.UIElements
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback)
         {
             return this.eventTypeId == eventTypeId && (Delegate)m_Callback == callback;
+        }
+
+        public override Delegate GetCallback()
+        {
+            return m_Callback;
         }
     }
 }

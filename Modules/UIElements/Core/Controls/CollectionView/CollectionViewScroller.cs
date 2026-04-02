@@ -218,14 +218,14 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (value == SliderDirection.Horizontal)
                 {
                     style.flexDirection = FlexDirection.Row;
-                    AddToClassList(Scroller.horizontalVariantUssClassName);
-                    RemoveFromClassList(Scroller.verticalVariantUssClassName);
+                    AddToClassList(Scroller.horizontalVariantUssClassNameUnique);
+                    RemoveFromClassList(Scroller.verticalVariantUssClassNameUnique);
                 }
                 else
                 {
                     style.flexDirection = FlexDirection.Column;
-                    AddToClassList(Scroller.verticalVariantUssClassName);
-                    RemoveFromClassList(Scroller.horizontalVariantUssClassName);
+                    AddToClassList(Scroller.verticalVariantUssClassNameUnique);
+                    RemoveFromClassList(Scroller.horizontalVariantUssClassNameUnique);
                 }
                 if (previous != slider.direction)
                     NotifyPropertyChanged(directionProperty);
@@ -258,7 +258,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         {
             scrollSize = k_DefaultPageSize;
 
-            AddToClassList(Scroller.ussClassName);
+            AddToClassList(Scroller.ussClassNameUnique);
 
             // Add children in correct order
             slider = new ScrollerSlider(lowValue, highValue, direction, k_DefaultPageSize)
@@ -266,13 +266,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                 name = "unity-slider",
                 viewDataKey = "Slider"
             };
-            slider.AddToClassList(Scroller.sliderUssClassName);
+            slider.AddToClassList(Scroller.sliderUssClassNameUnique);
 
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
-            lowButton.AddToClassList(Scroller.lowButtonUssClassName);
+            lowButton.AddToClassList(Scroller.lowButtonUssClassNameUnique);
             Add(lowButton);
             highButton = new RepeatButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-high-button" };
-            highButton.AddToClassList(Scroller.highButtonUssClassName);
+            highButton.AddToClassList(Scroller.highButtonUssClassNameUnique);
             Add(highButton);
             Add(slider);
 
@@ -285,6 +285,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         public void Adjust()
         {
             // Any factor smaller than 1f will enable the scroller (and its children)
+            SetEnabled(factor < 1f);
             slider.AdjustDragElement(factor);
         }
 

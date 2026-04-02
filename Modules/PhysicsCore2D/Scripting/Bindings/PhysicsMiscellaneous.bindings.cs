@@ -75,6 +75,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsCore2D::Global_CalculateWorldTransformWrite")] extern internal static PhysicsBuffer PhysicsGlobal_CalculateWorldTransformWrite(PhysicsWorld world, PhysicsWorld.TransformPlane transformPlane, PhysicsWorld.TransformPlaneCustom transformPlaneCustom, PhysicsWorld.TransformWriteMode transformWriteMode, IntPtr transformAccessArrayIntPtr);
         [NativeMethod(Name = "PhysicsCore2D::Global_CheckTransformChanges")] extern internal static int PhysicsGlobal_CheckTransformChanges();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetContactFilterMode")] extern internal static PhysicsShape.ContactFilterMode PhysicsGlobal_GetContactFilterMode();
+        [NativeMethod(Name = "PhysicsCore2D::Global_GetContactFilterGroupMode")] extern internal static PhysicsShape.ContactFilterGroupMode PhysicsGlobal_GetContactFilterGroupMode();
 
         #endregion
     }

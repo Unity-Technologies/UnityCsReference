@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
@@ -18,6 +19,14 @@ namespace Unity.Hierarchy
         readonly Action<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_SetModelValue;
         readonly Func<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue, bool> m_IsDefaultValue;
         readonly Action<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_OnSetEditorValue;
+
+        EventModifiers m_LastEventModifiers;
+
+        /// <summary>
+        /// Gets whether the Alt/Option key was pressed during the last pointer down event on this editor element.
+        /// This is typically used to modify behavior, such as applying changes only to the parent object without affecting children.
+        /// </summary>
+        public bool AltKeyPressed => m_LastEventModifiers.HasFlag(EventModifiers.Alt);
 
         /// <summary>
         /// Model associated with this Editor (ex: GameObject, Scene...)
@@ -67,6 +76,8 @@ namespace Unity.Hierarchy
             Cell.userData = this;
             Element = editor;
             Element.visible = true;
+            Element.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            Element.RegisterCallback<PointerUpEvent>(OnPointerUp);
             Element.RegisterCallback<ChangeEvent<TValue>>(SetModelValue);
             SyncEditorValueWithoutNotify();
         }
@@ -79,6 +90,8 @@ namespace Unity.Hierarchy
             Cell.userData = null;
             Cell = null;
             Element.visible = false;
+            Element.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            Element.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             Element.UnregisterCallback<ChangeEvent<TValue>>(SetModelValue);
             Element = null;
         }
@@ -155,6 +168,29 @@ namespace Unity.Hierarchy
         public bool IsModelDefaultValue()
         {
             return m_IsDefaultValue(this, GetModelValue());
+        }
+
+        void OnPointerDown(PointerDownEvent evt)
+        {
+            m_LastEventModifiers = evt.modifiers;
+
+            // For Toggle controls with Alt key, manually trigger the value change because Alt key prevents the normal ChangeEvent from firing
+            if (!evt.modifiers.HasFlag(EventModifiers.Alt) || Element is not Toggle toggle)
+                return;
+
+            evt.StopPropagation();
+            var newValue = !toggle.value;
+            toggle.value = newValue;
+        }
+
+        void OnPointerUp(PointerUpEvent evt)
+        {
+            // We stop propagation to avoid triggering selection from this code path
+            if (m_LastEventModifiers.HasFlag(EventModifiers.Alt))
+            {
+                evt.StopPropagation();
+            }
+            m_LastEventModifiers = EventModifiers.None;
         }
     }
 }

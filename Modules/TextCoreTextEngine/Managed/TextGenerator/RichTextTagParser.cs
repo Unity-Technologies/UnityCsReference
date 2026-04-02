@@ -174,7 +174,8 @@ namespace UnityEngine.TextCore
             ColorValue = 3,
             Vector4Value = 4,
             GlyphMetricsValue = 5,
-            BoolValue = 6
+            BoolValue = 6,
+            EntityIdValue = 7
         }
 
         internal enum TagUnitType
@@ -233,6 +234,14 @@ namespace UnityEngine.TextCore
                 m_ID = id;
             }
 
+            internal TagValue(EntityId value, TagUnitType tagUnitType = TagUnitType.Unknown, ValueID? id = null)
+            {
+                type = TagValueType.EntityIdValue;
+                unit = tagUnitType;
+                m_entityIdValue = value;
+                m_ID = id;
+            }
+
             //[FieldOffset(0)]
             internal TagValueType type;
 
@@ -253,6 +262,7 @@ namespace UnityEngine.TextCore
             private GlyphMetrics m_glyphMetricsValue;
 
             private bool m_boolValue;
+            private EntityId m_entityIdValue;
 
             private ValueID? m_ID;
 
@@ -317,6 +327,17 @@ namespace UnityEngine.TextCore
                 }
             }
 
+            internal EntityId EntityIdValue
+            {
+                get
+                {
+                    if (type != TagValueType.EntityIdValue)
+                        throw new InvalidOperationException("Not an EntityId value");
+                    return m_entityIdValue;
+                }
+            }
+
+
             internal ValueID? ID
             {
                 get
@@ -361,7 +382,15 @@ namespace UnityEngine.TextCore
 
         static bool tagMatch(ReadOnlySpan<char> tagCandidate, string tagName)
         {
-            return tagCandidate.StartsWith(tagName.AsSpan()) && (tagCandidate.Length == tagName.Length || (!char.IsLetter(tagCandidate[tagName.Length]) && tagCandidate[tagName.Length] != '-'));
+            if (!tagCandidate.StartsWith(tagName.AsSpan()))
+                return false;
+
+            if (tagCandidate.Length == tagName.Length)
+                return true; // Exact match, "b" matches <b>
+
+            char next = tagCandidate[tagName.Length]; // UUM-134299
+            return next == '='  // Attribute value, <color=red>, <size=12px>, <font="Arial">
+                || next == ' '; // Space-separated attributes, <a href="url">, <sprite index=1>
         }
 
         //Return true if there is a match
@@ -419,7 +448,7 @@ namespace UnityEngine.TextCore
                 return null;
 
             byte alphaValue = (byte)(highNibble * 16 + lowNibble);
-            return new TagValue(alphaValue);
+            return new TagValue((float)alphaValue);
         }
 
         static int HexCharToInt(char hex)
@@ -651,9 +680,7 @@ namespace UnityEngine.TextCore
                 return false;
 
             var sprite = spriteAsset.spriteCharacterTable[spriteIndex];
-#pragma warning disable 618 // Todo (emilie.thaulow): update after #81049 has landed
             spriteAssetValue = new TagValue(spriteAsset.entityId, TagUnitType.Unknown, ValueID.AssetID);
-#pragma warning restore 618
             glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
             scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
             // Sprites are assigned in the E000 Private Area + sprite Index
@@ -1085,7 +1112,7 @@ namespace UnityEngine.TextCore
                             {
                                 if (Enum.IsDefined(typeof(TextFontWeight), weightValue))
                                 {
-                                    value = new TagValue(weightValue);
+                                    value = new TagValue((float)weightValue);
                                 }
                                 else
                                 {
@@ -1503,7 +1530,7 @@ namespace UnityEngine.TextCore
 
                     case TagType.Sprite:
                         if (segment.tags[i].value?.ID == ValueID.AssetID)
-                            textSpan.spriteID = EntityId.FromULong((ulong)segment.tags[i].value!.NumericalValue);
+                            textSpan.spriteID = segment.tags[i].value!.EntityIdValue;
                         if (segment.tags[i].value2?.ID == ValueID.GlyphMetrics)
                             textSpan.spriteMetrics = segment.tags[i].value2!.GlyphMetricsValue;
                         if (segment.tags[i].value3?.ID == ValueID.Tint)
@@ -1871,4 +1898,3 @@ namespace UnityEngine.TextCore
         }
     }
 }
-

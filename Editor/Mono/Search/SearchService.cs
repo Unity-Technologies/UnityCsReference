@@ -284,9 +284,7 @@ namespace UnityEditor.SearchService
             var activeEngineIndex = engines.FindIndex(engine => engine.name == actualActiveEngineName);
             if (activeEngineIndex < 0)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var defaultEngine = GetDefaultEngine() ?? engines.First();
-#pragma warning restore UA2001
+                var defaultEngine = GetDefaultEngine() ?? engines[0];
                 SetActiveSearchEngine(defaultEngine.name);
                 return defaultEngine;
             }

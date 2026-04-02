@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that allows the user to pick a choice from a list of options. For more information, refer to [[wiki:UIE-uxml-element-DropdownField|UXML element DropdownField]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/DropdownField.png")]
     public partial class DropdownField : PopupField<string>
     {

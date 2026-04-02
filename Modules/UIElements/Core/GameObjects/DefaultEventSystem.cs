@@ -32,13 +32,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private RuntimePanel m_FocusedPanel;
-        private RuntimePanel m_PreviousFocusedPanel;
+        private Panel m_FocusedPanel;
+        private Panel m_PreviousFocusedPanel;
         private Focusable m_PreviousFocusedElement;
 
-        public RuntimePanel focusedPanel
+        public Panel focusedPanel
         {
-            get => m_FocusedPanel;
+            get => m_FocusedPanel as Panel;
             set
             {
                 if (m_FocusedPanel != value)
@@ -52,7 +52,6 @@ namespace UnityEngine.UIElements
 
         public void Reset()
         {
-            m_LegacyInputProcessor?.Reset();
             m_InputForUIProcessor?.Reset();
             m_FocusedPanel = null;
         }
@@ -76,17 +75,9 @@ namespace UnityEngine.UIElements
             {
                 inputForUIProcessor.ProcessInputForUIEvents();
             }
-            else
-            {
-                legacyInputProcessor.ProcessLegacyInputEvents();
-            }
 
             UpdateWorldSpacePointers();
         }
-
-        private LegacyInputProcessor m_LegacyInputProcessor;
-        // Internal for Unit Tests
-        internal LegacyInputProcessor legacyInputProcessor => m_LegacyInputProcessor ??= new LegacyInputProcessor(this);
 
         private InputForUIProcessor m_InputForUIProcessor;
         private InputForUIProcessor inputForUIProcessor => m_InputForUIProcessor ??= new InputForUIProcessor(this);
@@ -110,30 +101,6 @@ namespace UnityEngine.UIElements
                 else
                 {
                     RemoveInputProcessor();
-                }
-            }
-        }
-
-        private bool m_UseInputForUI = true;
-        /// <summary>
-        /// Set by <see cref="UIToolkitInputConfiguration.SetRuntimeInputBackend"/>. Don't clear in Reset().
-        /// </summary>
-        internal bool useInputForUI
-        {
-            get => m_UseInputForUI;
-            set
-            {
-                if (m_UseInputForUI == value) return;
-
-                if (m_IsInputReady)
-                {
-                    RemoveInputProcessor();
-                    m_UseInputForUI = value;
-                    InitInputProcessor();
-                }
-                else
-                {
-                    m_UseInputForUI = value;
                 }
             }
         }
@@ -174,13 +141,10 @@ namespace UnityEngine.UIElements
 
         void InitInputProcessor()
         {
-            if (m_UseInputForUI)
-            {
-                m_IsInputForUIActive = true;
-                UnityEngine.InputForUI.EventProvider.SetEnabled(true);
-                UnityEngine.InputForUI.EventProvider.Subscribe(inputForUIProcessor.OnEvent);
-                m_InputForUIProcessor.Reset();
-            }
+            m_IsInputForUIActive = true;
+            UnityEngine.InputForUI.EventProvider.SetEnabled(true);
+            UnityEngine.InputForUI.EventProvider.Subscribe(inputForUIProcessor.OnEvent);
+            m_InputForUIProcessor.Reset();
         }
 
         // Change focused panel to reflect an element being focused by code. However
@@ -280,7 +244,7 @@ namespace UnityEngine.UIElements
                 {
                     if (!targetPanel.isFlat)
                     {
-                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        // World-space panels don't use the regular RecomputeElementUnderPointer mechanism.
                         //
                         // This behavior is slightly different than screen-space panels and Editor panels: if an
                         // element moves or a collider starts blocking our raycast, the element under pointer will not
@@ -341,7 +305,7 @@ namespace UnityEngine.UIElements
                 {
                     if (!targetPanel.isFlat)
                     {
-                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        // World-space panels don't use the regular RecomputeElementUnderPointer mechanism.
                         //
                         // This behavior is slightly different than screen-space panels and Editor panels: if an
                         // element moves or a collider starts blocking our raycast, the element under pointer will not
@@ -383,16 +347,15 @@ namespace UnityEngine.UIElements
             set => m_Raycaster = value;
         }
 
-        private readonly PhysicsDocumentPicker m_WorldSpacePicker = new();
-        private readonly ScreenOverlayPanelPicker m_ScreenOverlayPicker = new();
 
         public float worldSpaceMaxDistance = Mathf.Infinity;
         public int worldSpaceLayers = Physics.DefaultRaycastLayers;
 
         private static readonly Vector3 s_InvalidPanelCoordinates = new (float.NaN, float.NaN, float.NaN);
 
+
         internal void FindTargetAtPosition(Vector2 mousePosition, Vector2 delta, int pointerId, int? targetDisplay,
-            out VisualElement target, out RuntimePanel targetPanel, out Vector3 targetPanelPosition,
+            out VisualElement target, out BaseRuntimePanel targetPanel, out Vector3 targetPanelPosition,
             out VisualElement elementUnderPointer, out Camera camera)
         {
             var screenPointerState = PointerDeviceState.GetScreenPointerState(pointerId, true);
@@ -405,11 +368,11 @@ namespace UnityEngine.UIElements
             var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                if (m_ScreenOverlayPicker.TryPick(panels[i], pointerId, mousePosition, delta,
+                if (ScreenOverlayPanelPicker.TryPick((IRuntimePanel)panels[i], pointerId, mousePosition, delta,
                         targetDisplay, out _))
                 {
                     target = elementUnderPointer = null;
-                    targetPanel = (RuntimePanel)panels[i];
+                    targetPanel = panels[i];
                     targetPanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, true);
                     camera = null;
                     return;
@@ -419,10 +382,11 @@ namespace UnityEngine.UIElements
             foreach (var worldRay in raycaster.MakeRay(mousePosition, pointerId, targetDisplay))
             {
                 var layerMask = worldRay.camera.cullingMask & worldSpaceLayers;
-                if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
-                        out var collider, out var panelComponent, out elementUnderPointer, out var distance,
+                if (PhysicsDocumentPicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
+                        out var collider, out var panelComponent, out IEventHandler elementUnderPointerObj, out var distance,
                         out var captured) && (worldRay.isInsideCameraRect || captured))
                 {
+                    elementUnderPointer = (VisualElement)elementUnderPointerObj;
                     screenPointerState.hit = new PointerDeviceState.RuntimePointerState.RaycastHit
                     {
                         collider = collider,
@@ -436,7 +400,7 @@ namespace UnityEngine.UIElements
                         break;
                     var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
                     target = capturingElement ?? elementUnderPointer ?? panelComponent.GetRootVisualElement();
-                    targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+                    targetPanel = (BaseRuntimePanel)panelComponent.GetContainerPanel();
                     targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay.ray);
                     camera = worldRay.camera;
                     return;
@@ -450,11 +414,13 @@ namespace UnityEngine.UIElements
         }
 
         internal void FindTargetAtRay(Ray worldRay, float maxDistance, int pointerId, out VisualElement target,
-            out RuntimePanel targetPanel, out Vector3 targetPanelPosition, out VisualElement elementUnderPointer)
+            out BaseRuntimePanel targetPanel, out Vector3 targetPanelPosition, out VisualElement elementUnderPointer)
         {
             maxDistance = Mathf.Min(maxDistance, worldSpaceMaxDistance);
-            var picked = m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, maxDistance, worldSpaceLayers,
-                out var collider, out var panelComponent, out elementUnderPointer, out var distance, out _);
+            var picked = PhysicsDocumentPicker.TryPickWithCapture(pointerId, worldRay, maxDistance, worldSpaceLayers,
+                out var collider, out var panelComponent, out IEventHandler elementUnderPointerObj, out var distance, out _);
+
+            elementUnderPointer = (VisualElement)elementUnderPointerObj;
 
             var trackedState = PointerDeviceState.GetTrackedState(pointerId, true);
             trackedState.Reset();
@@ -474,7 +440,7 @@ namespace UnityEngine.UIElements
             {
                 var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
                 target = capturingElement ?? elementUnderPointer ?? panelComponent.GetRootVisualElement();
-                targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+                targetPanel = (BaseRuntimePanel) panelComponent.GetContainerPanel();
                 targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay);
                 return;
             }
@@ -492,7 +458,7 @@ namespace UnityEngine.UIElements
             return documentPoint;
         }
 
-        private void UpdateFocusedPanel(RuntimePanel runtimePanel)
+        private void UpdateFocusedPanel(Panel runtimePanel)
         {
             if (runtimePanel.focusController.focusedElement != null)
             {

@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Unity.Collections;
 
 namespace UnityEditorInternal
 {
@@ -283,21 +284,16 @@ namespace UnityEditorInternal
 
             EventCallback<ChangeEvent<string>> valueChangeAction = (e) =>
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                MinMaxCurveState state = (MinMaxCurveState)s_Styles.modes.Select(m => m.text).ToList().IndexOf(e.newValue);
-#pragma warning restore UA2001
+                MinMaxCurveState state = (MinMaxCurveState)System.Array.FindIndex(s_Styles.modes, m => m.text == e.newValue);
                 m_Property.mode.intValue = (int)state;
                 m_Property.mode.serializedObject.ApplyModifiedProperties();
 
                 constantMax.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
 
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if(constantMax.Children().Any())
-#pragma warning restore UA2002
+                var firstChild = constantMax.children.FirstOrDefault();
+                if (firstChild != null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    constantMax.Children().First().EnableInClassList(AlignClass, state != MinMaxCurveState.k_TwoScalars);
-#pragma warning restore UA2001
+                    firstChild.EnableInClassList(AlignClass, state != MinMaxCurveState.k_TwoScalars);
 
                     var label = constantMax.Query<Label>().Build().First();
                     if (state == MinMaxCurveState.k_Scalar)
@@ -320,12 +316,8 @@ namespace UnityEditorInternal
 
             container.RegisterCallback<AttachToPanelEvent>((e) =>
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var popup = mode.Children().First();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                popup.Remove(popup.Children().First());
-#pragma warning restore UA2001
+                var popup = mode.children[0];
+                popup.Remove(popup.children[0]);
                 popup.RemoveFromClassList(InputClass);
 
                 valueChangeAction.Invoke(ChangeEvent<string>.GetPooled("", s_Styles.modes[m_Property.mode.intValue].text));

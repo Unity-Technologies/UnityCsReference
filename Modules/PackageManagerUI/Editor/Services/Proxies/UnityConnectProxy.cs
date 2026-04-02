@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using UnityEditor.Connect;
 using UnityEngine;
 
@@ -16,11 +18,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isUserLoggedIn { get; }
         string userPrimaryOrg { get; }
         string displayName { get; }
-
         string GetConfigurationURL(CloudConfigUrl config);
         void ShowLogin();
         void OpenAuthorizedURLInWebBrowser(string url);
         OrganizationInfo[] ParseOrganizationInfos();
+        public Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult);
     }
 
     [Serializable]
@@ -82,7 +84,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
         }
-
+                
         public OrganizationInfo[] ParseOrganizationInfos()
         {
             var foreignKeys = UnityConnect.instance.userInfo.organizationForeignKeys.Split(',');
@@ -98,6 +100,32 @@ namespace UnityEditor.PackageManager.UI.Internal
                 parsedOrganizationInfos[i] = orgInfo;
             }
 
+            return parsedOrganizationInfos;
+        }
+
+        public async Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult = null)
+        {
+            OrganizationInfo[] parsedOrganizationInfos;
+            try
+            {
+                var organizations = await UnityConnectRequests.GetOrganizationsAsync();
+                List<OrganizationInfo> sortedOrganizationList = new();
+                foreach(var org in organizations)
+                {
+                    sortedOrganizationList.Add(new OrganizationInfo
+                    {
+                        name = org.Name,
+                        foreignKey = org.GenesisId
+                    });
+                }
+                sortedOrganizationList.Sort((o, v) => o.name.CompareTo(v.name));
+                parsedOrganizationInfos = sortedOrganizationList.ToArray();
+            }
+            catch (Exception)
+            {
+                parsedOrganizationInfos = ParseOrganizationInfos();
+            }
+            onResult?.Invoke(parsedOrganizationInfos);
             return parsedOrganizationInfos;
         }
 

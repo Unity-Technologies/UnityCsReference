@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides an Element displaying text. For more information, refer to [[wiki:UIE-uxml-element-Label|UXML element Label]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Label.png")]
     public partial class Label : TextElement
     {
@@ -22,6 +23,7 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-label";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// Constructs a Label with no initial text.
@@ -39,7 +41,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Label(string text)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             this.text = text;
         }

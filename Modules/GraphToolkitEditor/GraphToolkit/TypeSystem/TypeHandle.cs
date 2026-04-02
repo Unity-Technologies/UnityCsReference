@@ -29,12 +29,12 @@ namespace Unity.GraphToolkit
     }
 
     /// <summary>
-    /// The type for execution flow ports.
+    /// The type for untyped ports.
     /// </summary>
     [UnityRestricted]
-    internal class ExecutionFlow
+    internal class Untyped
     {
-        ExecutionFlow() { }
+        Untyped() { }
     }
 
     /// <summary>

@@ -950,16 +950,22 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::IssuePluginEventInternal", HasExplicitThis = true)]
         extern private void IssuePluginEventInternal(IntPtr callback, int eventID);
 
+        [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample", HasExplicitThis = true)]
         extern public void BeginSample(string name);
 
+        [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample", HasExplicitThis = true)]
         extern public void EndSample(string name);
+
         public void BeginSample(CustomSampler sampler) { BeginSample_CustomSampler(sampler); }
         public void EndSample(CustomSampler sampler) { EndSample_CustomSampler(sampler); }
 
+        [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_CustomSampler", HasExplicitThis = true)]
         extern private void BeginSample_CustomSampler([NotNull] CustomSampler sampler);
+
+        [NativeConditional("ENABLE_PROFILER")]
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_CustomSampler", HasExplicitThis = true)]
         extern private void EndSample_CustomSampler([NotNull] CustomSampler sampler);
 
@@ -973,10 +979,25 @@ namespace UnityEngine.Rendering
         [Conditional("ENABLE_PROFILER")]
         public void EndSample(ProfilerMarker marker) { EndSample_ProfilerMarker(marker.Handle); }
 
-        [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_ProfilerMarker", HasExplicitThis = true, ThrowsException = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_ProfilerMarker", HasExplicitThis = true)]
         extern private void BeginSample_ProfilerMarker(IntPtr markerHandle);
-        [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_ProfilerMarker", HasExplicitThis = true, ThrowsException = true)]
+
+        [NativeConditional("ENABLE_PROFILER")]
+        [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_ProfilerMarker", HasExplicitThis = true)]
         extern private void EndSample_ProfilerMarker(IntPtr markerHandle);
+
+        [Pure]
+        [MethodImpl(256)]
+        [Conditional("ENABLE_PROFILER")]
+        public void BeginSample(ProfilerMarker marker, Object contextObject)
+        {
+            BeginSample_ProfilerMarkerWithObject(marker.Handle, contextObject != null ? contextObject.GetEntityId() : EntityId.None);
+        }
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_ProfilerMarkerWithObject", HasExplicitThis = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        extern void BeginSample_ProfilerMarkerWithObject(IntPtr markerHandle, EntityId instanceId);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::IssuePluginEventAndDataInternal", HasExplicitThis = true)]
         extern private void IssuePluginEventAndDataInternal(IntPtr callback, int eventID, IntPtr data);

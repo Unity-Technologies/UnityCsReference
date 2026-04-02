@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.GraphToolkit.Editor;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
@@ -188,9 +189,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             m_Library.Adapter.OnSelectionChanged(selectedItems);
             if (m_Library.Adapter.HasDetailsPanel)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedItem = selectedItems.FirstOrDefault();
-#pragma warning restore UA2001
                 m_Library.Adapter.UpdateDetailsPanel(selectedItem);
                 if (m_Library.SourcePort != null && selectedItem is GraphNodeModelLibraryItem)
                     AddPortSubItems(selectedItem);

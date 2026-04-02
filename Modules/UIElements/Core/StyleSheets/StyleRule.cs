@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal int line;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         // This reference is set at runtime as convenience, but is not serialized
         [field: NonSerialized]
         internal StyleSheet styleSheet
@@ -108,7 +109,6 @@ namespace UnityEngine.UIElements
             Unity.Collections.CollectionExtensions.RemoveFromArray(ref m_ComplexSelectors, index);
             selector.ruleIndex = -1;
             selector.rule = null;
-            selector.nextInTable = null;
             styleSheet.RequestRebuild();
             return true;
         }

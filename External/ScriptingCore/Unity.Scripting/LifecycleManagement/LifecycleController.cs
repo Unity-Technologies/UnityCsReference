@@ -45,14 +45,14 @@ namespace Unity.Scripting.LifecycleManagement
             _lifecycleTracker = new ActiveLifecycleScopesTracker(_scopeTransitionHelper);
         }
 
-        public void OnAssembliesLoaded(OrderedAssemblyList loadedAssemblies)
+        public void OnAssembliesLoaded(ReadOnlyAssemblyList loadedAssemblies)
         {
             _scopeTransitionHelper.PushStack(loadedAssemblies);
 
             ExecuteInitializationMethods(loadedAssemblies);
         }
 
-        private void ExecuteInitializationMethods(OrderedAssemblyList loadedAssemblies)
+        private void ExecuteInitializationMethods(IReadOnlyList<Assembly> loadedAssemblies)
         {
             foreach (var assembly in loadedAssemblies)
             {
@@ -81,14 +81,14 @@ namespace Unity.Scripting.LifecycleManagement
             return TryGetInitializationMethod(assembly, out _);
         }
 
-        public void OnAssemblyLoadedScopeExiting(OrderedAssemblyList unloadingAssemblies)
+        public void OnAssemblyLoadedScopeExiting(ReadOnlyAssemblyList unloadingAssemblies)
         {
             _lifecycleTracker.ClearUnloadingAutoStaticsCleanupCallbacks(unloadingAssemblies);
 
             _scopeTransitionHelper.PopStack();
         }
 
-        public void OnAssemblyLoadedScopeExited(OrderedAssemblyList unloadingAssemblies)
+        public void OnAssemblyLoadedScopeExited(ReadOnlyAssemblyList unloadingAssemblies)
         {
             _lifecycleMethodRegistry.Clear(unloadingAssemblies);
         }
@@ -103,7 +103,7 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        internal IReadonlyOrderedAssemblyList GetAllAssembliesOrdered()
+        internal IReadOnlyList<Assembly> GetAllAssembliesOrdered()
         {
             lock (_lock)
             {

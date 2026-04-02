@@ -17,8 +17,10 @@ namespace UnityEditor.Overlays
         public const float minChunkHeight = 44f; //Use rounded numbers to take into account 1x screens
         public const float foldedChunkHeight = 22f; //Use rounded numbers to take into account 1x screens
 
-        // Enough width to show all overlay actions. This is validated in a test for future proofing of style changes and additional actions.
-        public const float minWidth = 56;
+        // Enough width to show all overlay actions. The width has been updated for UX reasons, notably
+        // to be able to interact more with the overlays' content even when set to the minimum.
+        // This is validated in a test for future proofing of style changes and additional actions.
+        public const float minWidth = 120;
 
         public const float maxPercentWidth = 40;
 
@@ -361,6 +363,24 @@ namespace UnityEditor.Overlays
 
                 if(newState)
                     stateChanged?.Invoke();
+            }
+        }
+
+        public void CycleState()
+        {
+            switch (GetCurrentState())
+            {
+                case State.Panel:
+                    SwitchState(State.Toolbar);
+                    break;
+
+                case State.Toolbar:
+                    SwitchState(State.Minimized);
+                    break;
+
+                case State.Minimized:
+                    SwitchState(State.Panel);
+                    break;
             }
         }
 

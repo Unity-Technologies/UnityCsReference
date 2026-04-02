@@ -5,6 +5,7 @@
 using UnityEngine.UIElements;
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -70,7 +71,6 @@ namespace Unity.UI.Builder
         public static string GenerateElementTargetedSelector(VisualElement documentElement)
         {
             string elementTargetedSelector;
-            var classList = documentElement?.classList;
 
             // if element has name, use that to target it
             if (!string.IsNullOrEmpty(documentElement?.name))
@@ -78,9 +78,9 @@ namespace Unity.UI.Builder
                 elementTargetedSelector = $"#{documentElement.name}";
             }
             // if element has no name, use its class to target it
-            else if (classList != null && classList.Count > 0)
+            else if (GetLastClassFromClassList(documentElement, out var className))
             {
-                elementTargetedSelector = $".{classList[^1]}";
+                elementTargetedSelector = $".{className}";
             }
             // if element has no class, use its type to target it
             else
@@ -95,6 +95,14 @@ namespace Unity.UI.Builder
             }
 
             return elementTargetedSelector;
+        }
+
+        private static bool GetLastClassFromClassList(VisualElement element, out string className)
+        {
+            className = null;
+            foreach (var c in element.GetClasses())
+                className = c;
+            return className != null;
         }
     }
 }

@@ -54,9 +54,9 @@ namespace UnityEditor.Search
         public SubsetStringView(string baseString, int startIndex, int endIndex, CountLengthToEndOfBlock counter)
         {
             if (startIndex < 0 || (!string.IsNullOrEmpty(baseString) && startIndex >= baseString.Length) || (string.IsNullOrEmpty(baseString) && startIndex != 0))
-                throw new ArgumentException("Index out of string range", nameof(startIndex));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "Index out of string range");
             if (endIndex < 0 || (!string.IsNullOrEmpty(baseString) && endIndex > baseString.Length) || (string.IsNullOrEmpty(baseString) && endIndex != 0))
-                throw new ArgumentException("Index out of string range", nameof(endIndex));
+                throw new ArgumentOutOfRangeException(nameof(endIndex), "Index out of string range");
             if (endIndex < startIndex)
                 throw new ArgumentException("Incorrect range specified. End index should not be smaller than start index.", nameof(endIndex));
 

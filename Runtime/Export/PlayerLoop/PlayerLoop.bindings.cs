@@ -331,6 +331,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct ProfilerEndFrame {}
         [RequiredByNativeCode]
+        public struct GraphicsStateCollectionWarmup {}
+        [RequiredByNativeCode]
         public struct GraphicsWarmupPreloadedShaders {}
         [RequiredByNativeCode]
         public struct PlayerSendFramePostPresent {}

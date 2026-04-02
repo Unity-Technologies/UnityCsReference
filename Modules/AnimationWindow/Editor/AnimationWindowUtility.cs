@@ -1,0 +1,1066 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Globalization;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+using TangentMode = UnityEditor.AnimationUtility.TangentMode;
+
+namespace UnityEditorInternal
+{
+    static partial class AnimationWindowUtility
+    {
+        public static void CreateDefaultCurves(AnimationWindowState state, ReadOnlySpan<EditorCurveBinding> properties)
+        {
+            CreateDefaultCurves(state, state.selection.clip, properties);
+        }
+
+        public static void CreateDefaultCurves(AnimationWindowState state, IAnimationWindowClip clip, ReadOnlySpan<EditorCurveBinding> properties)
+        {
+            var curves = new List<AnimationWindowCurve>();
+            clip.CreateCurves(properties, curves);
+
+            foreach (var curve in curves)
+            {
+                SetDefaultValues(state, clip, curve);
+            }
+
+            state.SaveCurves(clip, curves);
+        }
+
+        static void SetDefaultValues(AnimationWindowState state, IAnimationWindowClip clip, AnimationWindowCurve curve)
+        {
+            Type type = state.selection.GetValueType(curve.binding);
+
+            object currentValue = CurveBindingUtility.GetCurrentValue(state, curve.binding);
+            if (curve.length == 0.0F)
+            {
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, clip.frameRate));
+            }
+            else
+            {
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, clip.frameRate));
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(clip.length, clip.frameRate));
+            }
+        }
+
+        // Motion Remove me!
+        public static bool ShouldShowAnimationWindowCurve(EditorCurveBinding curveBinding)
+        {
+            // We don't want to convert the w component of rotation curves to be shown in animation window
+            if (IsTransformType(curveBinding.type))
+                return !curveBinding.propertyName.EndsWith(".w");
+
+            return true;
+        }
+
+        public static bool IsNodeLeftOverCurve(AnimationWindowState state, AnimationWindowHierarchyNode node)
+        {
+            if (node.binding != null)
+            {
+                var selectionBinding = state.selection;
+                if (selectionBinding != null)
+                {
+                    if (selectionBinding.rootGameObject == null)
+                        return false;
+
+                    return state.selection.GetValueType((EditorCurveBinding)node.binding) == null;
+                }
+            }
+
+            // Go through all child nodes recursively
+            if (node.hasChildren)
+            {
+                foreach (var child in node.children)
+                    return IsNodeLeftOverCurve(state, child as AnimationWindowHierarchyNode);
+            }
+
+            return false;
+        }
+
+        public static bool IsNodeAmbiguous(AnimationWindowState state, AnimationWindowHierarchyNode node)
+        {
+            if (node.binding != null)
+            {
+                var selectionBinding = state.selection;
+                if (selectionBinding != null)
+                {
+                    if (selectionBinding.rootGameObject != null)
+                        return AnimationUtility.AmbiguousBinding(node.binding.Value.path, node.binding.Value.m_ClassID, selectionBinding.rootGameObject.transform);
+                }
+            }
+
+            // Go through all child nodes recursively
+            if (node.hasChildren)
+            {
+                foreach (var child in node.children)
+                    return IsNodeAmbiguous(state, child as AnimationWindowHierarchyNode);
+            }
+
+            return false;
+        }
+
+        public static bool IsNodePhantom(AnimationWindowHierarchyNode node)
+        {
+            if (node is AnimationWindowHierarchyPropertyNode propertyNode)
+                return propertyNode.isPhantomNode;
+
+            return false;
+        }
+
+        public static bool IsNodeOverriden(AnimationWindowHierarchyNode node)
+        {
+            if (node is AnimationWindowHierarchyPropertyNode propertyNode)
+                return propertyNode.inheritanceState == InheritanceState.Overridden;
+
+            // Go through all child nodes recursively
+            if (node.hasChildren)
+                return node.children.TrueForAll(child => IsNodeOverriden(child as AnimationWindowHierarchyNode));
+
+            return false;
+        }
+
+        public static void AddSelectedKeyframes(AnimationWindowState state, AnimationKeyTime time)
+        {
+            List<AnimationWindowCurve> curves = state.activeCurves.Count > 0 ? state.activeCurves : state.filteredCurves;
+            AddKeyframes(state, curves, time);
+        }
+
+        public static void AddKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
+        {
+            if (state.selection.isReadOnly)
+                return;
+
+            string undoLabel = L10n.Tr("Add Key");
+            state.SaveKeySelection(undoLabel);
+            state.ClearKeySelections();
+
+            foreach (AnimationWindowCurve curve in curves)
+            {
+                AnimationKeyTime shiftedMouseKeyTime = AnimationKeyTime.Time(time.time, time.frameRate);
+
+                object value = CurveBindingUtility.GetCurrentValue(state, curve);
+                AnimationWindowKeyframe keyframe = AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, shiftedMouseKeyTime);
+
+                if (keyframe != null)
+                    state.SelectKey(keyframe);
+            }
+
+            state.SaveCurves(state.selection.clip, curves, undoLabel);
+        }
+
+        public static void RemoveKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
+        {
+            if (state.selection.isReadOnly)
+                return;
+
+            string undoLabel = L10n.Tr("Remove Key");
+            state.SaveKeySelection(undoLabel);
+
+            foreach (AnimationWindowCurve curve in curves)
+            {
+                curve.RemoveKeyframe(time);
+            }
+
+            state.SaveCurves(state.selection.clip, curves, undoLabel);
+        }
+
+        public static AnimationWindowKeyframe AddKeyframeToCurve(AnimationWindowCurve curve, object value, Type type, AnimationKeyTime time)
+        {
+            // When there is already a key a this time
+            // Make sure that only value is updated but tangents are maintained.
+            AnimationWindowKeyframe previousKey = curve.FindKeyAtTime(time);
+            if (previousKey != null)
+            {
+                previousKey.value = value;
+                return previousKey;
+            }
+
+            AnimationWindowKeyframe keyframe = null;
+
+            if (curve.isPPtrCurve)
+            {
+                keyframe = new AnimationWindowKeyframe();
+
+                keyframe.time = time.time;
+                keyframe.value = value;
+                keyframe.curve = curve;
+                curve.AddKeyframe(keyframe, time);
+            }
+            else if (curve.isDiscreteCurve)
+            {
+                keyframe = new AnimationWindowKeyframe();
+                keyframe.time = time.time;
+                keyframe.leftTangentMode = TangentMode.Constant;
+                keyframe.rightTangentMode = TangentMode.Constant;
+                keyframe.brokenTangent = true;
+                keyframe.curve = curve;
+                keyframe.value = Convert.ToInt32(value);
+
+                curve.AddKeyframe(keyframe, time);
+            }
+            else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
+            {
+                Keyframe tempKey = new Keyframe(time.time, (float)value);
+                if (type == typeof(bool))
+                {
+                    AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
+                    AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+
+                    AnimationUtility.SetKeyBroken(ref tempKey, true);
+                }
+                else if (type == typeof(int))
+                {
+                    // Create temporary curve to get proper tangents
+                    AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+                    if (animationCurve.length <= 1)
+                    {
+                        TangentMode tangentMode = TangentMode.Linear;
+                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, tangentMode);
+                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, tangentMode);
+                    }
+                    else
+                    {
+                        int keyIndex = animationCurve.AddKey(tempKey);
+                        if (keyIndex != -1)
+                        {
+                            CurveUtility.SetKeyModeFromContext(animationCurve, keyIndex);
+                            tempKey = animationCurve[keyIndex];
+                        }
+                    }
+
+                    AnimationUtility.SetKeyBroken(ref tempKey, true);
+                }
+                else
+                {
+                    // Create temporary curve to get proper tangents
+                    AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+                    int keyIndex = animationCurve.AddKey(tempKey);
+                    if (keyIndex != -1)
+                    {
+                        // Make sure tangent slopes default to ClampedAuto.  Tangent mode will be modified afterwards.
+                        AnimationUtility.SetKeyLeftTangentMode(animationCurve, keyIndex, TangentMode.ClampedAuto);
+                        AnimationUtility.SetKeyRightTangentMode(animationCurve, keyIndex, TangentMode.ClampedAuto);
+                        AnimationUtility.UpdateTangentsFromModeSurrounding(animationCurve, keyIndex);
+
+                        CurveUtility.SetKeyModeFromContext(animationCurve, keyIndex);
+
+                        tempKey = animationCurve[keyIndex];
+                    }
+                }
+
+                keyframe = new AnimationWindowKeyframe();
+                keyframe.FromKeyframe(curve, tempKey);
+
+                curve.AddKeyframe(keyframe, time);
+            }
+
+            return keyframe;
+        }
+
+        public static List<AnimationWindowCurve> FilterCurves(AnimationWindowCurve[] curves, string path, bool entireHierarchy)
+        {
+            List<AnimationWindowCurve> results = new List<AnimationWindowCurve>();
+
+            if (curves != null)
+            {
+                foreach (AnimationWindowCurve curve in curves)
+                    if (curve.path.Equals(path) || (entireHierarchy && curve.path.Contains(path)))
+                        results.Add(curve);
+            }
+
+            return results;
+        }
+
+        public static List<AnimationWindowCurve> FilterCurves(AnimationWindowCurve[] curves, string path, Type animatableObjectType)
+        {
+            List<AnimationWindowCurve> results = new List<AnimationWindowCurve>();
+
+            if (curves != null)
+            {
+                foreach (AnimationWindowCurve curve in curves)
+                    if (curve.path.Equals(path) && curve.type == animatableObjectType)
+                        results.Add(curve);
+            }
+
+            return results;
+        }
+
+        internal static bool IsRotationCurve(EditorCurveBinding curveBinding)
+        {
+            string propertyName = GetPropertyGroupName(curveBinding.propertyName);
+            return propertyName == "m_LocalRotation" || propertyName == "localEulerAnglesRaw";
+        }
+
+        public static bool IsRectTransformPosition(EditorCurveBinding curveBinding)
+        {
+            return curveBinding.type == typeof(RectTransform) && GetPropertyGroupName(curveBinding.propertyName) == "m_LocalPosition";
+        }
+
+        public static bool ContainsFloatKeyframes(List<AnimationWindowKeyframe> keyframes)
+        {
+            if (keyframes == null || keyframes.Count == 0)
+                return false;
+
+            foreach (var key in keyframes)
+            {
+                if (!key.isPPtrCurve)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Get curves for property or propertygroup (example: x,y,z)
+        public static List<AnimationWindowCurve> FilterCurves(AnimationWindowCurve[] curves, string path, Type animatableObjectType, string propertyName)
+        {
+            List<AnimationWindowCurve> results = new List<AnimationWindowCurve>();
+
+            if (curves != null)
+            {
+                string propertyGroupName = GetPropertyGroupName(propertyName);
+                bool isPropertyGroup = propertyGroupName == propertyName;
+
+                foreach (AnimationWindowCurve curve in curves)
+                {
+                    bool propertyNameMatches = isPropertyGroup ? GetPropertyGroupName(curve.propertyName).Equals(propertyGroupName) : curve.propertyName.Equals(propertyName);
+                    if (curve.path.Equals(path) && curve.type == animatableObjectType && propertyNameMatches)
+                        results.Add(curve);
+                }
+            }
+
+            return results;
+        }
+
+        // Current value of the property that rootGO + curveBinding is pointing to
+        public static object GetCurrentValue(GameObject rootGameObject, EditorCurveBinding curveBinding)
+        {
+            if (curveBinding.isPPtrCurve)
+            {
+                AnimationUtility.GetObjectReferenceValue(rootGameObject, curveBinding, out var value);
+                return value;
+            }
+            else if (curveBinding.isDiscreteCurve)
+            {
+                AnimationUtility.GetDiscreteIntValue(rootGameObject, curveBinding, out var value);
+                return value;
+            }
+            else
+            {
+                AnimationUtility.GetFloatValue(rootGameObject, curveBinding, out var value);
+                return value;
+            }
+        }
+
+        public static EditorCurveBinding[] GetAnimatableBindings(GameObject rootGameObject)
+        {
+            if (rootGameObject != null)
+            {
+                var transforms = rootGameObject.GetComponentsInChildren<Transform>();
+
+                // At least 10 bindings for Transform (m_LocalPosition, m_LocalRotation, m_LocalScale) and 1 binding for GameObject (m_IsActive)
+                const int kMinNumberOfBindingsPerGameObject = 11;
+
+                var bindings = new List<EditorCurveBinding>(transforms.Length * kMinNumberOfBindingsPerGameObject);
+                for (int i = 0; i < transforms.Length; ++i)
+                {
+                    bindings.AddRange(AnimationUtility.GetAnimatableBindings(transforms[i].gameObject, rootGameObject));
+                }
+
+                return bindings.ToArray();
+            }
+
+            return Array.Empty<EditorCurveBinding>();
+        }
+
+        public static bool PropertyIsAnimatable(Object targetObject, string propertyPath, Object rootObject)
+        {
+            if (targetObject is ScriptableObject)
+            {
+                ScriptableObject scriptableObject = (ScriptableObject)targetObject;
+                EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(scriptableObject);
+                return Array.Exists(allCurveBindings, binding => binding.propertyName == propertyPath);
+            }
+            else
+            {
+                GameObject gameObject = targetObject as GameObject;
+                if (targetObject is Component)
+                    gameObject = ((Component)targetObject).gameObject;
+
+                if (gameObject != null)
+                {
+                    var dummyModification = new PropertyModification();
+                    dummyModification.propertyPath = propertyPath;
+                    dummyModification.target = targetObject;
+
+                    EditorCurveBinding binding = new EditorCurveBinding();
+                    return AnimationUtility.PropertyModificationToEditorCurveBinding(dummyModification, rootObject == null ? gameObject : (GameObject)rootObject, out binding) != null;
+                }
+            }
+
+            return false;
+        }
+
+        // Given a serialized property, gathers all animateable properties
+        public static PropertyModification[] SerializedPropertyToPropertyModifications(SerializedProperty property)
+        {
+            List<SerializedProperty> properties = new List<SerializedProperty>();
+
+            properties.Add(property);
+
+            // handles child properties (Vector3 is 3 recordable properties)
+            if (property.hasChildren)
+            {
+                var iter = property.Copy();
+                var end = property.GetEndProperty(false);
+
+                // recurse over all children properties
+                while (iter.Next(true) && !SerializedProperty.EqualContents(iter, end) && iter.propertyPath.StartsWith(property.propertyPath))
+                {
+                    properties.Add(iter.Copy());
+                }
+            }
+
+            // Special case for m_LocalRotation...
+            if (property.propertyPath.StartsWith("m_LocalRotation"))
+            {
+                var serializedObject = property.serializedObject;
+                if (serializedObject.targetObject is Transform)
+                {
+                    SerializedProperty eulerHintProperty = serializedObject.FindProperty("m_LocalEulerAnglesHint");
+                    if (eulerHintProperty != null && eulerHintProperty.hasChildren)
+                    {
+                        var iter = eulerHintProperty.Copy();
+                        var end = eulerHintProperty.GetEndProperty(false);
+
+                        // recurse over all children properties
+                        while (iter.Next(true) && !SerializedProperty.EqualContents(iter, end) && iter.propertyPath.StartsWith(eulerHintProperty.propertyPath))
+                        {
+                            properties.Add(iter.Copy());
+                        }
+                    }
+                }
+            }
+
+            List<PropertyModification> modifications = new List<PropertyModification>();
+
+            for (int i = 0; i < properties.Count; ++i)
+            {
+                var propertyIter = properties[i];
+                var isObject = propertyIter.propertyType == SerializedPropertyType.ObjectReference;
+                var isFloat = propertyIter.propertyType == SerializedPropertyType.Float;
+                var isBool = propertyIter.propertyType == SerializedPropertyType.Boolean;
+                var isInt = propertyIter.propertyType == SerializedPropertyType.Integer;
+                var isEnum = propertyIter.propertyType == SerializedPropertyType.Enum;
+
+                if (isObject || isFloat || isBool || isInt || isEnum)
+                {
+                    var serializedObject = propertyIter.serializedObject;
+                    var targetObjects = serializedObject.targetObjects;
+
+                    if (propertyIter.hasMultipleDifferentValues)
+                    {
+                        for (int j = 0; j < targetObjects.Length; ++j)
+                        {
+                            var singleObject = new SerializedObject(targetObjects[j]);
+                            SerializedProperty singleProperty = singleObject.FindProperty(propertyIter.propertyPath);
+
+                            string value = string.Empty;
+                            Object objectReference = null;
+
+                            if (isObject)
+                                objectReference = singleProperty.objectReferenceValue;
+                            else if (isFloat)
+                                value = singleProperty.floatValue.ToString(CultureInfo.InvariantCulture);
+                            else if (isInt)
+                                value = singleProperty.intValue.ToString();
+                            else if (isEnum)
+                                value = singleProperty.enumValueIndex.ToString();
+                            else // if (isBool)
+                                value = singleProperty.boolValue ? "1" : "0";
+
+                            var modification = new PropertyModification();
+
+                            modification.target = targetObjects[j];
+                            modification.propertyPath = (singleProperty.isReferencingAManagedReferenceField ? singleProperty.managedReferencePropertyPath : singleProperty.propertyPath);
+                            modification.value = value;
+                            modification.objectReference = objectReference;
+                            modifications.Add(modification);
+                        }
+                    }
+                    // fast path
+                    else
+                    {
+                        string value = string.Empty;
+                        Object objectReference = null;
+
+                        if (isObject)
+                            objectReference = propertyIter.objectReferenceValue;
+                        else if (isFloat)
+                            value = propertyIter.floatValue.ToString(CultureInfo.InvariantCulture);
+                        else if (isInt)
+                            value = propertyIter.intValue.ToString();
+                        else if (isEnum)
+                            value = propertyIter.enumValueIndex.ToString();
+                        else // if (isBool)
+                            value = propertyIter.boolValue ? "1" : "0";
+
+                        for (int j = 0; j < targetObjects.Length; ++j)
+                        {
+                            var modification = new PropertyModification();
+
+                            modification.target = targetObjects[j];
+                            modification.propertyPath = (propertyIter.isReferencingAManagedReferenceField ? propertyIter.managedReferencePropertyPath : propertyIter.propertyPath);
+                            modification.value = value;
+                            modification.objectReference = objectReference;
+                            modifications.Add(modification);
+                        }
+                    }
+                }
+            }
+
+            return modifications.ToArray();
+        }
+
+        public static bool CurveExists(EditorCurveBinding binding, AnimationWindowCurve[] curves)
+        {
+            foreach (var animationWindowCurve in curves)
+            {
+                if (binding.propertyName == animationWindowCurve.binding.propertyName &&
+                    binding.type == animationWindowCurve.binding.type &&
+                    binding.path == animationWindowCurve.binding.path)
+                    return true;
+            }
+            return false;
+        }
+
+        private static readonly string k_PositionDisplayName = L10n.Tr("Position");
+        private static readonly string k_ScaleDisplayName = L10n.Tr("Scale");
+        private static readonly string k_RotationDisplayName = L10n.Tr("Rotation");
+        private static readonly string k_MaterialReferenceDisplayName = L10n.Tr("Material Reference");
+
+        private const string k_ComponentPathSeparator = "  :  ";
+
+        private static string FormatComponentPathDisplayName(Type componentType, string displayPath)
+        {
+            return ObjectNames.NicifyVariableName(componentType.Name) + k_ComponentPathSeparator + displayPath.Replace("/", k_ComponentPathSeparator);
+        }
+
+        // Takes raw animation curve propertyname and makes it pretty
+        public static string GetPropertyDisplayName(string propertyName)
+        {
+            propertyName = propertyName.Replace("m_LocalPosition", k_PositionDisplayName);
+            propertyName = propertyName.Replace("m_LocalScale", k_ScaleDisplayName);
+            propertyName = propertyName.Replace("m_LocalRotation", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAnglesBaked", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAnglesRaw", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAngles", k_RotationDisplayName);
+            propertyName = propertyName.Replace("m_Materials.Array.data", k_MaterialReferenceDisplayName);
+            if (propertyName.StartsWith("managedReferences["))
+                propertyName = propertyName.Remove(0, propertyName.IndexOf('.') + 1);
+
+            propertyName = ObjectNames.NicifyVariableName(propertyName);
+            propertyName = propertyName.Replace("m_", "");
+
+            return propertyName;
+        }
+
+        // Transform and Sprite: just show Position / Rotation / Scale / Sprite
+        public static bool ShouldPrefixWithTypeName(Type animatableObjectType, string propertyName)
+        {
+            if (animatableObjectType == typeof(Transform) || animatableObjectType == typeof(RectTransform))
+                return false;
+
+            if (animatableObjectType == typeof(SpriteRenderer) && propertyName == "m_Sprite")
+                return false;
+
+            return true;
+        }
+
+        public static string GetNicePropertyDisplayName(EditorCurveBinding curveBinding, SerializedObject so)
+        {
+            if (curveBinding.isSerializeReferenceCurve)
+            {
+                if (so != null)
+                {
+                    var displayName = curveBinding.propertyName;
+                    var sp = so.FindFirstPropertyFromManagedReferencePath(displayName);
+                    if (sp != null)
+                        displayName = AnimationWindowUtility.GetPropertyDisplayName(AnimationWindowUtility.GetPropertyGroupName(sp.propertyPath));
+                    if (displayName != "")
+                        return displayName;
+                }
+                else
+                {
+                    return ObjectNames.NicifyVariableName(curveBinding.type.Name) + "." + curveBinding.propertyName;
+                }
+            }
+
+            return AnimationWindowUtility.GetNicePropertyDisplayName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
+        }
+
+        public static string GetNicePropertyDisplayName(EditorCurveBinding curveBinding, SerializedObject so, Type animatableObjectType, out string fullPathForTooltip)
+        {
+            if (!string.IsNullOrEmpty(curveBinding.propertyName) && curveBinding.propertyName.IndexOf('/') >= 0)
+            {
+                GetGroupDisplayPath(curveBinding.propertyName, out string displayPath, out fullPathForTooltip);
+                return FormatComponentPathDisplayName(animatableObjectType, displayPath);
+            }
+            fullPathForTooltip = null;
+            return GetNicePropertyDisplayName(curveBinding, so);
+        }
+
+        public static string GetNicePropertyDisplayName(Type animatableObjectType, string propertyName)
+        {
+            if (ShouldPrefixWithTypeName(animatableObjectType, propertyName))
+                return ObjectNames.NicifyVariableName(animatableObjectType.Name) + "." + GetPropertyDisplayName(propertyName);
+            else
+                return GetPropertyDisplayName(propertyName);
+        }
+
+        public static string GetNicePropertyGroupDisplayName(EditorCurveBinding curveBinding, SerializedObject so)
+        {
+            if (curveBinding.isSerializeReferenceCurve)
+            {
+                if (so != null)
+                {
+                    var displayName = curveBinding.propertyName;
+                    var sp = so.FindFirstPropertyFromManagedReferencePath(displayName);
+                    if (sp != null)
+                        displayName = AnimationWindowUtility.GetPropertyDisplayName(AnimationWindowUtility.GetPropertyGroupName(sp.propertyPath));
+                    if (displayName != "")
+                        return displayName;
+                }
+                else
+                {
+                    return ObjectNames.NicifyVariableName(curveBinding.type.Name) + "." + curveBinding.propertyName;
+                }
+            }
+
+            return NicifyPropertyGroupName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
+        }
+
+        public static string GetNicePropertyGroupDisplayName(EditorCurveBinding curveBinding, SerializedObject so, Type animatableObjectType, out string fullPathForTooltip)
+        {
+            if (!string.IsNullOrEmpty(curveBinding.propertyName) && curveBinding.propertyName.IndexOf('/') >= 0)
+            {
+                GetGroupDisplayPath(curveBinding.propertyName, out string displayPath, out fullPathForTooltip);
+                return FormatComponentPathDisplayName(animatableObjectType, displayPath);
+            }
+            fullPathForTooltip = null;
+            return GetNicePropertyGroupDisplayName(curveBinding, so);
+        }
+
+        public static string GetNicePropertyGroupDisplayName(Type animatableObjectType, string propertyGroupName)
+        {
+            if (ShouldPrefixWithTypeName(animatableObjectType, propertyGroupName))
+                return ObjectNames.NicifyVariableName(animatableObjectType.Name) + "." + NicifyPropertyGroupName(animatableObjectType, propertyGroupName);
+            else
+                return NicifyPropertyGroupName(animatableObjectType, propertyGroupName);
+        }
+
+        // Takes raw animation curve propertyname and returns a pretty groupname
+        public static string NicifyPropertyGroupName(Type animatableObjectType, string propertyGroupName)
+        {
+            string result = GetPropertyGroupName(GetPropertyDisplayName(propertyGroupName));
+
+            // Workaround for uGUI RectTransform which only animates position.z
+            if (animatableObjectType == typeof(RectTransform) && result.Equals("Position"))
+                result = "Position (Z)";
+
+            return result;
+        }
+
+        // We automatically group Vector4, Vector3 and Color
+        static public int GetComponentIndex(string name)
+        {
+            if (name == null || name.Length < 3 || name[name.Length - 2] != '.')
+                return -1;
+            char lastCharacter = name[name.Length - 1];
+            switch (lastCharacter)
+            {
+                case 'r':
+                    return 0;
+                case 'g':
+                    return 1;
+                case 'b':
+                    return 2;
+                case 'a':
+                    return 3;
+                case 'x':
+                    return 0;
+                case 'y':
+                    return 1;
+                case 'z':
+                    return 2;
+                case 'w':
+                    return 3;
+                default:
+                    return -1;
+            }
+        }
+
+        // If Vector4, Vector3 or Color, return group name instead of full name
+        public static string GetPropertyGroupName(string propertyName)
+        {
+            if (GetComponentIndex(propertyName) != -1)
+                return propertyName.Substring(0, propertyName.Length - 2);
+
+            return propertyName;
+        }
+
+        /// <summary>
+        /// Returns the last segment of a property name (the part after the last '/').
+        /// Used for display when the property name contains an element path (e.g. "#elementA/#elementB/Translate.x" -> "Translate.x").
+        /// Does not modify Game Object path (binding.path); this is only for the path embedded in the property name.
+        /// </summary>
+        public static string GetPropertyPartForDisplay(string fullPropertyName)
+        {
+            if (string.IsNullOrEmpty(fullPropertyName))
+                return fullPropertyName;
+
+            int lastSlash = fullPropertyName.LastIndexOf('/');
+            if (lastSlash < 0)
+                return fullPropertyName;
+
+            return fullPropertyName.Substring(lastSlash + 1);
+        }
+
+        /// <summary>
+        /// Gets the display path for a group row when the property name contains path segments.
+        /// When there are more than two segments, returns the last two (path without channel) for the label and the full path for tooltip.
+        /// </summary>
+        /// <param name="fullPropertyName">Full property name (e.g. "#elementA/#elementB/#elementC/Translate.x").</param>
+        /// <param name="displayPath">Path to show in the label (last two segments, last token without channel).</param>
+        /// <param name="fullPathForTooltip">Full path without channel, for tooltip when shortened; null if not shortened.</param>
+        public static void GetGroupDisplayPath(string fullPropertyName, out string displayPath, out string fullPathForTooltip)
+        {
+            fullPathForTooltip = null;
+            if (string.IsNullOrEmpty(fullPropertyName))
+            {
+                displayPath = fullPropertyName;
+                return;
+            }
+
+            if (fullPropertyName.IndexOf('/') < 0)
+            {
+                displayPath = GetPropertyGroupName(fullPropertyName);
+                return;
+            }
+
+            string[] segments = PropertyPathTokenizer.TokenizePath(fullPropertyName);
+            if (segments.Length == 0)
+            {
+                displayPath = fullPropertyName;
+                return;
+            }
+
+            string pathWithoutChannel = GetPropertyGroupName(segments[segments.Length - 1]);
+
+            if (segments.Length > 2)
+            {
+                displayPath = segments[segments.Length - 2] + "/" + pathWithoutChannel;
+                fullPathForTooltip = string.Join("/", segments, 0, segments.Length - 1) + "/" + pathWithoutChannel;
+            }
+            else if (segments.Length == 2)
+            {
+                displayPath = segments[0] + "/" + pathWithoutChannel;
+            }
+            else
+            {
+                displayPath = pathWithoutChannel;
+            }
+        }
+
+        public static float GetNextKeyframeTime(IEnumerable<AnimationWindowCurve> curves, float currentTime, float frameRate)
+        {
+            AnimationKeyTime candidateKeyTime = AnimationKeyTime.Frame(int.MaxValue, frameRate);
+            AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
+            AnimationKeyTime nextTime = AnimationKeyTime.Frame(time.frame + 1, frameRate);
+            bool found = false;
+
+            foreach (AnimationWindowCurve curve in curves)
+            {
+                foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
+                {
+                    AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
+                    if (keyTime.frame <= candidateKeyTime.frame && keyTime.frame >= nextTime.frame)
+                    {
+                        if (keyframe.time <= candidateKeyTime.time)
+                        {
+                            candidateKeyTime = keyTime;
+                            found = true;
+                        }
+                    }
+                }
+            }
+            return found ? candidateKeyTime.time : time.time;
+        }
+
+        public static float GetPreviousKeyframeTime(IEnumerable<AnimationWindowCurve> curves, float currentTime, float frameRate)
+        {
+            AnimationKeyTime candidateKeyTime = AnimationKeyTime.Time(float.MinValue, frameRate);
+            AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
+            AnimationKeyTime previousTime = AnimationKeyTime.Frame(time.frame - 1, frameRate);
+
+            bool found = false;
+
+            foreach (AnimationWindowCurve curve in curves)
+            {
+                foreach (AnimationWindowKeyframe keyframe in curve.keyframes)
+                {
+                    AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
+                    if (keyTime.frame >= candidateKeyTime.frame && keyTime.frame <= previousTime.frame)
+                    {
+                        if (keyTime.time >= candidateKeyTime.time)
+                        {
+                            candidateKeyTime = keyTime;
+                            found = true;
+                        }
+                    }
+                }
+            }
+
+            return found ? candidateKeyTime.time : time.time;
+        }
+
+        public static int GetPropertyNodeID(int setId, string path, System.Type type, string propertyName)
+        {
+            return (setId + path + type.Name + propertyName).GetHashCode();
+        }
+
+        public static void SyncTimeArea(TimeArea from, TimeArea to)
+        {
+            to.SetDrawRectHack(from.drawRect);
+            to.m_Scale = new Vector2(from.m_Scale.x, to.m_Scale.y);
+            to.m_Translation = new Vector2(from.m_Translation.x, to.m_Translation.y);
+            to.EnforceScaleAndRange();
+        }
+
+        public static void DrawInRangeOverlay(Rect rect, Color color, float startOfClipPixel, float endOfClipPixel)
+        {
+            // Rect shaded shape drawn inside range
+            if (endOfClipPixel >= rect.xMin)
+            {
+                if (color.a > 0f)
+                {
+                    Rect inRect = Rect.MinMaxRect(Mathf.Max(startOfClipPixel, rect.xMin), rect.yMin, Mathf.Min(endOfClipPixel, rect.xMax), rect.yMax);
+                    DrawRect(inRect, color);
+                }
+            }
+        }
+
+        public static void DrawOutOfRangeOverlay(Rect rect, Color color, float startOfClipPixel, float endOfClipPixel)
+        {
+            Color lineColor = Color.white.RGBMultiplied(0.4f);
+
+            // Rect shaded shape drawn before range
+            if (startOfClipPixel > rect.xMin)
+            {
+                Rect startRect = Rect.MinMaxRect(rect.xMin, rect.yMin, Mathf.Min(startOfClipPixel, rect.xMax), rect.yMax);
+                DrawRect(startRect, color);
+                TimeArea.DrawVerticalLine(startRect.xMax, startRect.yMin, startRect.yMax, lineColor);
+            }
+
+            // Rect shaded shape drawn after range
+            Rect endRect = Rect.MinMaxRect(Mathf.Max(endOfClipPixel, rect.xMin), rect.yMin, rect.xMax, rect.yMax);
+            DrawRect(endRect, color);
+            TimeArea.DrawVerticalLine(endRect.xMin, endRect.yMin, endRect.yMax, lineColor);
+        }
+
+        public static void DrawSelectionOverlay(Rect rect, Color color, float startPixel, float endPixel)
+        {
+            startPixel = Mathf.Max(startPixel, rect.xMin);
+            endPixel = Mathf.Max(endPixel, rect.xMin);
+
+            Rect labelRect = Rect.MinMaxRect(startPixel, rect.yMin, endPixel, rect.yMax);
+            DrawRect(labelRect, color);
+        }
+
+        public static void DrawRect(Rect rect, Color color)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            HandleUtility.ApplyWireMaterial();
+            GL.PushMatrix();
+            GL.MultMatrix(Handles.matrix);
+            GL.Begin(GL.QUADS);
+            GL.Color(color);
+            GL.Vertex(rect.min);
+            GL.Vertex(new Vector2(rect.xMax, rect.yMin));
+            GL.Vertex(rect.max);
+            GL.Vertex(new Vector2(rect.xMin, rect.yMax));
+            GL.End();
+            GL.PopMatrix();
+        }
+
+        private static CurveRenderer CreateRendererForCurve(AnimationWindowCurve curve)
+        {
+            CurveRenderer renderer;
+            switch (System.Type.GetTypeCode(curve.valueType))
+            {
+                case TypeCode.Int32:
+                    renderer = new IntCurveRenderer(curve.ToAnimationCurve());
+                    break;
+                case TypeCode.Boolean:
+                    renderer = new BoolCurveRenderer(curve.ToAnimationCurve());
+                    break;
+                default:
+                    renderer = new NormalCurveRenderer(curve.ToAnimationCurve());
+                    break;
+            }
+            return renderer;
+        }
+
+        private static CurveWrapper.PreProcessKeyMovement CreateKeyPreprocessorForCurve(AnimationWindowCurve curve)
+        {
+            CurveWrapper.PreProcessKeyMovement method;
+            switch (System.Type.GetTypeCode(curve.valueType))
+            {
+                case TypeCode.Int32:
+                    method = (ref Keyframe key) => { key.value = Mathf.Floor(key.value + 0.5f); };
+                    break;
+                case TypeCode.Boolean:
+                    method = (ref Keyframe key) => { key.value = key.value > 0.5f ? 1.0f : 0.0f; };
+                    break;
+                default:
+                    method = null;
+                    break;
+            }
+            return method;
+        }
+
+        public static CurveWrapper GetCurveWrapper(AnimationWindowState state, AnimationWindowCurve curve)
+        {
+            //Discrete and PPtr curves are not allowed to create curve wrappers.
+            if (curve.isDiscreteCurve || curve.isPPtrCurve)
+                return null;
+
+			var clip = state.selection.clip;
+
+            CurveWrapper curveWrapper = new CurveWrapper();
+            curveWrapper.renderer = CreateRendererForCurve(curve);
+            curveWrapper.preProcessKeyMovementDelegate = CreateKeyPreprocessorForCurve(curve);
+            curveWrapper.renderer.SetWrap(WrapMode.Clamp, clip.isLooping ? WrapMode.Loop : WrapMode.Clamp);
+            curveWrapper.renderer.SetCustomRange(0f, clip.length);
+            curveWrapper.binding = curve.binding;
+            curveWrapper.isPhantom = curve.isPhantom;
+            curveWrapper.id = curve.GetHashCode();
+            curveWrapper.color = CurveUtility.GetPropertyColor(curve.propertyName);
+            curveWrapper.hidden = false;
+            curveWrapper.selectionBindingInterface = state.selection;
+            return curveWrapper;
+        }
+
+        // Convert keyframe from curve editor representation (CurveSelection) to animation window representation (AnimationWindowKeyframe)
+        public static AnimationWindowKeyframe CurveSelectionToAnimationWindowKeyframe(CurveSelection curveSelection, List<AnimationWindowCurve> allCurves)
+        {
+            foreach (AnimationWindowCurve curve in allCurves)
+            {
+                int curveID = curve.GetHashCode();
+                if (curveID == curveSelection.curveID)
+                    if (curve.keyframes.Count > curveSelection.key)
+                        return curve.keyframes[curveSelection.key];
+            }
+
+            return null;
+        }
+
+        // Convert keyframe from animation window representation (AnimationWindowKeyframe) to curve editor representation (CurveSelection) to animation window representation (AnimationWindowKeyframe)
+        public static CurveSelection AnimationWindowKeyframeToCurveSelection(AnimationWindowKeyframe keyframe, CurveEditor curveEditor)
+        {
+            int curveID = keyframe.curve.GetHashCode();
+            foreach (CurveWrapper curveWrapper in curveEditor.animationCurves)
+                if (curveWrapper.id == curveID && keyframe.GetIndex() >= 0)
+                    return new CurveSelection(curveWrapper.id, keyframe.GetIndex());
+
+            return null;
+        }
+
+        public static AnimationWindowCurve BestMatchForPaste(EditorCurveBinding binding, List<AnimationWindowCurve> clipboardCurves, List<AnimationWindowCurve> targetCurves)
+        {
+            // Exact match
+            foreach (AnimationWindowCurve targetCurve in targetCurves)
+                if (targetCurve.binding == binding)
+                    return targetCurve;
+
+            // Matching propertyname
+            foreach (AnimationWindowCurve targetCurve in targetCurves)
+            {
+                if (targetCurve.binding.propertyName == binding.propertyName)
+                {
+                    // Only match if key in binding is not already being pasted itself in clipboardCurves.
+                    if (!clipboardCurves.Exists(clipboardCurve => clipboardCurve.binding == targetCurve.binding))
+                    {
+                        return targetCurve;
+                    }
+                }
+            }
+
+            // No good match found.
+            return null;
+        }
+
+        // Make a rect from MinMax values and make sure they're positive sizes
+        internal static Rect FromToRect(Vector2 start, Vector2 end)
+        {
+            Rect r = new Rect(start.x, start.y, end.x - start.x, end.y - start.y);
+            if (r.width < 0)
+            {
+                r.x += r.width;
+                r.width = -r.width;
+            }
+            if (r.height < 0)
+            {
+                r.y += r.height;
+                r.height = -r.height;
+            }
+            return r;
+        }
+
+        public static bool IsTransformType(Type type)
+        {
+            return type == typeof(Transform) || type == typeof(RectTransform);
+        }
+
+        public static bool IsActualTransformCurve(EditorCurveBinding curveBinding)
+        {
+            return curveBinding.type == typeof(Transform) || curveBinding.type == typeof(RectTransform) && (curveBinding.propertyName.StartsWith("m_LocalScale") ||
+                curveBinding.propertyName.StartsWith("m_LocalRotation") ||
+                curveBinding.propertyName.StartsWith("localEuler"));
+        }
+
+        public static bool ForceGrouping(EditorCurveBinding binding)
+        {
+            if (binding.type == typeof(Transform))
+                return true;
+
+            if (binding.type == typeof(RectTransform))
+            {
+                string group = GetPropertyGroupName(binding.propertyName);
+                return group == "m_LocalPosition" || group == "m_LocalScale" || group == "m_LocalRotation" || group == "localEulerAnglesBaked" || group == "localEulerAngles" || group == "localEulerAnglesRaw";
+            }
+
+            if (typeof(Renderer).IsAssignableFrom(binding.type))
+            {
+                string group = GetPropertyGroupName(binding.propertyName);
+                return group == "material._Color" || group == "material._BaseColor";
+            }
+            return false;
+        }
+
+        public static void ControllerChanged()
+        {
+            foreach (AnimationWindow animationWindow in AnimationWindow.GetAllAnimationWindows())
+                animationWindow.OnControllerChange();
+        }
+    }
+}

@@ -20,12 +20,12 @@ namespace UnityEditorInternal
     {
         [FormerlySerializedAs("assetInstanceId")]
         public EntityId assetEntityId;
-        [Obsolete("assetInstanceId is deprecated. Use assetEntityId instead.")]
+        [Obsolete("assetInstanceId is deprecated. Use assetEntityId instead.", true)]
         public int assetInstanceId { get => assetEntityId; set => assetEntityId = value; }
 
         [FormerlySerializedAs("objectInstanceId")]
         public EntityId objectEntityId;
-        [Obsolete("objectInstanceId is deprecated. Use objectEntityId instead.")]
+        [Obsolete("objectInstanceId is deprecated. Use objectEntityId instead.", true)]
         public int objectInstanceId { get => objectEntityId; set => objectEntityId = value; }
 
         public int assetNameOffset;
@@ -174,8 +174,8 @@ namespace UnityEditorInternal
 
         public extern bool onlyShowGPUSamples { get; set; }
 
-        [Obsolete("instanceIDs is deprecated. Use entityIds instead.")]
-        public int[] instanceIDs => entityIds.AsIntArray();
+        [Obsolete("instanceIDs is deprecated. Use entityIds instead.", true)]
+        public int[] instanceIDs => throw new InvalidOperationException("instanceIDs obsolete, use entityIds instead.");
         public extern EntityId[] entityIds { get; }
 
         public extern string GetTooltip(int column);
@@ -220,8 +220,8 @@ namespace UnityEditorInternal
         public extern string GetUISystemEventMarkerNameByOffset(int offset);
 
         public extern EntityId[] GetUISystemBatchEntityIds();
-        [Obsolete("GetUISystemBatchInstanceIDs is deprecated. Use GetUISystemBatchEntityIds instead.")]
-        public extern int[] GetUISystemBatchInstanceIDs();
+        [Obsolete("GetUISystemBatchInstanceIDs is deprecated. Use GetUISystemBatchEntityIds instead.", true)]
+        public int[] GetUISystemBatchInstanceIDs() => throw new NotImplementedException("Use GetUISystemBatchEntityIds instead.");
 
         [StaticAccessor("GetIUISystem()", StaticAccessorType.Arrow)]
         [NativeMethod("ReleaseTexture")]

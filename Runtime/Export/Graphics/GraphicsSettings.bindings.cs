@@ -98,8 +98,7 @@ namespace UnityEngine.Rendering
             }
         }
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        [NativeName("GetAllConfiguredRenderPipelinesForScript")] extern static private ScriptableObject[] GetAllConfiguredRenderPipelines();
+        extern static private ScriptableObject[] GetAllConfiguredRenderPipelines();
 
         public static RenderPipelineAsset[] allConfiguredRenderPipelines
         {

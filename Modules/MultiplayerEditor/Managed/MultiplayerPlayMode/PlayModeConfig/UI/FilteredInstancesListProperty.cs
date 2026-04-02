@@ -26,7 +26,7 @@ class FilteredInstancesListProperty : Foldout
 } 
 
 class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesListProperty
-    where TController : InstanceController<TController, TSettings>
+    where TController : InstanceController<TSettings>
     where TSettings : struct
 {
     readonly List<Item> m_FilteredInstances = new();
@@ -233,7 +233,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         var serializedItemsList = serializedScenario.FindProperty(ScenarioConfigEditor.k_InstancesListPropertyPath);
         var instanceItem = new InstanceItem<TController, TSettings>(
             name,
-            InstanceController<TController, TSettings>.GetDefaultSettings());
+            InstanceController<TSettings>.GetDefaultSettings());
 
         serializedItemsList.arraySize++;
         var property = serializedItemsList.GetArrayElementAtIndex(serializedItemsList.arraySize - 1);

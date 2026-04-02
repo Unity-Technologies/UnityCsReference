@@ -17,6 +17,8 @@ namespace UnityEditor.Lighting.LightingSearch
         static float? s_CurrentExposure;
         internal static event System.Action ExposureChanged;
 
+        internal static bool IsInitialized => s_CurrentExposure.HasValue;
+
         internal static float CurrentExposure
         {
             get
@@ -66,6 +68,11 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             // Set via property setter to recalculate and trigger ExposureChanged event
             CurrentExposure = CalculateAutoExposure();
+        }
+
+        internal static void Reset()
+        {
+            s_CurrentExposure = null;
         }
     }
 }

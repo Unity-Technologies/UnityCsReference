@@ -195,9 +195,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="valueGetter">The function to use. If null, use the property getter method.</param>
         protected void SetValueGetterOrDefault(string propertyName, Func<Model, TValue> valueGetter)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ValueGetter = valueGetter != null ? () => valueGetter(Models.First()) : MakePropertyValueGetter(Models, propertyName);
-#pragma warning restore UA2001
+            m_ValueGetter = valueGetter != null ? () => valueGetter(Models[0]) : MakePropertyValueGetter(Models, propertyName);
         }
 
         /// <summary>
@@ -280,7 +278,7 @@ namespace Unity.GraphToolkit.Editor
 
         protected static readonly Func<TValue> k_GetMixed = () => default;
 
-        static Func<TValue> MakePropertyValueGetter(IEnumerable<Model> models, string propertyName)
+        static Func<TValue> MakePropertyValueGetter(IReadOnlyList<Model> models, string propertyName)
         {
             var baseType = ModelHelpers.GetCommonBaseType(models);
 
@@ -289,18 +287,14 @@ namespace Unity.GraphToolkit.Editor
             {
                 Debug.Assert(typeof(TValue) == getterInfo.ReturnType);
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var firstValue = getterInfo.Invoke(models.First(), null);
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var firstValue = getterInfo.Invoke(models[0], null);
+                #pragma warning disable UA2001, UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 bool allSame = models.Skip(1).All(t => Equals(firstValue, getterInfo.Invoke(t, null)));
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2008
 
                 if (allSame)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var del = Delegate.CreateDelegate(typeof(Func<TValue>), models.First(), getterInfo);
-#pragma warning restore UA2001
+                    var del = Delegate.CreateDelegate(typeof(Func<TValue>), models[0], getterInfo);
                     return del as Func<TValue>;
                 }
 

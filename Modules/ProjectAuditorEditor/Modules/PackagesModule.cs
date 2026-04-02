@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor.PackageManager;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using System.Collections;
@@ -85,9 +83,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         IEnumerable<ReportItem> EnumerateInstalledPackages(PackageAnalysisContext context)
         {
             var package = context.PackageInfo;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var dependencies = package.dependencies.Select(d => d.name + " [" + d.version + "]").ToArray();
-#pragma warning restore UA2001
+            var dependencies = System.Array.ConvertAll(package.dependencies, d => d.name + " [" + d.version + "]");
             var displayName = string.IsNullOrEmpty(package.displayName) ? package.name : package.displayName;
             var node = new PackageDependencyNode(displayName, dependencies);
             yield return context.CreateInsight(IssueCategory.Package, displayName)

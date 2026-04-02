@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
-using Unity.Collections;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
@@ -104,6 +104,9 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(Name = "GetSampleCallstack", IsThreadSafe = true, ThrowsException = true)]
         extern void GetSampleCallstackInternal(int sampleIndex, [NotNull] List<ulong> outCallstack);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern EntityId GetSampleEntityId(int sampleIndex);
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]

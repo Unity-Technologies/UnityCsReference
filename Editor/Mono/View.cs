@@ -18,7 +18,7 @@ namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal partial class View : ScriptableObject
     {
         internal virtual void Reflow()
@@ -50,8 +50,10 @@ namespace UnityEditor
         }
 
         // Can be used by concrete subclasses to store C++ objects
-        [SerializeField]
         MonoReloadableIntPtr   m_ViewPtr;
+
+        // Returns the native pointer to the View
+        internal ref IntPtr nativeHandle => ref m_ViewPtr.m_IntPtr;
         [SerializeField]
         View[] m_Children = Array.Empty<View>();
         [NonSerialized]

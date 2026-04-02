@@ -6,6 +6,7 @@ using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using HierarchyViewItemContainerPool = UnityEngine.Pool.ObjectPool<Unity.Hierarchy.HierarchyViewItemContainer>;
 
 namespace Unity.Hierarchy
 {
@@ -25,7 +26,7 @@ namespace Unity.Hierarchy
         static readonly Length k_DefaultWidth = new Length(300f, LengthUnit.Pixel);
 
         readonly HierarchyView m_View;
-        readonly UnityEngine.Pool.ObjectPool<HierarchyViewItemContainer> m_ViewItemContainerPool;
+        readonly HierarchyViewItemContainerPool m_ViewItemContainerPool;
 
         public event Action<HierarchyViewItem> OnBindItem;
         public event Action<HierarchyViewItem> OnUnbindItem;
@@ -33,7 +34,7 @@ namespace Unity.Hierarchy
         public HierarchyViewColumnName(HierarchyView view)
         {
             m_View = view;
-            m_ViewItemContainerPool = new UnityEngine.Pool.ObjectPool<HierarchyViewItemContainer>(() => new HierarchyViewItemContainer());
+            m_ViewItemContainerPool = new(() => new HierarchyViewItemContainer(), defaultCapacity: 0, maxSize: 512);
 
             title = "Name";
             name = k_HierarchyNameColumnName;
@@ -56,11 +57,6 @@ namespace Unity.Hierarchy
             };
         }
 
-        VisualElement MakeCell()
-        {
-            return m_ViewItemContainerPool.Get();
-        }
-
         internal void ApplyDefaultColumnProperties()
         {
             width = k_DefaultWidth;
@@ -72,6 +68,11 @@ namespace Unity.Hierarchy
             sortable = false;
         }
 
+        VisualElement MakeCell()
+        {
+            return m_ViewItemContainerPool.Get();
+        }
+
         void DestroyCell(VisualElement element)
         {
             if (element == null)
@@ -80,7 +81,7 @@ namespace Unity.Hierarchy
             if (element is not HierarchyViewItemContainer container)
                 throw new ArgumentException($"Expected {nameof(element)} to be a {nameof(HierarchyViewItemContainer)}");
 
-            container.ReleaseViewItem();
+            container.Release();
             m_ViewItemContainerPool.Release(container);
         }
 

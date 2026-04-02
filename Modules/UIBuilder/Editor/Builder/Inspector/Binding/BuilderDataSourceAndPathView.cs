@@ -30,7 +30,7 @@ namespace Unity.UI.Builder
             public AnyObjectField dataSourceField;
             public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
-            public BuilderDataSourcePathCompleter dataSourcePathCompleter;
+            public DataSourcePathCompleter dataSourcePathCompleter;
             public UIEHelpBox dataSourceWarningBox;
             public UIEHelpBox pathWarningBox;
         }
@@ -57,7 +57,7 @@ namespace Unity.UI.Builder
         protected AnyObjectField m_DataSourceField;
         protected BaseField<string> m_DataSourceTypeField;
         protected TextField m_DataSourcePathField;
-        BuilderDataSourcePathCompleter m_DataSourcePathCompleter;
+        DataSourcePathCompleter m_DataSourcePathCompleter;
         UIEHelpBox m_DataSourceWarningBox;
         UIEHelpBox m_PathWarningBox;
 
@@ -203,7 +203,7 @@ namespace Unity.UI.Builder
 
                     m_DataSourcePathField.label = "Data Source Path";
                     m_DataSourcePathField.isDelayed = true;
-                    m_DataSourcePathCompleter = new BuilderDataSourcePathCompleter(m_DataSourcePathField);
+                    m_DataSourcePathCompleter = new DataSourcePathCompleter(m_DataSourcePathField);
                     // HACK: We pass the text field as the field to "edit" by the completer.
                     // When writing directly into the field (so not choosing an item from the auto-complete),
                     // it triggers a ChangeEvent<string>, which is picked up by the PropertyField to change
@@ -213,9 +213,9 @@ namespace Unity.UI.Builder
                     // be picked up by the PropertyField.
                     // Changing the behaviour of the completer to send an event would break variable handling
                     // of the DimensionStyleFields.
-                    m_DataSourcePathCompleter.itemChosen += i =>
+                    m_DataSourcePathCompleter.ItemChosen += i =>
                     {
-                        var path = m_DataSourcePathCompleter.results[i].propertyPath.ToString();
+                        var path = m_DataSourcePathCompleter.Results[i].propertyPath.ToString();
                         using (var evt = ChangeEvent<string>.GetPooled(path, path))
                         {
                             evt.elementTarget = m_DataSourcePathField;
@@ -233,7 +233,7 @@ namespace Unity.UI.Builder
         protected override void GenerateSerializedAttributeFields()
         {
             var path = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
-            var root = new UxmlAssetSerializedDataRoot { dataDescription = uxmlSerializedDataDescription, rootPath = path, classList = { InspectorElement.ussClassName }};
+            var root = new UxmlAssetSerializedDataRoot { dataDescription = uxmlSerializedDataDescription, rootPath = path }.WithClassList(InspectorElement.ussClassName);
             attributesContainer.Add(root);
             GenerateDataBindingFields(root);
         }
@@ -242,7 +242,7 @@ namespace Unity.UI.Builder
         {
             if (m_BindingsFoldout == null)
             {
-                m_BindingsFoldout = new PersistedFoldout() { text = "Bindings", classList = { PersistedFoldout.unindentedUssClassName } };
+                m_BindingsFoldout = new PersistedFoldout() { text = "Bindings" }.WithClassList(PersistedFoldout.unindentedUssClassName);
 
                 m_ButtonStrip = new ToggleButtonGroup("Data Source")
                 {
@@ -525,9 +525,9 @@ namespace Unity.UI.Builder
             if (m_DataSourcePathCompleter == null || m_DataSourceField == null || m_DataSourceTypeField == null)
                 return;
 
-            m_DataSourcePathCompleter.element = currentElement;
-            m_DataSourcePathCompleter.bindingDataSource = dataSource ? dataSource : inheritedDataSource;
-            m_DataSourcePathCompleter.bindingDataSourceType = dataSourceType ?? inheritedDataSourceType;
+            m_DataSourcePathCompleter.Element = currentElement;
+            m_DataSourcePathCompleter.BindingDataSourceObject = dataSource ? dataSource : inheritedDataSource;
+            m_DataSourcePathCompleter.BindingDataSourceType = dataSourceType ?? inheritedDataSourceType;
 
             if (bindingSerializedPropertyRootPath != null)
             {
@@ -535,7 +535,7 @@ namespace Unity.UI.Builder
                 using (new BuilderUxmlAttributesEditingContext.DisableUndoScope(context))
                 {
                     var result = BuilderAssetUtilities.SynchronizePath(context, bindingSerializedPropertyRootPath, true);
-                    m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
+                    m_DataSourcePathCompleter.Binding = result.attributeOwner as DataBinding;
                 }
             }
 

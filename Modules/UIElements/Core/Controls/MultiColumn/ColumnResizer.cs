@@ -12,15 +12,18 @@ namespace UnityEngine.UIElements.Internal
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = MultiColumnHeaderColumn.ussClassName + "__resize-preview";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string visualUssClassName = ussClassName + "__visual";
+        internal static readonly UniqueStyleString visualUssClassNameUnique = new(visualUssClassName);
 
         public MultiColumnHeaderColumnResizePreview()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             pickingMode = PickingMode.Ignore;
 
             var visual = new VisualElement() { pickingMode = PickingMode.Ignore };
-            visual.AddToClassList(visualUssClassName);
+            visual.AddToClassList(visualUssClassNameUnique);
             Add(visual);
         }
     }

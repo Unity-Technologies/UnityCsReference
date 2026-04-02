@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using Unity.Collections;
 
 namespace UnityEditor.Search.Providers
 {
@@ -73,9 +74,7 @@ namespace UnityEditor.Search.Providers
 
             foreach (var p in s_SearchRequest.Result)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (p.keywords.Contains(context.searchQuery) ||
-#pragma warning restore UA2001
                     SearchUtils.MatchSearchGroups(context, p.description.ToLowerInvariant(), true) ||
                     SearchUtils.MatchSearchGroups(context, p.name.ToLowerInvariant(), true))
                     yield return provider.CreateItem(context, p.packageId, String.IsNullOrEmpty(p.resolvedPath) ? 0 : 1, FormatLabel(p), FormatDescription(p), null, p);

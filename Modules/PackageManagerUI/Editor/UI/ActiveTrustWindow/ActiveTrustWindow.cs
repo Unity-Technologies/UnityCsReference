@@ -10,11 +10,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class ActiveTrustWindow
     {
-        public static ActiveTrustReturnValue ShowActiveTrustWindow(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
+        public static ActiveTrustReturnValue ShowActiveTrustWindow(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages, OperationType operationType)
         {
             var container = ServicesContainer.instance;
             var content = new ActiveTrustContent(container.Resolve<IResourceLoader>(), container.Resolve<IApplicationProxy>(),
-                invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
+                invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages, operationType);
             return ModalWindowContainer.ShowModal(content) ? content.returnValue : ActiveTrustReturnValue.Error;
         }
 
@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public ActiveTrustReturnValue returnValue { get; private set; } = ActiveTrustReturnValue.Cancel;
 
-            public ActiveTrustContent(IResourceLoader resourceLoader, IApplicationProxy application, IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
+            public ActiveTrustContent(IResourceLoader resourceLoader, IApplicationProxy application, IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages, OperationType operationType)
             {
                 var root = resourceLoader.GetTemplate("ActiveTrustWindow.uxml");
                 cache = new VisualElementCache(root);
@@ -74,17 +74,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                     returnValue = ActiveTrustReturnValue.Cancel;
                     container.Close();
                 };
-                var installAnywayButton = new Button { text = L10n.Tr("Install Anyway") };
-                installAnywayButton.clicked += () =>
+                var proceedAnywayButton = new Button { name = "proceedAnywayButton", text = string.Format(L10n.Tr("{0} Anyway"), GetActionFromOperationType(operationType)) };
+                proceedAnywayButton.clicked += () =>
                 {
-                    returnValue = ActiveTrustReturnValue.InstallAnyway;
+                    returnValue = ActiveTrustReturnValue.ProceedAnyway;
                     container.Close();
                 };
-                buttonsContainer.Add(installAnywayButton);
+                buttonsContainer.Add(proceedAnywayButton);
                 buttonsContainer.Add(cancelButton);
                 Add(root);
 
                 RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
+            }
+
+            private string GetActionFromOperationType(OperationType operationType)
+            {
+                return operationType == OperationType.Remove ? "Proceed" : operationType.ToString();
             }
 
             private void InitializeTitleAndHelpBox(bool hasInvalidSignature, bool hasMissingSignature, bool hasLimitedTrust)
@@ -105,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else if (hasLimitedTrust)
                 {
-                    windowTitle = L10n.Tr("Install package");
+                    windowTitle = L10n.Tr("Unofficial Unity source");
                     helpBoxContainer.messageType = HelpBoxMessageType.Info;
                     helpBoxContainer.AddToClassList("info");
                     helpBoxContainer.text = L10n.Tr("These packages are signed, but their publishers are not verified by Unity. Please ensure you understand where these packages originated from.");

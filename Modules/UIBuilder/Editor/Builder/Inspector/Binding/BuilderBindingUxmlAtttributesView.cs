@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
             public AnyObjectField dataSourceField;
             public BaseField<string> dataSourceTypeField;
             public TextField dataSourcePathField;
-            public BuilderDataSourcePathCompleter dataSourcePathCompleter;
+            public DataSourcePathCompleter dataSourcePathCompleter;
             public UIEHelpBox dataSourceWarningBox;
             public UIEHelpBox pathWarningBox;
 	        public UIEHelpBox converterGroupWarningBox;
@@ -130,10 +130,12 @@ namespace Unity.UI.Builder
                     break;
                 case k_BindingAttr_ConvertersToUi:
                     m_ConvertersToUi = target.Q<BindingConvertersField>();
+                    m_ConvertersToUi.EditedElement = context.element;
                     UpdateAdvancedSettingsOverride();
                     break;
                 case k_BindingAttr_ConvertersToSource:
                     m_ConvertersToSource = target.Q<BindingConvertersField>();
+                    m_ConvertersToSource.EditedElement = context.element;
                     UpdateAdvancedSettingsOverride();
                     break;
                 case k_BindingAttr_UpdateTrigger:
@@ -142,7 +144,6 @@ namespace Unity.UI.Builder
                     break;
             }
 
-            UpdateConverterCompleter();
             UpdateWarningBox();
         }
 
@@ -212,9 +213,8 @@ namespace Unity.UI.Builder
                 m_AdvancedSettings = new PersistedFoldout()
                 {
                     text = "Advanced Settings",
-                    classList = { PersistedFoldout.unindentedUssClassName },
                     value = false
-                };
+                }.WithClassList(PersistedFoldout.unindentedUssClassName);
                 m_ConvertersGroupBox = new GroupBox("Local converters");
                 m_ConverterGroupWarningBox ??= new UIEHelpBox(BuilderConstants.BindingWindowCompatibleWarningBoxText, HelpBoxMessageType.Info);
                 m_ConverterGroupWarningBox.style.display = DisplayStyle.None;
@@ -234,7 +234,7 @@ namespace Unity.UI.Builder
                 var attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_BindingMode);
                 CreateSerializedAttributeRow(attribute, $"{root.rootPath}.{attribute.serializedField.Name}", root);
 
-                root.Add(new VisualElement() { classList = { BuilderConstants.SeparatorLineStyleClassName } });
+                root.Add(new VisualElement().WithClassList(BuilderConstants.SeparatorLineStyleClassName));
                 root.Add(m_AdvancedSettings);
 
                 attribute = desc.FindAttributeWithUxmlName(k_BindingAttr_UpdateTrigger);
@@ -275,16 +275,6 @@ namespace Unity.UI.Builder
         {
             base.UpdateAttributeOverrideStyle(fieldElement);
             UpdateAdvancedSettingsOverride();
-        }
-
-        void UpdateConverterCompleter()
-        {
-            // Make sure we have all the required fields available.
-            if (m_ConvertersToUi == null || m_ConvertersToSource == null || m_DataSourceField == null || m_DataSourceTypeField == null || m_DataSourcePathField == null)
-                return;
-
-            m_ConvertersToUi.SetDataSourceContext(currentElement, dataSourcePath, parentView.bindingPropertyName, dataSource, dataSourceType, false);
-            m_ConvertersToSource.SetDataSourceContext(currentElement, dataSourcePath, parentView.bindingPropertyName, dataSource, dataSourceType, true);
         }
 
         void UpdateAdvancedSettingsOverride()

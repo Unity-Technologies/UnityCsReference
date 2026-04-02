@@ -12,12 +12,12 @@ using UnityEngine.Multiplayer.Internal;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class SetupEditorMultiplayerRoleNode : Node
+    class SetupEditorMultiplayerRoleNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<MultiplayerRoleFlags> Role;
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;
 
-        public SetupEditorMultiplayerRoleNode(string name) : base(name)
+        public SetupEditorMultiplayerRoleNode()
         {
             Role = new(this);
             PlayerInstanceIndex = new(this);

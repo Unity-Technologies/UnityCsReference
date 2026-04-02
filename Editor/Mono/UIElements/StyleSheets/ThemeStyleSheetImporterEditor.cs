@@ -74,9 +74,7 @@ namespace UnityEditor.UIElements.StyleSheets
             var stringBuilder = new StringBuilder();
             var state = extraDataTarget as ThemeAssetDefinitionState;
             var targetPath = AssetDatabase.GetAssetPath(target);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            AddStyleSheets(stringBuilder, state.InheritedThemes.Cast<StyleSheet>());
-#pragma warning restore UA2001
+            AddStyleSheets(stringBuilder, state.InheritedThemes);
             stringBuilder.AppendLine();
             AddStyleSheets(stringBuilder, state.StyleSheets);
 

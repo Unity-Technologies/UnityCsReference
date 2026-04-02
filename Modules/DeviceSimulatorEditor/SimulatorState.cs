@@ -14,10 +14,12 @@ namespace UnityEditor.DeviceSimulation
         public bool controlPanelVisible;
         public float controlPanelWidth;
 
+        [System.NonSerialized]
         public Dictionary<string, bool> controlPanelFoldouts = new Dictionary<string, bool>();
         [SerializeField] private List<string> controlPanelFoldoutKeys = new List<string>();
         [SerializeField] private List<bool> controlPanelFoldoutValues = new List<bool>();
 
+        [System.NonSerialized]
         public Dictionary<string, string> plugins = new Dictionary<string, string>();
         [SerializeField] private List<string> pluginNames = new List<string>();
         [SerializeField] private List<string> pluginStates = new List<string>();

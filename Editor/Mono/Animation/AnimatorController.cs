@@ -7,7 +7,6 @@ using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor.Animations
 {
@@ -232,7 +231,7 @@ namespace UnityEditor.Animations
 
         public static AnimationClip AllocateAnimatorClip(string name)
         {
-            var clip = AnimationWindowWizard.AllocateAndSetupClip(true);
+            var clip = MecanimUtilities.AllocateAndSetupClip(true);
             clip.name = name;
             return clip;
         }

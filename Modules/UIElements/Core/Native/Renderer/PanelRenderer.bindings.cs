@@ -54,7 +54,10 @@ namespace UnityEngine.UIElements
                 if (nativePanelSettings != value)
                 {
                     if (nativePanelSettings != null)
+                    {
                         RemoveVisualTreeAssetTracker();
+                        RemoveFromHierarchy();
+                    }
 
                     nativePanelSettings = value;
                     isAssetDirty = true;
@@ -91,6 +94,8 @@ namespace UnityEngine.UIElements
         }
 
         VisualElement IPanelComponent.GetRootVisualElement() => m_RootVisualElement;
+        IEventHandler IPanelComponent.GetRoot() => (this as IPanelComponent).GetRootVisualElement();
+
 
         VisualElementReferenceProvider m_ReferenceProvider;
 
@@ -204,6 +209,20 @@ namespace UnityEngine.UIElements
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
 
+        Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
+        {
+            return PanelComponentUtils.GetPanelPosition(gameObject, pickedElement, worldRay);
+        }
+
+        private int m_SoftPointerCaptures = 0;
+        int IPanelComponent.softPointerCaptures
+        {
+            get => m_SoftPointerCaptures;
+            set => m_SoftPointerCaptures = value;
+        }
+
+        VisualElementFocusRing IPanelComponent.focusRing { get; set; }
+
         /// <summary>
         /// Defines how the size of the root element is calculated for world space.
         /// </summary>
@@ -309,7 +328,6 @@ namespace UnityEngine.UIElements
         #region Native Calls
 
         internal volatile List<CommandList>[] commandLists;
-        internal volatile bool skipRendering;
 
         internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
         internal extern void ResetDrawCallData(int safeFrameIndex);
@@ -352,12 +370,20 @@ namespace UnityEngine.UIElements
                 m_ReferenceProvider.UnloadReferences();
                 m_ReferenceProvider.Dispose();
             }
+            if (rootVisualElement != null)
+            {
+                rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+                rootVisualElement.ReleaseResources();
+                rootVisualElement = null;
+            }
         }
 
         [RequiredByNativeCode(Optional = true)]
         [RequiredMember]
         void OnPanelRendererDeactivated()
         {
+            PointerDeviceState.RemovePanelComponentData(this);
+
             if (rootVisualElement != null)
             {
                 RemoveVisualTreeAssetTracker();
@@ -408,6 +434,8 @@ namespace UnityEngine.UIElements
                 {
                     RemoveVisualTreeAssetTracker();
                     referenceProvider.UnloadReferences();
+                    rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+                    rootVisualElement.ReleaseResources();
                 }
 
                 if (visualTreeAsset == null)
@@ -423,6 +451,8 @@ namespace UnityEngine.UIElements
                     visualTreeAsset.CloneTree(rootVisualElement, out var referenceTable);
                     referenceProvider.ResolveReferences(referenceTable);
                 }
+
+                (this as IPanelComponent).focusRing = rootVisualElement != null ? new(rootVisualElement) : null;
 
                 SetupFromHierarchy();
 
@@ -573,6 +603,8 @@ namespace UnityEngine.UIElements
         #region Update
         internal RuntimePanel containerPanel => (RuntimePanel)rootVisualElement?.elementPanel;
 
+        IRuntimePanel IPanelComponent.GetContainerPanel() => containerPanel;
+
         GameObject IPanelComponent.gameObject => this.gameObject;
 
         private bool isWorldSpace => (panelSettings != null && panelSettings.renderMode == PanelRenderMode.WorldSpace);
@@ -642,9 +674,9 @@ namespace UnityEngine.UIElements
             m_RootHasWorldTransform = false;
         }
 
-        float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
+        internal float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        Vector2 PivotOffset()
+        internal Vector2 PivotOffset()
         {
             var pc = (IPanelComponent)this;
 
@@ -661,7 +693,6 @@ namespace UnityEngine.UIElements
             // Don't render embedded documents which will be rendered as part of their parents
             // Don't render documents with invalid PPU
             float ppu = pixelsPerUnit;
-            skipRendering = (parentUI != null) || (ppu < Mathf.Epsilon);
 
             BaseRuntimePanel rtp = (BaseRuntimePanel)rootVisualElement.panel;
             if (rtp == null)
@@ -742,9 +773,9 @@ namespace UnityEngine.UIElements
                 isWorldSpaceRootUIDocument = false;
             }
 
-            if (rootVisualElement.isWorldSpaceRootUIDocument != isWorldSpaceRootUIDocument)
+            if (rootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
-                rootVisualElement.isWorldSpaceRootUIDocument = isWorldSpaceRootUIDocument;
+                rootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
                 rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
             }
         }
@@ -757,7 +788,7 @@ namespace UnityEngine.UIElements
             if (!isWorldSpace)
             {
                 // If we're not a child of any other PanelRenderer stretch to take the full screen.
-                m_RootVisualElement.EnableInClassList(k_RootStyleClassName, parentUI == null);
+                m_RootVisualElement.EnableInClassList(rootStyleClassNameUnique, parentUI == null);
 
                 // Reset inline styles thay may have been set if the PanelSetting was
                 // previously set to world-space rendering.
@@ -808,15 +839,18 @@ namespace UnityEngine.UIElements
         #region Animation
         internal extern UIAnimationBinder GetAnimationBinder();
 
+        [NativeMethod("RegisterPanelRendererAnimationBinding")]
+        internal static extern void RegisterPanelRendererAnimationBinding();
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(Optional = true)]
+        [RequiredMember]
         internal void ConnectToAnimationBinder()
         {
             UIAnimationBinder binder = GetAnimationBinder();
 
             if(binder != null)
             {
-                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false)); 
+                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false));
             }
         }
 
@@ -838,7 +872,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     internal struct CommandListState
     {

@@ -6,153 +6,110 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class PageSelection : IEnumerable<string>, ISerializationCallbackReceiver
+    internal class PageSelection : IReadOnlyCollection<string>, ISerializationCallbackReceiver
     {
-        private IReadOnlyCollection<string> m_PreviousSelections = Array.Empty<string>();
+        private string[] m_PreviousSelections = Array.Empty<string>();
 
         private HashSet<string> m_SelectionsLookup = new ();
 
-        // The order of the selection is the order in which the user selects the packages.
-        // We keep track of it to make sure that if the user uses the keyboard to move in the package list, we start from their last selection
+        // The selection list is the order by when the user selects them (not in the order shown in the UI)
+        // We keep track of it to make sure that if the user uses the keyboard to move in the item list, we start from their last selection
         [SerializeField]
         private List<string> m_OrderedSelections = new ();
 
-        [SerializeField]
-        private string[] m_SerializedSelectionsLookup = Array.Empty<string>();
+        public IReadOnlyList<string> previousSelections => m_PreviousSelections;
 
-        public IReadOnlyCollection<string> previousSelections => m_PreviousSelections;
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<string> orderedSelections => m_OrderedSelections.Filter(s => Contains(s));
-#pragma warning restore UA2001
+        public string first => m_OrderedSelections.Count > 0 ? m_OrderedSelections[0] : null;
+        public string last => m_OrderedSelections.Count > 0 ? m_OrderedSelections[^1] : null;
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public string firstSelection => orderedSelections.FirstOrDefault();
-#pragma warning restore UA2001
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public string lastSelection => orderedSelections.LastOrDefault();
-#pragma warning restore UA2001
-
-        // Normally we begin with lower case for public attribute, but `Count` is a very common container attribute, we want to make it consistent with System collections.
         public int Count => m_SelectionsLookup.Count;
 
-        public bool SetNewSelection(IEnumerable<string> packageUniqueIds)
+        public bool SetNewSelection(IEnumerable<string> itemUniqueIds)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var newSelectionLookup = packageUniqueIds.ToHashSet();
-#pragma warning restore UA2001
-            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectionUpdated = newSelectionLookup.Any(s => !m_SelectionsLookup.Contains(s))
-#pragma warning restore UA2006
-                                   #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                   || m_SelectionsLookup.Any(s => !newSelectionLookup.Contains(s));
-#pragma warning restore UA2006
-
+            m_OrderedSelections.ToArray(ref m_PreviousSelections);
+            m_OrderedSelections.Clear();
+            m_OrderedSelections.AddRange(itemUniqueIds);
+            var selectionUpdated = !m_PreviousSelections.IsSequenceEqual(m_OrderedSelections);
             if (selectionUpdated)
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_PreviousSelections = orderedSelections.ToArray();
-#pragma warning restore UA2001
-                m_SelectionsLookup = newSelectionLookup;
+                m_OrderedSelections.ToHashSet(ref m_SelectionsLookup);
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_OrderedSelections = packageUniqueIds.ToList();
-#pragma warning restore UA2001
-            }
             return selectionUpdated;
         }
 
-        private void TrimOrderedSelection()
+        public bool AmendSelection(IEnumerable<string> toAdd, IEnumerable<string> toRemove)
         {
-            if (m_OrderedSelections.Count != m_SelectionsLookup.Count)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_OrderedSelections = m_OrderedSelections.Filter(s => Contains(s)).ToList();
-#pragma warning restore UA2001
-        }
+            m_OrderedSelections.ToArray(ref m_PreviousSelections);
 
-        public bool AmendSelection(IEnumerable<string> toAddOrUpdate, IEnumerable<string> toRemove)
-        {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var itemsToAdd = toAddOrUpdate?.Filter(s => !Contains(s)).ToArray() ?? Array.Empty<string>();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var itemsToRemove = toRemove?.Filter(s => Contains(s)).ToArray() ?? Array.Empty<string>();
-#pragma warning restore UA2001
-            if (itemsToAdd.Length == 0 && itemsToRemove.Length == 0)
-                return false;
+            var selectionUpdated = false;
+            if (toRemove != null)
+                foreach (var item in toRemove)
+                    selectionUpdated |= m_SelectionsLookup.Remove(item);
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PreviousSelections = orderedSelections.ToArray();
-#pragma warning restore UA2001
-
-            foreach (var item in itemsToAdd)
+            // We rebuild the ordered selection list separately here once if needed to avoid worst case O(n^2) removal
+            if (selectionUpdated)
             {
-                m_SelectionsLookup.Add(item);
-                m_OrderedSelections.Add(item);
+                m_OrderedSelections.Clear();
+                foreach (var item in m_PreviousSelections)
+                    if (m_SelectionsLookup.Contains(item))
+                        m_OrderedSelections.Add(item);
             }
 
-            foreach (var item in itemsToRemove)
-                m_SelectionsLookup.Remove(item);
+            if (toAdd != null)
+                foreach (var item in toAdd)
+                    if (m_SelectionsLookup.Add(item))
+                    {
+                        selectionUpdated = true;
+                        m_OrderedSelections.Add(item);
+                    }
 
-            TrimOrderedSelection();
-
-            return true;
+            return selectionUpdated;
         }
 
-        public bool ToggleSelection(string packageUniqueId)
+        public bool ToggleSelection(string itemUniqueId)
         {
-            var packageSelected = Contains(packageUniqueId);
+            var itemSelected = Contains(itemUniqueId);
 
-            // If the package is the only one selected right now, we don't want to toggle it off
-            if (packageSelected && Count == 1)
+            // If the item is the only one selected right now, we don't want to toggle it off
+            if (itemSelected && Count == 1)
                 return false;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PreviousSelections = orderedSelections.ToArray();
-#pragma warning restore UA2001
-            if (!packageSelected)
+            m_OrderedSelections.ToArray(ref m_PreviousSelections);
+            if (!itemSelected)
             {
-                m_SelectionsLookup.Add(packageUniqueId);
-                m_OrderedSelections.Add(packageUniqueId);
+                if (m_SelectionsLookup.Add(itemUniqueId))
+                    m_OrderedSelections.Add(itemUniqueId);
             }
             else
             {
-                m_SelectionsLookup.Remove(packageUniqueId);
-                TrimOrderedSelection();
+                m_SelectionsLookup.Remove(itemUniqueId);
+                m_OrderedSelections.RemoveAll(i => i == itemUniqueId);
             }
             return true;
         }
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedSelectionsLookup = m_SelectionsLookup.ToArray();
-#pragma warning restore UA2001
         }
 
         public void OnAfterDeserialize()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SelectionsLookup = m_SerializedSelectionsLookup.ToHashSet();
-#pragma warning restore UA2001
+            m_OrderedSelections.ToHashSet(ref m_SelectionsLookup);
         }
 
-        public bool Contains(string packageUniqueId)
+        public bool Contains(string itemUniqueId)
         {
-            return m_SelectionsLookup.Contains(packageUniqueId);
+            return m_SelectionsLookup.Contains(itemUniqueId);
         }
 
         [ExcludeFromCodeCoverage]
         public IEnumerator<string> GetEnumerator()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_SelectionsLookup.Cast<string>().GetEnumerator();
-#pragma warning restore UA2001
+            return m_SelectionsLookup.GetEnumerator();
         }
 
         [ExcludeFromCodeCoverage]

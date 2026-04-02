@@ -448,7 +448,10 @@ namespace UnityEditor
 
     internal class UISystemPreviewWindow : EditorWindow
     {
+#pragma warning disable UAC1001
+        // https://jira.unity3d.com/browse/UUM-132549
         public UISystemProfiler profiler;
+#pragma warning restore UAC1001
 
         public void OnEnable()
         {

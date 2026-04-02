@@ -4,12 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-    [Serializable]
-    partial class UserContextNodeModelImp : ContextNodeModel, IUserNodeModelImp
+    partial class UserContextNodeModelImp
     {
         [NonSerialized]
         new List<BlockNode> m_Blocks;
@@ -76,6 +74,65 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 }
             }
             Node?.OnDisable();
+        }
+
+        public TBlockNode CreateBlockNode<TBlockNode>(int index = -1) where TBlockNode : BlockNode, new()
+        {
+            if (m_Node?.Graph is null)
+                return null;
+
+            CheckModificationLock();
+
+            var validBlockTypes = PublicGraphFactory.GetBlockTypes(m_Node.Graph.GetType(), m_Node.GetType());
+
+            if (!validBlockTypes.Contains(typeof(TBlockNode).GetGenericTypeDefinition()))
+                throw new ArgumentException($"The type '{typeof(TBlockNode).Name}' is not supported by context '{m_Node.m_Implementation.Title}'.");
+
+            var data = new GraphBlockCreationData(GraphModel, contextNodeModel: this, orderInContext:index);
+
+            var blockModel = GraphModelImp.CreateContextFromBlockData(data, typeof(TBlockNode), null);
+
+            // Find the created block in our list and return it.
+            foreach (var block in Blocks)
+            {
+                if (block.m_Implementation == blockModel)
+                    return (TBlockNode)block;
+            }
+
+            return null;
+        }
+
+        public void RemoveBlockNode(BlockNode blockNode)
+        {
+            if (m_Node?.Graph is null)
+                return;
+
+            CheckModificationLock();
+
+            // Ensure the block belongs to this context.
+            if (blockNode.m_Implementation is not UserBlockNodeModelImp blockNodeModel || blockNodeModel.ContextNodeModel != this)
+                return;
+
+            RemoveContainerElements([blockNodeModel]);
+        }
+
+        public void AddBlockNode(BlockNode blockNode, int index = -1)
+        {
+            // No need to check if m_Node?.Graph is null. It should be possible to add a block to a context that is not yet in a graph.
+
+            CheckModificationLock();
+
+            var nodeImp = (BlockNodeModel)blockNode.GetImplementation();
+
+            InsertBlock(nodeImp, index);
+        }
+
+        public void ClearBlockNodes()
+        {
+            while (Blocks.Count > 0)
+            {
+                RemoveBlockNode(Blocks[^1]);
+            }
         }
     }
 }

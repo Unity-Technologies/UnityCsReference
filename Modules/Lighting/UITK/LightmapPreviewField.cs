@@ -33,8 +33,9 @@ namespace UnityEditor.Lighting
 
             var button = new Button(() =>
             {
-                LightmapPreviewWindow.CreateLightmapPreviewWindow(lightmapIndex, false, true, false, exposure);
-            }) { text = k_OpenPreviewText };
+                LightmapPreviewWindow.CreateLightmapPreviewWindowIndexedWithExposure(lightmapIndex, false, false, exposure);
+            })
+            { text = k_OpenPreviewText };
             button.AddToClassList(k_PreviewButtonClassName);
             internalContainer.Add(button);
 

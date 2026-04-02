@@ -132,7 +132,7 @@ class MsBuildCompilation
 
             UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(buildTarget, compilationOptions);
 
-            var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value;
+            var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
             var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
 
             _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, GetMsBuildConfiguration(target, buildTarget), !disableNugetRestore);

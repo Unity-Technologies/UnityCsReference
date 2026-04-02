@@ -19,6 +19,12 @@ namespace UnityEditor.Rendering
         High,
     }
 
+    public enum LightBaker // Defines which light baker to use by default for lightmap and light probe generation.
+    {
+        ProgressiveLightBaker = 0, // Use the Progressive Lightmapper (CPU or GPU).
+        UnityComputeLightBaker,    // Use the Unified Light Baker.
+    }
+
     public struct AlbedoSwatchInfo
     {
         public string name;

@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     abstract class CollectionVirtualizationController
     {
         protected readonly ScrollView m_ScrollView;

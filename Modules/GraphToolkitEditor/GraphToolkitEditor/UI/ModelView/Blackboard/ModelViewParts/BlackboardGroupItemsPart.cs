@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -101,9 +102,7 @@ namespace Unity.GraphToolkit.Editor
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<IGroupItemModel> itemModels = newItemsModels.ToList();
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ModelView firstItem = items.FirstOrDefault();
-#pragma warning restore UA2001
             IGroupItemModel firstModel = itemModels[0];
             if (firstItem == null || !ReferenceEquals(firstItem.Model, firstModel))
             {

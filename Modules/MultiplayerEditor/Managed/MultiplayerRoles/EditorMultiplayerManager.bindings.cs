@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
+using Unity.Multiplayer;
 
 namespace UnityEditor.Multiplayer.Internal
 {

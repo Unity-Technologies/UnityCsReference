@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -36,6 +38,7 @@ namespace UnityEngine
         internal TextHandle textHandle;
         private bool hasSelection => m_TextSelectingUtility.hasSelection;
         private string SelectedText => m_TextSelectingUtility.selectedText;
+
         private int m_iAltCursorPos => m_TextSelectingUtility.iAltCursorPos;
         int m_CursorIndexSavedState = -1;
 
@@ -47,19 +50,54 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal Action OnTextChanged;
 
+        void NotifyFromFlags(int flags)
+        {
+            if ((flags & (int)EditingEventFlags.TextChanged) != 0)
+            {
+                m_Text = text;
+                OnTextChanged?.Invoke();
+            }
+                
+            m_TextSelectingUtility.NotifyFromFlags(flags);
+        }
+
         public bool multiline = false;
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal bool revealCursor
         {
             get => m_TextSelectingUtility.revealCursor;
             set => m_TextSelectingUtility.revealCursor = value;
         }
 
+        bool useAdvancedText => textHandle.useAdvancedText;
+        IntPtr nativeTgi => textHandle.textGenerationInfo;
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        internal void SyncStateToNative(int cursorIndex, int selectIndex, string text = null, bool revealCursor = false)
+        {
+            IntPtr tgi = nativeTgi;
+            if (tgi != IntPtr.Zero)
+            {
+                if (text != null)
+                    TextEditingService.SetText(tgi, text);
+                TextSelectionService.SetCursorIndex(tgi, cursorIndex);
+                TextSelectionService.SetSelectIndex(tgi, selectIndex);
+                TextSelectionService.SetRevealCursor(tgi, revealCursor);
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal void SyncStateToNative()
+        {
+            m_TextSelectingUtility.SyncStateToNative();
+        }
+
         //Used by automated tests
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal int stringCursorIndex
         {
-            get => textHandle.GetCorrespondingStringIndex(cursorIndex);
-            set => cursorIndex = textHandle.GetCorrespondingCodePointIndex(value);
+            get => useAdvancedText ? TextSelectionService.GetValidPointIndex(nativeTgi, cursorIndex) : textHandle.GetCorrespondingStringIndex(cursorIndex);
+            set => cursorIndex = useAdvancedText ? TextSelectionService.GetValidPointIndex(nativeTgi, value) : textHandle.GetCorrespondingCodePointIndex(value);
         }
 
         private int cursorIndex
@@ -77,16 +115,12 @@ namespace UnityEngine
             set => m_TextSelectingUtility.selectIndexNoValidation = value;
         }
 
-        private int stringCursorIndexNoValidation {
-            get => textHandle.GetCorrespondingStringIndex(m_TextSelectingUtility.cursorIndexNoValidation);
-        }
-
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         //Used by automated tests
         internal int stringSelectIndex
         {
-            get => textHandle.GetCorrespondingStringIndex(selectIndex);
-            set => selectIndex = textHandle.GetCorrespondingCodePointIndex(value);
+            get => useAdvancedText ? TextSelectionService.GetValidPointIndex(nativeTgi, selectIndex) : textHandle.GetCorrespondingStringIndex(selectIndex);
+            set => selectIndex = useAdvancedText ? TextSelectionService.GetValidPointIndex(nativeTgi, value) : textHandle.GetCorrespondingCodePointIndex(value);
         }
 
         private int selectIndex
@@ -98,13 +132,30 @@ namespace UnityEngine
         string m_Text;
         public string text
         {
-            get => m_Text;
+            get
+            {
+                if (useAdvancedText)
+                    return TextEditingService.GetText(nativeTgi);
+                return m_Text;
+            }
             set
             {
-                if (value == m_Text)
-                    return;
+                var newText = value ?? string.Empty;
+                if (useAdvancedText)
+                {
+                    if (!TextEditingService.SetText(nativeTgi, newText))
+                        return;
+                    if (newText == m_Text)
+                        return;
+                    m_Text = newText;
 
-                m_Text = value ?? string.Empty;
+                }
+                else
+                {
+                    if (newText == m_Text)
+                        return;
+                    m_Text = newText;
+                }
                 OnTextChanged?.Invoke();
             }
         }
@@ -112,14 +163,28 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal void SetTextWithoutNotify(string value)
         {
-            m_Text = value;
+            var newText = value ?? string.Empty;
+            if (useAdvancedText)
+            {
+                TextEditingService.SetText(nativeTgi, newText);
+                m_Text = newText;
+            }
+            else
+                m_Text = newText;
         }
 
         public TextEditingUtilities(TextSelectingUtilities selectingUtilities, TextHandle textHandle, string text)
         {
             m_TextSelectingUtility = selectingUtilities;
             this.textHandle = textHandle;
-            m_Text = text;
+            if (useAdvancedText)
+            {
+                textHandle.AddToPermanentCache();
+                TextEditingService.SetText(nativeTgi, text ?? string.Empty);
+                m_Text = text ?? string.Empty;
+            }
+            else
+                m_Text = text ?? string.Empty;
         }
 
         /// <summary>
@@ -152,8 +217,15 @@ namespace UnityEngine
 
         public void SetImeWindowPosition(Vector2 worldPosition)
         {
-            var cursorPos = textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
-            Input.compositionCursorPos = worldPosition + cursorPos;
+            if (useAdvancedText)
+            {
+                var cursorPos = textHandle.PixelsToPoints(TextSelectionService.GetCursorPositionFromCursorIndex(nativeTgi));
+                Input.compositionCursorPos = worldPosition + cursorPos;
+                return;
+            }
+
+            var cursorPosStandard = textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
+            Input.compositionCursorPos = worldPosition + cursorPosStandard;
         }
 
         public string GeneratePreviewString(bool richText)
@@ -174,6 +246,12 @@ namespace UnityEngine
         /// <param name="cursor"></param>
         public void EnableCursorPreviewState()
         {
+            if (useAdvancedText)
+            {
+                TextEditingService.EnableCursorPreviewState(nativeTgi, Input.compositionString.Length);
+                return;
+            }
+
             if (m_CursorIndexSavedState != -1)
                 return;
 
@@ -186,6 +264,12 @@ namespace UnityEngine
         /// </summary>
         public void RestoreCursorState()
         {
+            if (useAdvancedText)
+            {
+                TextEditingService.RestoreCursorState(nativeTgi);
+                return;
+            }
+
             if (m_CursorIndexSavedState == -1)
                 return;
 
@@ -287,7 +371,6 @@ namespace UnityEngine
             (new KeyEvent(KeyCode.V, EventModifiers.Control), TextEditOp.Paste),
             (new KeyEvent(KeyCode.Delete, EventModifiers.Shift | EventModifiers.FunctionKey), TextEditOp.Cut),
             (new KeyEvent(KeyCode.Insert, EventModifiers.Shift | EventModifiers.FunctionKey), TextEditOp.Paste)
-
         };
 
         //Used for tests
@@ -299,7 +382,7 @@ namespace UnityEngine
             var keyEvent = new KeyEvent(key, modifiers);
             foreach (var mapping in s_GlobalKeyMappings)
             {
-                if (mapping.keyEvent == keyEvent) 
+                if (mapping.keyEvent == keyEvent)
                     return mapping.operation;
             }
 
@@ -357,24 +440,19 @@ namespace UnityEngine
         // Deletes previous text on the line
         public bool DeleteLineBack()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.DeleteLineBack(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             RestoreCursorState();
 
             if (hasSelection)
             {
                 DeleteSelection();
                 return true;
-            }
-
-            if (textHandle.useAdvancedText)
-            {
-                var start = textHandle.GetFirstCharacterIndexOnLine(cursorIndex);
-                if (start != cursorIndex)
-                {
-                    text = text.Remove(start, stringCursorIndex - start);
-                    cursorIndex = selectIndex = start;
-                    return true;
-                }
-                return false;
             }
 
             var currentLineInfo = textHandle.GetLineInfoFromCharacterIndex(cursorIndex);
@@ -394,6 +472,13 @@ namespace UnityEngine
         // Deletes the previous word
         public bool DeleteWordBack()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.DeleteWordBack(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             RestoreCursorState();
 
             if (hasSelection)
@@ -416,6 +501,13 @@ namespace UnityEngine
         // Deletes the following word
         public bool DeleteWordForward()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.DeleteWordForward(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             RestoreCursorState();
 
             if (hasSelection)
@@ -437,6 +529,13 @@ namespace UnityEngine
         // perform a right-delete
         public bool Delete()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.Delete(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             RestoreCursorState();
 
             if (hasSelection)
@@ -446,11 +545,7 @@ namespace UnityEngine
             }
             else if (stringCursorIndex < text.Length)
             {
-                int count;
-                if (textHandle.useAdvancedText)
-                    count = Mathf.Abs(textHandle.NextCodePointIndex(cursorIndex) - cursorIndex);
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
                 text = text.Remove(stringCursorIndex, count);
                 return true;
             }
@@ -460,9 +555,14 @@ namespace UnityEngine
         // Perform a left-delete
         public bool Backspace()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.Backspace(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             RestoreCursorState();
-            int prevCursorIndex = cursorIndex;
-            int prevSelectIndex = selectIndex;
 
             if (hasSelection)
             {
@@ -472,17 +572,11 @@ namespace UnityEngine
             else if (cursorIndex > 0)
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
-                int count;
-                if (textHandle.useAdvancedText)
-                {
-                    count = Mathf.Abs(cursorIndex - startIndex);
-                }
-                else
-                    count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+                int count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
 
                 text = text.Remove(stringCursorIndex - count, count);
-                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, prevCursorIndex - count) : startIndex;
-                selectIndex = textHandle.useAdvancedText ? Math.Max(0, prevSelectIndex - count) : startIndex;
+                cursorIndex = startIndex;
+                selectIndex = startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }
@@ -492,6 +586,13 @@ namespace UnityEngine
         /// Delete the current selection. If there is no selection, this function does not do anything...
         public bool DeleteSelection()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.DeleteSelection(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             if (cursorIndex == selectIndex)
                 return false;
             if (cursorIndex < selectIndex)
@@ -512,11 +613,17 @@ namespace UnityEngine
         /// Replace the selection with /replace/. If there is no selection, /replace/ is inserted at the current cursor point.
         public void ReplaceSelection(string replace)
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextEditingService.ReplaceSelection(nativeTgi, replace));
+                return;
+            }
+
             RestoreCursorState();
             DeleteSelection();
             text = text.Insert(stringCursorIndex, replace);
 
-            int length = textHandle.useAdvancedText ? replace.Length : new StringInfo(replace).LengthInTextElements;
+            int length = new StringInfo(replace).LengthInTextElements;
             var newIndex = cursorIndexNoValidation + length;
             cursorIndexNoValidation = newIndex;
             selectIndexNoValidation = newIndex;
@@ -547,17 +654,24 @@ namespace UnityEngine
         /// Move selection to alt cursor /position/
         public void MoveSelectionToAltCursor()
         {
+            if (useAdvancedText)
+            {
+                NotifyFromFlags(TextEditingService.MoveSelectionToAltCursor(nativeTgi));
+                return;
+            }
+
             RestoreCursorState();
+
             if (m_iAltCursorPos == -1)
                 return;
             int p = m_iAltCursorPos;
-            string tmp = SelectedText;
-            text = text.Insert(p, tmp);
+            string tmpStandard = SelectedText;
+            text = text.Insert(p, tmpStandard);
 
             if (p < cursorIndex)
             {
-                cursorIndex += tmp.Length;
-                selectIndex += tmp.Length;
+                cursorIndex += tmpStandard.Length;
+                selectIndex += tmpStandard.Length;
             }
 
             DeleteSelection();
@@ -573,22 +687,42 @@ namespace UnityEngine
 
         public bool Cut()
         {
+            if (useAdvancedText)
+            {
+                int flags = TextEditingService.Cut(nativeTgi);
+                NotifyFromFlags(flags);
+                return (flags & (int)EditingEventFlags.TextChanged) != 0;
+            }
+
             m_TextSelectingUtility.Copy();
             return DeleteSelection();
         }
 
         public bool Paste()
         {
-            RestoreCursorState();
-            string pasteval = StytemCopyBuffer.systemCopyBuffer;
-            if (pasteval != "")
+            if (useAdvancedText)
             {
+                string pasteval = StytemCopyBuffer.systemCopyBuffer;
+                if (pasteval == "")
+                    return false;
                 if (!multiline)
                     pasteval = ReplaceNewlinesWithSpaces(pasteval);
-                ReplaceSelection(pasteval);
+                NotifyFromFlags(TextEditingService.ReplaceSelection(nativeTgi, pasteval));
                 return true;
             }
-            return false;
+
+            RestoreCursorState();
+            {
+                string pastevalStd = StytemCopyBuffer.systemCopyBuffer;
+                if (pastevalStd != "")
+                {
+                    if (!multiline)
+                        pastevalStd = ReplaceNewlinesWithSpaces(pastevalStd);
+                    ReplaceSelection(pastevalStd);
+                    return true;
+                }
+                return false;
+            }
         }
 
         static string ReplaceNewlinesWithSpaces(string value)
@@ -604,19 +738,23 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void OnBlur()
         {
+            if (useAdvancedText)
+            {
+                isCompositionActive = false;
+                NotifyFromFlags(TextEditingService.OnBlur(nativeTgi));
+                return;
+            }
+
             revealCursor = false;
             isCompositionActive = false;
             RestoreCursorState();
             m_TextSelectingUtility.SelectNone();
         }
 
-        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
-        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool TouchScreenKeyboardShouldBeUsed()
+        internal bool TouchScreenKeyboardCanBeUsed()
         {
-            RuntimePlatform platform = Application.platform;
-            switch (platform)
+            switch (Application.platform)
             {
                 case RuntimePlatform.Android:
                 case RuntimePlatform.WebGLPlayer:
@@ -627,6 +765,12 @@ namespace UnityEngine
                 default:
                     return TouchScreenKeyboard.isSupported;
             }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool PhysicalKeyboardCanBeUsed()
+        {
+            return TouchScreenKeyboard.isSupported ? TouchScreenKeyboard.isInPlaceEditingAllowed : true;
         }
     }
 }

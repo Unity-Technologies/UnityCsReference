@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 
 namespace UnityEngine.UIElements
 {
@@ -103,18 +103,16 @@ namespace UnityEngine.UIElements
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var ids = targetView.selectedIds.Any() ? targetView.selectedIds : new[] { recycledItem.id };
-#pragma warning restore UA2002
+                var ids = (targetView.HasAnySelectedIds()) ? targetView.selectedIds : new[] { recycledItem.id };
                 return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (targetView.selectedIds.Any())
-#pragma warning restore UA2002
-            {
+            // Only block default reordering if enableReordering is false; custom canStartDrag already handled above.
+            if (!dragAndDropController.enableReordering)
+                return false;
+
+            if (targetView.HasAnySelectedIds())
                 return dragAndDropController.CanStartDrag(targetView.selectedIds);
-            }
 
             return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.id });
         }
@@ -131,9 +129,7 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!targetView.selectedIndicesList.Contains(recycledItem.index))
-#pragma warning restore UA2001
                     {
                         targetView.SetSelection(recycledItem.index);
                     }
@@ -143,9 +139,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ids = targetView.selectedIds.Any() ? targetView.selectedIds : Array.Empty<int>();
-#pragma warning restore UA2002
+                ids = targetView.HasAnySelectedIds() ? targetView.selectedIds : Array.Empty<int>();
             }
 
             var startDragArgs = dragAndDropController.SetupDragAndDrop(ids);
@@ -259,7 +253,7 @@ namespace UnityEngine.UIElements
             if (m_DragHoverBar == null)
             {
                 m_DragHoverBar = new VisualElement();
-                m_DragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassName);
+                m_DragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassNameUnique);
                 m_DragHoverBar.style.width = targetView.localBound.width;
                 m_DragHoverBar.style.visibility = Visibility.Hidden;
                 m_DragHoverBar.pickingMode = PickingMode.Ignore;
@@ -276,13 +270,13 @@ namespace UnityEngine.UIElements
             if (m_DragHoverItemMarker == null && targetView is BaseTreeView)
             {
                 m_DragHoverItemMarker = new VisualElement();
-                m_DragHoverItemMarker.AddToClassList(BaseVerticalCollectionView.dragHoverMarkerUssClassName);
+                m_DragHoverItemMarker.AddToClassList(BaseVerticalCollectionView.dragHoverMarkerUssClassNameUnique);
                 m_DragHoverItemMarker.style.visibility = Visibility.Hidden;
                 m_DragHoverItemMarker.pickingMode = PickingMode.Ignore;
                 m_DragHoverBar.Add(m_DragHoverItemMarker);
 
                 m_DragHoverSiblingMarker = new VisualElement();
-                m_DragHoverSiblingMarker.AddToClassList(BaseVerticalCollectionView.dragHoverMarkerUssClassName);
+                m_DragHoverSiblingMarker.AddToClassList(BaseVerticalCollectionView.dragHoverMarkerUssClassNameUnique);
                 m_DragHoverSiblingMarker.style.visibility = Visibility.Hidden;
                 m_DragHoverSiblingMarker.pickingMode = PickingMode.Ignore;
                 targetScrollView.contentViewport.Add(m_DragHoverSiblingMarker);
@@ -293,7 +287,7 @@ namespace UnityEngine.UIElements
             switch (dragPosition.dropPosition)
             {
                 case DragAndDropPosition.OverItem:
-                    dragPosition.recycledItem.rootElement.AddToClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
+                    dragPosition.recycledItem.rootElement.AddToClassList(BaseVerticalCollectionView.itemDragHoverUssClassNameUnique);
                     break;
                 case DragAndDropPosition.BetweenItems:
                     if (dragPosition.insertAtIndex == 0)
@@ -541,9 +535,7 @@ namespace UnityEngine.UIElements
             while (previousItemIndex >= 0)
             {
                 var id = targetView.viewController.GetIdForIndex(previousItemIndex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!dragAndDropController.GetSortedSelectedIds().Contains(id))
-#pragma warning restore UA2001
                 {
                     previousItemId = id;
                     break;
@@ -555,9 +547,7 @@ namespace UnityEngine.UIElements
             while (nextItemIndex < targetView.itemsSource.Count)
             {
                 var id = targetView.viewController.GetIdForIndex(nextItemIndex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!dragAndDropController.GetSortedSelectedIds().Contains(id))
-#pragma warning restore UA2001
                 {
                     nextItemId = id;
                     break;
@@ -639,7 +629,7 @@ namespace UnityEngine.UIElements
             m_LastDragPosition = new DragPosition();
             foreach (var item in targetView.activeItems)
             {
-                item.rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
+                item.rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemDragHoverUssClassNameUnique);
             }
 
             if (m_DragHoverBar != null)

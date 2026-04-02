@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEditor.Experimental;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -12,244 +15,334 @@ namespace UnityEditor
     {
         static class Styles
         {
+            // Dynamic tooltips
+            public static readonly string minTooltips = L10n.Tr($"The minimum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin}, {SceneView.CameraSettings.kAbsoluteSpeedMax - 1}].");
+            public static readonly string maxTooltips = L10n.Tr($"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].");
+
+            // Menu labels
             public static readonly GUIContent copyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
             public static readonly GUIContent pastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
             public static readonly GUIContent copySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
             public static readonly GUIContent pasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
             public static readonly GUIContent resetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
-            public static readonly GUIContent cameraSpeedRange = EditorGUIUtility.TrTextContent(" ");
 
-            public static readonly GUIStyle settingsArea;
+            // Layout
+            public const int windowWidth = 290;
+            public const int windowHeight = ((int)EditorGUI.kSingleLineHeight) * 16/*fieldCount*/ + 5/*contentPadding*/ * 2 + 2/*headerSpacing*/ * 2;
+        }
 
-            static Styles()
+        // Isolating the close on Escape pressed code in this Manipulator
+        class CloseOnEscapeKeyPressed : Manipulator
+        {
+            EditorWindow m_Window;
+
+            public CloseOnEscapeKeyPressed(EditorWindow window) => m_Window = window;
+
+            protected override void RegisterCallbacksOnTarget()
             {
-                settingsArea = new GUIStyle
-                {
-                    border = new RectOffset(4, 4, 4, 4),
-                };
+                // KeyDownEvent will be prevented until dropdown gets focus.
+                // Force it to ensure it also works before any click on the dropdown.
+                // Though the focus can only be set once the panel encompassing the target exists.
+                target.focusable = true;
+                if (target.panel == null)
+                    target.RegisterCallbackOnce<AttachToPanelEvent>(evt => {
+                        target.Focus();
+                    });
+                else
+                    target.Focus();
+                
+                target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            }
+
+            protected override void UnregisterCallbacksFromTarget()
+                => target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+
+            void OnKeyDown<T>(KeyboardEventBase<T> evt)
+                where T : KeyboardEventBase<T>, new()
+            {
+                if (evt.keyCode == KeyCode.Escape)
+                    m_Window.Close();
             }
         }
 
-        readonly SceneView m_SceneView;
-
-        GUIContent m_CameraSpeedSliderContent;
-        GUIContent m_AccelerationEnabled;
-        GUIContent m_AccelerationSpeed;
-        GUIContent[] m_MinMaxContent;
-        GUIContent m_FieldOfView;
-        GUIContent m_DynamicClip;
-        GUIContent m_OcclusionCulling;
-        GUIContent m_EasingEnabled;
-        GUIContent m_EasingDuration;
-        GUIContent m_SpeedModifier;
-        GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
-        GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Camera Navigation");
-
-        readonly string k_ClippingPlaneWarning = L10n.Tr("Using extreme values between the near and far planes may cause rendering issues. In general, to get better precision move the Near plane as far as possible.");
-
-        const int kFieldCount = 16;
-        const int kWindowWidth = 290;
-        const int kContentPadding = 5;
-        const int k_HeaderSpacing = 2;
-        const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kContentPadding * 2 + k_HeaderSpacing * 2;
-        const float kPrefixLabelWidth = 140f;
-
+        const string k_UXMLResourcePath = "UXML/SceneView/SceneViewCameraEditor.uxml";
+        
         // FOV values chosen to be the smallest and largest before extreme visual corruption
         const float k_MinFieldOfView = 4f;
         const float k_MaxFieldOfView = 120f;
 
-        Vector2 m_WindowSize;
-        Vector2 m_Scroll;
+        readonly SceneView m_SceneView;
 
+        VisualElement m_Root;
+        HelpBox m_ExtremeClipping;
+        Slider m_FieldOfView;
+        Toggle m_DynamicClipping;
+        VisualElement m_WholeClippingPlanes;
+        FloatField m_NearClip, m_FarClip;
+        Toggle m_OcclusionCulling;
+        Toggle m_Easing;
+        Slider m_EasingDuration;
+        Toggle m_Acceleration;
+        Slider m_AccelerationSpeed;
+        Slider m_Speed, m_SpeedModifier;
+        FloatField m_MinSpeed, m_MaxSpeed;
+        VisualElement m_AdditionalSettings;
+        List<BaseFieldMouseDragger> m_CustomLabelDraggers = new();
+        
+        Vector2 m_WindowSize = new Vector2(Styles.windowWidth, Styles.windowHeight);
+
+        [Obsolete($"{nameof(SceneViewCameraWindow)} has been converted to UITK. Please use {nameof(createAdditionalSettingsGUI)} and {nameof(bindAdditionalSettings)} instead. #from(6000.5)")]
         public static event Action<SceneView> additionalSettingsGui;
 
+        public static Func<SceneView, VisualElement> createAdditionalSettingsGUI;
+        public static Action<SceneView, VisualElement> bindAdditionalSettings;
+
         public override Vector2 GetWindowSize()
-        {
-            return m_WindowSize;
-        }
+            => m_WindowSize;
 
         public SceneViewCameraWindow(SceneView sceneView)
+            => m_SceneView = sceneView;
+        
+        public override VisualElement CreateGUI()
         {
-            m_SceneView = sceneView;
+            m_Root = new VisualElement();
+            var visualTreeAsset = (VisualTreeAsset)EditorResources.Load<UnityEngine.Object>(k_UXMLResourcePath, isRequired: true);
+            visualTreeAsset.CloneTree(m_Root);
 
-            m_CameraSpeedSliderContent = EditorGUIUtility.TrTextContent("Speed", "The current speed of the camera in the Scene view.");
-            m_AccelerationEnabled = EditorGUIUtility.TrTextContent("Acceleration", "Check this to enable acceleration when moving the camera. When enabled, camera speed is evaluated as a modifier. With acceleration disabled, the camera is accelerated to the Camera Speed.");
-            m_AccelerationSpeed = EditorGUIUtility.TrTextContent("Acceleration Speed", "The current acceleration speed of the camera in the Scene View");
-            m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera's view angle. Measured in degrees vertically, or along the local Y axis.");
-            m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping", "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
-            m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the camera because they\'re hidden (occluded) by other objects.");
-            m_EasingEnabled = EditorGUIUtility.TrTextContent("Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
-            m_EasingDuration = EditorGUIUtility.TrTextContent("Easing Duration", "Time taken for the camera to ease in when it starts moving and ease out when it stops.");
-            m_SpeedModifier = EditorGUIUtility.TrTextContent("Speed Modifier", "The modifier multiplied applied to the camera speed Scene View when holding down shift.");
-            m_WindowSize = new Vector2(kWindowWidth, kWindowHeight);
-            m_MinMaxContent = new[]
-            {
-                EditorGUIUtility.TrTextContent("Min", $"The minimum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin}, {SceneView.CameraSettings.kAbsoluteSpeedMax - 1}]."),
-                EditorGUIUtility.TrTextContent("Max", $"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].")
-            };
+            var menuButton = m_Root.Q<Button>(className: "menu");
+            menuButton.clicked += ShowContextMenu;
+            menuButton.style.backgroundImage = EditorGUIUtility.FindTexture("_Popup");
+
+            m_Root.AddManipulator(new CloseOnEscapeKeyPressed(editorWindow));
+
+            LinkElements(m_SceneView.cameraSettings);
+            Bind(m_SceneView.cameraSettings);
+
+            return m_Root;
         }
 
-        public override void OnGUI(Rect rect)
+        void ShowExtremeClippingIfNeeded()
         {
-            if (m_SceneView == null || m_SceneView.sceneViewState == null)
-                return;
-
-            Draw();
-
-            // Escape closes the window
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-            {
-                editorWindow.Close();
-                GUIUtility.ExitGUI();
-            }
+            bool shouldShow = m_SceneView.cameraSettings.farClip / m_SceneView.cameraSettings.nearClip > 10000000
+                || m_SceneView.cameraSettings.nearClip < 0.0001f;
+            m_ExtremeClipping.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+        
+        private void CreateCustomLabelDragger<TValueType>(Label label, TextValueField<TValueType> field)
+        {
+            var dragger = new FieldMouseDragger<TValueType>(field);
+            dragger.SetDragZone(label);
+            label.EnableInClassList(BaseField<TValueType>.labelDraggerVariantUssClassName, true);
+            m_CustomLabelDraggers.Add(dragger); // keep it alive
         }
 
-        void Draw()
+        void LinkElements(SceneView.CameraSettings settings)
         {
-            var settings = m_SceneView.cameraSettings;
+            // Link C# constants and callbacks to VisualElement
 
-            m_Scroll = GUILayout.BeginScrollView(m_Scroll);
-
-            GUILayout.BeginVertical(Styles.settingsArea);
-            EditorGUI.BeginChangeCheck();
-
-            GUILayout.Space(k_HeaderSpacing);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(m_SceneCameraLabel, EditorStyles.boldLabel);
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorGUI.GUIContents.titleSettingsIcon, EditorStyles.iconButton))
-                ShowContextMenu(m_SceneView);
-            GUILayout.EndHorizontal();
-
-            EditorGUIUtility.labelWidth = kPrefixLabelWidth;
-
-            // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
-            using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
+            // Scene Camera
+            //    Field of View
+            m_FieldOfView = m_Root.MandatoryQ<Slider>("FieldOfView");
+            m_FieldOfView.lowValue = k_MinFieldOfView;
+            m_FieldOfView.highValue = k_MaxFieldOfView;
+            m_FieldOfView.RegisterValueChangedCallback(evt =>
             {
-                settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, k_MinFieldOfView, k_MaxFieldOfView);
-            }
-
-            settings.dynamicClip = EditorGUILayout.Toggle(m_DynamicClip, settings.dynamicClip);
-
-            using (new EditorGUI.DisabledScope(settings.dynamicClip))
-            {
-                float near = settings.nearClip, far = settings.farClip;
-                DrawStackedFloatField(EditorGUI.s_ClipingPlanesLabel,
-                    EditorGUI.s_NearAndFarLabels[0],
-                    EditorGUI.s_NearAndFarLabels[1], ref near, ref far,
-                    EditorGUI.kNearFarLabelsWidth);
-                settings.SetClipPlanes(near, far);
-                if(far/near > 10000000 || near < 0.0001f)
-                    EditorGUILayout.HelpBox(k_ClippingPlaneWarning,MessageType.Warning);
-            }
-
-            settings.occlusionCulling = EditorGUILayout.Toggle(m_OcclusionCulling, settings.occlusionCulling);
-
-            if (EditorGUI.EndChangeCheck())
+                settings.fieldOfView = evt.newValue;
                 m_SceneView.Repaint();
+            });
+            
+            //    Clipping
+            m_DynamicClipping = m_Root.MandatoryQ<Toggle>("DynamicClipping");
+            m_WholeClippingPlanes = m_Root.MandatoryQ("ClippingPlanes");
+            m_NearClip = m_Root.MandatoryQ<FloatField>("ClippingNear");
+            m_FarClip = m_Root.MandatoryQ<FloatField>("ClippingFar");
+            m_ExtremeClipping = m_Root.MandatoryQ<HelpBox>("ExtremeClippingHelpBox");
 
-            EditorGUILayout.Space(k_HeaderSpacing);
-
-            GUILayout.Label(m_NavigationLabel, EditorStyles.boldLabel);
-
-            settings.easingEnabled = EditorGUILayout.Toggle(m_EasingEnabled, settings.easingEnabled);
+            m_DynamicClipping.RegisterValueChangedCallback(evt =>
             {
-                using var scope = new EditorGUI.DisabledScope(!settings.easingEnabled);
-                EditorGUI.BeginChangeCheck();
-                float value = EditorGUILayout.Slider(m_EasingDuration, settings.easingDuration, SceneView.CameraSettings.kAbsoluteEasingDurationMin, SceneView.CameraSettings.kAbsoluteEasingDurationMax);
-                if (EditorGUI.EndChangeCheck())
-                    settings.easingDuration = value;
-            }
+                settings.dynamicClip = evt.newValue;
+                m_WholeClippingPlanes.SetEnabled(!settings.dynamicClip);
+                m_SceneView.Repaint();
+            });
 
-            settings.accelerationEnabled = EditorGUILayout.Toggle(m_AccelerationEnabled, settings.accelerationEnabled);
+            m_NearClip.RegisterValueChangedCallback(evt =>
             {
-                using var scope = new EditorGUI.DisabledScope(!settings.accelerationEnabled);
-                EditorGUI.BeginChangeCheck();
-                float value = EditorGUILayout.Slider(m_AccelerationSpeed, settings.accelerationSpeed, SceneView.CameraSettings.kAbsoluteAccelerationSpeedMin, SceneView.CameraSettings.kAbsoluteAccelerationSpeedMax);
-                if (EditorGUI.EndChangeCheck())
-                    settings.accelerationSpeed = value;
-            }
+                settings.SetClipPlanes(evt.newValue, settings.farClip);
+                m_NearClip.SetValueWithoutNotify(settings.nearClip);
+                m_FarClip.SetValueWithoutNotify(settings.farClip);
+                ShowExtremeClippingIfNeeded();
+                m_SceneView.Repaint();
+            });
+            CreateCustomLabelDragger(m_Root.MandatoryQ<Label>("ClippingNearLabel"), m_NearClip);
 
+            m_FarClip.RegisterValueChangedCallback(evt => 
             {
-                EditorGUI.BeginChangeCheck();
-                float value = EditorGUILayout.Slider(m_SpeedModifier, settings.speedModifier, SceneView.CameraSettings.kAbsoluteSpeedModifierMin, SceneView.CameraSettings.kAbsoluteSpeedModifierMax);
-                if (EditorGUI.EndChangeCheck())
-                    settings.speedModifier = value;
-            }
+                settings.SetClipPlanes(settings.nearClip, evt.newValue);
+                m_NearClip.SetValueWithoutNotify(settings.nearClip);
+                m_FarClip.SetValueWithoutNotify(settings.farClip);
+                ShowExtremeClippingIfNeeded();
+                m_SceneView.Repaint();
+            });
+            CreateCustomLabelDragger(m_Root.MandatoryQ<Label>("ClippingFarLabel"), m_FarClip);
 
-            EditorGUI.BeginChangeCheck();
-            float min = settings.speedMin;
-            float max = settings.speedMax;
-            float speed = settings.RoundSpeedToNearestSignificantDecimal(settings.speed);
-            speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, speed, min, max);
-            if (EditorGUI.EndChangeCheck())
-                settings.speed = settings.RoundSpeedToNearestSignificantDecimal(speed);
-
-            EditorGUI.BeginChangeCheck();
-
-            DrawStackedFloatField(Styles.cameraSpeedRange,
-                m_MinMaxContent[0],
-                m_MinMaxContent[1],
-                ref min, ref max,
-                EditorGUI.kNearFarLabelsWidth);
-
-
-            if (EditorGUI.EndChangeCheck())
-                settings.SetSpeedMinMax(min, max);
-
-            EditorGUIUtility.labelWidth = 0f;
-
-            if (additionalSettingsGui != null)
+            //    Occlusion culling
+            m_OcclusionCulling = m_Root.MandatoryQ<Toggle>("OcclusionCulling");
+            m_OcclusionCulling.RegisterValueChangedCallback(evt =>
             {
-                EditorGUILayout.Space(k_HeaderSpacing);
-                additionalSettingsGui(m_SceneView);
+                settings.occlusionCulling = evt.newValue;
+                m_SceneView.Repaint();
+            });
 
-                if (Event.current.type == EventType.Repaint)
-                    m_WindowSize.y = Math.Min(GUILayoutUtility.GetLastRect().yMax + kContentPadding * 2, kWindowHeight * 3);
+            // Camera Navigation
+            //    Easing
+            m_Easing = m_Root.MandatoryQ<Toggle>("Easing");
+            m_EasingDuration = m_Root.MandatoryQ<Slider>("EasingDuration");
+
+            m_Easing.RegisterValueChangedCallback(evt =>
+            {
+                settings.easingEnabled = evt.newValue;
+                m_EasingDuration.SetEnabled(settings.easingEnabled);
+            });
+
+            m_EasingDuration.lowValue = SceneView.CameraSettings.kAbsoluteEasingDurationMin;
+            m_EasingDuration.highValue = SceneView.CameraSettings.kAbsoluteEasingDurationMax;
+            m_EasingDuration.RegisterValueChangedCallback(evt => settings.easingDuration = evt.newValue);
+
+            //    Acceleration
+            m_Acceleration = m_Root.MandatoryQ<Toggle>("Acceleration");
+            m_AccelerationSpeed = m_Root.MandatoryQ<Slider>("AccelerationSpeed");
+
+            m_Acceleration.RegisterValueChangedCallback(evt =>
+            {
+                settings.accelerationEnabled = evt.newValue;
+                m_AccelerationSpeed.SetEnabled(settings.accelerationEnabled);
+            });
+
+            m_AccelerationSpeed.lowValue = SceneView.CameraSettings.kAbsoluteAccelerationSpeedMin;
+            m_AccelerationSpeed.highValue = SceneView.CameraSettings.kAbsoluteAccelerationSpeedMax;
+            m_AccelerationSpeed.RegisterValueChangedCallback(evt => settings.accelerationSpeed = evt.newValue);
+
+            //    Speed
+            m_Speed = m_Root.MandatoryQ<Slider>("Speed");
+            m_SpeedModifier = m_Root.MandatoryQ<Slider>("SpeedModifier");
+            m_MinSpeed = m_Root.MandatoryQ<FloatField>("SpeedMin");
+            m_MaxSpeed = m_Root.MandatoryQ<FloatField>("SpeedMax");
+
+            m_Speed.RegisterValueChangedCallback(evt => settings.speed = settings.RoundSpeedToNearestSignificantDecimal(evt.newValue));
+            
+            m_SpeedModifier.lowValue = SceneView.CameraSettings.kAbsoluteSpeedModifierMin;
+            m_SpeedModifier.highValue = SceneView.CameraSettings.kAbsoluteSpeedModifierMax;
+            m_SpeedModifier.RegisterValueChangedCallback(evt => settings.speedModifier = evt.newValue);
+
+            m_MinSpeed.RegisterValueChangedCallback(evt =>
+            {
+                settings.SetSpeedMinMax(evt.newValue, settings.speedMax);
+                m_Speed.lowValue = settings.speedMin;
+                m_Speed.highValue = settings.speedMax;
+                m_MinSpeed.SetValueWithoutNotify(settings.speedMin);
+                m_MaxSpeed.SetValueWithoutNotify(settings.speedMax);
+            });
+            CreateCustomLabelDragger(m_Root.MandatoryQ<Label>("SpeedMinLabel"), m_MinSpeed);
+            m_MinSpeed.tooltip = Styles.minTooltips;
+            
+            m_MaxSpeed.RegisterValueChangedCallback(evt =>
+            {
+                settings.SetSpeedMinMax(settings.speedMin, evt.newValue);
+                m_Speed.lowValue = settings.speedMin;
+                m_Speed.highValue = settings.speedMax;
+                m_MinSpeed.SetValueWithoutNotify(settings.speedMin);
+                m_MaxSpeed.SetValueWithoutNotify(settings.speedMax);
+            });
+            CreateCustomLabelDragger(m_Root.MandatoryQ<Label>("SpeedMaxLabel"), m_MaxSpeed);
+            m_MaxSpeed.tooltip = Styles.maxTooltips;
+
+            // Rendering (SRP extension, hidden in BiRP)
+            if (createAdditionalSettingsGUI != null)
+            {
+                m_AdditionalSettings = createAdditionalSettingsGUI(m_SceneView);
+                if (m_AdditionalSettings != null)
+                {
+                    var container = new VisualElement() { name = "AdditionalSettingsSection" };
+                    container.AddToClassList("section");
+                    container.Add(m_AdditionalSettings);
+                    m_Root.Add(container);
+                }
             }
-
-            GUILayout.EndVertical();
-            GUILayout.EndScrollView();
+            // Keep old extension system at the end as it was.
+            else if (additionalSettingsGui != null)
+            {
+                var container = new IMGUIContainer(() =>
+                {
+                    var oldWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = 140; //keep alignment with UITK UI, same value as .unity-label
+                    additionalSettingsGui(m_SceneView);
+                    EditorGUIUtility.labelWidth = oldWidth;
+                });
+                container.style.maxWidth = Styles.windowWidth;
+                m_Root.Add(container);
+            }
         }
 
-        static void DrawStackedFloatField(GUIContent label, GUIContent firstFieldLabel, GUIContent secondFieldLabel, ref float near, ref float far, float propertyLabelsWidth, params GUILayoutOption[] options)
+        void Bind(SceneView.CameraSettings settings)
         {
-            bool hasLabel = EditorGUI.LabelHasContent(label);
-            float height = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kVerticalSpacingMultiField;
-            Rect r = EditorGUILayout.GetControlRect(hasLabel, height, EditorStyles.numberField, options);
+            // Update the data. It need to be done manually as there is no underlying UnityObject for binding through serialization path
+            // This is currently only binded again when performing a Reset or executing Paste
+            
+            // Scene Camera
+            //    Field of View
+            m_FieldOfView.SetValueWithoutNotify(settings.fieldOfView);
+            m_FieldOfView.SetEnabled(!m_SceneView.camera.orthographic);
 
-            Rect fieldPosition = EditorGUI.PrefixLabel(r, label);
-            fieldPosition.height = EditorGUI.kSingleLineHeight;
+            //    Clipping
+            m_WholeClippingPlanes.SetEnabled(!settings.dynamicClip);
+            m_DynamicClipping.SetValueWithoutNotify(settings.dynamicClip);
+            m_NearClip.SetValueWithoutNotify(settings.nearClip);
+            m_FarClip.SetValueWithoutNotify(settings.farClip);
+            ShowExtremeClippingIfNeeded();
 
-            float oldLabelWidth = EditorGUIUtility.labelWidth;
-            int oldIndentLevel = EditorGUI.indentLevel;
+            //    Occlusion culling
+            m_OcclusionCulling.SetValueWithoutNotify(settings.occlusionCulling);
 
-            EditorGUIUtility.labelWidth = propertyLabelsWidth;
-            EditorGUI.indentLevel = 0;
+            // Camera Navigation
+            //    Easing
+            m_Easing.SetValueWithoutNotify(settings.easingEnabled);
+            m_EasingDuration.SetEnabled(settings.easingEnabled);
+            m_EasingDuration.SetValueWithoutNotify(settings.easingDuration);
 
-            near = EditorGUI.FloatField(fieldPosition, firstFieldLabel, near);
-            fieldPosition.y += EditorGUI.kSingleLineHeight + EditorGUI.kVerticalSpacingMultiField;
-            far = EditorGUI.FloatField(fieldPosition, secondFieldLabel, far);
+            //    Acceleration
+            m_Acceleration.SetValueWithoutNotify(settings.accelerationEnabled);
+            m_AccelerationSpeed.SetEnabled(settings.accelerationEnabled);
+            m_AccelerationSpeed.SetValueWithoutNotify(settings.accelerationSpeed);
 
-            EditorGUI.indentLevel = oldIndentLevel;
-            EditorGUIUtility.labelWidth = oldLabelWidth;
+            //    Speed
+            m_Speed.lowValue = settings.speedMin;
+            m_Speed.highValue = settings.speedMax;
+            m_Speed.SetValueWithoutNotify(settings.RoundSpeedToNearestSignificantDecimal(settings.speed));
+            m_SpeedModifier.SetValueWithoutNotify(settings.speedModifier);
+            m_MinSpeed.SetValueWithoutNotify(settings.speedMin);
+            m_MaxSpeed.SetValueWithoutNotify(settings.speedMax);
+
+            // Rendering (SRP extension, hidden in BiRP)
+            if (m_AdditionalSettings != null && bindAdditionalSettings != null)
+                bindAdditionalSettings(m_SceneView, m_AdditionalSettings);
         }
 
-        internal static void ShowContextMenu(SceneView view)
+        // ========= Menu interactions below =========
+
+        void ShowContextMenu()
         {
             var menu = new GenericMenu();
-            menu.AddItem(Styles.copyPlacementLabel, false, () => CopyPlacement(view));
+            menu.AddItem(Styles.copyPlacementLabel, false, () => CopyPlacement(m_SceneView));
             if (CanPastePlacement())
-                menu.AddItem(Styles.pastePlacementLabel, false, () => PastePlacement(view));
+                menu.AddItem(Styles.pastePlacementLabel, false, () => PastePlacement(m_SceneView));
             else
                 menu.AddDisabledItem(Styles.pastePlacementLabel);
-            menu.AddItem(Styles.copySettingsLabel, false, () => CopySettings(view));
+            menu.AddItem(Styles.copySettingsLabel, false, CopySettings);
             if (Clipboard.HasCustomValue<SceneView.CameraSettings>())
-                menu.AddItem(Styles.pasteSettingsLabel, false, () => PasteSettings(view));
+                menu.AddItem(Styles.pasteSettingsLabel, false, PasteSettings);
             else
                 menu.AddDisabledItem(Styles.pasteSettingsLabel);
-            menu.AddItem(Styles.resetSettingsLabel, false, () => ResetSettings(view));
+            menu.AddItem(Styles.resetSettingsLabel, false, ResetSettings);
 
             menu.ShowAsContext();
         }
@@ -276,9 +369,7 @@ namespace UnityEditor
         }
 
         static void CopyPlacement(SceneView view)
-        {
-            Clipboard.SetCustomValue(new TransformWorldPlacement(view.camera.transform));
-        }
+            => Clipboard.SetCustomValue(new TransformWorldPlacement(view.camera.transform));
 
         // ReSharper disable once UnusedMember.Local - called by a shortcut
         [Shortcut("Camera/Paste Placement")]
@@ -291,9 +382,7 @@ namespace UnityEditor
         }
 
         static bool CanPastePlacement()
-        {
-            return Clipboard.HasCustomValue<TransformWorldPlacement>();
-        }
+            => Clipboard.HasCustomValue<TransformWorldPlacement>();
 
         static void PastePlacement(SceneView view)
         {
@@ -312,21 +401,58 @@ namespace UnityEditor
             view.Repaint();
         }
 
-        static void CopySettings(SceneView view)
+        void CopySettings()
         {
-            Clipboard.SetCustomValue(view.cameraSettings);
+            // ClipboardParser.CustomPrefix uses the templated type, which may not match the actual runtime type.
+            // We extracted its logic here using GetType() instead, so it doesn’t treat everything as "IAdditionalSettings".
+            // Also, the parser requires the templated type to have a public constructor, which cannot be enforced via an interface.
+            // To ensure our changes don’t affect other copy/paste operations (and since CameraSettings copy is already in progress),
+            // AdditionalSettings are stored in a temporary buffer inside CameraSettings.
+            var settings = m_SceneView.currentPipelineAdditionalSettings;
+            m_SceneView.cameraSettings.m_LocalCopyBuffer = settings != null
+                ? $"{settings.GetType().FullName}JSON:{EditorJsonUtility.ToJson(settings)}"
+                : null;
+            Clipboard.SetCustomValue(m_SceneView.cameraSettings);
+            m_SceneView.cameraSettings.m_LocalCopyBuffer = null;
         }
 
-        static void PasteSettings(SceneView view)
+        void PasteSettings()
         {
-            view.cameraSettings = Clipboard.GetCustomValue<SceneView.CameraSettings>();
-            view.Repaint();
+            // Beware all further result of Clipboard.GetCustomValue<T> give same object.
+            // As we modify it (clean the local copy buffer), we want to be sure to use a new instance with same data instead.
+            // This also fix case where SceneViewCamera become linked after a copy paste...
+            m_SceneView.cameraSettings = Clipboard.GetCustomValue<SceneView.CameraSettings>().Clone();
+
+            var settings = m_SceneView.currentPipelineAdditionalSettings;
+            if (settings != null)
+            {
+                // This paste can be optimized using a cache for reconstructed object as in Clipboard.GetCustomValue
+                // But this is adding a lot more complexity for an operation happening really sparsely...
+                // Also we want to conserve linkedComponent unchanged to aply change on the right Camera...
+                Component tmpLinkedComponent = settings.linkedComponent;
+                string prefix = $"{settings.GetType().FullName}JSON:";
+                if (m_SceneView.cameraSettings.m_LocalCopyBuffer?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ?? false)
+                    EditorJsonUtility.FromJsonOverwrite(m_SceneView.cameraSettings.m_LocalCopyBuffer.Substring(prefix.Length), settings);
+                settings.linkedComponent = tmpLinkedComponent;
+                settings.Apply();
+            }
+            m_SceneView.cameraSettings.m_LocalCopyBuffer = null; // Buffer was copy-pasted too... It will not be used anymore until next Copy
+
+            m_SceneView.Repaint();
+            Bind(m_SceneView.cameraSettings);
         }
 
-        static void ResetSettings(SceneView view)
+        void ResetSettings()
         {
-            view.ResetCameraSettings();
-            view.Repaint();
+            m_SceneView.ResetCameraSettings();
+            var settings = m_SceneView.currentPipelineAdditionalSettings;
+            if (settings != null)
+            {
+                settings.Reset();
+                settings.Apply();
+            }
+            m_SceneView.Repaint();
+            Bind(m_SceneView.cameraSettings);
         }
     }
 }

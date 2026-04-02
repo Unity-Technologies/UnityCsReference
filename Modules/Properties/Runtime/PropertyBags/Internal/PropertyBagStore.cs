@@ -5,9 +5,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using Unity.Jobs;
+using UnityEngine.Bindings;
 
 namespace Unity.Properties.Internal
 {
@@ -17,6 +16,32 @@ namespace Unity.Properties.Internal
         /// Statically registers the property bag through the <see cref="PropertyBagStore"/>.
         /// </summary>
         void Register();
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    static class PropertyBagLazyInitialization
+    {
+        static readonly Dictionary<Type, Func<IPropertyBag>> s_LazyPropertyBagRegistrations = new Dictionary<Type, Func<IPropertyBag>>(84);
+
+        public static void AddLazyRegistration(Type type, Func<IPropertyBag> registration)
+        {
+            s_LazyPropertyBagRegistrations[type] = registration;
+        }
+
+        public static bool HasLazyRegistration(Type type)
+        {
+            return s_LazyPropertyBagRegistrations.ContainsKey(type);
+        }
+
+        public static bool TryGetRegistrationDelegate(Type type, out Func<IPropertyBag> registrationDelegate)
+        {
+            return s_LazyPropertyBagRegistrations.TryGetValue(type, out registrationDelegate);
+        }
+
+        public static void RemoveRegistration(Type type)
+        {
+            s_LazyPropertyBagRegistrations.Remove(type);
+        }
     }
 
     /// <summary>
@@ -58,12 +83,12 @@ namespace Unity.Properties.Internal
         /// <typeparam name="TContainer">The container type this <see cref="ContainerPropertyBag{TContainer}"/> describes.</typeparam>
         internal static void AddPropertyBag<TContainer>(IPropertyBag<TContainer> propertyBag)
         {
-            if (!TypeTraits<TContainer>.IsContainer)
+            if (!TypeTraits.IsContainer(typeof(TContainer)))
             {
                 throw new Exception($"PropertyBagStore Type=[{typeof(TContainer)}] is not a valid container type. Type can not be primitive, enum or string.");
             }
 
-            if (TypeTraits<TContainer>.IsAbstractOrInterface)
+            if (TypeTraits.IsAbstractOrInterface(typeof(TContainer)))
             {
                 throw new Exception($"PropertyBagStore Type=[{typeof(TContainer)}] is not a valid container type. Type can not be abstract or interface.");
             }
@@ -83,6 +108,10 @@ namespace Unity.Properties.Internal
                         return;
                 }
             }
+
+            // A lazy registration was requested.
+            if (PropertyBagLazyInitialization.HasLazyRegistration(typeof(TContainer)))
+                return;
 
             TypedStore<TContainer>.PropertyBag = propertyBag;
             if (!s_PropertyBags.ContainsKey(typeof(TContainer)))
@@ -155,6 +184,17 @@ namespace Unity.Properties.Internal
                 return null;
             }
 
+            if (PropertyBagLazyInitialization.TryGetRegistrationDelegate(type, out var registrationDelegate))
+            {
+                propertyBag = registrationDelegate();
+                PropertyBagLazyInitialization.RemoveRegistration(type);
+                if (propertyBag != null)
+                {
+                    (propertyBag as IPropertyBagRegister)?.Register();
+                    return propertyBag;
+                }
+            }
+
             propertyBag = ReflectedPropertyBagProvider.CreatePropertyBag(type);
             if (null == propertyBag)
             {
@@ -192,7 +232,7 @@ namespace Unity.Properties.Internal
         /// <returns><see langword="true"/> if the property bag exists; otherwise, <see langword="false"/>.</returns>
         internal static bool Exists<TContainer>(ref TContainer value)
         {
-            if (!TypeTraits<TContainer>.CanBeNull)
+            if (!TypeTraits.CanBeNull(typeof(TContainer)))
             {
                 return GetPropertyBag<TContainer>() != null;
             }
@@ -217,14 +257,14 @@ namespace Unity.Properties.Internal
         {
             // early out for primitive types that don't have associated containers
             // note: GetPropertyBag checks for TypeTraits.IsContainerType(type) already
-            if (!TypeTraits<TValue>.IsContainer)
+            if (!TypeTraits.IsContainer(typeof(TValue)))
             {
                 propertyBag = null;
                 return false;
             }
 
             // We can not recurse on a null value.
-            if (TypeTraits<TValue>.CanBeNull)
+            if (TypeTraits.CanBeNull(typeof(TValue)))
             {
                 if (EqualityComparer<TValue>.Default.Equals(value, default))
                 {
@@ -233,7 +273,7 @@ namespace Unity.Properties.Internal
                 }
             }
 
-            if (TypeTraits<TValue>.IsValueType)
+            if (typeof(TValue).IsValueType)
             {
                 propertyBag = GetPropertyBag<TValue>();
                 return null != propertyBag;

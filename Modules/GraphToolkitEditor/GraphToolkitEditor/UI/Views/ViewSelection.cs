@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
@@ -194,12 +195,12 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Returns true if the selection can be copied.
         /// </summary>
-        protected virtual bool CanCopySelection() => m_ClipboardProvider != null && GetSelection().HasAny(ge => ge.IsCopiable());
+        protected virtual bool CanCopySelection() => m_ClipboardProvider != null && GetSelection().Exists(ge => ge.IsCopiable());
 
         /// <summary>
         /// Returns true if the selection can be cut (copied and deleted).
         /// </summary>
-        protected virtual bool CanCutSelection() => m_ClipboardProvider != null && GetSelection().HasAny(ge => ge.IsCopiable() && ge.IsDeletable());
+        protected virtual bool CanCutSelection() => m_ClipboardProvider != null && GetSelection().Exists(ge => ge.IsCopiable() && ge.IsDeletable());
 
         /// <summary>
         /// Returns true if the clipboard content can be pasted.
@@ -214,7 +215,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Returns true if the selection can be deleted.
         /// </summary>
-        protected virtual bool CanDeleteSelection() => GetSelection().HasAny(ge => ge.IsDeletable());
+        protected virtual bool CanDeleteSelection() => GetSelection().Exists(ge => ge.IsDeletable());
 
         /// <summary>
         /// Renames the selected element.

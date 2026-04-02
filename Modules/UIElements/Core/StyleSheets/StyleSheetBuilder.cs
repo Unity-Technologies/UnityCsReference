@@ -201,7 +201,16 @@ namespace UnityEngine.UIElements.StyleSheets
             Debug.Assert(m_BuilderState == BuilderState.Property);
             m_BuilderState = BuilderState.Rule;
 
-            m_CurrentProperty.values = m_CurrentValues.ToArray();
+            // If no values were added to the property remove the property
+            if (m_CurrentValues.Count == 0)
+            {
+                m_CurrentProperties.Remove(m_CurrentProperty);
+            }
+            else
+            {
+                m_CurrentProperty.values = m_CurrentValues.ToArray();
+            }
+
             m_CurrentProperty = null;
             m_CurrentValues.Clear();
         }

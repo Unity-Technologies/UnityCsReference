@@ -47,21 +47,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 tagDialogueView.OnSaveSelectedEvent += () =>
                 {
                     var tag = tagDialogueView.TagField.value;
-                    tag = tag.Replace('/', ' ').Trim();  // We don't want more layers of drop downs or to deal with serialization issues... as well as empty space
+                    tag = tag.Replace('/', ' ').Trim(); // We don't want more layers of drop downs or to deal with serialization issues... as well as empty space
                     tagDialogueView.TagField.SetValueWithoutNotify(tag);
-                    if (!string.IsNullOrWhiteSpace(tag) && !MultiplayerPlaymode.PlayerTags.Contains(tag))
+
+                    if (string.IsNullOrWhiteSpace(tag))
+                        return;
+
+                    if (MultiplayerPlaymode.PlayerTags.Contains(tag))
                     {
-                        if (!MultiplayerPlaymode.PlayerTags.Add(tag, out var tagError))
-                        {
-                            MppmLog.Error($"Error: {tagError}");
-                        }
-
-                        numViews--;
-                        settingsView.PlayerTagsView.Remove(tagDialogueView);
-
-                        settingsView.PlayerTagsView.PlayerTagsList.itemsSource = MultiplayerPlaymode.PlayerTags.Tags;
-                        settingsView.PlayerTagsView.PlayerTagsList.RefreshItems();
+                        tagDialogueView.ShowError($"Tag \"{tag}\" already exists.");
+                        return;
                     }
+
+                    if (!MultiplayerPlaymode.PlayerTags.Add(tag, out var tagError))
+                    {
+                        MppmLog.Error($"Error: {tagError}");
+                        return;
+                    }
+
+                    numViews--;
+                    settingsView.PlayerTagsView.Remove(tagDialogueView);
+
+                    settingsView.PlayerTagsView.PlayerTagsList.itemsSource = MultiplayerPlaymode.PlayerTags.Tags;
+                    settingsView.PlayerTagsView.PlayerTagsList.RefreshItems();
                 };
 
                 settingsView.PlayerTagsView.Add(tagDialogueView);

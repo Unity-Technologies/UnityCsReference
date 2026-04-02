@@ -2,639 +2,87 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using UnityEditor;
-using UnityEngine;
+using Unity.UIToolkit.Editor;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
-using Object = UnityEngine.Object;
-using UIEHelpBox = UnityEngine.UIElements.HelpBox;
 
 namespace Unity.UI.Builder
 {
-    class BuilderInspectorVariables : IBuilderInspectorSection
+    class BuilderInspectorVariables : VariablesInspector
     {
         BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
         VisualElement m_SectionFoldout;
-        StyleSheet styleSheet => m_Inspector.styleSheet;
-        StyleRule currentStyleRule => m_Inspector.currentRule;
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
-        ListView m_VariablesListView;
-        List<StyleProperty> m_VariablesItemsSource;
-
-        // Allows '_' and '-' but no special characters or spaces.
-        static readonly Regex k_ValidNameRegex = new(@"^$|^[a-zA-Z0-9-_]+$");
 
         public VisualElement root => m_SectionFoldout;
-
-        // used for testing
-        internal List<StyleProperty> variablesItemsSource => m_VariablesItemsSource;
-
-        internal static readonly string s_InspectorVariableListName = "variables-list-view";
-        static readonly string s_EmptyListText = "Click the + icon to create a new Variable";
-        static readonly string s_VariablesDropdownClassName = "inspector-variables-dropdown";
-        static readonly string s_EmptyListClassName = "variables-list-empty";
-        static readonly string s_VariablesSectionClassName = "inspector-style-section-foldout-variables";
-        static readonly string s_ActiveFieldClassName = "active";
-        const string s_DefaultVariableName = "--new-var";
-        static readonly string s_WarningBoxUssClassName = "warning-info-box";
-
-        internal static readonly StyleValueType[] typesArray =
-        {
-            StyleValueType.Float, StyleValueType.Color, StyleValueType.Dimension, StyleValueType.String,
-            StyleValueType.Keyword, StyleValueType.Enum, StyleValueType.AssetReference
-        };
-
-        internal static readonly StyleValueKeyword[] keywordArray =
-        {
-            StyleValueKeyword.Auto, StyleValueKeyword.Initial, StyleValueKeyword.Inherit, StyleValueKeyword.Unset,
-            StyleValueKeyword.None,  StyleValueKeyword.True, StyleValueKeyword.False
-        };
 
         public BuilderInspectorVariables(BuilderInspector inspector)
         {
             m_Inspector = inspector;
-            m_SectionFoldout = m_Inspector.Q(s_VariablesSectionClassName);
-            m_SectionFoldout.styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorVariable));
+            m_SectionFoldout = m_Inspector.Q(k_VariablesSectionClassName);
+            m_SectionFoldout.Add(this);
+            m_SectionFoldout.styleSheets.Add(
+                BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorVariable));
             m_Selection = inspector.selection;
-            m_VariablesListView = m_Inspector.Q(s_InspectorVariableListName) as ListView;
-
-            // Setup the variables section
-            m_VariablesListView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
-            m_VariablesListView.selectionType = SelectionType.Multiple;
-            m_VariablesListView.makeNoneElement = () => new Label(L10n.Tr(s_EmptyListText)) { classList = { s_EmptyListClassName } };
-            m_VariablesListView.makeItem = () => new BuilderInspectorVariablesListItem();
-            m_VariablesListView.bindItem = (e, i) =>
-            {
-                var item = e as BuilderInspectorVariablesListItem;
-                var listItem = m_VariablesItemsSource[i].values[0];
-
-                item.itemNameField.RegisterValueChangedCallback(OnNameChanged);
-                item.itemNameField.RegisterCallback<KeyUpEvent>(ValidateName);
-                item.itemValueField.RegisterValueChangedCallback(OnValueChanged);
-                item.itemFloatField.RegisterValueChangedCallback(OnFloatChanged);
-                item.itemKeywordField.RegisterValueChangedCallback(OnValueChanged);
-                item.itemDimensionField.RegisterValueChangedCallback(OnDimensionChanged);
-                item.itemColorField.RegisterValueChangedCallback(OnColourChanged);
-                item.itemAssetField.RegisterValueChangedCallback(OnAssetChanged);
-                item.itemTypeField.RegisterValueChangedCallback(OnTypeChanged);
-
-                item.itemValueField.enabledSelf = true;
-                item.itemValueField.textEdition.AcceptCharacter = (c) => c != '"';
-
-                item.userData = m_VariablesItemsSource[i];
-                item.Q<TextField>(BuilderInspectorVariablesListItem.nameFieldName).SetValueWithoutNotify(m_VariablesItemsSource[i].name.TrimStart('-'));
-                OnChangeVariableType(listItem.valueType, item);
-
-                // We display the value in the active field.
-                switch (listItem.valueType)
-                {
-                    case StyleValueType.Keyword:
-                        var keywordText = styleSheet.ReadKeyword(listItem);
-                        item.itemKeywordField.SetValueWithoutNotify(keywordText.ToString());
-                        break;
-                    case StyleValueType.Color:
-                        var color = styleSheet.ReadColor(listItem);
-                        item.itemColorField.SetValueWithoutNotify(color);
-                        break;
-                    case StyleValueType.AssetReference:
-                        var asset = styleSheet.ReadAssetReference(listItem);
-                        item.itemAssetField.SetValueWithoutNotify(asset);
-                        break;
-                    case StyleValueType.Dimension:
-                        var dimensionText = BuilderStyleSheetExporter.GetStylePropertyHandleString(styleSheet, m_VariablesItemsSource[i].values.AsSpan(), 0);
-                        item.itemDimensionField.SetValueWithoutNotify(string.Join(" ", dimensionText));
-                        break;
-                    case StyleValueType.Function:
-                        var functionText = styleSheet.ReadVariable(m_VariablesItemsSource[i].values[2]);
-                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", functionText?.Trim('"')));
-                        item.itemValueField.enabledSelf = false;
-                        break;
-                    case StyleValueType.Float:
-                        var floatText = styleSheet.ReadFloat(listItem);
-                        item.itemFloatField.SetValueWithoutNotify(floatText);
-                        break;
-                    case StyleValueType.Enum:
-                        var enumText = styleSheet.ReadEnum(listItem);
-                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", enumText?.Trim('"')));
-                        break;
-                    case StyleValueType.String:
-                        var str = styleSheet.ReadString(listItem);
-                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", str?.Trim('"')));
-                        break;
-                    default:
-                        var valueText = BuilderStyleSheetExporter.GetStylePropertyHandleString(styleSheet, m_VariablesItemsSource[i].values.AsSpan(), 0);
-                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", valueText?.Trim('"')));
-                        break;
-                }
-
-                item.itemTypeField.SetValueWithoutNotify(string.Join(" ", listItem.valueType.ToString()));
-
-                EnableWarningBox(item, BuilderConstants.VariableNameFieldMustBeValidMessage, !IsValidName(item.itemNameField.text));
-
-                // Add context menu actions
-                item.contextualMenuManipulator = new ContextualMenuManipulator((evt) =>
-                {
-                    m_VariablesListView.AddToSelection(i);
-                    BuildContextMenu(evt, item);
-                });
-                item.AddManipulator(item.contextualMenuManipulator);
-            };
-            m_VariablesListView.unbindItem = (e, _) =>
-            {
-                var item = e as BuilderInspectorVariablesListItem;
-
-                item.itemNameField.UnregisterValueChangedCallback(OnNameChanged);
-                item.itemNameField.UnregisterCallback<KeyUpEvent>(ValidateName);
-                item.itemValueField.UnregisterValueChangedCallback(OnValueChanged);
-                item.itemFloatField.UnregisterValueChangedCallback(OnFloatChanged);
-                item.itemKeywordField.UnregisterValueChangedCallback(OnValueChanged);
-                item.itemDimensionField.UnregisterValueChangedCallback(OnDimensionChanged);
-                item.itemColorField.UnregisterValueChangedCallback(OnColourChanged);
-                item.itemAssetField.UnregisterValueChangedCallback(OnAssetChanged);
-                item.itemTypeField.UnregisterValueChangedCallback(OnTypeChanged);
-
-                EnableWarningBox(item, null, false);
-                item.RemoveManipulator(item.contextualMenuManipulator);
-            };
-
-            m_VariablesListView.destroyItem = (e) =>
-            {
-                var item = e as BuilderInspectorVariablesListItem;
-                item.RemoveManipulator(item.contextualMenuManipulator);
-                item.contextualMenuManipulator = null;
-            };
-
-            var menu = new GenericDropdownMenu();
-            foreach (var choice in typesArray)
-            {
-                menu.AddItem(choice.ToString(), false, (_) => OnCreateVariable(choice.ToString()), null);
-            }
-
-            // We want to override the add button behavior so that we can create the variable before the list item is created.
-            m_VariablesListView.overridingAddButtonBehavior = (_, btn) =>
-            {
-                menu.DropDown(btn.worldBound, btn, DropdownMenuSizeMode.Auto);
-                menu.contentContainer.AddToClassList(s_VariablesDropdownClassName);
-            };
-
-            m_VariablesListView.onRemove += DeleteVariable;
-            m_VariablesListView.itemIndexChanged += OnListReordered;
-
-            // Change the icon of the listview add button
-            var addButton = m_VariablesListView.Q<Button>("unity-list-view__add-button");
-            addButton.text = string.Empty;
-            addButton.iconImage = EditorGUIUtility.IconContent("Toolbar Plus More", "Add new variable").image as Texture2D;
+            styleRule = m_Inspector.currentRule;
         }
 
-        static string GetTextFieldDefaultValue(StyleValueType type)
+        protected override VariablesListItem CreateListItem() => new BuilderInspectorVariablesListItem();
+
+        protected override void OnStyleSheetModified()
         {
-            return (type) switch
-            {
-                StyleValueType.Float => "0",
-                StyleValueType.String => "String",
-                _ => ""
-            };
+            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+            m_Selection.NotifyOfStylingChange();
         }
 
-        string GenerateDefaultName(string baseName = s_DefaultVariableName)
+        protected override void AfterAddVariable()
         {
-            var suffix = 1;
-            if (baseName != s_DefaultVariableName)
-            {
-                var regex = new Regex(@"-(\d+)$");
-                var match = regex.Match(baseName);
-                if (match.Success)
-                {
-                    // Extract the number from the match group
-                    var number = int.Parse(match.Groups[1].Value);
-
-                    // Increment the number and create a new string
-                    suffix = number + 1;
-                    baseName = baseName.Substring(0, match.Index);
-                }
-            }
-
-            var name = $"{baseName}-{suffix}";
-
-            if (!m_VariablesItemsSource.Exists(prop => prop.name.Equals(name)))
-                return name;
-
-            do
-            {
-                name = $"{baseName}-{suffix}";
-                suffix++;
-            } while (m_VariablesItemsSource.Exists(prop => prop.name.Equals(name)));
-
-            return name;
-        }
-
-        internal void OnCreateVariable(string choice)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            Enum.TryParse<StyleValueType>(choice, out var type);
-
-            var name = GenerateDefaultName();
-
-            var property = styleSheet.AddProperty(currentVisualElement.GetStyleComplexSelector().rule, name);
-
-            switch (type)
-            {
-                case StyleValueType.Float:
-                    property.SetFloat(styleSheet, 0.0f);
-                    break;
-                case StyleValueType.String:
-                    property.SetString(styleSheet, "String");
-                    break;
-                case StyleValueType.Enum:
-                    property.SetEnumAsString(styleSheet, "auto");
-                    break;
-                case StyleValueType.Keyword:
-                    property.SetKeyword(styleSheet, StyleKeyword.Auto);
-                    break;
-                case StyleValueType.Color:
-                    property.SetColor(styleSheet, Color.black);
-                    break;
-                case StyleValueType.AssetReference:
-                    property.SetAssetReference(styleSheet, new Object());
-                    break;
-                case StyleValueType.Dimension:
-                    property.SetDimension(styleSheet, new Dimension(0, Dimension.Unit.Pixel));
-                    break;
-            }
-
-            AfterAddVariable();
-        }
-
-        void OnChangeVariableType(StyleValueType type, BuilderInspectorVariablesListItem currentRow)
-        {
-            var row = currentRow.Q(className: s_ActiveFieldClassName);
-            if (row == null)
-            {
-                row = currentRow?.itemValueField;
-                row.AddToClassList(s_ActiveFieldClassName);
-            }
-
-            row.RemoveFromClassList(s_ActiveFieldClassName);
-
-            switch (type)
-            {
-                case (StyleValueType.Keyword):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.keywordFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-                case (StyleValueType.Color):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.colorFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-                case (StyleValueType.ScalableImage):
-                case (StyleValueType.AssetReference):
-                case (StyleValueType.MissingAssetReference):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.assetFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-                case (StyleValueType.Dimension):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.dimensionFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-                case (StyleValueType.Float):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.floatFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-                case (StyleValueType.String):
-                case (StyleValueType.Enum):
-                default:
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.valueFieldName).AddToClassList(s_ActiveFieldClassName);
-                    break;
-            }
-        }
-
-        void AfterAddVariable()
-        {
-            // We remove the selected style rule from properties and add it to the end so that it doesn't affect reordering.
-            var props = new List<StyleProperty>(currentStyleRule.properties);
+            var props = new List<StyleProperty>(styleRule.properties);
             var index = props.FindIndex(p => p.name == BuilderConstants.SelectedStyleRulePropertyName);
-            var selectedStyleVar = props[index];
-            props.RemoveAt(index);
-            props.Add(selectedStyleVar);
-            for (int i = 0; i < props.Count; i++)
+            if (index > 0)
             {
-                currentStyleRule.properties[i] = props[i];
-            }
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-            m_VariablesListView.RefreshItems();
-        }
-
-        internal void DeleteVariable(BaseListView listView)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            // If no items are selected, remove last item
-            if (listView.selectedIndex == -1 && m_VariablesItemsSource.Count > 0)
-            {
-                var index = m_VariablesItemsSource.Count - 1;
-                var prop = m_VariablesItemsSource[index];
-                if (prop != null)
+                var selectedStyleVar = props[index];
+                props.RemoveAt(index);
+                props.Add(selectedStyleVar);
+                for (int i = 0; i < props.Count; i++)
                 {
-                    styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector().rule, prop);
-                }
-            }
-            else
-            {
-                foreach (var selectedIndex in listView.selectedIndicesList)
-                {
-                    if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
-                        continue;
-
-                    var prop = m_VariablesItemsSource[selectedIndex];
-                    if (prop != null)
-                    {
-                        styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector().rule, prop);
-                    }
+                    styleRule.properties[i] = props[i];
                 }
             }
 
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-            m_VariablesListView.ClearSelection();
+            OnStyleSheetModified();
+            variablesListView.RefreshItems();
         }
 
-        void OnListReordered(int previousIndex, int newIndex)
+        protected override StyleComplexSelector GetRootRule(StyleRule rule)
         {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            if (rule == null) return null;
 
-            ReorderVariables();
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-            m_VariablesListView.RefreshItems();
-        }
-
-        internal void ReorderVariables()
-        {
-            var variableIndices = new List<int>();
-
-            for (var i = 0; i < currentStyleRule.properties.Length; i++)
+            foreach (var complexSelector in rule.complexSelectors)
             {
-                if (m_VariablesItemsSource.Contains(currentStyleRule.properties[i]))
-                {
-                    variableIndices.Add(i);
-                }
+                if (!complexSelector.isSimple) continue;
+                var parts = complexSelector.selectors[0].parts;
+                if (parts.Length == 1 &&
+                    parts[0].type == StyleSelectorType.PseudoClass &&
+                    parts[0].value == "root")
+                    return complexSelector;
             }
 
-            for (var i = 0; i < variableIndices.Count; i++)
-            {
-                currentStyleRule.properties[variableIndices[i]] = m_VariablesItemsSource[i];
-            }
+            return null;
         }
 
-        void OnNameChanged(ChangeEvent<string> evt)
+        public override void ExtractToGlobalVariable()
         {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
+            RegisterStyleSheetUndo();
 
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            var newName = BuilderConstants.VariablePrefix + evt.newValue.TrimStart('-');
-
-            if (!IsValidName(newName))
-                 return;
-
-            styleProperty.name = newName;
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnValueChanged(ChangeEvent<string> evt)
-        {
-            var listItem = evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>();
-            if (listItem.userData is not StyleProperty styleProperty)
-                return;
-
-            var newValue = evt.newValue.Replace("\"", "");
-
-            // if it's an empty string, we don't want to set the value
-            if (styleProperty.values[0].valueType == StyleValueType.Enum && string.IsNullOrEmpty(evt.newValue))
-            {
-                EnableWarningBox(listItem, BuilderConstants.VariableEnumFieldMustBeValidMessage, true);
-                listItem.itemValueField.SetValueWithoutNotify(evt.previousValue);
-                return;
-            }
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            switch (styleProperty.values[0].valueType)
-            {
-                case StyleValueType.String:
-                    styleSheet.WriteString(ref styleProperty.values[0], newValue);
-                    break;
-                case StyleValueType.Enum:
-                    styleSheet.WriteEnumAsString(ref styleProperty.values[0], newValue);
-                    break;
-                case StyleValueType.Keyword:
-                    styleSheet.WriteKeyword(ref styleProperty.values[0], Enum.Parse<StyleValueKeyword>(evt.newValue));
-                    break;
-            }
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnFloatChanged(ChangeEvent<float> evt)
-        {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            styleSheet.WriteFloat(ref styleProperty.values[0], evt.newValue);
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnDimensionChanged(ChangeEvent<string> evt)
-        {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            if (evt.currentTarget is USSVariablesStyleField { isKeyword: false } field)
-            {
-                styleSheet.WriteDimension(ref styleProperty.values[0], new Dimension(float.Parse(field.value), field.unit));
-            }
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnTypeChanged(ChangeEvent<string> evt)
-        {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            ChangeType(evt.newValue, styleProperty);
-        }
-
-        void ChangeType(string newType, StyleProperty styleProperty)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            Enum.TryParse<StyleValueType>(newType, out var type);
-
-            switch (type)
-            {
-                case StyleValueType.Float:
-                    styleProperty.SetFloat(styleSheet, float.Parse(GetTextFieldDefaultValue(type)));
-                    break;
-                case StyleValueType.Color:
-                    styleProperty.SetColor(styleSheet, Color.black);
-                    break;
-                case StyleValueType.AssetReference:
-                    styleProperty.SetAssetReference(styleSheet, new Object());
-                    break;
-                case (StyleValueType.Dimension):
-                    styleProperty.SetDimension(styleSheet, new Dimension(0, Dimension.Unit.Pixel));
-                    break;
-                case (StyleValueType.Keyword):
-                    styleProperty.SetKeyword(styleSheet, StyleValueKeyword.Auto);
-                    break;
-                case (StyleValueType.String):
-                    styleProperty.SetString(styleSheet, GetTextFieldDefaultValue(type));
-                    break;
-                case (StyleValueType.Enum):
-                    styleProperty.SetEnum(styleSheet, (Enum)StyleValueKeyword.Auto);
-                    break;
-            }
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnColourChanged(ChangeEvent<Color> evt)
-        {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            styleSheet.WriteColor(ref styleProperty.values[0], evt.newValue);
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void OnAssetChanged(ChangeEvent<Object> evt)
-        {
-            if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            styleSheet.WriteAssetReference(ref styleProperty.values[0], evt.newValue);
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-        }
-
-        void BuildContextMenu(ContextualMenuPopulateEvent evt, BuilderInspectorVariablesListItem currentRow)
-        {
-            var menu = evt.menu;
-            var index = m_VariablesItemsSource.IndexOf(currentRow.userData as StyleProperty);
-            var isRootSelector = currentVisualElement.GetStyleComplexSelector().Equals(m_Inspector.styleSheet.FindSelector(":root"));
-            var multipleSelected = m_VariablesListView.selectedIndicesList.Count > 1;
-
-            menu.AppendAction("Extract to Global variable", _ =>
-            {
-                ExtractToGlobalVariable();
-            }, _ => isRootSelector ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
-
-            menu.AppendAction("Delete", _ =>
-            {
-                DeleteVariable(m_VariablesListView);
-            });
-
-            menu.AppendAction("Duplicate", _ =>
-            {
-                DuplicateVariable();
-            });
-
-            menu.AppendAction("Move Up", _ =>
-            {
-                MoveVariable(index, -1);
-            }, _ => index > 0 && !multipleSelected ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            menu.AppendAction("Move Down", _ =>
-            {
-                MoveVariable(index, 1);
-            }, _ => index < m_VariablesItemsSource.Count - 1 && !multipleSelected ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-        }
-
-        internal void MoveVariable(int index, int direction)
-        {
-            if (index == -1)
-                return;
-
-            var newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= m_VariablesItemsSource.Count || index < 0 || index >= m_VariablesItemsSource.Count)
-                return;
-
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            (m_VariablesItemsSource[newIndex], m_VariablesItemsSource[index]) = (m_VariablesItemsSource[index], m_VariablesItemsSource[newIndex]);
-
-            ReorderVariables();
-
-            // Select the moved item
-            m_VariablesListView.selectedIndex = newIndex;
-
-            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            m_Selection.NotifyOfStylingChange();
-            m_VariablesListView.RefreshItems();
-        }
-
-        internal void DuplicateVariable()
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            var selectedIndices = m_VariablesListView.selectedIndicesList;
+            var selectedIndices = variablesListView.selectedIndicesList;
             if (selectedIndices.Count == 0)
                 return;
 
-            foreach (var selectedIndex in selectedIndices)
-            {
-                if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
-                    continue;
-
-                var styleProperty = m_VariablesItemsSource[selectedIndex];
-                var newName = GenerateDefaultName(styleProperty.name);
-
-                styleSheet.DuplicatePropertyInSelector(currentVisualElement.GetStyleComplexSelector(), styleProperty, newName);
-            }
-
-            AfterAddVariable();
-        }
-
-        internal void ExtractToGlobalVariable()
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            var selectedIndices = m_VariablesListView.selectedIndicesList;
-            if (selectedIndices.Count == 0)
-                return;
-
-            // Find root selector
             var rootSelector = m_Inspector.styleSheet.FindSelector(":root");
             if (currentVisualElement.GetStyleComplexSelector().Equals(rootSelector))
-            {
                 return;
-            }
 
             if (rootSelector == null)
             {
@@ -645,68 +93,14 @@ namespace Unity.UI.Builder
 
             foreach (var selectedIndex in selectedIndices)
             {
-                if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
+                if (selectedIndex < 0 || selectedIndex >= variablesItemsSource.Count)
                     continue;
-                var styleProperty = m_VariablesItemsSource[selectedIndex];
-                styleSheet.TransferPropertyToSelector(rootSelector, currentStyleRule, styleProperty);
-            }
-            // Delete the variables from the current element
-            DeleteVariable(m_VariablesListView);
-            m_VariablesListView.RefreshItems();
-        }
-
-        public void Refresh()
-        {
-            if (currentStyleRule == null)
-                return;
-
-            var newVariablesList = new List<StyleProperty>();
-            foreach (var property in currentStyleRule.properties)
-            {
-                if (property.isCustomProperty && property.name != BuilderConstants.SelectedStyleRulePropertyName)
-                {
-                    newVariablesList.Add(property);
-                }
+                var styleProperty = variablesItemsSource[selectedIndex];
+                styleSheet.TransferPropertyToSelector(rootSelector, styleRule, styleProperty);
             }
 
-            m_VariablesItemsSource = newVariablesList;
-            m_VariablesListView.itemsSource = m_VariablesItemsSource;
-            m_VariablesListView.RefreshItems();
+            DeleteVariable(variablesListView);
+            variablesListView.RefreshItems();
         }
-
-        void ValidateName(KeyUpEvent evt)
-        {
-            if (evt.target is not TextElement field)
-                return;
-
-            EnableWarningBox(field.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>(), BuilderConstants.VariableNameFieldMustBeValidMessage,
-                !IsValidName(field.text));
-        }
-
-        static void EnableWarningBox(VisualElement item, string message, bool enabled)
-        {
-            var nameWarningHelpBox = item.Q<UIEHelpBox>();
-
-            if (enabled && nameWarningHelpBox == null)
-            {
-                nameWarningHelpBox = new UIEHelpBox(L10n.Tr(message), HelpBoxMessageType.Warning) { name = s_WarningBoxUssClassName };
-                item.Add(nameWarningHelpBox);
-            }
-
-            if (nameWarningHelpBox != null)
-            {
-                nameWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownWarningMessageClassName, enabled);
-                nameWarningHelpBox.EnableInClassList(BuilderConstants.InspectorHiddenWarningMessageClassName, !enabled);
-            }
-        }
-
-        static bool IsValidName(string name)
-        {
-            return k_ValidNameRegex.Match(name.TrimStart('-')).Success;
-        }
-
-        public void Enable() { }
-
-        public void Disable() { }
     }
 }

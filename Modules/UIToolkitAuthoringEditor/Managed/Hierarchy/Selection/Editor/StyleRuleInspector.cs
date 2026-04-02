@@ -44,9 +44,12 @@ internal sealed class StyleRuleInspector : VisualElement
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
+    internal const string VariablesFoldoutName = "style-inspector__style-section__variables";
+
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
     private readonly StyleRuleHeader m_Header;
+    private VariablesInspector m_VariablesSection;
 
     private StyleRule m_StyleRule;
     private bool m_IsReadOnly;
@@ -60,14 +63,13 @@ internal sealed class StyleRuleInspector : VisualElement
         get => m_StyleRule;
         set
         {
-            if (m_StyleRule == value)
-                return;
             m_StyleRule = value;
 
             if (m_StyleRule == null)
             {
                 m_StyleInspector.Target = default;
                 m_Header.Rule = null;
+                m_VariablesSection?.Refresh(null);
             }
             else
             {
@@ -78,6 +80,7 @@ internal sealed class StyleRuleInspector : VisualElement
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule.styleSheet, m_StyleRule);
                 m_Header.Rule = m_StyleRule;
+                m_VariablesSection?.Refresh(m_StyleRule);
             }
 
             NotifyPropertyChanged(StyleRuleProperty);
@@ -131,6 +134,7 @@ internal sealed class StyleRuleInspector : VisualElement
                 SetSelectorElementInlineStyles();
 
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
+                InitializeVariablesSection();
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule?.styleSheet, m_StyleRule);
                 m_Header.Rule = m_StyleRule;
@@ -140,9 +144,13 @@ internal sealed class StyleRuleInspector : VisualElement
             {
                 if (detachFromPanelEvent.originPanel == null)
                     return;
+                if (m_StyleInspectorDefaultContent != null)
+                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGenerated;
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
                 m_StyleInspectorDefaultContent = null;
+
+                m_VariablesSection = null;
 
                 m_StyleInspector.Target = default;
 
@@ -155,9 +163,32 @@ internal sealed class StyleRuleInspector : VisualElement
         base.HandleEventBubbleUp(evt);
     }
 
+    void InitializeVariablesSection()
+    {
+        m_VariablesSection = m_StyleInspectorDefaultContent.Q<VariablesInspector>();
+        if (m_VariablesSection != null)
+        {
+            m_VariablesSection.Refresh(m_StyleRule);
+            return;
+        }
+
+        m_StyleInspectorDefaultContent.contentWasGenerated += OnDefaultContentGenerated;
+    }
+
+    void OnDefaultContentGenerated(StyleInspectorDefaultContent content)
+    {
+        content.contentWasGenerated -= OnDefaultContentGenerated;
+
+        m_VariablesSection = content.Q<VariablesInspector>();
+        if (m_VariablesSection == null)
+            return;
+
+        m_VariablesSection.Refresh(m_StyleRule);
+    }
+
     void SetSelectorElementInlineStyles()
     {
-        if (m_StyleRule == null || m_Element == null)
+        if (m_StyleRule == null || m_StyleRule.styleSheet == null || m_Element == null)
             return;
 
         m_Element.styleSheets.Clear();

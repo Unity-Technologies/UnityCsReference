@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-[assembly: InternalsVisibleTo("Unity.InputSystem")]
 namespace UnityEngineInternal.Input
 {
     using NativeBeforeUpdateCallback = System.Action<NativeInputUpdateType>;
@@ -25,6 +24,7 @@ namespace UnityEngineInternal.Input
         Text = 0x54455854,
         State = 0x53544154,
         Delta = 0x444C5441,
+        Focus = 0x464f4355,
     }
 
     // We pass this as a struct to make it less painful to change the OnUpdate() API if need be.

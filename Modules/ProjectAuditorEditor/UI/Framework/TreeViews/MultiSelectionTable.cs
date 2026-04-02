@@ -47,6 +47,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             SortOption.ItemName
         };
 
+        GUIStyle m_LineStyle;
         GUIStyle m_ActiveLineStyle;
 
         public MultiSelectionTable(TreeViewState state, MultiColumnHeader multicolumnHeader, string[] names,
@@ -64,7 +65,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             showAlternatingRowBackgrounds = true;
             showBorder = true;
             customFoldoutYOffset =
-                (kRowHeights - EditorGUIUtility.singleLineHeight) *
+                (EditorGUIUtility.singleLineHeight - kRowHeights) *
                 0.5f; // center foldout in the row since we also center content. See RowGUI
             // extraSpaceBeforeIconAndLabel = 0;
             multicolumnHeader.sortingChanged += OnSortingChanged;
@@ -411,6 +412,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                         var content = new GUIContent(text, tooltip);
 
+                        if (m_LineStyle == null)
+                        {
+                            m_LineStyle = new GUIStyle(DefaultStyles.label);
+                            m_LineStyle.alignment = TextAnchor.MiddleLeft;
+                        }
+
                         if (m_ActiveLineStyle == null)
                         {
                             m_ActiveLineStyle = new GUIStyle(DefaultStyles.label);
@@ -439,7 +446,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         //DefaultStyles.label.Draw(rect, content, mouseOver, false, args.selected, args.focused);
 
                         // Must use this call to draw tooltip
-                        EditorGUI.LabelField(rect, content, args.selected ? m_ActiveLineStyle : DefaultStyles.label);
+                        EditorGUI.LabelField(rect, content, args.selected ? m_ActiveLineStyle : m_LineStyle);
                     }
                 }
                 break;

@@ -46,7 +46,8 @@ namespace UnityEditor.Search
 
             if (allowAssetObjects)
             {
-                yield return SearchService.GetProvider(AdbProvider.type);
+                if (context.allowBuiltinResources)
+                    yield return SearchService.GetProvider(AdbProvider.type);
                 yield return SearchService.GetProvider(AssetProvider.type);
             }
             if (allowSceneObjects)

@@ -170,7 +170,7 @@ namespace UnityEditor
 
             bool doGenerate = true;
             if (paths.Count > 0)
-                doGenerate = AssetDatabase.MakeEditable(paths.ToArray(), $"Materials will be checked out in:\n{string.Join("\n", matFolders.ToArray())}");
+                doGenerate = AssetDatabase.MakeEditable(paths.ToArray(), $"Materials will be checked out in:\n{string.Join("\n", matFolders)}");
 
             if (doGenerate)
             {

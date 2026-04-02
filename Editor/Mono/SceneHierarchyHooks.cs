@@ -5,7 +5,9 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Pool;
 
 namespace UnityEditor.SceneManagement
 {
@@ -78,6 +80,14 @@ namespace UnityEditor.SceneManagement
             return CanSetNewParent(transform, subSceneInfo.transform);
         }
 
+        internal static bool CanSceneChangesBeDiscarded(Scene scene)
+        {
+            bool canReload = scene.isDirty && CanSceneBeReloaded(scene);
+            bool canDiscardChanges = !EditorApplication.isPlaying && canReload;
+
+            return canDiscardChanges;
+        }
+
         internal static void AddCustomGameObjectContextMenuItems(GenericMenu menu, GameObject gameObject)
         {
             addItemsToGameObjectContextMenu?.Invoke(menu, gameObject);
@@ -104,46 +114,76 @@ namespace UnityEditor.SceneManagement
             return !string.IsNullOrEmpty(path) && System.IO.File.Exists(path);
         }
 
-        internal static void UnloadScene(object userData)
+        internal static void UnloadScenes(object userData)
         {
-            var (scene, _) = ((Scene, bool))userData;
-            CloseScene(removeScene: false, scene);
-        }
+            var (scenes, _) = ((Scene[], bool))userData;
+            using var _ = ListPool<Scene>.Get(out var unloadableScenes);
 
-        internal static void LoadScene(object userData)
-        {
-            var scene = (Scene)userData;
-            if (!scene.isLoaded)
-                EditorSceneManager.OpenScene(scene.path, OpenSceneMode.Additive);
-
-            EditorApplication.RequestRepaintAllViews();
-        }
-
-        internal static void RemoveScene(object userData)
-        {
-            var scene = (Scene)userData;
-            CloseScene(removeScene: true, scene);
-        }
-
-        static void CloseScene(bool removeScene, Scene scene)
-        {
-            if (scene.isDirty)
+            foreach (var scene in scenes)
             {
-                var userCancelled = !EditorSceneManager.SaveModifiedScenesIfUserWantsTo(new[] { scene });
-                if (userCancelled)
-                    return;
+                if (!string.IsNullOrEmpty(scene.path) && !scene.isSubScene && scene.isLoaded)
+                    unloadableScenes.Add(scene);
             }
 
-            EditorSceneManager.CloseScene(scene, removeScene);
+            CloseScenes(removeScene: false, unloadableScenes);
+        }
+
+        internal static void LoadScenes(object userData)
+        {
+            var scenes = (Scene[])userData;
+
+            foreach (var scene in scenes)
+            {
+                if (!string.IsNullOrEmpty(scene.path) && !scene.isLoaded)
+                    EditorSceneManager.OpenScene(scene.path, OpenSceneMode.Additive);
+            }
 
             EditorApplication.RequestRepaintAllViews();
         }
 
-        internal static void SaveScene(object userData)
+        internal static void RemoveScenes(object userData)
         {
-            var (scene, _, _) = ((Scene, bool, bool))userData;
-            if (scene.isLoaded)
-                EditorSceneManager.SaveScene(scene);
+            var scenes = (Scene[])userData;
+            using var _ = ListPool<Scene>.Get(out var removableScenes);
+
+            foreach (var scene in scenes)
+                removableScenes.Add(scene);
+
+            CloseScenes(removeScene: true, removableScenes);
+        }
+
+        static void CloseScenes(bool removeScene, List<Scene> scenes)
+        {
+            using var dirtyScenesSpan = scenes.Count <= 16
+                ? new RentSpanUnmanaged<Scene>(stackalloc Scene[scenes.Count])
+                : new RentSpanUnmanaged<Scene>(scenes.Count);
+
+            var dirtyCount = 0;
+            foreach (var scene in scenes)
+            {
+                if (scene.isDirty)
+                    dirtyScenesSpan.Span[dirtyCount++] = scene;
+            }
+
+            var userCancelled = !EditorSceneManager.SaveModifiedScenesIfUserWantsToSpan(dirtyScenesSpan.Span.Slice(0, dirtyCount));
+            if (userCancelled)
+                return;
+
+            foreach (var scene in scenes)
+                EditorSceneManager.CloseScene(scene, removeScene);
+
+            EditorApplication.RequestRepaintAllViews();
+        }
+
+        internal static void SaveScenes(object userData)
+        {
+            var (scenes, _, _) = ((Scene[], bool, bool))userData;
+
+            foreach (var scene in scenes)
+            {
+                if (scene.isLoaded && (!EditorApplication.isPlaying || scene.isSubScene))
+                    EditorSceneManager.SaveScene(scene);
+            }
         }
 
         internal static void SaveSceneAs(object userData)
@@ -153,23 +193,35 @@ namespace UnityEditor.SceneManagement
                 EditorSceneManager.SaveSceneAs(scene);
         }
 
-        // TODO: This needs to be able to handle multi-selections for multiple scenes.
         internal static void DiscardChanges(object userData)
         {
-            var (scene, _) = ((Scene, bool))userData;
+            var (scenes, _) = ((Scene[], bool))userData;
 
-            if (string.IsNullOrEmpty(scene.path))
+            using var discardableScenesSpan = scenes.Length <= 16
+                ? new RentSpanUnmanaged<Scene>(stackalloc Scene[scenes.Length])
+                : new RentSpanUnmanaged<Scene>(scenes.Length);
+
+            var discardablesCount = 0;
+            foreach (var scene in scenes)
             {
-                Debug.LogWarning("Discarding changes in a scene that have not yet been saved is not supported. Save the scene first or create a new scene.");
-                return;
+                if (string.IsNullOrEmpty(scene.path))
+                {
+                    Debug.LogWarning($"Discarding changes in a scene that have not yet been saved is not supported. Save the scene ({scene.name}) first or create a new scene.");
+                    continue;
+                }
+
+                if (!CanSceneChangesBeDiscarded(scene))
+                    continue;
+
+                discardableScenesSpan.Span[discardablesCount++] = scene;
             }
 
-            var scenes = new Scene[1];
-            scenes[0] = scene;
-            if (!SceneHierarchy.UserAllowedDiscardingChanges(scenes))
+            if (!SceneHierarchy.UserAllowedDiscardingChanges(discardableScenesSpan.Span.Slice(0, discardablesCount)))
                 return;
 
-            EditorSceneManager.ReloadScene(scene);
+            for (int i = 0; i < discardablesCount; ++i)
+                EditorSceneManager.ReloadScene(discardableScenesSpan.Span[i]);
+
             EditorApplication.RequestRepaintAllViews();
         }
     }

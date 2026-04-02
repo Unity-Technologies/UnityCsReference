@@ -7,7 +7,6 @@ using UnityEditor.Modules;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System;
 using UnityEngine.Experimental.Rendering;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
@@ -152,9 +151,7 @@ namespace UnityEditor.Modules
                 }
                 else
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!formatValues.SequenceEqual(formatValuesForAll) || !formatStrings.SequenceEqual(formatStringsForAll))
-#pragma warning restore UA2001
+                    if (!formatValues.AsSpan().SequenceEqual(formatValuesForAll) || !formatStrings.AsSpan().SequenceEqual(formatStringsForAll))
                     {
                         formatOptionsAreDifferent = true;
                         break;

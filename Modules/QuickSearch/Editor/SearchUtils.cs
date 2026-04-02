@@ -15,6 +15,7 @@ using UnityEngine.Pool;
 using UnityEditor.Search.Providers;
 using UnityEditor.Utils;
 using UnityEngine.Search;
+using Unity.Collections;
 
 using UnityEditor.SceneManagement;
 
@@ -348,9 +349,9 @@ namespace UnityEditor.Search
 #pragma warning restore UA2001
             if (Selection.objects.Length == 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstItem = items.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
                 if (firstItem != null)
                     EditorUtility.OpenWithDefaultApp(firstItem.id);
                 return;
@@ -360,9 +361,7 @@ namespace UnityEditor.Search
                 if (focusProjectBrowser)
                     EditorWindow.FocusWindowIfItsOpen(Utils.GetProjectBrowserWindowType());
                 if (pingSelection)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.objects.LastOrDefault());
-#pragma warning restore UA2001
             };
         }
 
@@ -629,9 +628,7 @@ namespace UnityEditor.Search
         static bool TypePredicate(Type t)
         {
             return !t.IsGenericType &&
-                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                      !s_IgnoredAssemblies.Contains(t.Assembly) &&
-#pragma warning restore UA2001
                      !typeof(Editor).IsAssignableFrom(t) &&
                      !typeof(EditorWindow).IsAssignableFrom(t) &&
                      t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
@@ -708,9 +705,7 @@ namespace UnityEditor.Search
 
             var replacementBase = $"{replacementId}{replacementOp}";
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var enumNames = Enum.GetNames(enumType).Select(n => Utils.FastToLower(n)).ToList();
-#pragma warning restore UA2001
+            var enumNames = Array.ConvertAll(Enum.GetNames(enumType), Utils.FastToLower);
             var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
             foreach (var fieldInfo in fields)
             {
@@ -1281,7 +1276,7 @@ namespace UnityEditor.Search
             return Utils.FormatBytes(byteCount);
         }
 
-        [Obsolete("GetMainAssetInstanceID is obsolete, use GetMainAssetEntityId instead")]
+        [Obsolete("GetMainAssetInstanceID is obsolete, use GetMainAssetEntityId instead", true)]
         public static int GetMainAssetInstanceID(string assetPath) => GetMainAssetEntityId(assetPath);
         public static EntityId GetMainAssetEntityId(string assetPath) => Utils.GetMainAssetEntityId(assetPath);
 
@@ -1444,28 +1439,29 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static Texture2D GetIconFromDisplayMode(DisplayMode displayMode)
-        {
-            switch (displayMode)
-            {
-                case DisplayMode.Grid:
-                    return EditorGUIUtility.LoadIconRequired("GridView");
-                case DisplayMode.Table:
-                    return EditorGUIUtility.LoadIconRequired("TableView");
-                default:
-                    return EditorGUIUtility.LoadIconRequired("ListView");
-            }
-        }
-
         internal static DisplayMode GetDisplayModeFromItemSize(float itemSize)
         {
-            if (itemSize <= (int)DisplayMode.List)
+            if (itemSize <= (float)DisplayMode.Compact)
+                return DisplayMode.Compact;
+
+            if (itemSize <= (float)DisplayMode.List)
                 return DisplayMode.List;
 
-            if (itemSize >= (int)DisplayMode.Table)
+            if (itemSize <= (float)DisplayMode.Limit)
+                return DisplayMode.Grid;
+
+            if (itemSize == (float)DisplayMode.Table)
                 return DisplayMode.Table;
 
+            // Default View:
             return DisplayMode.Grid;
+        }
+
+        internal static float GetItemSizeFromDisplayMode(DisplayMode displayMode)
+        {
+            if (displayMode == DisplayMode.None)
+                return (float)DisplayMode.List;
+            return (float)displayMode;
         }
 
         internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
@@ -1599,6 +1595,14 @@ namespace UnityEditor.Search
                         var path = GetObjectPath(value as UnityEngine.Object, subAssetUseGlobalObjectId: true);
                         return EscapeLiteralString(path);
                     }
+                case SerializedPropertyType.LoadableReference:
+                    {
+                        var loadableObj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(prop.loadableReferenceValue);
+                        if (loadableObj == null)
+                            return "none";
+                        var path = GetObjectPath(loadableObj, subAssetUseGlobalObjectId: true);
+                        return EscapeLiteralString(path);
+                    }
                 case SerializedPropertyType.String:
                     // Always escape the string value so any of our TypeParser will parse it back as a string.
                     return $"\"{value}\"";
@@ -1705,9 +1709,9 @@ namespace UnityEditor.Search
         {
             if (EditorWindow.HasOpenInstances<SearchWindow>())
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Resources.FindObjectsOfTypeAll<SearchWindow>()
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
                     .Where(w => w.state.searchFlags.HasAny(SearchFlags.ReuseExistingWindow)
                         || (w.context?.options.HasAny(SearchFlags.ReuseExistingWindow) ?? false))
                     .FirstOrDefault();
@@ -1745,9 +1749,9 @@ namespace UnityEditor.Search
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             title = title ?? string.Join(", ", contextualProviders.Select(p => p.name.ToLower()));
 #pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var mainProvider = contextualProviders.First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
 
             if (flags.HasFlag(SearchFlags.GeneralSearchWindow))
             {
@@ -1806,9 +1810,7 @@ namespace UnityEditor.Search
 
         internal static ISearchView OpenFromContextWindow(string query, string sourceContext)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var contextualProviders = GetProviderForContextualSearch(SearchService.Providers).Select(p => p.id).ToArray();
-#pragma warning restore UA2001
+            var contextualProviders = Array.ConvertAll(GetProviderForContextualSearch(SearchService.Providers), p => p.id);
             return OpenWithContextualProviders(query, contextualProviders, kWithProviderDefaultFlags,
                 contextualFlags: OpenWithContextualProvidersFlags.AddActiveProvidersToContext | OpenWithContextualProvidersFlags.AddContextualFilterIdToQuery | OpenWithContextualProvidersFlags.SyncSearch,
                 eventType: SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, eventContext: sourceContext);
@@ -1844,9 +1846,9 @@ namespace UnityEditor.Search
                     // If we have an invalid group, default to all if we can.
                     if (viewState.hideAllGroup)
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         groupId = viewState.context.providers.First().id;
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                     }
                     else
                     {
@@ -1864,9 +1866,9 @@ namespace UnityEditor.Search
                 if (viewState.hideAllGroup || providers.Count() == 1)
 #pragma warning restore UA2005
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     groupId = providers.First().id;
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 }
                 else
                 {
@@ -1992,9 +1994,9 @@ namespace UnityEditor.Search
 
             if (dbsCount == 1)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return predicate(dbs.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             }
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -2049,7 +2051,29 @@ namespace UnityEditor.Search
             }
             return tokenCount;
         }
-        
+
+        internal static void GetSplitIndices(string source, ReadOnlySpan<char> splitChars, List<int> outIndices)
+        {
+            // Early out if there is nothing to split on
+            if (string.IsNullOrEmpty(source) || splitChars.IsEmpty)
+                return;
+
+            var lastIndexOf = 0;
+            do
+            {
+                var sourceSpan = source.AsSpan(lastIndexOf);
+                var oldLastIndexOf = lastIndexOf;
+                lastIndexOf = sourceSpan.IndexOfAny(splitChars);
+                if (lastIndexOf >= 0)
+                {
+                    // Adjust index to be relative to source string
+                    lastIndexOf += oldLastIndexOf;
+                    outIndices.Add(lastIndexOf);
+                    lastIndexOf++;
+                }
+            } while (lastIndexOf >= 0 && lastIndexOf < source.Length);
+        }
+
         internal static string BuildUnionTypeQuery(Type[] types)
         {
             var query = types.Length > 1 ? "(" : string.Empty;

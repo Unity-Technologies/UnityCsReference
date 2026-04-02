@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering an unsigned integer. For more information, refer to [[wiki:UIE-uxml-element-UnsignedIntegerField|UXML element UnsignedIntegerField]].
     /// </summary>
+    [UxmlElement(libraryPath = "Numeric Fields")]
     [Icon("UIToolkit/Icons/UnsignedIntegerField.png")]
     public partial class UnsignedIntegerField : TextValueField<uint>
     {
@@ -55,14 +56,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-unsigned-integer-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Constructor.
@@ -84,9 +90,9 @@ namespace UnityEngine.UIElements
         public UnsignedIntegerField(string label, int maxLength = kMaxValueFieldLength)
             : base(label, maxLength, new UnsignedIntegerInput())
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
             AddLabelDragger<uint>();
         }
 

@@ -20,9 +20,9 @@ namespace UnityEditor.Search
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 using (c.runtime.Push(c.args[0], c.args.Skip(1)))
 #pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     yield return Constant(c.runtime.current).First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             }
             else if (c.expression.types.HasAny(SearchExpressionType.Number))
                 yield return SearchExpression.CreateItem(c.expression.GetNumberValue(), c.expression.alias.ToString());

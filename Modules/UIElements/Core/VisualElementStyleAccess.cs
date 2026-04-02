@@ -10,9 +10,11 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    public partial class VisualElement
+    public partial class VisualElement : ICustomStyle
     {
-        internal static CustomStyleAccess s_CustomStyleAccess = new CustomStyleAccess();
+        internal CustomStyleAccess customStyleAccess => new(this);
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal InlineStyleAccess inlineStyleAccess;
         internal ResolvedStyleAccess resolvedStyleAccess;
 
@@ -120,14 +122,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// SA: [[VisualElement.style]], [[VisualElement.resolvedStyle]]
         /// </remarks>
-        public ICustomStyle customStyle
-        {
-            get
-            {
-                s_CustomStyleAccess.SetContext(computedStyle.customProperties, computedStyle.dpiScaling);
-                return s_CustomStyleAccess;
-            }
-        }
+        public ICustomStyle customStyle => this;
 
         /// <summary>
         /// Returns a <see cref="VisualElementStyleSheetSet"/> that manipulates style sheets attached to this element.
@@ -316,15 +311,15 @@ namespace UnityEngine.UIElements
             return s;
         }
 
-        internal class CustomStyleAccess : ICustomStyle
+        internal ref struct CustomStyleAccess
         {
-            private Dictionary<string, StylePropertyValue> m_CustomProperties;
+            private CustomPropertyListRef m_CustomProperties;
             private float m_DpiScaling;
 
-            public void SetContext(Dictionary<string, StylePropertyValue> customProperties, float dpiScaling)
+            public CustomStyleAccess(VisualElement self)
             {
-                m_CustomProperties = customProperties;
-                m_DpiScaling = dpiScaling;
+                m_CustomProperties = self.computedStyle.customProperties;
+                m_DpiScaling = self.computedStyle.dpiScaling;
             }
 
             public bool TryGetValue(CustomStyleProperty<float> property, out float value)
@@ -356,7 +351,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<bool> property, out bool value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     value = customProp.sheet.ReadKeyword(customProp.handle) == StyleValueKeyword.True;
                     return true;
@@ -368,7 +363,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<Color> property, out Color value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     var handle = customProp.handle;
                     switch (handle.valueType)
@@ -388,7 +383,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     var source = new ImageSource();
                     if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.texture != null)
@@ -404,7 +399,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     var source = new ImageSource();
                     if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.sprite != null)
@@ -420,7 +415,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     var source = new ImageSource();
                     if (StylePropertyReader.TryGetImageSourceFromValue(customProp, m_DpiScaling, out source) && source.vectorImage != null)
@@ -436,7 +431,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue<T>(CustomStyleProperty<T> property, out T value) where T : Object
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     if (customProp.sheet.TryReadAssetReference(customProp.handle, out Object objValue))
                     {
@@ -451,7 +446,7 @@ namespace UnityEngine.UIElements
 
             public bool TryGetValue(CustomStyleProperty<string> property, out string value)
             {
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)property.name, out var customProp))
                 {
                     value = customProp.sheet.ReadAsString(customProp.handle);
                     return true;
@@ -464,7 +459,7 @@ namespace UnityEngine.UIElements
             private bool TryGetValue(string propertyName, StyleValueType valueType, out StylePropertyValue customProp)
             {
                 customProp = new StylePropertyValue();
-                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out customProp))
+                if (m_CustomProperties.TryGetValue((UniqueStyleString)propertyName, out customProp))
                 {
                     // CustomProperty only support one value
                     var handle = customProp.handle;
@@ -485,5 +480,24 @@ namespace UnityEngine.UIElements
                 Debug.LogWarning($"Trying to read custom property {propertyName} value as {valueType} while parsed type is {customProp.handle.valueType}");
             }
         }
+
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<float> property, out float value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<int> property, out int value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<bool> property, out bool value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<Color> property, out Color value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue<T>(CustomStyleProperty<T> property, out T value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<string> property, out string value) =>
+            customStyleAccess.TryGetValue(property, out value);
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
@@ -27,6 +28,7 @@ namespace UnityEditor.Search
         public int length => m_EndIndex - m_StartIndex;
 
         public char this[int index] => m_BaseString[m_StartIndex + index];
+        public char this[Index index] => m_BaseString[index.IsFromEnd ? (m_EndIndex - index.Value) : (m_StartIndex + index.Value)];
 
         public StringView(string baseString)
         {
@@ -36,16 +38,18 @@ namespace UnityEditor.Search
         }
 
         public StringView(string baseString, int startIndex)
-            : this(baseString, startIndex, string.IsNullOrEmpty(baseString) ? startIndex : baseString.Length - startIndex)
+            : this(baseString, startIndex, string.IsNullOrEmpty(baseString) ? startIndex : baseString.Length)
         {
         }
 
         public StringView(string baseString, int startIndex, int endIndex)
         {
             if (startIndex < 0 || (!string.IsNullOrEmpty(baseString) && startIndex > baseString.Length) || (string.IsNullOrEmpty(baseString) && startIndex != 0))
-                throw new ArgumentException("Index out of string range", nameof(startIndex));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "Index out of string range");
             if (endIndex < 0 || (!string.IsNullOrEmpty(baseString) && endIndex > baseString.Length) || (string.IsNullOrEmpty(baseString) && endIndex != 0))
-                throw new ArgumentException("Index out of string range", nameof(endIndex));
+                throw new ArgumentOutOfRangeException(nameof(endIndex), "Index out of string range");
+            if (endIndex < startIndex)
+                throw new ArgumentException("Incorrect range specified. End index should not be smaller than start index.", nameof(endIndex));
             m_BaseString = baseString;
             m_StartIndex = startIndex;
             m_EndIndex = endIndex;
@@ -572,6 +576,7 @@ namespace UnityEditor.Search
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static partial class StringExtensions
     {
         static readonly char[] k_OneLetterWords = new char[] { ':', '-', '!' };
@@ -649,6 +654,54 @@ namespace UnityEditor.Search
             yield return new StringView(view.baseString, start, i);
         }
 
+        public static void Split(this StringView view, ReadOnlySpan<char> tokens, List<StringView> outSubstrings)
+        {
+            Split(view, tokens, StringSplitOptions.None, outSubstrings);
+        }
+
+        public static void Split(this StringView view, ReadOnlySpan<char> tokens, StringSplitOptions splitOptions, List<StringView> outSubstrings)
+        {
+            // Early out if there is nothing to split on
+            if (!view.valid || tokens.IsEmpty)
+                return;
+
+            var start = 0;
+            var i = 0;
+            while (i < view.length)
+            {
+                var sourceSpan = view.ToReadOnlySpan(start);
+                var lastIndexOf = sourceSpan.IndexOfAny(tokens);
+                if (lastIndexOf >= 0)
+                {
+                    i = start + lastIndexOf;
+                    var sv = new StringView(view.baseString, start, i);
+                    if ((splitOptions & StringSplitOptions.RemoveEmptyEntries) != 0)
+                    {
+                        if (!sv.IsNullOrEmpty())
+                            outSubstrings.Add(sv);
+                    }
+                    else
+                        outSubstrings.Add(sv);
+
+                    start = i + 1;
+                }
+                else
+                    i = view.length;
+            }
+
+            var lastSv = StringView.empty;
+            if (start <= view.length && i <= view.length)
+                lastSv = new StringView(view.baseString, start, i);
+
+            if ((splitOptions & StringSplitOptions.RemoveEmptyEntries) != 0)
+            {
+                if (!lastSv.IsNullOrEmpty())
+                    outSubstrings.Add(lastSv);
+            }
+            else
+                outSubstrings.Add(lastSv);
+        }
+
         public static bool HasQuotes(this StringView sv, in char quoteChar = '"')
         {
             return sv.length >= 2 && sv.StartsWith(quoteChar) && sv.EndsWith(quoteChar);
@@ -656,7 +709,18 @@ namespace UnityEditor.Search
 
         public static ReadOnlySpan<char> ToReadOnlySpan(this StringView sv)
         {
-            return sv.baseString.AsSpan(sv.startIndex, sv.length);
+            return ToReadOnlySpan(sv, 0);
+        }
+
+        public static ReadOnlySpan<char> ToReadOnlySpan(this StringView sv, int startIndex)
+        {
+            if (startIndex < 0 || startIndex > sv.length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "Index out of string range");
+
+            if (startIndex == sv.length || sv.length == 0)
+                return ReadOnlySpan<char>.Empty;
+
+            return sv.baseString.AsSpan(sv.startIndex + startIndex, sv.length - startIndex);
         }
     }
 }

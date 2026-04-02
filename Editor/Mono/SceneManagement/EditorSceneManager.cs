@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.SceneManagement;
@@ -144,13 +145,16 @@ namespace UnityEditor.SceneManagement
         }
 
         [RequiredByNativeCode]
-        private static Transform Internal_GetParentTransformForNewGameObjects()
+        private static IntPtr Internal_GetParentTransformForNewGameObjects()
         {
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             if (prefabStage != null)
-                return prefabStage.prefabContentsRoot.transform;
+            {
+                Transform transform = prefabStage.prefabContentsRoot.transform;
+                return transform != null ? transform.GetCachedPtr() : IntPtr.Zero;
+            }
 
-            return null;
+            return IntPtr.Zero;
         }
     }
 }

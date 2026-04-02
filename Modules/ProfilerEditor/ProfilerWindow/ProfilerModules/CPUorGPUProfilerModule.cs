@@ -126,7 +126,7 @@ namespace UnityEditorInternal.Profiling
             private set
             {
                 if (selection != null)
-                    // revoke frameIndex guarantee on old selection before we loose control over it
+                    // revoke frameIndex guarantee on old selection before we lose control over it
                     selection.frameIndexIsSafe = false;
 
                 m_Selection = value;
@@ -498,6 +498,7 @@ namespace UnityEditorInternal.Profiling
             if (selection != null)
                 selection.frameIndexIsSafe = false;
             Clear();
+            ClearSelection();
         }
 
         internal static readonly ProfilerMarker setSelectionIntegrityCheckMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(CPUOrGPUProfilerModule.SetSelection)} Integrity Check");

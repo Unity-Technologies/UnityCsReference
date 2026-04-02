@@ -7,13 +7,15 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 
+#pragma warning disable CS0618 // Obsolete types/members: UnicodeLineBreakingRules; AtlasPopulationMode.Static, characterTable; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
     [System.Serializable]
     [ExcludeFromPresetAttribute]
     [ExcludeFromObjectFactory]
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextSettings.h")]
-    public class TextSettings : ScriptableObject
+    public partial class TextSettings : ScriptableObject
     {
         /// <summary>
         /// The version of the TextSettings class.
@@ -28,13 +30,10 @@ namespace UnityEngine.TextCore.Text
         protected string m_Version;
 
         /// <summary>
-        /// The Font Asset automatically assigned to newly created text objects.
+        /// Editor-only setting to show obsolete TextCore properties in the inspector.
         /// </summary>
-        public FontAsset defaultFontAsset
-        {
-            get => m_DefaultFontAsset;
-            set => m_DefaultFontAsset = value;
-        }
+        [SerializeField]
+        internal bool m_ShowObsoleteProperties;
 
         [FormerlySerializedAs("m_defaultFontAsset")]
         [SerializeField]
@@ -71,20 +70,32 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected List<FontAsset> m_FallbackFontAssets;
 
+        [FormerlySerializedAs("m_matchMaterialPreset")]
+        [SerializeField]
+        protected bool m_MatchMaterialPreset;
+
+        [FormerlySerializedAs("m_missingGlyphCharacter")]
+        [SerializeField]
+        protected int m_MissingCharacterUnicode;
+
         internal List<FontAsset> fallbackOSFontAssets
         {
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
-                if (GetStaticFallbackOSFontAsset() == null)
+                if (m_FallbackOSFontAssets == null)
                 {
-                    SetStaticFallbackOSFontAsset(GetOSFontAssetList());
+                    m_FallbackOSFontAssets = GetOSFontAssetList();
                 }
-                return GetStaticFallbackOSFontAsset();
+                return m_FallbackOSFontAssets;
             }
         }
 
-        static List<FontAsset> s_FallbackOSFontAssetInternal;
+        [SerializeField]
+        List<FontAsset> m_FallbackOSFontAssets;
+
+        internal bool isFallbackOSFontAssetsInitialized => m_FallbackOSFontAssets != null;
+
         static FontAsset s_RuntimeDefault;
 
         private FontAsset GetDefaultFont()
@@ -96,33 +107,10 @@ namespace UnityEngine.TextCore.Text
             return s_RuntimeDefault;
         }
 
-        internal virtual List<FontAsset> GetStaticFallbackOSFontAsset()
-        {
-            return s_FallbackOSFontAssetInternal;
-        }
-
-        internal virtual void SetStaticFallbackOSFontAsset(List<FontAsset> fontAssets)
-        {
-            s_FallbackOSFontAssetInternal = fontAssets;
-        }
-
         internal virtual List<FontAsset> GetFallbackFontAssets(bool isRaster, int textPixelSize = -1)
         {
             return fallbackFontAssets;
         }
-
-        /// <summary>
-        /// Determines if the text system will use an instance material derived from the primary material preset or use the default material of the fallback font asset.
-        /// </summary>
-        public bool matchMaterialPreset
-        {
-            get => m_MatchMaterialPreset;
-            set => m_MatchMaterialPreset = value;
-        }
-
-        [FormerlySerializedAs("m_matchMaterialPreset")]
-        [SerializeField]
-        protected bool m_MatchMaterialPreset;
 
         /// <summary>
         /// Determines if OpenType Font Features should be retrieved at runtime from the source font file.
@@ -135,19 +123,6 @@ namespace UnityEngine.TextCore.Text
         // private bool m_GetFontFeaturesAtRuntime = true;
 
         /// <summary>
-        /// The unicode value of the character that will be used when the requested character is missing from the font asset and potential fallbacks.
-        /// </summary>
-        public int missingCharacterUnicode
-        {
-            get => m_MissingCharacterUnicode;
-            set => m_MissingCharacterUnicode = value;
-        }
-
-        [FormerlySerializedAs("m_missingGlyphCharacter")]
-        [SerializeField]
-        protected int m_MissingCharacterUnicode;
-
-        /// <summary>
         /// Determines if the "Clear Dynamic Data on Build" property will be set to true or false on newly created dynamic font assets.
         /// </summary>
         public bool clearDynamicDataOnBuild
@@ -158,29 +133,8 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected bool m_ClearDynamicDataOnBuild = true;
 
-        /// <summary>
-        /// Determines if Emoji support is enabled in the Input Field TouchScreenKeyboard.
-        /// </summary>
-        public bool enableEmojiSupport
-        {
-            get { return m_EnableEmojiSupport; }
-            set { m_EnableEmojiSupport = value; }
-        }
         [SerializeField]
         private bool m_EnableEmojiSupport;
-
-        /// <summary>
-        /// list of Fallback Text Assets (Font Assets and Sprite Assets) used to lookup characters defined in the Unicode as Emojis.
-        /// </summary>
-        public List<TextAsset> emojiFallbackTextAssets
-        {
-            get => m_EmojiFallbackTextAssets;
-            set
-            {
-                m_EmojiFallbackTextAssets = value;
-                m_IsNativeTextSettingsDirty = true;
-            }
-        }
 
         [SerializeField]
         private List<TextAsset> m_EmojiFallbackTextAssets;
@@ -212,27 +166,26 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected string m_DefaultSpriteAssetPath = "Sprite Assets/";
 
-        [Obsolete("The Fallback Sprite Assets list is now obsolete. Use the emojiFallbackTextAssets instead.", true)]
-        public List<SpriteAsset> fallbackSpriteAssets
-        {
-            get => m_FallbackSpriteAssets;
-            set => m_FallbackSpriteAssets = value;
-        }
         [SerializeField]
         protected List<SpriteAsset> m_FallbackSpriteAssets;
 
         internal static SpriteAsset s_GlobalSpriteAsset { private set; get; }
 
-        /// <summary>
-        /// The unicode value of the sprite character that will be used when the requested character sprite is missing from the sprite asset and potential fallbacks.
-        /// </summary>
-        public uint missingSpriteCharacterUnicode
-        {
-            get => m_MissingSpriteCharacterUnicode;
-            set => m_MissingSpriteCharacterUnicode = value;
-        }
         [SerializeField]
         protected uint m_MissingSpriteCharacterUnicode;
+
+        /// <summary>
+        /// list of Fallback Text Assets (Font Assets and Sprite Assets) used to lookup characters defined in the Unicode as Emojis.
+        /// </summary>
+        public List<TextAsset> emojiFallbackTextAssets
+        {
+            get => m_EmojiFallbackTextAssets;
+            set
+            {
+                m_EmojiFallbackTextAssets = value;
+                m_IsNativeTextSettingsDirty = true;
+            }
+        }
 
         /// <summary>
         /// The Default Style Sheet used by the text objects.
@@ -247,17 +200,6 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected TextStyleSheet m_DefaultStyleSheet;
 
-        /// <summary>
-        /// This property is obsolete and no longer used. It will be removed in a future version.
-        /// </summary>
-        [Obsolete("styleSheetsResourcePath is no longer used and will be removed in a future version.", false)]
-        public string styleSheetsResourcePath
-        {
-            get => m_StyleSheetsResourcePath;
-            set => m_StyleSheetsResourcePath = value;
-        }
-
-        string m_StyleSheetsResourcePath = "Text Style Sheets/";
 
         /// <summary>
         /// The relative path to a Resources folder in the project where the text system will look to load color gradient presets.
@@ -273,32 +215,8 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected string m_DefaultColorGradientPresetsPath = "Text Color Gradients/";
 
-        // =============================================
-        // Line breaking rules
-        // =============================================
-
-        /// <summary>
-        /// Text file that contains the line breaking rules for all unicode characters.
-        /// </summary>
-        public UnicodeLineBreakingRules lineBreakingRules
-        {
-            get
-            {
-                if (m_UnicodeLineBreakingRules == null)
-                {
-                    m_UnicodeLineBreakingRules = new UnicodeLineBreakingRules();
-                    m_UnicodeLineBreakingRules.LoadLineBreakingRules();
-                }
-
-                return m_UnicodeLineBreakingRules;
-            }
-            set => m_UnicodeLineBreakingRules = value;
-        }
-
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
-
-
 
         // =============================================
         // Text object specific settings
@@ -330,7 +248,6 @@ namespace UnityEngine.TextCore.Text
         void OnEnable()
         {
             lineBreakingRules.LoadLineBreakingRules();
-            SetStaticFallbackOSFontAsset(null);
             if (s_GlobalSpriteAsset == null)
                 s_GlobalSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
         }
@@ -381,6 +298,8 @@ namespace UnityEngine.TextCore.Text
 
         // Internal for testing purposes
         internal Dictionary<int, FontAsset> m_FontLookup;
+
+        [SerializeField]
         internal List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
@@ -540,3 +459,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

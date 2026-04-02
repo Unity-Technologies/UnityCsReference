@@ -19,6 +19,7 @@ namespace UnityEditor.Build.Profile
     /// Build Settings window in 'File > Build Settings'.
     /// Handles creating and editing of <see cref="BuildProfile"/> assets.
     /// </summary>
+    [EditorWindowTitle(title = "Build Profiles", icon = "BuildProfileWindow")]
     internal class BuildProfileWindow : EditorWindow
     {
         const string k_DevOpsUrl = "https://unity.com/products/unity-devops?utm_medium=desktop-app&utm_source=unity-editor-window-menu&utm_content=buildsettings";
@@ -66,17 +67,20 @@ namespace UnityEditor.Build.Profile
         AssetImportOverridesWindow m_AssetImportWindow;
         Background m_WarningIcon;
 
+        BuildProfileWindowActionProvider m_ActionProvider;
+        List<Button> m_CustomButtons;
+
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindow()
         {
-            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            var window = GetWindow<BuildProfileWindow>();
             window.minSize = new Vector2(725, 400);
         }
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildProfileWindowAndRequireActiveProfile()
         {
-            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            var window = GetWindow<BuildProfileWindow>();
             window.minSize = new Vector2(725, 400);
 
             // Activate the first buildable profile if none is active.
@@ -109,8 +113,12 @@ namespace UnityEditor.Build.Profile
             if (!HasOpenInstances<BuildProfileWindow>())
                 return;
 
-            var window = GetWindow<BuildProfileWindow>();
-            window.UpdateFromEditorSettings();
+            // Get the existing window without switching focus to it
+            var windows = Resources.FindObjectsOfTypeAll<BuildProfileWindow>();
+            if (windows.Length > 0)
+            {
+                windows[0].UpdateFromEditorSettings();
+            }
         }
 
         public static void OnPlatformModuleInstallationChanged(GUID platformId)
@@ -171,6 +179,8 @@ namespace UnityEditor.Build.Profile
             if (m_BuildProfileDataSource != null)
                 m_BuildProfileDataSource.Dispose();
             m_BuildProfileDataSource = new BuildProfileDataSource(this);
+            m_ActionProvider = new BuildProfileWindowActionProvider();
+            m_CustomButtons = new List<Button>();
             m_ProfileListViews = new PlatformListView(this, m_BuildProfileDataSource);
             m_BuildProfileSelection = new BuildProfileWindowSelection(rootVisualElement, m_ProfileListViews);
             m_BuildProfileContextMenu = new BuildProfileContextMenu(this, m_BuildProfileSelection, m_BuildProfileDataSource);
@@ -186,7 +196,7 @@ namespace UnityEditor.Build.Profile
 
             // When creating the profile lists, the bind callbacks (which set the active profile index)
             // will be called after this, so we need to find the active profile to select it in here
-            m_ProfileListViews.SelectActiveProfile();
+            m_ProfileListViews.RestoreBuildProfileSelection();
 
             // Set up event handlers.
             m_BuildAndRunButton.clicked += () =>
@@ -401,7 +411,7 @@ namespace UnityEditor.Build.Profile
             // the selectionChanged event will not be called. This ensures that the build profile
             // inspector is updated accordingly.
             m_BuildProfileSelection.ClearListViewSelection(ListViewSelectionType.Custom);
-            m_ProfileListViews.SelectActiveProfile();
+            m_ProfileListViews.RestoreBuildProfileSelection();
         }
 
         /// <summary>
@@ -484,7 +494,7 @@ namespace UnityEditor.Build.Profile
         /// <param name="next"></param>
         void OnWorkflowStateChanged(BuildProfileWorkflowState next)
         {
-            if (next == m_WindowState && buildProfileEditor is not null)
+            if (next == m_WindowState && buildProfileEditor != null)
             {
                 // When refreshing the window state, if there's a build profile selected
                 // then the corresponding editor state should be considered.
@@ -580,24 +590,37 @@ namespace UnityEditor.Build.Profile
             m_AdditionalActionsDropdown.Show();
         }
 
-        void OnActivateButtonClicked()
+        internal void OnActivateButtonClicked()
         {
             if (!m_BuildProfileSelection.HasSelection())
                 return;
 
             BuildProfile activateProfile = m_BuildProfileSelection.Get(0);
             if (activateProfile.IsActiveBuildProfileOrPlatform())
-                return;
+            {
+                if (!activateProfile.isMultiTarget)
+                    return;
+
+                if (activateProfile.activePlatformGuid == activateProfile.selectedPlatformGuid)
+                    return;
+            }
 
             // before we update the BuildProfileContext's activeProfile,
             // we want to capture the current active profile to check if an editor restart is required
             // because certain player settings changed that will require it
             var currentBuildProfile = BuildProfileContext.activeProfile;
 
+            if (activateProfile.isMultiTarget)
+                activateProfile.activePlatformGuid = activateProfile.selectedPlatformGuid;
+
             // success here is handling the player settings, failure is the user cancels handling the restart.
             var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(currentBuildProfile, activateProfile);
             if (!isSuccess)
+            {
+                if (activateProfile.isMultiTarget)
+                    activateProfile.activePlatformGuid = new GUID(string.Empty);
                 return;
+            }
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
@@ -621,6 +644,7 @@ namespace UnityEditor.Build.Profile
             RebuildProfileListViews();
 
             UpdateToolbarButtonState();
+            RepaintBuildProfileInspector();
         }
 
         void OnBuildButtonClicked(BuildOptions optionFlags)
@@ -646,6 +670,10 @@ namespace UnityEditor.Build.Profile
             var isModuleInstalled = BuildProfileContext.IsModuleInstalled(profile);
             var isBuildAutomationSupported = BuildProfileContext.IsBuildAutomationSupported(profile);
 
+            // Reset any custom buttons
+            m_CustomButtons.ForEach(button => button.RemoveFromHierarchy());
+            m_CustomButtons.Clear();
+
             if (profile is null)
             {
                 m_WindowState.activateAction = ActionState.Hidden;
@@ -656,29 +684,81 @@ namespace UnityEditor.Build.Profile
             }
             else if (profile.IsActiveBuildProfileOrPlatform())
             {
+                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
+
                 m_WindowState.activateAction = ActionState.Hidden;
-                m_WindowState.buildAction = ActionState.Enabled;
-                m_WindowState.buildAndRunAction = ActionState.Enabled;
-                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                    isModuleInstalled ?
-                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+
+                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
+                {
+                    HideBuildButtonActions();
+                }
+                else
+                {
+                    m_WindowState.buildAction = ActionState.Enabled;
+                    m_WindowState.buildAndRunAction = ActionState.Enabled;
+                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                        isModuleInstalled ?
+                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+                }
+
+                if (sdkPlatformExtension != null)
+                    CreateFormButtonsForSDKPlatforms(profile);
+
                 m_WindowState.Refresh();
             }
             else
             {
+                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
+
                 bool canBuild = profile.CanBuildLocally();
                 m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
-                m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
-                m_WindowState.buildAndRunAction = ActionState.Hidden;
-                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                    isModuleInstalled ?
-                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+
+                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
+                {
+                    HideBuildButtonActions();
+                } 
+                else
+                {
+                    m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
+                    m_WindowState.buildAndRunAction = ActionState.Hidden;
+                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                        isModuleInstalled ?
+                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
+                }
+
                 m_WindowState.Refresh();
             }
+        }
+
+        void HideBuildButtonActions()
+        {
+            m_WindowState.buildAction = ActionState.Hidden;
+            m_WindowState.buildAndRunAction = ActionState.Hidden;
+            m_WindowState.buildInCloudPackageAction = ActionState.Hidden;
+        }
+
+        void CreateFormButtonsForSDKPlatforms(BuildProfile profile)
+        {
+            var actions = m_ActionProvider.GetAllActions(profile);
+            foreach (var action in actions)
+            {
+                var button = new Button { text = action.GetDisplayName() };
+
+                button.clicked += () => action.OnClick(profile);
+
+                button.SetEnabled(action.IsClickable(profile));
+                button.AddToClassList("form-button");
+                button.AddToClassList("ml-medium");
+
+                m_CustomButtons.Add(button);
+            }
+
+            foreach (var button in m_CustomButtons)
+                m_SelectionFooter.Add(button);
         }
 
         /// <summary>
@@ -808,6 +888,12 @@ namespace UnityEditor.Build.Profile
                 m_WelcomeMessageElement.Hide();
                 m_PlatformListLabel.Hide();
                 m_ProfileListViews.HideClassicPlatformListView();
+
+                if (m_ProfileListViews.IsClassicPlatformSelected() && 
+                    m_BuildProfileDataSource.customBuildProfiles.Count > 0)
+                {
+                    m_BuildProfileSelection.visualElement.SelectBuildProfile(0);
+                }
             }
             else
             {

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Elements;
@@ -17,7 +18,10 @@ internal class BuildProfileBootstrapView : VisualElement
 
     private VisualElement m_Spinner;
     private bool m_SpinnerHasStarted = false;
-    internal BuildProfileBootstrapView()
+    internal BuildProfileBootstrapView(
+        BuildProfile profile,
+        BuildProfileInitialization initializationInfo,
+        Action onRepaintRequired)
     {
         var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
         var uss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
@@ -25,9 +29,23 @@ internal class BuildProfileBootstrapView : VisualElement
         uxml.CloneTree(this);
         m_PackageAddProgressLabel = this.Q<Label>("package-add-progress");
         m_Spinner = this.Q<VisualElement>("spinner");
+
+        profile.OnPackageAddProgress = () =>
+        {
+            StartSpinner();
+            Set(initializationInfo.packageAddInfo.GetPackageAddProgressInfo());
+        };
+
+        // Prevent inspector editor from overwriting repaint
+        // callback of an editor in the build profile window.
+        if (onRepaintRequired != null)
+            profile.OnPackageAddComplete = onRepaintRequired;
     }
-    // This call is needed separately to have the animation running.
-    // Putting this in the construction somehow will not work.
+
+    /// <summary>
+    /// Starts the spinner animation.
+    /// Must be called after the element is added to the visual tree.
+    /// </summary>
     internal void StartSpinner()
     {
         if (!m_SpinnerHasStarted)
@@ -46,7 +64,7 @@ internal class BuildProfileBootstrapView : VisualElement
         switch (info.state)
         {
             case BuildProfilePackageAddInfo.ProgressState.PackageDownloading:
-                message = usePlural? TrText.packagesAddDownloading : TrText.packagesAddDownloading;
+                message = usePlural? TrText.packagesAddDownloading : TrText.packageAddDownloading;
                 break;
             case BuildProfilePackageAddInfo.ProgressState.PackageInstalling:
                 message = usePlural? TrText.packagesAddInstalling : TrText.packageAddInstalling;
@@ -59,7 +77,7 @@ internal class BuildProfileBootstrapView : VisualElement
                 break;
         }
 
-        if(message != string.Empty)
+        if (!string.IsNullOrEmpty(message))
             m_PackageAddProgressLabel.text = message;
     }
 }

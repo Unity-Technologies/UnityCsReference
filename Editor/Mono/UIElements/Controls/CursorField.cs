@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
         /// <param name="label">The text to use as a label.</param>
         public CursorField(string label) : base(label, null)
         {
-            m_ObjectField = new ObjectField() { classList = { objectFieldUssClassName }};
+            m_ObjectField = new ObjectField().WithClassList(objectFieldUssClassName);
             m_ObjectField.objectType = typeof(Texture2D);
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 

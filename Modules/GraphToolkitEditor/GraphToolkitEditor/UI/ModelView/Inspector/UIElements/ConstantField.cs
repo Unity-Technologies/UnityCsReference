@@ -3,11 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Unity.Collections;
 using Unity.GraphToolkit.CSO;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -144,7 +147,7 @@ namespace Unity.GraphToolkit.Editor
 
             // If the field is a string and has a TextAreaAttribute, adjust its height accordingly.
 
-            if (Field is TextField textField && m_Attributes != null && m_Attributes.HasAny(a => a is TextAreaAttribute))
+            if (Field is TextField textField && m_Attributes != null && m_Attributes.Exists(a => a is TextAreaAttribute))
             {
                 var textAreaAttribute = m_Attributes.First(a => a is TextAreaAttribute) as TextAreaAttribute;
                 TextAreaFieldHelper.UpdateTextAreaHeight(textAreaAttribute, textField, ConstantModels[0].ObjectValue as string ?? string.Empty);
@@ -155,7 +158,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var owner in Owners)
                 {
-                    if (owner is PortModel portModel && portModel.IsConnected() && portModel.GetConnectedPorts().HasAny(p => p.NodeModel.State == ModelState.Enabled))
+                    if (owner is PortModel portModel && portModel.IsConnected() && portModel.GetConnectedPorts().Exists(p => p.NodeModel.State == ModelState.Enabled))
                     {
                         isConnected = true;
                         break;
@@ -189,6 +192,17 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (!isConnected && same)
                     m_CustomPropertyDrawerAdapter.UpdateDisplayedValue(displayedValue.ObjectValue);
+                return;
+            }
+
+            if (Field is ListView)
+            {
+                SetFieldValue(Field, typeof(ListView), displayedValue);
+                return;
+            }
+
+            if (displayedValue.ObjectValue is System.Collections.IList)
+            {
                 return;
             }
 
@@ -267,10 +281,23 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         protected virtual void SetFieldValue(VisualElement field, Type fieldType, Constant displayedValue)
         {
-            var setValueMethod = fieldType.GetMethod("SetValueWithoutNotify");
+            // Handle the new ListPropertyField
+            if (field is ListPropertyField listField)
+            {
+                if (displayedValue.ObjectValue is IList modelList)
+                {
+                    listField.SetValue(modelList);
+                }
+                else
+                {
+                    listField.SetValue(null);
+                }
+                return;
+            }
 
+            // Standard handling for primitive fields
             var value = ValueToDisplay(displayedValue.ObjectValue);
-            setValueMethod?.Invoke(field, new[] { value });
+            BindSafe(field, value);
         }
 
         IReadOnlyList<Attribute> m_Attributes;
@@ -288,6 +315,13 @@ namespace Unity.GraphToolkit.Editor
                 int i;
                 for (i = 0; i < Owners.Count; i++)
                 {
+                    // Default to using delayed fields for non-user-defined port fields
+                    if (Owners[i] is VariableDeclarationModelBase || Owners[i] is ConstantNodeModel)
+                    {
+                        m_Attributes = new List<Attribute> { new DelayedAttribute() };
+                        break;
+                    }
+
                     if (Owners[i] is not PortModel port)
                         continue;
 
@@ -351,6 +385,24 @@ namespace Unity.GraphToolkit.Editor
             {
                 CreateDefaultFieldForType(fieldType, tooltipString, m_Attributes);
             }
+        }
+
+        /// <inheritdoc />
+        protected override bool ShouldCreateListEditorForType(Type type)
+        {
+            if (!TypeExtensions.IsListOrArray(type))
+                return false;
+
+            if (Owners == null || Owners.Count == 0)
+                return true;
+
+            for (int i = 0; i < Owners.Count; i++)
+            {
+                if (Owners[i] is VariableDeclarationModelBase || Owners[i] is ConstantNodeModel)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -522,6 +574,66 @@ namespace Unity.GraphToolkit.Editor
             }
 
             return true;
+        }
+
+        private void BindSafe(VisualElement element, object value)
+        {
+            if (value == null && element is not ObjectField) return;
+
+            // Primitives 
+            if (element is IntegerField intF) { intF.SetValueWithoutNotify((int)value); return; }
+            if (element is FloatField floatF) { floatF.SetValueWithoutNotify((float)value); return; }
+            if (element is DoubleField doubleF) { doubleF.SetValueWithoutNotify((double)value); return; }
+            if (element is LongField longF) { longF.SetValueWithoutNotify((long)value); return; }
+            if (element is Toggle tog) { tog.SetValueWithoutNotify((bool)value); return; }
+            
+            // TextField handles 'string' AND 'char'
+            if (element is TextField textF) { textF.SetValueWithoutNotify(value.ToString()); return; }
+
+            // Unity Structs
+            if (element is Vector2Field v2F) { v2F.SetValueWithoutNotify((Vector2)value); return; }
+            if (element is Vector3Field v3F) { v3F.SetValueWithoutNotify((Vector3)value); return; }
+            if (element is Vector4Field v4F) { v4F.SetValueWithoutNotify((Vector4)value); return; }
+            if (element is Vector2IntField v2iF) { v2iF.SetValueWithoutNotify((Vector2Int)value); return; }
+            if (element is Vector3IntField v3iF) { v3iF.SetValueWithoutNotify((Vector3Int)value); return; }
+            if (element is RectField rectF) { rectF.SetValueWithoutNotify((Rect)value); return; }
+            if (element is RectIntField rectiF) { rectiF.SetValueWithoutNotify((RectInt)value); return; }
+            if (element is BoundsField bndF) { bndF.SetValueWithoutNotify((Bounds)value); return; }
+            if (element is BoundsIntField bndiF) { bndiF.SetValueWithoutNotify((BoundsInt)value); return; }
+            if (element is ColorField colF) { colF.SetValueWithoutNotify((Color)value); return; }
+            if (element is CurveField curveF) { curveF.SetValueWithoutNotify((AnimationCurve)value); return; }
+            if (element is GradientField gradF) { gradF.SetValueWithoutNotify((Gradient)value); return; }
+
+            // Special Types
+            if (element is EnumField enumF) { enumF.SetValueWithoutNotify((Enum)value); return; }
+            
+            // LayerMaskField takes 'int', but the value might be 'LayerMask' struct
+            if (element is LayerMaskField layF) 
+            { 
+                int intVal = value is LayerMask lm ? lm.value : (int)value;
+                layF.SetValueWithoutNotify(intVal); 
+                return; 
+            }
+
+            // Objects (Object and GameObject)
+            if (element is ObjectField objF) { objF.SetValueWithoutNotify((Object)value); return; }
+
+            // Fallback 1: Reflection
+            var method = element.GetType().GetMethod("SetValueWithoutNotify", 
+                BindingFlags.Public | BindingFlags.Instance);
+            
+            if (method != null)
+            {
+                method.Invoke(element, new[] { value });
+                return;
+            }
+
+            // Fallback 2: Read-Only Label
+            if (element is Label label)
+            {
+                label.text = value?.ToString() ?? "null";
+                label.SetEnabled(false);
+            }
         }
     }
 }

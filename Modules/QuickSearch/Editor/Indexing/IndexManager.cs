@@ -7,9 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using UIToolkitListView = UnityEngine.UIElements.ListView;
 
 namespace UnityEditor.Search
@@ -221,9 +221,10 @@ namespace UnityEditor.Search
         {
             int indexToSelect = -1;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllSearchDatabases = SearchDatabase.EnumerateAll().OrderBy(sd => Path.GetFileNameWithoutExtension(sd.path)).ToList();
 #pragma warning restore UA2001
+
             foreach (var searchDatabase in EnumerateIndexes(includePackages ? SearchDatabase.IndexLocation.all : SearchDatabase.IndexLocation.assets))
             {
                 m_IndexSettingsAssets.Add(searchDatabase);
@@ -502,9 +503,9 @@ namespace UnityEditor.Search
             if (obj.Any())
 #pragma warning restore UA2001
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string path = (string)obj.First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 if (Path.HasExtension(path)) // In case of Scene and Prefab index, it can give only objects ids so in that case we can't ping
                     EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path));
             }
@@ -542,9 +543,10 @@ namespace UnityEditor.Search
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetDocuments(true).Select(d => $"{d.name} {{{d.id}}}").ToList(), m_DocumentsListView);
 #pragma warning restore UA2001
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    UpdateIndexPreviewListView(selectedItemAsset.index.GetKeywords().OrderBy(p => p).ToList(), m_KeywordsListView);
-#pragma warning restore UA2001
+                    var sortedKeywords = new List<string>(selectedItemAsset.index.GetKeywords());
+                    sortedKeywords.Sort();
+                    UpdateIndexPreviewListView(sortedKeywords, m_KeywordsListView);
+
                     m_KeywordsButton.text = $"{selectedItemAsset.index.keywordCount} Keywords";
                 }
             }
@@ -761,9 +763,7 @@ namespace UnityEditor.Search
                     }
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (m_IndexSettings.All(index => !index.hasUnsavedChanges))
-#pragma warning restore UA2001
+                if (m_IndexSettings.TrueForAll(index => !index.hasUnsavedChanges))
                     base.SaveChanges();
             }
         }
@@ -1198,9 +1198,7 @@ namespace UnityEditor.Search
 
             private void OnDragUpdated(EventBase evt)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore UA2001
                 if (draggedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -1211,9 +1209,7 @@ namespace UnityEditor.Search
 
             private void OnDragPerform(EventBase evt)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore UA2001
                 if (draggedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -1456,9 +1452,7 @@ namespace UnityEditor.Search
                 hasPackagesRoot = false;
                 if (searchDatabaseSettings.roots != null)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     hasPackagesRoot = searchDatabaseSettings.roots.Contains("Packages");
-#pragma warning restore UA2001
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     roots.AddRange(searchDatabaseSettings.roots.Where(r => r != "Packages"));
 #pragma warning restore UA2001

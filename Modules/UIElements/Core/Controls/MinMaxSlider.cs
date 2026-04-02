@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[Slider]]
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/MinMaxSlider.png")]
     public partial class MinMaxSlider : BaseField<Vector2>
     {
@@ -247,31 +248,44 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-min-max-slider";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// USS class name of tracker elements in elements of this type.
         /// </summary>
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
+        internal static readonly UniqueStyleString trackerUssClassNameUnique = new(trackerUssClassName);
+
         /// <summary>
         /// USS class name of dragger elements in elements of this type.
         /// </summary>
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        internal static readonly UniqueStyleString draggerUssClassNameUnique = new(draggerUssClassName);
+
         /// <summary>
         /// USS class name of the minimum thumb elements in elements of this type.
         /// </summary>
         public static readonly string minThumbUssClassName = ussClassName + "__min-thumb";
+        internal static readonly UniqueStyleString minThumbUssClassNameUnique = new(minThumbUssClassName);
+
         /// <summary>
         /// USS class name of the maximum thumb elements in elements of this type.
         /// </summary>
         public static readonly string maxThumbUssClassName = ussClassName + "__max-thumb";
+        internal static readonly UniqueStyleString maxThumbUssClassNameUnique = new(maxThumbUssClassName);
+
         /// <summary>
         /// USS class name of the element that is currently controlled by <see cref="NavigationMoveEvent"/>.
         /// When a <see cref="NavigationSubmitEvent"/> is received the slider cycles through the elements in the following order:
@@ -281,6 +295,7 @@ namespace UnityEngine.UIElements
         ///4. None (Default Navigation behavior).
         /// </summary>
         public static readonly string movableUssClassName = ussClassName + "--movable";
+        internal static readonly UniqueStyleString movableUssClassNameUnique = new(movableUssClassName);
 
         /// <summary>
         /// Constructor.
@@ -318,9 +333,9 @@ namespace UnityEngine.UIElements
             var clampedValue = ClampValues(new Vector2(minValue, maxValue));
             this.minValue = clampedValue.x;
             this.maxValue = clampedValue.y;
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
 
             pickingMode = PickingMode.Ignore;
 
@@ -328,19 +343,19 @@ namespace UnityEngine.UIElements
 
             visualInput.pickingMode = PickingMode.Position;
             var trackElement = new VisualElement() { name = "unity-tracker" };
-            trackElement.AddToClassList(trackerUssClassName);
+            trackElement.AddToClassList(trackerUssClassNameUnique);
             visualInput.Add(trackElement);
 
             dragElement = new VisualElement() { name = "unity-dragger" };
-            dragElement.AddToClassList(draggerUssClassName);
+            dragElement.AddToClassList(draggerUssClassNameUnique);
             dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             visualInput.Add(dragElement);
 
             // For a better handling of the cursor style, children elements are created so that the style is automatic with the uss.
             dragMinThumb = new VisualElement() { name = "unity-thumb-min" };
             dragMaxThumb = new VisualElement() { name = "unity-thumb-max" };
-            dragMinThumb.AddToClassList(minThumbUssClassName);
-            dragMaxThumb.AddToClassList(maxThumbUssClassName);
+            dragMinThumb.AddToClassList(minThumbUssClassNameUnique);
+            dragMaxThumb.AddToClassList(maxThumbUssClassNameUnique);
             dragElement.Add(dragMinThumb);
             dragElement.Add(dragMaxThumb);
 
@@ -448,8 +463,8 @@ namespace UnityEngine.UIElements
 
         DragState GetNavigationState()
         {
-            var minEnabled = dragMinThumb.ClassListContains(movableUssClassName);
-            var maxEnabled = dragMaxThumb.ClassListContains(movableUssClassName);
+            var minEnabled = dragMinThumb.ClassListContains(movableUssClassNameUnique);
+            var maxEnabled = dragMaxThumb.ClassListContains(movableUssClassNameUnique);
 
             if (minEnabled)
                 return maxEnabled ? DragState.MiddleThumb : DragState.MinThumb;
@@ -460,9 +475,9 @@ namespace UnityEngine.UIElements
 
         void SetNavigationState(DragState newState)
         {
-            dragMinThumb.EnableInClassList(movableUssClassName, newState == DragState.MinThumb || newState == DragState.MiddleThumb);
-            dragMaxThumb.EnableInClassList(movableUssClassName, newState == DragState.MaxThumb || newState == DragState.MiddleThumb);
-            dragElement.EnableInClassList(movableUssClassName, newState == DragState.MiddleThumb);
+            dragMinThumb.EnableInClassList(movableUssClassNameUnique, newState == DragState.MinThumb || newState == DragState.MiddleThumb);
+            dragMaxThumb.EnableInClassList(movableUssClassNameUnique, newState == DragState.MaxThumb || newState == DragState.MiddleThumb);
+            dragElement.EnableInClassList(movableUssClassNameUnique, newState == DragState.MiddleThumb);
         }
 
         void OnFocusIn(FocusInEvent evt)

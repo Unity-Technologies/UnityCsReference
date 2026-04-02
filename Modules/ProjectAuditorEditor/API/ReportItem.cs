@@ -10,6 +10,27 @@ using UnityEngine;
 namespace Unity.ProjectAuditor.Editor
 {
     /// <summary>
+    /// The various supported upgrade properties in a ReportItem.
+    /// </summary>
+    public enum UpgradeProperties
+    {
+        /// <summary>
+        /// The minimum version this issue applies to.
+        /// </summary>
+        MinVersion,
+
+        /// <summary>
+        /// The maximum version this issue applies to.
+        /// </summary>
+        MaxVersion,
+
+        /// <summary>
+        /// The recommended way to fix this upgrade issue.
+        /// </summary>
+        Recommendation
+    }
+
+    /// <summary>
     /// Describes an issue that ProjectAuditor reports in the Unity project.
     /// </summary>
     [Serializable]
@@ -28,14 +49,20 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         SerializableEnum<Severity> severity;
 
-        [SerializeField]
+        [NonSerialized] // Too big to serialize into the report, would also require SerializeReference, due to tree structure.
         DependencyNode m_Dependencies;
+
+        [SerializeField]
+        bool hasDependencies;   // We need to save if the issue has dependencies or not. So we know whether to show "Missing Data" in the UI.
 
         [SerializeField]
         Location location;
 
         [SerializeField]
         string[] properties;
+
+        [SerializeField]
+        string[] upgradeProperties;
 
         /// <summary>
         /// Determines whether the Issue was fixed. Only used if the ReportItem represents an Issue.
@@ -101,7 +128,15 @@ namespace Unity.ProjectAuditor.Editor
         internal DependencyNode Dependencies
         {
             get => m_Dependencies;
-            set => m_Dependencies = value;
+            set { m_Dependencies = value; hasDependencies = true; }
+        }
+
+        /// <summary>
+        /// Did the item have dependencies when created? (Even if the actual dependencies have been lost because the report was loaded from disk)
+        /// </summary>
+        internal bool HasDependencies
+        {
+            get => hasDependencies;
         }
 
         /// <summary>
@@ -192,6 +227,20 @@ namespace Unity.ProjectAuditor.Editor
             internal set => severity = value;
         }
 
+        /// <summary>
+        /// Determines whether this issue is an upgrade issue.
+        /// </summary>
+        public bool IsUpgradeIssue => UpgradeProperties?.Length > 0;
+
+        /// <summary>
+        /// Properties relating to upgrade issues
+        /// </summary>
+        public string[] UpgradeProperties
+        {
+            get => upgradeProperties;
+            internal set => upgradeProperties = value;
+        }
+
         internal ReportItem()
         {
             // only for json serialization purposes
@@ -237,6 +286,15 @@ namespace Unity.ProjectAuditor.Editor
             description = desc;
             severity = Severity.Default;
             IsIgnored = false;
+        }
+
+        internal ReportItem Clone(IssueCategory category, string id, string description)
+        {
+            var result = MemberwiseClone() as ReportItem;
+            result.descriptorId = new DescriptorId(id);
+            result.category = category;
+            result.description = description;
+            return result;
         }
 
         /// <summary>

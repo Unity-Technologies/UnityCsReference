@@ -88,9 +88,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             itemsChosen += obj =>
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var first = obj.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
                 if (first is IItemView itemView) // do not notify if the item chosen is a category and not an item
                     OnItemChosen(itemView.Item);
             };
@@ -416,7 +416,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             m_TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, iconElement, type);
 
-            if (type == TypeHandle.ExecutionFlow)
+            if (type == TypeHandle.Untyped)
             {
                 var direction = PortDirection.Input;
                 if (portModel != null)
@@ -431,11 +431,23 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             var resolvedType = type.Resolve();
             if (resolvedType != null)
             {
-                var typeStyle = graphModel != null ? graphModel.GetDataTypeStyle(resolvedType) : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
+                bool overrideIcon = true;
+                (Texture2D icon, Color color)? typeStyle = graphModel != null ?
+                    graphModel.GetDataTypeStyle(resolvedType)
+                    : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
+
+                if (!typeStyle.HasValue && resolvedType.IsListOrArray())
+                {
+                    Type elementStyle = resolvedType.GetCollectionElementType();
+                    typeStyle = graphModel != null ? graphModel.GetDataTypeStyle(elementStyle)
+                        : BaseDataTypeStyleMapper.GetDataTypeStyle(elementStyle);
+                    overrideIcon = false;
+                }
+
                 if (typeStyle.HasValue)
                 {
                     iconElement.tintColor = typeStyle.Value.color;
-                    if (typeStyle.Value.icon != null)
+                    if (overrideIcon && typeStyle.Value.icon != null)
                         iconElement.image = typeStyle.Value.icon;
                 }
             }
@@ -587,14 +599,14 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             m_LastItemViewClicked = selectedItemView;
 
-            if (!selectedItems.HasAny())
+#pragma warning disable UA2001, UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (!selectedItems.Any())
                 m_ItemChosenCallback(null);
             else
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 OnModelViewSelectionChange?.Invoke(selectedItems
-#pragma warning restore UA2001
                     .OfType<ITreeItemView>()
                     .ToList());
+#pragma warning restore UA2001, UA2002
         }
 
         void OnItemChosen(ItemLibraryItem item)

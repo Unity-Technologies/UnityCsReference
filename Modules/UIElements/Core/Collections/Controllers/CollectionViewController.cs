@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections;
-using System.Linq;
+using Unity.Collections;
 using Unity.Hierarchy;
 using UnityEngine.Assertions;
 
@@ -187,9 +187,7 @@ namespace UnityEngine.UIElements
         {
             BindItem(reusableItem.bindableElement, index);
             SetBindingContext(reusableItem, index);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             reusableItem.SetSelected(m_View.selectedIndicesList.Contains(index));
-#pragma warning restore UA2001
             reusableItem.rootElement.pseudoStates &= ~PseudoStates.Hover;
             reusableItem.index = index;
         }

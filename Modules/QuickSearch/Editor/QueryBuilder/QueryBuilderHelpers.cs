@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     static class QueryColors
     {
         private static bool isDarkTheme => EditorGUIUtility.isProSkin;
@@ -52,7 +53,6 @@ namespace UnityEditor.Search
         }
     }
 
-    [Serializable]
     class QueryHelperSearchGroup
     {
         public static readonly Texture2D templateIcon = Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon");
@@ -154,7 +154,7 @@ namespace UnityEditor.Search
         internal static ISearchQuery CreateQuery(string queryStr)
         {
             var q = new SearchQuery() { searchText = queryStr };
-            q.viewState.itemSize = SearchSettings.itemIconSize;
+            q.viewState.itemIconSize = SearchSettings.itemIconSize;
             return q;
         }
 

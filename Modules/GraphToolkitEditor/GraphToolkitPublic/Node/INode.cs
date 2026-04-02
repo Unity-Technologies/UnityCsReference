@@ -84,6 +84,14 @@ namespace Unity.GraphToolkit.Editor
         public int InputPortCount => NodeModel.InputsByDisplayOrder.Count;
 
         /// <summary>
+        /// The globally unique identifier for this node.
+        /// </summary>
+        /// <remarks>
+        /// This GUID uniquely identifies the node instance and persists across sessions.
+        /// </remarks>
+        public Hash128 Guid { get; }
+
+        /// <summary>
         /// Retrieves an input port using its index.
         /// </summary>
         /// <param name="index">The index of the input port.</param>

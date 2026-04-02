@@ -73,12 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static IEnumerable<T> GetEnumerable<T>(this IDictionary<string, object> dict, string key) where T : class
         {
-            var list = Get<IList>(dict, key);
-            if (list == null)
-                yield break;
-            foreach (var item in list)
-                if (item is T t)
-                    yield return t;
+            return Get<IList>(dict, key)?.FilterByType<T>();
         }
 
         public static string GetString(this IDictionary<string, object> dict, string key)

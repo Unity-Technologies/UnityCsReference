@@ -173,7 +173,7 @@ namespace UnityEngine.UIElements
             ve.transformFlags |= flags;
 
             if (ve is IPanelComponentRootElement)
-                // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
+                // We crossed a panel component boundary, don't dirty the "without nested" flags anymore
                 flags &= ~VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
             DirtyParentHierarchy(ve.hierarchy.parent, flags);
@@ -186,7 +186,7 @@ namespace UnityEngine.UIElements
                 ve.transformFlags |= flags;
 
                 if (ve is IPanelComponentRootElement)
-                    // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
+                    // We crossed a panel component boundary, don't dirty the "without nested" flags anymore
                     flags &= ~VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
                 ve = ve.hierarchy.parent;

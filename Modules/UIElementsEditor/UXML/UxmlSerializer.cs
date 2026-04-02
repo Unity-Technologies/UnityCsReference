@@ -468,21 +468,22 @@ namespace UnityEditor.UIElements
         public string rootName { get; set; }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlSerializer
     {
-        public static bool TryParseSerializedAttribute(string name, string value, UxmlSerializedData uxmlSerializedData, CreationContext cc)
+        public static UxmlAttributeConversionResult TryParseSerializedAttribute(string name, string value, UxmlSerializedData uxmlSerializedData, CreationContext cc)
         {
             var desc = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
             if (desc.FindAttributeWithUxmlName(name) is { } attributeDesc)
                 return TryParseSerializedAttribute(value, uxmlSerializedData, attributeDesc, cc);
-            return false;
+            return UxmlAttributeConversionResult.Failure();
         }
 
-        public static bool TryParseSerializedAttribute(string value, UxmlSerializedData uxmlSerializedData, UxmlSerializedAttributeDescription attributeDescription, CreationContext cc)
+        public static UxmlAttributeConversionResult TryParseSerializedAttribute(string value, UxmlSerializedData uxmlSerializedData, UxmlSerializedAttributeDescription attributeDescription, CreationContext cc)
         {
-            if (!UxmlAttributeConverter.TryConvertFromString(attributeDescription.type, value, cc, out var parsedValue))
-                return false;
+            var result = UxmlAttributeConverter.TryConvertFromString(attributeDescription.type, value, cc, out var parsedValue);
+            if (!result.success)
+                return result;
 
             if (parsedValue is Type type)
             {
@@ -490,8 +491,7 @@ namespace UnityEditor.UIElements
                 var typeRefAttribute = attributeDescription.serializedField.GetCustomAttribute<UxmlTypeReferenceAttribute>();
                 if (typeRefAttribute != null && typeRefAttribute.baseType != null && !typeRefAttribute.baseType.IsAssignableFrom(type))
                 {
-                    Debug.LogError($"Type: Invalid type \"{type}\". Type must derive from {typeRefAttribute.baseType.FullName}.");
-                    return false;
+                    return UxmlAttributeConversionResult.Failure($"Type: Invalid type \"{type}\". Type must derive from {typeRefAttribute.baseType.FullName}.");
                 }
 
                 parsedValue = value;
@@ -503,10 +503,10 @@ namespace UnityEditor.UIElements
             }
             catch (Exception e)
             {
-                Debug.LogException(new Exception($"Could not set value for {attributeDescription.serializedField.Name} with {parsedValue}", e), cc.visualTreeAsset);
+                return UxmlAttributeConversionResult.Failure($"Could not set value for {attributeDescription.serializedField.Name} with {parsedValue}", cc.visualTreeAsset, e);
             }
 
-            return true;
+            return UxmlAttributeConversionResult.Success();
         }
 
         public static void CreateSerializedDataOverrides(VisualTreeAsset vta)
@@ -634,7 +634,8 @@ namespace UnityEditor.UIElements
 
                     if (desc.FindAttributeWithUxmlName(ao.Key) is { } attributeDescription)
                     {
-                        TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, attributeDescription, templateContext);
+                        var result = TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, attributeDescription, templateContext);
+                        result.DefaultErrorAction();
                         handledAttributes.Add(ao.Key);
                     }
                     else
@@ -644,7 +645,8 @@ namespace UnityEditor.UIElements
                             if (handledAttributes.Contains(obsoleteAttribute.name))
                                 continue;
                             handledAttributes.Add(obsoleteAttribute.name);
-                            TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, obsoleteAttribute, cc);
+                            var result = TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, obsoleteAttribute, cc);
+                            result.DefaultErrorAction();
                         }
                     }
                 }

@@ -157,7 +157,9 @@ namespace UnityEditor.Modules
 
         bool SupportsInstallInBuildFolder();
 
-        bool SupportsLz4Compression();
+        ReadOnlySpan<Compression> GetSupportedCompressions();
+
+        bool SupportsCompression(Compression compression);
 
         Compression GetDefaultCompression();
 
@@ -289,6 +291,8 @@ namespace UnityEditor.Modules
         void SerializedObjectUpdated();
 
         bool SupportsForcedSrgbBlit();
+
+        bool ShouldShowIl2CppLTOSettings();
 
         bool SupportsStaticSplashScreenBackgroundColor();
 

@@ -124,7 +124,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             if (!Application.isBatchMode)
             {
-                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Framing Timing Stats "), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. Ok to enable"),
+                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Framing Timing Stats "), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. \"Ok\" to enable"),
                     L10n.Tr("Ok"), L10n.Tr("Cancel"));
 
                 if (Ok)
@@ -142,10 +142,38 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
             else
             {
-                Debug.Log("Frame timing manager is not enabled in batch mode");
+                Debug.Log("Frame timing manager is not enabled for Adaptive Performance in batch mode");
             }
 
             return false;
+        }
+
+        internal static bool DiaglogForThermalStats(BuildProfile profile)
+        {
+            if (!Application.isBatchMode)
+            {
+                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Disable adjust IOS FPS Using Thermal State"), L10n.Tr("\"Adjust iOS FPS based on thermal state\" should be disabled in the Player Settings to ensure thermal mitigation works properly in the Adaptive Performance Apple Provider. Ok to disable"),
+                    L10n.Tr("Ok"), L10n.Tr("Cancel"));
+
+                if (Ok)
+                {
+                    if (profile != null)
+                    {
+                        profile.playerSettings.SetAdjustIOSFPSUsingThermalState_Internal(false);
+                    }
+                    else
+                    {
+                        PlayerSettings.adjustIOSFPSUsingThermalState = false;
+                    }
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.Log("Adjust IOS FPS Using Thermal State is not disabled for Adaptive Performance in batch mode");
+            }
+
+            return true;
         }
 
         internal static bool CheckEnableFrameTimingState(BuildProfile profile = null)
@@ -163,6 +191,23 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
 
             return true;
+        }
+
+        internal static bool CheckEnableThermalState(BuildProfile profile = null)
+        {
+            if (profile != null && profile.playerSettings != null)
+            {
+                if (profile.playerSettings.GetAdjustIOSFPSUsingThermalState_Internal() == true)
+                {
+                    return DiaglogForThermalStats(profile);
+                }
+            }
+            else if (PlayerSettings.adjustIOSFPSUsingThermalState == true)
+            {
+                return DiaglogForThermalStats(null);
+            }
+
+            return false;
         }
 
         internal static void AddToPreloadedAssetList(UnityEngine.Object settings)

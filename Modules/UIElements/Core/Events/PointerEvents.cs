@@ -355,6 +355,7 @@ namespace UnityEngine.UIElements
         int pointerId { get; }
         Vector3 position { get; }
         Vector3 deltaPosition { get; set; }
+        Ray? panelRay { get; set; }
     }
 
     internal static class PointerEventHelper
@@ -658,12 +659,15 @@ namespace UnityEngine.UIElements
         internal IMouseEvent compatibilityMouseEvent { get; set; }
         internal int displayIndex { get; set; }
         internal bool recomputeTopElementUnderPointer { get; set; }
+        internal Ray? panelRay { get; set; }
 
         IMouseEvent IPointerEventInternal.compatibilityMouseEvent => compatibilityMouseEvent;
         int IPointerEventInternal.displayIndex => displayIndex;
         bool IPointerEventInternal.recomputeTopElementUnderPointer => recomputeTopElementUnderPointer;
 
         Vector3 IPointerOrMouseEvent.deltaPosition { get => deltaPosition; set => deltaPosition = value; }
+        Ray? IPointerOrMouseEvent.panelRay { get => panelRay; set => panelRay = value; }
+
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -705,6 +709,7 @@ namespace UnityEngine.UIElements
             compatibilityMouseEvent = null;
             displayIndex = 0;
             recomputeTopElementUnderPointer = false;
+            panelRay = null;
         }
 
         /// <summary>

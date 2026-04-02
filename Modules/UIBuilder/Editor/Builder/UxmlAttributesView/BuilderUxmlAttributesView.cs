@@ -13,10 +13,8 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Bindings;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
-using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
@@ -179,9 +177,10 @@ namespace Unity.UI.Builder
                 if (attribute == null)
                     return;
 
-                if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
-                    UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(context.visualTree), out var uxmlValue))
+                if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString))
                 {
+                    var tryConvertFromStringResult = UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(context.visualTree), out var uxmlValue);
+                    tryConvertFromStringResult.DefaultErrorAction();
                     value = uxmlValue;
                 }
                 else
@@ -477,7 +476,7 @@ namespace Unity.UI.Builder
 
             if (serializedInstanced != null)
             {
-                var removeButton = new Button { name = buttonName, classList = { s_UxmlButtonUssClassName }, text = "Delete" };
+                var removeButton = new Button { name = buttonName, text = "Delete" }.WithClassList(s_UxmlButtonUssClassName);
                 removeButton.clicked += () =>
                 {
                     BuilderAssetUtilities.AddUxmlObjectToSerializedData(context, property, null);
@@ -494,7 +493,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                var addButton = new Button { name = buttonName, classList = { s_UxmlButtonUssClassName }, text = "Add" };
+                var addButton = new Button { name = buttonName, text = "Add" }.WithClassList(s_UxmlButtonUssClassName);
                 addButton.clicked += () =>
                 {
                     ShowAddUxmlObjectMenu(addButton, attribute, t =>
@@ -1330,12 +1329,6 @@ namespace Unity.UI.Builder
                 UpdateCustomPropertyDrawerAttributeOverrideStyle(customPropertyDrawer);
         }
 
-        void OnAttributeValueChange(ChangeEvent<string> evt)
-        {
-            var field = evt.elementTarget as TextField;
-            PostAttributeValueChange(field, evt.newValue);
-        }
-
         internal void OnValidatedAttributeValueChange(ChangeEvent<string> evt, Regex regex, string message)
         {
             var field = evt.elementTarget as TextField;
@@ -1366,7 +1359,9 @@ namespace Unity.UI.Builder
 
             using var marker = k_PostAttributeValueChangedMarker.Auto();
             var attributeName = GetAttributeName(field);
-            PostAttributeValueChange(attributeName, value, uxmlAsset);
+            UxmlAssetUtilities.PostAttributeValueChange(attributeName, value, context.visualTree, uxmlAsset, context.isInTemplateInstance, context.element,
+                () => BuilderAssetUtilities.UndoRecordDocument(context, BuilderConstants.ChangeAttributeValueUndoMessage),
+                (vta, vea) => BuilderAssetUtilities.CallDeserializeOnElement(context, vea), VisualElementExtensions.GetVisualElementAsset);
 
             // Mark field as overridden.
             if (field.GetFirstAncestorOfType<CustomPropertyDrawerField>() is { } customPropertyDrawer)
@@ -1380,46 +1375,6 @@ namespace Unity.UI.Builder
             var styleRow = GetLinkedStyleRow(field);
             if (styleRow != null)
                 UpdateFieldStatus(field);
-        }
-
-        void PostAttributeValueChange(string attributeName, string value, UxmlAsset uxmlAsset = null)
-        {
-            BuilderAssetUtilities.UndoRecordDocument(context, (BuilderConstants.ChangeAttributeValueUndoMessage));
-
-            // Set value in asset.
-            if (context.isInTemplateInstance)
-            {
-                TemplateContainer templateContainerParent = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element);
-
-                if (templateContainerParent != null)
-                {
-                    var templateAsset = templateContainerParent.GetVisualElementAsset() as TemplateAsset;
-                    var currentVisualElementName = context.element.name;
-
-                    if (!string.IsNullOrEmpty(currentVisualElementName))
-                    {
-                        var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(context.element);
-                        templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
-
-                        var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
-                        elementsToChange.ForEach(x =>
-                        {
-                            var templateVea = x.GetVisualElementAssetInTemplate();
-
-                            if (templateVea == null)
-                                return;
-
-                            UxmlSerializer.CreateSerializedDataOverrides(context.visualTree);
-                            BuilderAssetUtilities.CallDeserializeOnElement(context, x);
-                        });
-                    }
-                }
-            }
-            else
-            {
-                uxmlAsset ??= attributesUxmlOwner;
-                uxmlAsset.SetAttribute(attributeName, value);
-            }
         }
 
         void SetUndoGroup(VisualElement field)

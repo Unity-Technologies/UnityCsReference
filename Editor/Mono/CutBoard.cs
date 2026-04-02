@@ -25,9 +25,10 @@ namespace UnityEditor
         {
             m_GOCutboard = Selection.transforms;
             m_SelectedObjects = Selection.objects;
+
             // Selection.transform does not provide correct list order, so we have to do it manually
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_GOCutboard = m_GOCutboard.ToList().OrderBy(g => Array.IndexOf(m_SelectedObjects, g.gameObject)).ToArray();
+            m_GOCutboard = m_GOCutboard.OrderBy(g => Array.IndexOf(m_SelectedObjects, g.gameObject)).ToArray();
 #pragma warning restore UA2001
 
             // Return if nothing selected

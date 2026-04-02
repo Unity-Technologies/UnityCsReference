@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -143,9 +143,7 @@ namespace Unity.GraphToolkit.Editor
             if (dbProvider == null)
                 return;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ShowDatabases(view, worldPosition, callback, GetItemLibraryDatabasesForNodes(dbProvider, portModels), filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
-#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -164,9 +162,7 @@ namespace Unity.GraphToolkit.Editor
             IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var toolName = view.GraphTool.Name;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var adapterTitle = $"Choose an action for {portModels.First().DataTypeHandle.FriendlyName}";
-#pragma warning restore UA2001
+            var adapterTitle = $"Choose an action for {portModels[0].DataTypeHandle.FriendlyName}";
             var adapter = view.GetItemLibraryHelper().GetItemLibraryAdapter(adapterTitle, toolName, portModels);
             var filter = view.GetItemLibraryHelper().GetLibraryFilterProvider()?.GetOutputToGraphFilter(portModels);
             var dbProvider = view.GetItemLibraryHelper().GetItemDatabaseProvider();
@@ -174,9 +170,7 @@ namespace Unity.GraphToolkit.Editor
             if (dbProvider == null)
                 return;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ShowDatabases(view, worldPosition, callback, GetItemLibraryDatabasesForNodes(dbProvider, portModels), filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
-#pragma warning restore UA2001
         }
 
         /// <summary>

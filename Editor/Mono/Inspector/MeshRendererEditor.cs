@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System.Linq;
-using UnityEngine.Rendering;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -44,9 +41,7 @@ namespace UnityEditor
 
             base.OnEnable();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_GameObjectsSerializedObject = new SerializedObject(targets.Select(t => ((MeshRenderer)t).gameObject).ToArray());
-#pragma warning restore UA2001
+            m_GameObjectsSerializedObject = new SerializedObject(System.Array.ConvertAll(targets, t => ((MeshRenderer)t).gameObject));
             m_GameObjectStaticFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
 
             Lightmapping.lightingDataUpdated += LightingDataUpdatedRepaint;

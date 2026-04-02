@@ -4,10 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine.Bindings;
-using System.Linq;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -81,10 +78,6 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal int ruleIndex;
-
-        [NonSerialized]
-        // Points to the possible next selector that indexes to the same lookup table in StyleSheet
-        internal StyleComplexSelector nextInTable;
 
         [NonSerialized]
         internal int orderInStyleSheet;
@@ -165,9 +158,7 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return string.Format("[{0}]", string.Join(", ", m_Selectors.Select(x => x.ToString()).ToArray()));
-#pragma warning restore UA2001
+            return string.Format("[{0}]", string.Join<StyleSelector>(", ", m_Selectors));
         }
 
         // Sort StyleSelectorPart elements in decreasing type order, then decreasing value order.

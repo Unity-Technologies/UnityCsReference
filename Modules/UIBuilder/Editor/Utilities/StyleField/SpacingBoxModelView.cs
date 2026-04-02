@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -72,12 +71,12 @@ namespace Unity.UI.Builder
 
             m_Layer1 = new VisualElement()
             {
-                name = "BoxModelViewLayer1", classList = { BuilderConstants.InspectorCompositeStyleRowElementClassName }
-            };
+                name = "BoxModelViewLayer1"
+            }.WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             m_Layer2 = new VisualElement()
             {
-                name = "BoxModelViewLayer2", classList = { BuilderConstants.InspectorCompositeStyleRowElementClassName }
-            };
+                name = "BoxModelViewLayer2"
+            }.WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             m_Layer2.pickingMode = PickingMode.Ignore;
             m_Layer2.StretchToParentSize();
 
@@ -102,14 +101,8 @@ namespace Unity.UI.Builder
             m_Layer2.Add(m_BottomTextFieldPaddingContainer);
             m_Layer2.Add(m_BottomTextFieldMarginContainer);
 
-            m_ContentBox = new VisualElement()
-            {
-                classList =
-                {
-                    BuilderConstants.InspectorCompositeStyleRowElementClassName,
-                    k_BoxModelClassName, k_ContainerContentClassName
-                }
-            };
+            m_ContentBox = new VisualElement().WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName,
+                    k_BoxModelClassName, k_ContainerContentClassName);
             m_ContentBox.tooltip = "Size";
             m_ContentBox.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Content);
 
@@ -206,12 +199,8 @@ namespace Unity.UI.Builder
         private void OnMouseEnter(MouseEnterEvent evt)
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_Inspector.selection.selection.Any())
-#pragma warning restore UA2002
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection.First());
-#pragma warning restore UA2001
+            if (m_Inspector.selection.selection.Count > 0)
+                m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection[0]);
         }
 
         private void OnMouseLeave(MouseLeaveEvent evt)

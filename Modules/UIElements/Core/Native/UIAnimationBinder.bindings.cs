@@ -25,7 +25,9 @@ namespace UnityEngine.UIElements
         public int propertyId;
         public int channel;
         public float currentValue;
+        public EntityId currentObjectValue;
         private uint hash; // Do not use on the managed side
+        int currentValueUpToDate;
     };
 
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationBinder.h")]
@@ -48,7 +50,7 @@ namespace UnityEngine.UIElements
 
             rootVisualElement.RegisterAnimation(this);
 
-            ClearElementNames();
+            ClearElementCaches();
         }
 
         void OnEnable()
@@ -59,13 +61,24 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [RequiredByNativeCode]
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
+        void ClearElementCaches()
+        {
+            ClearElementNames();
+            m_Elements?.Clear();
+            m_ElementsMap?.Clear();
+        }
+
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
         void UnregisterRootElement()
         {
             if(rootVisualElement != null)
             {
                 rootVisualElement.UnregisterAnimation(this);
                 rootVisualElement= null;
+                ClearElementCaches();
             }
         }
 
@@ -77,7 +90,8 @@ namespace UnityEngine.UIElements
             Internal_AssignKnownElementNames(names, propertyNames);
         }
 
-        [RequiredByNativeCode]
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
         internal void UpdateElementNames()
         {
             if (m_Elements == null)
@@ -175,15 +189,53 @@ namespace UnityEngine.UIElements
             Internal_ApplyBoundValues();
         }
 
-        [RequiredByNativeCode]
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
         unsafe void IterateOnBoundValues(IntPtr values, int count)
         {
             var boundValues = new ReadOnlySpan<UIAnimationBoundProperty>(values.ToPointer(), count);
 
             foreach (ref readonly var boundValue in boundValues)
             {
-                SetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel, boundValue.currentValue);
+                StylePropertyId id = (StylePropertyId)boundValue.propertyId;
+
+                switch (id)
+                {
+                    case StylePropertyId.BackgroundImage:
+                    case StylePropertyId.UnityFont:
+                    case StylePropertyId.UnityMaterial:
+                        SetObjectValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel, boundValue.currentObjectValue);
+                        break;
+                    default:
+                        SetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel, boundValue.currentValue);
+                        break;
+                }
             }
+        }
+
+        [RequiredMember]
+        [RequiredByNativeCode(Optional = true)]
+        unsafe void FetchCurrentValue(IntPtr values, int count)
+        {
+            var boundValues = new Span<UIAnimationBoundProperty>(values.ToPointer(), count);
+
+            foreach (ref var boundValue in boundValues)
+            {
+                StylePropertyId id = (StylePropertyId)boundValue.propertyId;
+
+                switch (id)
+                {
+                    case StylePropertyId.BackgroundImage:
+                    case StylePropertyId.UnityFont:
+                    case StylePropertyId.UnityMaterial:
+                        boundValue.currentObjectValue = GetObjectValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
+                        break;
+                    default:
+                        boundValue.currentValue = GetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
+                        break;
+                }
+            }
+
         }
 
         void IValueAnimationUpdate.Tick(long currentTimeMs)

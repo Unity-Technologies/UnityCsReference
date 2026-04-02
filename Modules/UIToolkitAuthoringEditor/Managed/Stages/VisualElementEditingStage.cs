@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Unity.Hierarchy.Editor;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -28,8 +29,11 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private VisualTreeAssetEditingContext m_Context;
 
-    private VisualTreeAssetExporter m_Exporter;
-    private VisualTreeAssetExporter.ExportOptions m_ExporterOptions;
+    private VisualTreeAssetExporter m_VisualTreeAssetExporter;
+    private VisualTreeAssetExporter.ExportOptions m_VisualTreeAssetExporterOptions;
+
+    private StyleSheetExporter m_StyleSheetExporter;
+    private StyleSheetExporter.UssExportOptions m_StyleSheetExporterOptions;
 
     private PanelElement m_PanelElement;
 
@@ -48,6 +52,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         {
             if (m_Context == value)
                 return;
+
             m_Context = value;
             if (m_Context.SubDocumentOptions != SubDocumentOptions.None)
             {
@@ -61,6 +66,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         }
     }
 
+    public BreadcrumbBar.SeparatorStyle SeparatorStyle { get; set; }
+
     public VisualTreeAsset EditedVisualTreeAsset { get; private set; }
 
     public Clipboard Clipboard => m_Clipboard;
@@ -69,14 +76,26 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         Context = context;
         m_HeaderContent.text = EditedVisualTreeAsset.name;
-        m_HeaderContent.image = UIResources.GetIconForType(typeof(VisualTreeAsset), UIResources.RequestSize.Px32).texture;
+        m_HeaderContent.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;;
     }
 
     public VisualElementEditingStage()
     {
         m_HeaderContent = new GUIContent();
-        m_Exporter = new VisualTreeAssetExporter();
-        m_ExporterOptions = new VisualTreeAssetExporter.ExportOptions();
+        m_VisualTreeAssetExporter = new VisualTreeAssetExporter();
+        m_VisualTreeAssetExporterOptions = new VisualTreeAssetExporter.ExportOptions
+        {
+            ignoreAttributeList = ["__unity-builder-selected-element"],
+            styleExporterOptions = new StyleSheetExporter.UssExportOptions
+            {
+                ignorePropertyList = ["--ui-builder-selected-style-property"]
+            }
+        };
+        m_StyleSheetExporter = new StyleSheetExporter();
+        m_StyleSheetExporterOptions = new StyleSheetExporter.UssExportOptions
+        {
+            ignorePropertyList = ["--ui-builder-selected-style-property"]
+        };
     }
 
     public void RequestRefresh()
@@ -118,10 +137,14 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         base.OnEnable();
         m_PanelElement = new PanelElement();
         m_PanelElement.CreateNestedPanel();
+        Binding.SetPanelLogLevel(m_PanelElement.NestedPanel, BindingLogLevel.None);
         DoDeserialize();
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
         m_Clipboard = new Clipboard();
+        // This is temporary fix for domain issues that are very specific to timings.
+        // TODO: [MP] Remove once we have the proper reload attributes for managed objects.
+        HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
     }
 
     protected override void OnDisable()
@@ -183,31 +206,70 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         return true;
     }
 
-    internal override bool hasUnsavedChanges => EditorUtility.IsDirty(EditedVisualTreeAsset);
+    internal override bool hasUnsavedChanges => AnyReferencedAssetDirty();
+
+    private bool AnyReferencedAssetDirty()
+    {
+        if (EditorUtility.IsDirty(EditedVisualTreeAsset))
+            return true;
+        var styleSheets = EditedVisualTreeAsset.GetAllReferencedStyleSheets();
+        foreach(var styleSheet in styleSheets)
+            if (EditorUtility.IsDirty(styleSheet))
+                return true;
+        return false;
+    }
 
     internal override bool Save()
     {
-        if (string.IsNullOrEmpty(assetPath))
+        var succeeded = true;
+        using (new AssetDatabase.AssetEditingScope())
         {
-            // [TODO] Figure out Save as...
-            return false;
+
+            var styleSheets = EditedVisualTreeAsset.GetAllReferencedStyleSheets();
+            foreach (var styleSheet in styleSheets)
+            {
+                if (EditorUtility.IsDirty(styleSheet))
+                {
+                    var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
+                    if (string.IsNullOrEmpty(styleSheetPath))
+                        // [TODO] Figure out Save as...
+                        continue;
+                    var styleSheetStr = m_StyleSheetExporter.ToUssString(styleSheet, m_StyleSheetExporterOptions);
+                    succeeded &= WriteTextFileToDisk(styleSheetPath, styleSheetStr);
+                    AssetDatabase.ImportAsset(styleSheetPath);
+                }
+            }
+
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                // [TODO] Figure out Save as...
+                return false;
+            }
+
+            if (EditorUtility.IsDirty(EditedVisualTreeAsset))
+            {
+                VisualTreeAsset.HarmonizeIds(EditedVisualTreeAsset);
+                var assetStr = m_VisualTreeAssetExporter.ToUxmlString(EditedVisualTreeAsset, m_VisualTreeAssetExporterOptions);
+                succeeded &= WriteTextFileToDisk(assetPath, assetStr);
+                AssetDatabase.ImportAsset(assetPath);
+            }
         }
 
-        VisualTreeAsset.HarmonizeIds(EditedVisualTreeAsset);
-        var assetStr =  m_Exporter.ToUxmlString(EditedVisualTreeAsset, m_ExporterOptions);
-        var written = WriteTextFileToDisk(assetStr);
-        if (written)
-        {
-            ReimportAssets();
-            CloneTree();
-        }
-        return written;
+        ReloadAssets();
+        CloneTree();
+
+        return succeeded;
     }
 
     internal override void DiscardChanges()
     {
         ReimportAssets();
         CloneTree();
+    }
+
+    internal bool AskUserToSaveModifiedStage()
+    {
+        return AskUserToSaveModifiedStageBeforeSwitchingStage();
     }
 
     internal override bool AskUserToSaveModifiedStageBeforeSwitchingStage()
@@ -250,7 +312,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         var history = StageNavigationManager.instance.stageHistory;
         bool isLastCrumb = this == history[^1];
         var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
-        var separatorstyle = Context.SubDocumentOptions == SubDocumentOptions.Isolation ? BreadcrumbBar.SeparatorStyle.Line : BreadcrumbBar.SeparatorStyle.Arrow ;
         if (isAssetMissing)
         {
             style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelMissing;
@@ -262,29 +323,27 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             content = content,
             guistyle = style,
             userdata = this,
-            separatorstyle = separatorstyle
+            separatorstyle = SeparatorStyle
         };
     }
 
-    private bool WriteTextFileToDisk(string content)
+    private bool WriteTextFileToDisk(string path, string content)
     {
         // Make sure the folders exist.
-        var folder = Path.GetDirectoryName(assetPath);
+        var folder = Path.GetDirectoryName(path);
         if (folder != null && !Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
-        var success = FileUtil.WriteTextFileToDisk(assetPath, content, out var message);
+        var success = FileUtil.WriteTextFileToDisk(path, content, out var message);
 
-        if (success)
-        {
-            ReimportAssets();
-        }
-        else
-        {
+        if (!success)
             Debug.LogError(message);
-        }
-
         return success;
+    }
+
+    private void ReloadAssets()
+    {
+        Context = VisualTreeAssetEditingContext.Reload(Context);
     }
 
     private void ReimportAssets()

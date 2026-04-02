@@ -63,9 +63,9 @@ namespace Unity.GraphToolkit.Editor
                     IEnumerable<BlockNodeModel> selectedBlockModels = GraphView.GetSelection().OfType<BlockNodeModel>();
 #pragma warning restore UA2001
 
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (selectedBlockModels.Contains(DraggedBlock.Model as BlockNodeModel))
-#pragma warning restore UA2001
+#pragma warning restore UA2007
                         SelectedBlockModels = selectedBlockModels;
                     else
                         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -188,9 +188,9 @@ namespace Unity.GraphToolkit.Editor
                         }
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);
 
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (SelectedBlockModels.All(t => t.IsCompatibleWith(HoveredContext.ContextNodeModel)))
-#pragma warning restore UA2001
+#pragma warning restore UA2008
                             HoveredContext.BlocksDragging(posInContext, SelectedBlockModels, m_Duplicate);
                         else
                             HoveredContext.BlockDraggingRefused();
@@ -224,9 +224,9 @@ namespace Unity.GraphToolkit.Editor
                             continue;
 
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (SelectedBlockModels.All(t => t.IsCompatibleWith(HoveredContext.ContextNodeModel)))
-#pragma warning restore UA2001
+#pragma warning restore UA2008
                         {
                             foreach (var block in SelectedBlocks)
                             {

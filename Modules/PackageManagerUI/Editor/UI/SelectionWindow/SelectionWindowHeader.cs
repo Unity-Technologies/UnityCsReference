@@ -16,18 +16,17 @@ internal class SelectionWindowHeader : VisualElement
 
     public SelectionWindowHeader()
     {
-        var header = new VisualElement { name = "header", classList = { "header" } };
+        var header = new VisualElement { name = "header" }.WithClassList("header");
         Add(header);
 
         var headerIcon = new VisualElement
         {
             name = "headerIcon",
-            classList = { "header-icon" },
             style = { backgroundImage = new StyleBackground(defaultHeaderIcon) }
-        };
+        }.WithClassList("header-icon");
         header.Add(headerIcon);
 
-        var headerText = new VisualElement { name = "headerText", classList = { "header-text" } };
+        var headerText = new VisualElement { name = "headerText" }.WithClassList("header-text");
         header.Add(headerText);
 
         m_Title = new Label { name = "title", text = "Title", tabIndex = -1, displayTooltipWhenElided = true };
@@ -36,7 +35,7 @@ internal class SelectionWindowHeader : VisualElement
         m_Description = new Label { name = "description", text = "description", tabIndex = -1, displayTooltipWhenElided = true };
         headerText.Add(m_Description);
 
-        var separator = new VisualElement { name = "separator", classList = { "separator" } };
+        var separator = new VisualElement { name = "separator" }.WithClassList("separator");
         Add(separator);
     }
 

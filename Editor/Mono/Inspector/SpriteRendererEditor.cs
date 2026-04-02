@@ -225,6 +225,10 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox("BlendShapes with SpriteSkin require GPU skinning. Please enable it in the Player tab in Project Settings.", MessageType.Warning);
             }
+            if (renderer.drawMode != SpriteDrawMode.Simple)
+            {
+                EditorGUILayout.HelpBox("BlendShapes with Sliced or Tiled draw modes are not supported.", MessageType.Warning);
+            }
         }
 
         internal void SetDrawMode(SpriteDrawMode drawMode)

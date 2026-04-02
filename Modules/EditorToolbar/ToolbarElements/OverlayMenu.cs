@@ -172,13 +172,26 @@ namespace UnityEditor.Overlays
                 toggle.SetValueWithoutNotify(overlay.displayed);
                 toggle.RegisterValueChangedCallback((evt) => overlay.displayed = evt.newValue);
                 Action<bool> displayedChanged = (value) => toggle.SetValueWithoutNotify(value);
+                Action<bool> hasMenuEntryChanged = (value) => UpdateEntryVisibility(toggle, overlay);
                 toggle.RegisterCallback<AttachToPanelEvent>((evt) =>
                 {
                     displayedChanged(overlay.displayed);
+                    UpdateEntryVisibility(toggle, overlay);
+
                     overlay.displayedChanged += displayedChanged;
+                    overlay.hasMenuEntryChanged += hasMenuEntryChanged;
                 });
-                toggle.RegisterCallback<DetachFromPanelEvent>((evt) => overlay.displayedChanged -= displayedChanged);
+                toggle.RegisterCallback<DetachFromPanelEvent>((evt) =>
+                {
+                    overlay.displayedChanged -= displayedChanged;
+                    overlay.hasMenuEntryChanged -= hasMenuEntryChanged;
+                });
                 return toggle;
+            }
+
+            static void UpdateEntryVisibility(EditorToolbarToggle toggle, Overlay overlay)
+            {
+                toggle.style.display = overlay.hasMenuEntry ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             public void RebuildContent()
@@ -253,7 +266,7 @@ namespace UnityEditor.Overlays
                 var overlayMenuItemContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Menu _{binding}");
                 var enableOverlaysContent = EditorGUIUtility.TrTextContent($"Overlays/Enable Overlays");
                 var displaceWindowContent = EditorGUIUtility.TrTextContent($"Overlays/Displace Window");
-                var overlaySettingsContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Settings...");
+                var overlaySettingsContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Preferences...");
 
                 var displaceWindow = targetWindow.overlayCanvas.dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow;
                 var overlaysEnabled = targetWindow.overlayCanvas.overlaysEnabled;
@@ -344,7 +357,7 @@ namespace UnityEditor.Overlays
 
         bool ShouldShowOverlay(Overlay overlay)
         {
-            return overlay.userControlledVisibility && overlay.hasMenuEntry && !overlay.canvas.IsTransient(overlay) && (overlay != this || isPopup);
+            return overlay.userControlledVisibility && !overlay.canvas.IsTransient(overlay) && (overlay != this || isPopup);
         }
 
         public OverlayToolbar CreateHorizontalToolbarContent()
@@ -428,7 +441,7 @@ namespace UnityEditor.Overlays
         {
             var label = new Label(isVerticalToolbar ? "None" : "No Overlays");
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
-            label.tooltip = $"No overlays in the current {canvas.containerWindow.name}";
+            label.tooltip = $"No overlays to show in the {(String.IsNullOrEmpty(canvas.containerWindow.name) ? "current" : canvas.containerWindow.name)} menu.";
 
             return label;
         }

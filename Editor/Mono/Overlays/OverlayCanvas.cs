@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Overlays
 {
@@ -111,7 +112,7 @@ namespace UnityEditor.Overlays
             index = indexInContainer;
             dockPosition = (DockPosition)section;
             id = overlay.id;
-            displayed = overlay.displayed;
+            displayed = overlay.GetSerializedDisplayed();
             contents = EditorJsonUtility.ToJson(overlay);
 
             // obsolete
@@ -234,6 +235,13 @@ namespace UnityEditor.Overlays
     {
         None,
         DisplaceWindow
+    }
+
+    enum DynamicPanelZone
+    {
+        // Use the same value as the dock zone enum
+        LeftDynamicPanel = DockZone.LeftDynamicPanel,
+        RightDynamicPanel = DockZone.RightDynamicPanel
     }
 
     //Dock position within container
@@ -493,6 +501,20 @@ namespace UnityEditor.Overlays
             DisplaceWindow();
         }
 
+        internal void SetDynamicPanelMode(DynamicPanelZone zone, DynamicPanelOverlayContainer.State state)
+        {
+            var container = GetDockZoneContainer((DockZone)zone);
+            if (container is DynamicPanelOverlayContainer dynContainer)
+                dynContainer.SwitchState(state);
+        }
+
+        internal void CycleDynamicPanelState(DynamicPanelZone zone)
+        {
+            var container = GetDockZoneContainer((DockZone)zone);
+            if (container is DynamicPanelOverlayContainer dynContainer)
+                dynContainer.CycleState();
+        }
+
         internal OverlayCanvas() { }
 
         OverlayCanvasModeDefinition CreateModeDefinition(OverlayCanvasMode mode)
@@ -593,12 +615,8 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the vertical overlay container group.
                 // If they are, the layout is already correct.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (displaceContainer.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    && displaceContainer.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore UA2001
+                if (displaceContainer.children.Contains(leftDynamicPanelOverlayContainer)
+                    && displaceContainer.children.Contains(rightDynamicPanelOverlayContainer))
                     return;
 
                 displaceContainer.Add(leftDynamicPanelOverlayContainer);
@@ -611,12 +629,8 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the overlay scene container.
                 // If they are, the layout is already correct.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (sceneContainers.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    && sceneContainers.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore UA2001
+                if (sceneContainers.children.Contains(leftDynamicPanelOverlayContainer)
+                    && sceneContainers.children.Contains(rightDynamicPanelOverlayContainer))
                     return;
 
                 var anchoredContainer = sceneContainers.Q<VisualElement>(k_AnchoredContainerName);
@@ -1397,7 +1411,7 @@ namespace UnityEditor.Overlays
 
             // Clear OverlayContainer instances and set Overlay.displayed to false. RestoreOverlay expects that Overlay
             // is not present in VisualElement hierarchy.
-            foreach (var overlay in this.overlays)
+            foreach (var overlay in m_Overlays)
             {
                 overlay.displayed = false;
                 overlay.container?.RemoveOverlay(overlay);
@@ -1407,15 +1421,13 @@ namespace UnityEditor.Overlays
             // 1. Find and associate all Overlays with SaveData (using default SaveData if necessary)
             // 2. Sort in ascending order by SaveData.index
             // 3. Apply SaveData, insert Overlay in Container
-            var overlays = new List<Tuple<SaveData, Overlay>>();
+            var overlays = new List<ValueTuple<SaveData, Overlay>>(m_Overlays.Count);
 
-            foreach(var o in this.overlays)
-                overlays.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
+            foreach(var o in m_Overlays)
+                overlays.Add(new ValueTuple<SaveData, Overlay>(FindSaveData(o), o));
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var ordered = overlays.OrderBy(x => x.Item1.index);
-#pragma warning restore UA2001
-            foreach (var o in ordered)
+            overlays.Sort((a, b) => { return a.Item1.index.CompareTo(b.Item1.index); });
+            foreach (var o in overlays)
                 RestoreOverlay(o.Item2, o.Item1);
 
             foreach (var container in m_Containers)

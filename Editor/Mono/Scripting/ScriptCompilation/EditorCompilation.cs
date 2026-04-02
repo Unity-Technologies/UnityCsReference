@@ -8,10 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using NiceIO;
 using Bee.BeeDriver;
-using Bee.BinLog;
 using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
 using UnityEditor.Compilation;
@@ -28,6 +26,7 @@ using File = System.IO.File;
 using UnityEditor.Build;
 using UnityEngine.Pool;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -937,7 +936,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static RunnableProgram MakeScriptCompilationBuildProgram()
         {
             var buildProgramAssembly = new NPath($"{EditorApplication.applicationBuildPipelinePath}/ScriptCompilationBuildProgram.exe");
-            return new SystemProcessRunnableProgram($"{EditorApplication.applicationScriptingPath}/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", new[] {buildProgramAssembly.InQuotes(SlashMode.Native)}, new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
+            return new SystemProcessRunnableProgram($"{EditorApplication.applicationScriptingPath}/DotNetSdk/dotnet{BeeScriptCompilation.ExecutableExtension}", new[] {buildProgramAssembly.InQuotes(SlashMode.Native)}, new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
                );
         }
 
@@ -1844,9 +1843,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [Obsolete]
         ScriptAssembly InitializeScriptAssemblyWithoutReferencesAndDefines(AssemblyBuilder assemblyBuilder)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var scriptFiles = assemblyBuilder.scriptPaths.Select(p => AssetPath.Combine(projectDirectory, p)).ToArray();
-#pragma warning restore UA2001
+            var scriptFiles = Array.ConvertAll(assemblyBuilder.scriptPaths, p => AssetPath.Combine(projectDirectory, p));
             var assemblyPath = AssetPath.Combine(projectDirectory, assemblyBuilder.assemblyPath);
 
             var scriptAssembly = new ScriptAssembly

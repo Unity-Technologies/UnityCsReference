@@ -3,10 +3,10 @@ using System.Reflection;
 
 namespace Unity.Scripting.LifecycleManagement;
 
-internal sealed class StackOrderedAssemblyList : IReadonlyOrderedAssemblyList
+internal sealed class StackOrderedAssemblyList : IReadOnlyList<Assembly>
 {
     private int _count;
-    private readonly List<OrderedAssemblyList> _assemblyStacks = new();
+    private readonly List<ReadOnlyAssemblyList> _assemblyStacks = new();
 
     public int Count => _count;
     public int StackCount => _assemblyStacks.Count;
@@ -34,7 +34,7 @@ internal sealed class StackOrderedAssemblyList : IReadonlyOrderedAssemblyList
         }
     }
 
-    public void PushStack(OrderedAssemblyList assemblies)
+    public void PushStack(ReadOnlyAssemblyList assemblies)
     {
         _count += assemblies.Count;
         _assemblyStacks.Add(assemblies);

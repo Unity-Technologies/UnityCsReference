@@ -82,16 +82,13 @@ namespace Unity.UI.Builder
 
             m_Layer1 = new VisualElement()
             {
-                name = "BoxModelViewLayer1", classList = { BuilderConstants.InspectorCompositeStyleRowElementClassName }
-            };
+                name = "BoxModelViewLayer1"
+            }.WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             m_Layer2 = new VisualElement()
             {
-                name = "BoxModelViewLayer2", classList =
-                {
-                    BuilderConstants.InspectorCompositeStyleRowElementClassName,
-                    k_BordeLayer2ClassName
-                }
-            };
+                name = "BoxModelViewLayer2"
+            }.WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName,
+                    k_BordeLayer2ClassName);
             m_Layer2.pickingMode = PickingMode.Ignore;
             m_Layer2.StretchToParentSize();
 
@@ -132,14 +129,8 @@ namespace Unity.UI.Builder
             m_Layer2.Add(m_ContentBottom);
             m_Layer2.Add(m_BottomColorFieldContainer);
 
-            m_ContentBox = new VisualElement()
-            {
-                classList =
-                {
-                    BuilderConstants.InspectorCompositeStyleRowElementClassName,
-                    k_BoxModelClassName, k_ContainerContentClassName
-                }
-            };
+            m_ContentBox = new VisualElement().WithClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName,
+                    k_BoxModelClassName, k_ContainerContentClassName);
 
             m_BorderWidthBox = new BoxModelElement<string, BoxModelStyleField>(BoxType.BorderWidth, true, m_ContentBox,
                 m_TopBorderWidthFieldContainer, m_BottomBorderWidthFieldContainer,
@@ -157,8 +148,8 @@ namespace Unity.UI.Builder
             m_BorderWidthBox.Add(m_BorderRadiusBox);
 
             // visual elements used for border style
-            var borderElement1 = new VisualElement() { classList = { k_BorderElementClassName, k_BorderElementVerticalClassName } };
-            var borderElement2 = new VisualElement() { classList = { k_BorderElementClassName, k_BorderElementHorizontalClassName } };
+            var borderElement1 = new VisualElement().WithClassList(k_BorderElementClassName, k_BorderElementVerticalClassName);
+            var borderElement2 = new VisualElement().WithClassList(k_BorderElementClassName, k_BorderElementHorizontalClassName);
             m_BorderWidthBox.Add(borderElement1);
             m_BorderWidthBox.Add(borderElement2);
 

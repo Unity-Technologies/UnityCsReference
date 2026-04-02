@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 // Modules
 [assembly: InternalsVisibleTo("UnityEditor.HierarchyModule")]
+[assembly: InternalsVisibleTo("UnityEditor.QuickSearchModule")]
 
 // Temporary until `IHierarchyEntityIdConverter` API is made fully public.
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]

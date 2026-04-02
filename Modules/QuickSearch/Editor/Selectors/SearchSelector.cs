@@ -76,9 +76,7 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return $"{selector.pattern} | {string.Join("| ", groups.Select(g => g.ToString()))}";
-#pragma warning restore UA2001
+            return $"{selector.pattern} | {string.Join("| ", groups)}";
         }
     }
 

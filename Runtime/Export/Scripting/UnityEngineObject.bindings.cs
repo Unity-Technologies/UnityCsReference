@@ -76,28 +76,31 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential, Size = 4)]
     [Serializable]
-    [Obsolete("Obsolete - Please use EntityId instead.")]
+    [Obsolete("Obsolete - Please use EntityId instead.", true)]
     public struct InstanceID : IEquatable<InstanceID>, IComparable<InstanceID>, IFormattable
     {
         [SerializeField]
-        int m_Data;
+        int m_index;
+
+        [SerializeField]
+        int m_version;
 
         public static InstanceID None => default;
         public override bool Equals(object obj) => obj is InstanceID other && Equals(other);
-        public bool Equals(InstanceID other) => m_Data == other.m_Data;
-        public int CompareTo(InstanceID other) => m_Data.CompareTo(other.m_Data);
+        public bool Equals(InstanceID other) => m_index == other.m_index;
+        public int CompareTo(InstanceID other) => m_index.CompareTo(other.m_index);
         public static bool operator ==(InstanceID left, InstanceID right) => left.Equals(right);
         public static bool operator !=(InstanceID left, InstanceID right) => !left.Equals(right);
 
-        public static bool operator <(InstanceID left, InstanceID right)  => left.m_Data < right.m_Data;
-        public static bool operator >(InstanceID left, InstanceID right)  => left.m_Data > right.m_Data;
-        public static bool operator <=(InstanceID left, InstanceID right) => left.m_Data <= right.m_Data;
-        public static bool operator >=(InstanceID left, InstanceID right)  => left.m_Data >= right.m_Data;
+        public static bool operator <(InstanceID left, InstanceID right)  => left.m_index < right.m_index;
+        public static bool operator >(InstanceID left, InstanceID right)  => left.m_index > right.m_index;
+        public static bool operator <=(InstanceID left, InstanceID right) => left.m_index <= right.m_index;
+        public static bool operator >=(InstanceID left, InstanceID right)  => left.m_index >= right.m_index;
 
         public override int GetHashCode()
         {
             // We only want the lower bits, which is the Index
-            uint a = (uint)m_Data;
+            uint a = (uint)m_index;
 
             // Same Int hash as in the engine
             a = (a + 0x7ed55d16) + (a << 12);
@@ -115,45 +118,50 @@ namespace UnityEngine
             return this != InstanceID.None;
         }
 
-        public bool Equals(int other) => m_Data == (int)other;
+        public bool Equals(int other) => m_index == (int)other;
 
-        public static implicit operator int(InstanceID entityId) => entityId.m_Data;
-        public static implicit operator InstanceID(int intValue) => new InstanceID {m_Data = intValue};
+        public static implicit operator int(InstanceID entityId) => entityId.m_index;
+        public static implicit operator InstanceID(int intValue) => new InstanceID {m_index = intValue};
 
         public static implicit operator EntityId(InstanceID entityId) => (int)entityId;
-        public static implicit operator InstanceID(EntityId entityId) => new InstanceID {m_Data = entityId};
+        public static implicit operator InstanceID(EntityId entityId) => new InstanceID {m_index = (int)entityId};
 
-        public override string ToString() => m_Data.ToString();
-        public string ToString(string format) => m_Data.ToString(format);
-        public string ToString(string format, IFormatProvider formatProvider) => m_Data.ToString(format, formatProvider);
+        public override string ToString() => m_index.ToString();
+        public string ToString(string format) => m_index.ToString(format);
+        public string ToString(string format, IFormatProvider formatProvider) => m_index.ToString(format, formatProvider);
     }
 
 #pragma warning disable 612, 618
-    [StructLayout(LayoutKind.Sequential, Size = 4)]
+    [StructLayout(LayoutKind.Sequential, Size = 8)]
     [UsedByNativeCode]
     [Serializable]
     [NativeClass("EntityId")]
     [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
     public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
     {
-        [SerializeField]
-        int m_Data;
+        const ulong MagicVersion = (ulong)0x7E25105 << 32;
 
-        public static EntityId None => default;
+        [SerializeField]
+        ulong m_rawData;
+
+        public static EntityId None => new EntityId { m_rawData = 0 };
         public override bool Equals(object obj) => obj is EntityId other && Equals(other);
-        public bool Equals(EntityId other) => m_Data == other.m_Data;
-        public int CompareTo(EntityId other) => m_Data.CompareTo(other.m_Data);
+        public bool Equals(EntityId other)
+        {
+            return m_rawData == other.m_rawData;
+        }
+        public int CompareTo(EntityId other) => ((int)(m_rawData & 0xFFFFFFFF)).CompareTo(((int)(other.m_rawData & 0xFFFFFFFF)));
         public static bool operator ==(EntityId left, EntityId right) => left.Equals(right);
         public static bool operator !=(EntityId left, EntityId right) => !left.Equals(right);
 
-        public static bool operator <(EntityId left, EntityId right)  => left.m_Data < right.m_Data;
-        public static bool operator >(EntityId left, EntityId right)  => left.m_Data > right.m_Data;
-        public static bool operator <=(EntityId left, EntityId right) => left.m_Data <= right.m_Data;
-        public static bool operator >=(EntityId left, EntityId right)  => left.m_Data >= right.m_Data;
+        public static bool operator <(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) < (int)(right.m_rawData & 0xFFFFFFFF);
+        public static bool operator >(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) > (int)(right.m_rawData & 0xFFFFFFFF);
+        public static bool operator <=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) <= (int)(right.m_rawData & 0xFFFFFFFF);
+        public static bool operator >=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) >= (int)(right.m_rawData & 0xFFFFFFFF);
 
         public override int GetHashCode()
         {
-            return (int)m_Data;
+            return (int)(uint)m_rawData;
         }
 
         public bool IsValid()
@@ -161,23 +169,22 @@ namespace UnityEngine
             return this != EntityId.None;
         }
 
-        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", false)]
-        public bool Equals(int other) => m_Data == (int)other;
 
-        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
-        public static implicit operator int(EntityId entityId) => entityId.m_Data;
+        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
+        public bool Equals(int other) => m_rawData == (MagicVersion | (ulong)(uint)other);
 
-        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
-        public static implicit operator EntityId(int intValue) => new EntityId {m_Data = intValue};
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
+        public static implicit operator int(EntityId entityId) => (int)(entityId.m_rawData & 0xFFFFFFFF);
 
-        [Obsolete("",false)]
-        public static implicit operator EntityId(InstanceID entityId) => new EntityId {m_Data = entityId};
-        [Obsolete("",false)]
-        public static implicit operator InstanceID(EntityId entityId) => (int)entityId;
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
+        public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
 
-        public override string ToString() => m_Data.ToString();
-        public string ToString(string format) => m_Data.ToString(format);
-        public string ToString(string format, IFormatProvider formatProvider) => m_Data.ToString(format, formatProvider);
+
+        public override string ToString() => ((int)(m_rawData & 0xFFFFFFFF)).ToString();
+        public string ToString(string format) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format);
+        public string ToString(string format, IFormatProvider formatProvider) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider);
+
+
 
         [FreeFunction("AllocateNextLowestEntityId")]
         internal static extern EntityId AllocateNextLowestEntityId();
@@ -188,43 +195,21 @@ namespace UnityEngine
             EntityId res = EntityId.None;
 
             if (int.TryParse(input, out var intResult))
-                res = FromULong((ulong)intResult);
+                res = FromULong(MagicVersion | (ulong)(uint)intResult);
 
             return res;
         }
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
-        public ulong GetRawData() => (ulong)m_Data;
+        public ulong GetRawData() => m_rawData;
 
         [Obsolete("Stop using EntityId.From(int)",false)]
-        internal static EntityId From(int input) => new EntityId {m_Data = input};
+        internal static EntityId From(int input) => new EntityId {m_rawData = MagicVersion | (ulong)(uint)input};
         [Obsolete("Stop using EntityId.From(ulong) and use EntityId.FromULong instead.",false)]
-        internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
+        internal static EntityId From(ulong input) => new EntityId { m_rawData = input };
 
-        public static EntityId FromULong(ulong input) => new EntityId { m_Data = (int)input };
-        public static ulong ToULong(EntityId entityId) => (ulong)entityId.m_Data;
-    }
-
-    internal static class EntityIdExtensions
-    {
-        public static int[] ToIntArray(this InstanceID[] instanceIds) => Array.ConvertAll(instanceIds, input => (int)input);
-        public static InstanceID[] ToInstanceIDArray(this int[] instanceIdInts) => Array.ConvertAll(instanceIdInts, input => (InstanceID)input);
-        public static List<int> ToIntList(this List<InstanceID> instanceIds) => instanceIds.ConvertAll(input => (int)input);
-        public static List<InstanceID> ToInstanceIDList(this List<int> instanceIdInts) =>  instanceIdInts.ConvertAll(input => (InstanceID)input);
-
-        public static int[] ToIntArray(this EntityId[] entityIds) => Array.ConvertAll(entityIds, input => (int)input);
-        public static EntityId[] ToEntityIdArray(this int[] entityIdInts) => Array.ConvertAll(entityIdInts, input => (EntityId)input);
-        public static List<int> ToIntList(this List<EntityId> entityIds) => entityIds.ConvertAll(input => (int)input);
-        public static List<EntityId> ToEntityIdList(this List<int> entityIdInts) =>  entityIdInts.ConvertAll(input => (EntityId)input);
-
-        [StructLayout(LayoutKind.Explicit)]
-        struct UnsafeTypeCastInstanceIDArray // .GetType() won't be cast, so `is` and `as` won't work.
-        {
-            [FieldOffset(0)] public EntityId[] instance_ids;
-            [FieldOffset(0)] public int[] ulongs;
-        }
-        internal static EntityId[] AsEntityIdArray(this int[] instanceIds) => new UnsafeTypeCastInstanceIDArray { ulongs = instanceIds }.instance_ids;
-        internal static int[] AsIntArray(this EntityId[] instanceIds) => new UnsafeTypeCastInstanceIDArray { instance_ids = instanceIds }.ulongs;
+        public static EntityId FromULong(ulong input) => new EntityId { m_rawData = input };
+        public static ulong ToULong(EntityId entityId) => entityId.m_rawData;
     }
     #pragma warning restore 612, 618
 
@@ -267,16 +252,9 @@ namespace UnityEngine
             throw new NotImplementedException();
         }
 
-        [Obsolete("GetInstanceID is deprecated. Use GetEntityId instead. This will be removed in a future version.")]
+        [Obsolete("GetInstanceID is deprecated. Use GetEntityId instead. This will be removed in a future version.", true)]
         [System.Security.SecuritySafeCritical]
-        public unsafe int GetInstanceID()
-        {
-            //Because in the player we dissalow calling GetInstanceID() on a non-mainthread, we're also
-            //doing this in the editor, so people notice this problem early. even though technically in the editor,
-            //it is a threadsafe operation.
-            EnsureRunningOnMainThread();
-            return m_EntityId;
-        }
+        public unsafe int GetInstanceID() => (int)(GetEntityId().GetRawData() & 0x00000000FFFFFFFF);
 
         public override int GetHashCode()
         {
@@ -349,7 +327,7 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        System.IntPtr GetCachedPtr()
+        internal System.IntPtr GetCachedPtr()
         {
             return m_CachedPtr;
         }
@@ -361,7 +339,21 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal void GetInstanceIdFast(out EntityId v) { v = m_EntityId; }
+        internal void GetEntityIdFast(out EntityId v) { v = m_EntityId; }
+
+        [RequiredByNativeCode]
+        internal void SetEntityId(EntityId v) { m_EntityId = v; }
+
+        [RequiredByNativeCode]
+        internal void SetUnityRuntimeErrorString(string errorString) { m_UnityRuntimeErrorString = errorString; }
+
+        [RequiredByNativeCode]
+        internal void BindNativeObject(System.IntPtr cachedPtr, EntityId v)
+        {
+            m_CachedPtr = cachedPtr;
+            m_EntityId = v;
+            m_UnityRuntimeErrorString = null;
+        }
 
         // The name of the object.
         public string name
@@ -959,6 +951,11 @@ namespace UnityEngine
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
         internal extern static Object FindObjectFromInstanceID(EntityId instanceID);
+
+        [VisibleToOtherModules]
+        [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceIDThreadSafe", IsThreadSafe = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern static Object FindObjectFromInstanceIDThreadSafe(EntityId instanceID);
 
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
         private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType, out bool isMonoBehaviour);

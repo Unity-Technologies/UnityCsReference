@@ -384,18 +384,6 @@ namespace UnityEditor
 
         internal static void UserCallbackRowGUI(EntityId itemID, Rect rect)
         {
-            #pragma warning disable 618
-            if (EditorApplication.hierarchyWindowItemOnGUI != null)
-            {
-                // Adjust rect for the right aligned column for the prefab isolation button
-                rect.xMax -=
-                    GameObjectStyles.rightArrow.fixedWidth +
-                    GameObjectStyles.rightArrow.margin.horizontal;
-
-                EditorApplication.hierarchyWindowItemOnGUI(itemID, rect);
-            }
-            #pragma warning restore 618
-
             if (EditorApplication.hierarchyWindowItemByEntityIdOnGUI != null)
             {
                 // Adjust rect for the right aligned column for the prefab isolation button

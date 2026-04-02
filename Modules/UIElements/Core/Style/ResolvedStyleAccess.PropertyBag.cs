@@ -11,10 +11,14 @@ namespace UnityEngine.UIElements
     partial class ResolvedStyleAccessPropertyBag : PropertyBag<ResolvedStyleAccess>, INamedProperties<ResolvedStyleAccess>
     {
         readonly List<IProperty<ResolvedStyleAccess>> m_PropertiesList;
-
         readonly Dictionary<string, IProperty<ResolvedStyleAccess>> m_PropertiesHash;
 
-        abstract class ResolvedStyleProperty<TValue> : Property<ResolvedStyleAccess, TValue>
+        internal interface IStyleProperty : IProperty<ResolvedStyleAccess>
+        {
+            string ussName { get; }
+        }
+
+        abstract class ResolvedStyleProperty<TValue> : Property<ResolvedStyleAccess, TValue>, IStyleProperty
         {
             public abstract string ussName { get; }
         }
@@ -92,13 +96,15 @@ namespace UnityEngine.UIElements
         {
         }
 
-
-        void AddProperty<TValue>(ResolvedStyleProperty<TValue> property)
+        void AddPropertyRange(params IStyleProperty[] properties)
         {
-            m_PropertiesList.Add(property);
-            m_PropertiesHash.Add(property.Name, property);
-            if (string.CompareOrdinal(property.Name, property.ussName) != 0)
-                m_PropertiesHash.Add(property.ussName, property);
+            foreach (var property in properties)
+            {
+                m_PropertiesList.Add(property);
+                m_PropertiesHash.Add(property.Name, property);
+                if (string.CompareOrdinal(property.Name, property.ussName) != 0)
+                    m_PropertiesHash.Add(property.ussName, property);
+            }
         }
 
         public override PropertyCollection<ResolvedStyleAccess> GetProperties()

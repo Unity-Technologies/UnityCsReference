@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements
         // this will be null until a visual tree is added to a panel
         internal BaseVisualElementPanel elementPanel
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
             private set;
         }
@@ -138,7 +138,7 @@ namespace UnityEngine.UIElements
         public VisualTreeAsset visualTreeAssetSource
         {
             get => m_VisualTreeAssetSource;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal set => m_VisualTreeAssetSource = value;
         }
 
@@ -279,16 +279,45 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removed all child elements from this element's `contentContainer`.
+        /// Removes all child elements from this element's <see cref="contentContainer"/>.
         /// </summary>
+        /// <remarks>
+        ///
+        /// Only the child elements are removed, not the element itself.
+        ///
+        /// To remove all descendants, use the <see cref="Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
+        /// </remarks>
         public void Clear()
         {
             Clear(VisualElementClearOptions.None);
         }
 
         /// <summary>
-        /// Removes all child elements from this element's `contentContainer`.
+        /// Removes all child elements from this element's <see cref="contentContainer"/>, using the specified options. Use this method to reduce memory usage.
         /// </summary>
+        /// <param name="options">Allows which actions are performed when clearing the children.</param>
+        /// <remarks>
+        ///
+        /// Only the child elements are removed, not the element itself.
+        ///
+        /// The default option only removes the immediate children and doesn't perform additional actions.
+        ///
+        /// To remove all descendants from their parent, specify the <see cref="VisualElementClearOptions.Recursive"/> flag.
+        ///
+        /// To invoke the <see cref="VisualElement.ReleaseResources"/> method on all descendants, specify the <see cref="VisualElementClearOptions.RecursiveReleaseResources"/> flag.
+        /// This flag implies that the hierarchy is cleared recursively, because an element must have no children when it is released.
+        ///
+        /// You can use the combination of these flags to clear a large number of elements from the hierarchy and immediately release resources to reduce memory usage. For more information, refer to <see cref="VisualElement.ReleaseResources"/>.
+        /// This method also removes internal parent-child relationships between elements, which can improve garbage collection and troubleshoot memory leaks.
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to use this method to reduce memory usage when a custom EditorWindow is closed.
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementRecursiveReleaseExample.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to release elements when implementing object pooling:
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+        /// </example>
         public void Clear(VisualElementClearOptions options)
         {
             if (contentContainer == this)
@@ -438,12 +467,19 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.hierarchy"/>
         public IEnumerable<VisualElement> Children()
         {
-            if (contentContainer == this)
-            {
-                return hierarchy.Children();
-            }
+            return children;
+        }
 
-            return contentContainer?.Children() ?? s_EmptyList;
+        internal IReadOnlyList<VisualElement> children
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get
+            {
+                if (contentContainer == this)
+                    return hierarchy.children;
+
+                return contentContainer?.children ?? s_EmptyList;
+            }
         }
 
         /// <summary>
@@ -567,7 +603,7 @@ namespace UnityEngine.UIElements
                     throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
 
                 if (m_Owner.resourcesReleased)
-                    throw new InvalidOperationException("Cannot modify an element which has released its resources");
+                    throw new InvalidOperationException("You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
             }
 
             /// <summary>
@@ -598,7 +634,7 @@ namespace UnityEngine.UIElements
                 ValidateElementCanBeModified();
 
                 if (child.resourcesReleased)
-                    throw new InvalidOperationException("Cannot insert an element which has released its resources");
+                    throw new InvalidOperationException("You can't insert a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
 
                 child.RemoveFromHierarchy();
 
@@ -623,7 +659,7 @@ namespace UnityEngine.UIElements
                 }
 
                 child.hierarchy.SetParent(m_Owner);
-                child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
+                child.PropagateParentEnabled(m_Owner.enabledInHierarchy);
 
                 if (child.languageDirection == LanguageDirection.Inherit)
                     child.localLanguageDirection = m_Owner.localLanguageDirection;
@@ -707,11 +743,13 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Removes all child elements from this element's <see cref="contentContainer"/>.
+            /// Removes all child elements from this element's hierarchy.
             /// </summary>
             /// <remarks>
+            /// Unlike <see cref="VisualElement.Clear()"/>, this method ignores the element's <see cref="contentContainer"/>.
+            ///
             /// Only the child elements are removed, not the element itself.
-            /// Only the immediate children are removed. To remove all descendants, use the <see cref="Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
+            /// Only the immediate children are removed. To remove all descendants, use the <see cref="VisualElement.Hierarchy.Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
             /// </remarks>
             public void Clear()
             {
@@ -719,10 +757,12 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Removes all child elements from this element's <see cref="contentContainer"/>, using the specified options. Use this method to reduce memory usage.
+            /// Removes all child elements from this element's hierarchy, using the specified options. Use this method to reduce memory usage.
             /// </summary>
             /// <param name="options">Allows which actions are performed when clearing the children.</param>
             /// <remarks>
+            /// Unlike <see cref="VisualElement.Clear(VisualElementClearOptions)"/>, this method ignores the element's <see cref="contentContainer"/>.
+            ///
             /// Only the child elements are removed, not the element itself.
             ///
             /// Using default options, only the immediate children are removed and no additional action is performed.
@@ -735,6 +775,12 @@ namespace UnityEngine.UIElements
             /// You can use the combination of these flags to clear a large number of elements from the hierarchy and immediately release resources to reduce memory usage. For more information, refer to <see cref="VisualElement.ReleaseResources"/>.
             /// It also removes internal parent and child relationships between elements, which can help with garbage collection speed and troubleshooting memory leaks.
             /// </remarks>
+            /// <example>
+            /// The following example shows how to use this method to reduce memory usage when a custom EditorWindow is closed.
+            /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementRecursiveReleaseExample.cs"/>
+            /// The following example shows how to release elements when implementing object pooling:
+            /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementPoolExampleWindow.cs"/>
+            /// </example>
             public void Clear(VisualElementClearOptions options)
             {
                 ValidateElementCanBeModified();
@@ -813,10 +859,11 @@ namespace UnityEngine.UIElements
 
                             ClearInternal(descendant.hierarchy, clearNativeData:!releaseResources);
 
-                            var oldParent = descendant.hierarchy.parent;
+                            // Note: we do not invoke any OnChildRemoved() here
+                            // There isn't anything useful to do for implementations of this internal virtual method
+                            // because their entire hierarchy is being cleared
                             descendant.m_PhysicalParent = null;
                             descendant.m_LogicalParent = null;
-                            oldParent?.OnChildRemoved(descendant);
 
                             if (releaseResources)
                             {
@@ -1253,7 +1300,7 @@ namespace UnityEngine.UIElements
             return thisSide;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetRoot()
         {
             if (panel != null)
@@ -1270,7 +1317,7 @@ namespace UnityEngine.UIElements
             return root;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetRootVisualContainer(bool stopAtNearestRoot = false)
         {
             VisualElement topMostRootContainer = null;

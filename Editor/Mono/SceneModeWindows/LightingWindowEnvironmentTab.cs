@@ -3,11 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using Object = UnityEngine.Object;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -90,9 +90,7 @@ namespace UnityEditor
 
                 if (m_EnvironmentSection == null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<LightingWindowEnvironmentSection>().FirstOrDefault() ?? typeof(DefaultEnvironmentSectionExtension);
-#pragma warning restore UA2001
                     LightingWindowEnvironmentSection extension = (LightingWindowEnvironmentSection)Activator.CreateInstance(extensionType);
                     m_EnvironmentSection = extension;
                     m_EnvironmentSection.OnEnable();

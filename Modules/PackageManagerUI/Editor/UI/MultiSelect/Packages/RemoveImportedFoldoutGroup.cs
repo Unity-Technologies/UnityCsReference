@@ -1,0 +1,26 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal class RemoveImportedFoldoutGroup : PackageMultiSelectFoldoutGroup
+    {
+        public RemoveImportedFoldoutGroup(IApplicationProxy applicationProxy, IPackageOperationDispatcher operationDispatcher)
+            : base(new RemoveImportedAction(operationDispatcher, applicationProxy))
+        {
+        }
+
+        public override void Refresh()
+        {
+            mainFoldout.headerTextTemplate = L10n.Tr("Remove imported assets from {0}");
+            inProgressFoldout.headerTextTemplate = L10n.Tr("Removing imported assets from {0}");
+            base.Refresh();
+        }
+
+        public override bool AddItem(IPackage package)
+        {
+            return package.versions.imported != null && base.AddItem(package);
+        }
+    }
+}

@@ -19,4 +19,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         Warning,
         Restricted
     }
+
+    internal enum SampleState
+    {
+        None = 0,
+        Installed,
+        UpdateAvailable
+    }
 }

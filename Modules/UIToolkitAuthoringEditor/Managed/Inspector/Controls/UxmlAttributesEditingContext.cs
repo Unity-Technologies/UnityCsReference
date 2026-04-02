@@ -3,11 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using UnityEditor;
-using UnityEditor.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -28,15 +29,71 @@ class UxmlAttributesEditingContext : IDisposable
         public readonly bool oldIsReadOnly = oldIsReadOnly;
     }
 
-    // For when we need to view read only attributes from a visual element, such as one created by script.
-    internal class TempSerializedData : ScriptableObject
+    /// <summary>
+    /// Scope to disable undo when editing UXML attributes using a given context for the duration of the scope.
+    /// </summary>
+    public class DisableUndoScope : IDisposable
     {
-        [SerializeReference] public UxmlSerializedData serializedData;
+        UxmlAttributesEditingContext m_Context;
+        bool m_OldEnabled;
+
+        /// <summary>
+        /// Creates a scope.
+        /// </summary>
+        /// <param name="context"></param>
+        public DisableUndoScope(UxmlAttributesEditingContext context)
+        {
+            m_Context = context;
+            m_OldEnabled = m_Context.m_UndoEnabledExplicit;
+            m_Context.undoEnabled = false;
+        }
+
+        public void Dispose()
+        {
+            m_Context.undoEnabled = m_OldEnabled;
+        }
+    }
+
+    // For when we need to view read only attributes from a visual element, such as one created by script.
+    internal class TempSerializedData : VisualTreeAsset
+    {
+        public static TempSerializedData Create(VisualElement element, bool isTemplateInstance)
+        {
+            var instance = ScriptableObject.CreateInstance<TempSerializedData>();
+            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+
+            var type = element.GetType();
+            var elementAsset = new VisualElementAsset(type.FullName);
+
+            instance.visualTree.Add(elementAsset);
+            instance.ResetData(element, isTemplateInstance);
+            element.SetProperty(k_TempSerializedDataPropertyName, instance);
+            return instance;
+        }
+
+        public void ResetData(VisualElement element, bool isTemplateInstance)
+        {
+            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+
+            elementAsset.serializedData = desc.CreateDefaultSerializedData();
+
+            // In staging mode we want to show only the UXML data, Pulling from the live element will copy values
+            // that may be different in the serialized UXML.
+            // We currently make an exception for templates: rebuilding them solely from serialized data would
+            // require walking and reassembling the entire asset, which is complex and error‑prone.
+            // This is a temporary workaround limited to templates and may be removed once we have a better approach.
+            if (isTemplateInstance)
+                desc.SyncSerializedData(element, elementAsset.serializedData);
+        }
+
+        public VisualElementAsset elementAsset => visualTree[0] as VisualElementAsset;
+        public UxmlSerializedData serializedData => elementAsset.serializedData;
     }
 
     internal static readonly string k_TempSerializedDataPropertyName = "__TempSerializedData";
     internal static readonly string k_UxmlSerializedDataFieldName = "m_SerializedData";
-    internal static readonly string k_TempSerializedRootPath = nameof(TempSerializedData.serializedData);
+
+    bool m_UndoEnabledExplicit = true;
 
     /// <summary>
     /// The controller that manages authoring of UXML attributes.
@@ -44,14 +101,35 @@ class UxmlAttributesEditingContext : IDisposable
     public UxmlAttributesEditingController editingController { get; }
 
     /// <summary>
+    /// The VisualTreeAsset that contains the UXML elements being edited.
+    /// </summary>
+    public VisualTreeAsset editedVisualTreeAsset { get; private set; }
+
+    /// <summary>
+    /// The VisualTreeAsset that contains the UXML elements being edited or the temporary VisualTreeAsset
+    /// used to edit template instances and VisualElements dynamically created.
+    /// </summary>
+    public VisualTreeAsset visualTreeAsset { get; private set; }
+
+    /// <summary>
+    /// The VisualElementAsset being edited.
+    /// </summary>
+    public VisualElementAsset elementAsset { get; private set; }
+
+    /// <summary>
+    /// The serialized data being edited element.
+    /// </summary>
+    public UxmlSerializedData uxmlSerializedData { get; private set; }
+
+    /// <summary>
+    /// Indicates whether the current element is part of a template instance.
+    /// </summary>
+    public bool isInTemplateInstance { get; private set; }
+
+    /// <summary>
     /// The VisualElement that is currently being viewed or edited.
     /// </summary>
     public VisualElement element { get; private set; }
-
-    /// <summary>
-    /// The serialized data for the current UXML element.
-    /// </summary>
-    public UxmlSerializedData uxmlSerializedData { get; private set; }
 
     /// <summary>
     /// The serialized object created from the VisualTreeAsset of the VisualElement being viewed or
@@ -78,6 +156,11 @@ class UxmlAttributesEditingContext : IDisposable
     internal TempSerializedData tempSerializedData { get; private set; }
 
     /// <summary>
+    /// Indicates whether the undo system is enabled for this context.
+    /// </summary>
+    public bool undoEnabled { get => m_UndoEnabledExplicit && !isReadOnly; set => m_UndoEnabledExplicit = value; }
+
+    /// <summary>
     /// Event sent when the context changes.
     /// </summary>
     public event EventHandler<ContextChangedEventArgs> contextChanged;
@@ -93,13 +176,35 @@ class UxmlAttributesEditingContext : IDisposable
         editingController.context = this;
     }
 
+    public void Set(VisualElement element, bool isReadOnly = false)
+    {
+        VisualTreeAsset vta;
+        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
+
+        if (stage != null)
+        {
+            vta = stage.EditedVisualTreeAsset;
+        }
+        else
+        {
+            vta = element.visualTreeAssetSource;
+        }
+
+        Set(vta, element, isReadOnly);
+    }
+
+    public void Set(VisualTreeAsset editedVisualTreeAsset, VisualElement element, bool isReadOnly = false)
+    {
+        SetInternal(editedVisualTreeAsset, element, isReadOnly);
+    }
+
     /// <summary>
     /// Set the context
     /// </summary>
     /// <param name="element">The VisualElement associated to the attributes to view or edit</param>
     /// <param name="environment">The environment where the uxml attributes are view or edited</param>
     /// <param name="isReadOnly">Indicates whether the attributes are read-only</param>
-    public void Set(VisualElement element, bool isReadOnly = false)
+    void SetInternal(VisualTreeAsset editedVisualTreeAsset, VisualElement element, bool isReadOnly)
     {
         var oldElement = this.element;
         var oldIsReadOnly = this.isReadOnly;
@@ -109,12 +214,13 @@ class UxmlAttributesEditingContext : IDisposable
             return;
 
         ClearWithoutNotification();
+
         this.element = element;
         this.isReadOnly = isReadOnly || (element != null && element.visualElementAsset == null);
 
         try
         {
-            Init();
+            Init(editedVisualTreeAsset);
         }
         finally
         {
@@ -127,8 +233,11 @@ class UxmlAttributesEditingContext : IDisposable
         contextChanged?.Invoke(this, new ContextChangedEventArgs(element, isReadOnly, oldElement, oldIsReadOnly));
     }
 
-    protected virtual void Init()
+    protected virtual void Init(VisualTreeAsset editedVisualTreeAsset)
     {
+        this.editedVisualTreeAsset = editedVisualTreeAsset;
+        isInTemplateInstance = false;
+
         if (element != null)
         {
             uxmlSerializedDataDescription = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
@@ -136,33 +245,37 @@ class UxmlAttributesEditingContext : IDisposable
             if (uxmlSerializedDataDescription == null)
                 return;
 
-            // If the element has a VisualElementAsset, we always use it for displaying in the inspector.
+            var templateAsset = element.templateAsset;
+
+            isInTemplateInstance = templateAsset != null && editedVisualTreeAsset != element.visualTreeAssetSource;
+
             var elementAsset = element.visualElementAsset;
-            if (elementAsset == null)
+
+            if (elementAsset == null || isInTemplateInstance)
             {
                 tempSerializedData = element.GetProperty(k_TempSerializedDataPropertyName) as TempSerializedData;
 
                 if (tempSerializedData == null)
                 {
-                    tempSerializedData = ScriptableObject.CreateInstance<TempSerializedData>();
-
-                    // We need to keep the serialized data alive so we can undo/redo changes
-                    element.SetProperty(k_TempSerializedDataPropertyName, tempSerializedData);
-
-                    // Elements without a VisualElementAsset should not be editable
-                    tempSerializedData.hideFlags = HideFlags.NotEditable;
-
-                    // We use the default serialized data so we can detect what values are different from the defaults when applying driven properties.
-                    tempSerializedData.serializedData = uxmlSerializedDataDescription.CreateDefaultSerializedData();
+                    tempSerializedData = TempSerializedData.Create(element, isInTemplateInstance);
                 }
-
-                rootSerializedObject = new SerializedObject(tempSerializedData);
-                serializedBasePath = k_TempSerializedRootPath;
+                else
+                {
+                    tempSerializedData.ResetData(element, isInTemplateInstance);
+                }
+                visualTreeAsset = tempSerializedData;
+                this.elementAsset = tempSerializedData.elementAsset;
                 uxmlSerializedData = tempSerializedData.serializedData;
+                rootSerializedObject = new SerializedObject(tempSerializedData);
+                serializedBasePath = GetSerializedPath(tempSerializedData.elementAsset);
             }
             else
             {
-                var visualTreeAsset = element.visualTreeAssetSource;
+                var visualTreeAsset = editedVisualTreeAsset;
+
+                visualTreeAsset.hideFlags = isReadOnly ? HideFlags.NotEditable : HideFlags.None;
+
+                // TODO : Restore the hideFlags after done
 
                 // If the UXML file has been modified, the element may no longer be in the asset so we will ignore it. (UUM-59305)
                 if (elementAsset.visualTreeAsset != visualTreeAsset)
@@ -181,6 +294,9 @@ class UxmlAttributesEditingContext : IDisposable
                     uxmlSerializedData = elementAsset.serializedData;
                 }
 
+                this.visualTreeAsset = visualTreeAsset;
+                this.elementAsset = elementAsset;
+
                 rootSerializedObject = new SerializedObject(visualTreeAsset);
                 serializedBasePath = GetSerializedPath(elementAsset);
             }
@@ -192,7 +308,7 @@ class UxmlAttributesEditingContext : IDisposable
     /// </summary>
     public void Clear()
     {
-        Set(null);
+        Set(null, null);
     }
 
     void ClearWithoutNotification()

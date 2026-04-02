@@ -15,9 +15,7 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Selector, SearchExpressionType.AnyValue | SearchExpressionType.Optional)]
         static IEnumerable<SearchItem> CurrentObject(SearchExpressionContext c)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var aliasSelector = c.args.First();
-#pragma warning restore UA2001
+            var aliasSelector = c.args[0];
             if (aliasSelector.types.HasNone(SearchExpressionType.Selector))
                 yield break;
 
@@ -37,9 +35,9 @@ namespace UnityEditor.Search
 
             var defaultValueArg = c.args[1];
             var defaultValueItems = defaultValueArg.Execute(c);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var firstItem = defaultValueItems.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
             if (firstItem == null)
                 yield break;
             item.value = firstItem.value;

@@ -11,9 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         long countLoaded { get; }
         long countTotal { get; }
 
-        IList<string> orderedGroups { get; }
+        IReadOnlyCollection<string> orderedGroupNames { get; }
 
-        VisualState Get(string packageUniqueId);
-        bool Contains(string packageUniqueId);
+        VisualState Get(string itemUniqueId);
+        bool Contains(string itemUniqueId);
+
+        VisualState GetNext(string itemUniqueId, bool reverseOrder = false);
     }
 }

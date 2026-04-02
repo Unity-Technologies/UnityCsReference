@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
@@ -57,10 +56,7 @@ namespace Unity.GraphToolkit.Editor
             var types = TypeCache.GetTypesWithAttribute<LibraryItemAttribute>();
             foreach (var type in types)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var attributes = type.GetCustomAttributes<LibraryItemAttribute>().ToList();
-#pragma warning restore UA2001
-                if (!attributes.HasAny())
+                if (!Attribute.IsDefined(type, typeof(LibraryItemAttribute)))
                     continue;
 
                 //Blocks and Nodes share LibraryItemAttribute but blocks shouldn't be added to nodes lists.
@@ -69,7 +65,8 @@ namespace Unity.GraphToolkit.Editor
 
                 var nodeHelpAttribute = type.GetCustomAttribute<LibraryHelpAttribute>();
 
-                foreach (var attribute in attributes)
+                var attributes = Attribute.GetCustomAttributes(type, typeof(LibraryItemAttribute));
+                foreach (LibraryItemAttribute attribute in attributes)
                 {
                     if (!attribute.GraphModelType.IsInstanceOfType(GraphModel))
                         continue;
@@ -258,7 +255,7 @@ namespace Unity.GraphToolkit.Editor
         /// Gets subgraphs of the same type as the main graph object type.
         /// </summary>
         /// <returns>The subgraph assets found.</returns>
-        protected virtual IEnumerable<GraphModel> GetSubgraphs()
+        protected virtual IReadOnlyList<GraphModel> GetSubgraphs()
         {
             var graphAssetType = GraphModel?.GraphObject == null ? null : GraphModel.GraphObject.GetType();
             return GetSubgraphsOfType(graphAssetType);
@@ -314,7 +311,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual GraphElementItemDatabase AddSubgraphs()
         {
             var subgraphModels = GetSubgraphs();
-            if (subgraphModels == null || !subgraphModels.HasAny())
+            if (subgraphModels == null || subgraphModels.Count == 0)
                 return this;
 
             foreach (var graphModel in subgraphModels)

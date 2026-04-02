@@ -106,6 +106,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string RelativeDataPath;
         public bool GenerateUsymFile;
         public string UsymtoolPath;
+        public BuildProgramLTOMode LtoMode;
     }
 
     public class Services
@@ -128,5 +129,12 @@ namespace PlayerBuildProgramLibrary.Data
         Mono,
         IL2CPP,
         CoreCLR,
+    }
+
+    // Keep in sync with bee LTO modes
+    public enum BuildProgramLTOMode
+    {
+        Full = 0,
+        Thin = 1
     }
 }

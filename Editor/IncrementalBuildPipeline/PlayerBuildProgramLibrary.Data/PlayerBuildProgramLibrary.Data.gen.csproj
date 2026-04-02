@@ -13,6 +13,7 @@
     <Nullable>disable</Nullable>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
     <RootNamespace>PlayerBuildProgramLibrary.Data</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>

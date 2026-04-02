@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace UnityEditor.Search.Providers
 {
@@ -127,9 +126,7 @@ namespace UnityEditor.Search.Providers
             {
                 new SearchAction(type, "open", null, "Open project settings", (items) =>
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var item = items.Last();
-#pragma warning restore UA2001
+                    var item = items[^1];
                     if (item.id.StartsWith("Project/"))
                         SettingsService.OpenProjectSettings(item.id);
                     else

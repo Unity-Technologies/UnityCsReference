@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
@@ -371,8 +372,7 @@ namespace UnityEditor
             EntityId rootEntityId = particleSystem.GetEntityId();
             Vector3 state = new Vector3(0, (int)GetCurrentPlayState(), ParticleSystemEditorUtils.playbackTime);
             SessionState.SetVector3(k_SimulationStateId + rootEntityId, state);
-            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Update SessionState.SetInt to SessionState.SetULong when EntityId size changes");
-            SessionState.SetInt(k_SimulationStateId + rootEntityId + "instanceID", (int)EntityId.ToULong(rootEntityId));
+            SessionState.SetEntityId(k_SimulationStateId + rootEntityId + "instanceID", rootEntityId);
         }
 
         void TryRestorePlayState(ParticleSystem particleSystem)
@@ -381,7 +381,7 @@ namespace UnityEditor
                 return;
 
             Vector3 simulationState = SessionState.GetVector3(k_SimulationStateId + particleSystem.GetEntityId(), Vector3.zero);
-            EntityId simulationStateInstanceID = EntityId.FromULong((ulong)SessionState.GetInt(k_SimulationStateId + particleSystem.GetEntityId() + "instanceID", 0));
+            EntityId simulationStateInstanceID = SessionState.GetEntityId(k_SimulationStateId + particleSystem.GetEntityId() + "instanceID", EntityId.None);
             if (particleSystem.GetEntityId() == simulationStateInstanceID)
             {
                 float lastPlayBackTime = simulationState.z;
@@ -399,7 +399,7 @@ namespace UnityEditor
                         Stop();
                         break;
                     case PlayState.Playing:
-                        Play();
+                        Play(true);
                         break;
                     case PlayState.Paused:
                         Pause();
@@ -868,14 +868,14 @@ namespace UnityEditor
             return ParticleSystemEditorUtils.playbackIsPlaying;
         }
 
-        internal void Play()
+        internal void Play(bool skipIfPlaying = false)
         {
             bool anyPlayed = false;
 
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
             {
                 ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
-                if (root)
+                if (root && (!skipIfPlaying || !root.isPlaying))
                 {
                     root.Play();
                     anyPlayed = true;
@@ -1024,9 +1024,7 @@ namespace UnityEditor
             EntityId[] selectedEntityIds = Selection.entityIds;
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selectedEntityIds.Contains(psUI.m_ParticleSystems[0].gameObject.GetEntityId()))
-#pragma warning restore UA2001
                     result.Add(psUI);
             }
             return result;
@@ -1325,9 +1323,7 @@ namespace UnityEditor
                             if (psRenderer != null)
                             {
                                 if (enabled)
-                                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     psRenderer.editorEnabled = selectedEntityIds.Contains(psRenderer.gameObject.GetEntityId());
-#pragma warning restore UA2001
                                 else
                                     psRenderer.editorEnabled = true;
                             }

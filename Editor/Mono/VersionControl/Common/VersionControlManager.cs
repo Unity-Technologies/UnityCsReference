@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
+using Unity.Collections;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.VersionControl
@@ -52,9 +53,7 @@ namespace UnityEditor.VersionControl
             var descriptorList = new List<VersionControlDescriptor>(types.Count);
             foreach (var type in types)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attribute = (VersionControlAttribute)type.GetCustomAttributes(typeof(VersionControlAttribute), false).Single();
-#pragma warning restore UA2001
                 var name = attribute.name;
                 if (!typeof(VersionControlObject).IsAssignableFrom(type))
                 {

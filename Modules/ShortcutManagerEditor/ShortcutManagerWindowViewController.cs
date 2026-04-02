@@ -819,9 +819,7 @@ namespace UnityEditor.ShortcutManagement
                 var binding = entry.combinations;
                 if (binding?.Count > 0)
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var firstKeyBinding = binding.First();
-#pragma warning restore UA2001
+                    var firstKeyBinding = binding[0];
                     if (!m_KeyBindingRootToBoundEntries.ContainsKey(firstKeyBinding))
                     {
                         m_KeyBindingRootToBoundEntries[firstKeyBinding] = new List<ShortcutEntry>();

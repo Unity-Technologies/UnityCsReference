@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
@@ -183,6 +184,7 @@ namespace UnityEngine.UIElements
     class StyleMatchingContext
     {
         private List<StyleSheet> m_StyleSheetStack;
+        private List<SelectorAccelerationCacheEntry> m_CacheEntryStack;
 
         public int styleSheetCount => m_StyleSheetStack.Count;
 
@@ -194,6 +196,7 @@ namespace UnityEngine.UIElements
         public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
         {
             m_StyleSheetStack = new List<StyleSheet>();
+            m_CacheEntryStack = new List<SelectorAccelerationCacheEntry>();
             variableContext = StyleVariableContext.none;
             currentElement = null;
             this.processResult = processResult;
@@ -205,16 +208,25 @@ namespace UnityEngine.UIElements
                 return;
 
             m_StyleSheetStack.Add(sheet);
+            m_CacheEntryStack.Add(SelectorAccelerationCache.shared.GetOrCreate(sheet));
         }
 
         public void RemoveStyleSheetRange(int index, int count)
         {
             m_StyleSheetStack.RemoveRange(index, count);
+            m_CacheEntryStack.RemoveRange(index, count);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StyleSheet GetStyleSheetAt(int index)
         {
             return m_StyleSheetStack[index];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public SelectorAccelerationCacheEntry GetCacheEntryAt(int index)
+        {
+            return m_CacheEntryStack[index];
         }
     }
 

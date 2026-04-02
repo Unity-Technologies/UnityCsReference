@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -33,6 +34,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[Clickable]], [[Image]], [[ManipulatorActivationFilter]]
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Button.png")]
     public partial class Button : TextElement
     {
@@ -78,6 +80,7 @@ namespace UnityEngine.UIElements
         /// this class affects every button located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-button";
+        [VisibleToOtherModules] internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// The USS class name for Button elements with an icon.
@@ -88,6 +91,7 @@ namespace UnityEngine.UIElements
         /// affects every button with an icon located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string iconUssClassName = ussClassName + "--with-icon";
+        internal static readonly UniqueStyleString iconUssClassNameUnique = new(iconUssClassName);
 
         /// <summary>
         /// The USS class name for Button elements with an icon only, no text.
@@ -98,6 +102,7 @@ namespace UnityEngine.UIElements
         /// this class affects every button with an icon located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string iconOnlyUssClassName = ussClassName + "--with-icon-only";
+        internal static readonly UniqueStyleString iconOnlyUssClassNameUnique = new(iconOnlyUssClassName);
 
         /// <summary>
         /// The USS class name of the image element that will be used to display the icon texture.
@@ -108,6 +113,7 @@ namespace UnityEngine.UIElements
         /// image elements inside a Button that contains this class.
         /// </remarks>
         public static readonly string imageUSSClassName = ussClassName + "__image";
+        internal static readonly UniqueStyleString imageUssClassNameUnique = new(imageUSSClassName);
 
         private Clickable m_Clickable;
 
@@ -264,7 +270,7 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Text = value;
-                EnableInClassList(iconOnlyUssClassName, !m_IconImage.IsEmpty() && string.IsNullOrEmpty(text));
+                EnableInClassList(iconOnlyUssClassNameUnique, !m_IconImage.IsEmpty() && string.IsNullOrEmpty(text));
 
                 if (m_TextElement != null)
                 {
@@ -314,7 +320,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Button(Action clickEvent)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
@@ -403,7 +409,7 @@ namespace UnityEngine.UIElements
                 m_ImageElement.image = value.renderTexture;
             else
                 m_ImageElement.vectorImage = value.vectorImage;
-            EnableInClassList(iconOnlyUssClassName, string.IsNullOrEmpty(text));
+            EnableInClassList(iconOnlyUssClassNameUnique, string.IsNullOrEmpty(text));
         }
 
         private void OnNavigationSubmit(NavigationSubmitEvent evt)
@@ -428,9 +434,9 @@ namespace UnityEngine.UIElements
         {
             if (m_ImageElement == null)
             {
-                m_ImageElement = new Image { classList = { imageUSSClassName } };
+                m_ImageElement = new Image().WithClassList(imageUssClassNameUnique);
                 Add(m_ImageElement);
-                AddToClassList(iconUssClassName);
+                AddToClassList(iconUssClassNameUnique);
             }
 
             if (m_TextElement == null)
@@ -448,8 +454,8 @@ namespace UnityEngine.UIElements
             {
                 m_ImageElement.RemoveFromHierarchy();
                 m_ImageElement = null;
-                RemoveFromClassList(iconUssClassName);
-                RemoveFromClassList(iconOnlyUssClassName);
+                RemoveFromClassList(iconUssClassNameUnique);
+                RemoveFromClassList(iconOnlyUssClassNameUnique);
             }
 
             if (m_TextElement != null)

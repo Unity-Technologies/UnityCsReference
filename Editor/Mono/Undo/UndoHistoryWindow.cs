@@ -95,14 +95,11 @@ namespace UnityEditor
         {
             Undo.GetUndoList(m_NewUndos, out m_UndoCursor);
             // Needs undo cursor cache as well
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!m_LastUndos.SequenceEqual(m_NewUndos) || m_UndoCursor != m_LastUndoCursor ||
-#pragma warning restore UA2001
-                m_History.Count == 0 || m_UndoRedoPerformed)
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (m_UndoCursor != m_LastUndoCursor || m_History.Count == 0 || m_UndoRedoPerformed || !m_LastUndos.SequenceEqual(m_NewUndos))
+#pragma warning restore UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_LastUndos = m_NewUndos.ToList();
-#pragma warning restore UA2001
+                m_LastUndos = new List<string>(m_NewUndos);
                 m_LastUndoCursor = m_UndoCursor;
 
                 for (int i = 0; i < m_NewUndos.Count; i++)

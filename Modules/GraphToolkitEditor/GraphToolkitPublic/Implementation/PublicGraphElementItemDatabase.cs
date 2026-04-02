@@ -15,7 +15,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             : base(graphModel) { }
 
         /// <inheritdoc />
-        protected override IEnumerable<GraphModel> GetSubgraphs()
+        protected override IReadOnlyList<GraphModel> GetSubgraphs()
         {
             if (GraphModel is not GraphModelImp graphModelImp)
                 return new List<GraphModel>();

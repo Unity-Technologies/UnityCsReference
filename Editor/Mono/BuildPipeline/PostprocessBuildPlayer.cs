@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
@@ -98,8 +97,8 @@ namespace UnityEditor
                     // the StreamingAssets folder.
                     // TBD: it would be better to match based on the manifest hash which would work
                     // even when the build had been made to a different path and then moved to StreamingAssets.
-                    string metadataLocation = BuildHistory.GetDirectory(StreamingAssets);
-                    if (metadataLocation != String.Empty)
+                    if (BuildHistory.TryGetBuildSummaryForOutputPath(StreamingAssets, out var streamingSummary) &&
+                        BuildHistory.TryGetMetadataPath(streamingSummary.BuildSessionGUID, out var metadataLocation))
                     {
                         return new string[] { metadataLocation };
                     }
@@ -110,8 +109,10 @@ namespace UnityEditor
 
 
         [RequiredByNativeCode]
-        static public string PrepareForBuild(BuildPlayerOptions buildOptions)
+        static public string PrepareForBuild(IntPtr buildOptionsPtr)
         {
+            var buildOptions = BuildPlayerOptions.GetBuildPlayerOptions(buildOptionsPtr);
+
             var postprocessor = ModuleManager.GetBuildPostProcessor(buildOptions.target);
             if (postprocessor == null)
                 return null;
@@ -143,15 +144,32 @@ namespace UnityEditor
             return false;
         }
 
-        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target) =>
-            SupportsLz4Compression(target);
+        // This has references within Unity packages (like test-framework) so it can't be removed at the moment.
+        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            return SupportsCompression(target, Compression.Lz4);
+        }
 
+        // This could have references within Unity/Packages so it can't be removed at the moment.
         static public bool SupportsLz4Compression(BuildTarget target)
+        {
+            return SupportsCompression(target, Compression.Lz4);
+        }
+
+        static public bool SupportsCompression(BuildTarget target, Compression compression)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
             if (postprocessor != null)
-                return postprocessor.SupportsLz4Compression();
+                return postprocessor.SupportsCompression(compression);
             return false;
+        }
+
+        static public ReadOnlySpan<Compression> GetSupportedCompressions(BuildTarget target)
+        {
+           IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(target);
+            if (postprocessor != null)
+                return postprocessor.GetSupportedCompressions();
+            return ReadOnlySpan<Compression>.Empty;
         }
 
         static public Compression GetDefaultCompression(BuildTarget target)
@@ -294,9 +312,7 @@ namespace UnityEditor
 
             foreach (var keyValue in projectBootConfigEntries)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if ((keyValue.Value == null) || keyValue.Value.All(char.IsWhiteSpace))
-#pragma warning restore UA2001
+                if (string.IsNullOrWhiteSpace(keyValue.Value))
                     config.AddKey(keyValue.Key);
                 else
                     config.Set(keyValue.Key, keyValue.Value);

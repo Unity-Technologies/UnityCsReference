@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [Overlay(typeof(SceneView), k_Id, k_OverlayName,
+    [Overlay(typeof(ISupportsToolsOverlays), k_Id, k_OverlayName,
         priority = (int)OverlayPriority.ToolContexts,
         group = OverlayAttribute.unityGroup,
         defaultDisplay = false,
@@ -27,6 +27,8 @@ namespace UnityEditor.Toolbars
 
         OverlayToolbar m_Root;
         readonly Dictionary<Type, Toggle> m_CtxTypeToToggle = new();
+        
+        Type toolsOwnerType => containerWindow?.GetType();
 
         public OverlayToolbar CreateHorizontalToolbarContent()
         {
@@ -47,19 +49,31 @@ namespace UnityEditor.Toolbars
 
         public override void OnCreated()
         {
-            EditorToolManager.availableToolsChanged += RebuildContextButtons;
-            ToolManager.activeContextChanged += RefreshToggleStates;
+            EditorToolManager.availableToolsChangedForOwner += OnAvailableToolsChangedForOwner;
+            ToolManager.activeContextChangedForOwner += OnActiveContextChangedForOwner;
         }
 
         public override void OnWillBeDestroyed()
         {
-            EditorToolManager.availableToolsChanged -= RebuildContextButtons;
-            ToolManager.activeContextChanged -= RefreshToggleStates;
+            EditorToolManager.availableToolsChangedForOwner -= OnAvailableToolsChangedForOwner;
+            ToolManager.activeContextChangedForOwner -= OnActiveContextChangedForOwner;
+        }
+
+        void OnActiveContextChangedForOwner(Type ownerType)
+        {
+            if (ownerType == toolsOwnerType)
+                RefreshToggleStates();
+        }
+
+        void OnAvailableToolsChangedForOwner(Type ownerType)
+        {
+            if (ownerType == toolsOwnerType)
+                RebuildContextButtons();
         }
 
         void RefreshToggleStates()
         {
-            var activeContextType = ToolManager.activeContextType;
+            var activeContextType = ToolManager.GetActiveContextType(toolsOwnerType);
             foreach (var kvp in m_CtxTypeToToggle)
             {
                 var toggle = kvp.Value;
@@ -81,10 +95,15 @@ namespace UnityEditor.Toolbars
             containerVE.AddToClassList("toolbar-contents");
 
             m_Root.Add(containerVE);
+            
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolsOwnerType);
+            if (state == null)
+                return;
+            
+            var sortedCtxCache = EditorToolManager.GetEditorToolStateForOwner(toolsOwnerType).sortedContextsDataCache;
+            var sortedCtxs = sortedCtxCache.allAvailableContextAssociations;
 
             VisualElement goGroupVE = new VisualElement();
-            var sortedCtxs = EditorToolUtility.sortedContextsDataCache.allAvailableContextAssociations;
-
             AddContextToggle(sortedCtxs[0].editor, goGroupVE);
             EditorToolbarUtility.SetupChildrenAsButtonStrip(goGroupVE);
             containerVE.Add(goGroupVE);
@@ -146,10 +165,11 @@ namespace UnityEditor.Toolbars
                 userData = contextType
             };
 
+            var ownerType = toolsOwnerType;
             toggle.RegisterValueChangedCallback((_) =>
             {
                 toggle.SetValueWithoutNotify(true);
-                ToolManager.SetActiveContext(contextType);
+                ToolManager.SetActiveContext(contextType, ownerType);
             });
 
             parent.Add(toggle);

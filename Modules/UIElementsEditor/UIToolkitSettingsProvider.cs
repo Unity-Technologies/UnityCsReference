@@ -29,10 +29,11 @@ namespace UnityEditor.UIElements
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
+        const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableUSSStatsWindow = "enable-uss-stats-window";
-        const string k_EnableTextAdvanced = "enable-text-advanced";
+        const string k_EnablePanelRendererAnimation = "enable-panel-renderer-animation";
         const string k_EnableDebuggerLowLevelName = "enable-debugger-low-level";
         const string k_DefaultRuntimeTheme = "default-runtime-theme";
         const string k_DefaultEditorTheme = "default-editor-theme";
@@ -136,6 +137,14 @@ namespace UnityEditor.UIElements
             {
                 UIToolkitProjectSettings.enableAbsolutePositionPlacement = e.newValue;
             });
+
+            var consistentAttributeOrderingToggle = rootElement.Q<Toggle>(k_ConsistentAttributeOrdering);
+            consistentAttributeOrderingToggle.SetValueWithoutNotify(UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting);
+            consistentAttributeOrderingToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting = e.newValue;
+            });
+
             if (!Unsupported.IsDeveloperMode())
             {
                 VisualElement container = rootElement.Q("developer-settings-container");
@@ -164,11 +173,11 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableUSSStats = e.newValue;
             });
 
-            var enableTextAdvancedToggle = rootElement.Q<Toggle>(k_EnableTextAdvanced);
-            enableTextAdvancedToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableAdvancedText);
-            enableTextAdvancedToggle.RegisterValueChangedCallback(e =>
+            var panelRendererAnimationToggle = rootElement.Q<Toggle>(k_EnablePanelRendererAnimation);
+            panelRendererAnimationToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enablePanelRendererAnimation);
+            panelRendererAnimationToggle.RegisterValueChangedCallback(e =>
             {
-                UIToolkitProjectSettings.enableAdvancedText = e.newValue;
+                UIToolkitProjectSettings.enablePanelRendererAnimation = e.newValue;
             });
 
             var enableDebuggerLowLevelToggle = rootElement.Q<Toggle>(k_EnableDebuggerLowLevelName);

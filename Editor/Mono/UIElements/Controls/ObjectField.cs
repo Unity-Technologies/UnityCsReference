@@ -21,6 +21,7 @@ namespace UnityEditor.UIElements
     {
         internal static readonly BindingId objectTypeProperty = nameof(objectType);
         internal static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
+        internal static readonly BindingId allowBuiltinResourcesProperty = nameof(allowBuiltinResources);
 
         private event Action m_OnObjectSelectorShow = () => { };
 
@@ -41,6 +42,7 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(allowSceneObjects), "allow-scene-objects"),
+                    new (nameof(allowBuiltinResources), "allow-builtin-resources"),
                     new (nameof(objectType), "type", typeof(Object)),
                 }, true);
             }
@@ -49,7 +51,9 @@ namespace UnityEditor.UIElements
             [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
             [SerializeField] string objectType;
             [SerializeField] bool allowSceneObjects;
+            [SerializeField] bool allowBuiltinResources;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowBuiltinResources_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -62,6 +66,8 @@ namespace UnityEditor.UIElements
                 var e = (ObjectField)obj;
                 if (ShouldWriteAttributeValue(allowSceneObjects_UxmlAttributeFlags))
                     e.allowSceneObjects = allowSceneObjects;
+                if (ShouldWriteAttributeValue(allowBuiltinResources_UxmlAttributeFlags))
+                    e.allowBuiltinResources = allowBuiltinResources;
                 if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
                     e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
             }
@@ -128,6 +134,24 @@ namespace UnityEditor.UIElements
                     return;
                 m_AllowSceneObjects = value;
                 NotifyPropertyChanged(allowSceneObjectsProperty);
+            }
+        }
+
+        bool m_AllowBuiltinResources = true;
+
+        /// <summary>
+        /// Shows or hides built-in resources in the object selector popup. True by default to show built-in resources.
+        /// </summary>
+        [CreateProperty]
+        public bool allowBuiltinResources
+        {
+            get => m_AllowBuiltinResources;
+            set
+            {
+                if (m_AllowBuiltinResources == value)
+                    return;
+                m_AllowBuiltinResources = value;
+                NotifyPropertyChanged(allowBuiltinResourcesProperty);
             }
         }
 
@@ -489,7 +513,7 @@ namespace UnityEditor.UIElements
         internal void ShowObjectSelector()
         {
             // All the object changes will be notified through the OnObjectChanged and a "cancellation" (Escape key) on the ObjectSelector is calling the closing callback without any good object
-            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectSelectorClosed, OnObjectChanged);
+            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectSelectorClosed, OnObjectChanged, true, m_AllowBuiltinResources);
             m_OnObjectSelectorShow?.Invoke();
         }
 

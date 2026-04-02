@@ -12,13 +12,15 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> cursor style property <see cref="IStyle.cursor"/>.
     /// </summary>
-    [Serializable, StructLayout(LayoutKind.Sequential)]
+    [Serializable, StructLayout(LayoutKind.Sequential, Size = 24)]
     public partial struct Cursor : IEquatable<Cursor>
     {
         [SerializeField]
         EntityId m_Texture;
 
         int m_DefaultCursorId;
+
+        int __dummy; // increasing struct size to a multiple of 8
 
         [SerializeField]
         Vector2 m_Hotspot;

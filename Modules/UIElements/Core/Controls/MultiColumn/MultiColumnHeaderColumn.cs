@@ -12,8 +12,14 @@ namespace UnityEngine.UIElements.Internal
     class MultiColumnHeaderColumnSortIndicator : VisualElement
     {
         public static readonly string ussClassName = MultiColumnHeaderColumn.ussClassName + "__sort-indicator";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string arrowUssClassName = ussClassName + "__arrow";
+        internal static readonly UniqueStyleString arrowUssClassNameUnique = new(arrowUssClassName);
+
         public static readonly string indexLabelUssClassName = ussClassName + "__index-label";
+        internal static readonly UniqueStyleString indexLabelUssClassNameUnique = new(indexLabelUssClassName);
+
         Label m_IndexLabel;
 
         public string sortOrderLabel
@@ -24,16 +30,16 @@ namespace UnityEngine.UIElements.Internal
 
         public MultiColumnHeaderColumnSortIndicator()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             pickingMode = PickingMode.Ignore;
             VisualElement arrowIndicator = new VisualElement() { pickingMode = PickingMode.Ignore };
 
-            arrowIndicator.AddToClassList(arrowUssClassName);
+            arrowIndicator.AddToClassList(arrowUssClassNameUnique);
             Add(arrowIndicator);
 
             m_IndexLabel = new Label() { pickingMode = PickingMode.Ignore };
-            m_IndexLabel.AddToClassList(indexLabelUssClassName);
+            m_IndexLabel.AddToClassList(indexLabelUssClassNameUnique);
             Add(m_IndexLabel);
         }
     }
@@ -44,22 +50,23 @@ namespace UnityEngine.UIElements.Internal
     class MultiColumnHeaderColumnIcon : Image
     {
         public static new readonly string ussClassName = MultiColumnHeaderColumn.ussClassName + "__icon";
+        internal static new readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         public bool isImageInline { get; set; }
 
         public MultiColumnHeaderColumnIcon()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             RegisterCallback<CustomStyleResolvedEvent>((evt) => UpdateClassList());
         }
 
         public void UpdateClassList()
         {
-            parent.RemoveFromClassList(MultiColumnHeaderColumn.hasIconUssClassName);
+            parent.RemoveFromClassList(MultiColumnHeaderColumn.hasIconUssClassNameUnique);
 
             if (image != null || sprite != null || vectorImage != null)
             {
-                parent.AddToClassList(MultiColumnHeaderColumn.hasIconUssClassName);
+                parent.AddToClassList(MultiColumnHeaderColumn.hasIconUssClassNameUnique);
             }
         }
     }
@@ -70,18 +77,41 @@ namespace UnityEngine.UIElements.Internal
     class MultiColumnHeaderColumn : VisualElement
     {
         public static readonly string ussClassName = MultiColumnCollectionHeader.ussClassName + "__column";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string sortableUssClassName = ussClassName + "--sortable";
+        internal static readonly UniqueStyleString sortableUssClassNameUnique = new(sortableUssClassName);
+
         public static readonly string sortedAscendingUssClassName = ussClassName + "--sorted-ascending";
+        internal static readonly UniqueStyleString sortedAscendingUssClassNameUnique = new(sortedAscendingUssClassName);
+
         public static readonly string sortedDescendingUssClassName = ussClassName + "--sorted-descending";
+        internal static readonly UniqueStyleString sortedDescendingUssClassNameUnique = new(sortedDescendingUssClassName);
+
         public static readonly string movingUssClassName = ussClassName + "--moving";
+        internal static readonly UniqueStyleString movingUssClassNameUnique = new(movingUssClassName);
+
         public static readonly string contentContainerUssClassName = ussClassName + "__content-container";
+        internal static readonly UniqueStyleString contentContainerUssClassNameUnique = new(contentContainerUssClassName);
+
         public static readonly string contentUssClassName = ussClassName + "__content";
+        internal static readonly UniqueStyleString contentUssClassNameUnique = new(contentUssClassName);
+
         public static readonly string defaultContentUssClassName = ussClassName + "__default-content";
+        internal static readonly UniqueStyleString defaultContentUssClassNameUnique = new(defaultContentUssClassName);
+
         public static readonly string hasIconUssClassName = contentUssClassName + "--has-icon";
+        internal static readonly UniqueStyleString hasIconUssClassNameUnique = new(hasIconUssClassName);
+
         public static readonly string hasTitleUssClassName = contentUssClassName + "--has-title";
+        internal static readonly UniqueStyleString hasTitleUssClassNameUnique = new(hasTitleUssClassName);
+
         public static readonly string titleUssClassName = ussClassName + "__title";
+        internal static readonly UniqueStyleString titleUssClassNameUnique = new(titleUssClassName);
+
         public static readonly string iconElementName = "unity-multi-column-header-column-icon";
         public static readonly string titleElementName = "unity-multi-column-header-column-title";
+
         static readonly string s_BoundVEPropertyName = "__bound";
         static readonly string s_BindingCallbackVEPropertyName = "__binding-callback";
         static readonly string s_UnbindingCallbackVEPropertyName = "__unbinding-callback";
@@ -143,7 +173,7 @@ namespace UnityEngine.UIElements.Internal
 
                 if (m_Content != null)
                 {
-                    m_Content.AddToClassList(contentUssClassName);
+                    m_Content.AddToClassList(contentUssClassNameUnique);
                     m_ContentContainer.Add(m_Content);
                 }
             }
@@ -170,7 +200,7 @@ namespace UnityEngine.UIElements.Internal
             this.column = column;
             this.column.changed += OnColumnChanged;
             this.column.resized += OnColumnResized;
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             // Enforce to avoid override from uss.
             style.marginLeft = 0;
             style.marginTop = 0;
@@ -186,7 +216,7 @@ namespace UnityEngine.UIElements.Internal
             m_ContentContainer = new VisualElement();
             m_ContentContainer.style.flexGrow = 1;
             m_ContentContainer.style.flexShrink = 1;
-            m_ContentContainer.AddToClassList(contentContainerUssClassName);
+            m_ContentContainer.AddToClassList(contentContainerUssClassNameUnique);
             Add(m_ContentContainer);
 
             UpdateHeaderTemplate();
@@ -234,9 +264,9 @@ namespace UnityEngine.UIElements.Internal
         private void OnMoverChanged(ColumnMover mv)
         {
             if (mover.moving)
-                AddToClassList(movingUssClassName);
+                AddToClassList(movingUssClassNameUnique);
             else
-                RemoveFromClassList(movingUssClassName);
+                RemoveFromClassList(movingUssClassNameUnique);
         }
 
         void UpdateDataFromColumn()
@@ -288,12 +318,12 @@ namespace UnityEngine.UIElements.Internal
         {
             var defContent = new VisualElement() { pickingMode = PickingMode.Ignore };
 
-            defContent.AddToClassList(defaultContentUssClassName);
+            defContent.AddToClassList(defaultContentUssClassNameUnique);
 
             var icon = new MultiColumnHeaderColumnIcon() { name = iconElementName, pickingMode = PickingMode.Ignore };
 
             var title = new Label() { name = titleElementName, pickingMode = PickingMode.Ignore };
-            title.AddToClassList(titleUssClassName);
+            title.AddToClassList(titleUssClassNameUnique);
 
             defContent.Add(icon);
             defContent.Add(title);
@@ -306,13 +336,13 @@ namespace UnityEngine.UIElements.Internal
             var title = ve.Q<Label>(titleElementName);
             var icon = ve.Q<MultiColumnHeaderColumnIcon>();
 
-            ve.RemoveFromClassList(hasTitleUssClassName);
+            ve.RemoveFromClassList(hasTitleUssClassNameUnique);
 
             if (title != null)
                 title.text = column.title;
 
             if (!string.IsNullOrEmpty(column.title))
-                ve.AddToClassList(hasTitleUssClassName);
+                ve.AddToClassList(hasTitleUssClassNameUnique);
 
             if (icon != null)
             {

@@ -12,16 +12,19 @@ namespace UnityEngine.UIElements.Internal
     class MultiColumnHeaderColumnResizeHandle : VisualElement
     {
         public static readonly string ussClassName = MultiColumnCollectionHeader.ussClassName + "__column-resize-handle";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string dragAreaUssClassName = ussClassName + "__drag-area";
+        internal static readonly UniqueStyleString dragAreaUssClassNameUnique = new(dragAreaUssClassName);
 
         public VisualElement dragArea { get; }
 
         public MultiColumnHeaderColumnResizeHandle()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             dragArea = new VisualElement() { focusable = true, tabIndex = -1  };
-            dragArea.AddToClassList(dragAreaUssClassName);
+            dragArea.AddToClassList(dragAreaUssClassNameUnique);
             Add(dragArea);
         }
     }

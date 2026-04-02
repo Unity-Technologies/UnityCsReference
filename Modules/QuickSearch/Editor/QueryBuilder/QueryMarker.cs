@@ -236,9 +236,9 @@ namespace UnityEditor.Search
                 var valueArg = queryMarker.args[0];
                 var value = valueArg.value;
                 if (valueArg.needsEvaluation)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     value = valueArg.Evaluate(context).FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
                 if (value == null)
                     continue;
 

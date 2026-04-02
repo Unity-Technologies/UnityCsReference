@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Loading;
 using System.Collections.Generic;
 
 namespace UnityEngine.SceneManagement
@@ -37,9 +38,9 @@ namespace UnityEngine.SceneManagement
         }
 
         /*UCBP-PUBLIC*/
-        internal LoadableScene loadableScene
+        internal LoadableSceneId loadableSceneId
         {
-            get { return GetLoadableSceneInternal(handle); }
+            get { return GetLoadableSceneIdInternal(handle); }
         }
 
         public bool IsValid()

@@ -11,10 +11,13 @@ namespace UnityEditor.Build.Reporting
     public static class CommonRoles
     {
         ///<summary>The <see cref="BuildFile.role" /> value of a file that contains the packed content of a Scene.</summary>
+        ///<remarks>This role is also used for serialized files inside AssetBundles when they contain a scene.</remarks>
         [NativeProperty("BuildReporting::CommonRoles::scene", true, TargetType.Field)]
         public static extern string scene { get; }
 
-        ///<summary>The <see cref="BuildFile.role" /> value of a file that contains asset objects which are shared between Scenes. Examples of asset objects are textures, models, and audio.</summary>
+        ///<summary>The <see cref="BuildFile.role" /> value of a file that contains asset objects which are shared between Scenes.</summary>
+        ///<remarks>Examples of asset objects are textures, models, and audio.
+        ///This role is also used for any serialized file inside an AssetBundle, apart from serialized files that contain scenes.</remarks>
         [NativeProperty("BuildReporting::CommonRoles::sharedAssets", true, TargetType.Field)]
         public static extern string sharedAssets { get; }
 

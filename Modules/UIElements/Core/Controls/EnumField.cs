@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// Makes a dropdown for switching between enum values. For more information, refer to [[wiki:UIE-uxml-element-EnumField|UXML element EnumField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/EnumField.png")]
     public partial class EnumField : BaseField<Enum>
     {
@@ -150,12 +151,12 @@ namespace UnityEngine.UIElements
         private void Initialize(Enum defaultValue)
         {
             m_TextElement = new TextElement();
-            m_TextElement.AddToClassList(textUssClassName);
+            m_TextElement.AddToClassList(textUssClassNameUnique);
             m_TextElement.pickingMode = PickingMode.Ignore;
             visualInput.Add(m_TextElement);
 
             m_ArrowElement = new VisualElement();
-            m_ArrowElement.AddToClassList(arrowUssClassName);
+            m_ArrowElement.AddToClassList(arrowUssClassNameUnique);
             m_ArrowElement.pickingMode = PickingMode.Ignore;
             visualInput.Add(m_ArrowElement);
             if (defaultValue != null)
@@ -168,22 +169,31 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-enum-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of text elements in elements of this type.
         /// </summary>
         public static readonly string textUssClassName = ussClassName + "__text";
+        internal static readonly UniqueStyleString textUssClassNameUnique = new(textUssClassName);
+
         /// <summary>
         /// USS class name of arrow indicators in elements of this type.
         /// </summary>
         public static readonly string arrowUssClassName = ussClassName + "__arrow";
+        internal static readonly UniqueStyleString arrowUssClassNameUnique = new(arrowUssClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Construct an EnumField.
@@ -205,9 +215,9 @@ namespace UnityEngine.UIElements
         public EnumField(string label, Enum defaultValue = null)
             : base(label, null)
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
             Initialize(defaultValue);
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
@@ -360,8 +370,8 @@ namespace UnityEngine.UIElements
                 UpdateValueLabel(value);
             }
 
-            m_TextElement.EnableInClassList(labelUssClassName, showMixedValue);
-            m_TextElement.EnableInClassList(mixedValueLabelUssClassName, showMixedValue);
+            m_TextElement.EnableInClassList(labelUssClassNameUnique, showMixedValue);
+            m_TextElement.EnableInClassList(mixedValueLabelUssClassNameUnique, showMixedValue);
         }
     }
 }

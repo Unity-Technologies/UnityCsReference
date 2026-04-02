@@ -1165,7 +1165,7 @@ namespace UnityEditor
                     string dependentComponents = string.Join(
                         ", ",
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        GetAddedComponentDependencies(component, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                        GetAddedComponentDependencies(component, OverrideOperation.Apply).Select(ObjectNames.GetInspectorTitle));
 #pragma warning restore UA2001
                     if (!string.IsNullOrEmpty(dependentComponents))
                     {
@@ -1250,7 +1250,7 @@ namespace UnityEditor
                 string dependentComponents = string.Join(
                     ", ",
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    GetAddedComponentDependencies(component, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    GetAddedComponentDependencies(component, OverrideOperation.Revert).Select(ObjectNames.GetInspectorTitle));
 #pragma warning restore UA2001
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
@@ -1346,7 +1346,7 @@ namespace UnityEditor
                 string dependentComponents = string.Join(
                     ", ",
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Apply).Select(ObjectNames.GetInspectorTitle));
 #pragma warning restore UA2001
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
@@ -1466,7 +1466,7 @@ namespace UnityEditor
             string dependentComponents = string.Join(
                 ", ",
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(ObjectNames.GetInspectorTitle));
 #pragma warning restore UA2001
             if (!string.IsNullOrEmpty(dependentComponents))
             {

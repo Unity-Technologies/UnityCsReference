@@ -298,7 +298,7 @@ namespace UnityEditor
         extern public static bool IsPassCompiled([NotNull] Material material, int pass);
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
         {
             return (MaterialProperty[])GetMaterialPropertiesImpl(mats);
@@ -380,7 +380,7 @@ namespace UnityEditor
         extern internal static ShaderData.PreprocessedVariant PreprocessShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives);
 
-        extern internal static ShaderData.VariantCompileInfo CompileComputeShaderVariant([NotNull] ComputeShader shader, int kernelIndex, 
+        extern internal static ShaderData.VariantCompileInfo CompileComputeShaderVariant([NotNull] ComputeShader shader, int kernelIndex,
             string[] keywords, GraphicsDeviceType graphicsDeviceType, BuildTarget buildTarget);
 
         extern private static bool CanBuildShadersWithShaderCompiler(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget);

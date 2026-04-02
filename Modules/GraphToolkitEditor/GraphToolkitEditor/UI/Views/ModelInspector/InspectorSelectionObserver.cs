@@ -61,17 +61,14 @@ namespace Unity.GraphToolkit.Editor
 
                     if (updateType != UpdateType.None || gvObservation.UpdateType == UpdateType.Complete)
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
-#pragma warning restore UA2001
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var selectedModels = m_ToolState.GraphModel.GetModelsDisplayableInInspector(selection).Distinct().ToList();
-#pragma warning restore UA2001
-
-                        if (m_SelectionStates.HasAny(t => t.DisplayInInspector))
+                        if (m_SelectionStates.Exists(t => t.DisplayInInspector))
                         {
                             using (var updater = m_ModelInspectorState.UpdateScope)
                             {
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
+                                var selectedModels = m_ToolState.GraphModel.GetModelsDisplayableInInspector(selection).Distinct().ToList();
+#pragma warning restore UA2001
                                 updater.SetInspectedModels(selectedModels, graphModel);
                             }
                         }

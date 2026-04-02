@@ -528,9 +528,7 @@ namespace UnityEditor
                 sectionRects[i].x += margin;
                 sectionRects[i].width -= margin * 2;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Rect contentRect = new Rect(0, 0, 1, sectionRects.Last().yMax);
-#pragma warning restore UA2001
+            Rect contentRect = new Rect(0, 0, 1, sectionRects[^1].yMax);
 
             // Adjust for scrollbar
             if (contentRect.height > column1Rect.height)
@@ -759,9 +757,7 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var objs = AssetDatabase.FindAllAssets(new SearchFilter() { classNames = classNames }).Select(property => property.pptrValue).ToList();
 #pragma warning restore UA2001
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (objs.Any())
-#pragma warning restore UA2002
+            if (objs.Count > 0)
             {
                 objs.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
                 foreach (var obj in objs)

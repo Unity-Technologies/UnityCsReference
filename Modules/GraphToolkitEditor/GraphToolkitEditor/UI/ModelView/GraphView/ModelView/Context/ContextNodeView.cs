@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -287,7 +288,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc/>
         public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
         {
-            if (!copyPasteData.Nodes.HasAny(t => t is BlockNodeModel))
+            if (!copyPasteData.Nodes.Exists(t => t is BlockNodeModel))
                 return false;
 
             using var dispose = copyPasteData.Nodes.OfTypeToPooledList<BlockNodeModel, AbstractNodeModel>(out var blocks);

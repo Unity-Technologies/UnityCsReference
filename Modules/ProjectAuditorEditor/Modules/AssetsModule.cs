@@ -14,15 +14,15 @@ namespace Unity.ProjectAuditor.Editor.Core
         internal static readonly IssueLayout k_IssueLayout = new IssueLayout
         {
             Category = IssueCategory.AssetIssue,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
                 new PropertyDefinition { Type = PropertyType.Severity, Format = PropertyFormat.String, Name = "Severity"},
                 new PropertyDefinition { Type = PropertyType.Areas, Format = PropertyFormat.String, Name = "Areas", LongName = "Impacted Areas" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500 },
                 new PropertyDefinition { Type = PropertyType.Descriptor, Name = "Descriptor", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.IsIgnored, Name = "Ignored"},
-            }
+            ]
         };
 
         public override string Name => "Assets";
@@ -60,9 +60,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                     };
 
                     foreach (var analyzer in analyzers)
-                    {
                         analysisParams.OnIncomingIssues(analyzer.Analyze(assetAnalysisContext));
-                    }
 
                     yield return null;
                 }

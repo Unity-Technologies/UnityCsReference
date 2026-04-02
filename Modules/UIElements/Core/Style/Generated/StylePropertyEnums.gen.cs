@@ -15,14 +15,13 @@ namespace UnityEngine.UIElements.StyleSheets
 {
     internal enum StylePropertyGroup
     {
-        custom = 1,
-        Inherited = 2,
-        Layout = 3,
-        Rare = 4,
-        Shorthand = 5,
-        Transform = 6,
-        Transition = 7,
-        Visual = 8
+        Inherited = 1,
+        Layout = 2,
+        Rare = 3,
+        Shorthand = 4,
+        Transform = 5,
+        Transition = 6,
+        Visual = 7
     }
 
     [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]

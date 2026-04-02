@@ -38,9 +38,9 @@ namespace UnityEditor.ShortcutManagement
 
         public bool Equals(ShortcutBinding other)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return keyCombinationSequence.SequenceEqual(other.keyCombinationSequence);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
         }
 
         public override bool Equals(object obj)

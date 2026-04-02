@@ -15,6 +15,20 @@ namespace UnityEditor.UIElements
         public EditorMonitor()
         {
             Panel.beforeAnyRepaint += OnBeforeRepaint;
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+        }
+
+        bool m_DomainUnloading;
+        void OnBeforeAssemblyReload()
+        {
+            m_DomainUnloading = true;
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            if (m_RenderTexture != null)
+            {
+                m_RenderTexture.Release();
+                UnityEngine.Object.DestroyImmediate(m_RenderTexture);
+                m_RenderTexture = null;
+            }
         }
 
         void OnBeforeRepaint(Panel source)
@@ -63,6 +77,9 @@ namespace UnityEditor.UIElements
         RenderTexture m_RenderTexture;
         bool CheckForRenderTexturesTrashed()
         {
+            if (m_DomainUnloading)
+                return false; // We must not re-create the texture when the domain is unloading.
+
             if (m_RenderTexture == null || !m_RenderTexture.IsCreated())
             {
                 m_RenderTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32) { name = "EditorAtlasMonitorRT" };

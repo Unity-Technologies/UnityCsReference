@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using JetBrains.Annotations;
 using UnityEngine;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -26,9 +26,7 @@ namespace UnityEditor
 
                 foreach (var type in addComponentMenuTypes)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var attr = type.GetCustomAttributes(typeof(AddComponentMenu), false).FirstOrDefault()
-#pragma warning restore UA2001
                         as AddComponentMenu;
                     if (attr == null)
                         continue;

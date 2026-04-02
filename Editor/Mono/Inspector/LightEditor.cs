@@ -7,9 +7,9 @@ using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Collections;
 using System;
 using System.Linq;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -282,9 +282,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
 
                 int type;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (Styles.LightTypeValues.Contains(lightType.intValue))
-#pragma warning restore UA2001
                 {
                     // ^ The currently selected light type is supported in the
                     // current pipeline.
@@ -313,9 +311,7 @@ namespace UnityEditor
                 }
                 EditorGUI.EndProperty();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!Styles.LightTypeValues.Contains(lightType.intValue))
-#pragma warning restore UA2001
                 {
                     EditorGUILayout.HelpBox(
                         "This light type is not supported in the current active render pipeline. Change the light type or the active Render Pipeline to use this light.",

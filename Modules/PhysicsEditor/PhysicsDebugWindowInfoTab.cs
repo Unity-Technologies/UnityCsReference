@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine.SceneManagement;
 using System;
 using UnityEditor.SceneManagement;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -398,9 +399,7 @@ namespace UnityEditor
 
         private bool IsSelected(Transform tr)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Selection.GetTransforms(SelectionMode.Unfiltered).Contains(tr);
-#pragma warning restore UA2001
         }
 
         private VisualisationState ShouldDrawObject(Transform transform)

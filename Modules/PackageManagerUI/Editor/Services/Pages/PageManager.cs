@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,22 +13,23 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         event Action<IPage> onActivePageChanged;
         event Action<IPage> onListRebuild;
-        event Action<IPage, PageFilters> onFiltersChange;
-        event Action<IPage, string> onTrimmedSearchTextChanged;
+        event Action<PageFiltersChangeArgs> onFiltersChange;
+        event Action<IPage> onTrimmedSearchTextChanged;
         event Action<PageSelectionChangeArgs> onSelectionChanged;
         event Action<VisualStateChangeArgs> onVisualStateChange;
         event Action<ListUpdateArgs> onListUpdate;
-        event Action<IPage> onSupportedStatusFiltersChanged;
+        event Action<PageStateChangeArgs> onStateChanged;
+        event Action onExtensionPagesChanged;
+        event Action onScopedRegistryPagesChanged;
 
         IPage lastActivePage { get; }
         IPage activePage { get; set; }
         IEnumerable<IPage> orderedExtensionPages { get; }
+        IEnumerable<IPage> orderedScopedRegistryPages { get; }
 
         void AddExtensionPage(ExtensionPageArgs args);
         IPage GetPage(string pageId);
-        IPage GetPage(RegistryInfo registryInfo);
-        IPage FindPage(IPackage package);
-        IPage FindPage(IList<IPackage> packages);
+        IPage FindPage(IPackage package, string pageIdToPrioritize = null);
 
         void OnWindowDestroy();
     }
@@ -41,12 +41,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IPage> onActivePageChanged = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
-        public event Action<IPage, PageFilters> onFiltersChange = delegate {};
-        public event Action<IPage, string> onTrimmedSearchTextChanged = delegate {};
+        public event Action<PageFiltersChangeArgs> onFiltersChange = delegate {};
+        public event Action<IPage> onTrimmedSearchTextChanged = delegate {};
         public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
         public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
         public event Action<ListUpdateArgs> onListUpdate = delegate {};
-        public event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
+        public event Action<PageStateChangeArgs> onStateChanged = delegate {};
+        public event Action onExtensionPagesChanged = delegate {};
+        public event Action onScopedRegistryPagesChanged = delegate {};
 
         private Dictionary<string, IPage> m_Pages = new();
 
@@ -60,52 +62,56 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ActivePage ??= m_Pages.Values.FirstOrDefault(p => p.isActivePage);
-#pragma warning restore UA2001
+                m_ActivePage ??= m_Pages.Values.FirstMatch(p => p.isActive);
                 if (m_ActivePage != null)
                     return m_ActivePage;
                 m_ActivePage = GetPage(k_DefaultPageId);
-                m_ActivePage.OnActivated();
+                m_ActivePage.Activate();
                 return m_ActivePage;
             }
             set
             {
-                lastActivePage = activePage;
-                m_ActivePage = value;
-                if (activePage == lastActivePage)
+                if (activePage == value)
                     return;
 
-                activePage.OnActivated();
-                lastActivePage?.OnDeactivated();
+                lastActivePage = activePage;
+                m_ActivePage = value;
+
+                activePage.Activate();
+                lastActivePage?.Deactivate();
                 onActivePageChanged?.Invoke(activePage);
             }
         }
 
         [NonSerialized]
         private List<ExtensionPageArgs> m_OrderedExtensionPageArgs = new();
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<IPage> orderedExtensionPages => m_OrderedExtensionPageArgs.Select(a => GetPage(a.id));
-#pragma warning restore UA2001
+        public IEnumerable<IPage> orderedExtensionPages => m_OrderedExtensionPageArgs.SelectAsEnumerable(a => GetPage(a.id));
+
+        [SerializeField]
+        private bool m_ScopedRegistryPagesInitialized = false;
+        [SerializeField]
+        private string[] m_OrderedScopedRegistryPageIds = Array.Empty<string>();
+        public IEnumerable<IPage> orderedScopedRegistryPages
+        {
+            get
+            {
+                if (!m_ScopedRegistryPagesInitialized)
+                    UpdateScopedRegistryPages(false);
+                return m_OrderedScopedRegistryPageIds.SelectAsEnumerable(GetPage);
+            }
+        }
 
         [SerializeReference]
         private IPage[] m_SerializedPages = Array.Empty<IPage>();
 
-
-        private readonly IUnityConnectProxy m_UnityConnect;
-        private readonly IPackageDatabase m_PackageDatabase;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IUpmRegistryClient m_UpmRegistryClient;
         private readonly IPageFactory m_PageFactory;
 
-        public PageManager(IUnityConnectProxy unityConnect,
-            IPackageDatabase packageDatabase,
-            IProjectSettingsProxy settingsProxy,
+        public PageManager(IProjectSettingsProxy settingsProxy,
             IUpmRegistryClient upmRegistryClient,
             IPageFactory pageFactory)
         {
-            m_UnityConnect = RegisterDependency(unityConnect);
-            m_PackageDatabase = RegisterDependency(packageDatabase);
             m_SettingsProxy = RegisterDependency(settingsProxy);
             m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
             m_PageFactory = RegisterDependency(pageFactory);
@@ -113,9 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedPages = m_Pages.Values.ToArray();
-#pragma warning restore UA2001
+            m_Pages.Values.ToArray(ref m_SerializedPages);
             m_SerializedLastActivePageId = lastActivePage?.id ?? string.Empty;
             m_SerializedActivePageId = m_ActivePage?.id ?? string.Empty;
         }
@@ -134,17 +138,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PageFactory.ResolveDependenciesForPage(page);
         }
 
-        private IPage CreatePageFromId(string pageId)
-        {
-            var page = m_PageFactory.CreatePageFromId(pageId);
-            return page != null ? OnNewPageCreated(page) : null;
-        }
-
         private IPage OnNewPageCreated(IPage page)
         {
-            page.OnEnable();
-            m_Pages[page.id] = page;
-            RegisterPageEvents(page);
+            if (page != null)
+            {
+                page.OnEnable();
+                m_Pages[page.id] = page;
+                RegisterPageEvents(page);
+            }
             return page;
         }
 
@@ -153,10 +154,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onVisualStateChange += args => onVisualStateChange?.Invoke(args);
             page.onListUpdate += args => onListUpdate?.Invoke(args);
             page.onSelectionChanged += args => onSelectionChanged?.Invoke(args);
-            page.onListRebuild += p => onListRebuild?.Invoke(p);
-            page.onFiltersChange += filters => onFiltersChange?.Invoke(page, filters);
-            page.onTrimmedSearchTextChanged += text => onTrimmedSearchTextChanged?.Invoke(page, text);
-            page.onSupportedStatusFiltersChanged += p => onSupportedStatusFiltersChanged?.Invoke(p);
+            page.onListRebuild += () => onListRebuild?.Invoke(page);
+            page.onStageChanged += args =>
+            {
+                if (page.isActive && !page.visible)
+                    activePage = GetPage(k_DefaultPageId);
+                onStateChanged?.Invoke(args);
+            };
+            page.onFiltersChanged += args => onFiltersChange?.Invoke(args);
+            page.onTrimmedSearchTextChanged += () => onTrimmedSearchTextChanged?.Invoke(page);
         }
 
         public void AddExtensionPage(ExtensionPageArgs args)
@@ -178,82 +184,97 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // Since the pages are serialized but m_OrderedExtensionPageArgs is not serialized, after domain reload
             // we will find an existing page even though we already checked for duplicates earlier. This is expected,
-            // we will use as much of the existing page as we and update the fields that cannot be serialized (the functions)
+            // we will use as much of the existing page as we can and update the fields that cannot be serialized (the functions)
             if (m_Pages.Get(ExtensionPage.GetIdFromName(args.name)) is ExtensionPage existingPage)
                 existingPage.UpdateArgs(args);
             else
                 OnNewPageCreated(m_PageFactory.CreateExtensionPage(args));
+
+            onExtensionPagesChanged?.Invoke();
         }
 
         public IPage GetPage(string pageId)
         {
-            return !string.IsNullOrEmpty(pageId) && m_Pages.TryGetValue(pageId, out var page) ? page : CreatePageFromId(pageId);
-        }
-
-        public IPage GetPage(RegistryInfo registryInfo)
-        {
-            if (registryInfo == null)
+            if (string.IsNullOrEmpty(pageId))
                 return null;
-            var pageId = ScopedRegistryPage.GetIdFromRegistry(registryInfo);
-            return m_Pages.TryGetValue(pageId, out var page) ? page : OnNewPageCreated(m_PageFactory.CreateScopedRegistryPage(registryInfo));
+            return m_Pages.TryGetValue(pageId, out var page) ? page : OnNewPageCreated(m_PageFactory.CreatePageFromId(pageId));
         }
 
-        private void OnPackagesChanged(PackagesChangeArgs args)
+        public IPage<T> GetPage<T>(string pageId)
         {
-            activePage.OnPackagesChanged(args);
+            return GetPage(pageId) as IPage<T>;
+        }
+
+        private void UpdateScopedRegistryPages(bool triggerChangeEvent)
+        {
+            string[] pageIdsToRemove;
+            var numPageCreated = 0;
+            var scopedRegistries = m_SettingsProxy.scopedRegistries;
+            if (scopedRegistries.Count == 0)
+            {
+                pageIdsToRemove = m_OrderedScopedRegistryPageIds;
+                m_OrderedScopedRegistryPageIds = Array.Empty<string>();
+            }
+            else
+            {
+                var myRegistriesPage = GetPage(MyRegistriesPage.k_Id) ?? OnNewPageCreated(m_PageFactory.CreateMyRegistriesPage());
+                var newOrderedScopedRegistryPageIds = new List<string> { myRegistriesPage.id };
+
+                var pagesToReuse = m_Pages.Values.FilterByType<ScopedRegistryPage>().ToNewDictionary(p => p.scopedRegistry.id);
+                foreach (var registry in scopedRegistries)
+                {
+                    // We remove the page after reusing it so that whatever is left behind at the end will become the list of not reusable pages to remove,
+                    // these non-reusable pages corresponds to scoped registries that has been removed
+                    if (pagesToReuse.Remove(registry.id, out var page))
+                    {
+                        newOrderedScopedRegistryPageIds.Add(page.id);
+                        page.UpdateRegistry(registry);
+                    }
+                    else
+                    {
+                        newOrderedScopedRegistryPageIds.Add(OnNewPageCreated(m_PageFactory.CreateScopedRegistryPage(registry)).id);
+                        ++numPageCreated;
+                    }
+                }
+                pageIdsToRemove = pagesToReuse.Values.SelectToNewArray(p => p.id);
+                m_OrderedScopedRegistryPageIds = newOrderedScopedRegistryPageIds.ToArray();
+            }
+
+            if (pageIdsToRemove.ContainsMatches(activePage.id))
+                activePage = GetPage(k_DefaultPageId);
+
+            foreach (var pageId in pageIdsToRemove)
+                m_Pages.Remove(pageId);
+
+            m_ScopedRegistryPagesInitialized = true;
+
+            if (triggerChangeEvent && pageIdsToRemove.Length + numPageCreated > 0)
+                onScopedRegistryPagesChanged?.Invoke();
         }
 
         private void OnRegistriesModified()
         {
-            // Here we only want to remove outdated pages and update existing pages when needed
-            // We will delay the creation of new pages to when the UI is displaying them to save some resources
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var scopedRegistries = m_SettingsProxy.scopedRegistries.ToDictionary(r => r.id, r => r);
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var scopedRegistryPages = m_Pages.Values.FilterByType<ScopedRegistryPage>().ToArray();
-#pragma warning restore UA2001
-            var pagesToRemove = new HashSet<string>();
-            foreach (var page in scopedRegistryPages)
+            UpdateScopedRegistryPages(true);
+        }
+
+        public IPage FindPage(IPackage package, string pageIdToPrioritize = null)
+        {
+            if (package == null)
+                return null;
+
+            var pagesChecked = new HashSet<string>();
+            var pageIdsToCheck = new[] { pageIdToPrioritize, activePage.id, BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id };
+            foreach (var pageId in pageIdsToCheck)
             {
-                if (scopedRegistries.TryGetValue(page.scopedRegistry.id, out var registryInfo))
-                    page.UpdateRegistry(registryInfo);
-                else
-                    pagesToRemove.Add(page.id);
+                if (string.IsNullOrEmpty(pageId) || !pagesChecked.Add(pageId))
+                    continue;
+                var page = GetPage<IPackage>(pageId);
+                if (page == null)
+                    continue;
+                if (page.visualStates.Contains(package.uniqueId) || page.ShouldInclude(package))
+                    return page;
             }
-
-            if (pagesToRemove.Contains(activePage.id))
-                activePage = GetPage(k_DefaultPageId);
-
-            foreach (var pageId in pagesToRemove)
-                m_Pages.Remove(pageId);
-
-            if (scopedRegistries.Count > 0)
-                return;
-            GetPage(MyRegistriesPage.k_Id).ClearFilters(true);
-        }
-
-        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
-        {
-            GetPage(MyAssetsPage.k_Id).ClearFilters(true);
-        }
-
-        public IPage FindPage(IPackage package)
-        {
-            return FindPage(new[] { package});
-        }
-
-        public IPage FindPage(IList<IPackage> packages)
-        {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (packages == null || packages.Count == 0 || packages.All(p => activePage.visualStates.Contains(p.uniqueId) || activePage.ShouldInclude(p)))
-#pragma warning restore UA2001
-                return activePage;
-
-            var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return pageIdsToCheck.Select(GetPage).FirstOrDefault(page => !page.isActivePage && packages.All(page.ShouldInclude));
-#pragma warning restore UA2001
+            return null;
         }
 
         [ExcludeFromCodeCoverage]
@@ -262,9 +283,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var page in m_Pages.Values)
                 page.OnEnable();
 
-            m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
-            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
         }
 
         [ExcludeFromCodeCoverage]
@@ -273,16 +292,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var page in m_Pages.Values)
                 page.OnDisable();
 
-            m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
             m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
-            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         public void OnWindowDestroy()
         {
+            // When the window gets closed, we want to reset some states as if the page is deactivated without actually deactivating the page
+            // so that the next time user opens the package manager windows, the UI will show up in a clean state
+            activePage.ResetStatesOnDeactivate();
+
             // Since extension pages are added on Window creation time we need to clear them on Window destroy, so the next
             // time the Package Manager window is created (which would happen when it is closed and reopened), we will not
-            // report a false alarm of page name duplication.
+            // report a false alarm of page name duplication
             m_OrderedExtensionPageArgs.Clear();
         }
     }

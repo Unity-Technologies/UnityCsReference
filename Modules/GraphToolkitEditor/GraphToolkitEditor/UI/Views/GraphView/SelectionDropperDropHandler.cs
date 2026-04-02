@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -57,9 +58,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool CanHandleDrop()
         {
             var dndContent = SelectionDropper.GetDraggedElements();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return dndContent.OfType<VariableDeclarationModelBase>().HasAny();
-#pragma warning restore UA2001
+            return dndContent.Exists(c => c is VariableDeclarationModelBase);
         }
 
         /// <inheritdoc />

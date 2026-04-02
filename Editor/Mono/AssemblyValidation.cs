@@ -150,9 +150,9 @@ namespace UnityEditor
             {
                 using (var analyzerDefinition = AssemblyDefinition.ReadAssembly(analyzer, readerParameters))
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var netstandardVersion = analyzerDefinition.MainModule.AssemblyReferences.Where(r => r.Name == "netstandard").FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
                     if (netstandardVersion != null && netstandardVersion.Version >= new Version(2, 1))
                     {
                         errors.Add(new Error

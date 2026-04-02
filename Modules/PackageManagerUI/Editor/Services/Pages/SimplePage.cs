@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -13,172 +11,75 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class SimplePage : BasePage
     {
-        public static readonly PageSortOption[] k_DefaultSupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc, PageSortOption.PublishedDateDesc };
-        public static readonly PageFilters.Status[] k_DefaultSupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
-
-        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => k_DefaultSupportedStatusFilters;
-        public override IReadOnlyList<PageSortOption> supportedSortOptions => k_DefaultSupportedSortOptions;
-
         [SerializeField]
-        private VisualStateList m_VisualStateList = new();
+        protected VisualStateList m_VisualStateList = new();
         public override IVisualStateList visualStates => m_VisualStateList;
 
-        public override PageCapability capability => PageCapability.SupportLocalReordering;
-
-        public SimplePage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
-
-        public override bool UpdateFilters(PageFilters newFilters)
+        protected override void UpdateFiltersInternal(PageFilters newFilters, PageFilters.ChangedTypes changedTypes, bool triggerEvent = true)
         {
-            if (!base.UpdateFilters(newFilters))
-                return false;
+            base.UpdateFiltersInternal(newFilters, changedTypes, triggerEvent);
+            if (!changedTypes.AnyFilterValuesChanged())
+                return;
 
-            RebuildVisualStatesAndUpdateVisibilityWithSearchText();
-            return true;
+            if (changedTypes.HasFlag(PageFilters.ChangedTypes.SortOption))
+                Rebuild(true);
+            else
+                ApplyFiltersAndSearchText(true);
         }
 
         protected override void RefreshListOnSearchTextChange()
         {
-            RebuildVisualStatesAndUpdateVisibilityWithSearchText();
+            ApplyFiltersAndSearchText(true);
         }
 
-        public override void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
+        protected void Rebuild(bool triggerEvent)
         {
-            var changedVisualStates = new HashSet<VisualState>();
+            RebuildVisualStateList();
+            if (triggerEvent)
+                TriggerListRebuild();
+            ApplyFiltersAndSearchText(triggerEvent);
+        }
 
-            foreach (var packageUniqueId in packageUniqueIds)
+        protected void IncrementalListUpdate(IReadOnlyCollection<string> added = null, IReadOnlyCollection<string> updated = null, IReadOnlyCollection<string> removed = null)
+        {
+            added ??= Array.Empty<string>();
+            updated ??= Array.Empty<string>();
+            removed ??= Array.Empty<string>();
+            if (added.Count == 0 & updated.Count == 0 && removed.Count == 0)
+                return;
+
+            // Note that even for incremental update we still just rebuild the list for simplicity because the grouping and ordering of an item might have changed
+            RebuildVisualStateList();
+            TriggerOnListUpdate(added, updated, removed);
+            ApplyFiltersAndSearchText(true);
+        }
+
+        private void ApplyFiltersAndSearchText(bool triggerEvent)
+        {
+            var changedVisualStates = new List<VisualState>();
+            foreach (var state in visualStates)
             {
-                var visualState = m_VisualStateList.Get(packageUniqueId);
-                if (visualState == null || visualState.userUnlocked == unlocked)
+                var newVisibility = MatchesSearchTextAndFilter(state.itemUniqueId);
+                if (state.visible == newVisibility)
                     continue;
-                visualState.userUnlocked = unlocked;
-                changedVisualStates.Add(visualState);
-            }
-            TriggerOnVisualStateChange(changedVisualStates);
-        }
-
-        public override void ResetUserUnlockedState()
-        {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var unlockedVisualStates = visualStates.Filter(v => v.userUnlocked).ToArray();
-#pragma warning restore UA2001
-            foreach (var visualState in unlockedVisualStates)
-                visualState.userUnlocked = false;
-            TriggerOnVisualStateChange(unlockedVisualStates);
-        }
-
-        public virtual void RebuildVisualStatesAndUpdateVisibilityWithSearchText()
-        {
-            RebuildAndReorderVisualStates();
-            RefreshSupportedStatusFiltersOnEntitlementPackageChange();
-            TriggerListRebuild();
-            FilterPackagesBySearchText();
-        }
-
-        public override void OnActivated()
-        {
-            base.OnActivated();
-            ResetUserUnlockedState();
-            RebuildVisualStatesAndUpdateVisibilityWithSearchText();
-            TriggerOnSelectionChanged();
-        }
-
-        public override void OnDeactivated()
-        {
-            base.OnDeactivated();
-            var selectedVisualStates = GetSelectedVisualStates();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedGroups = new HashSet<string>(selectedVisualStates.Select(v => v.groupName).Filter(groupName => !string.IsNullOrEmpty(groupName)));
-#pragma warning restore UA2001
-            foreach (var group in selectedGroups)
-                SetGroupExpanded(group, true);
-        }
-
-        public override void RebuildAndReorderVisualStates()
-        {
-            var filterByStatus = filters.status;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packages = m_PackageDatabase.allPackages.Filter(
-#pragma warning restore UA2001
-                p => ShouldInclude(p)
-                     && (filterByStatus != PageFilters.Status.UpdateAvailable || p.state == PackageState.UpdateAvailable)
-                     && (filterByStatus != PageFilters.Status.SubscriptionBased || p.hasEntitlements));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var orderedVisualStates = packages.OrderBy(p => p, new PackageComparer(filters.sortOption)).Select(p =>
-#pragma warning restore UA2001
-            {
-                var visualState = m_VisualStateList.Get(p.uniqueId) ?? new VisualState(p.uniqueId);
-                visualState.groupName = GetGroupName(p);
-                visualState.lockedByDefault = GetDefaultLockState(p);
-                return visualState;
-            }).ToList();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var orderedGroups = orderedVisualStates.Select(v => v.groupName).EnumerateDistinct().Filter(i => !string.IsNullOrEmpty(i)).ToList();
-#pragma warning restore UA2001
-            if (orderedGroups.Count > 1)
-                SortGroupNames(orderedGroups);
-            m_VisualStateList.Rebuild(orderedVisualStates, orderedGroups);
-        }
-
-        protected virtual void SortGroupNames(List<string> groupNames)
-        {
-            groupNames.Sort((x, y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase));
-        }
-
-        public override bool GetDefaultLockState(IPackage package)
-        {
-            return package.versions.installed?.isDirectDependency != true &&
-               m_PackageDatabase.IsUsedByFeature(package.versions.installed);
-        }
-
-        // All the following load functions do nothing, because for a SimplePage we already know the complete list and there's no more to load
-        [ExcludeFromCodeCoverage]
-        public override void LoadMore(long numberOfPackages) {}
-        [ExcludeFromCodeCoverage]
-        public override void Load(string packageUniqueId) {}
-        [ExcludeFromCodeCoverage]
-        public override void LoadExtraItems(IEnumerable<IPackage> packages) {}
-
-        private class PackageComparer : IComparer<IPackage>
-        {
-            private PageSortOption m_SortOption;
-            public PackageComparer(PageSortOption sortOption)
-            {
-                m_SortOption = sortOption;
+                state.visible = newVisibility;
+                changedVisualStates.Add(state);
             }
 
-            private static int CompareByDisplayName(IPackageVersion x, IPackageVersion y)
-            {
-                return string.Compare(x.displayName, y.displayName, StringComparison.CurrentCultureIgnoreCase);
-            }
-
-            public int Compare(IPackage packageX, IPackage packageY)
-            {
-                var x = packageX?.versions.primary;
-                var y = packageY?.versions.primary;
-                if (x == null || y == null)
-                    return 0;
-
-                var result = 0;
-                switch (m_SortOption)
-                {
-                    case PageSortOption.NameAsc:
-                        return CompareByDisplayName(x, y);
-                    case PageSortOption.NameDesc:
-                        return -CompareByDisplayName(x, y);
-                    case PageSortOption.PublishedDateDesc:
-                        result = -(x.publishedDate ?? DateTime.MinValue).CompareTo(y.publishedDate ?? DateTime.MinValue);
-                        break;
-                    // Sorting by Update date and Purchase date is only available through the Asset Store backend API
-                    // So we will resort to default sorting (by display name) in this case.
-                    case PageSortOption.UpdateDateDesc:
-                    case PageSortOption.PurchasedDateDesc:
-                    default:
-                        break;
-                }
-                // We want to use display name as the secondary sort option if the primary sort option returns 0
-                // If sort option is set to anything sort option that's not supported, we'll sort by display name
-                return result != 0 ? result : CompareByDisplayName(x, y);
-            }
+            if (triggerEvent && changedVisualStates.Count > 0)
+                TriggerOnVisualStateChange(changedVisualStates);
         }
+
+        protected abstract bool MatchesSearchTextAndFilter(string itemUniqueId);
+
+        protected abstract void RebuildVisualStateList();
+
+        public override void Activate()
+        {
+            Rebuild(false);
+            base.Activate();
+        }
+
+        protected virtual int CompareGroupName(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
     }
 }

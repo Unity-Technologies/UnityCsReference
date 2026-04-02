@@ -6,12 +6,13 @@ using System;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
+#pragma warning disable CS0618 // TextSettings.defaultFontAsset is obsolete
+
 namespace UnityEngine.UIElements
 {
     internal static class TextUtilities
     {
         public static Func<TextSettings> getEditorTextSettings;
-        internal static Func<bool> IsAdvancedTextEnabled;
         private static TextSettings s_TextSettings;
 
         public static TextSettings textSettings
@@ -119,7 +120,7 @@ namespace UnityEngine.UIElements
 
             return null;
         }
-     
+
         internal static FontAsset GetFontAssetFromStyle_MainThreadOnly(VisualElement ve)
         {
             var fontDefinition = FontDefinition.From(ve.computedStyle.unityFontDefinition);
@@ -147,35 +148,28 @@ namespace UnityEngine.UIElements
 
         internal static TextSettings GetTextSettingsFrom(VisualElement ve)
         {
-            if (ve.panel is RuntimePanel runtimePanel)
-                return runtimePanel.panelSettings?.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
+            if (ve.panel is IRuntimePanel runtimePanel)
+            {
+                TextSettings result = null;
+                var panelSettings = runtimePanel.panelSettings;
+
+                if(panelSettings != null)
+                    result = panelSettings.textSettings;
+
+                if(result == null)
+                    result = PanelTextSettings.defaultPanelTextSettings;
+
+                return result;
+            }
+
             return getEditorTextSettings();
-        }
-
-        static bool s_HasAdvancedTextSystemErrorBeenShown = false;
-
-        internal static bool IsAdvancedTextEnabledForPanel(IPanel panel)
-        {
-            var isAdvancedTextGeneratorEnabledOnProject = false;
-            if (panel is RuntimePanel runtimePanel && !runtimePanel.panelSettings.disableNoThemeWarning)
-                isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
-            else
-                isAdvancedTextGeneratorEnabledOnProject = true;
-            return isAdvancedTextGeneratorEnabledOnProject;
         }
 
         internal static bool IsAdvancedTextEnabledForElement(VisualElement ve)
         {
             if (ve == null)
-                return false;
-            var isAdvancedTextGeneratorEnabledOnTextElement = ve.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
-            var isAdvancedTextGeneratorEnabledOnProject = isAdvancedTextGeneratorEnabledOnTextElement && IsAdvancedTextEnabledForPanel(ve.panel);
-            if (!s_HasAdvancedTextSystemErrorBeenShown && !isAdvancedTextGeneratorEnabledOnProject && isAdvancedTextGeneratorEnabledOnTextElement)
-            {
-                s_HasAdvancedTextSystemErrorBeenShown = true;
-                Debug.LogError("Advanced Text Generator is disabled but the API is still called. Please enable it in the UI Toolkit Project Settings if you want to use it, or refrain from calling the API.");
-            }
-            return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
+                return true;
+            return ve.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
         }
 
         internal static TextCoreSettings GetTextCoreSettingsForElement(TextElement te, bool ignoreColors)

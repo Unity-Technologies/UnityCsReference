@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Callbacks;
 using UnityEditor.IMGUI.Controls;
@@ -14,7 +13,6 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting.APIUpdating;
-using TreeViewDragging = UnityEditor.IMGUI.Controls.TreeViewDragging<int>;
 
 namespace UnityEditor.SceneManagement
 {
@@ -312,9 +310,7 @@ namespace UnityEditor.SceneManagement
             else if (m_Mode == Mode.InContext)
             {
                 var stageHistory = StageNavigationManager.instance.stageHistory;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (this == stageHistory.Last())
-#pragma warning restore UA2001
+                if (this == stageHistory[^1])
                 {
                     ulong mask = GetSceneCullingMask();
                     int count = stageHistory.Count;
@@ -1230,9 +1226,7 @@ namespace UnityEditor.SceneManagement
             GUIContent content = CreateHeaderContent();
 
             var history = StageNavigationManager.instance.stageHistory;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool isLastCrumb = this == history.Last();
-#pragma warning restore UA2001
+            bool isLastCrumb = this == history[^1];
             var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
             var separatorstyle = mode == Mode.InIsolation ? BreadcrumbBar.SeparatorStyle.Line : BreadcrumbBar.SeparatorStyle.Arrow;
             if (isAssetMissing)
@@ -2162,7 +2156,7 @@ namespace UnityEditor.SceneManagement
 
             public static void LogErrors()
             {
-                string combinedErrors = string.Join("\n", m_Errors.ToArray());
+                string combinedErrors = string.Join("\n", m_Errors);
                 Debug.LogError("Inconsistent preview object state:\n" + combinedErrors);
             }
 

@@ -9,6 +9,12 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    internal static class FoldoutConstants
+    {
+        public static readonly string ussClassName = "unity-foldout";
+        public static readonly int ussFoldoutMaxDepth = 4;
+    }
+
     /// <summary>
     /// A Foldout control is a collapsible section of a user interface. When toggled, it expands or collapses, which hides or reveals the elements it contains.
     /// </summary>
@@ -18,12 +24,18 @@ namespace UnityEngine.UIElements
     /// an arrow sprite instead of the <see cref="Toggle"/> control's usual checkbox. The arrow points right when the toggle is
     /// collapsed and down when it is expanded.
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Foldout.png")]
     public partial class Foldout : BindableElement, INotifyValueChanged<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
         internal static readonly BindingId valueProperty = nameof(value);
+
+        static Foldout()
+        {
+            VisualElementUtils.SetFoldoutType((typeof(Foldout)));
+        }
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
@@ -117,7 +129,7 @@ namespace UnityEngine.UIElements
             {
                 var previous = text;
                 m_Toggle.text = value;
-                m_Toggle.visualInput.Q(className: Toggle.textUssClassName)?.AddToClassList(textUssClassName);
+                m_Toggle.visualInput.Q(className: Toggle.textUssClassName)?.AddToClassList(textUssClassNameUnique);
                 if (string.CompareOrdinal(previous, text) != 0)
                     NotifyPropertyChanged(textProperty);
             }
@@ -175,7 +187,9 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to every instance of a <see cref="Foldout"/>. Any styling applied to
         /// this class affects every Foldout located beside, or below the stylesheet in the visual tree.
         /// </remarks>
-        public static readonly string ussClassName = "unity-foldout";
+        public static readonly string ussClassName = FoldoutConstants.ussClassName;
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name of Toggle sub-elements in Foldout elements.
         /// </summary>
@@ -185,6 +199,8 @@ namespace UnityEngine.UIElements
         /// stylesheet in the visual tree.
         /// </remarks>
         public static readonly string toggleUssClassName = ussClassName + "__toggle";
+        [VisibleToOtherModules] internal static readonly UniqueStyleString toggleUssClassNameUnique = new(toggleUssClassName);
+
         /// <summary>
         /// The USS class name for the content element in a Foldout.
         /// </summary>
@@ -194,6 +210,8 @@ namespace UnityEngine.UIElements
         /// below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string contentUssClassName = ussClassName + "__content";
+        internal static readonly UniqueStyleString contentUssClassNameUnique = new(contentUssClassName);
+
         /// <summary>
         /// The USS class name for the Label element in a Foldout.
         /// </summary>
@@ -202,6 +220,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every foldout container located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string inputUssClassName = ussClassName + "__input";
+        internal static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+
         /// <summary>
         /// The USS class name for the Label element in a Foldout.
         /// </summary>
@@ -211,6 +231,8 @@ namespace UnityEngine.UIElements
         /// every foldout container located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        internal static readonly UniqueStyleString checkmarkUssClassNameUnique = new(checkmarkUssClassName);
+
         /// <summary>
         /// The USS class name for the Label element in a Foldout.
         /// </summary>
@@ -220,10 +242,13 @@ namespace UnityEngine.UIElements
         /// below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string textUssClassName = ussClassName + "__text";
+        internal static readonly UniqueStyleString textUssClassNameUnique = new(textUssClassName);
 
         internal static readonly string toggleInspectorUssClassName = toggleUssClassName + "--inspector";
+        internal static readonly UniqueStyleString toggleInspectorUssClassNameUnique = new(toggleInspectorUssClassName);
+
         internal static readonly string ussFoldoutDepthClassName = ussClassName + "--depth-";
-        internal static readonly int ussFoldoutMaxDepth = 4;
+        internal static readonly int ussFoldoutMaxDepth = FoldoutConstants.ussFoldoutMaxDepth;
 
         private KeyboardNavigationManipulator m_NavigationManipulator;
 
@@ -278,7 +303,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Foldout()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             delegatesFocus = true;
             focusable = true;
 
@@ -296,13 +321,13 @@ namespace UnityEngine.UIElements
                 value = m_Toggle.value;
                 evt.StopPropagation();
             });
-            m_Toggle.AddToClassList(toggleUssClassName);
-            m_Toggle.visualInput.AddToClassList(inputUssClassName);
-            m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(checkmarkUssClassName);
+            m_Toggle.AddToClassList(toggleUssClassNameUnique);
+            m_Toggle.visualInput.AddToClassList(inputUssClassNameUnique);
+            m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(checkmarkUssClassNameUnique);
             m_Toggle.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
             hierarchy.Add(m_Toggle);
 
-            m_Container.AddToClassList(contentUssClassName);
+            m_Container.AddToClassList(contentUssClassNameUnique);
             hierarchy.Add(m_Container);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -314,11 +339,15 @@ namespace UnityEngine.UIElements
             // Remove from all the depth classes...
             for (int i = 0; i <= ussFoldoutMaxDepth; i++)
             {
+#pragma warning disable RS0030
                 RemoveFromClassList(ussFoldoutDepthClassName + i);
+#pragma warning restore RS0030
             }
+#pragma warning disable RS0030
             RemoveFromClassList(ussFoldoutDepthClassName + "max");
+#pragma warning restore RS0030
 
-            m_Toggle.AssignInspectorStyleIfNecessary(toggleInspectorUssClassName);
+            m_Toggle.AssignInspectorStyleIfNecessary(toggleInspectorUssClassNameUnique);
 
             // Figure out the real depth of this actual Foldout...
             var depth = this.GetFoldoutDepth();
@@ -326,11 +355,15 @@ namespace UnityEngine.UIElements
             // Add the class name corresponding to that depth
             if (depth > ussFoldoutMaxDepth)
             {
+#pragma warning disable RS0030
                 AddToClassList(ussFoldoutDepthClassName + "max");
+#pragma warning restore RS0030
             }
             else
             {
+#pragma warning disable RS0030
                 AddToClassList(ussFoldoutDepthClassName + depth);
+#pragma warning restore RS0030
             }
         }
     }

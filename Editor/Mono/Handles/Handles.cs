@@ -1131,9 +1131,9 @@ namespace UnityEditor
             var gridSettings = GridSettings.instance;
             if (Tools.pivotRotation == PivotRotation.Grid)
             {
-                val = Quaternion.Inverse(gridSettings.rotation) * (val - gridSettings.position); 
+                val = Quaternion.Inverse(gridSettings.rotation) * (val - gridSettings.position);
                 constraintDirection = Quaternion.Inverse(gridSettings.rotation) * constraintDirection;
-                
+
                 preSnapVal = val;
             }
 
@@ -1142,9 +1142,9 @@ namespace UnityEditor
                 snapAxis = (SnapAxis)~new SnapAxisFilter(constraintDirection);
             else
                 snapAxis = (SnapAxis)new SnapAxisFilter(constraintDirection);
-           
+
             val = Snapping.Snap(val, gridSettings.gridSize, snapAxis);
-            
+
             if (Tools.pivotRotation == PivotRotation.Grid)
                 val = initialVal + gridSettings.rotation * (val - preSnapVal);
 
@@ -1530,9 +1530,10 @@ namespace UnityEditor
             return PlayModeView.GetMainPlayModeViewTargetSize();
         }
 
-        [Obsolete("Deprecated. Use DrawOutline(EntityId[], EntityId[], Color, Color, float) instead.")]
+        [Obsolete("Deprecated. Use DrawOutline(EntityId[], EntityId[], Color, Color, float) instead.",true)]
         public static void DrawOutline(int[] parentRenderers, int[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
-            => DrawOutline(parentRenderers.AsEntityIdArray(), childRenderers.AsEntityIdArray(), parentNodeColor, childNodeColor, fillOpacity);
+            => throw new InvalidOperationException(
+                "Use DrawOutline(EntityId[], EntityId[], Color, Color, float) instead.");
         public static void DrawOutline(EntityId[] parentRenderers, EntityId[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             if(Event.current.type != EventType.Repaint)
@@ -1541,9 +1542,10 @@ namespace UnityEditor
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
-        [Obsolete("Deprecated. Use DrawOutline(EntityId[], Color, float) instead.")]
+        [Obsolete("Deprecated. Use DrawOutline(EntityId[], Color, float) instead.", true)]
         public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0) =>
-            DrawOutline(renderers.AsEntityIdArray(), null, color, color, fillOpacity);
+            throw new InvalidOperationException(
+                "Use DrawOutline(EntityId[], Color, float) instead.");
         public static void DrawOutline(EntityId[] renderers, Color color, float fillOpacity = 0) =>
             DrawOutline(renderers, null, color, color, fillOpacity);
 

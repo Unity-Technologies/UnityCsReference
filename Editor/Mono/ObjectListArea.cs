@@ -8,7 +8,7 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
-using UnityEngine.Serialization;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -1000,9 +1000,7 @@ namespace UnityEditor
 
         bool IsLocalAssetsCurrentlySelected()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId currentSelectedEntityId = m_State.m_SelectedInstanceIDs.FirstOrDefault();
-#pragma warning restore UA2001
             if (currentSelectedEntityId != EntityId.None)
             {
                 int index = m_LocalAssets.IndexOf(currentSelectedEntityId);

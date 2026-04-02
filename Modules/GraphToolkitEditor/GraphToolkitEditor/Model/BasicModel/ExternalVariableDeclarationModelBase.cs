@@ -10,6 +10,7 @@ namespace Unity.GraphToolkit.Editor
     /// Base class for references to a <see cref="VariableDeclarationModelBase"/> in another graph.
     /// </summary>
     [UnityRestricted]
+    [Serializable]
     internal abstract class ExternalVariableDeclarationModelBase : VariableDeclarationModelBase
     {
         /// <inheritdoc />

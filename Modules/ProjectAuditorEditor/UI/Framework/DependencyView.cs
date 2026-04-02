@@ -68,10 +68,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             m_NodeDictionary.Add(id, node);
 
-            // if the tree is too deep, serialization will exceed the 10 levels limit. (see kClassSerializationDepthLimit)
-            if (!node.HasValidChildren || depth >= CallCrawler.k_MaxDepth)
+            if (!node.HasValidChildren || depth >= DependencyNode.k_MaxDepth)
             {
-                items.Add(new TreeViewItem { id = id + 1, depth = depth + 1, displayName = "<Serialization Limit>" });
+                items.Add(new TreeViewItem { id = id + 1, depth = depth + 1, displayName = "<Truncated>" });
             }
             else
             {

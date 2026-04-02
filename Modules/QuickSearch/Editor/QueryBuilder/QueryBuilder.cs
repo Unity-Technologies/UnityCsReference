@@ -79,9 +79,9 @@ namespace UnityEditor.Search
 
         public bool valid => errors.Count == 0;
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public QueryBlock currentBlock => selectedBlocks.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<QueryBlock> selectedBlocks => EnumerateBlocks().Where(b => b.selected);
 #pragma warning restore UA2001
@@ -267,9 +267,9 @@ namespace UnityEditor.Search
                 if (context != null)
                 {
                     if (!string.IsNullOrEmpty(context.filterId))
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         newBlocks.Add(new QueryAreaBlock(this, context.providers.First()));
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                     searchQuery = context.rawSearchQuery;
                 }
                 else
@@ -641,7 +641,7 @@ namespace UnityEditor.Search
                         return true;
                     }
                 }
-                else
+                else if (cb != null)
                 {
                     cb.OpenEditorAndUpdateStyles(cb.drawRect);
                     return true;

@@ -57,7 +57,7 @@ namespace UnityEditor.UIElements
         public FontField(string label)
             : base(label, null)
         {
-            m_ObjectField = new ObjectField() { classList = { objectFieldUssClassName } };
+            m_ObjectField = new ObjectField().WithClassList(objectFieldUssClassName);
             m_ObjectField.objectType = typeof(Font);
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 

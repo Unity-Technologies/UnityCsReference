@@ -9,25 +9,25 @@ using UnityEngine.UIElements;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// UI element control that displays a hierarchy item.
+    /// Represents a UI element that displays a hierarchy item in a <see cref="HierarchyView"/>.
     /// </summary>
     public sealed class HierarchyViewItem : VisualElement
     {
-        const string k_UnityListViewItem = "unity-list-view__item";
-        const string k_UnityTreeViewItem = "unity-tree-view__item";
-        const string k_UnityTreeViewItemToggle = "unity-tree-view__item-toggle";
-        const string k_UnityToggleCheckmark = "unity-toggle__checkmark";
-        const string k_HierarchyItemContainer = "hierarchy-item__container";
-        const string k_HierarchyItemOverrideBarContainer = "hierarchy-item__override-bar-container";
-        const string k_HierarchyItemIcon = "hierarchy-item__icon";
-        const string k_HierarchyItemIconCut = "hierarchy-item__icon--cut";
-        const string k_HierarchyItemOverlayIcon = "hierarchy-item__overlay-icon";
-        const string k_HierarchyItemName = HierarchyViewItemName.k_StyleName;
-        const string k_HierarchyItemLeftContainer = "hierarchy-item__left-container";
-        const string k_HierarchyItemLeftCustomSection = "hierarchy-item__left-custom-section";
-        const string k_HierarchyItemRightContainer = "hierarchy-item__right-container";
-        const string k_HierarchyItemRightArrowButton = "hierarchy-item__right-arrow-button";
-        const string k_HierarchyItemToggleHidden = "hierarchy-item__toggle--hidden";
+        static readonly UniqueStyleString k_UnityListViewItem = new("unity-list-view__item");
+        static readonly UniqueStyleString k_UnityTreeViewItem = new("unity-tree-view__item");
+        static readonly UniqueStyleString k_UnityTreeViewItemToggle = new("unity-tree-view__item-toggle");
+        static readonly UniqueStyleString k_UnityToggleCheckmark = new("unity-toggle__checkmark");
+        static readonly UniqueStyleString k_HierarchyItemContainer = new("hierarchy-item__container");
+        static readonly UniqueStyleString k_HierarchyItemOverrideBarContainer = new("hierarchy-item__override-bar-container");
+        static readonly UniqueStyleString k_HierarchyItemIcon = new("hierarchy-item__icon");
+        static readonly UniqueStyleString k_HierarchyItemIconCut = new("hierarchy-item__icon--cut");
+        static readonly UniqueStyleString k_HierarchyItemOverlayIcon = new("hierarchy-item__overlay-icon");
+        static readonly UniqueStyleString k_HierarchyItemName = HierarchyViewItemName.k_StyleName;
+        static readonly UniqueStyleString k_HierarchyItemLeftContainer = new("hierarchy-item__left-container");
+        static readonly UniqueStyleString k_HierarchyItemLeftCustomSection = new("hierarchy-item__left-custom-section");
+        static readonly UniqueStyleString k_HierarchyItemRightContainer = new("hierarchy-item__right-container");
+        static readonly UniqueStyleString k_HierarchyItemRightArrowButton = new("hierarchy-item__right-arrow-button");
+        static readonly UniqueStyleString k_HierarchyItemToggleHidden = new("hierarchy-item__toggle--hidden");
         internal const int k_IndentWidth = 14; // internal for tests
 
         // These members are set in Bind, and reset in Unbind
@@ -57,66 +57,66 @@ namespace Unity.Hierarchy
         internal event ExpandedStateChangedEventHandler ExpandedStateChanged;
 
         /// <summary>
-        /// The <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
+        /// Gets the <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public HierarchyNodeType NodeType => m_Handler?.GetNodeType() ?? HierarchyNodeType.Null;
 
         /// <summary>
-        /// The <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
-        /// This is going to be <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.OnUnbindItem(HierarchyViewItem)"/> is called.
+        /// Gets the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
+        /// This value is <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.OnUnbindItem(HierarchyViewItem)"/> executes.
         /// </summary>
         public ref readonly HierarchyNode Node => ref m_Node;
 
         /// <summary>
-        /// The <see cref="Label"/> representing the name of the item.
+        /// Gets the <see cref="Label"/> that displays the name of the item.
         /// </summary>
         public Label Name => m_Name.Label;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the icon of the item.
-        /// This is typically used to display a custom icon for the item's type by adding a uss class on it.
+        /// Gets the <see cref="VisualElement"/> that displays the icon of the item.
+        /// Add a USS class to this element to display a custom icon for the item type.
         /// </summary>
         public VisualElement Icon => m_Icon;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the overlay icon of the item. Hidden by default.
+        /// Gets the <see cref="VisualElement"/> that represents the overlay icon of the item. This element is hidden by default.
         /// </summary>
         public VisualElement OverlayIcon => m_OverlayIcon;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing a left-aligned container on the right of the <see cref="Name"/>.
+        /// Gets the left-aligned <see cref="VisualElement"/> container to the right of the <see cref="Name"/>.
         /// </summary>
         public VisualElement LeftCustomContainer => m_LeftCustomContainer;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing a right-aligned container on the right side of the <see cref="HierarchyViewItem"/>.
+        /// Gets the right-aligned <see cref="VisualElement"/> container on the right side of this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public VisualElement RightCustomContainer => m_RightCustomContainer;
 
         /// <summary>
-        /// The <see cref="Button"/> typically represented by an arrow button and used to navigate into a node.
+        /// Gets the <see cref="Button"/> used to navigate into a node. This button is typically displayed as an arrow button.
         /// </summary>
         public Button NavigateIntoButton => m_NavigateIntoButton.Value;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the override bar at the very left of the item.
+        /// Gets the <see cref="VisualElement"/> that represents the override bar at the left of the item.
         /// </summary>
         public VisualElement OverrideBarContainer => m_OverrideBarContainer;
 
         /// <summary>
-        /// The <see cref="UnityEngine.UIElements.Toggle"/> used to expand/collapse the item.
+        /// Gets the <see cref="UnityEngine.UIElements.Toggle"/> used to expand or collapse the item.
         /// </summary>
         public Toggle Toggle => m_Toggle;
 
         /// <summary>
-        /// The <see cref="VisualElement"/> representing the entire row container of this <see cref="HierarchyViewItem"/>."/>
+        /// Gets the <see cref="VisualElement"/> that represents the entire row container of this <see cref="HierarchyViewItem"/>.
         /// </summary>
         public VisualElement RowContainer
         {
             get
             {
                 var p = parent;
-                while (p != null && !p.ClassListContains("unity-multi-column-view__row-container"))
+                while (p != null && !p.ClassListContains(MultiColumnController.rowContainerUssClassNameUnique))
                     p = p.parent;
                 return p;
             }
@@ -138,7 +138,7 @@ namespace Unity.Hierarchy
         internal HierarchyViewItem()
         {
             // Setup the root. This is taken from 'TreeView.MakeTreeItem'
-            name = k_UnityTreeViewItem;
+            name = (string)k_UnityTreeViewItem;
             style.flexDirection = FlexDirection.Row;
 
             var root = new VisualElement();
@@ -154,8 +154,8 @@ namespace Unity.Hierarchy
 
             m_Toggle = new Toggle();
             m_Toggle.AddToClassList(k_UnityTreeViewItemToggle);
-            m_Toggle.AddToClassList(Foldout.toggleUssClassName);
-            m_Toggle.Q(className: k_UnityToggleCheckmark).style.marginTop = 0;
+            m_Toggle.AddToClassList(Foldout.toggleUssClassNameUnique);
+            m_Toggle.Q(className: (string)k_UnityToggleCheckmark).style.marginTop = 0;
             m_Toggle.focusable = false;
 
             m_Icon = new VisualElement();
@@ -184,7 +184,7 @@ namespace Unity.Hierarchy
             {
                 var btn = new Button();
                 btn.AddToClassList(k_HierarchyItemRightArrowButton);
-                btn.RemoveFromClassList(Button.ussClassName);
+                btn.RemoveFromClassList(Button.ussClassNameUnique);
                 btn.style.display = DisplayStyle.None;
                 m_RightCustomContainer.Add(btn);
                 return btn;
@@ -205,7 +205,7 @@ namespace Unity.Hierarchy
 
             // Setup object
             m_Node = node;
-            m_Handler = view.Source.GetNodeTypeHandler(in node);
+            m_Handler = view.ViewModel.GetNodeTypeHandler(in node);
             m_View = view;
 
             // Setup styling
@@ -227,7 +227,7 @@ namespace Unity.Hierarchy
             if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
                 m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
             else
-                m_Name.Text = m_View.Source.GetName(in m_Node);
+                m_Name.Text = m_View.Source.Exists(in m_Node) ? m_View.Source.GetName(in m_Node) : string.Empty;
 
             // Setup handler-specific or user-defined styling
             m_View.InvokeBindViewItem(this);
@@ -299,7 +299,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Starts the rename operation on the <see cref="Name"/> of this <see cref="HierarchyViewItem"/>, if possible.
+        /// Starts the rename operation on the <see cref="Name"/> of this <see cref="HierarchyViewItem"/>, if the node supports renaming.
         /// </summary>
         public void BeginRename()
         {

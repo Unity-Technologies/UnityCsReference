@@ -228,8 +228,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 issues.Add(context.CreateInsight(IssueCategory.SpriteAtlas, context.Name)
                     .WithCustomProperties(
-                        new object[]
-                        {
+                        [
                             reportedFreeSpace,
                             mainTextureResolution,
                             spritesEnabled ? context.SpriteAtlas.spriteCount.ToString() : k_Unavailable,
@@ -237,8 +236,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             textureSettings.readable,
                             textureSettings.generateMipMaps,
                             context.SpriteAtlas.GetPackingSettings().padding,
-                        })
-                    .WithLocation(new Location(assetPath)));
+                        ])
+                    .WithLocation(assetPath));
+
+                analysisParams.DependencyCrawler.AddToSpriteAtlasCache(context.SpriteAtlas);
 
                 foreach (var analyzer in analyzers)
                 {

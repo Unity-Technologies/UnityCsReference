@@ -178,11 +178,11 @@ internal class StyleTransitionListView : VisualElement
 
         void RefreshOverrides()
         {
-            m_FoldoutOverride.isOverridden = m_Type != TransitionChangeType.None;
-            m_PropertyOverride.isOverridden = (m_Type & TransitionChangeType.Property) == TransitionChangeType.Property;
-            m_DurationOverride.isOverridden = (m_Type & TransitionChangeType.Duration) == TransitionChangeType.Duration;
-            m_TimingFunctionOverride.isOverridden = (m_Type & TransitionChangeType.TimingFunction) == TransitionChangeType.TimingFunction;
-            m_DelayOverride.isOverridden = (m_Type & TransitionChangeType.Delay) == TransitionChangeType.Delay;
+            m_FoldoutOverride.IsOverridden = m_Type != TransitionChangeType.None;
+            m_PropertyOverride.IsOverridden = (m_Type & TransitionChangeType.Property) == TransitionChangeType.Property;
+            m_DurationOverride.IsOverridden = (m_Type & TransitionChangeType.Duration) == TransitionChangeType.Duration;
+            m_TimingFunctionOverride.IsOverridden = (m_Type & TransitionChangeType.TimingFunction) == TransitionChangeType.TimingFunction;
+            m_DelayOverride.IsOverridden = (m_Type & TransitionChangeType.Delay) == TransitionChangeType.Delay;
         }
     }
 

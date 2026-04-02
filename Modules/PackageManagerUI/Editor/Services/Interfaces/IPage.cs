@@ -10,23 +10,36 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal struct ListUpdateArgs
     {
         public IPage page;
-        public IReadOnlyCollection<IPackage> added;
-        public IReadOnlyCollection<IPackage> updated;
-        public IReadOnlyCollection<IPackage> removed;
-        public bool reorder;
+        public IReadOnlyCollection<string> added;
+        public IReadOnlyCollection<string> updated;
+        public IReadOnlyCollection<string> removed;
     }
 
     internal struct VisualStateChangeArgs
     {
         public IPage page;
-        public IEnumerable<VisualState> visualStates;
+        public IReadOnlyCollection<VisualState> changed;
     }
 
     internal struct PageSelectionChangeArgs
     {
         public IPage page;
         public PageSelection selection;
-        public bool isExplicitUserSelection;
+        public bool isDirectMouseSelection;
+    }
+
+    internal struct PageStateChangeArgs
+    {
+        public IPage page;
+        public bool visible;
+        public Icon icon;
+    }
+
+    internal struct PageFiltersChangeArgs
+    {
+        public IPage page;
+        public IPageFilters previousFilters;
+        public PageFilters.ChangedTypes filterTypesChanged;
     }
 
     internal interface IPage
@@ -34,66 +47,71 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<PageSelectionChangeArgs> onSelectionChanged;
         // triggered when the state of the UI item is updated (expanded, hidden, see all versions toggled)
         event Action<VisualStateChangeArgs> onVisualStateChange;
-        // triggered when packages are added/updated or removed
+        // triggered when items are added/updated or removed
+        event Action onListRebuild;
         event Action<ListUpdateArgs> onListUpdate;
-        event Action<IPage> onListRebuild;
-        event Action<PageFilters> onFiltersChange;
-        event Action<string> onTrimmedSearchTextChanged;
-        event Action<IPage> onSupportedStatusFiltersChanged;
+        event Action<PageStateChangeArgs> onStageChanged;
+        event Action<PageFiltersChangeArgs> onFiltersChanged;
+        event Action onTrimmedSearchTextChanged;
 
         string id { get; }
         string displayName { get; }
         Icon icon { get; }
 
+        bool visible { get; }
+
         string searchText { get; set; }
         string trimmedSearchText { get; }
-        PageFilters filters { get; }
-        PageCapability capability { get; }
 
-        IReadOnlyList<PageFilters.Status> supportedStatusFilters { get; }
-        IReadOnlyList<PageSortOption> supportedSortOptions { get; }
+        IPageFilters filters { get; }
+
+        void UpdateSupportedFiltersAsync();
+
+        PageCapability capability { get; }
 
         RefreshOptions refreshOptions { get; }
 
         RegistryInfo scopedRegistry { get; }
 
-        bool ShouldInclude(IPackage package);
+        bool isActive { get; }
+        // Call to activate a page (when it became the current visible page)
+        void Activate();
+        // Call to deactivate a page (when it went from the current page to the previous page)
+        void Deactivate();
 
-        bool isActivePage { get; }
-        // Called when a page got activated (when it became the current visible page)
-        void OnActivated();
-        // Called when a page got deactivated (when it went from the current page to the previous page)
-        void OnDeactivated();
-
-        // an ordered list of `packageUniqueIds`
+        // an ordered list of `itemUniqueIds`
         IVisualStateList visualStates { get; }
 
         // return true if filters are changed
         bool ClearFilters(bool resetSortOptionToDefault = false);
         // return true if filters are changed
-        bool UpdateFilters(PageFilters newFilters);
+        bool UpdateFilters(IPageFilters newFilters);
+        // return true if sort options are changed
+        bool UpdateSortOption(PageSortOption newSortOption);
         PageSelection GetSelection();
-
-        void OnPackagesChanged(PackagesChangeArgs args);
 
         void OnEnable();
         void OnDisable();
 
-        void LoadMore(long numberOfPackages);
-        void Load(string packageUniqueId);
-        void LoadExtraItems(IEnumerable<IPackage> packages);
+        void LoadMore(long numberOfItems);
+        void Load(string itemUniqueId);
+        void LoadExtraItems(IEnumerable<string> itemUniqueIds);
 
-        bool SetNewSelection(IPackage package, bool isExplicitUserSelection = false);
-        bool SetNewSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false);
-        void RemoveSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false);
-        bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false);
+        bool SetNewSelection(string itemUniqueId, bool isDirectMouseSelection);
+        bool SetNewSelection(IEnumerable<string> itemUniqueIds, bool isDirectMouseSelection);
+        void RemoveSelection(IEnumerable<string> itemUniqueIds, bool isDirectMouseSelection);
+        bool ToggleSelection(string itemUniqueId, bool isDirectMouseSelection);
         bool UpdateSelectionIfCurrentSelectionIsInvalid();
-        void TriggerOnSelectionChanged(bool isExplicitUserSelection = false);
+        void TriggerOnSelectionChanged(bool isDirectMouseSelection);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
-        string GetGroupName(IPackage package);
-        void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked);
-        void ResetUserUnlockedState();
-        bool GetDefaultLockState(IPackage package);
+        void SetUserUnlockedState(IEnumerable<string> itemUniqueIds, bool unlocked);
+
+        void ResetStatesOnDeactivate();
+    }
+
+    internal interface IPage<in T> : IPage
+    {
+        bool ShouldInclude(T item);
     }
 }

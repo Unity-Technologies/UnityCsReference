@@ -121,6 +121,17 @@ namespace UnityEngine.U2D
         unsafe public static void SetVertexAttribute<T>(this Sprite sprite, VertexAttribute channel, NativeArray<T> src) where T : struct
         {
             CheckAttributeTypeMatchesAndThrow<T>(channel);
+
+            // Warn if setting tangents when blend shapes exist and sprite don't have normals
+            if (channel == VertexAttribute.Tangent)
+            {
+                if (sprite.blendShapeCount > 0 && !sprite.HasVertexAttribute(VertexAttribute.Normal))
+                {
+                    Debug.LogWarning($"Blend shapes are not supported on sprites with position-and-tangent-only layout on sprite '{sprite.name}'.");
+                    return;
+                }
+            }
+
             SetChannelData(sprite, channel, src.GetUnsafeReadOnlyPtr());
         }
 

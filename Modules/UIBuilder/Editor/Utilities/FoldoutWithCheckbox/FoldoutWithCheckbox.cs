@@ -37,12 +37,9 @@ namespace Unity.UI.Builder
 
             m_Label = new Label();
             m_Label.AddToClassList(k_LabelClassName);
-            m_Label.AddManipulator(new Clickable(evt =>
+            m_Label.AddManipulator(new Clickable(() =>
             {
-                if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
-                {
-                    m_Toggle.value = !m_Toggle.value;
-                }
+                m_Toggle.value = !m_Toggle.value;
             }));
 
             m_Toggle.hierarchy.Add(m_Label);

@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.SceneTemplate
 {
@@ -458,9 +459,7 @@ namespace UnityEditor.SceneTemplate
 
         private int GetSelectedVisibleIndex()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastSelectedItem = m_SelectedItems.LastOrDefault();
-#pragma warning restore UA2001
             var lastSelectedElement = lastSelectedItem == null ? null : m_IdToElements[lastSelectedItem.id];
             var selectedIndex = lastSelectedElement == null || lastSelectedElement.style.display == DisplayStyle.None ? -1 : m_ItemsContainer.IndexOf(lastSelectedElement);
             return selectedIndex;

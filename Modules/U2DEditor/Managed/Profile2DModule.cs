@@ -47,8 +47,11 @@ namespace UnityEditor.U2D.Profiling
 
         void OnSelectedFrameIndexChanged(long index)
         {
+            if(Event.current != null && Event.current.type == EventType.Layout)
+                return;
             var frameIndex = Convert.ToInt32(index);
-            var items = new List<SpriteAtlasProfilerInfoWrapper>();
+            var items = new List<SpriteNode>();
+            spriteAtlasProfilerInfoView.Init(null);
             using (var frameData = UnityEditorInternal.ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
             {
                 if (frameData == null || !frameData.valid)
@@ -97,11 +100,11 @@ namespace UnityEditor.U2D.Profiling
                             spriteAtlasGuid = valid ? Profiler2D.GetSpriteStringByBlobOffset(frameData, atlasItems[s.atlasEntityId].assetGuidOffset) : "?";
                         }
                     }
-                    spriteAtlasName = (spriteAtlasGuid == "?") ? "Textures" : spriteAtlasName;
+                    spriteAtlasName = (spriteAtlasGuid == "?") ? "Sprites not in atlas" : spriteAtlasName;
 
                     var texValid = frameData.GetUnityObjectInfo(s.textureEntityId, out var textureInfo);
                     var spriteValid = frameData.GetUnityObjectInfo(s.spriteEntityId, out var spriteInfo);
-                    var wrapper = new SpriteAtlasProfilerInfoWrapper((int)EntityId.ToULong(s.spriteEntityId),
+                    var wrapper = new SpriteNode((int)EntityId.ToULong(s.spriteEntityId),
                          spriteAtlasName,
                          spriteAtlasGuid,
                          spriteValid ? spriteInfo.name : "(none)",

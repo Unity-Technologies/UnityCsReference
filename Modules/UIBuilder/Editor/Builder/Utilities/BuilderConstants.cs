@@ -494,8 +494,7 @@ namespace Unity.UI.Builder
 
         // Completion
         public static readonly string CompleterAnchoredControlScreenRectVEPropertyName = "__unity-ui-builder-completer-popup-window-screen-rect";
-        public static readonly string CompleterCurrentEntryItemId = "__unity-ui-builder-completer-current-entry-item";
-
+        
         // Dimension Style Field specific
         public const float DimensionStyleFieldReducedDragStep = 0.1f;
 

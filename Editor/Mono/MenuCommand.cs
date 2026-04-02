@@ -25,5 +25,8 @@ namespace UnityEditor
         public MenuCommand(Object inContext, int inUserData) { context = inContext; userData = inUserData;  }
         // Creates a new MenuCommand object.
         public MenuCommand(Object inContext) { context = inContext; userData = 0;  }
+
+        [RequiredByNativeCode]
+        internal static MenuCommand CreateFromNative(Object context, int userData) => new MenuCommand(context, userData);
     }
 }

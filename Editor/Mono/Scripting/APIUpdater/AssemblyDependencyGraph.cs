@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.APIUpdater
 {
@@ -114,9 +115,7 @@ namespace UnityEditor.Scripting.APIUpdater
             if (entry == null)
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             entry.m_Dependencies.RemoveAll(candidate => dependencies.Contains(candidate.m_Name));
-#pragma warning restore UA2001
         }
 
         public void RemoveRoot(string tbr, bool updateDependents = false)
@@ -224,9 +223,7 @@ namespace UnityEditor.Scripting.APIUpdater
 
                 if (seen.Contains(entry.Name))
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    Console.WriteLine($"[APIUpdater] Warning: Cycle detected in assembly references: {string.Join("->", seen.ToArray())}->{entry.Name}. This is not supported and AssemblyUpdater may not work as expected.");
-#pragma warning restore UA2001
+                    Console.WriteLine($"[APIUpdater] Warning: Cycle detected in assembly references: {string.Join("->", seen)}->{entry.Name}. This is not supported and AssemblyUpdater may not work as expected.");
                     continue;
                 }
 

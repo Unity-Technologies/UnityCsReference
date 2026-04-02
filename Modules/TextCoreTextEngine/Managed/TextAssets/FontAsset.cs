@@ -16,6 +16,8 @@ using System.Runtime.InteropServices;
 
 using UnityEditor;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
     /// <summary>
@@ -95,6 +97,7 @@ namespace UnityEngine.TextCore.Text
     /// </summary>
     public enum AtlasPopulationMode
     {
+        [Obsolete("AtlasPopulationMode.Static is deprecated. Use Dynamic or DynamicOS instead. See https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html for migration guidance.")]
         Static = 0x0,
         Dynamic = 0x1,
         DynamicOS = 0x2
@@ -104,7 +107,6 @@ namespace UnityEngine.TextCore.Text
     ///
     /// </summary>
     [Serializable][ExcludeFromPreset]
-    [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/FontAsset.h")]
     public partial class FontAsset : TextAsset
     {
@@ -156,6 +158,12 @@ namespace UnityEngine.TextCore.Text
         }
         internal Font m_SourceFontFile_EditorRef;
 
+
+        /// <summary>
+        /// Editor-only setting to show obsolete TextCore properties in the inspector.
+        /// </summary>
+        [SerializeField]
+        internal bool m_ShowObsoleteProperties;
 
         /// <summary>
         /// The settings used in the Font Asset Creator when this font asset was created or edited.
@@ -259,70 +267,14 @@ namespace UnityEngine.TextCore.Text
         }
         private int m_StyleNameHashCode;
 
-        /// <summary>
-        /// List of glyphs contained in the font asset.
-        /// </summary>
-        public List<Glyph> glyphTable
-        {
-            get { return m_GlyphTable; }
-            internal set { m_GlyphTable = value; }
-        }
         [SerializeField]
         internal List<Glyph> m_GlyphTable = new List<Glyph>();
 #nullable restore
-        /// <summary>
-        /// Dictionary used to lookup glyphs contained in the font asset by their index.
-        /// </summary>
-        public Dictionary<uint, Glyph> glyphLookupTable
-        {
-            get
-            {
-                if (m_GlyphLookupDictionary == null)
-                    ReadFontAssetDefinition();
 
-                return m_GlyphLookupDictionary;
-            }
-        }
         internal Dictionary<uint, Glyph> m_GlyphLookupDictionary;
 
-
-        /// <summary>
-        /// List containing the characters of the given font asset.
-        /// </summary>
-        public List<Character> characterTable
-        {
-            get { return m_CharacterTable; }
-            internal set { m_CharacterTable = value; }
-        }
         [SerializeField]
         internal List<Character> m_CharacterTable = new List<Character>();
-
-        /// <summary>
-        /// Dictionary used to lookup characters contained in the font asset or its fallbacks by their unicode values.
-        /// </summary>
-        public Dictionary<uint, Character> characterLookupTable
-        {
-            get
-            {
-                if (m_CharacterLookupDictionary == null)
-                    ReadFontAssetDefinition();
-
-                return m_CharacterLookupDictionary;
-            }
-        }
-        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal Dictionary<uint, Character> m_CharacterLookupDictionary;
-
-        /// <summary>
-        /// Determines if the font asset is using a shared atlas texture(s)
-        /// </summary>
-        //public bool isUsingDynamicTextures
-        //{
-        //    get { return m_IsUsingDynamicTextures; }
-        //    set { m_IsUsingDynamicTextures = value; }
-        //}
-        //[SerializeField]
-        //private bool m_IsUsingDynamicTextures;
 
         /// <summary>
         /// The font atlas used by this font asset.
@@ -383,6 +335,7 @@ namespace UnityEngine.TextCore.Text
             get { return m_GetFontFeatures; }
             set { m_GetFontFeatures = value; }
         }
+
         [SerializeField]
         private bool m_GetFontFeatures = true;
 
@@ -468,14 +421,6 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         private List<GlyphRect> m_FreeGlyphRects;
 
-        /// <summary>
-        /// Table containing the various font features of this font asset.
-        /// </summary>
-        public FontFeatureTable fontFeatureTable
-        {
-            get { return m_FontFeatureTable; }
-            internal set { m_FontFeatureTable = value; }
-        }
         [SerializeField]
         internal FontFeatureTable m_FontFeatureTable = new FontFeatureTable();
 
@@ -895,8 +840,9 @@ namespace UnityEngine.TextCore.Text
             fontAsset.freeGlyphRects = new List<GlyphRect>(8) { new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier) };
             fontAsset.usedGlyphRects = new List<GlyphRect>(8);
 
-            // Set the name of the font asset resources for tracking in the profiler
+            // Set the name of the font asset and its resources for tracking in the profiler
             string fontName = fontAsset.faceInfo.familyName + " - " + fontAsset.faceInfo.styleName;
+            fontAsset.name = fontName + " SDF";
             fontAsset.material.name = fontName + " Material";
             fontAsset.atlasTextures[0].name = fontName + " Atlas";
 
@@ -1010,6 +956,9 @@ namespace UnityEngine.TextCore.Text
                 UpdateWeightFallbacks();
                 UpdateFaceInfo();
                 UpdateRenderMode();
+                UpdateItalicAngle();
+                UpdateBoldWeight();
+                UpdateBoldSpacing();
             }
         }
 
@@ -1526,88 +1475,6 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         private static HashSet<EntityId> k_SearchedFontAssetLookup;
 
-        /// <summary>
-        /// Function to check if a certain character exists in the font asset.
-        /// </summary>
-        /// <param name="character"></param>
-        /// <returns></returns>
-        public bool HasCharacter(int character)
-        {
-            if (characterLookupTable == null)
-                return false;
-
-            return m_CharacterLookupDictionary.ContainsKey((uint)character);
-        }
-
-        /// <summary>
-        /// Function to check if a character is contained in the font asset with the option to also check potential local fallbacks.
-        /// </summary>
-        /// <param name="character"></param>
-        /// <param name="searchFallbacks"></param>
-        /// <param name="tryAddCharacter"></param>
-        /// <returns></returns>
-        public bool HasCharacter(char character, bool searchFallbacks = false, bool tryAddCharacter = false)
-        {
-            return HasCharacter((uint)character, searchFallbacks, tryAddCharacter);
-        }
-
-        /// <summary>
-        /// Function to check if a character is contained in the font asset with the option to also check potential local fallbacks.
-        /// </summary>
-        /// <param name="character"></param>
-        /// <param name="searchFallbacks"></param>
-        /// <param name="tryAddCharacter"></param>
-        /// <returns></returns>
-        public bool HasCharacter(uint character, bool searchFallbacks = false, bool tryAddCharacter = false)
-        {
-            // Read font asset definition if it hasn't already been done.
-            if (characterLookupTable == null)
-                return false;
-
-            // Check font asset
-            if (m_CharacterLookupDictionary.ContainsKey(character))
-                return true;
-
-            // Check if font asset is dynamic and if so try to add the requested character to it.
-            if (tryAddCharacter && (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS))
-            {
-                Character returnedCharacter;
-
-                if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
-                    return true;
-            }
-
-            if (searchFallbacks)
-            {
-                // Initialize or clear font asset lookup
-                if (k_SearchedFontAssetLookup == null)
-                    k_SearchedFontAssetLookup = new HashSet<EntityId>();
-                else
-                    k_SearchedFontAssetLookup.Clear();
-
-                // Add current font asset to lookup
-                k_SearchedFontAssetLookup.Add(GetEntityId());
-
-                // Check font asset fallbacks
-                if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
-                {
-                    for (int i = 0; i < fallbackFontAssetTable.Count && fallbackFontAssetTable[i] != null; i++)
-                    {
-                        FontAsset fallback = fallbackFontAssetTable[i];
-                        EntityId fallbackID = fallback.GetEntityId();
-
-                        // Search fallback if not already contained in lookup
-                        if (k_SearchedFontAssetLookup.Add(fallbackID))
-                        {
-                            if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter))
-                                return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// Function to check if a character is contained in a font asset with the option to also check through fallback font assets. This also verifies that the weight and style of the character is the good one in the cache.
@@ -1677,172 +1544,6 @@ namespace UnityEngine.TextCore.Text
             return false;
         }
 
-        /// <summary>
-        /// Function to check if certain characters exists in the font asset. Function returns a list of missing characters.
-        /// </summary>
-        /// <param name="text">String containing the characters to check.</param>
-        /// <param name="missingCharacters">List of missing characters.</param>
-        /// <returns></returns>
-        public bool HasCharacters(string text, out List<char> missingCharacters)
-        {
-            if (characterLookupTable == null)
-            {
-                missingCharacters = null;
-                return false;
-            }
-
-            missingCharacters = new List<char>();
-
-            for (int i = 0; i < text.Length; i++)
-            {
-                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
-
-                if (!m_CharacterLookupDictionary.ContainsKey(character))
-                    missingCharacters.Add((char)character);
-            }
-
-            if (missingCharacters.Count == 0)
-                return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Function to check if the characters in the given string are contained in the font asset with the option to also check its potential local fallbacks.
-        /// </summary>
-        /// <param name="text">String containing the characters to check.</param>
-        /// <param name="missingCharacters">Array containing the unicode values of the missing characters.</param>
-        /// <param name="searchFallbacks">Determines if fallback font assets assigned to this font asset should be searched.</param>
-        /// <param name="tryAddCharacter"></param>
-        /// <returns>Returns true if all requested characters are available in the font asset and potential fallbacks.</returns>
-        public bool HasCharacters(string text, out uint[] missingCharacters, bool searchFallbacks = false, bool tryAddCharacter = false)
-        {
-            missingCharacters = null;
-
-            // Read font asset definition if it hasn't already been done.
-            if (characterLookupTable == null)
-                return false;
-
-            // Clear internal list of
-            s_MissingCharacterList.Clear();
-
-            for (int i = 0; i < text.Length; i++)
-            {
-                bool isMissingCharacter = true;
-
-                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
-
-                if (m_CharacterLookupDictionary.ContainsKey(character))
-                    continue;
-
-                // Check if fallback is dynamic and if so try to add the requested character to it.
-                if (tryAddCharacter && (atlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS))
-                {
-                    Character returnedCharacter;
-
-                    if (TryAddCharacterInternal(character, FontStyles.Normal, TextFontWeight.Regular, out returnedCharacter))
-                        continue;
-                }
-
-                if (searchFallbacks)
-                {
-                    // Initialize or clear font asset lookup
-                    if (k_SearchedFontAssetLookup == null)
-                        k_SearchedFontAssetLookup = new HashSet<EntityId>();
-                    else
-                        k_SearchedFontAssetLookup.Clear();
-
-                    // Add current font asset to lookup
-                    k_SearchedFontAssetLookup.Add(GetEntityId());
-
-                    // Check font asset fallbacks
-                    if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
-                    {
-                        for (int j = 0; j < fallbackFontAssetTable.Count && fallbackFontAssetTable[j] != null; j++)
-                        {
-                            FontAsset fallback = fallbackFontAssetTable[j];
-                            EntityId fallbackID = fallback.GetEntityId();
-
-                            // Search fallback if it has not already been searched
-                            if (k_SearchedFontAssetLookup.Add(fallbackID))
-                            {
-                                if (fallback.HasCharacter_Internal(character, FontStyles.Normal, TextFontWeight.Regular, true, tryAddCharacter) == false)
-                                    continue;
-
-                                isMissingCharacter = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (isMissingCharacter)
-                    s_MissingCharacterList.Add(character);
-            }
-
-            if (s_MissingCharacterList.Count > 0)
-            {
-                missingCharacters = s_MissingCharacterList.ToArray();
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Function to check if certain characters exists in the font asset. Function returns false if any characters are missing.
-        /// </summary>
-        /// <param name="text">String containing the characters to check</param>
-        /// <returns></returns>
-        public bool HasCharacters(string text)
-        {
-            if (characterLookupTable == null)
-                return false;
-
-            for (int i = 0; i < text.Length; i++)
-            {
-                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
-
-                if (!m_CharacterLookupDictionary.ContainsKey(character))
-                    return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Function to extract all the characters from a font asset.
-        /// </summary>
-        /// <param name="fontAsset"></param>
-        /// <returns></returns>
-        public static string GetCharacters(FontAsset fontAsset)
-        {
-            string characters = string.Empty;
-
-            for (int i = 0; i < fontAsset.characterTable.Count; i++)
-            {
-                characters += (char)fontAsset.characterTable[i].unicode;
-            }
-
-            return characters;
-        }
-
-        /// <summary>
-        /// Function which returns an array that contains all the characters from a font asset.
-        /// </summary>
-        /// <param name="fontAsset"></param>
-        /// <returns></returns>
-        public static int[] GetCharactersArray(FontAsset fontAsset)
-        {
-            int[] characters = new int[fontAsset.characterTable.Count];
-
-            for (int i = 0; i < fontAsset.characterTable.Count; i++)
-            {
-                characters[i] = (int)fontAsset.characterTable[i].unicode;
-            }
-
-            return characters;
-        }
 
         /// <summary>
         /// Get the glyph index for the given Unicode.
@@ -2117,3 +1818,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

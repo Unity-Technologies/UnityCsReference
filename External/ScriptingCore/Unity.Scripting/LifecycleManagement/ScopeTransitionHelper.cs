@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Unity.Scripting.LifecycleManagement
 {
     /// <summary>
@@ -21,14 +23,14 @@ namespace Unity.Scripting.LifecycleManagement
         /// <summary>
         /// Returns the list of all loaded assemblies in order of assembly reference, so every dependency of an assembly comes before that assembly. All assemblies within an ALC parent ALC comes before any assembly in a child ALC. Unrelated sets of assemblies is in an ALC is returned in an undefined order.
         /// </summary>
-        public IReadonlyOrderedAssemblyList AllAssemblies => _assemblyList;
+        public IReadOnlyList<Assembly> AllAssemblies => _assemblyList;
 
         public ScopeTransitionHelper(LifecycleMethodRegistry lifecycleMethodRegistry)
         {
             _lifecycleMethodRegistry = lifecycleMethodRegistry;
         }
 
-        private List<LifecycleMethodData> FindStaticMethodsWithAttribute(Type attributeType, IReadonlyOrderedAssemblyList assemblies)
+        private List<LifecycleMethodData> FindStaticMethodsWithAttribute(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
             return _lifecycleMethodRegistry.Get(attributeType, assemblies);
         }
@@ -43,12 +45,12 @@ namespace Unity.Scripting.LifecycleManagement
         /// When detailed profiling is enabled (diagnostic switch "EnableDomainReloadTimings"),
         /// each method invocation is wrapped in a separate profiler marker with "LifeCycle.Invoke" prefix (e.g. "LifeCycle.InvokeOnAssemblyLoadedAttribute") and string metadata with a full method name.
         /// </remarks>
-        public void ExecuteMethodsInOrder<T>(IReadonlyOrderedAssemblyList? assemblies = null)
+        public void ExecuteMethodsInOrder<T>(ReadOnlyAssemblyList? assemblies = null)
         {
             ExecuteMethodsInOrder(typeof(T), assemblies ?? AllAssemblies);
         }
 
-        private void ExecuteMethodsInOrder(Type attributeType, IReadonlyOrderedAssemblyList assemblies)
+        private void ExecuteMethodsInOrder(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
             using var executeMethodsProfilerScope = new Profiling.ProfilerMarker(k_ProfilerMarkerPrefix + attributeType.Name).Auto();
 
@@ -92,12 +94,12 @@ namespace Unity.Scripting.LifecycleManagement
         /// When detailed profiling is enabled (diagnostic switch "EnableDomainReloadTimings"),
         /// each method invocation is wrapped in a separate profiler marker with "LifeCycle.Invoke" prefix (e.g. "LifeCycle.InvokeOnAssemblyLoadedAttribute") and string metadata with a full method name.
         /// </remarks>
-        public void ExecuteMethodsInReverseOrder<T>(IReadonlyOrderedAssemblyList? assemblies = null)
+        public void ExecuteMethodsInReverseOrder<T>(ReadOnlyAssemblyList? assemblies = null)
         {
             ExecuteMethodsInReverseOrder(typeof(T), assemblies ?? AllAssemblies);
         }
 
-        private void ExecuteMethodsInReverseOrder(Type attributeType, IReadonlyOrderedAssemblyList assemblies)
+        private void ExecuteMethodsInReverseOrder(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
             using var executeMethodsProfilerScope = new Profiling.ProfilerMarker(k_ProfilerMarkerPrefix + attributeType.Name).Auto();
 
@@ -131,7 +133,7 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        internal void PushStack(OrderedAssemblyList assemblies)
+        internal void PushStack(ReadOnlyAssemblyList assemblies)
         {
             _assemblyList.PushStack(assemblies);
         }

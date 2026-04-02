@@ -233,7 +233,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
                 renderer = m_Field.value.panelRenderer;
                 var vta = renderer.visualTreeAsset;
                 if (vta != null)
-                    asset = vta.FindElementByPath(m_Field.value.authoringPath);
+                    asset = vta.FindElementByPath(m_Field.value.authoringPath.path);
                 return asset != null && renderer != null;
             }
 

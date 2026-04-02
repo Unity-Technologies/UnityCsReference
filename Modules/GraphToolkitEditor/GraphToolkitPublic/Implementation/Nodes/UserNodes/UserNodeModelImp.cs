@@ -11,9 +11,8 @@ using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-
     [Serializable]
-    class UserNodeModelImp : NodeModel, IUserNodeModelImp
+    partial class UserNodeModelImp : NodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         Node m_Node;
@@ -21,9 +20,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public Node Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -131,10 +134,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
 			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
 
-    partial class UserBlockNodeModelImp
+    [Serializable]
+    partial class UserBlockNodeModelImp : BlockNodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         BlockNode m_Node;
@@ -142,9 +145,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public BlockNode Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -254,10 +261,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
 				Debug.LogWarning($"The {(direction == PortDirection.Input ? "input" : "output")} port {portId} in {m_Node.GetType()} is configured as a vertical port. Vertical ports are not supported on block nodes.");
 			return new PortModelImp(this, direction, PortOrientation.Horizontal, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
 
-    partial class UserContextNodeModelImp
+    [Serializable]
+    partial class UserContextNodeModelImp : ContextNodeModel, IUserNodeModelImp
     {
         [SerializeReference]
         ContextNode m_Node;
@@ -265,9 +272,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public ContextNode Node => m_Node;
 
+        [NonSerialized]
         string m_CustomTooltip;
+        [NonSerialized]
         string m_CustomTitle;
+        [NonSerialized]
         string m_CustomSubtitle;
+        [NonSerialized]
         Color m_CustomDefaultColor = Color.darkGreen;
 
         public override string Tooltip
@@ -376,6 +387,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
 			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
     }
+
 }

@@ -17,6 +17,14 @@ namespace UnityEditor.EditorTools
 
         public static void SetActiveContext(Type context)
         {
+            SetActiveContext(context, typeof(SceneView));
+        }
+        
+        internal static void SetActiveContext(Type context, Type contextOwner)
+        {
+            if (contextOwner == null)
+                contextOwner = typeof(SceneView);
+            
             if (context != null && (!typeof(EditorToolContext).IsAssignableFrom(context) || context.IsAbstract))
                 throw new ArgumentException("Type must be assignable to EditorToolContext, and not abstract.", "context");
 
@@ -24,15 +32,21 @@ namespace UnityEditor.EditorTools
 
             if (EditorToolUtility.IsComponentEditor(ctx))
             {
-                var instance = EditorToolManager.GetComponentContext(ctx, true);
+                var instance = EditorToolManager.GetComponentContext(ctx, toolOwner:contextOwner, true);
                 if (instance == null)
                     throw new InvalidOperationException("The current selection does not contain any objects editable " +
                         $"by the component tool of type: {context}");
-                EditorToolManager.activeToolContext = instance;
+                
+                EditorToolManager.SetActiveToolContext(instance, contextOwner);
             }
             else
             {
-                EditorToolManager.activeToolContext = EditorToolManager.GetSingleton(ctx) as EditorToolContext;
+                var ownerToolsState = EditorToolManager.instance.GetOrCreateStateForType(contextOwner);
+                if (ownerToolsState != null)
+                {
+                    var ctxInstance = ownerToolsState.GetSingleton(ctx) as EditorToolContext;
+                    EditorToolManager.SetActiveToolContext(ctxInstance, contextOwner);
+                }
             }
         }
 
@@ -40,7 +54,27 @@ namespace UnityEditor.EditorTools
         {
             SetActiveContext(typeof(T));
         }
-
+        
+        internal static void SetActiveContext<T>(Type toolOwnerType) where T : EditorToolContext
+        {
+            SetActiveContext(typeof(T), toolOwnerType);
+        }
+        
+        internal static Type GetActiveToolType(Type toolOwnerType)
+        {
+            EditorTool tool = null;
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (state != null) 
+                tool = state.activeTool;
+            return tool != null ? tool.GetType() : null;
+        }
+        
+        internal static Type GetActiveContextType(Type contextOwnerType)
+        {
+            var ctx = EditorToolManager.GetActiveToolContext(contextOwnerType);
+            return ctx != null ? ctx.GetType() : null;
+        }
+        
         public static Type activeToolType
         {
             get
@@ -51,41 +85,98 @@ namespace UnityEditor.EditorTools
         }
 
         public static event Action activeToolChanging;
+        
+        internal static event Action<Type> activeToolChangingForOwner;
 
         public static event Action activeToolChanged;
+        internal static event Action<Type> activeToolChangedForOwner;
 
         public static event Action activeContextChanging;
+        internal static event Action<Type> activeContextChangingForOwner;
 
         public static event Action activeContextChanged;
+        internal static event Action<Type> activeContextChangedForOwner;
 
         internal static void ActiveToolWillChange()
         {
-            if (activeToolChanging != null)
-                activeToolChanging();
+            ActiveToolWillChange(typeof(SceneView));
+        }
+
+        internal static void ActiveToolWillChange(Type toolOwnerType)
+        {
+            if (toolOwnerType == null)
+                toolOwnerType = typeof(SceneView);
+
+            if (toolOwnerType == typeof(SceneView))
+            {
+                if (activeToolChanging != null)
+                    activeToolChanging();
 #pragma warning disable 618
-            EditorTools.ActiveToolWillChange();
+                EditorTools.ActiveToolWillChange();
 #pragma warning restore 618
+            }
+            
+            activeToolChangingForOwner?.Invoke(toolOwnerType);
         }
 
         internal static void ActiveToolDidChange()
         {
-            if (activeToolChanged != null)
-                activeToolChanged();
+            ActiveToolDidChange(typeof(SceneView));
+        }
+        
+        internal static void ActiveToolDidChange(Type toolOwnerType)
+        {
+            if (toolOwnerType == null)
+                toolOwnerType = typeof(SceneView);
+            
+            if (toolOwnerType == typeof(SceneView))
+            {
+                if (activeToolChanged != null)
+                    activeToolChanged();
 #pragma warning disable 618
             EditorTools.ActiveToolDidChange();
 #pragma warning restore 618
+            }
+         
+            activeToolChangedForOwner?.Invoke(toolOwnerType);
         }
 
         internal static void ActiveContextWillChange()
         {
-            if (activeContextChanging != null)
-                activeContextChanging();
+            ActiveContextWillChange(typeof(SceneView));
+        }
+
+        internal static void ActiveContextWillChange(Type contextOwnerType)
+        {
+            if (contextOwnerType == null)
+                contextOwnerType = typeof(SceneView);
+
+            if (contextOwnerType == typeof(SceneView))
+            {
+                if (activeContextChanging != null)
+                    activeContextChanging();
+            }
+            
+            activeContextChangingForOwner?.Invoke(contextOwnerType);
         }
 
         internal static void ActiveContextDidChange()
         {
-            if (activeContextChanged != null)
-                activeContextChanged();
+            ActiveContextDidChange(typeof(SceneView));
+        }
+
+        internal static void ActiveContextDidChange(Type contextOwnerType)
+        {
+            if (contextOwnerType == null)
+                contextOwnerType = typeof(SceneView);
+
+            if (contextOwnerType == typeof(SceneView))
+            {
+                if (activeContextChanged != null)
+                    activeContextChanged();
+            }
+            
+            activeContextChangedForOwner?.Invoke(contextOwnerType);
         }
 
         public static void SetActiveTool<T>() where T : EditorTool
@@ -95,25 +186,7 @@ namespace UnityEditor.EditorTools
 
         public static void SetActiveTool(Type type)
         {
-            if (!typeof(EditorTool).IsAssignableFrom(type) || type.IsAbstract)
-                throw new ArgumentException("Type must be assignable to EditorTool, and not abstract.");
-
-            if (EditorToolUtility.IsComponentEditor(type))
-            {
-                var tool = EditorToolManager.GetComponentTool(type);
-
-                if (tool == null)
-                    throw new InvalidOperationException("The current selection does not contain any objects editable " +
-                        $"by the component tool of type: {type}");
-                if (!tool.IsAvailable() || tool.isHidden)
-                    throw new InvalidOperationException($"Cannot activate {type} tool because it is currently not " + 
-                                                        "available (either the tool's IsAvailable() method returned " +
-                                                        "false or IsHidden() method returned true).");
-                SetActiveTool(tool);
-                return;
-            }
-
-            SetActiveTool((EditorTool)EditorToolManager.GetSingleton(type));
+            SetActiveTool(type, typeof(SceneView));
         }
 
         public static void SetActiveTool(EditorTool tool)
@@ -121,39 +194,70 @@ namespace UnityEditor.EditorTools
             EditorToolManager.activeTool = tool;
         }
 
+        internal static void SetActiveTool<T>(Type toolOwnerType) where T : EditorTool
+        {
+            SetActiveTool(typeof(T), toolOwnerType);
+        }
+
+        internal static void SetActiveTool(Type type, Type toolOwnerType)
+        {
+            if (!typeof(EditorTool).IsAssignableFrom(type) || type.IsAbstract)
+                throw new ArgumentException("Type must be assignable to EditorTool, and not abstract.");
+
+            if (EditorToolUtility.IsComponentEditor(type))
+            {
+                var tool = EditorToolManager.GetComponentTool(type, toolOwnerType);
+
+                if (tool == null)
+                    throw new InvalidOperationException("The current selection does not contain any objects editable " +
+                                                        $"by the component tool of type: {type}");
+                if (!tool.IsAvailable() || tool.isHidden)
+                    throw new InvalidOperationException($"Cannot activate {type} tool because it is currently not " +
+                                                        "available (either the tool's IsAvailable() method returned " +
+                                                        "false or IsHidden() method returned true).");
+                SetActiveTool(tool, toolOwnerType);
+                return;
+            }
+
+            SetActiveTool((EditorTool)EditorToolManager.GetSingleton(type, toolOwnerType), toolOwnerType);
+        }
+        
+        internal static void SetActiveTool(EditorTool tool, Type toolOwnerType)
+        {
+            EditorToolManager.SetActiveTool(tool, toolOwnerType);
+        }
+
         public static void RestorePreviousTool()
         {
-            var prev = EditorToolUtility.GetEditorToolWithEnum(EditorToolManager.previousTool);
-            if (!(prev is NoneTool))
-                EditorToolManager.activeTool = prev;
+            RestorePreviousTool(typeof(SceneView));
+        }
+        
+        internal static void RestorePreviousTool(Type toolOwnerType)
+        {
+            var ownerState = EditorToolManager.GetEditorToolStateForOwner(toolOwnerType);
+            if (ownerState != null)
+            {
+                var prev = EditorToolUtility.GetEditorToolWithEnum(ownerState.previousTool, toolOwnerType);
+                if (!(prev is NoneTool))
+                    ownerState.activeTool = prev;
+            }
         }
 
         public static void RestorePreviousPersistentTool() => EditorToolManager.RestorePreviousPersistentTool();
+
+        internal static void RestorePreviousPersistentTool(Type toolOwnerType) => EditorToolManager.RestorePreviousPersistentTool(toolOwnerType);
 
         public static bool IsActiveTool(EditorTool tool)
         {
             return EditorToolManager.activeTool == tool;
         }
 
-        public static void RefreshAvailableTools()
+        internal static bool IsActiveTool(EditorTool tool, Type toolOwnerType)
         {
-            foreach (var obj in SceneView.sceneViews)
-            {
-                if (!(obj is SceneView scene))
-                    continue;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var overlay = scene.overlayCanvas?.overlays.FirstOrDefault(x => x is TransformToolsOverlayToolBar);
-#pragma warning restore UA2001
-                if(overlay != null)
-                    overlay.RebuildContent();
-            }
+            return EditorToolManager.GetActiveTool(toolOwnerType) == tool;
         }
 
-        public static bool IsActiveContext(EditorToolContext context)
-        {
-            return EditorToolManager.activeToolContext == context;
-        }
-
+        // Used in tests
         internal static IEnumerable<Type> allContextsExceptGameObject
         {
             get
@@ -167,20 +271,71 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        [Shortcut("Tools/Enter GameObject Mode", typeof(ToolShortcutContext))]
+        public static void RefreshAvailableTools()
+        {
+            RefreshAvailableTools(typeof(SceneView));
+        }
+
+        internal static void RefreshAvailableTools(Type toolOwnerType)
+        {
+            if (toolOwnerType == typeof(SceneView))
+            {
+                foreach (var obj in SceneView.sceneViews)
+                {
+                    if (!(obj is SceneView scene))
+                        continue;
+                    RebuildToolsOverlay(scene);
+                }
+            }
+            else
+            {
+                var toolOwnerWndObjects = UObject.FindObjectsByType(toolOwnerType);
+                foreach (var obj in toolOwnerWndObjects)
+                {
+                    if (!(obj is EditorWindow toolOwnerWindow))
+                        continue;
+                    RebuildToolsOverlay(toolOwnerWindow);
+                }
+            }
+
+            void RebuildToolsOverlay(EditorWindow toolOwnerWindow)
+            {
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var overlay = toolOwnerWindow.overlayCanvas?.overlays.FirstOrDefault(x => x is TransformToolsOverlayToolBar);
+#pragma warning restore UA2001
+                if (overlay != null)
+                    overlay.RebuildContent();
+            }
+        }
+
+        public static bool IsActiveContext(EditorToolContext context)
+        {
+            return EditorToolManager.activeToolContext == context;
+        }
+
+        [Shortcut("Tools/Enter Default Tool Mode", typeof(ToolShortcutContext))]
         internal static void ExitToolContext()
         {
-            SetActiveContext<GameObjectToolContext>();
+            var toolsOwnerType = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            if (EditorToolUtility.GetToolOwnerDefinition(toolsOwnerType, out var toolOwnerDef))
+                SetActiveContext(toolOwnerDef.defaultContext, toolsOwnerType);
+            else
+                SetActiveContext(typeof(GameObjectToolContext), toolsOwnerType);
         }
 
         [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext), KeyCode.G)]
         internal static void CycleToolContexts()
         {
-            if (EditorToolUtility.toolContextsInProject < 2)
+            var toolsOwnerType = EditorToolUtility.GetToolOwnerFromFocusedWindow();
+            if (EditorToolUtility.GetToolContextsInProject(toolsOwnerType) < 2)
                 return;
 
-            var active = EditorToolManager.activeToolContext;
-            var sortedAvailableCtxs = EditorToolUtility.sortedContextsDataCache.allAvailableContextAssociations;
+            var active = EditorToolManager.GetActiveToolContext(toolsOwnerType);
+            var state = EditorToolManager.GetEditorToolStateForOwner(toolsOwnerType);
+            if (state == null)
+                return;
+            
+            var sortedAvailableCtxs = state.sortedContextsDataCache.allAvailableContextAssociations;
 
             var ctxIdx = 0;
             if (sortedAvailableCtxs.Count <= 1)
@@ -190,7 +345,7 @@ namespace UnityEditor.EditorTools
             if (active is GameObjectToolContext)
             {
                 // GO ctx is always idx 0 in sorted context association list, therefore if it's active, we can immediately cycle into idx 1 context.
-                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor);
+                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor, toolsOwnerType);
                 return;
             }
 
@@ -201,7 +356,7 @@ namespace UnityEditor.EditorTools
                 // We'll just return the last available context in that case.
                 if (++ctxIdx == sortedAvailableCtxs.Count)
                 {
-                    SetActiveContext(sortedAvailableCtxs[^1].editor);
+                    SetActiveContext(sortedAvailableCtxs[^1].editor, toolsOwnerType);
                     return;
                 }
             }
@@ -209,9 +364,14 @@ namespace UnityEditor.EditorTools
             // If we can advance from the active context, that is the next context. If not, we're at the end of the list
             // and need to circle back around to the first available context.
             if (++ctxIdx < sortedAvailableCtxs.Count)
-                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor);
+                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor, toolsOwnerType);
             else
-                SetActiveContext(typeof(GameObjectToolContext));
+            {
+                if (EditorToolUtility.GetToolOwnerDefinition(toolsOwnerType, out var toolOwnerDef))
+                    SetActiveContext(toolOwnerDef.defaultContext, toolsOwnerType);
+                else
+                    SetActiveContext(typeof(GameObjectToolContext), toolsOwnerType);
+            }
         }
     }
 }

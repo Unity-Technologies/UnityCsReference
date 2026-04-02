@@ -37,12 +37,12 @@ namespace UnityEditor
 
         public void AttachProcess()
         {
-            AttachWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
+            AttachWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent, GetTabRect());
         }
 
         public void KillProcess()
         {
-            DestroyWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle);
+            DestroyWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent);
         }
 
         /*
@@ -98,47 +98,47 @@ namespace UnityEditor
             if (m_Parent.window == null)
                 return;
 
-            ResizeWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
+            ResizeWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent, GetTabRect());
         }
 
         private void OnDestroy()
         {
-            DestroyWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle);
+            DestroyWindow_Native(m_NativeContextPtr.m_IntPtr, m_Parent);
         }
 
         private void OnBecameInvisible()
         {
             if (m_Parent.window == null)
                 return;
-            OnBecameInvisible_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle);
+            OnBecameInvisible_Native(m_NativeContextPtr.m_IntPtr, m_Parent);
         }
 
         private void OnBecameVisible()
         {
             if (m_Parent.window == null)
                 return;
-            OnBecameVisible_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
+            OnBecameVisible_Native(m_NativeContextPtr.m_IntPtr, m_Parent, GetTabRect());
         }
 
         private void OnTabNewWindow()
         {
             if (m_Parent.window == null)
                 return;
-            AddedAsTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
+            AddedAsTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent, GetTabRect());
         }
 
         private void OnAddedAsTab()
         {
             if (m_Parent.window == null)
                 return;
-            AddedAsTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle, GetTabRect());
+            AddedAsTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent, GetTabRect());
         }
 
         private void OnBeforeRemovedAsTab()
         {
             if (m_Parent.window == null)
                 return;
-            BeforeRemoveTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent.nativeHandle);
+            BeforeRemoveTab_Native(m_NativeContextPtr.m_IntPtr, m_Parent);
         }
 
         [ExcludeFromDocs]

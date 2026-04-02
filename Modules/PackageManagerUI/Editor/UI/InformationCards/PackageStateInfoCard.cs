@@ -21,7 +21,7 @@ internal class PackageStateInfoCard : PackageInformationCard
     public PackageStateInfoCard(IApplicationProxy applicationProxy)
     {
         m_ApplicationProxy = applicationProxy;
-        m_LinkButton = new Button { classList = { "link" } };
+        m_LinkButton = new Button().WithClassList("link");
         m_Content.Add(m_LinkButton);
         contentText = string.Empty;
 

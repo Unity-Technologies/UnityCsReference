@@ -109,11 +109,13 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-text-element";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// USS class name of selectable text elements.
         /// </summary>
         public static readonly string selectableUssClassName = ussClassName + "__selectable";
+        internal static readonly UniqueStyleString selectableUssClassNameUnique = new(selectableUssClassName);
 
         /// <summary>
         /// Initializes and returns an instance of TextElement.
@@ -127,7 +129,7 @@ namespace UnityEngine.UIElements
 
             uitkTextHandle = new UITKTextHandle(this);
 
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             generateVisualContent += OnGenerateVisualContent;
             edition.GetDefaultValueType = GetDefaultValueType;
@@ -184,9 +186,7 @@ namespace UnityEngine.UIElements
         {
             // All panels should account for TextElement  LiveReload in the Editor
             // And otherwise we only register them if ATG is effectively used
-            {
-                (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
-            }
+            (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
             uitkTextHandle.ReleaseResourcesIfPossible();
         }

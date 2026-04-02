@@ -178,6 +178,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if ((attr & UIError.Attribute.Warning) != 0)
                 Debug.LogWarning($"{k_ConsoleLogPrefix} {message}");
+            else if (message?.IndexOf("Failure writing output to destination", StringComparison.OrdinalIgnoreCase) >= 0)
+                Debug.LogError($"{k_ConsoleLogPrefix} There's not enough storage available to complete this operation.");
             else
                 Debug.LogError($"{k_ConsoleLogPrefix} {message}");
 

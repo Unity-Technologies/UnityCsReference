@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -40,7 +41,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        internal static List<TreeViewItem<TIdentifier>> FindItemsInList(IEnumerable<TIdentifier> itemIDs, IList<TreeViewItem<TIdentifier>> treeViewItems)
+        internal static List<TreeViewItem<TIdentifier>> FindItemsInList(IReadOnlyList<TIdentifier> itemIDs, IList<TreeViewItem<TIdentifier>> treeViewItems)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (from x in treeViewItems where itemIDs.Contains(x.id) select x).ToList();

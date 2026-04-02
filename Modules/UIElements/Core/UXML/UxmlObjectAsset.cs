@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     struct UxmlProperty
     {
         public string name;
@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     struct UxmlNamespaceDefinition : IEquatable<UxmlNamespaceDefinition>
     {
         public static UxmlNamespaceDefinition Empty { get; } = default;
@@ -238,7 +238,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> entries)
         {
             if (!string.IsNullOrEmpty(fieldName))
@@ -257,7 +257,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void CollectUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> foundEntries)
         {
             for (var i = 0; i < childCount; i++)

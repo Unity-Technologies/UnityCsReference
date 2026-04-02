@@ -58,7 +58,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual IReadOnlyList<PortModel> VisibleOutputsByDisplayOrder => InputsByDisplayOrder;
 
         /// <inheritdoc />
-        public override IReadOnlyCollection<PortModel> GetPorts()
+        public override IReadOnlyList<PortModel> GetPorts()
         {
             var listSize = InputPorts.Count + OutputPorts.Count;
             var ports = new List<PortModel>(listSize);

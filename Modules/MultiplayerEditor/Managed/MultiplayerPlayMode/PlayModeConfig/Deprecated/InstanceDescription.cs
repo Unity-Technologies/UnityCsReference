@@ -47,22 +47,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_Nodes = nodeIds;
         }
 
-        internal void SetCorrespondingNodes(params Node[] nodes)
-        {
-            var names = new string[nodes.Length];
-            for (int i = 0; i < nodes.Length; i++)
-            {
-                names[i] = nodes[i]?.Name;
-            }
-            SetCorrespondingNodes(names);
-        }
-
-        internal ReadOnlyCollection<string> GetCorrespondingNodes()
-        {
-            m_Nodes ??= Array.Empty<string>();
-            return Array.AsReadOnly(m_Nodes);
-        }
-
         internal abstract string InstanceTypeName { get; }
 
         internal abstract string BuildTargetType { get; }

@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace UnityEditorInternal.Profiling
 {
+    [Serializable]
     internal abstract class ProfilerDetailedView
     {
         protected static readonly string kNoneText = LocalizationDatabase.GetLocalizedString("None");

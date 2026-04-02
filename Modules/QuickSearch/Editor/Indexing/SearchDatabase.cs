@@ -317,9 +317,9 @@ namespace UnityEditor.Search
 
         public static SearchDatabase GetDefaultSearchDatabase()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAll().First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
         }
 
         public static IEnumerable<SearchDatabase> EnumerateAll()
@@ -494,9 +494,9 @@ namespace UnityEditor.Search
         {
             if (s_DBs == null)
                 return null;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_DBs.Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
         }
 
         public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)

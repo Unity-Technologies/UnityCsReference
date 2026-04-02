@@ -56,25 +56,25 @@ namespace Unity.UIToolkit.Editor
             : base(text)
         {
             var topRow = new OverrideRow() { name = k_TopPropertyName };
-            topField = new StyleLengthField("Top") { name = k_TopPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            topField = new StyleLengthField("Top") { name = k_TopPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             topField.SetBinding("value", new StylePropertyBinding(k_TopPropertyName));
             topRow.Add(topField);
             Add(topRow);
 
             var rightRow = new OverrideRow() { name = k_RightPropertyName };
-            rightField = new StyleLengthField("Right") { name = k_RightPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            rightField = new StyleLengthField("Right") { name = k_RightPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             rightField.SetBinding("value", new StylePropertyBinding(k_RightPropertyName));
             rightRow.Add(rightField);
             Add(rightRow);
 
             var bottomRow = new OverrideRow() { name = k_BottomPropertyName };
-            bottomField = new StyleLengthField("Bottom") { name = k_BottomPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            bottomField = new StyleLengthField("Bottom") { name = k_BottomPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             bottomField.SetBinding("value", new StylePropertyBinding(k_BottomPropertyName));
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
             var leftRow = new OverrideRow() { name = k_LeftPropertyName };
-            leftField = new StyleLengthField("Left") { name = k_LeftPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            leftField = new StyleLengthField("Left") { name = k_LeftPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             leftField.SetBinding("value", new StylePropertyBinding(k_LeftPropertyName));
             leftRow.Add(leftField);
             Add(leftRow);
@@ -91,28 +91,32 @@ namespace Unity.UIToolkit.Editor
 
             topField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                 {
                     UpdateFromChildFields();
                 }
             });
             rightField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                 {
                     UpdateFromChildFields();
                 }
             });
             bottomField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                 {
                     UpdateFromChildFields();
                 }
             });
             leftField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleLength>.valueProperty)
+                if (e.property == BaseField<StyleLength>.valueProperty ||
+                    e.property == enabledSelfProperty)
                 {
                     UpdateFromChildFields();
                 }
@@ -147,9 +151,11 @@ namespace Unity.UIToolkit.Editor
             var allTheSame = true;
             var singleValue = "none";
             var cumulativeValue = string.Empty;
+            var shouldBeEnabled = true;
 
             for (var i = 0; i < fields.Count; ++i)
             {
+                shouldBeEnabled &= fields[i].enabledSelf;
                 var childValue = fields[i].value.ToString().ToLower();
                 if (childValue.Equals("0"))
                 {
@@ -170,6 +176,7 @@ namespace Unity.UIToolkit.Editor
             headerInputField.SetValueWithoutNotify(allTheSame ? singleValue : cumulativeValue);
             if (fields.Count > 0)
                 draggerIntegerField.SetValueWithoutNotify((int)fields[0].value.value.value);
+            enabledSelf = shouldBeEnabled;
         }
 
         private void OnHeaderValueChange(ChangeEvent<string> evt)

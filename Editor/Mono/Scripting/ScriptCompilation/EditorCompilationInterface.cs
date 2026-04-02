@@ -253,10 +253,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
         }
 
-        [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo GetTargetAssembly(string scriptPath)
         {
             return Instance.GetTargetAssembly(scriptPath);
+        }
+
+        [RequiredByNativeCode]
+        private static void GetTargetAssemblyNameAndFlags(string scriptPath, out string name, out int flags)
+        {
+            var info = Instance.GetTargetAssembly(scriptPath);
+            name = info.Name;
+            flags = (int)info.Flags;
         }
 
         public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions(

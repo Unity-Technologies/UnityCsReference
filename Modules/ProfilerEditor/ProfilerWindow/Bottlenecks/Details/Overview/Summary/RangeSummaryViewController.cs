@@ -4,17 +4,27 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 
 namespace Unity.Profiling.Editor.UI
 {
     class RangeSummaryViewController : SummaryViewController
     {
+        static class Content
+        {
+            public static readonly string k_SystemsImpactTitleFormat = L10n.Tr("Systems impact across {0} (mean time)");
+            public static readonly string k_CaptureDescriptor = L10n.Tr("capture");
+            public static readonly string k_SelectionDescriptor = L10n.Tr("selection");
+            public static readonly string k_WholeCaptureNoDataText = L10n.Tr("Record a new capture or load an existing one to see its details here.");
+            public static readonly string k_SelectionNoDataText = L10n.Tr("Select a frame from the charts above to see its details here.");
+        }
+
         // Model.
         readonly bool m_RangeIsWholeCapture;
         readonly string m_RangeDescriptor;
         readonly string m_NoDataText;
-        protected CancellationTokenSource m_BuildModelCancellation;
+        RangeBottlenecksModel m_RangeBottlenecksModel;
 
         // Children.
         RangeBottlenecksViewController m_BottlenecksViewController;
@@ -28,26 +38,51 @@ namespace Unity.Profiling.Editor.UI
             bool rangeIsWholeCapture = false) : base(dataService, settingsService, profilerWindow, responder, detailsBinder)
         {
             m_RangeIsWholeCapture = rangeIsWholeCapture;
-            m_RangeDescriptor = rangeIsWholeCapture ? "capture" : "selection";
-            m_NoDataText = rangeIsWholeCapture ?
-                "Record a new capture or load an existing one to see its details here." :
-                "Select a frame from the charts above to see its details here.";
+            m_RangeDescriptor = rangeIsWholeCapture ? Content.k_CaptureDescriptor : Content.k_SelectionDescriptor;
+            m_NoDataText = rangeIsWholeCapture ? Content.k_WholeCaptureNoDataText : Content.k_SelectionNoDataText;
         }
 
-        public void ReloadData(Range frameRange)
+        public void ReloadData(Range frameRange, Action<IDetailsProvider> onDetailsProviderReady = null)
         {
             UnityEngine.Debug.Assert(IsViewLoaded);
 
-            if (m_DataService.FirstFrameIndex < 0 || m_DataService.FirstFrameIndex + m_DataService.FrameCount < 0)
-                m_SelectedRange = Range.All;
-            else
+            var hasData = m_DataService.FrameCount != 0;
+
+            // Clamp the frame range to the bounds of available profiler data, if necessary
+            if (hasData)
             {
-                m_SelectedRange = m_RangeIsWholeCapture
-                    ? new Range(m_DataService.FirstFrameIndex, m_DataService.FirstFrameIndex + m_DataService.FrameCount)
-                    : frameRange;
+                if (frameRange.Equals(Range.All))
+                {
+                    // If the range is the whole capture, we want to show data as long as there is at least 1 frame in the capture.
+                    frameRange = new Range(m_DataService.FirstFrameIndex, m_DataService.FirstFrameIndex + m_DataService.FrameCount);
+                }
+
+                var (start, end) = (frameRange.Start.Value, frameRange.End.Value);
+                if (end < m_DataService.FirstFrameIndex || start >= m_DataService.FirstFrameIndex + m_DataService.FrameCount)
+                {
+                    hasData = false;
+                }
+                else
+                {
+                    if (start < m_DataService.FirstFrameIndex)
+                        start = m_DataService.FirstFrameIndex;
+                    if (end > m_DataService.FirstFrameIndex + m_DataService.FrameCount)
+                        end = m_DataService.FirstFrameIndex + m_DataService.FrameCount;
+                    frameRange = new Range(start, end);
+                }
             }
 
-            ReloadDataAsync(frameRange);
+            // If we have no data, show the no data view.
+            if (!hasData)
+            {
+                HideContentViewsAndShowNoDataView();
+                m_SelectedRange = new Range(0, 0);
+                onDetailsProviderReady?.Invoke(null);
+                return;
+            }
+
+            m_SelectedRange = frameRange;
+            ReloadDataAsync(frameRange, onDetailsProviderReady);
         }
 
         public void CancelReloadDataIfNecessary()
@@ -66,7 +101,7 @@ namespace Unity.Profiling.Editor.UI
             m_BottlenecksContainer.Add(m_BottlenecksViewController.View);
             AddChild(m_BottlenecksViewController);
 
-            var systemsImpactTitle = $"Systems impact across {m_RangeDescriptor} (mean time)";
+            var systemsImpactTitle = string.Format(Content.k_SystemsImpactTitleFormat, m_RangeDescriptor);
             m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, systemsImpactTitle);
             m_SystemsImpactContainer.Add(m_SystemsImpactViewController.View);
             AddChild(m_SystemsImpactViewController);
@@ -88,103 +123,38 @@ namespace Unity.Profiling.Editor.UI
             AddChild(m_AllocationsSectionViewController);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override async Task BuildModelAsync(Range range, CancellationToken cancellationToken)
         {
-            if (disposing)
-            {
-                m_BuildModelCancellation?.Cancel();
-            }
-
-            base.Dispose(disposing);
+            var modelBuilder = new RangeSummaryModelBuilder(
+                m_DataService,
+                range);
+            await modelBuilder.BuildAsync(
+                cancellationToken,
+                OnRangeBottlenecksBuildCompleted: (model) => {
+                    m_RangeBottlenecksModel = model;
+                    m_BottlenecksViewController.ReloadData(model);
+                },
+                OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
+                OnFrameTimesBuildCompleted: m_FrameTimesSectionViewController.RefreshFrameTimesView,
+                OnTopFrameMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopFrameMarkersView,
+                OnTopRangeMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopRangeMarkersView,
+                OnGCAllocationsBuildCompleted: m_AllocationsSectionViewController.RefreshGCAllocationsView,
+                OnTopGCMarkersBuildCompleted: m_AllocationsSectionViewController.RefreshTopGCMarkersView,
+                OnGCCollectBuildCompleted: m_AllocationsSectionViewController.RefreshGCCollectView
+            );
         }
 
-        async void ReloadDataAsync(Range frameRange)
+        protected override IDetailsProvider CreateDetailsProvider(Range range)
         {
-            // If there is already a builder in flight, cancel it.
-            m_BuildModelCancellation?.Cancel();
-
-            // Show the content views.
-            ShowContentViewsAndHideNoDataView();
-            ShowContentActivityIndicators();
-
-            // Build the data model asynchronously. Refresh UI as models are built.
-            var success = true;
-            using (var buildModelCancellation = new CancellationTokenSource())
-            {
-                // Store a reference to the source so we can cancel it.
-                m_BuildModelCancellation = buildModelCancellation;
-
-                try
-                {
-                    var modelBuilder = new RangeSummaryModelBuilder(
-                        m_DataService,
-                        frameRange);
-                    await modelBuilder.BuildAsync(
-                        buildModelCancellation.Token,
-                        OnRangeBottlenecksBuildCompleted: m_BottlenecksViewController.ReloadData,
-                        OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
-                        OnFrameTimesBuildCompleted: m_FrameTimesSectionViewController.RefreshFrameTimesView,
-                        OnTopFrameMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopFrameMarkersView,
-                        OnTopRangeMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopRangeMarkersView,
-                        OnGCAllocationsBuildCompleted: m_AllocationsSectionViewController.RefreshGCAllocationsView,
-                        OnTopGCMarkersBuildCompleted: m_AllocationsSectionViewController.RefreshTopGCMarkersView,
-                        OnGCCollectBuildCompleted: m_AllocationsSectionViewController.RefreshGCCollectView
-                    );
-                }
-                catch (OperationCanceledException e) when (e.CancellationToken == buildModelCancellation.Token)
-                {
-                    // The operation was cancelled.
-                    success = false;
-                }
-                catch (ProfilerFrameIndexOutOfBounds)
-                {
-                    // The frame index is invalid, cancel the operation.
-                    buildModelCancellation.Cancel();
-                    success = false;
-                }
-                catch (Exception e)
-                {
-                    success = false;
-                    UnityEngine.Debug.LogException(e);
-                }
-
-                // It's possible for an async reload operation to reach here after another has
-                // been started, i.e. it is not the current builder.
-                var isCurrentBuilder = m_BuildModelCancellation == buildModelCancellation;
-                if (isCurrentBuilder)
-                {
-                    // Nullify the source reference if it is the current one.
-                    m_BuildModelCancellation = null;
-
-                    if (success == false)
-                    {
-                        HideContentActivityIndicators();
-                        HideContentViewsAndShowNoDataView();
-                    }
-                }
-            }
+            return new RangeSummaryDetailsProvider(
+                m_ProfilerWindow,
+                m_DataService,
+                m_SettingsService,
+                range,
+                m_RangeBottlenecksModel);
         }
 
-        void ShowContentViewsAndHideNoDataView()
-        {
-            SetContentViewsVisible(true);
-        }
-
-        void HideContentViewsAndShowNoDataView()
-        {
-            SetContentViewsVisible(false);
-        }
-
-        void SetContentViewsVisible(bool visible)
-        {
-            UIUtility.SetElementDisplay(m_TopSection, visible);
-            UIUtility.SetElementDisplay(m_FrameTimesContainer, visible);
-            UIUtility.SetElementDisplay(m_AllocationsContainer, visible);
-
-            UIUtility.SetElementDisplay(m_NoDataLabel, !visible);
-        }
-
-        void ShowContentActivityIndicators()
+        protected override void ShowContentActivityIndicators()
         {
             // The purpose of the delay is to avoid visual flickering when very fast
             // asynchronous operations are queued in quick succession, such as when
@@ -197,12 +167,97 @@ namespace Unity.Profiling.Editor.UI
             m_AllocationsSectionViewController.ShowActivityIndicatorAfterDelay(k_DelayMs);
         }
 
-        void HideContentActivityIndicators()
+        protected override void HideContentActivityIndicators()
         {
             m_BottlenecksViewController.SetActivityIndicatorVisible(false);
             m_SystemsImpactViewController.SetActivityIndicatorVisible(false);
             m_FrameTimesSectionViewController.SetActivityIndicatorVisible(false);
             m_AllocationsSectionViewController.SetActivityIndicatorVisible(false);
+        }
+    }
+
+    class RangeSummaryDetailsProvider : SummaryDetailsProvider
+    {
+        readonly RangeBottlenecksModel m_RangeBottlenecksModel;
+
+        public RangeSummaryDetailsProvider(
+            ProfilerWindow profilerWindow,
+            IProfilerCaptureDataService dataService,
+            IProfilerPersistentSettingsService settingsService,
+            Range frameRange,
+            RangeBottlenecksModel rangeBottlenecksModel)
+            : base(profilerWindow, dataService, settingsService, frameRange)
+        {
+            m_RangeBottlenecksModel = rangeBottlenecksModel;
+        }
+
+        public override ViewController GetDetailsViewController(IProfilerCaptureDataService dataService)
+        {
+            return new RangeSummaryDetailsPanelViewController(
+                m_ProfilerWindow,
+                m_DataService,
+                m_SettingsService,
+                m_FrameRange,
+                m_RangeBottlenecksModel);
+        }
+    }
+
+    class RangeSummaryDetailsPanelViewController : SummaryDetailsPanelViewController
+    {
+        static class RangeContent
+        {
+            // Range-specific bottleneck descriptions (with target set)
+            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>The {0} exceeded your target frame time in this frame range.</b>");
+            public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame range.</b>");
+        }
+
+        public RangeSummaryDetailsPanelViewController(
+            ProfilerWindow profilerWindow,
+            IProfilerCaptureDataService dataService,
+            IProfilerPersistentSettingsService settingsService,
+            Range frameRange,
+            RangeBottlenecksModel model)
+            : base(profilerWindow, dataService, settingsService, frameRange, cpuTimeNs: 0, gpuTimeNs: 0)
+        {
+            (_, m_CpuTimeNs) = ComputeAvgAndMax(model.CpuDurationsNs);
+            (_, m_GpuTimeNs) = ComputeAvgAndMax(model.GpuDurationsNs);
+        }
+
+        static (ulong avg, ulong max) ComputeAvgAndMax(ulong[] values)
+        {
+            if (values == null || values.Length == 0)
+                return (0, 0);
+
+            ulong sum = 0;
+            ulong max = 0;
+            int nonZeroCount = 0;
+
+            foreach (var value in values)
+            {
+                // Skip empty/incomplete frames, matching RangeBottlenecksModel.ComputePercentageOfValuesOverBudget pattern
+                if (value == 0)
+                    continue;
+
+                sum += value;
+                if (value > max)
+                    max = value;
+                nonZeroCount++;
+            }
+
+            if (nonZeroCount == 0)
+                return (0, 0);
+
+            return (sum / (ulong)nonZeroCount, max);
+        }
+
+        protected override string GetBoundTitleFormat()
+        {
+            return RangeContent.k_BoundTitleFormat;
+        }
+
+        protected override string GetNotBoundTitle()
+        {
+            return RangeContent.k_NotBoundTitle;
         }
     }
 }

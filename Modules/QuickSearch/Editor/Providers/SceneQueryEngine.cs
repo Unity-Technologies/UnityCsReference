@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEditor.SceneManagement;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search.Providers
 {
@@ -27,6 +28,7 @@ namespace UnityEditor.Search.Providers
         public SceneQueryEngineFilterAttribute(string token, string[] supportedOperators = null)
             : base(token, supportedOperators) {}
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal SceneQueryEngineFilterAttribute(string token, string[] supportedOperators, string propositionReplacement)
             : base(token, supportedOperators)
         {
@@ -87,9 +89,9 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("layer", GetLayer);
-            m_QueryEngine.AddFilter<string>("renderinglayer", OnRenderingLayer, new[] { ":" });
+            m_QueryEngine.AddFilter<string>("renderinglayer", OnRenderingLayer, new[] { "=", ":" });
             m_QueryEngine.AddFilter("tag", GetTag);
-            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
+            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { "=", ":"});
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter, StringComparison.OrdinalIgnoreCase);
@@ -507,9 +509,7 @@ namespace UnityEditor.Search.Providers
             if (!options.HasAny(SearchPropositionFlags.FilterOnly))
             {
                 if (options.StartsWith("#"))
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return FetchPropertyPropositions(options.tokens.First().Substring(1));
-#pragma warning restore UA2001
+                    return FetchPropertyPropositions(options.tokens[0].Substring(1));
             }
 
             return base.FindPropositions(context, options);

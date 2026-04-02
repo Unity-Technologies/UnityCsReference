@@ -10,8 +10,15 @@ namespace UnityEngine.UIElements
     internal static class VisualElementUtils
     {
         private static readonly HashSet<string> s_usedNames = new HashSet<string>();
-        private static readonly Type s_FoldoutType = typeof(Foldout);
-        private static readonly string s_InspectorElementUssClassName = "unity-inspector-element";
+        private static Type s_FoldoutType;
+        private static readonly UniqueStyleString s_InspectorElementUssClassName = new("unity-inspector-element");
+
+        // To help with code stripping
+        public static void SetFoldoutType(Type foldoutType)
+        {
+            s_FoldoutType = foldoutType;
+        }
+
 
         public static string GetUniqueName(string nameBase)
         {
@@ -34,7 +41,7 @@ namespace UnityEngine.UIElements
         internal static int GetFoldoutDepth(this VisualElement element)
         {
             var depth = 0;
-            if (element.parent != null)
+            if (s_FoldoutType != null && element.parent != null)
             {
                 var currentParent = element.parent;
                 while (currentParent != null)
@@ -50,7 +57,7 @@ namespace UnityEngine.UIElements
             return depth;
         }
 
-        internal static void AssignInspectorStyleIfNecessary(this VisualElement element, string classNameToEnable)
+        internal static void AssignInspectorStyleIfNecessary(this VisualElement element, UniqueStyleString classNameToEnable)
         {
             var inspector = element.GetFirstAncestorWhere((i) => i.ClassListContains(s_InspectorElementUssClassName));
             element.EnableInClassList(classNameToEnable, inspector != null);

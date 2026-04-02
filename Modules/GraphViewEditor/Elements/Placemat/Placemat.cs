@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -298,9 +299,7 @@ namespace UnityEditor.Experimental.GraphView
             foreach (var node in nodes)
             {
                 var stackNode = node as StackNode;
-                #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (stackNode != null && stackNode.contentContainer.Children().Any(n => n == port.node))
-#pragma warning restore UA2006
+                if (stackNode != null && stackNode.contentContainer.children.Exists(n => n == port.node))
                     return true;
 
                 if (node == port.node)
@@ -431,9 +430,9 @@ namespace UnityEditor.Experimental.GraphView
         internal bool WillDragNode(Node node)
         {
             if (Collapsed)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return AllCollapsedElements.Contains(node);
-#pragma warning restore UA2001
+#pragma warning restore UA2007
 
             return ActOnGraphElementsOver(t => node == t, true);
         }

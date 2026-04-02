@@ -11,6 +11,7 @@ using System;
 using UnityEditor.Audio;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Audio;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -68,7 +69,7 @@ namespace UnityEditor
     internal class AudioMixerTreeViewDragging : TreeViewDragging<EntityId>
     {
         private const string k_AudioMixerDraggingID = "AudioMixerDragging";
-        Action<List<AudioMixerController>, AudioMixerController> m_MixersDroppedOnMixerCallback;
+        Action<AudioMixerController[], AudioMixerController> m_MixersDroppedOnMixerCallback;
 
         class DragData
         {
@@ -80,7 +81,7 @@ namespace UnityEditor
             public List<AudioMixerItem> m_DraggedItems;
         }
 
-        public AudioMixerTreeViewDragging(TreeViewController<EntityId> treeView, Action<List<AudioMixerController>, AudioMixerController> mixerDroppedOnMixerCallback)
+        public AudioMixerTreeViewDragging(TreeViewController<EntityId> treeView, Action<AudioMixerController[], AudioMixerController> mixerDroppedOnMixerCallback)
             : base(treeView)
         {
             m_MixersDroppedOnMixerCallback = mixerDroppedOnMixerCallback;
@@ -145,9 +146,7 @@ namespace UnityEditor
             var parentMixerItem = parentNode as AudioMixerItem;
             if (parentMixerItem != null && dragData != null)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                List<AudioMixerGroupController> draggedMasterGroups = (from i in draggedItems select i.mixer.masterGroup).ToList();
-#pragma warning restore UA2001
+                List<AudioMixerGroupController> draggedMasterGroups = draggedItems.ConvertAll(i => i.mixer.masterGroup);
                 var allGroups = parentMixerItem.mixer.GetAllAudioGroupsSlow();
                 bool causesFeedback = AudioMixerController.WillModificationOfTopologyCauseFeedback(allGroups, draggedMasterGroups, parentMixerItem.mixer.masterGroup, null);
                 bool validDrag = ValidDrag(parentNode, draggedItems) && !causesFeedback;
@@ -164,7 +163,7 @@ namespace UnityEditor
         bool ValidDrag(TreeViewItem<EntityId> parent, List<AudioMixerItem> draggedItems)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var draggedIDs = (from n in draggedItems select n.id).ToList();
+            var draggedIDs = new HashSet<EntityId>(draggedItems.Select(n => n.id));
 #pragma warning restore UA2001
 
             var currentParent = parent;
@@ -185,10 +184,10 @@ namespace UnityEditor
 #pragma warning restore UA2001
         }
 
-        private List<AudioMixerController> GetAudioMixersFromItems(List<AudioMixerItem> draggedItems)
+        private AudioMixerController[] GetAudioMixersFromItems(List<AudioMixerItem> draggedItems)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return (from i in draggedItems select i.mixer).ToList();
+            return (from i in draggedItems select i.mixer).ToArray();
 #pragma warning restore UA2001
         }
     }
@@ -221,9 +220,7 @@ namespace UnityEditor
             if (m_Mixers.Count > 0)
             {
                 // First create a tree view item for each controller
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetEntityId(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
-#pragma warning restore UA2001
+                var roots = m_Mixers.ConvertAll(mixer => new AudioMixerItem(mixer.GetEntityId(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer)));
 
                 // Rearrange items to a tree based on output mixer group
                 foreach (var item in roots)
@@ -479,9 +476,7 @@ namespace UnityEditor
 
         AudioMixerItem GetSelectedItem()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_TreeView.FindItem(m_TreeView.GetSelection().FirstOrDefault()) as AudioMixerItem;
-#pragma warning restore UA2001
         }
 
         override protected void SyncFakeItem()
@@ -535,7 +530,7 @@ namespace UnityEditor
     {
         private TreeViewController<EntityId> m_TreeView;
         const int kObjectSelectorID = 1212;
-        List<AudioMixerController> m_DraggedMixers;
+        AudioMixerController[] m_DraggedMixers;
 
         class Styles
         {
@@ -576,9 +571,7 @@ namespace UnityEditor
             AudioMixerController controller = (AudioMixerController)obj;
             if (controller != null)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ProjectWindowUtil.DeleteAssets(new[] { controller.GetEntityId() }.ToList(), true);
-#pragma warning restore UA2001
+                ProjectWindowUtil.DeleteAssets([controller.GetEntityId()], true);
             }
         }
 
@@ -653,9 +646,7 @@ namespace UnityEditor
                 {
                     Event.current.Use();
                     if (execute)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        ProjectWindowUtil.DeleteAssets(m_TreeView.GetSelection().ToList(), true);
-#pragma warning restore UA2001
+                        ProjectWindowUtil.DeleteAssets(m_TreeView.GetSelection(), true);
                 }
                 else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
@@ -678,19 +669,17 @@ namespace UnityEditor
             ReloadTree();
         }
 
-        void OnMixersDroppedOnMixerCallback(List<AudioMixerController> draggedMixers, AudioMixerController droppedUponMixer)
+        void OnMixersDroppedOnMixerCallback(AudioMixerController[] draggedMixers, AudioMixerController droppedUponMixer)
         {
             // Set Unity selection when drag ended (when dragging non selected items we just render them as selected while dragging)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var draggedIDs = (from i in draggedMixers select i.GetEntityId()).ToArray();
-#pragma warning restore UA2001
+            var draggedIDs = Array.ConvertAll(draggedMixers, i => i.GetEntityId());
             m_TreeView.SetSelection(draggedIDs, true);
             Selection.entityIds = draggedIDs;
 
             if (droppedUponMixer == null)
             {
                 // Dragged to the root -> clear all outputgroups
-                Undo.RecordObjects(draggedMixers.ToArray(), "Set output group for mixer" + (draggedMixers.Count > 1 ? "s" : ""));
+                Undo.RecordObjects(draggedMixers, "Set output group for mixer" + (draggedMixers.Length > 1 ? "s" : ""));
                 foreach (var mixer in draggedMixers)
                     mixer.outputAudioMixerGroup = null;
                 ReloadTree();
@@ -699,7 +688,7 @@ namespace UnityEditor
             {
                 // Show Object Selector for output group selection
                 m_DraggedMixers = draggedMixers;
-                Object startSelection = draggedMixers.Count == 1 ? draggedMixers[0].outputAudioMixerGroup : null;
+                Object startSelection = draggedMixers.Length == 1 ? draggedMixers[0].outputAudioMixerGroup : null;
                 ObjectSelector.get.Show(startSelection, typeof(AudioMixerGroup), null, false, new List<EntityId>() { droppedUponMixer.GetEntityId() });
                 ObjectSelector.get.objectSelectorID = kObjectSelectorID;
                 ObjectSelector.get.titleContent = EditorGUIUtility.TrTextContent("Select Output Audio Mixer Group");
@@ -715,12 +704,12 @@ namespace UnityEditor
                 string commandName = evt.commandName;
                 if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == kObjectSelectorID)
                 {
-                    if (m_DraggedMixers == null || m_DraggedMixers.Count == 0)
+                    if (m_DraggedMixers == null || m_DraggedMixers.Length == 0)
                         Debug.LogError("Unexpected invalid mixer list used for dragging");
 
                     var selected =  ObjectSelector.GetCurrentObject();
                     AudioMixerGroup selectedGroup = selected != null ? selected as AudioMixerGroup : null;
-                    Undo.RecordObjects(m_DraggedMixers.ToArray(), "Set output group for mixer" + (m_DraggedMixers.Count > 1 ? "s" : ""));
+                    Undo.RecordObjects(m_DraggedMixers, "Set output group for mixer" + (m_DraggedMixers.Length > 1 ? "s" : ""));
                     foreach (var mixer in m_DraggedMixers)
                     {
                         if (mixer != null)
@@ -735,9 +724,7 @@ namespace UnityEditor
                     ReloadTree();
 
                     // Ensure newly selected output group is revealed
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var selectedIDs = (from i in m_DraggedMixers select i.GetEntityId()).ToArray();
-#pragma warning restore UA2001
+                    var selectedIDs = Array.ConvertAll(m_DraggedMixers, i => i.GetEntityId());
                     m_TreeView.SetSelection(selectedIDs, true);
                 }
 

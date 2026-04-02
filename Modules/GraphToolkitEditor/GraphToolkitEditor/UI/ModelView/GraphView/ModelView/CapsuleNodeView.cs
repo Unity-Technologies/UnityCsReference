@@ -19,6 +19,11 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string capsuleName = "capsule";
 
         /// <summary>
+        /// The USS modifier name for when we have visible sub ports.
+        /// </summary>
+        public static readonly string withSubportsName = "with-sub-ports";
+
+        /// <summary>
         /// The USS class name added to nodes that are <see cref="CapsuleNodeView"/>.
         /// </summary>
         public static readonly string capsuleUssClassName = ussClassName.WithUssModifier(capsuleName);
@@ -49,37 +54,32 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string portalExitUssClassName = ussClassName.WithUssModifier("portal-exit");
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the title container.
+        /// The USS class name added to nodes that are <see cref="CapsuleNodeView"/> that have visible sub ports.
         /// </summary>
-        public static readonly string titleIconContainerPartName = "title-icon-container";
+        public static readonly string capsuleWithSubportsUssClassName = capsuleUssClassName.WithUssModifier(withSubportsName);
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the constant editor.
+        /// The name of the <see cref="ModelViewPart"/> for the variable title.
         /// </summary>
-        public static readonly string constantEditorPartName = "constant-editor";
+        public static readonly string titlePartName = "variable-title-part";
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the input ports container.
+        /// The name of the <see cref="ModelViewPart"/> for the sub port container.
         /// </summary>
-        public static readonly string inputPortContainerPartName = "inputs";
+        public static readonly string subPortContainerPartName = "sub-port-container-part";
 
-        /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the output ports container.
-        /// </summary>
-        public static readonly string outputPortContainerPartName = "outputs";
+        protected CapsuleNodePortContainerPart m_CapsuleNodePortContainerPart;
+        CapsuleNodeLodCachePart m_CapsuleNodeLodCachePart;
+
+        internal CapsuleNodePortContainerPart CapsuleNodePortContainerPart => m_CapsuleNodePortContainerPart;
 
         internal bool IsHighlighted() => Border.Highlighted;
-
-        SinglePortContainerPart m_InputPart;
-        SinglePortContainerPart m_OutputPart;
-        CapsuleNodeLodCachePart m_CapsuleNodeLodCachePart;
 
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth));
-            PartList.AppendPart(ConstantNodeEditorPart.Create(constantEditorPartName, Model, this, ussClassName));
-
+            m_CapsuleNodePortContainerPart = new CapsuleNodePortContainerPart(subPortContainerPartName, Model, this, ussClassName);
+            PartList.AppendPart(m_CapsuleNodePortContainerPart);
             m_CapsuleNodeLodCachePart = CapsuleNodeLodCachePart.Create(cachePartName, Model, this, capsuleUssClassName);
             PartList.AppendPart(m_CapsuleNodeLodCachePart);
         }
@@ -116,41 +116,13 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            var inputPort = ExtractInputPortModel(Model);
-            if (inputPort != null && m_InputPart == null)
-            {
-                m_InputPart = SinglePortContainerPart.Create(inputPortContainerPartName, inputPort, this, ussClassName);
-                PartList.InsertPartBefore(titleIconContainerPartName, m_InputPart);
-
-                m_InputPart.BuildUITree(this);
-                m_InputPart.PostBuildUITree();
-                m_InputPart.Root.SendToBack();
-            }
-            else if (inputPort == null && m_InputPart != null)
-            {
-                PartList.RemovePart(m_InputPart.PartName);
-                m_InputPart.Root.RemoveFromHierarchy();
-                m_InputPart = null;
-            }
-
-            var outputPort = ExtractOutputPortModel(Model);
-            if (outputPort != null && m_OutputPart == null)
-            {
-                m_OutputPart = SinglePortContainerPart.Create(outputPortContainerPartName, outputPort, this, ussClassName);
-                PartList.InsertPartBefore(cachePartName, m_OutputPart);
-
-                m_OutputPart.BuildUITree(this);
-                m_OutputPart.PostBuildUITree();
-                m_OutputPart.Root.PlaceBehind(m_CapsuleNodeLodCachePart.Root);
-            }
-            else if (outputPort == null && m_OutputPart != null)
-            {
-                PartList.RemovePart(m_OutputPart.PartName);
-                m_OutputPart.Root.RemoveFromHierarchy();
-                m_OutputPart = null;
-            }
-
             Border.Highlighted = ShouldBeHighlighted();
+
+            if (NodeModel is NodeModel nodeModel)
+            {
+                var visiblePorts = (nodeModel is ISingleOutputPortNodeModel outputPortNodeModel && outputPortNodeModel.OutputPort != null)  ? nodeModel.VisibleOutputsByDisplayOrder : nodeModel.VisibleInputsByDisplayOrder;
+                EnableInClassList(capsuleWithSubportsUssClassName, visiblePorts.Count > 1);
+            }
         }
 
         /// <inheritdoc />
@@ -164,28 +136,6 @@ namespace Unity.GraphToolkit.Editor
         {
             if (Model is VariableNodeModel variableNodeModel)
                 Dependencies.AddModelDependency(variableNodeModel.VariableDeclarationModel);
-        }
-
-        protected static Model ExtractInputPortModel(Model model)
-        {
-            if (model is ISingleInputPortNodeModel inputPortHolder && inputPortHolder.InputPort != null)
-            {
-                Debug.Assert(inputPortHolder.InputPort.Direction == PortDirection.Input);
-                return inputPortHolder.InputPort;
-            }
-
-            return null;
-        }
-
-        protected static Model ExtractOutputPortModel(Model model)
-        {
-            if (model is ISingleOutputPortNodeModel outputPortHolder && outputPortHolder.OutputPort != null)
-            {
-                Debug.Assert(outputPortHolder.OutputPort.Direction == PortDirection.Output);
-                return outputPortHolder.OutputPort;
-            }
-
-            return null;
         }
 
         /// <inheritdoc />

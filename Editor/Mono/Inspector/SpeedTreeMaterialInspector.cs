@@ -59,9 +59,7 @@ namespace UnityEditor
                 geomTypes[i] = SpeedTreeGeometryType.Branch;
                 for (int j = 0; j < speedTreeGeometryTypeString.Length; ++j)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (((Material)targets[i]).shaderKeywords.Contains(speedTreeGeometryTypeString[j]))
-#pragma warning restore UA2001
                     {
                         geomTypes[i] = (SpeedTreeGeometryType)j;
                         break;
@@ -76,9 +74,7 @@ namespace UnityEditor
                 bool shouldEnableAlphaTest = ShouldEnableAlphaTest(setGeomType);
                 UnityEngine.Rendering.CullMode cullMode = shouldEnableAlphaTest ? UnityEngine.Rendering.CullMode.Off : UnityEngine.Rendering.CullMode.Back;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var m in targets.Cast<Material>())
-#pragma warning restore UA2001
+                foreach (Material m in targets)
                 {
                     if (shouldEnableAlphaTest)
                         m.SetOverrideTag("RenderType", "treeTransparentCutout");
@@ -105,15 +101,13 @@ namespace UnityEditor
             {
                 props.Remove(bumpMap);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var enableBump = targets.Select(t => ((Material)t).shaderKeywords.Contains("EFFECT_BUMP"));
                 bool? enable = ToggleShaderProperty(bumpMap, enableBump.First(), enableBump.DistinctCountGreaterThan(1));
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2010
                 if (enable != null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var m in targets.Cast<Material>())
-#pragma warning restore UA2001
+                    foreach (Material m in targets)
                     {
                         if (enable.Value)
                             m.EnableKeyword("EFFECT_BUMP");
@@ -128,9 +122,7 @@ namespace UnityEditor
             if (detailTex != null)
             {
                 props.Remove(detailTex);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (geomTypes.Contains(SpeedTreeGeometryType.BranchDetail))
-#pragma warning restore UA2001
                     ShaderProperty(detailTex, detailTex.displayName);
             }
 
@@ -142,14 +134,12 @@ namespace UnityEditor
             if (enableHueVariation != null && hueVariation != null)
             {
                 props.Remove(hueVariation);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 bool? enable = ToggleShaderProperty(hueVariation, enableHueVariation.First(), enableHueVariation.DistinctCountGreaterThan(1));
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2010
                 if (enable != null)
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    foreach (var m in targets.Cast<Material>())
-#pragma warning restore UA2001
+                    foreach (Material m in targets)
                     {
                         if (enable.Value)
                             m.EnableKeyword("EFFECT_HUE_VARIATION");

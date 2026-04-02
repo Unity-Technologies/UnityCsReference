@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements.StyleSheets;
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal interface IStyleProfiler
 {
-    void BeginMatchingStyleSheet(StyleSheet styleSheet);
+    void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry);
     void BeginMatchingElement(VisualElement element);
     void BeginMatchingSelector(StyleComplexSelector complexSelector);
     void EndMatchingSelector(StyleComplexSelector complexSelector, bool match, bool passedAncestorFilter);
@@ -29,7 +29,7 @@ static class StyleProfilerStorage<TProfilerType> where TProfilerType : struct, I
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 struct NoOpStyleProfiler : IStyleProfiler
 {
-    public void BeginMatchingStyleSheet(StyleSheet styleSheet)
+    public void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry)
     {
     }
 

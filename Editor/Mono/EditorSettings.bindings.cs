@@ -278,8 +278,12 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern EnterPlayModeOptions enterPlayModeOptions { get; set; }
 
-        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern bool serializeInlineMappingsOnOneLine { get; set; }
+        [Obsolete("serializeInlineMappingsOnOneLine is deprecated. Unity now always serializes inline mappings on one line. This property always returns true.")]
+        public static bool serializeInlineMappingsOnOneLine
+        {
+            get { return true; }
+            set { /* No-op: Unity always serializes inline mappings on one line */ }
+        }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern AssetPipelineMode assetPipelineMode { get; }
@@ -295,6 +299,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern string cacheServerNamespacePrefix { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerImportResultCachingEnabled { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableDownload { get; set; }

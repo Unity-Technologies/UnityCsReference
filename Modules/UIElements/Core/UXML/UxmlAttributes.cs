@@ -41,6 +41,7 @@ namespace UnityEngine.UIElements
     /// <see cref="UxmlAttributeAttribute"/> attribute.
     /// This serialized data allows for the element to be serialized from UXML and supports editing in the Attributes field of the
     /// Inspector window in  the UI Builder.
+    /// The UxmlSerializedData includes a generated <see cref="UxmlSerializedData.CreateInstance"/> method that uses the default constructor. You can use the <see cref="UxmlCreateInstanceMethodAttribute"/> to replace the default behaviour and provide your own creation method.
     /// By default, the custom control appears in the Library tab in UI Builder.
     /// The @@visibility@@ field can be used to control the visibility of the custom control in the Library tab.
     ///
@@ -90,9 +91,9 @@ namespace UnityEngine.UIElements
         public LibraryVisibility visibility = LibraryVisibility.Default;
 
         /// <summary>
-        /// Custom path to use when displaying the element in the UI Builder Library.
+        /// Custom path to organize the element in UI Toolkit authoring tools (UI Builder Library, context menus, and UI Library).
         /// Sub-paths can be created by using a forward slash (/).
-        /// If no value is provided, the element namespace will be used.
+        /// If no value is provided, the element namespace will be used in the UI Builder Library and UI Library window.
         /// </summary>
         public string libraryPath;
 
@@ -124,6 +125,30 @@ namespace UnityEngine.UIElements
             name = uxmlName;
             supportedChildTypes = supportedTypes;
         }
+    }
+
+    /// <summary>
+    /// Declares a method to create instances in place of the default constructor.
+    /// </summary>
+    /// <remarks>
+    /// Use this to provide custom instance creation logic, such as object pooling or dependency injection.
+    /// The method must meet the following requirements:
+    ///- Be a static method defined on the element type.
+    ///- Have public or internal accessibility.
+    ///- Accept no parameters.
+    ///- Not be generic.
+    ///- Return an instance of the element type (or null to fall back to the default constructor).
+    ///
+    /// If this attribute is not found on the element, the source generator uses the default constructor (`new T()`).
+    /// If the method returns null, the source generator uses the default constructor as a fallback.
+    /// </remarks>
+    /// <example>
+    /// The following example uses a custom creation method for object pooling:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CreateInstanceMethod.cs"/>
+    /// </example>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class UxmlCreateInstanceMethodAttribute : Attribute
+    {
     }
 
     /// <summary>
@@ -324,6 +349,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Declares that a class can be instantiated from UXML and contain UXML attributes.
+    /// The UxmlSerializedData includes a generated <see cref="UxmlSerializedData.CreateInstance"/> method that uses the default constructor. You can use the <see cref="UxmlCreateInstanceMethodAttribute"/> to replace the default behaviour and provide your own creation method.
     /// </summary>
     /// <remarks>
     /// A UXML object is a class that can be instantiated from UXML and contain UXML attributes.

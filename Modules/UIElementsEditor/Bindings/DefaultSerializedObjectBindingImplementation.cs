@@ -183,6 +183,48 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
         }
     }
 
+    public void UntrackPropertyValue(VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
+    {
+        if (property == null)
+        {
+            throw new ArgumentNullException(nameof(property));
+        }
+
+        if (element != null)
+        {
+            if (callback == null)
+            {
+                callback = SendPropertyChangeCallback;
+            }
+
+            // Remove tracking if the context updater exists
+            var contextUpdater = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
+            if (contextUpdater != null)
+            {
+                contextUpdater.RemoveTracking(property, callback);
+            }
+
+            // Also check for and remove any pending binding requests that were queued while the element was detached
+            var bindingRequests = VisualTreeBindingsUpdater.GetBindingRequests(element);
+            if (bindingRequests != null)
+            {
+                for (int i = bindingRequests.Count - 1; i >= 0; i--)
+                {
+                    if (bindingRequests[i] is BindingRequest request &&
+                        request.requestType == BindingRequest.RequestType.TrackProperty &&
+                        request.callback == callback &&
+                        request.obj == property.serializedObject &&
+                        request.parentProperty != null &&
+                        request.parentProperty.propertyPath == property.propertyPath)
+                    {
+                        VisualTreeBindingsUpdater.RemoveBindingRequest(element, request);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     private static void SendPropertyChangeCallback(object cookie, SerializedProperty prop)
     {
         if (cookie is VisualElement element)

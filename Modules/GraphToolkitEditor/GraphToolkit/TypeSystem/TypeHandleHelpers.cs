@@ -130,10 +130,11 @@ namespace Unity.GraphToolkit
         /// </summary>
         /// <param name="t">The type for which to create a type handle.</param>
         /// <param name="uniqueId">The unique custom identifier for the type.</param>
+        /// <param name="friendlyName">Friendly name for this TypeHandle</param>
         /// <returns>A type handle for the type.</returns>
-        public static TypeHandle GenerateCustomTypeHandle(Type t, string uniqueId)
+        public static TypeHandle GenerateCustomTypeHandle(Type t, string uniqueId, string friendlyName = null)
         {
-            var (th, isNew) = GetOrCreateCustomTypeHandle(uniqueId);
+            var (th, isNew) = GetOrCreateCustomTypeHandle(uniqueId, friendlyName);
 
             if (isNew)
             {

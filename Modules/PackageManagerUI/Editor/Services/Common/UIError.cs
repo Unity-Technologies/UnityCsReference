@@ -11,10 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UIError
     {
-        private static readonly string k_EntitlementErrorMessage = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. If you're licensed to use this package, go to Unity Hub > Preferences > Licenses and click Refresh. Otherwise, contact your administrator.");
+        private static readonly string k_EntitlementErrorMessage = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. Contact your administrator to assign a seat for this license. Then, go to Unity Hub  > Licenses and click Refresh.");
+        private static readonly string k_EntitlementReadMoreLink = "https://docs.unity.com/en-us/cloud/organizations/manage-seats";
         private static readonly string k_CantValidateSignatureErrorMessage = L10n.Tr("Package signature could not be validated.");
-        public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage);
-        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.Warning);
+        public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.None, -1, k_EntitlementReadMoreLink);
+        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.Warning, -1, k_EntitlementReadMoreLink);
         public static readonly UIError k_CantValidateSignatureError = new UIError(UIErrorCode.UpmError_Unknown, k_CantValidateSignatureErrorMessage);
 
         [SerializeField]

@@ -49,9 +49,6 @@ namespace Unity.Hierarchy
         protected internal void GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
     }
 
-    /// <summary>
-    /// Extension methods on <see cref="Hierarchy"/>.
-    /// </summary>
     public static partial class HierarchyExtensions
     {
         /// <summary>

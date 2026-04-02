@@ -50,7 +50,6 @@ class AIDropdownContent : PopupWindowContent
 
         packages = new()
         {
-            "com.unity.ai.generators",
             "com.unity.ai.assistant",
             "com.unity.ai.inference"
         },

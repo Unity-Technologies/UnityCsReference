@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installedVersion == null || installedVersion.HasTag(PackageTag.InstalledFromPath) || sortedVersions.Count <= 1)
                 return null;
 
-            if (installedVersion.HasTag(PackageTag.Experimental) || sortedVersions.AnyMatches(v => v.availableRegistry != RegistryType.UnityRegistry))
+            if (installedVersion.HasTag(PackageTag.Experimental) || sortedVersions.Exists(v => v.availableRegistry != RegistryType.UnityRegistry))
             {
                 var lastVersion = sortedVersions[^1];
                 return lastVersion.isInstalled ? null : lastVersion;
@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var availableVersions = sortedVersions.Filter(i => i != version && !i.HasTag(PackageTag.InstalledFromPath)).ToNewArray(sortedVersions.Count);
             if (availableVersions.Length == 0)
                 return null;
-            var patchVersionString = SemVersionHelper.MaxSatisfying(version.versionString, availableVersions.SelectToNewArray(v => v.versionString), ResolutionStrategy.HighestPatch, !string.IsNullOrEmpty(version.version?.Prerelease));
+            var patchVersionString = SemVersionHelper.MaxSatisfying(version.versionString, Array.ConvertAll(availableVersions, v => v.versionString), ResolutionStrategy.HighestPatch, !string.IsNullOrEmpty(version.version?.Prerelease));
             return string.IsNullOrEmpty(patchVersionString) ? null : availableVersions.LastMatch(v => v.versionString == patchVersionString);
         }
 

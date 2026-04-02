@@ -92,13 +92,13 @@ namespace UnityEditor.Search
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allOtherPropositions = new[] { SearchProposition.CreateSeparator() }.Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
                 return areaPropositions.Concat(allOtherPropositions);
-#pragma warning restore UA2001
+                #pragma warning restore UA2001
             }
             else
             {
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return SearchProposition.Fetch(context, options).OrderBy(p => p);
-#pragma warning restore UA2001
+                #pragma warning restore UA2001
             }
         }
     }

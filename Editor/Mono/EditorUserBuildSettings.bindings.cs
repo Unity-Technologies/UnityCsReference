@@ -824,7 +824,8 @@ namespace UnityEditor
         private static extern bool SwitchActiveBuildTargetAndSubTargetGuid(GUID platformGuid, BuildTarget target, int subtarget);
         internal static bool SwitchActiveBuildTargetGuid(BuildProfile profile)
         {
-            var platformGuid = profile.platformGuid;
+            var platformGuid = profile.isMultiTarget ? profile.activePlatformGuid : profile.platformGuid;
+
             // Account for derived platforms.
             // Jira https://jira.unity3d.com/browse/PLAT-9234
             // The editor triggers recompilation on a build target or subtarget change already. Both of these values
@@ -848,8 +849,7 @@ namespace UnityEditor
                 if (subtarget != -1) activeSubtarget = subtarget;
             }
 
-
-            return SwitchActiveBuildTargetAndSubTargetGuid(platformGuid, buildTargetFromGuid, activeSubtarget);
+            return SwitchActiveBuildTargetAndSubTargetGuid(profile.platformGuid, buildTargetFromGuid, activeSubtarget);
         }
 
         // The currently active build target.

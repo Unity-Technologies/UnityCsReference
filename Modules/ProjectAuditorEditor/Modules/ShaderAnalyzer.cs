@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEngine.Rendering;
@@ -48,8 +49,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             if (!isSrpBatchingCompatible && IsSrpBatchingEnabled)
             {
+                var location = new Location(context.AssetPath);
+                var dependencyNode = new ShaderDependencyNode { Location = location };
+                
                 yield return context.CreateIssue(IssueCategory.AssetIssue, k_SrpBatcherDescriptor.Id, context.Shader.name)
-                    .WithLocation(context.AssetPath);
+                    .WithDependencies(dependencyNode)
+                    .WithLocation(location);
             }
         }
 

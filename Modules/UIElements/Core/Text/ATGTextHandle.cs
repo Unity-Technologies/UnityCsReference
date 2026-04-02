@@ -135,12 +135,10 @@ namespace UnityEngine.UIElements
         {
             InitTextLib();
             var fa = m_TextElement.cachedFontAsset;
+            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
 
             if (fa == null)
-            {
-                var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
                 fa = textSettings.GetFontAsset();
-            }
 
             if (fa == null)
                 return;
@@ -152,7 +150,7 @@ namespace UnityEngine.UIElements
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
-            TextUtilities.GetTextSettingsFrom(m_TextElement).UpdateNativeTextSettings();
+            textSettings.UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
         }
 
@@ -232,9 +230,11 @@ namespace UnityEngine.UIElements
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
                 fa = GetCorrespondingBitmapFontAsset(fa, (int)Math.Round(effectiveFontSize, MidpointRounding.AwayFromZero));
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
+            #pragma warning restore CS0618
             {
-                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}");
+                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}. See <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html\">migration guidance</a>.");
                 return false;
             }
 
@@ -272,7 +272,9 @@ namespace UnityEngine.UIElements
             fa.EnsureNativeFontAssetIsCreated();
             ref var style = ref m_TextElement.computedStyle;
 
+            #pragma warning disable CS0618 // Type or member is obsolete
             if (fa == null || fa.atlasPopulationMode == AtlasPopulationMode.Static || style.unityEditorTextRenderingMode != EditorTextRenderingMode.Bitmap)
+            #pragma warning restore CS0618
                 return;
 
             var scale = GetPixelsPerPoint();

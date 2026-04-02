@@ -31,9 +31,9 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsGraphReferencingGraphAsset(GraphModel graphModel, GUID graphGuid)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return graphModel?.NodeModels != null && graphModel.NodeModels.OfType<SubgraphNodeModel>().HasAny(n => n.SubgraphReference.AssetGuid == graphGuid);
-#pragma warning restore UA2001
+            #pragma warning disable UA2001, UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return graphModel?.NodeModels != null && graphModel.NodeModels.OfType<SubgraphNodeModel>().Any(n => n.SubgraphReference.AssetGuid == graphGuid);
+#pragma warning restore UA2001, UA2006
         }
 
         /// <inheritdoc />

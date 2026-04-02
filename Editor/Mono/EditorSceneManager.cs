@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -132,6 +134,81 @@ namespace UnityEditor.SceneManagement
         public static AsyncOperation LoadSceneAsyncInPlayMode(string path, LoadSceneParameters parameters)
         {
             return LoadSceneInPlayModeInternal(path, parameters, false);
+        }
+
+        [RequiredByNativeCode]
+        static void ProcessInitializeOnEnterPlayModeAttributes(EnterPlayModeOptions options)
+        {
+            var methods = TypeCache.GetMethodsWithAttribute<InitializeOnEnterPlayModeAttribute>();
+            var parameters = new object[] { options };
+
+            foreach (var method in methods)
+            {
+                if (!ValidateInitializeOnEnterPlayModeMethod(method, out var hasParameter))
+                    continue;
+
+                try
+                {
+                    // We currently accept no arguments for [InitializeOnEnterPlayMode] methods even though it is undocumented
+                    method.Invoke(null, hasParameter ? parameters : null);
+                }
+                catch (TargetInvocationException e)
+                {
+                    Debug.LogException(e.InnerException ?? e);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
+        internal static bool ValidateInitializeOnEnterPlayModeMethod(MethodInfo methodInfo, out bool hasParameter)
+        {
+            hasParameter = false;
+            if (!methodInfo.IsStatic)
+            {
+                return false;
+            }
+
+            if (methodInfo.IsSpecialName)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is a property or event accessor method and cannot be marked with [InitializeOnEnterPlayMode]");
+                return false;
+            }
+
+            var parameters = methodInfo.GetParameters();
+
+            if (parameters.Length > 1)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' signature does not match expected method signature for [InitializeOnEnterPlayMode] wrong number of arguments");
+                return false;
+            }
+
+            if (parameters.Length == 1)
+            {
+                if (parameters[0].ParameterType != typeof(EnterPlayModeOptions))
+                {
+                    Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' signature does not match method signature for [InitializeOnEnterPlayMode] methods, expected argument {typeof(EnterPlayModeOptions).FullName} actual argument {parameters[0].ParameterType}");
+                    return false;
+                }
+
+                hasParameter = true;
+            }
+
+            if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.IsGenericType)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is in a generic type, but [InitializeOnEnterPlayMode] methods cannot be in generic types");
+                return false;
+            }
+
+            if (methodInfo.IsGenericMethod)
+            {
+                Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is a generic method, but [InitializeOnEnterPlayMode] methods cannot be generic");
+                return false;
+            }
+
+            return true;
         }
     }
 }

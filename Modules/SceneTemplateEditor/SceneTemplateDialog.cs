@@ -26,6 +26,7 @@ namespace UnityEditor.SceneTemplate
         public Func<bool, bool> onCreateCallback;
         public bool isPinned;
         public bool isReadonly;
+        public bool isDeprecated;
         public SceneTemplateAsset sceneTemplate;
 
         public string ValidPath => string.IsNullOrEmpty(assetPath) ? name : assetPath;
@@ -63,6 +64,7 @@ namespace UnityEditor.SceneTemplate
         internal const string k_SceneTemplatePathName = "scene-template-path-label";
         internal const string k_SceneTemplateDescriptionSection = "scene-template-description-section";
         internal const string k_SceneTemplateDescriptionName = "scene-template-description-label";
+        internal const string k_SceneTemplateDeprecatedHelpBoxName = "scene-template-deprecated-help-box";
         internal const string k_SceneTemplateThumbnailName = "scene-template-thumbnail-element";
         private const string k_SceneTemplateEditTemplateButtonName = "scene-template-edit-template-button";
         private const string k_SceneTemplateCreateAdditiveButtonName = "scene-template-create-additive-button";
@@ -348,9 +350,9 @@ namespace UnityEditor.SceneTemplate
             m_GridView.onPinnedChanged += OnPinnedChanged;
             m_GridView.onItemsActivated += objects =>
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sceneTemplateInfo = objects.First().userData as SceneTemplateInfo;
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 if (sceneTemplateInfo == null)
                     return;
                 if (m_SelectedButtonIndex != -1)
@@ -366,20 +368,18 @@ namespace UnityEditor.SceneTemplate
             }
             else
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_GridView.SetSelection(templateItems.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             }
 
             m_NoUserTemplateHelpBox = new HelpBox(L10n.Tr("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation."), HelpBoxMessageType.Info);
-            m_NoUserTemplateHelpBox.AddToClassList(Styles.sceneTemplateNoTemplateHelpBox);
+            m_NoUserTemplateHelpBox.AddToClassList(Styles.sceneTemplateHelpBox);
             m_NoUserTemplateHelpBox.RegisterCallback<MouseDownEvent>(e =>
             {
                 SceneTemplateUtils.OpenDocumentationUrl();
             });
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_NoUserTemplateHelpBox.style.display = m_SceneTemplateInfos.All(t => t.IsInMemoryScene) ? DisplayStyle.Flex : DisplayStyle.None;
-#pragma warning restore UA2001
+            m_NoUserTemplateHelpBox.style.display = m_SceneTemplateInfos.TrueForAll(t => t.IsInMemoryScene) ? DisplayStyle.Flex : DisplayStyle.None;
             m_GridView.Insert(2, m_NoUserTemplateHelpBox);
 
             EditorApplication.delayCall += () =>
@@ -489,6 +489,20 @@ namespace UnityEditor.SceneTemplate
                 sceneDescriptionLabel.name = k_SceneTemplateDescriptionName;
                 descriptionSection.Add(sceneDescriptionLabel);
             }
+
+            // Deprecation Warning
+            var deprecationHelpBox =
+                new HelpBox(
+                    L10n.Tr(
+                        "The Built-In Render Pipeline is deprecated. Migrate to the Universal Render Pipeline instead."),
+                    HelpBoxMessageType.Info);
+            deprecationHelpBox.AddToClassList(Styles.sceneTemplateHelpBox);
+            deprecationHelpBox.name = k_SceneTemplateDeprecatedHelpBoxName;
+            deprecationHelpBox.RegisterCallback<MouseDownEvent>(e =>
+            {
+                SceneTemplateUtils.OpenDeprecationDocumentationUrl();
+            });
+            descriptionSection.Add(deprecationHelpBox);
         }
 
         private void UpdateTemplateDescriptionUI(SceneTemplateInfo newSceneTemplateInfo)
@@ -515,6 +529,11 @@ namespace UnityEditor.SceneTemplate
                 sceneTemplateDescriptionLabel.text = newSceneTemplateInfo.description;
                 sceneTemplateDescriptionSection.visible = !string.IsNullOrEmpty(newSceneTemplateInfo.description);
             }
+
+            var sceneTemplateDeprecatedHelpBox = rootVisualElement.Q<HelpBox>(k_SceneTemplateDeprecatedHelpBoxName);
+            if (sceneTemplateDeprecatedHelpBox != null && newSceneTemplateInfo != null)
+                sceneTemplateDeprecatedHelpBox.visible = newSceneTemplateInfo.isDeprecated;
+
 
             // Thumbnail
             m_PreviewArea?.UpdatePreview(newSceneTemplateInfo?.thumbnail, newSceneTemplateInfo?.badge);

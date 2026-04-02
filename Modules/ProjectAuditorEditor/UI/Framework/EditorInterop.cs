@@ -107,17 +107,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static void FocusOnAssetInProjectWindow(Location location)
         {
-            // Note that LoadMainAssetAtPath might fails, for example if there is a compile error in the script associated with the asset.
-            //
-            // Instead, we should use GetMainAssetInstanceID and FrameObjectInProjectWindow internal methods:
-            //    var instanceId = AssetDatabase.GetMainAssetInstanceID(location.Path);
-            //    ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+            var entityId = AssetDatabase.GetMainAssetEntityId(location.Path);
+            Selection.activeEntityId = entityId;
+            ProjectWindowUtil.FrameObjectInProjectWindow(entityId, true);
+        }
 
-            var obj = AssetDatabase.LoadMainAssetAtPath(location.Path);
-            if (obj != null)
-            {
-                ProjectWindowUtil.ShowCreatedAsset(obj);
-            }
+        public static void FocusOnAssetInHierarchyWindow(Location location)
+        {
+            var entityId = AssetDatabase.GetMainAssetEntityId(location.Path);
+            Selection.activeEntityId = entityId;
+            EditorGUIUtility.PingObject(entityId);
         }
 
         public static void OpenProjectAuditorPreferences()

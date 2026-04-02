@@ -15,13 +15,14 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = TabView.ussClassName + "__drag-preview";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public TabDragPreview()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             pickingMode = PickingMode.Ignore;
         }
@@ -36,9 +37,16 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = TabView.ussClassName + "__drag-location-preview";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         public static readonly string visualUssClassName = ussClassName + "__visual";
+        internal static readonly UniqueStyleString visualUssClassNameUnique = new(visualUssClassName);
+
         public static readonly string verticalUssClassName = ussClassName + "__vertical";
+        internal static readonly UniqueStyleString verticalUssClassNameUnique = new(verticalUssClassName);
+
         public static readonly string horizontalUssClassName = ussClassName + "__horizontal";
+        internal static readonly UniqueStyleString horizontalUssClassNameUnique = new(horizontalUssClassName);
 
         VisualElement m_Preview;
 
@@ -49,11 +57,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         public TabDragLocationPreview()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             pickingMode = PickingMode.Ignore;
 
             m_Preview = new VisualElement();
-            m_Preview.AddToClassList(visualUssClassName);
+            m_Preview.AddToClassList(visualUssClassNameUnique);
             m_Preview.pickingMode = PickingMode.Ignore;
             Add(m_Preview);
         }
@@ -167,7 +175,7 @@ namespace UnityEngine.UIElements
                 if (m_Moving == value)
                     return;
                 m_Moving = value;
-                m_TabToMove.EnableInClassList(Tab.draggingUssClassName, moving);
+                m_TabToMove.EnableInClassList(Tab.draggingUssClassNameUnique, moving);
             }
         }
 
@@ -381,11 +389,9 @@ namespace UnityEngine.UIElements
             m_LastPos = pos;
 
             m_PreviewElement = new TabDragPreview();
-            m_LocationPreviewElement = new TabDragLocationPreview
-            {
-                classList = { isVertical ? TabDragLocationPreview.verticalUssClassName :
-                    TabDragLocationPreview.horizontalUssClassName }
-            };
+            m_LocationPreviewElement = new TabDragLocationPreview()
+            .WithClassList(isVertical ? TabDragLocationPreview.verticalUssClassNameUnique :
+                    TabDragLocationPreview.horizontalUssClassNameUnique);
             m_Header.hierarchy.Add(m_PreviewElement);
             m_Header.Add(m_LocationPreviewElement);
 

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,6 +15,7 @@ using ScriptCompilationBuildProgram.Data;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal.APIUpdating;
 using Bee.BinLog;
+using Unity.Collections;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -192,12 +192,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var updateLines = updateTxtFile.ReadAllLines();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    updates = Array.ConvertAll(updateLines, ParseLineIntoUpdate);
                     if (updates.Contains(null))
-#pragma warning restore UA2001
                         return ErrorResult($"Script updater for {nodeOutputFile} emitted an invalid line to {updateTxtFile}");
 
                     if (containsUpdatableCompilerMessage == CanUpdateAny.Certainly && updates.Length == 0)

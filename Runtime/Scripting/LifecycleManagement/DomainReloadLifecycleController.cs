@@ -7,14 +7,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using Unity.Scripting;
 using Unity.Scripting.LifecycleManagement;
-using UnityEngine.Assemblies;
 using UnityEngine.Scripting;
 
 
 namespace UnityEngine
 {
     /// <summary>
-    /// DomainReloadLifecycleController represents the LifecycleManagement integration for Mono Unity
+    /// DomainReloadLifecycleController represents the LifecycleManagement integration for Mono and IL2CPP
     /// It is the alternative implementation of the LifecycleManagement responsibilities of AssemblyLoader:
     ///     - ensure a LifecycleController is instantiated
     ///     - provide complete set of registered assemblies
@@ -42,6 +41,7 @@ namespace UnityEngine
 
             public void Log(string message) => Debug.Log(message);
             public void LogError(string message) => Debug.LogError(message);
+            public void LogException(Exception exception) => Debug.LogException(exception);
             public void LogFormat(string format, params object[] args) => Debug.LogFormat(format, args);
             public void Assert(bool condition) => Debug.Assert(condition);
             public void AssertMsg(bool condition, string message) => Debug.Assert(condition, message);
@@ -64,38 +64,81 @@ namespace UnityEngine
         [NoAutoStaticsCleanup]
         private static AssemblyLoadedScopeIl2Cpp _currentAssemblyLoadedScope = null;
 
+        [NoAutoStaticsCleanup]
+        private static DependencyOrderedNativeCallbackProvider _nativeCallbackProvider = null;
+
         [RequiredByNativeCode]
-        static void Internal_EnterAssembliesLoadedLifecycleScopes_PreDeserialization()
+        static void Internal_InitializeLifecycleController()
         {
             try
             {
                 LifecycleController.InitializeForIl2Cpp(new ScriptingCoreDebugForIl2AndMonoCpp());
 
-                _currentAssemblyLoadedScope = new AssemblyLoadedScopeIl2Cpp(CurrentAssemblies.GetLoadedAssemblies());
-                LifecycleController.Instance.EnterScope(_currentAssemblyLoadedScope);
-
-                LifecycleController.Instance.EnterScope<CodeLoadedScope>();
+                _nativeCallbackProvider = new DependencyOrderedNativeCallbackProvider();
+                LifecycleController.Instance.SetDependency_NativeCallbackProvider(_nativeCallbackProvider);
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to setup LifecycleManagement and enter code reload scopes (pre deserialization) due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to initialize LifecycleManagement due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }
 
         [RequiredByNativeCode]
-        static void Internal_OnceCodeReloadSerializationDone()
+        static void Internal_EnterAssemblyLoadedScope(Assembly[] loadedAssemblies)
+        {
+            try
+            {
+                _currentAssemblyLoadedScope = new AssemblyLoadedScopeIl2Cpp(loadedAssemblies);
+                LifecycleController.Instance.EnterScope(_currentAssemblyLoadedScope);
+            }
+            catch (Exception e)
+            {
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to Enter AssemblyLoaded scopes, due to exception {e.ToString()}", true);
+                Debug.LogException(e);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_EnterCodeLoadedScope()
+        {
+            try
+            {
+                LifecycleController.Instance.EnterScope<CodeLoadedScope>();
+            }
+            catch (Exception e)
+            {
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to enter code loaded scope due to exception {e.ToString()}", true);
+                Debug.LogException(e);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_ExitCodeLoadedScope()
         {
             try
             {
                 LifecycleController.Instance.ExitScope<CodeLoadedScope>();
-
-                LifecycleController.Instance.ExitScope(_currentAssemblyLoadedScope);
-                _currentAssemblyLoadedScope = null;
             }
             catch (Exception e)
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code reload scopes (post serialization) and shut down the Lifecycle Management core due to exception {e.ToString()}", true);
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit code loaded scope, due to exception {e.ToString()}", true);
+                Debug.LogException(e);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_ExitAssemblyLoadedScope()
+        {
+            try
+            {
+                LifecycleController.Instance.ExitScope(_currentAssemblyLoadedScope);
+                _currentAssemblyLoadedScope = null;
+                _nativeCallbackProvider = null;
+            }
+            catch (Exception e)
+            {
+                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit assembly loaded scope, due to exception {e.ToString()}", true);
                 Debug.LogException(e);
             }
         }

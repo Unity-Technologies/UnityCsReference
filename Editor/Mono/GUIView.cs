@@ -97,7 +97,7 @@ namespace UnityEditor
                     }
                 }
 
-                Internal_Init(m_DepthBufferBits, m_AntiAliasing, isPlayModeView, isVsyncEnabled);
+                Internal_Init(ref nativeHandle, m_DepthBufferBits, m_AntiAliasing, isPlayModeView, isVsyncEnabled);
             }
             catch
             {
@@ -107,9 +107,8 @@ namespace UnityEditor
 
             if (!win)
             {
-                // Tell the native ContainerWindow we were attached to that we
-                // are no longer attached to it.
-                Internal_UnsetWindow(oldWindow);
+                // Tell the native GUIView that it no longer has a window attached.
+                Internal_UnsetWindow();
             }
             else
             {

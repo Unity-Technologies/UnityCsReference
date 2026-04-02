@@ -16,7 +16,10 @@ using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 using System.IO;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Pool;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.Shader.Tests")]
 namespace UnityEditor
 {
     [CustomEditor(typeof(Material))]
@@ -31,6 +34,13 @@ namespace UnityEditor
             public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
             public static string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
+
+            public static string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/");
+            public static string notSupported = L10n.Tr("\"Not supported/\"");
+            public static string failedToCompile = L10n.Tr("Failed to compile/");
+
+            public static string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.");
+            public static string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.");
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
@@ -236,14 +246,15 @@ namespace UnityEditor
 
             public void OnEnable()
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)SessionState.GetInt("PreviewReflectionProbe", 0))) as ReflectionProbe;
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+                EntityId probeEntityId = SessionState.GetEntityId("PreviewReflectionProbe", EntityId.None);
+                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(probeEntityId) as ReflectionProbe;
             }
 
             public void OnDisable()
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                SessionState.SetInt("PreviewReflectionProbe", (int)EntityId.ToULong(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None));
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
+                SessionState.SetEntityId("PreviewReflectionProbe", m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None);
             }
 
             public override void OnGUI(Rect rc)
@@ -519,6 +530,154 @@ namespace UnityEditor
             return clicked;
         }
 
+        internal static class ShaderDropdownDataBuilder
+        {
+            internal enum Category
+            {
+                Normal = 0,
+                Legacy = 1,
+                NotSupported = 2,
+                FailedToCompile = 3,
+                BuiltInDeprecated = 4,
+                Separator = 5,
+            }
+
+            internal readonly struct ShaderSelectionEntry
+            {
+                public readonly Category category;
+                public readonly string fullShaderName;
+                public readonly string menuPath;
+                public readonly string prefix;
+
+                public ShaderSelectionEntry(Category category, string fullShaderName, string menuPath, string prefix)
+                {
+                    this.category = category;
+                    this.fullShaderName = fullShaderName;
+                    this.menuPath = menuPath;
+                    this.prefix = prefix;
+                }
+            }
+
+            private static readonly Dictionary<string, bool> s_IsBuiltInDeprecatedByName = new();
+
+            [InitializeOnLoadMethod]
+            public static void ClearShaderSelectionEntryCache()
+            {
+                Action action = () => Clear();
+                EditorApplication.projectChanged += action;
+                AssemblyReloadEvents.afterAssemblyReload += Clear;
+                RenderPipelineManager.activeRenderPipelineTypeChanged += action;
+            }
+
+            internal static void Clear()
+            {
+                s_IsBuiltInDeprecatedByName.Clear();
+            }
+
+            private static bool IsBuiltInByPath(string path)
+            {
+                return !(path.StartsWith("Assets") || path.StartsWith("Packages"));
+            }
+
+            // White list of shaders that are still included in the built-in RP and should not be considered deprecated
+            // as they continue working in URP and HDRP
+            private static readonly List<string> s_WhiteListBuiltInShaders = new List<string>()
+            {
+                "GUI/Text Shader",
+                "Skybox/6 Sided",
+                "Skybox/Cubemap",
+                "Skybox/Panoramic",
+                "Skybox/Procedural",
+                "UI/Default",
+                "UI/Default Font",
+                "UI/DefaultETC1",
+                "UI/Unlit/Detail",
+                "UI/Unlit/Text",
+                "UI/Unlit/Text Detail",
+                "UI/Unlit/Transparent",
+            };
+
+            internal static bool IsBuiltInDeprecated(string shaderName)
+            {
+                if (s_IsBuiltInDeprecatedByName.TryGetValue(shaderName, out var v))
+                    return v;
+
+                bool isBuiltInDeprecated = false;
+
+                if (s_WhiteListBuiltInShaders.Contains(shaderName))
+                {
+                    isBuiltInDeprecated = false;
+                }
+                else
+                {
+                    var sh = Shader.Find(shaderName);
+                    if (sh != null)
+                    {
+                        var path = AssetDatabase.GetAssetPath(sh);
+                        isBuiltInDeprecated = string.IsNullOrEmpty(path) || IsBuiltInByPath(path);
+                    }
+                }
+
+                s_IsBuiltInDeprecatedByName[shaderName] = isBuiltInDeprecated;
+                return isBuiltInDeprecated;
+            }
+
+            internal static IEnumerable<ShaderSelectionEntry> EnumerateShaders(bool usingSRP)
+            {
+                using (ListPool<string>.Get(out var normal))
+                using (ListPool<string>.Get(out var unnested))
+                using (ListPool<string>.Get(out var builtInDeprecated))
+                using (ListPool<string>.Get(out var legacy))
+                using (ListPool<string>.Get(out var notSupported))
+                using (ListPool<string>.Get(out var failed))
+                {
+                    var shaders = ShaderUtil.GetAllShaderInfo();
+                    foreach (var shader in shaders)
+                    {
+                        var shaderName = shader.name;
+                        if (shaderName.StartsWith("Deprecated") || shaderName.StartsWith("Hidden"))
+                            continue;
+
+                        if (usingSRP && IsBuiltInDeprecated(shaderName)) { builtInDeprecated.Add(shaderName); continue; }
+
+                        if (shader.hasErrors) { failed.Add(shaderName); continue; }
+                        if (!shader.supported) { notSupported.Add(shaderName); continue; }
+                        if (shaderName.StartsWith("Legacy Shaders/")) { legacy.Add(shaderName); continue; }
+
+                        if (!shaderName.Contains("/")) { unnested.Add(shaderName); continue; }
+
+                        normal.Add(shader.name);
+                    }
+
+                    normal.Sort();
+                    foreach (var s in normal)
+                        yield return new ShaderSelectionEntry(Category.Normal, s, s, "");
+
+                    unnested.Sort();
+                    foreach (var s in unnested)
+                        yield return new ShaderSelectionEntry(Category.Normal, s, s, "");
+
+                    yield return new ShaderSelectionEntry(Category.Separator, "", "", "");
+
+                    builtInDeprecated.Sort();
+                    foreach (var s in builtInDeprecated)
+                        yield return new ShaderSelectionEntry(Category.BuiltInDeprecated, s, Styles.builtInDeprecated + s, Styles.builtInDeprecated);
+
+                    legacy.Sort();
+                    foreach (var s in legacy)
+                        yield return new ShaderSelectionEntry(Category.Legacy, s, s, "");
+
+                    notSupported.Sort();
+                    foreach (var s in notSupported)
+                        yield return new ShaderSelectionEntry(Category.NotSupported, s, Styles.notSupported + s, Styles.notSupported);
+
+                    failed.Sort();
+                    foreach (var s in failed)
+                        yield return new ShaderSelectionEntry(Category.FailedToCompile, s, Styles.failedToCompile + s, Styles.failedToCompile);
+                }
+            }
+        }
+
         private class ShaderSelectionDropdown : AdvancedDropdown
         {
             Action<object> m_OnSelectedShaderPopup;
@@ -554,56 +713,46 @@ namespace UnityEditor
                     m_SearchableElements = new List<AdvancedDropdownItem>();
                     var root = new AdvancedDropdownItem("Shaders");
 
-                    var shaders = ShaderUtil.GetAllShaderInfo();
-                    var shaderList = new List<string>();
-                    var unnestedList = new List<string>();
-                    var legacyList = new List<string>();
-                    var notSupportedList = new List<string>();
-                    var failedCompilationList = new List<string>();
-
-                    foreach (var shader in shaders)
+                    bool usingSRP = GraphicsSettings.isScriptableRenderPipelineEnabled;
+                    if (usingSRP)
                     {
-                        if (shader.name.StartsWith("Deprecated") || shader.name.StartsWith("Hidden"))
+                        bool firstBuiltInProcessed = false;
+                        foreach (var e in ShaderDropdownDataBuilder.EnumerateShaders(usingSRP))
                         {
-                            continue;
+                            if (e.category == ShaderDropdownDataBuilder.Category.Separator)
+                            {
+                                root.AddSeparator();
+                                continue;
+                            }
+
+                            if (!firstBuiltInProcessed)
+                            {
+                                if (e.category == ShaderDropdownDataBuilder.Category.BuiltInDeprecated)
+                                {
+                                    firstBuiltInProcessed = true;
+                                    var builtInNode = FindOrCreateChild(root, Styles.builtInDeprecated);
+                                    builtInNode.AddHelpBox(Styles.warningUsingSRPBuiltinDeprecated, MessageType.Warning);
+                                }
+                            }
+
+                            AddShaderToMenu(e.prefix, root, e.fullShaderName, e.menuPath);
                         }
-                        if (shader.hasErrors)
-                        {
-                            failedCompilationList.Add(shader.name);
-                            continue;
-                        }
-                        if (!shader.supported)
-                        {
-                            notSupportedList.Add(shader.name);
-                            continue;
-                        }
-                        if (shader.name.StartsWith("Legacy Shaders/"))
-                        {
-                            legacyList.Add(shader.name);
-                            continue;
-                        }
-                        if (!shader.name.Contains('/'))
-                        {
-                            unnestedList.Add(shader.name);
-                            continue;
-                        }
-                        shaderList.Add(shader.name);
                     }
+                    else
+                    {
+                        root.AddHelpBox(Styles.infoBuiltInBuiltinDeprecated, MessageType.Info);
 
-                    shaderList.Sort();
-                    unnestedList.Sort();
-                    shaderList.AddRange(unnestedList);
+                        foreach (var e in ShaderDropdownDataBuilder.EnumerateShaders(usingSRP))
+                        {
+                            if (e.category == ShaderDropdownDataBuilder.Category.Separator)
+                            {
+                                root.AddSeparator();
+                                continue;
+                            }
 
-                    legacyList.Sort();
-                    notSupportedList.Sort();
-                    failedCompilationList.Sort();
-
-                    shaderList.ForEach(s => AddShaderToMenu("", root, s, s));
-                    if (legacyList.Count > 0 || notSupportedList.Count > 0 || failedCompilationList.Count > 0)
-                        root.AddSeparator();
-                    legacyList.ForEach(s => AddShaderToMenu("", root, s, s));
-                    notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", root, s, "Not supported/" + s));
-                    failedCompilationList.ForEach(s => AddShaderToMenu("Failed to compile/", root, s, "Failed to compile/" + s));
+                            AddShaderToMenu(e.prefix, root, e.fullShaderName, e.menuPath);
+                        }
+                    }
 
                     return root;
                 }
@@ -918,7 +1067,10 @@ namespace UnityEditor
 
             if (isVisible && m_Shader != null && !HasMultipleMixedShaderValues())
             {
-                // Show Material properties
+                // Dynamically adjust padding for specific elements
+                EditorGUILayout.BeginVertical();
+                GUILayout.Space(-4); // Reduce the top padding by 4px
+
                 if (PropertiesGUI())
                 {
                     foreach (Material material in targets)
@@ -928,6 +1080,8 @@ namespace UnityEditor
                     }
                     PropertiesChanged();
                 }
+
+                EditorGUILayout.EndVertical();
             }
 
             DetectTextureStackValidationIssues();
@@ -2209,7 +2363,7 @@ namespace UnityEditor
 
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
-            var imguicontainer = UIElementsIMGUIUtility.GetCurrentIMGUIContainer();
+            var imguicontainer = IMGUIContainer.GetCurrentIMGUIContainer();
             if (imguicontainer != null)
             {
                 var editorElement = imguicontainer.GetFirstAncestorOfType<IEditorElement>();

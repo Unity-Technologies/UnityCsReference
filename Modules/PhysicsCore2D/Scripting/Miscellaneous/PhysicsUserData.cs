@@ -21,8 +21,15 @@ namespace Unity.U2D.Physics
     {
         /// <summary>
         /// A custom Unity object.
+        /// To get the <see cref="EntityId"/> of the object, use <see cref="PhysicsUserData.objectValueId"/>.
         /// </summary>
         public UnityEngine.Object objectValue { readonly get => PhysicsGlobal_GetObject(m_EntityId); set => m_EntityId = value != null ? value.GetEntityId() : EntityId.None; }
+
+        /// <summary>
+        /// The EntityId of a Unity object.
+        /// This is the object referred to with <see cref="PhysicsUserData.objectValue"/>
+        /// </summary>
+        public readonly EntityId objectValueId => m_EntityId;
 
         /// <summary>
         /// A custom 64-bit <see cref="PhysicsMask"/>.

@@ -103,7 +103,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     extension = GetExtensionMethodOf(currentDomain, s_CandidateTypes, filterMethods, keySelector);
                 }
-                while (extension == null && s_CandidateTypes.HasAny());
+                while (extension == null && s_CandidateTypes.Count > 0);
 
                 currentDomain = currentDomain.BaseType;
             }
@@ -122,7 +122,7 @@ namespace Unity.GraphToolkit.Editor
             Func<MethodInfo, bool> filterMethods,
             Func<MethodInfo, Type> keySelector)
         {
-            if (candidateTypes == null || !candidateTypes.HasAny())
+            if (candidateTypes == null || candidateTypes.Count == 0)
                 return null;
 
             var targetType = candidateTypes.Dequeue();

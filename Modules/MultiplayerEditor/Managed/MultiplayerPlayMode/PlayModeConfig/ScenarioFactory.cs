@@ -9,6 +9,8 @@ using System.Text.RegularExpressions;
 using Unity.PlayMode.Editor;
 using UnityEngine.Multiplayer.Internal;
 using UnityEditor.Multiplayer.Internal;
+using Unity.Multiplayer;
+using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -52,9 +54,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        public static Scenario CreateScenario(string name, IEnumerable<IInstanceItem> instanceItems)
+        public static Scenario CreateScenario(OrchestratedScenario owner, IEnumerable<IInstanceItem> instanceItems)
         {
-            var scenario = Scenario.Create(name);
+            var scenario = Scenario.Create(owner != null ? owner.name : "");
 
             CategorizeInstances(instanceItems, out var serverDescriptList, out var clientDescriptList);
 
@@ -64,7 +66,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // This will ensure the server instance is the first to be added in the scenario.
             if (serverDescriptList.Count > 0)
             {
-                var serverInstance = ConnectOrCreateInstance(serverDescriptList[0]);
+                var serverInstance = ConnectOrCreateInstance(serverDescriptList[0], owner);
                 scenario.AddInstance(serverInstance);
             }
 
@@ -72,13 +74,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // and configure the connection data for when they run.
             foreach (var clientDescript in clientDescriptList)
             {
-                var clientInstance = ConnectOrCreateInstance(clientDescript);
+                var clientInstance = ConnectOrCreateInstance(clientDescript, owner);
                 scenario.AddInstance(clientInstance);
             }
             return scenario;
         }
 
-        private static Instance ConnectOrCreateInstance(IInstanceItem instanceItem)
+        private static Instance ConnectOrCreateInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
         {
             // If an Existing Instance is Actively Free Running, we connect that instance to this new Scenario.
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config &&
@@ -96,18 +98,49 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             // Else, create and rebuild the instance from the description as per usual.
-            return CreateInstance(instanceItem);
+            return CreateInstance(instanceItem, owner);
         }
 
-        private static Instance CreateInstance(IInstanceItem instanceItem)
+        private static Instance CreateInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
         {
-            var controller = instanceItem.CreateController();
-            var instance = Instance.Create(instanceItem, controller);
-            var executionGraph = instance.GetExecutionGraph();
+            var controller = instanceItem.CreateController(owner);
+            var decorators = CreateDecoratorsForInstance(instanceItem, owner);
+            var graphBuilder = new ExecutionGraphBuilder();
 
-            controller.SetupExecutionGraph(executionGraph);
+            controller.SetupExecutionGraph(graphBuilder);
+            foreach (var decorator in decorators)
+            {
+                decorator.SetupExecutionGraph(graphBuilder);
+            }
 
-            return instance;
+            var executionGraph = graphBuilder.Build();
+            return Instance.Create(instanceItem, controller, decorators, executionGraph);
+        }
+
+        private static List<InstanceControllerDecorator> CreateDecoratorsForInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
+        {
+            var decorators = InstanceExtensionManager.GetDecoratorTypes(instanceItem.GetInstanceType());
+            var decoratorList = new List<InstanceControllerDecorator>();
+
+            foreach (var decoratorType in decorators)
+            {
+                if (!InstanceControllerDecorator.IsDecoratorWithSettings(decoratorType))
+                {
+                    decoratorList.Add((InstanceControllerDecorator)InstanceController.CreateInstance(decoratorType, instanceItem, owner));
+                }
+                else
+                {
+                    if (!instanceItem.HasDecorator(decoratorType))
+                    {
+                        Debug.LogError($"Instance item '{instanceItem.GetName()}' of type '{instanceItem.GetInstanceType().Name}' is missing a required decorator of type '{decoratorType.Name}'. This decorator will be generated with default settings.");
+                        instanceItem.GenerateMissingDecoratorsAndRemoveDuplicates([decoratorType]);
+                    }
+
+                    decoratorList.Add(instanceItem.GetDecoratorItem(decoratorType).CreateController(instanceItem, owner));
+                }
+            }
+
+            return decoratorList;
         }
 
         internal static string GenerateBuildPath(BuildProfile profile)

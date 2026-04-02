@@ -458,6 +458,9 @@ internal class SerializedObjectBindingContext
             case SerializedPropertyType.EntityId:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetEntityIdPropertyValue, SerializedPropertyHelper.SetEntityIdPropertyValue, SerializedPropertyHelper.ValueEquals);
                 break;
+            case SerializedPropertyType.LoadableReference:
+                DefaultBind(element, prop, SerializedPropertyHelper.GetLoadableReferencePropertyValue, SerializedPropertyHelper.SetLoadableReferencePropertyValue, SerializedPropertyHelper.ValueEquals);
+                break;
             case SerializedPropertyType.ExposedReference:
                 // nothing to bind here
                 break;
@@ -783,6 +786,35 @@ internal class SerializedObjectBindingContext
             return removed;
         }
 
+        public bool Remove(int propertyPathHash, object cookie, Action<object, SerializedProperty> callback, out bool wasLastCallback)
+        {
+            bool removed = false;
+
+            wasLastCallback = false;
+            if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
+            {
+                for (int i = values.Count - 1; i >= 0; i--)
+                {
+                    var t = values[i];
+
+                    if (ReferenceEquals(t.cookie, cookie) && t.onChangeCallback == callback)
+                    {
+                        values.RemoveAt(i);
+                        removed = true;
+                        break; // Only remove the specific callback
+                    }
+                }
+
+                wasLastCallback = values.Count == 0;
+                if (wasLastCallback)
+                {
+                    m_TrackedValues.Remove(propertyPathHash);
+                }
+            }
+
+            return removed;
+        }
+
         public void SyncUpdateCallbacks(int hash)
         {
             if (m_TrackedValues.TryGetValue(hash, out var values))
@@ -831,6 +863,15 @@ internal class SerializedObjectBindingContext
     {
         m_ValueTracker.Remove(propertyPathHash, cookie);
         changeTracker.RemovePropertyTracking(propertyPathHash);
+    }
+
+    public void UnregisterSerializedPropertyChangeCallback(object cookie, int propertyPathHash, Action<object, SerializedProperty> callback)
+    {
+        m_ValueTracker.Remove(propertyPathHash, cookie, callback, out var wasLastCallback);
+        if (wasLastCallback)
+        {
+            changeTracker.RemovePropertyTracking(propertyPathHash);
+        }
     }
 
     public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)

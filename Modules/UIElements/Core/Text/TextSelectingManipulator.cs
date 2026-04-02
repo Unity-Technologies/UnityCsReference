@@ -104,7 +104,10 @@ namespace UnityEngine.UIElements
             }
             else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || isClicking)
             {
+                bool wasCached = m_TextElement.uitkTextHandle.IsCachedPermanent;
                 m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+                if (!wasCached)
+                    m_SelectingUtilities.SyncStateToNative();
             }
 
             switch (evt)

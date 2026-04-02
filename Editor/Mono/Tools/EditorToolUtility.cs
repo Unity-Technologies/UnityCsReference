@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Collections;
@@ -13,31 +14,207 @@ using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    interface ISupportsToolsOverlays {}
+    
     static class EditorToolUtility
     {
         static readonly Regex k_NewLine = new Regex(@"\r|\n", RegexOptions.Compiled | RegexOptions.Multiline);
         static readonly Regex k_TrailingForwardSlashOrWhiteSpace = new Regex(@"[/|\s]*\Z", RegexOptions.Compiled);
 
-        static EditorToolCache s_ToolCache = new EditorToolCache(typeof(EditorToolAttribute));
-        static EditorToolCache s_ContextCache = new EditorToolCache(typeof(EditorToolContextAttribute));
-        static Dictionary<Type, GUIContent> s_ToolbarIcons = new Dictionary<Type, GUIContent>();
+        static Dictionary<Type, EditorToolCache> s_ToolCache = new();
+        static Dictionary<Type, EditorToolCache> s_ContextCache = new();
+        static Dictionary<Type, GUIContent> s_ToolbarIcons = new();
+        static Dictionary<Type, ToolOwnerDefinition> s_ToolOwnerDefinitions = new();
+        
+        internal readonly struct ToolOwnerDefinition
+        {
+            public Type toolOwnerType { get; }
+            public Type defaultContext { get; }
+
+            public ToolOwnerDefinition(Type toolOwnerType, EditorToolOwnerAttribute attribute)
+            {
+                this.toolOwnerType = toolOwnerType;
+                defaultContext = attribute.defaultContext ?? typeof(GameObjectToolContext);
+            }
+        }
+
+        static EditorToolCache GetContextCache(Type toolOwner)
+        {
+            if (!IsRegisteredToolOwner(toolOwner))
+                return null;
+            
+            if (s_ContextCache == null)
+                s_ContextCache = new();
+
+            if (!s_ContextCache.TryGetValue(toolOwner, out var contextCache))
+            {
+                contextCache = new EditorToolCache(typeof(EditorToolContextAttribute), toolOwner);
+                s_ContextCache.Add(toolOwner, contextCache);
+            }
+
+            return contextCache;
+        }
+        
+        static EditorToolCache GetToolCache(Type toolOwner)
+        {
+            if (!IsRegisteredToolOwner(toolOwner))
+                return null;
+            
+            if (s_ToolCache == null)
+                s_ToolCache = new();
+            
+            if (!s_ToolCache.TryGetValue(toolOwner, out var toolCache))
+            {
+                toolCache = new EditorToolCache(typeof(EditorToolAttribute), toolOwner);
+                s_ToolCache.Add(toolOwner, toolCache);
+            }
+
+            return toolCache;
+        }
+
+        internal static bool GetToolOwnerDefinition(Type toolOwner, out ToolOwnerDefinition toolOwnerDefinition)
+        {
+            toolOwnerDefinition = default;
+            
+            if (s_ToolOwnerDefinitions == null || s_ToolOwnerDefinitions.Count == 0)
+                InitializeToolOwnerDefinitions();
+
+            if (s_ToolOwnerDefinitions == null)
+                return false;
+            
+            return s_ToolOwnerDefinitions.TryGetValue(toolOwner, out toolOwnerDefinition);
+        }
+
+        internal static bool IsRegisteredToolOwner(Type type)
+        {
+            return GetToolOwnerDefinition(type, out _);
+        }
+
+        static bool CreateDefinitionForOwner(Type toolOwner, out ToolOwnerDefinition toolOwnerDefinition)
+        {
+            toolOwnerDefinition = default;
+            var attribs = toolOwner.GetCustomAttributes(typeof(EditorToolOwnerAttribute), false);
+            for (int i = 0; i < attribs.Length; ++i)
+            {
+                if (attribs[i] is EditorToolOwnerAttribute toolOwnerAttrib)
+                {
+                    toolOwnerDefinition = new ToolOwnerDefinition(toolOwner, toolOwnerAttrib);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [InitializeOnLoadMethod]
+        static void InitializeToolOwnerDefinitions()
+        {
+            if (s_ToolOwnerDefinitions == null)
+                s_ToolOwnerDefinitions = new();
+            else 
+                s_ToolOwnerDefinitions.Clear();
+           
+            var typesWithAttrib = TypeCache.GetTypesWithAttribute<EditorToolOwnerAttribute>();
+            foreach (var toolOwnerType in typesWithAttrib)
+            {
+                if (toolOwnerType != typeof(SceneView))
+                {
+                    if (!typeof(EditorWindow).IsAssignableFrom(toolOwnerType) || toolOwnerType.IsAbstract)
+                    {
+                        Debug.LogError($"Tool owner type {toolOwnerType} must be assignable to EditorWindow and must not be abstract.");
+                        continue;
+                    }
+
+                    var ownerAttributes = toolOwnerType.GetCustomAttributes(typeof(EditorToolOwnerAttribute), true);
+                    var attributeFound = false;
+                    var attributeInvalid = false;
+                    foreach (var ownerAttribute in ownerAttributes)
+                    {
+                        if (ownerAttribute is EditorToolOwnerAttribute attrib)
+                        {
+                            attributeFound = true;
+                            if (attrib.defaultContext == null ||
+                                attrib.defaultContext.IsAbstract ||
+                                attrib.defaultContext == typeof(GameObjectToolContext) ||
+                                !typeof(EditorToolContext).IsAssignableFrom(attrib.defaultContext))
+                            {
+                                Debug.LogError($"Tool owner type {toolOwnerType} has an invalid type set as the defaultContext in its EditorToolsOwner attribute." +
+                                               "The defaultContext must be a non-abstract EditorToolContext, not GameObjectToolContext, and not null.");
+                                attributeInvalid = true;
+                            }
+                            // check that the default context targets this owner
+                            else if (!IsDefaultContextTargetingOwner(attrib.defaultContext, toolOwnerType))
+                            {
+                                Debug.LogError($"Tool owner type {toolOwnerType} has a defaultContext ({attrib.defaultContext}) " +
+                                               $"that does not target it. The defaultContext must have an [EditorToolContext] attribute " +
+                                               $"with targetOwner set to {toolOwnerType}.");
+                                attributeInvalid = true;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!attributeFound || attributeInvalid)
+                        continue;
+                }
+
+                if (CreateDefinitionForOwner(toolOwnerType, out var ownerDef))
+                    s_ToolOwnerDefinitions.Add(toolOwnerType, ownerDef);
+                else
+                    Debug.LogError($"Could not create tool owner definition for {toolOwnerType}." );
+            }
+        }
+        
+        internal static IEnumerable<ToolOwnerDefinition> allToolOwnerDefinitions
+        {
+            get
+            {
+                if (s_ToolOwnerDefinitions == null || s_ToolOwnerDefinitions.Count == 0)
+                    InitializeToolOwnerDefinitions();
+
+                return s_ToolOwnerDefinitions.Values;
+            }
+        }
         
         internal static IEnumerable<EditorTypeAssociation> availableGlobalToolContexts
         {
-            get => s_ContextCache.GetEditorsForTargetType(null);
-        }
-
-        internal static IEnumerable<EditorTypeAssociation> registeredToolContexts
-        {
-            get => s_ContextCache.availableEditorTypeAssociations;
+            get => GetContextCache(typeof(SceneView)).GetEditorsForTargetType(null);
         }
         
-        internal static IEnumerable<EditorTypeAssociation> availailableEditorTools
+        internal static IEnumerable<EditorTypeAssociation> GetAvailableGlobalToolContexts(Type toolOwner)
         {
-            get => s_ToolCache.availableEditorTypeAssociations;
+            var cache = GetContextCache(toolOwner);
+            return cache != null ? cache.GetEditorsForTargetType(null) : Array.Empty<EditorTypeAssociation>();
+        }
+        
+        internal static IEnumerable<EditorTypeAssociation> registeredToolContexts
+        {
+            get => GetContextCache(typeof(SceneView)).availableEditorTypeAssociations;
         }
 
-        internal static int toolContextsInProject => s_ContextCache.Count;
+        internal static IEnumerable<EditorTypeAssociation> GetRegisteredToolContexts(Type toolOwner)
+        {
+            var cache = GetContextCache(toolOwner);
+            return cache != null ? cache.availableEditorTypeAssociations : Array.Empty<EditorTypeAssociation>();
+        }
+
+        internal static IEnumerable<EditorTypeAssociation> availableEditorTools
+        {
+            get => GetToolCache(typeof(SceneView)).availableEditorTypeAssociations;
+        }
+        
+        internal static IEnumerable<EditorTypeAssociation> GetAvailableEditorTools(Type toolOwner)
+        {
+            var cache = GetToolCache(toolOwner);
+            return cache != null ? cache.availableEditorTypeAssociations : Array.Empty<EditorTypeAssociation>();
+        }
+        
+        internal static int GetToolContextsInProject(Type toolOwnerType)
+        {
+            var cache = GetContextCache(toolOwnerType);
+            return cache != null ? cache.Count : 0;
+        }
 
         internal class SortedContextDataCache
         {
@@ -45,6 +222,8 @@ namespace UnityEditor.EditorTools
             List<EditorTypeAssociation> m_SortedAvailableCompContextAssoc = new();
             List<EditorTypeAssociation> m_SortedUnavailableCompContextAssoc = new();
             readonly List<EditorTypeAssociation> m_SortedAllAvailableContextAssoc = new();
+            
+            EditorToolManager.EditorToolState m_EditorToolState;
             
             bool m_Dirty = true;
             
@@ -84,6 +263,11 @@ namespace UnityEditor.EditorTools
                 }
             }
 
+            public SortedContextDataCache(EditorToolManager.EditorToolState editorToolState)
+            {
+                m_EditorToolState = editorToolState;
+            }
+
             void EnsureSorted()
             {
                 if (m_Dirty)
@@ -94,7 +278,7 @@ namespace UnityEditor.EditorTools
             }
 
             internal void SetDirty()
-            {
+            { 
                 m_Dirty = true;
             }
             
@@ -104,26 +288,27 @@ namespace UnityEditor.EditorTools
                 {
                     // Sort by priority
                     int result = a.priority.CompareTo(b.priority);
-                    if (result != 0) 
+                    if (result != 0)
                         return result;
-                    
+
                     // Then by name
                     result = string.Compare(GetToolName(a.editor), GetToolName(b.editor), StringComparison.Ordinal);
-                    if (result != 0) 
+                    if (result != 0)
                         return result;
-                    
+
                     // Then by hashcode
                     return a.GetHashCode().CompareTo(b.GetHashCode());
                 };
-                
+
                 // Sort global contexts
-                var globalContexts = new List<EditorTypeAssociation>(availableGlobalToolContexts);
+                var globalContexts = new List<EditorTypeAssociation>(GetAvailableGlobalToolContexts(m_EditorToolState.stateToolOwnerType));
+
                 globalContexts.Sort(sortComp);
 
                 // Move GO context to front of globals
                 for (int i = globalContexts.Count - 1; i >= 0; --i)
                 {
-                    if (globalContexts[i].editor == typeof(GameObjectToolContext))
+                    if (globalContexts[i].editor == m_EditorToolState.defaultToolContextType)
                     {
                         var goAssoc = globalContexts[i];
                         globalContexts.RemoveAt(i);
@@ -135,7 +320,7 @@ namespace UnityEditor.EditorTools
 
                 // Collect all registered component contexts
                 var allRegisteredCompContexts = new List<EditorTypeAssociation>();
-                foreach (var assoc in registeredToolContexts)
+                foreach (var assoc in GetRegisteredToolContexts(m_EditorToolState.stateToolOwnerType))
                 {
                     if (assoc.targetBehaviour != typeof(NullTargetKey))
                         allRegisteredCompContexts.Add(assoc);
@@ -174,12 +359,12 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        internal static SortedContextDataCache sortedContextsDataCache { get; } = new();
+        internal static SortedContextDataCache sortedContextsDataCache => EditorToolManager.instance.defaultState.sortedContextsDataCache;
 
         // Caution: Returns all types without filtering for EditorToolContext
-        internal static IEnumerable<EditorTypeAssociation> GetCustomEditorToolsForType(Type type)
+        internal static IEnumerable<EditorTypeAssociation> GetCustomEditorToolsForType(Type type, Type toolOwner)
         {
-            return s_ToolCache.GetEditorsForTargetType(type);
+            return GetToolCache(toolOwner).GetEditorsForTargetType(type);
         }
 
         internal static string GetToolName(Type tool)
@@ -215,9 +400,7 @@ namespace UnityEditor.EditorTools
         {
             if (typeof(EditorTool).IsAssignableFrom(tool) || typeof(EditorToolContext).IsAssignableFrom(tool))
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var toolAttribute = tool.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault();
-#pragma warning restore UA2001
                 if (toolAttribute is ToolAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
                 {
                     string path = SanitizeToolPath(attrib.displayName);
@@ -227,9 +410,7 @@ namespace UnityEditor.EditorTools
             }
             else if (typeof(EditorToolContext).IsAssignableFrom(tool))
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var editorToolAttribute = tool.GetCustomAttributes(typeof(EditorToolContextAttribute), false).FirstOrDefault();
-#pragma warning restore UA2001
                 if (editorToolAttribute is EditorToolContextAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
                 {
                     string path = SanitizeToolPath(attrib.displayName);
@@ -250,15 +431,13 @@ namespace UnityEditor.EditorTools
             if (type == null)
                 return null;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (EditorToolAttribute)type.GetCustomAttributes(typeof(EditorToolAttribute), false).FirstOrDefault();
-#pragma warning restore UA2001
         }
 
-        internal static int GetNonBuiltinToolCount()
+        internal static int GetNonBuiltinToolCount(Type toolOwner)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var globalEditorTools = GetCustomEditorToolsForType(null).Where(t => EditorToolManager.additionalContextToolTypesCache.All(tc => tc != t.editor));
+            var globalEditorTools = GetCustomEditorToolsForType(null, toolOwner).Where(t => EditorToolManager.additionalContextToolTypesCache.TrueForAll(tc => tc != t.editor));
 #pragma warning restore UA2001
 #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return globalEditorTools.Count();
@@ -267,68 +446,91 @@ namespace UnityEditor.EditorTools
 
         internal static bool IsComponentEditor(Type type)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (type.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault() is ToolAttribute attrib)
-#pragma warning restore UA2001
                 return attrib.targetType != null;
             return false;
         }
 
-        public static void InstantiateComponentContexts(List<ComponentEditor> editors)
+        public static void InstantiateComponentContexts(List<ComponentEditor> editors, Type toolOwner)
         {
-            s_ContextCache.InstantiateEditors(null, editors);
+            GetContextCache(toolOwner).InstantiateEditors(null, editors);
         }
 
-        public static void InstantiateComponentTools(EditorToolContext ctx, List<ComponentEditor> editors)
+        public static void InstantiateComponentTools(EditorToolContext ctx, List<ComponentEditor> editors, Type toolOwner)
         {
-            s_ToolCache.InstantiateEditors(ctx, editors);
+            GetToolCache(toolOwner).InstantiateEditors(ctx, editors);
         }
 
         // Get an EditorTool instance for type of tool enum. This will return an instance of NoneTool if the active
         // context does not resolve to a valid tool.
+
         internal static EditorTool GetEditorToolWithEnum(Tool type, EditorToolContext ctx = null)
         {
-            var context = (ctx == null ? EditorToolManager.activeToolContext : ctx);
-            switch (type)
+            return GetEditorToolWithEnum(type, typeof(SceneView), ctx);
+        }
+        
+        internal static EditorTool GetEditorToolWithEnum(Tool type, Type toolOwner, EditorToolContext ctx = null)
+        {
+            EditorTool DoResolveTool(EditorToolContext context, EditorToolManager.EditorToolState ownerState)
             {
-                case Tool.View:
-                    return (EditorTool)EditorToolManager.GetSingleton(typeof(ViewModeTool));
-                case Tool.Custom:
-                    return EditorToolManager.lastCustomTool;
-                case Tool.None:
-                    return EditorToolManager.GetSingleton<NoneTool>();
-                default:
-                    var resolved = context.ResolveTool(type);
-                    if (resolved == null)
-                        goto case Tool.None;
+                var resolved = context.ResolveTool(type);
+                if (resolved == null)
+                    return ownerState.GetSingleton<NoneTool>();
 
-                    // Tool types can resolve to either global or instance tools
-                    if (IsComponentTool(resolved))
+                // Tool types can resolve to either global or instance tools
+                if (IsComponentTool(resolved, toolOwner))
+                {
+                    var instance = EditorToolManager.GetComponentTool(resolved, toolOwner, true);
+                    if (instance == null)
                     {
-                        var instance = EditorToolManager.GetComponentTool(resolved, true);
-                        if (instance == null)
-                        {
-                            Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
-                                $"no component matching the target type is in the active selection. The active tool " +
-                                $"context will be set to the default.");
-                            EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
-                            return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
-                        }
-                        else if (!instance.IsAvailable() || instance.isHidden)
-                        {
-                            Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
-                                           $"the matching component tool is not Available or is Hidden for the active selection. The active tool " +
-                                           $"context will be set to the default.");
-                            EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
-                            return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
-                        }
-
-                        return instance;
+                        Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
+                                       $"no component matching the target type is in the active selection. The active tool " +
+                                       $"context will be set to the default.");
+                        ownerState.activeToolContext = ownerState.GetSingleton(ownerState.defaultToolContextType) as EditorToolContext;
+                        return (EditorTool)ownerState.GetSingleton(ownerState.activeToolContext.ResolveTool(type));
+                    }
+                    
+                    if (!instance.IsAvailable() || instance.isHidden)
+                    {
+                        Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
+                                       $"the matching component tool is not Available or is Hidden for the active selection. The active tool " +
+                                       $"context will be set to the default.");
+                        ownerState.activeToolContext = ownerState.GetSingleton(ownerState.defaultToolContextType) as EditorToolContext;
+                        return (EditorTool)ownerState.GetSingleton(ownerState.activeToolContext.ResolveTool(type));
                     }
 
-                    // EditorToolContext.ResolveTool does type validation, so a fast cast is safe here.
-                    return (EditorTool)EditorToolManager.GetSingleton(resolved);
+                    return instance;
+                }
+
+                // EditorToolContext.ResolveTool does type validation, so a fast cast is safe here.
+                return (EditorTool)ownerState.GetSingleton(resolved);
             }
+            
+            var context = (ctx == null ? EditorToolManager.GetActiveToolContext(toolOwner) : ctx);
+            var ownerState = EditorToolManager.instance.GetOrCreateStateForType(toolOwner);
+            if (ownerState != null)
+            {
+                switch (type)
+                {
+                    case Tool.View:
+                        if (toolOwner == null || toolOwner == typeof(SceneView))
+                            return (EditorTool)ownerState.GetSingleton(typeof(ViewModeTool));
+
+                        var resolvedTool = DoResolveTool(context, ownerState);
+                        if (resolvedTool == null || resolvedTool is NoneTool)
+                            return (EditorTool)ownerState.GetSingleton(typeof(ViewModeTool));
+
+                        return resolvedTool;
+                    case Tool.Custom:
+                        return ownerState.lastCustomTool;
+                    case Tool.None:
+                        return ownerState.GetSingleton<NoneTool>();
+                    default:
+                        return DoResolveTool(context, ownerState);
+                }
+            }
+
+            return null;
         }
 
         static Tool GetToolTypeInContext(EditorToolContext ctx, Type type)
@@ -364,36 +566,86 @@ namespace UnityEditor.EditorTools
                 || tool == Tool.Transform;
         }
 
+        internal static bool IsManipulationToolType(Type toolType)
+        {
+            return toolType == typeof(MoveTool)
+                   || toolType == typeof(RotateTool)
+                   || toolType == typeof(ScaleTool)
+                   || toolType == typeof(RectTool)
+                   || toolType == typeof(TransformTool);
+        }
+
+        internal static bool IsContextTargetOwnerMatchingGivenOwner(Type contextTargetOwner, Type toolOwner)
+        {
+            // For SV specifically, it matches if target owner is null or it's Scene View
+            if (toolOwner == typeof(SceneView) && (contextTargetOwner == null || contextTargetOwner == typeof(SceneView)))
+                return true;
+
+            // For non-SV, it matches only if target owner is set to required type
+            if (toolOwner != typeof(SceneView) && contextTargetOwner == toolOwner)
+                return true;
+
+            return false;
+        }
+
+        // Checks whether the default context declared by an [EditorToolOwner] attribute has a valid [EditorToolContext] attribute that targets the given owner
+        static bool IsDefaultContextTargetingOwner(Type defaultContextType, Type toolOwnerType)
+        {
+            var contextAttributes = defaultContextType.GetCustomAttributes(typeof(EditorToolContextAttribute), false);
+            if (contextAttributes.Length > 0 && contextAttributes[0] is EditorToolContextAttribute ctxAttrib)
+                return IsContextTargetOwnerMatchingGivenOwner(ctxAttrib.targetToolOwner, toolOwnerType);
+
+            return false;
+        }
+
+        internal static bool IsManipulationTool(EditorTool tool)
+        {
+            var toolEnum = GetEnumWithEditorTool(tool);
+            return IsManipulationTool(toolEnum);
+        }
+
         // In the current context, is this tool considered a built-in tool?
         // Built-in tools are the first category of tools in the toolbar, and are always available while their parent
         // context is active.
         internal static bool IsBuiltinOverride(EditorTool tool)
         {
+            return IsBuiltinOverride(tool, EditorToolManager.activeToolContext);
+        }
+        
+        internal static bool IsBuiltinOverride(EditorTool tool, EditorToolContext ctx)
+        {
             if (tool == null)
                 return false;
-            if (IsManipulationTool(GetEnumWithEditorTool(tool)))
+            if (IsManipulationTool(GetEnumWithEditorTool(tool, ctx)))
                 return true;
             var type = tool.GetType();
-            foreach(var extra in EditorToolManager.activeToolContext.GetAdditionalToolTypes())
+            foreach(var extra in ctx.GetAdditionalToolTypes())
                 if (type == extra)
                     return true;
             return false;
         }
-
+        
         internal static bool IsComponentTool(Type type)
         {
-            return s_ToolCache.GetTargetType(type) != null;
+            return GetToolCache(typeof(SceneView)).GetTargetType(type) != null;
         }
 
-        internal static bool IsGlobalTool(EditorTool tool)
+        internal static bool IsComponentTool(Type type, Type toolOwner)
         {
-            if(GetEnumWithEditorTool(tool) == Tool.Custom)
+            return GetToolCache(toolOwner).GetTargetType(type) != null;
+        }
+
+        internal static bool IsGlobalTool(EditorTool tool, Type toolOwner)
+        {
+            if (GetEnumWithEditorTool(tool) == Tool.Custom)
             {
                 var type = tool.GetType();
-                return !IsComponentTool(type)   // Component tool?
-                    && !IsManipulationTool(GetEnumWithEditorTool(tool, EditorToolManager.GetSingleton<GameObjectToolContext>())) // Built-in tool?
-                    && !IsBuiltinOverride(tool) // Built-in tool override?
-                    && EditorToolManager.additionalContextToolTypesCache.Exists(t => t == type); // Additional/Extra tool?
+                var ownerState = EditorToolManager.instance.GetOrCreateStateForType(toolOwner);
+                return ownerState != null
+                       && IsComponentTool(type, toolOwner)   // Component tool?
+                       && !IsManipulationTool(GetEnumWithEditorTool(tool, ownerState.GetSingleton(ownerState.defaultToolContextType) as EditorToolContext)) // Built-in tool?
+                       && !IsBuiltinOverride(tool, ownerState.activeToolContext) // Built-in tool override?
+                       && EditorToolManager.additionalContextToolTypesCache.Exists(t => t == type); // Additional/Extra tool?
             }
 
             return false;
@@ -454,9 +706,75 @@ namespace UnityEditor.EditorTools
 
             return icon;
         }
+        
+        internal static EditorTypeAssociation GetMetaData(Type toolType) => GetToolCache(typeof(SceneView)).GetMetaData(toolType);
 
-        internal static EditorTypeAssociation GetMetaData(Type toolType) => s_ToolCache.GetMetaData(toolType);
+        internal static EditorTypeAssociation GetMetaData(Type toolType, Type toolOwner) => GetToolCache(toolOwner).GetMetaData(toolType);
 
-        internal static List<EditorTypeAssociation> GetEditorsForVariant(EditorTypeAssociation type) => s_ToolCache.GetEditorsForVariant(type);
+        internal static List<EditorTypeAssociation> GetEditorsForVariant(EditorTypeAssociation type,  Type toolOwner) => GetToolCache(toolOwner).GetEditorsForVariant(type);
+        
+        internal static Type GetToolOwnerFromFocusedWindow()
+        {
+            var toolsOwner = typeof(SceneView);
+            var focusedWindow = EditorWindow.focusedWindow;
+            if (focusedWindow != null &&
+                focusedWindow.GetType() != typeof(SceneView) &&
+                IsRegisteredToolOwner(focusedWindow.GetType()))
+            {
+                toolsOwner = focusedWindow.GetType();
+            }
+
+            return toolsOwner;
+        }
+
+        internal static bool IsCustomEditorTool(EditorTool tool, Type toolOwner)
+        {
+            return IsComponentTool(tool != null ? tool.GetType() : null, toolOwner);
+        }
+
+        internal static bool IsCustomToolContext(EditorToolContext context)
+        {
+            return context != null && context.GetType() != typeof(GameObjectToolContext);
+        }
+
+        internal static void OrderAvailableTools(List<ToolEntry> tools)
+        {
+            tools.Sort((a, b) =>
+            {
+                // Sort by scope first
+                var result = a.scope.CompareTo(b.scope);
+                if (result != 0)
+                    return result;
+
+                // For tool groups, ensure CreationToolGroups appears first
+                if (a.scope == ToolEntry.Scope.Grouped && b.scope == ToolEntry.Scope.Grouped)
+                {
+                    if (a.group == typeof(CreationToolsGroup) && b.group != typeof(CreationToolsGroup))
+                        return -1;
+                    if (a.group != typeof(CreationToolsGroup) && b.group == typeof(CreationToolsGroup))
+                        return 1;
+                }
+
+                // Ensure tools of same group stay adjacent
+                result = String.Compare(a.group == null ? string.Empty : a.group.Name,
+                                        b.group == null ? string.Empty : b.group.Name, StringComparison.Ordinal);
+                if (result != 0)
+                    return result;
+
+                // Ensure tools targeting same components stay adjacent
+                result = String.Compare(a.targetBehaviour == null ? string.Empty : a.targetBehaviour.Name,
+                                        b.targetBehaviour == null ? string.Empty : b.targetBehaviour.Name, StringComparison.Ordinal);
+                if (result != 0)
+                    return result;
+
+                // Sort by priority next
+                result = a.priority.CompareTo(b.priority);
+                if (result != 0)
+                    return result;
+
+                // Finally by hash code
+                return a.GetHashCode().CompareTo(b.GetHashCode());
+            });
+        }
     }
 }

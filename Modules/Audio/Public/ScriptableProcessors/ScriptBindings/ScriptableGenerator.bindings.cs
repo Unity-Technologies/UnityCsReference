@@ -262,18 +262,44 @@ namespace UnityEngine.Audio
             /// </summary>
             /// <seealso cref="ICapabilities.length"/>
             public DiscreteTime? length => HasKnownLength ? ReportedLength : null;
+
+            static internal Int64 FramesAndSampleRateToDiscreteTimeTicks(Int64 lengthFrames, UInt32 sampleRate)
+            {
+                switch (sampleRate)
+                {
+                    case 8000: return lengthFrames * DiscreteTime.Tick8Khz;
+                    case 16000: return lengthFrames * DiscreteTime.Tick16Khz;
+                    case 22050: return lengthFrames * DiscreteTime.Tick22Khz;
+                    case 44100: return lengthFrames * DiscreteTime.Tick44Khz;
+                    case 48000: return lengthFrames * DiscreteTime.Tick48Khz;
+                    case 88200: return lengthFrames * DiscreteTime.Tick88Khz;
+                    case 96000: return lengthFrames * DiscreteTime.Tick96Khz;
+                    case 192000: return lengthFrames * DiscreteTime.Tick192Khz;
+                    default:
+                        // For non-standard sample rates, we can still calculate the ticks by using the ratio of ticks per second to the sample rate.
+                        return (lengthFrames * DiscreteTime.TicksPerSecond) / sampleRate;
+                }
+            }
         }
 
         /// <summary>
         /// The result returned from a <see cref="IRealtime.Process"/> call.
         /// </summary>
         /// <remarks>
-        /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>.
+        /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>,
+        /// and the status of the generator (eg. whether it has finished or not).
         /// </remarks>
         /// <seealso cref="RealtimeContext.Process"/>
         public ref struct Result
         {
+            internal enum Status : Int32
+            {
+                Success = 0,
+                Finished
+            }
+
             internal int m_ProcessedFrames;
+            internal Status m_Status;
 
             /// <summary>
             /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="RealtimeContext.Process"/>.
@@ -281,11 +307,33 @@ namespace UnityEngine.Audio
             public int processedFrames => m_ProcessedFrames;
 
             /// <summary>
+            /// If this is true, the <see cref="GeneratorInstance"/> has finished generating audio and won't produce any more frames.
+            /// </summary>
+            /// <remarks>
+            /// There may still be a range of valid <see cref="Result.processedFrames"/> values when this is true,
+            /// for example if the <see cref="GeneratorInstance"/> finishes in the middle of a buffer.
+            /// </remarks>
+            public bool isFinished() => m_Status == Status.Finished;
+
+            /// <summary>
             /// Creates a new <see cref="GeneratorInstance.Result"/> from a number of frames processed.
             /// </summary>
+            /// <seealso cref="Result.Finished(int)"/>
             public static implicit operator Result(int processedFrames)
             {
                 return new Result { m_ProcessedFrames = processedFrames };
+            }
+
+            /// <summary>
+            /// Creates a new <see cref="GeneratorInstance.Result"/> that indicates the generator has finished from this point on,
+            /// having delivered <see cref="Result.processedFrames"/> additionally.
+            /// </summary>
+            /// <param name="processedFrames">
+            /// This can just be 0 if the generator finishes before processing any frames.
+            /// </param>
+            public static Result Finished(int processedFrames)
+            {
+                return new Result { m_ProcessedFrames = processedFrames, m_Status = Status.Finished };
             }
         }
 

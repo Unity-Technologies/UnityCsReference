@@ -53,6 +53,7 @@ internal readonly record struct SetInlineStylePropertyCommand<T>
 
         EditorUtility.SetDirty(visualTreeAsset);
         EditorUtility.SetDirty(inlineStyleSheet);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
     }
 
     private static StyleRule GetOrCreateRule(VisualElementAsset vea, StyleSheet styleSheet)

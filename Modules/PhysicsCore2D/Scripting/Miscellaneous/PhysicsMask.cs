@@ -127,12 +127,20 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Checks if the provided PhysicsMask set bits are also set in this PhysicsMask.
+        /// Checks if all the provided PhysicsMask set bits are also set in this PhysicsMask.
+        /// </summary>
+        /// <param name="physicsMask">The PhysicsMask bits to compare to this PhysicsMask. If this is zero, false will always be returned.</param>
+        /// <returns>True if all bits in the specified PhysicsMask are also set in this PhysicsMask, false otherwise.</returns>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool AreBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) == physicsMask;
+
+        /// <summary>
+        /// Checks if any of the provided PhysicsMask set bits are also set in this PhysicsMask.
         /// </summary>
         /// <param name="physicsMask">The PhysicsMask bits to compare to this PhysicsMask. If this is zero, false will always be returned.</param>
         /// <returns>True if any set bits in the specified PhysicsMask are also set in this PhysicsMask, false otherwise.</returns>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool AreBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) == physicsMask;
+        public readonly bool AreAnyBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) != 0;
 
         /// <summary>
         /// Gets an enumerable group of bits that are currently reset (0).

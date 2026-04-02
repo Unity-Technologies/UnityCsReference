@@ -706,11 +706,9 @@ namespace UnityEditor
 
         internal static SettingsWindow FindWindowByScope(SettingsScope scopes)
         {
+            var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow));
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow)).Cast<SettingsWindow>();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return settingsWindows.FirstOrDefault(settingsWindow => settingsWindow.m_Scope == scopes);
+            return (SettingsWindow)settingsWindows.FirstOrDefault(settingsWindow => ((SettingsWindow)settingsWindow).m_Scope == scopes);
 #pragma warning restore UA2001
         }
 

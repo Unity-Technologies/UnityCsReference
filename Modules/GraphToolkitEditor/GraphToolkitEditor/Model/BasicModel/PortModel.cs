@@ -13,28 +13,6 @@ using UnityEngine.Pool;
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
-    /// The number of connections a port can accept.
-    /// </summary>
-    [UnityRestricted]
-    internal enum PortCapacity
-    {
-        /// <summary>
-        /// The port cannot accept any connection.
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// The port can only accept a single connection.
-        /// </summary>
-        Single,
-
-        /// <summary>
-        /// The port can accept multiple connections.
-        /// </summary>
-        Multi
-    }
-
-    /// <summary>
     /// Options for the port.
     /// </summary>
     [Flags]
@@ -281,7 +259,7 @@ namespace Unity.GraphToolkit.Editor
                     return PortCapacity.Multi;
 
                 // If not set, fallback to default behavior.
-                return DataTypeHandle != TypeHandle.ExecutionFlow && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
+                return DataTypeHandle != TypeHandle.Untyped && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
             }
             set
             {
@@ -640,7 +618,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Gets whether this port model has reorderable wires or not.
         /// </summary>
-        public virtual bool HasReorderableWires => DataTypeHandle == TypeHandle.ExecutionFlow && Direction == PortDirection.Output && IsConnected();
+        public virtual bool HasReorderableWires => DataTypeHandle == TypeHandle.Untyped && Direction == PortDirection.Output && IsConnected();
 
         /// <summary>
         /// A constant representing the port default value.
@@ -674,11 +652,11 @@ namespace Unity.GraphToolkit.Editor
             {
                 var portLabel = ComputePortLabel(true);
                 if (!string.IsNullOrEmpty(portLabel))
-                    portLabel += Orientation == PortOrientation.Horizontal ? ": " : "\n";
+                    portLabel += "\n";
 
                 return portLabel
                     + (Direction == PortDirection.Output ? "Output" : "Input")
-                    + (DataTypeHandle == TypeHandle.ExecutionFlow ? " execution flow" : $" of type {DataTypeHandle.FriendlyName}");
+                    + $" Type: {DataTypeHandle.FriendlyName}";
             }
         }
 
@@ -806,6 +784,15 @@ namespace Unity.GraphToolkit.Editor
             return ParentPort.IsDescendantOf(ancestor);
         }
 
+        /// <summary>
+        /// Generates a descriptive label for the port, including its expandable ancestor ports if applicable.
+        /// </summary>
+        /// <param name="full">
+        /// If <c>true</c>, includes all ancestor ports in the label; if <c>false</c>, includes only up to the nearest collapsed ancestor.
+        /// </param>
+        /// <returns>
+        /// A string representing the port label, optionally including its ancestor hierarchy for context.
+        /// </returns>
         internal string ComputePortLabel(bool full)
         {
             if (ParentPort == null)
@@ -827,11 +814,16 @@ namespace Unity.GraphToolkit.Editor
             //aggregate the ancestors
             using var poolHolder = ListPool<PortModel>.Get(out var ancestors);
             current = ParentPort;
-            while (current != null && (full || current != higherCollapsedAncestor))
+
+            //Don't include the main port name for VariableNodes.
+            while (current != null && (full || current != higherCollapsedAncestor) && (current.ParentPort != null || current.NodeModel is not VariableNodeModel))
             {
                 ancestors.Add(current);
                 current = current.ParentPort;
             }
+
+            if (ancestors.Count == 0)
+                return Title;
 
             // build the label
             s_LabelSuffixBuilder.Clear();
@@ -942,7 +934,7 @@ namespace Unity.GraphToolkit.Editor
             return EmbeddedValue.TrySetValue(value);
         }
 
-        Type IPort.DataType => DataTypeHandle == TypeHandle.ExecutionFlow ? null : PortDataType;
+        Type IPort.DataType => DataTypeHandle == TypeHandle.Untyped ? null : PortDataType;
 
         /// <inheritdoc />
         public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;

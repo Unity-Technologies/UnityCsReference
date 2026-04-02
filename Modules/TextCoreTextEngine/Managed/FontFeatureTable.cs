@@ -14,6 +14,7 @@ namespace UnityEngine.TextCore.Text
     /// Table that contains the various font features available for the given font asset.
     /// </summary>
     [Serializable]
+    [Obsolete("Font feature tables and OTL feature tags are obsolete. OpenType layout is now handled natively by Advanced Text Generator (ATG).", false)]
     public class FontFeatureTable
     {
         /// <summary>

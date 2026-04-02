@@ -37,7 +37,7 @@ namespace UnityEditor.Search
     class QueryExpressionBlock : QueryBlock
     {
         private SearchExpression m_Expression;
-        private List<QueryBuilder> m_ArgumentBuilders;
+        private QueryBuilder[] m_ArgumentBuilders;
 
         internal override bool canDisable => false;
         internal override bool canExclude => false;
@@ -50,9 +50,8 @@ namespace UnityEditor.Search
             value = expression.outerText.ToString();
 
             m_Expression = expression;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ArgumentBuilders = expression.parameters.Select(p => ExpressionBlock.Create(p.outerText.ToString())).ToList();
-#pragma warning restore UA2001
+            m_ArgumentBuilders = System.Array.ConvertAll(expression.parameters, p => ExpressionBlock.Create(p.outerText.ToString()));
+            @readonly = true;
         }
 
         public override string ToString() => m_Expression.outerText.ToString();

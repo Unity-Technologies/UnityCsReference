@@ -13,6 +13,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -191,10 +192,8 @@ namespace UnityEditor.ShortcutManagement
 
             var nameElement = (TextElement)shortcutElementTemplate[0];
             var contextElement = shortcutElementTemplate[1];
-#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var contextType = (TextElement)contextElement.Children().ElementAt(0);
-            var tag = (TextElement)contextElement.Children().ElementAt(1);
-#pragma warning restore UA2004
+            var contextType = (TextElement)contextElement.children[0];
+            var tag = (TextElement)contextElement.children[1];
             var shortcutTypeElement = (TextElement)shortcutElementTemplate[2];
             var bindingContainer = shortcutElementTemplate[3];
             var bindingTextElement = bindingContainer.Q<TextElement>();
@@ -309,9 +308,9 @@ namespace UnityEditor.ShortcutManagement
             if (count == 0)
                 m_ViewController.SetCategorySelected(null);
             else
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ViewController.SetCategorySelected((string)selection.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
         }
 
         void BuildSearchField(VisualElement root)
@@ -677,9 +676,7 @@ namespace UnityEditor.ShortcutManagement
                 // Change / to : here to avoid deep submenu nesting
                 var mangledPath = entry.displayName.Replace('/', ':');
                 // Replace "/" with "Slash" in binding name to avoid submenu nesting
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var mangledBinding = entry.combinations.FirstOrDefault().ToString().Replace("/", "Slash");
-#pragma warning restore UA2001
                 var rootItemLabel = $"{mangledPath} ({mangledBinding})";
                 if (entry.overridden)
                     menu.AddItem(new GUIContent($"{rootItemLabel}/{L10n.Tr("Reset to default")}"), false, (x) =>
@@ -728,9 +725,9 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableEntryChosen(IEnumerable<object> objects)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var entry = (ShortcutEntry)objects.First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             var row = m_ShortcutsTable.Query<VisualElement>().Checked().First();
             StartRebind(entry, row);
         }
@@ -813,9 +810,9 @@ namespace UnityEditor.ShortcutManagement
             if (selection.Any())
 #pragma warning restore UA2002
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newSelection = (ShortcutEntry)selection.First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 if (newSelection != m_ViewController.selectedEntry)
                 {
                     m_ViewController.ShortcutEntrySelected(newSelection);
@@ -1475,16 +1472,12 @@ namespace UnityEditor.ShortcutManagement
                     }
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                keyRow.Children().Last().AddToClassList(k_LastClass);
-#pragma warning restore UA2001
+                keyRow.children[^1].AddToClassList(k_LastClass);
 
                 container.Add(keyRow);
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            container.Children().First().AddToClassList(k_FirstClass);
-#pragma warning restore UA2001
+            container.children[0].AddToClassList(k_FirstClass);
 
             foreach (var child in container.Children())
             {

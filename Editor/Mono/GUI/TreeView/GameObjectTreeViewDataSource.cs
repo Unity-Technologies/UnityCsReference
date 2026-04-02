@@ -364,9 +364,8 @@ namespace UnityEditor
             {
                 if (count > list.Capacity) // this bit is purely an optimisation, to avoid multiple automatic capacity changes.
                     list.Capacity = count + 20; // add some extra to prevent alloc'ing when adding to list
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                list.AddRange(Enumerable.Repeat(default(TreeViewItem<EntityId>), count - cur)); // add range is nulls
-#pragma warning restore UA2001
+                for (int i = cur; i < count; i++)
+                    list.Add(default); // add range is nulls
             }
         }
 

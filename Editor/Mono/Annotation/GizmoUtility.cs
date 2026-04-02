@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
@@ -40,9 +39,7 @@ namespace UnityEditor
         public static GizmoInfo[] GetGizmoInfo()
         {
             var annotations = AnnotationUtility.GetAnnotations();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return annotations.Select(x => new GizmoInfo(x)).ToArray();
-#pragma warning restore UA2001
+            return Array.ConvertAll(annotations, x => new GizmoInfo(x));
         }
 
         public static void ApplyGizmoInfo(GizmoInfo info, bool addToRecentlyChanged = true)

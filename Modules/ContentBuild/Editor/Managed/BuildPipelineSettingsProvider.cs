@@ -38,8 +38,8 @@ namespace UnityEditor.Build
 
         /*UCBP-PUBLIC*/ internal static string buildHistoryFolderPath
         {
-            get => BuildHistory.GetRootDirectory();
-            set => BuildHistory.SetRootDirectory(value);
+            get => BuildHistory.BuildHistoryDirectory;
+            set => BuildHistory.BuildHistoryDirectory = value;
         }
 
         public override void OnGUI(string searchContext)
@@ -51,8 +51,66 @@ namespace UnityEditor.Build
             writeDebugFiles = EditorGUILayout.Toggle(k_WriteDebugFileText, writeDebugFiles);
 
 
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Build History Folder Path", GUILayout.MaxWidth(175));
+            GUI.enabled = false;
+            string folderPathLabel = buildHistoryFolderPath;
+            EditorGUILayout.TextField(folderPathLabel);
+            GUI.enabled = true;
+            if (EditorGUILayout.DropdownButton(new GUIContent("Change Build History Path"), FocusType.Passive, GUILayout.MaxWidth(175)))
+            {
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(k_ChangeBuildHistoryFolderLocationText, false, ChangeFolderLocation);
+                menu.AddItem(EditorGUIUtility.TrTextContent(k_OpenFolder), false, OpenInExplorer);
+                if (buildHistoryFolderPath.Equals(BuildHistory.DefaultRootDirectory))
+                {
+                    menu.AddDisabledItem(k_ResetBuildHistoryFolderText);
+                }
+                else
+                {
+                    menu.AddItem(k_ResetBuildHistoryFolderText, false, ResetFolderLocation);
+                }
+                menu.AddItem(k_CleanBuildHistoryFolderText, false, CleanBuildHistoryDirectories);
+                menu.ShowAsContext();
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
+        private static void OpenInExplorer()
+        {
+            EditorUtility.RevealInFinder(buildHistoryFolderPath);
+        }
+
+        private static void ChangeFolderLocation()
+        {
+            string newPath = EditorUtility.OpenFolderPanel("Select new build history folder location", buildHistoryFolderPath, buildHistoryFolderPath);
+            if (string.IsNullOrEmpty(newPath))
+            {
+                return;
+            }
+            else if (!newPath.Equals(buildHistoryFolderPath))
+            {
+                string projectRelativePath = FileUtil.GetProjectRelativePath(newPath);
+                if (!string.IsNullOrEmpty(projectRelativePath))
+                {
+                    buildHistoryFolderPath = projectRelativePath;
+                }
+                else
+                {
+                    buildHistoryFolderPath = newPath;
+                }
+            }
+        }
+
+        private static void ResetFolderLocation()
+        {
+            buildHistoryFolderPath = BuildHistory.DefaultRootDirectory;
+        }
+
+        private static void CleanBuildHistoryDirectories()
+        {
+            BuildHistory.DeleteHistory();
+        }
 
         [SettingsProvider]
         public static SettingsProvider CreateProvider()

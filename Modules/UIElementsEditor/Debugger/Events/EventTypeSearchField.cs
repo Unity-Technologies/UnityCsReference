@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
+using Unity.Collections;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -313,9 +314,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var previousType = nextType;
                 nextType = previousType.BaseType;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 interfaceType = previousType.GetInterfaces().Where(InterfacePredicate).Except(nextType.GetInterfaces().Where(InterfacePredicate)).FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
             }
             while (interfaceType == null && nextType != typeof(EventBase));
 
@@ -363,9 +364,9 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             // All toggling
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001, UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_State.Where(s => s.Key > 0).All(s => s.Value))
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2008
             {
                 m_State[0] = true;
             }
@@ -381,16 +382,15 @@ namespace UnityEditor.UIElements.Debugger
             // Group toggling
             if (choice.TypeId != 0)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (m_GroupedEvents[choice.Group].All(id => m_State[id]))
-#pragma warning restore UA2001
+                var events = m_GroupedEvents[choice.Group];
+                if (events.TrueForAll(id => m_State[id]))
                 {
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = m_Choices.First(c => c.TypeId < 0 && c.Group == choice.Group);
 #pragma warning restore UA2001
                     m_State[group.TypeId] = true;
                 }
-                else if (m_GroupedEvents[choice.Group].Exists(id => !m_State[id]))
+                else if (events.Count > 0) // At least one element must be false, as we already checked TrueForAll and it was false
                 {
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = m_Choices.First(c => c.TypeId < 0 && c.Group == choice.Group);
@@ -493,13 +493,9 @@ namespace UnityEditor.UIElements.Debugger
             if (checkIsParameter)
             {
                 var parameter = filter.Substring(k_IsKeyword.Length);
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_OnKeywords.Contains(parameter))
-#pragma warning restore UA2001
                     isOn = true;
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (k_OffKeywords.Contains(parameter))
-#pragma warning restore UA2001
                     isOn = false;
             }
 

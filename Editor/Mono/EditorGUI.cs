@@ -3217,7 +3217,7 @@ namespace UnityEditor
             // Add copy/paste clipboard operations if available (the entries themselves
             // will check for GUI enablement; e.g. Copy should be there even for disabled
             // GUI but Paste should not).
-            ClipboardContextMenu.SetupPropertyCopyPaste(propertyWithPath, menu: pm, evt: null);
+            ClipboardContextMenu.SetupPropertyCopyPaste(propertyWithPath, menu: pm, evt: null, isEnabled);
 
             if (isEnabled)
             {
@@ -4488,6 +4488,24 @@ namespace UnityEditor
                 }
             }
             DoObjectField(position, position, id, objType, property, validator, allowSceneObjects, style);
+        }
+
+        private static void LoadableReferenceField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            Object currentObject = LoadableReferenceEditorUtility.LoadableReferenceToObject(property.loadableReferenceValue);
+
+            BeginChangeCheck();
+            Object newObject = ObjectField(position, label, currentObject, typeof(Object), false);
+            if (EndChangeCheck())
+            {
+                LoadableReference newLoadableRef = LoadableReferenceEditorUtility.ObjectToLoadableReference(newObject);
+                if (newObject != null && !newLoadableRef.isValid)
+                {
+                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableReference."));
+                    return;
+                }
+                property.loadableReferenceValue = newLoadableRef;
+            }
         }
 
         public static Object ObjectField(Rect position, Object obj, Type objType, Object targetBeingEdited)
@@ -7228,7 +7246,7 @@ namespace UnityEditor
             {
                 if (evt.commandName == EventCommandNames.Paste)
                     GUI.changed = true;
-                ClipboardContextMenu.SetupPropertyCopyPaste(property, menu: null, evt: evt);
+                ClipboardContextMenu.SetupPropertyCopyPaste(property, menu: null, evt: evt, GUI.enabled);
             }
         }
 
@@ -7283,7 +7301,7 @@ namespace UnityEditor
             Color temp = GUI.color;
             GUI.color = new Color(UnityEngine.Random.value * .6f + .4f, UnityEngine.Random.value * .6f + .4f, UnityEngine.Random.value * .6f + .4f, 1f);
             var size = new Vector2(Styles.repaintDot.width, Styles.repaintDot.height);
-            GUI.Label(new Rect(Vector2.zero, EditorGUIUtility.PixelsToPoints(size)), Styles.repaintDot);
+            GUI.Label(new Rect(Vector2.zero, EditorGUIUtility.PixelsToPoints(size, Styles.repaintDot.pixelsPerPoint)), Styles.repaintDot);
             GUI.color = temp;
         }
 
@@ -7621,6 +7639,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Hash128:
                 case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
+                case SerializedPropertyType.LoadableReference:
                     return false;
             }
 
@@ -7761,12 +7780,10 @@ namespace UnityEditor
                         var propertyFieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var propertyType);
                         if (propertyFieldInfo != null)
                         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            var attributes = propertyFieldInfo.GetCustomAttributes<ColorUsageAttribute>(false).ToArray();
-#pragma warning restore UA2001
+                            var attributes = Attribute.GetCustomAttributes(propertyFieldInfo, typeof(ColorUsageAttribute), false);
                             if (attributes.Length > 0)
                             {
-                                var attribute = attributes[0];
+                                var attribute = (ColorUsageAttribute)attributes[0];
                                 showAlpha = attribute.showAlpha;
                                 hdr = attribute.hdr;
                             }
@@ -7934,6 +7951,11 @@ namespace UnityEditor
                         {
                             property.entityIdValue = EntityId.Parse(newValue);
                         }
+                        break;
+                    }
+                    case SerializedPropertyType.LoadableReference:
+                    {
+                        LoadableReferenceField(position, property, label);
                         break;
                     }
                     default:

@@ -18,7 +18,8 @@ namespace UnityEditor.Experimental.GraphView
                 // Prefix <propertyname> with something (ex: PropertyOwnerType) to have a unique property name that won't clash in the QueryBuilder
                 // saveKeyword: false -> Ensure the index keyword list won't be polluted with the keyword values.
 
-                indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.category", string.IsNullOrEmpty(template.category) ? TemplateSearchProvider.kUncategorized : template.category, saveKeyword: true);
+                var sanitizedCategory = SanitizeCategory(template.category);
+                indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.category", sanitizedCategory, saveKeyword: true);
                 indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.description", template.description, saveKeyword: false);
                 indexer.IndexProperty<string, T>(context.documentIndex, $"{template.ToolKey}.name", template.name, saveKeyword: true);
                 indexer.IndexWord(context.documentIndex, template.name);
@@ -38,6 +39,18 @@ namespace UnityEditor.Experimental.GraphView
                     indexer.IndexProperty<string, T>(context.documentIndex, customData.Key, value, saveKeyword: true);
                 }
             }
+        }
+
+        static string SanitizeCategory(string category)
+        {
+            if (string.IsNullOrEmpty(category))
+            {
+                return TemplateSearchProvider.kUncategorized;
+            }
+
+            return category
+                .Replace('/', '_')
+                .Replace('\\', '_');
         }
     }
 }

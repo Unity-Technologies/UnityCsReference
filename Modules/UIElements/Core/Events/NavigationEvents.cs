@@ -233,6 +233,44 @@ namespace UnityEngine.UIElements
         }
     }
 
+
+    /// <summary>
+    /// Move event direction.
+    /// UGUI uses this enum and it can't use the copy in NavigationMoveEvent because it would break code stripping
+    /// </summary>
+    internal enum NavigationMoveDirection
+    {
+        /// <summary>
+        /// No specific direction.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Left.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Up.
+        /// </summary>
+        Up,
+        /// <summary>
+        /// Right.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// Down.
+        /// </summary>
+        Down,
+
+        /// <summary>
+        /// Forwards, toward next element.
+        /// </summary>
+        Next,
+        /// <summary>
+        /// Backwards, toward previous element.
+        /// </summary>
+        Previous,
+    }
+
     /// <summary>
     /// Event typically sent when the user presses the D-pad, moves a joystick or presses the arrow keys.
     /// </summary>
@@ -251,32 +289,32 @@ namespace UnityEngine.UIElements
             /// <summary>
             /// No specific direction.
             /// </summary>
-            None,
+            None = NavigationMoveDirection.None,
             /// <summary>
             /// Left.
             /// </summary>
-            Left,
+            Left = NavigationMoveDirection.Left,
             /// <summary>
             /// Up.
             /// </summary>
-            Up,
+            Up = NavigationMoveDirection.Up,
             /// <summary>
             /// Right.
             /// </summary>
-            Right,
+            Right = NavigationMoveDirection.Right,
             /// <summary>
             /// Down.
             /// </summary>
-            Down,
+            Down = NavigationMoveDirection.Down,
 
             /// <summary>
             /// Forwards, toward next element.
             /// </summary>
-            Next,
+            Next = NavigationMoveDirection.Next,
             /// <summary>
             /// Backwards, toward previous element.
             /// </summary>
-            Previous,
+            Previous = NavigationMoveDirection.Previous,
         }
 
         internal static Direction DetermineMoveDirection(float x, float y, float deadZone = 0.6f)

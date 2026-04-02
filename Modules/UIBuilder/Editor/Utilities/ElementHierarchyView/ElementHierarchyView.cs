@@ -47,7 +47,13 @@ namespace Unity.UI.Builder
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
         public BuilderExplorer.BuilderElementInfoVisibilityState elementInfoVisibilityState { get; set; }
-        public IList<TreeViewItem> treeRootItems => m_TreeRootItems;
+        public IList<TreeViewItem> treeRootItems
+        {
+            get => m_TreeRootItems;
+            set => m_TreeRootItems = value;
+        }
+
+        public IList<TreeViewItem> unfilteredTreeRootItems => m_UnfilteredTreeRootItems;
 
         public IEnumerable<TreeViewItemData<VisualElement>> treeItems
         {
@@ -64,6 +70,7 @@ namespace Unity.UI.Builder
 
 
         IList<TreeViewItem> m_TreeRootItems;
+        IList<TreeViewItem> m_UnfilteredTreeRootItems;
         TreeView m_TreeView;
         PreSaveState m_RegisteredState;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
@@ -179,9 +186,7 @@ namespace Unity.UI.Builder
                     return;
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedElement = selection.selection.First();
-#pragma warning restore UA2001
+                var selectedElement = selection.selection[0];
                 var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
 
                 if (explorerItem == null)
@@ -255,9 +260,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedElement = m_Selection.selection.First();
-#pragma warning restore UA2001
+            var selectedElement = m_Selection.selection[0];
             var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
 
             if (explorerItem != null && !explorerItem.IsRenamingActive() && m_TreeView.IsFocused())
@@ -623,7 +626,7 @@ namespace Unity.UI.Builder
             labelCont.Add(renameTextfield);
 
             // Add class list.
-            if (documentElement.classList.Count > 0 && elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState.ClassList))
+            if (documentElement.classListCount > 0 && elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState.ClassList))
             {
                 foreach (var ussClass in documentElement.GetClasses())
                 {
@@ -800,10 +803,11 @@ namespace Unity.UI.Builder
 
             int nextId = 1;
             if (includeParent)
-                m_TreeRootItems = GetTreeItemsFromVisualTreeIncludingParent(rootVisualElement, ref nextId);
+                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTreeIncludingParent(rootVisualElement, ref nextId);
             else
-                m_TreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
+                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
 
+            m_TreeRootItems = m_UnfilteredTreeRootItems;
             // Clear selection which would otherwise persist via view data persistence.
             if (m_TreeView != null)
             {
@@ -1032,9 +1036,7 @@ namespace Unity.UI.Builder
                             return;
                         }
 
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var selectedElement = m_Selection.selection.First();
-#pragma warning restore UA2001
+                        var selectedElement = m_Selection.selection[0];
 
                         if (!selectedElement.HasProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName))
                         {

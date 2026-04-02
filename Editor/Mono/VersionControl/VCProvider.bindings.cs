@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
-using System.Linq;
 
 namespace UnityEditor.VersionControl
 {
@@ -115,7 +114,6 @@ namespace UnityEditor.VersionControl
         public static extern Plugin GetActivePlugin();
 
         [FreeFunction("VersionControlBindings::VCProvider::GetActiveConfigFields")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern ConfigField[] GetActiveConfigFields();
 
         [StaticAccessor("GetVCProvider()", StaticAccessorType.Dot)]
@@ -125,7 +123,6 @@ namespace UnityEditor.VersionControl
         internal static extern CustomCommand[] customCommands
         {
             [NativeMethod("GetMonoCustomCommands")]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 
@@ -253,7 +250,6 @@ namespace UnityEditor.VersionControl
         public static extern Asset GetAssetByGUID(string guid);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_GetAssetArrayFromSelection")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private static extern Asset[] Internal_GetAssetArrayFromSelection();
 
         [FreeFunction("VersionControlBindings::VCProvider::IsOpenForEdit")]
@@ -278,7 +274,6 @@ namespace UnityEditor.VersionControl
         public static extern Task Internal_ErrorTask([NotNull] string message);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList", ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private static extern Asset[] Internal_ConsolidateAssetList(Asset[] assets, CheckoutMode mode);
 
         [StaticAccessor("VCProvider", StaticAccessorType.DoubleColon)]
@@ -292,9 +287,7 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_WaitForRelatedTasks", ThrowsException = true)]
         internal static extern void WaitForRelatedTasks(Asset[] assets);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        internal static void WaitForRelatedTasks(string[] assets) => WaitForRelatedTasks(assets.Select(a => new Asset(a)).ToArray());
-#pragma warning restore UA2001
+        internal static void WaitForRelatedTasks(string[] assets) => WaitForRelatedTasks(System.Array.ConvertAll(assets, a => new Asset(a)));
 
         internal static void WaitForRelatedTasks(Asset asset) => WaitForRelatedTasks(new[] { asset });
 

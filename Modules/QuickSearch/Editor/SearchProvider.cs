@@ -157,6 +157,21 @@ namespace UnityEditor.Search
         [SerializeField] private SearchFunctor<Func<SearchItem, SearchContext, string>> m_Serialized_fetchDescription;
 
         /// <summary>
+        /// Handler to provide a parent descriptor for an item.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal Func<SearchItem, SearchContext, SearchItemParentDescriptor> fetchParentDescriptor;
+        [SerializeField] private SearchFunctor<Func<SearchItem, SearchContext, SearchItemParentDescriptor>> m_Serialized_fetchParentDescriptor;
+
+        /// <summary>
+        /// Handler to split a parent id into hierarchical parents for parent descriptors with the type <see cref="SearchItemParentType.TokenSeparatedId"/>.
+        /// The list must be populated with <see cref="StringView"/>s that correspond to each parent's label, ordered by ancestry (root to leaf, or left to right in the id string).
+        /// </summary>
+        [VisibleToOtherModules]
+        internal Action<SearchItem, SearchContext, List<StringView>> fetchParentsTokenSeparatedIds;
+        [SerializeField] private SearchFunctor<Action<SearchItem, SearchContext, List<StringView>>> m_Serialized_fetchParentsTokenSeparatedIds;
+
+        /// <summary>
         /// Handler to provider an async thumbnail for an item. Will be called when the item is about to be displayed.
         /// Compared to preview a thumbnail should be small and returned as fast as possible. Use fetchPreview if you want to generate a preview that is bigger and slower to return.
         /// Allows a plugin provider to only fetch/generate preview when they are needed.
@@ -363,6 +378,8 @@ namespace UnityEditor.Search
             fetchPreview = null;
             fetchLabel = DefaultFetchLabel;
             fetchDescription = null;
+            fetchParentDescriptor = null;
+            fetchParentsTokenSeparatedIds = null;
             priority = 100;
             showDetails = false;
             showDetailsOptions = ShowDetailsOptions.Default;
@@ -388,6 +405,8 @@ namespace UnityEditor.Search
             fetchItems = templateProvider.fetchItems;
             fetchLabel = templateProvider.fetchLabel;
             fetchDescription = templateProvider.fetchDescription;
+            fetchParentDescriptor = templateProvider.fetchParentDescriptor;
+            fetchParentsTokenSeparatedIds = templateProvider.fetchParentsTokenSeparatedIds;
             fetchPreview = templateProvider.fetchPreview;
             fetchThumbnail = templateProvider.fetchThumbnail;
             fetchColumns = templateProvider.fetchColumns;
@@ -401,6 +420,8 @@ namespace UnityEditor.Search
             toType = templateProvider.toType;
             toEntityId = templateProvider.toEntityId;
             actions = templateProvider.actions;
+            onEnable = templateProvider.onEnable;
+            onDisable = templateProvider.onDisable;
         }
 
         private static object DefaultFetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider) => null;
@@ -519,6 +540,16 @@ namespace UnityEditor.Search
             return CreateItem(context, id, 0, label, description, thumbnail, data);
         }
 
+        internal SearchAction GetDefaultAction()
+        {
+            return actions.Count == 0 ? null : actions[0];
+        }
+
+        internal SearchAction GetSecondaryAction()
+        {
+            return actions.Count < 2 ? GetDefaultAction() : actions[1];
+        }
+
         internal void ResetFetchTime()
         {
             fetchTime = TimeSpan.Zero;
@@ -579,6 +610,8 @@ namespace UnityEditor.Search
             if (fetchItems != null) m_Serialized_fetchItems = new SearchFunctor<Func<SearchContext, List<SearchItem>, SearchProvider, object>>(fetchItems);
             if (fetchLabel != null) m_Serialized_fetchLabel = new SearchFunctor<Func<SearchItem, SearchContext, string>>(fetchLabel);
             if (fetchDescription != null) m_Serialized_fetchDescription = new SearchFunctor<Func<SearchItem, SearchContext, string>>(fetchDescription);
+            if (fetchParentDescriptor != null) m_Serialized_fetchParentDescriptor = new SearchFunctor<Func<SearchItem, SearchContext, SearchItemParentDescriptor>>(fetchParentDescriptor);
+            if (fetchParentsTokenSeparatedIds != null) m_Serialized_fetchParentsTokenSeparatedIds = new SearchFunctor<Action<SearchItem, SearchContext, List<StringView>>>(fetchParentsTokenSeparatedIds);
             if (fetchPreview != null) m_Serialized_fetchPreview = new SearchFunctor<Func<SearchItem, SearchContext, Vector2, FetchPreviewOptions, Texture2D>>(fetchPreview);
             if (fetchThumbnail != null) m_Serialized_fetchThumbnail = new SearchFunctor<Func<SearchItem, SearchContext, Texture2D>>(fetchThumbnail);
             if (fetchColumns != null) m_Serialized_fetchColumns = new SearchFunctor<Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>>>(fetchColumns);
@@ -586,31 +619,30 @@ namespace UnityEditor.Search
             if (startDrag != null) m_Serialized_startDrag = new SearchFunctor<Action<SearchItem, SearchContext>>(startDrag);
             if (trackSelection != null) m_Serialized_trackSelection = new SearchFunctor<Action<SearchItem, SearchContext>>(trackSelection);
             if (isEnabledForContextualSearch != null) m_Serialized_isEnabledForContextualSearch = new SearchFunctor<Func<bool>>(isEnabledForContextualSearch);
-            if (m_Serialized_toObject != null) m_Serialized_toObject = new SearchFunctor<Func<SearchItem, Type, UnityEngine.Object>>(toObject);
-            if (m_Serialized_onEnable != null) m_Serialized_onEnable = new SearchFunctor<Action>(onEnable);
-            if (m_Serialized_onDisable != null) m_Serialized_onDisable = new SearchFunctor<Action>(onDisable);
+            if (toObject != null) m_Serialized_toObject = new SearchFunctor<Func<SearchItem, Type, UnityEngine.Object>>(toObject);
+            if (onEnable != null) m_Serialized_onEnable = new SearchFunctor<Action>(onEnable);
+            if (onDisable != null) m_Serialized_onDisable = new SearchFunctor<Action>(onDisable);
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             defaultContext = new SearchContext(this);
-            fetchItems ??= m_Serialized_fetchItems.handler;
-            fetchLabel ??= m_Serialized_fetchLabel.handler;
-            fetchDescription ??= m_Serialized_fetchDescription.handler;
-            fetchPreview ??= m_Serialized_fetchPreview.handler;
-            fetchThumbnail ??= m_Serialized_fetchThumbnail.handler;
-            fetchColumns ??= m_Serialized_fetchColumns.handler;
-            fetchPropositions ??= m_Serialized_fetchPropositions.handler;
-            startDrag ??= m_Serialized_startDrag.handler;
-            trackSelection ??= m_Serialized_trackSelection.handler;
-            tableConfig ??= m_Serialized_tableConfig.handler;
-            isEnabledForContextualSearch ??= m_Serialized_isEnabledForContextualSearch.handler;
-            toObject ??= m_Serialized_toObject.handler;
-            toKey ??= m_Serialized_toKey.handler;
-            toType ??= m_Serialized_toType.handler;
-            toEntityId ??= m_Serialized_toEntityId.handler;
-            onEnable ??= m_Serialized_onEnable.handler;
-            onDisable ??= m_Serialized_onDisable.handler;
+            fetchItems ??= m_Serialized_fetchItems?.handler;
+            fetchLabel ??= m_Serialized_fetchLabel?.handler;
+            fetchDescription ??= m_Serialized_fetchDescription?.handler;
+            fetchParentDescriptor ??= m_Serialized_fetchParentDescriptor?.handler;
+            fetchParentsTokenSeparatedIds ??= m_Serialized_fetchParentsTokenSeparatedIds?.handler;
+            fetchPreview ??= m_Serialized_fetchPreview?.handler;
+            fetchThumbnail ??= m_Serialized_fetchThumbnail?.handler;
+            fetchColumns ??= m_Serialized_fetchColumns?.handler;
+            fetchPropositions ??= m_Serialized_fetchPropositions?.handler;
+            startDrag ??= m_Serialized_startDrag?.handler;
+            trackSelection ??= m_Serialized_trackSelection?.handler;
+            tableConfig ??= m_Serialized_tableConfig?.handler;
+            isEnabledForContextualSearch ??= m_Serialized_isEnabledForContextualSearch?.handler;
+            toObject ??= m_Serialized_toObject?.handler;
+            onEnable ??= m_Serialized_onEnable?.handler;
+            onDisable ??= m_Serialized_onDisable?.handler;
         }
     }
 }

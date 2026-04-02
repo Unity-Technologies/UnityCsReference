@@ -64,12 +64,12 @@ namespace UnityEditor.UIElements
         public FontDefinitionField(string label) : base(label, null)
         {
             m_TypeOptions = new Dictionary<string, Type>();
-            m_ObjectField = new ObjectField() { classList = { objectFieldUssClassName }};
+            m_ObjectField = new ObjectField().WithClassList(objectFieldUssClassName);
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 
             m_ObjectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>() { typeof(Font), typeof(FontAsset) });
 
-            var popupContainer = new VisualElement() {name = k_OptionsPopupContainerName, classList = { k_OptionsPopupContainerName }};
+            var popupContainer = new VisualElement() {name = k_OptionsPopupContainerName }.WithClassList(k_OptionsPopupContainerName);
             m_TypePopup = new PopupField<string> { formatSelectedValueCallback = OnFormatSelectedValue };
             popupContainer.Add(m_TypePopup);
 

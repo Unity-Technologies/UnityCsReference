@@ -36,6 +36,7 @@ namespace Unity.U2D.Physics.Editor
 
             public const string transformChangeMode = $"Defines when changes to {nameof(UnityEngine.Transform)} that has are registered with {nameof(PhysicsWorld.RegisterTransformChange)} are called.";
             public const string contactFilterMode = $"The mode used for the {nameof(PhysicsShape.ContactFilter)} when determining if two {nameof(PhysicsShape)} can contact.";
+            public const string contactFilterGroupMode = $"The mode used for the {nameof(PhysicsShape.ContactFilter.groupIndex)} when determining if two {nameof(PhysicsShape)} can contact.";
             public const string renderingMode = "Controls drawing and rendering is allowed.";
             public const string maximumWorlds = "Controls the maximum number of worlds that can be created. The larger the number of worlds, the more memory that is initially allocated so care must be taken. Setting this value to one will reduce start-up memory usage to a minimum but will not allow any additional worlds to be created. Any change will only be actioned by Exiting Play mode in the Editor or restarting the player build. A single PhysicsWorld.defaultWorld is automatically created therefore occupies one of the available worlds.";
             public const string concurrentSimulations = $"Controls how many simulations can be started in parallel. Each one is started on its own worker and acts as its own main-thread. Workers should ideally be left free for the solver otherwise it may degrade solving performance. The actual quantity of workers used will always be capped to those available on the current device. If the total number of workers available is below 4 then parallel simulation won't occur however parallel solving using workers will. This should not be confused with the quantity of workers used when solving a simulation.";
@@ -51,6 +52,11 @@ namespace Unity.U2D.Physics.Editor
 
             // Create the open button.
             var openButton = new Button { text = "Open in Project Settings" };
+
+            // Twice the default height.
+            openButton.style.height = EditorGUIUtility.singleLineHeight * 2;
+
+            // Register for the clicked event.
             openButton.clicked += () => SettingsService.OpenProjectSettings(PhysicsCoreSettings2DProvider.SettingsPath);
             root.Add(openButton);
 
@@ -139,6 +145,7 @@ namespace Unity.U2D.Physics.Editor
             {
                 root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_TransformChangeMode), Tooltips.transformChangeMode, (settings) => settings.transformChangeMode = PhysicsWorld.TransformChangeMode.FixedUpdate,  false));
                 root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_ContactFilterMode), Tooltips.contactFilterMode, (settings) => settings.contactFilterMode = PhysicsShape.ContactFilterMode.Both, false));
+                root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_ContactFilterGroupMode), Tooltips.contactFilterGroupMode, (settings) => settings.contactFilterGroupMode = PhysicsShape.ContactFilterGroupMode.Group, false));
                 root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_RenderingMode), Tooltips.renderingMode, (settings) => settings.renderingMode = PhysicsWorld.RenderingMode.EditorOnly, false));
                 root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_MaximumWorlds), Tooltips.maximumWorlds, (settings) => settings.maximumWorlds = 128, false));
                 root.Add(CreateInspectorPropertyField(nameof(PhysicsCoreSettings2D.m_ConcurrentSimulations), Tooltips.concurrentSimulations, (settings) => settings.concurrentSimulations = 2, false));
@@ -187,8 +194,8 @@ namespace Unity.U2D.Physics.Editor
 
     class PhysicsCoreSettings2DProvider : SettingsProvider
     {
-        public const string SettingsPath = "Project/PhysicsCore2D/Settings";
-        const string EmptySettingsLabel = $"Select a {nameof(PhysicsCoreSettings2D)} Asset to edit ...";
+        public const string SettingsPath = "Project/Physics Core 2D/Settings";
+        static readonly string EmptySettingsLabel = $"Select a \"{ObjectNames.NicifyVariableName(nameof(PhysicsCoreSettings2D))}\" Asset to edit ...";
 
         public static PhysicsCoreSettings2DProvider Instance { get; private set; }
 
@@ -217,10 +224,10 @@ namespace Unity.U2D.Physics.Editor
 
         static VisualElement CreateEmptyPropertyGUI()
         {
+            // Show help box to guide user.
             var root = new VisualElement();
-            root.style.paddingTop = 8;
-            root.style.paddingLeft = 8;
-            root.Add(new Label(EmptySettingsLabel));
+            root.style.paddingTop = root.style.paddingLeft = root.style.paddingRight = 12;
+            root.Add(new HelpBox(EmptySettingsLabel, HelpBoxMessageType.Info));
             return root;
         }
 

@@ -1009,6 +1009,24 @@ namespace UnityEditor.Search
             return false;
         }
 
+        // Simplified based on TryGetNumber(object, out double)
+        internal static bool TryGetULong(object value, out ulong number)
+        {
+            number = 0;
+            switch (value)
+            {
+                case null:
+                    return false;
+                case string s:
+                    return TryParse(s, out number);
+                case not null when value.GetType().IsPrimitive:
+                    number = Convert.ToUInt64(value);
+                    return true;
+                default:
+                    return TryParse(Convert.ToString(value), out number);
+            }
+        }
+
 
         internal static bool IsRunningTests()
         {
@@ -1340,9 +1358,8 @@ namespace UnityEditor.Search
             }
             else if (typeof(T) == typeof(EntityId))
             {
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
-                result = (T)(object)EntityId.FromULong((ulong)temp);
+                success = ClipboardParser.ParseEntityId(expression.ToString(), out var temp);
+                result = (T)(object)temp;
             }
             return success;
         }

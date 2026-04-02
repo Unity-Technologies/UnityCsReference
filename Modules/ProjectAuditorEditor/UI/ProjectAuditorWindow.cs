@@ -70,7 +70,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         [SerializeField] string[] m_AssemblyNames;
         [SerializeField] bool[] m_AssemblyReadOnlyFlags;
         [SerializeField] string m_AssemblySelectionSummary;
-        [SerializeField] Report m_Report;
+        [SerializeField] internal Report m_Report;
         [SerializeField] AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
         [SerializeField] ViewManager m_ViewManager;
@@ -127,7 +127,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     categories =
                     [
                         IssueCategory.Code, IssueCategory.Assembly, IssueCategory.PrecompiledAssembly,
-                        IssueCategory.CodeCompilerMessage, IssueCategory.DomainReload
+                        IssueCategory.CodeCompilerMessage, IssueCategory.DomainReload, IssueCategory.ObsoleteAPI
                     ]
                 },
                 new Tab
@@ -198,6 +198,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             if (activeView.OnlyCriticalIssues() && !issue.IsMajorOrCritical())
+                return false;
+            if (activeView.OnlyFixableIssues() && issue.Id.GetDescriptor().Fixer == null)
                 return false;
 
             return true;
@@ -275,9 +277,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     supportedCategories.AddRange(GetTabCategories(tab));
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var categories = supportedCategories.Distinct();
-#pragma warning restore UA2001
+                var categories = new HashSet<IssueCategory>(supportedCategories);
 
                 // Get all the ViewDescriptors that match the supported categories, and sort them by MenuOrder
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -287,7 +287,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Array.Sort(viewDescriptors, (a, b) => a.MenuOrder.CompareTo(b.MenuOrder));
 
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ViewManager = new ViewManager(viewDescriptors.Select(d => d.Category).ToArray()); // view manager needs sorted categories
+                m_ViewManager = new ViewManager(viewDescriptors.Select(d => d.Category)); // view manager needs sorted categories
 #pragma warning restore UA2001
             }
 
@@ -637,6 +637,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuOrder = 1,
                 MenuLabel = "Assets/Shaders/Shaders",
                 DescriptionWithIcon = true,
+                ShowDependencyView = true,
                 ShowFilters = true,
                 OnContextMenu = (menu, viewManager, issue) =>
                 {
@@ -766,6 +767,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 MenuLabel = "Assets/Textures/Textures",
                 MenuOrder = 6,
                 DescriptionWithIcon = true,
+                ShowDependencyView = true,
                 ShowFilters = true,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.Textures
@@ -857,7 +859,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             ViewDescriptor.Register(new ViewDescriptor
             {
                 Category = IssueCategory.Code,
-                DisplayName = "Code",
+                DisplayName = "Code Issues",
                 MenuLabel = "Code/Issues",
                 MenuOrder = 0,
                 ShowAssemblySelection = true,
@@ -865,6 +867,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowFilters = true,
                 ShowInfoPanel = true,
                 ShowDetails = true,
+                ShowQuickFixes = false, // Remove this if we add support for quick-fixing code issues
                 DependencyViewGuiContent = new GUIContent("Inverted Call Hierarchy", "Expand the tree to see all of the methods which lead to the call site of a selected issue."),
                 GetAssemblyName = issue => issue.GetCustomProperty(assemblyProperty),
                 OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,
@@ -961,6 +964,17 @@ namespace Unity.ProjectAuditor.Editor.UI
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
+                Category = IssueCategory.ObsoleteAPI,
+                DisplayName = "Obsolete API Database",
+                MenuLabel = "Code/Obsolete API Database",
+                MenuOrder = 51,
+                ShowFilters = true,
+                ShowInfoPanel = true,
+                ShowDetails = true,
+                Type = typeof(ObsoleteApiView)
+            });
+            ViewDescriptor.Register(new ViewDescriptor
+            {
                 Category = IssueCategory.GameObject,
                 DisplayName = "Game Objects",
                 MenuLabel = "Game Objects/Issues",
@@ -968,7 +982,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowFilters = true,
                 ShowInfoPanel = true,
                 ShowDetails = true,
-                OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
+                OnOpenIssue = EditorInterop.FocusOnAssetInHierarchyWindow,
                 //AnalyticsEventId = (int)AnalyticsReporter.UIButton.ApiCalls,
                 Type = typeof(DiagnosticView)
             });
@@ -1275,7 +1289,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(Contents.AssemblyFilter, GUILayout.Width(LayoutSize.FilterOptionsLeftLabelWidth));
+                EditorGUILayout.LabelField(Contents.AssemblyFilter, LayoutSize.FilterOptionsLabelWidth);
 
                 using (new EditorGUI.DisabledScope(!IsAnalysisValid() || SelectionWindow.IsOpen<AssemblySelectionWindow>()))
                 {
@@ -1339,8 +1353,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(Contents.AreaFilter,
-                    GUILayout.Width(LayoutSize.FilterOptionsLeftLabelWidth));
+                EditorGUILayout.LabelField(Contents.AreaFilter, LayoutSize.FilterOptionsLabelWidth);
 
                 if (AreaNames.Length > 0)
                 {
@@ -1380,7 +1393,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
 
                     m_AreaSelectionSummary = GetSelectedAreasSummary();
-                    Utility.DrawSelectedText(m_AreaSelectionSummary);
+                    Utility.DrawSelectedText(ObjectNames.NicifyVariableName(m_AreaSelectionSummary));
 
                     GUILayout.FlexibleSpace();
                 }
@@ -1704,7 +1717,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         internal void SetAreaSelection(TreeViewSelection selection)
         {
-            var selectedStrings = selection.GetSelectedStrings(AreaNames, true);
+            var selectedStrings = selection.GetSelectedStrings(AreaNames, true, true);
 
             m_SelectedAreas = Areas.None;
             foreach (var areaString in selectedStrings)
@@ -1754,10 +1767,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_Report == null || m_ViewManager.HasPendingCategory(IssueCategory.Assembly))
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => new System.Tuple<string, bool>(i.Description, i.GetCustomPropertyBool(AssemblyProperty.ReadOnly)));
             var allAssemblies = assemblyNames.GroupBy(i => i.Item1).Select(g => g.First()).OrderBy(i => i.Item1).ToArray();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2010
 
             var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
             bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
@@ -1768,10 +1781,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             // update list of assembly names
             if (m_Report.IsForCurrentProject())
                 allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a.Item1, allowPackages, allowUnityCode, allowUserCode)).ToArray();
-
-            m_AssemblyNames = allAssemblies.Select(a => a.Item1).ToArray();
-            m_AssemblyReadOnlyFlags = allAssemblies.Select(a => a.Item2).ToArray();
 #pragma warning restore UA2001
+
+            m_AssemblyNames = Array.ConvertAll(allAssemblies, a => a.Item1);
+            m_AssemblyReadOnlyFlags = Array.ConvertAll(allAssemblies, a => a.Item2);
         }
 
         void UpdateAssemblySelection(bool forceRefresh = false)
@@ -2097,11 +2110,15 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_NoCodeSelectedMessage = "Please select either Editor, Player or both.";
 
         // UI styles and layout
-        static class LayoutSize
+        internal static class LayoutSize
         {
+            const int kFilterContentsWidth = 320;
+
             public static readonly int MinWindowWidth = 410;
             public static readonly int MinWindowHeight = 640;
-            public static readonly int FilterOptionsLeftLabelWidth = 94;
+            public static readonly GUILayoutOption FilterOptionsLabelWidth = GUILayout.Width(104);
+            public static readonly GUILayoutOption FilterOptionsContentsWidth = GUILayout.Width(kFilterContentsWidth);
+            public static readonly GUILayoutOption FilterOptionsContentsHalfWidth = GUILayout.Width(kFilterContentsWidth / 2);
             public static readonly int FilterOptionsEnumWidth = 50;
         }
 
@@ -2149,7 +2166,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent WelcomeTextTitle = new GUIContent($"Welcome to {ProjectAuditor.DisplayName}");
 
             public static readonly GUIContent WelcomeText = new GUIContent(
-                $@"{ProjectAuditor.DisplayName} is a suite of static analysis tools that examine assets, settings and scripts to enable users to optimize their Unity Project. It produces a report that highlights issues in Code and Settings, insights about the latest Build Report, information about Assets, and provides recommendations on how to improve."
+@"Select <b>Install Rules</b> to install the Rules package and enable project analysis. 
+To generate a report, select the project area, platform, and code to analyze then select <b>Start Analysis</b>."
             );
 
             public static readonly GUIContent Clear = new GUIContent("Clear");

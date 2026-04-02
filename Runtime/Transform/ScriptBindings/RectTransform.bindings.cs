@@ -120,6 +120,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Transform/RectTransform.h"),
      NativeClass("UI::RectTransform")]
+    [UIModuleHelpURL("class-RectTransform")]
     public sealed class RectTransform : Transform
     {
         public enum Edge { Left = 0, Right = 1, Top = 2, Bottom = 3 }

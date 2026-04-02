@@ -13,7 +13,9 @@ namespace UnityEditor
     internal interface IDerivedBuildTargetProvider
     {
         GUID GetBasePlatformGuid();
+        IBuildTarget GetBaseBuildTarget();
         IEnumerable<IDerivedBuildTarget> GetDerivedBuildTargets();
+        void RemoveDerivedBuildTargetExtension(GUID buildTarget);
         IBuildProfileExtension CreateBuildProfileExtension(GUID buildTarget);
         ISettingEditorExtension CreateSettingsEditorExtension(GUID buildTarget);
         bool TryGetDiscoveredTargetInfo(GUID buildTarget, out DiscoveredTargetInfo discoveredTargetInfo);

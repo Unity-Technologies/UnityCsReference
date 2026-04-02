@@ -76,7 +76,7 @@ namespace UnityEditor.UIElements.Samples
             container.Add(closeTabInfoLabel);
 
             // Create a TabView and apply custom styling to specific areas of their tabs.
-            var csharpCustomStyledTabView = new TabView() { style = { marginTop = 15 }, classList = { "some-styled-class" }}; // marginTop not required, only for demonstration purposes.
+            var csharpCustomStyledTabView = new TabView() { style = { marginTop = 15 } }.WithClassList("some-styled-class"); // marginTop not required, only for demonstration purposes.
             var customStyledTabOne = new Tab("One");
             customStyledTabOne.Add(new Label("Custom styled tabs: This is some content for the first Tab."));
             csharpCustomStyledTabView.Add(customStyledTabOne);

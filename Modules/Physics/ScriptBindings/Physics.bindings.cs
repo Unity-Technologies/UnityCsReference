@@ -1076,10 +1076,10 @@ namespace UnityEngine
         [NativeMethod(IsThreadSafe = true)]
         public static extern void BakeMesh(EntityId meshEntityId, bool convex, MeshColliderCookingOptions cookingOptions);
 
-        [Obsolete("BakeMesh(int, bool, MeshColliderCookingOptions) is obsolete. Use BakeMesh(EntityId, bool, MeshColliderCookingOptions) instead.")]
+        [Obsolete("BakeMesh(int, bool, MeshColliderCookingOptions) is obsolete. Use BakeMesh(EntityId, bool, MeshColliderCookingOptions) instead.", true)]
         public static void BakeMesh(int meshID, bool convex, MeshColliderCookingOptions cookingOptions) => BakeMesh((EntityId)meshID, convex, cookingOptions);
 
-        [Obsolete("BakeMesh(int, bool) is obsolete. Use BakeMesh(EntityId, bool) instead.")]
+        [Obsolete("BakeMesh(int, bool) is obsolete. Use BakeMesh(EntityId, bool) instead.", true)]
         public static void BakeMesh(int meshID, bool convex)
         {
             BakeMesh((EntityId)meshID, convex, MeshColliderCookingOptions.CookForFasterSimulation |

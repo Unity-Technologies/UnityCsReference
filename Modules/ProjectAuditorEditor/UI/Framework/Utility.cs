@@ -71,9 +71,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static readonly string k_SaveIconName = "SaveAs";
         static readonly string k_TrashIconName = "TreeEditor.Trash";
         static readonly string k_ViewIconName = "ViewToolOrbit";
-        static readonly string k_DisplayedIgnoredIssuesIconName = "animationvisibilitytoggleon";
-        static readonly string k_HiddenIgnoredIssuesIconName = "animationvisibilitytoggleoff";
-        static readonly string k_IgnoredIssuesLabel = " Ignored Issues";
         static readonly string k_AdditionalAnalysisIconName = "AdditionalAnalysis";
         static readonly string k_FoldoutExpandedIconName = "ClassicFoldoutArrow-Open";
         static readonly string k_FoldoutFoldedIconName = "ClassicFoldoutArrow-Close";
@@ -110,7 +107,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static bool BoldFoldout(bool toggle, GUIContent content)
         {
-            return EditorGUILayout.Foldout(toggle, content, SharedStyles.Foldout);
+            var style = SharedStyles.Foldout;
+            Vector2 textSize = style.CalcSize(content);
+            Rect rect = GUILayoutUtility.GetRect(content, style, GUILayout.Width(textSize.x)); // Ensure width matches arrow + label, so we get the correct hitbox for opening the foldout
+
+            return EditorGUI.Foldout(rect, toggle, content, true, style);
         }
 
         public static void ToolbarDropdownList(DropdownItem[] items, int selectionIndex,
@@ -177,7 +178,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static string GetTreeViewSelectedSummary(TreeViewSelection selection, string[] names)
         {
-            var selectedStrings = selection.GetSelectedStrings(names, true);
+            var selectedStrings = selection.GetSelectedStrings(names, true, false);
             var numStrings = selectedStrings.Length;
 
             if (numStrings == 0)
@@ -440,20 +441,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return EditorGUIUtility.TrTextContentWithIcon(displayName, assetPath, icon);
         }
 
-        internal static GUIContent GetDisplayIgnoredIssuesIconWithLabel()
-        {
-            var guiContent = EditorGUIUtility.TrIconContent(k_DisplayedIgnoredIssuesIconName);
-            guiContent.text = k_IgnoredIssuesLabel;
-            return guiContent;
-        }
-
-        internal static GUIContent GetHiddenIgnoredIssuesIconWithLabel()
-        {
-            var guiContent = EditorGUIUtility.TrIconContent(k_HiddenIgnoredIssuesIconName);
-            guiContent.text = k_IgnoredIssuesLabel;
-            return guiContent;
-        }
-
         static Texture2D LoadIcon(string iconName, string darkModePrefix = "")
         {
             if (SharedStyles.IsDarkMode)
@@ -530,6 +517,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public static bool IsInternalDocsLink(string url)
         {
             return url.Contains("docs.unity3d.com", StringComparison.Ordinal);
+        }
+
+        internal static int VersionToInt(string version)
+        {
+            var parts = version.Split('.');
+            return int.Parse(parts[0]) * 100 + int.Parse(parts[1]); // Just any integer that can be used for comparison
         }
     }
 }

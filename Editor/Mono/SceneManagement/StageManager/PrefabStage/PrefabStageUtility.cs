@@ -236,7 +236,7 @@ namespace UnityEditor.SceneManagement
             if (warnList.Count > 0)
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).Distinct().ToArray());
+                string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).Distinct());
 #pragma warning restore UA2001
                 if (blockingNames.Length > 1000)
                     blockingNames = blockingNames.Substring(0, 1000) + "\n...";

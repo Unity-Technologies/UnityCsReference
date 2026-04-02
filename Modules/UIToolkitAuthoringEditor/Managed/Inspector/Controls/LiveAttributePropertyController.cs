@@ -48,6 +48,7 @@ class LiveAttributePropertyController
         public SerializedProperty property;
         public LiveAttributePropertyModificationValueType valueType;
         public object value;
+        public bool isBound;
     }
 
     string m_UxmlSerializedDataSnapshot;
@@ -74,7 +75,8 @@ class LiveAttributePropertyController
         }
         else
         {
-            context.rootSerializedObject?.UpdateIfRequiredOrScript();
+            if (context.rootSerializedObject?.isValid == true)
+              context.rootSerializedObject.UpdateIfRequiredOrScript();
         }
     }
 
@@ -83,33 +85,36 @@ class LiveAttributePropertyController
     /// These values are marked as driven properties to make changes non-destructive to the underlying UXML data.
     /// Call <seealso cref="RemoveLiveProperties"/> to revert the inspector to display UXML data instead of live or bound values.
     /// </summary>
-    public void SyncLiveProperties()
+    /// <param name="syncOnlyBoundValues">If true, only syncs bound property values; if false, syncs all values (both live and bound)</param>
+    public void SyncLiveProperties(bool syncOnlyBoundValues)
     {
         var serializedDataProperty = context.rootSerializedObject.FindProperty(context.serializedBasePath);
+        if (serializedDataProperty == null)
+            return;
+
+        // Collect existing bindings first
+        using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
+        using var hashHandle = HashSetPool<string>.Get(out var resolvedBindingLookup);
+        context.element.GetBindingInfos(bindingInfos);
+        foreach (var info in bindingInfos)
+        {
+            if (context.element.TryGetLastBindingToUIResult(info.bindingId, out var bindingResult) &&
+                bindingResult.status == BindingStatus.Success)
+            {
+                resolvedBindingLookup.Add(info.bindingId);
+            }
+        }
 
         using var pooledList = ListPool<LiveAttributePropertyModification>.Get(out var propertyModifications);
         var hasUnsupportedDrivenPropertyChange = false;
         foreach (var attribute in context.uxmlSerializedDataDescription.serializedAttributes)
         {
             var property = serializedDataProperty.FindPropertyRelative(attribute.serializedField.Name);
-            CollectLiveAttributeValuePropertyModifications(context.element, context.uxmlSerializedData, attribute, property, propertyModifications, ref hasUnsupportedDrivenPropertyChange);
+            CollectLiveAttributeValuePropertyModifications(context.element, context.uxmlSerializedData, attribute, property, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
         }
 
         if (propertyModifications.Count > 0)
         {
-            // Collect existing bindings
-            using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
-            using var hashHandle = HashSetPool<string>.Get(out var resolvedBindingLookup);
-            context.element.GetBindingInfos(bindingInfos);
-            foreach (var info in bindingInfos)
-            {
-                if (context.element.TryGetLastBindingToUIResult(info.bindingId, out var bindingResult) &&
-                    bindingResult.status == BindingStatus.Success)
-                {
-                    resolvedBindingLookup.Add(info.bindingId);
-                }
-            }
-
             if (hasUnsupportedDrivenPropertyChange)
             {
                 // Take a snapshot of the current serialized data to revert unsupported changes later
@@ -119,9 +124,8 @@ class LiveAttributePropertyController
 
             foreach (var modification in propertyModifications)
             {
-                bool isBound = resolvedBindingLookup.Contains(modification.property.GetBindingPath());
                 DrivenPropertyManager.TryRegisterProperty(
-                    isBound ? BoundPropertyDriver.GetOrCreateInstance() : LivePropertyDriver.GetOrCreateInstance(),
+                    modification.isBound ? BoundPropertyDriver.GetOrCreateInstance() : LivePropertyDriver.GetOrCreateInstance(),
                     modification.property.serializedObject.targetObject,
                     modification.property.propertyPath);
                 switch (modification.valueType)
@@ -149,13 +153,14 @@ class LiveAttributePropertyController
         }
     }
 
-    void CollectLiveAttributeValuePropertyModifications(object obj, object uxmlSerializedData, UxmlSerializedAttributeDescription attributeDescription, SerializedProperty property, List<LiveAttributePropertyModification> propertyModifications, ref bool hasUnsupportedDrivenPropertyChange)
+    void CollectLiveAttributeValuePropertyModifications(object obj, object uxmlSerializedData, UxmlSerializedAttributeDescription attributeDescription, SerializedProperty property, List<LiveAttributePropertyModification> propertyModifications, ref bool hasUnsupportedDrivenPropertyChange, bool syncOnlyBoundValues, HashSet<string> resolvedBindingLookup)
     {
         try
         {
             if (!attributeDescription.TryGetValueFromObject(obj, out var value))
                 return;
 
+            var isBound = resolvedBindingLookup.Contains(property.GetBindingPath());
             var flags = uxmlSerializedData != null ? attributeDescription.GetSerializedValueAttributeFlags(uxmlSerializedData) : UxmlSerializedData.UxmlAttributeFlags.DefaultValue;
             var uxmlValue = (flags == UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml && uxmlSerializedData != null)
                 ? attributeDescription.GetSerializedValue(uxmlSerializedData)
@@ -167,10 +172,13 @@ class LiveAttributePropertyController
                 {
                     var valueList = value as IList;
                     var uxmlList = uxmlValue as IList;
-                    int itemCount = valueList?.Count ?? 0;
+                    var itemCount = valueList?.Count ?? 0;
 
                     if (property.arraySize != valueList?.Count)
                     {
+                        if (syncOnlyBoundValues && !isBound)
+                            return;
+
                         // Driven properties dont support array size changes so we need to work with a whole copy.
                         hasUnsupportedDrivenPropertyChange = true;
 
@@ -187,6 +195,7 @@ class LiveAttributePropertyController
                             property = property,
                             valueType = LiveAttributePropertyModificationValueType.ManagedReferenceArrayValue,
                             value = newValue,
+                            isBound = isBound
                         });
                         return;
                     }
@@ -195,14 +204,14 @@ class LiveAttributePropertyController
                     {
                         var item = valueList[i];
                         var uxmlItem = uxmlList != null && i < uxmlList.Count ? uxmlList[i] as UxmlSerializedData : null;
-
                         var elementProperty = property.GetArrayElementAtIndex(i);
+                        var isArrayElementBound = resolvedBindingLookup.Contains(elementProperty.GetBindingPath());
 
                         // Handle null items
                         if (item == null)
                         {
                             // Both null - no difference
-                            if (uxmlItem == null)
+                            if (uxmlItem == null || (syncOnlyBoundValues && !isArrayElementBound))
                                 continue;
 
                             // item is null but uxmlItem is not
@@ -214,6 +223,7 @@ class LiveAttributePropertyController
                                 property = elementProperty,
                                 valueType = LiveAttributePropertyModificationValueType.ManagedReferenceValue,
                                 value = null,
+                                isBound = isArrayElementBound,
                             });
                             continue;
                         }
@@ -224,6 +234,9 @@ class LiveAttributePropertyController
 
                         if (uxmlItem == null || uxmlItem.GetType() != desc.serializedDataType)
                         {
+                            if (syncOnlyBoundValues && !isArrayElementBound)
+                                continue;
+
                             // Type mismatch
                             hasUnsupportedDrivenPropertyChange = true;
 
@@ -236,6 +249,7 @@ class LiveAttributePropertyController
                                 property = elementProperty,
                                 valueType = LiveAttributePropertyModificationValueType.ManagedReferenceValue,
                                 value = uxmlItem,
+                                isBound = isArrayElementBound,
                             });
                             continue;
                         }
@@ -244,12 +258,15 @@ class LiveAttributePropertyController
                         {
                             var nestedProperty = elementProperty.FindPropertyRelative(nestedAttr.serializedField.Name);
                             if (nestedProperty != null)
-                                CollectLiveAttributeValuePropertyModifications(item, uxmlItem, nestedAttr, nestedProperty, propertyModifications, ref hasUnsupportedDrivenPropertyChange);
+                                CollectLiveAttributeValuePropertyModifications(item, uxmlItem, nestedAttr, nestedProperty, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
                         }
                     }
                 }
                 else
                 {
+                    if (value == null)
+                        return;
+
                     // Handle single UxmlObject
                     var desc = UxmlSerializedDataRegistry.GetDescription(value.GetType().FullName);
                     if (desc != null)
@@ -257,6 +274,9 @@ class LiveAttributePropertyController
                         var uxmlData = uxmlValue as UxmlSerializedData;
                         if (uxmlData == null || uxmlData.GetType() != desc.serializedDataType)
                         {
+                            if (syncOnlyBoundValues && !isBound)
+                                return;
+
                             //  Type mismatch
                             hasUnsupportedDrivenPropertyChange = true;
 
@@ -269,6 +289,7 @@ class LiveAttributePropertyController
                                 property = property,
                                 valueType = LiveAttributePropertyModificationValueType.ManagedReferenceValue,
                                 value = uxmlData,
+                                isBound = isBound,
                             });
                             return;
                         }
@@ -278,11 +299,15 @@ class LiveAttributePropertyController
                             var nestedProperty = property.FindPropertyRelative(nestedAttr.serializedField.Name);
 
                             if (nestedProperty != null)
-                                CollectLiveAttributeValuePropertyModifications(value, uxmlData, nestedAttr, nestedProperty, propertyModifications, ref hasUnsupportedDrivenPropertyChange);
+                                CollectLiveAttributeValuePropertyModifications(value, uxmlData, nestedAttr, nestedProperty, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
                         }
                     }
                     else if (uxmlValue != null)
                     {
+                        // Exit if syncing only bound values and this property is not bound
+                        if (syncOnlyBoundValues && !isBound)
+                            return;
+
                         // Handle null items
                         hasUnsupportedDrivenPropertyChange = true;
 
@@ -292,6 +317,7 @@ class LiveAttributePropertyController
                             property = property,
                             valueType = LiveAttributePropertyModificationValueType.ManagedReferenceValue,
                             value = null,
+                            isBound = isBound,
                         });
                     }
                 }
@@ -299,8 +325,7 @@ class LiveAttributePropertyController
                 return;
             }
 
-            // We only sync values that are different
-            if (!UxmlAttributeComparison.ObjectEquals(value, uxmlValue))
+            if (isBound || (!syncOnlyBoundValues && !UxmlAttributeComparison.ObjectEquals(value, uxmlValue)))
             {
                 propertyModifications.Add(new LiveAttributePropertyModification
                 {
@@ -308,6 +333,7 @@ class LiveAttributePropertyController
                     property = property,
                     valueType = LiveAttributePropertyModificationValueType.BoxedValue,
                     value = value,
+                    isBound = isBound,
                 });
             }
         }

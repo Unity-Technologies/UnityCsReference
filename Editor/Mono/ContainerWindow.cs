@@ -16,10 +16,15 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal partial class ContainerWindow : ScriptableObject
     {
-        [SerializeField] MonoReloadableIntPtr m_WindowPtr;
+        MonoReloadableIntPtr m_WindowPtr;
+
+        internal static class NativeHandleMarshaller
+        {
+            public static IntPtr ConvertToUnmanaged(ContainerWindow window) => window != null ? window.m_WindowPtr.m_IntPtr : IntPtr.Zero;
+        }
         [SerializeField] Rect m_PixelRect;
         [SerializeField] int m_ShowMode;
         [SerializeField] string m_Title = "";

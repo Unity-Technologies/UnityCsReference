@@ -12,6 +12,7 @@ using UnityEditorInternal;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.AssetImporters
 {
@@ -208,9 +209,7 @@ namespace UnityEditor.AssetImporters
 
         void InitializeUnsavedChangesCache()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var editors = Resources.FindObjectsOfTypeAll(typeof(AssetImporterEditor)).Cast<AssetImporterEditor>().ToList();
-#pragma warning restore UA2001
+            var editors = Resources.FindObjectsOfTypeAll(typeof(AssetImporterEditor));
 
             CheckExtraDataArray();
             var loadedIds = new List<EntityId>(targets.Length);
@@ -239,7 +238,7 @@ namespace UnityEditor.AssetImporters
                 // This is because when coming back from an assembly reload,
                 // the Editors already exist but get removed from the cache in their OnDisable, so we don't count them until its their turn to be Enabled back.
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var allEditors = editors.Where(e => e == this || (e.m_OnEnableCalled && e.targets.Contains(targets[i]))).Select(e => e.GetEntityId()).ToArray();
+                var allEditors = editors.Cast<AssetImporterEditor>().Where(e => e == this || (e.m_OnEnableCalled && e.targets.Contains(targets[i]))).Select(e => e.GetEntityId()).ToArray();
 #pragma warning restore UA2001
                 var instances = GetInspectorCopyCount(entityId);
                 if (allEditors.Length != instances)
@@ -385,9 +384,9 @@ namespace UnityEditor.AssetImporters
             InitializePostprocessors();
 
             saveChangesMessage = targets.Length == 1
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ? string.Format(Styles.unappliedSettingSingleAsset, GetAssetPaths().First())
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 : string.Format(Styles.unappliedSettingMultipleAssets, targets.Length);
 
             m_OnEnableCalled = true;
@@ -561,7 +560,7 @@ namespace UnityEditor.AssetImporters
             }
         }
 
-        [Obsolete("UnityUpgradeable () -> SaveChanges")]
+        [Obsolete("Please use SaveChanges.")]
         protected internal void ApplyAndImport()
         {
             SaveChanges();
@@ -579,7 +578,7 @@ namespace UnityEditor.AssetImporters
             serializedObject.Update();
         }
 
-        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
+        [Obsolete("Please use DiscardChanges.")]
         protected virtual void ResetValues()
         {
             DiscardChanges();
@@ -786,6 +785,8 @@ namespace UnityEditor.AssetImporters
             EditorGUI.indentLevel++;
 
             var processor = m_Postprocessors[index];
+
+            Rect clipRect = rect;
             rect.y += 3;
             rect.yMax = rect.yMin + EditorGUIUtility.singleLineHeight;
             if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition))
@@ -796,17 +797,23 @@ namespace UnityEditor.AssetImporters
                 pm.ShowAsContext();
             }
 
-            processor.Expanded = EditorGUI.Foldout(rect, processor.Expanded, m_Postprocessors[index].Name, true);
+            GUI.BeginClip(clipRect);
+            Rect localRect = new Rect(0, 3, clipRect.width, EditorGUIUtility.singleLineHeight);
+
+            processor.Expanded = EditorGUI.Foldout(localRect, processor.Expanded, GUIContent.Temp(processor.Name, processor.Name), true);
             if (processor.Expanded)
             {
                 EditorGUI.indentLevel++;
                 foreach (var method in processor.Methods)
                 {
-                    rect.y += EditorGUIUtility.singleLineHeight;
-                    EditorGUI.LabelField(rect, method);
+                    localRect.y += EditorGUIUtility.singleLineHeight;
+                    EditorGUI.LabelField(localRect, GUIContent.Temp(method, method));
                 }
                 EditorGUI.indentLevel--;
             }
+
+            GUI.EndClip();
+
             m_Postprocessors[index] = processor;
 
             EditorGUI.indentLevel--;
@@ -866,9 +873,7 @@ namespace UnityEditor.AssetImporters
                 }
 
                 AssetDatabase.StartAssetEditing();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var importer in targets.Cast<AssetImporter>())
-#pragma warning restore UA2001
+                foreach (AssetImporter importer in targets)
                 {
                     Undo.RegisterImporterUndo(importer.assetPath, string.Empty);
                     //When selecting an override, set it as an override, when selecting the default importer, clear the override
@@ -899,21 +904,17 @@ namespace UnityEditor.AssetImporters
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AvailableImporterTypes.AddRange(typeLists.Aggregate(
 #pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                new HashSet<Type>(typeLists.First()),
-#pragma warning restore UA2001
+                new HashSet<Type>(typeLists[0]),
                 (h, e) =>
                 {
                     h.IntersectWith(e);
                     return h;
                 }));
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultImporter = targetsPaths.Select(AssetDatabase.GetDefaultImporter).First();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AvailableImporterTypesOptions = m_AvailableImporterTypes.Select(a => a == defaultImporter ? string.Format(Styles.defaultImporterName, defaultImporter.FullName) : a.FullName).ToArray();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2010
 
 
             if (m_AvailableImporterTypes.Count > 0)
@@ -932,9 +933,9 @@ namespace UnityEditor.AssetImporters
                 }
                 else
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_SelectedImporterType = selection.First();
-#pragma warning restore UA2001
+#pragma warning restore UA2010
                 }
             }
 

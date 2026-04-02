@@ -29,13 +29,11 @@ namespace UnityEditor
 
         public void Update()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var switchesInEffect = Debug.diagnosticSwitches.Where(diagnosticSwitch => !diagnosticSwitch.isSetToDefault)
-#pragma warning restore UA2001
                 .ToArray();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (switchesInEffect.SequenceEqual(m_SwitchesInEffect))
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2014
                 return;
 
             m_SwitchesInEffect = switchesInEffect;

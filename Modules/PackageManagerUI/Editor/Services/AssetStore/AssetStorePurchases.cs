@@ -18,18 +18,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool isFilterSet => base.isFilterSet || !string.IsNullOrEmpty(searchText);
 
-        public PurchasesQueryArgs(int startIndex = 0, int limit = 0, string searchText = null, PageFilters filters = null)
+        public PurchasesQueryArgs(int startIndex = 0, int limit = 0, string searchText = null, IPageFilters filters = null) : base(filters)
         {
             this.startIndex = startIndex;
             this.limit = limit;
             this.searchText = searchText ?? string.Empty;
-            status = filters?.status ?? Status.None;
-            sortOption = filters?.sortOption ?? PageSortOption.NameAsc;
-            categories = filters?.categories ?? new List<string>();
-            labels = filters?.labels ?? new List<string>();
         }
 
-        public new PurchasesQueryArgs Clone()
+        public PurchasesQueryArgs Clone()
         {
             return (PurchasesQueryArgs)MemberwiseClone();
         }
@@ -37,35 +33,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string ToString()
         {
             var stringBuilder = new StringBuilder($"?offset={startIndex}&limit={limit}", 512);
-            var statusQuery = ToQueryString(status);
-            if (!string.IsNullOrEmpty(statusQuery))
-                stringBuilder.Append($"&{statusQuery}");
+            stringBuilder.Append(ToQueryString(status));
             if (!string.IsNullOrEmpty(searchText))
-                stringBuilder.Append($"&query={Uri.EscapeDataString(searchText)}");
-            var orderBy = ToQueryString(sortOption);
-            if (!string.IsNullOrEmpty(orderBy))
-                stringBuilder.Append($"&{orderBy}");
+            {
+                stringBuilder.Append("&query=");
+                stringBuilder.Append(Uri.EscapeDataString(searchText));
+            }
+            stringBuilder.Append(ToQueryString(sortOption));
             if (labels?.Count > 0)
-                stringBuilder.Append($"&tagging={string.Join(",", labels.SelectAsEnumerable(Uri.EscapeDataString))}");
+            {
+                stringBuilder.Append("&tagging=");
+                stringBuilder.AppendJoin(',', labels.SelectAsEnumerable(Uri.EscapeDataString));
+            }
             if (categories?.Count > 0)
-                stringBuilder.Append($"&categories={string.Join(",", categories.SelectAsEnumerable(Uri.EscapeDataString))}");
+            {
+                stringBuilder.Append("&categories=");
+                stringBuilder.AppendJoin(',', categories.SelectAsEnumerable(Uri.EscapeDataString));
+            }
             if (productIds?.Length > 0)
-                stringBuilder.Append($"&ids={string.Join(",", productIds)}");
+            {
+                stringBuilder.Append("&ids=");
+                stringBuilder.AppendJoin(',', productIds);
+            }
             return stringBuilder.ToString();
         }
 
-        public static string ToQueryString(Status value)
+        public static string ToQueryString(PageFilterStatus value)
         {
             return value switch
             {
-                Status.Unlabeled => "status=unlabeled",
-                Status.Hidden => "status=hidden",
-                Status.Deprecated => "status=deprecated",
-                Status.Downloaded => string.Empty,
-                Status.Imported => string.Empty,
-                Status.UpdateAvailable => string.Empty,
-                Status.SubscriptionBased => string.Empty,
-                Status.None => string.Empty,
+                PageFilterStatus.Unlabeled => "&status=unlabeled",
+                PageFilterStatus.Hidden => "&status=hidden",
+                PageFilterStatus.Deprecated => "&status=deprecated",
                 _ => string.Empty
             };
         }
@@ -74,11 +73,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return value switch
             {
-                PageSortOption.NameAsc => "orderBy=name&order=asc",
-                PageSortOption.NameDesc => "orderBy=name&order=desc",
-                PageSortOption.UpdateDateDesc => "orderBy=update_date&order=desc",
-                PageSortOption.PurchasedDateDesc => "orderBy=purchased_date&order=desc",
-                PageSortOption.PublishedDateDesc => string.Empty,
+                PageSortOption.NameAsc => "&orderBy=name&order=asc",
+                PageSortOption.NameDesc => "&orderBy=name&order=desc",
+                PageSortOption.UpdateDateDesc => "&orderBy=update_date&order=desc",
+                PageSortOption.PurchasedDateDesc => "&orderBy=purchased_date&order=desc",
                 _ => string.Empty
             };
         }
@@ -132,9 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public AssetStorePurchases ParsePurchases(IDictionary<string, object> rawList)
         {
-            var purchases = new AssetStorePurchases();
-            purchases.total = (long)rawList["total"];
-
+            var purchases = new AssetStorePurchases { total = (long)rawList["total"] };
             var results = rawList.GetEnumerable<Dictionary<string, object>>("results") ?? Array.Empty<Dictionary<string, object>>();
             foreach (var item in results)
             {

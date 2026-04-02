@@ -53,11 +53,11 @@ namespace UnityEditor.Build.Reporting
         // Not needed any more since we have SerializedDependency.size now, but keep it as long as the BuildReport UI uses it.
         [SerializeField] internal List<int> serializedSizes = new List<int>();
 
-        [SerializeField] internal Dictionary<string, HashSet<string>> dependencies = new Dictionary<string, HashSet<string>>();
+        internal Dictionary<string, HashSet<string>> dependencies = new Dictionary<string, HashSet<string>>();
 
-        [SerializeField] internal Dictionary<string, int> sizes = new Dictionary<string, int>();
+        internal Dictionary<string, int> sizes = new Dictionary<string, int>();
 
-        [SerializeField] internal Dictionary<string, string> icons = new Dictionary<string, string>();
+        internal Dictionary<string, string> icons = new Dictionary<string, string>();
 
         [SerializeField] internal int totalSize = 0;
 

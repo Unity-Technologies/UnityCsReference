@@ -25,15 +25,13 @@ namespace UnityEditor
 
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal interface IEditorWindowModel : IWindowModel
     {
         EditorWindow window { get; }
 
         RectOffset viewMargins { get; }
         bool notificationVisible { get; }
-
-        Color playModeTintColor { get; }
 
         Action onSplitterGUIHandler { get; set; }
 
@@ -58,7 +56,6 @@ namespace UnityEditor
 
     internal interface IEditorWindowBackend : IWindowBackend
     {
-        void PlayModeTintColorChanged();
         void NotificationVisibilityChanged();
         void Focused();
         void Blurred();

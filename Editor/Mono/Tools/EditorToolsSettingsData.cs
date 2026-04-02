@@ -10,9 +10,10 @@ using UnityEditor.EditorTools;
 namespace UnityEditor
 {
     [FilePath(assetPath, FilePathAttribute.Location.ProjectFolder)]
-    class EditorToolsSettingsData : ScriptableSingleton<EditorToolsSettingsData>, ISerializationCallbackReceiver
+    class EditorToolsSettingsData : EditorToolStateManager<EditorToolsSettingsData, EditorToolsSettingsData.EditorToolsSettingsState>
     {
         internal const string assetPath = "Library/EditorToolsSettings.asset";
+      
         [Serializable]
         public struct GroupSettingsData
         {
@@ -26,44 +27,264 @@ namespace UnityEditor
             public bool collapsed;
         }
 
-        [SerializeField] List<GroupSettingsData> m_GroupsSettingsList = new();
-        Dictionary<string, GroupSettingsData> m_GroupToSettingsData = new();
-
-        [SerializeField] 
-        string m_LastPivotModeTypeString;
-
-        public Type lastPivotModeType
+        [Serializable]
+        internal class EditorToolsSettingsState : EditorToolStateBase, ISerializationCallbackReceiver
         {
-            get
+            [SerializeField] List<GroupSettingsData> m_GroupsSettingsList = new();
+
+            Dictionary<string, GroupSettingsData> m_GroupToSettingsData = new();
+
+            [SerializeField]
+            string m_LastPivotModeTypeString;
+
+            [SerializeField]
+            string m_LastPivotRotationTypeString;
+
+            public Type lastPivotModeType
             {
-                var pivotModeType = PivotManager.defaultPivotModeType;
-                if (!string.IsNullOrEmpty(m_LastPivotModeTypeString))
-                    pivotModeType = Type.GetType(m_LastPivotModeTypeString) ?? pivotModeType;
-                return pivotModeType;
+                get
+                {
+                    var pivotModeType = PivotManager.defaultPivotModeType;
+                    if (!string.IsNullOrEmpty(m_LastPivotModeTypeString))
+                        pivotModeType = Type.GetType(m_LastPivotModeTypeString) ?? pivotModeType;
+                    return pivotModeType;
+                }
             }
-        }
 
-        [SerializeField]
-        string m_LastPivotRotationTypeString;
-
-        public Type lastPivotRotationType
-        {
-            get
+            public Type lastPivotRotationType
             {
-                var pivotRotationType = PivotManager.defaultPivotRotationType;
-                if (!string.IsNullOrEmpty(m_LastPivotRotationTypeString))
-                    pivotRotationType = Type.GetType(m_LastPivotRotationTypeString) ?? pivotRotationType;
-                return pivotRotationType;
+                get
+                {
+                    var pivotRotationType = PivotManager.defaultPivotRotationType;
+                    if (!string.IsNullOrEmpty(m_LastPivotRotationTypeString))
+                        pivotRotationType = Type.GetType(m_LastPivotRotationTypeString) ?? pivotRotationType;
+                    return pivotRotationType;
+                }
+            }
+
+            static readonly List<string> s_GroupTypesToRemove = new();
+            public void RefreshToolsData()
+            {
+                var availableEditorTools = EditorToolUtility.GetAvailableEditorTools(stateToolOwnerType);
+
+                // Remove settings for no longer existing groups
+                s_GroupTypesToRemove.Clear();
+                foreach (var kvp in m_GroupToSettingsData)
+                {
+                    var cachedGroupType = kvp.Key;
+                    var found = false;
+                    foreach (var editorTypeAssociation in availableEditorTools)
+                    {
+                        var availableGroupType = editorTypeAssociation.group ?? editorTypeAssociation.targetBehaviour;
+                        if (availableGroupType == null)
+                            continue;
+
+                        if (availableGroupType.AssemblyQualifiedName.Equals(cachedGroupType))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                        s_GroupTypesToRemove.Add(cachedGroupType);
+                }
+                foreach (var groupType in s_GroupTypesToRemove)
+                    m_GroupToSettingsData.Remove(groupType);
+
+                // Add group settings for new groups
+                foreach (var editorTypeAssociation in availableEditorTools)
+                {
+                    var groupType = editorTypeAssociation.group ?? editorTypeAssociation.targetBehaviour;
+                    if (groupType != null)
+                    {
+                        var groupTypeName = groupType.AssemblyQualifiedName;
+                        if (!m_GroupToSettingsData.ContainsKey(groupTypeName))
+                            m_GroupToSettingsData.Add(groupTypeName, new GroupSettingsData(groupTypeName, false));
+                    }
+                }
+            }
+
+            public void SetGroupCollapsed(Type groupType, bool collapsed)
+            {
+                if (groupType == null)
+                    throw new ArgumentNullException(nameof(groupType));
+
+                if (GetGroupSettings(groupType, out var groupSettings))
+                {
+                    groupSettings.collapsed = collapsed;
+                    m_GroupToSettingsData[groupType.AssemblyQualifiedName] = groupSettings;
+                }
+            }
+
+            static readonly List<string> s_KeysBuffer = new();
+            public void SetGroupsCollapsed(bool collapsed)
+            {
+                s_KeysBuffer.Clear();
+                s_KeysBuffer.AddRange(m_GroupToSettingsData.Keys);
+
+                foreach (var groupTypeName in s_KeysBuffer)
+                {
+                    var groupSettings = m_GroupToSettingsData[groupTypeName];
+                    groupSettings.collapsed = collapsed;
+                    m_GroupToSettingsData[groupTypeName] = groupSettings;
+                }
+            }
+
+            public bool GetGroupSettings(Type groupType, out GroupSettingsData groupSettings)
+            {
+                if (groupType == null)
+                    throw new ArgumentNullException(nameof(groupType));
+
+                // Ensure dictionary is initialized
+                if (m_GroupToSettingsData == null)
+                {
+                    groupSettings = default;
+                    return false;
+                }
+
+                return m_GroupToSettingsData.TryGetValue(groupType.AssemblyQualifiedName, out groupSettings);
+            }
+
+            public void SetLastPivotModeType(Type pivotModeType)
+            {
+                m_LastPivotModeTypeString = pivotModeType?.AssemblyQualifiedName;
+            }
+
+            public void SetLastPivotRotationType(Type pivotRotationType)
+            {
+                m_LastPivotRotationTypeString = pivotRotationType?.AssemblyQualifiedName;
+            }
+
+            public void OnBeforeSerialize()
+            {
+                m_GroupsSettingsList.Clear();
+                foreach (var dataPair in m_GroupToSettingsData)
+                {
+                    var groupSettings = dataPair.Value;
+                    m_GroupsSettingsList.Add(new GroupSettingsData(groupSettings.groupType, groupSettings.collapsed));
+                }
+            }
+
+            public void OnAfterDeserialize()
+            {
+                m_GroupToSettingsData.Clear();
+                for (int i = 0; i < m_GroupsSettingsList.Count; ++i)
+                {
+                    var groupSettings = m_GroupsSettingsList[i];
+                    var groupToSettings = new GroupSettingsData(groupSettings.groupType, groupSettings.collapsed);
+                    m_GroupToSettingsData.Add(groupSettings.groupType, groupToSettings);
+                }
+            }
+            
+            public bool MigrateObsoleteDataIfNeeded(List<GroupSettingsData> groupSettingsList, string lastPivotModeType, string lastPivotRotationType)
+            {
+                var migrated = false;
+                if (groupSettingsList != null && groupSettingsList.Count > 0)
+                {
+                    m_GroupToSettingsData.Clear();
+                    for (int i = 0; i < groupSettingsList.Count; ++i)
+                    {
+                        var groupSettings = groupSettingsList[i];
+                        var groupToSettings = new GroupSettingsData(groupSettings.groupType, groupSettings.collapsed);
+                        if (!m_GroupToSettingsData.ContainsKey(groupSettings.groupType))
+                            m_GroupToSettingsData.Add(groupSettings.groupType, groupToSettings);
+                    }
+
+                    migrated = true;
+                }
+
+                if (!string.IsNullOrEmpty(lastPivotModeType))
+                {
+                    m_LastPivotModeTypeString = lastPivotModeType;
+                    migrated = true;
+                }
+            
+                if (!string.IsNullOrEmpty(lastPivotRotationType))
+                {
+                    m_LastPivotRotationTypeString = lastPivotRotationType;
+                    migrated = true;
+                }
+
+                return migrated;
             }
         }
         
-        void OnEnable()
+        // Obsolete
+        [SerializeField]
+        List<GroupSettingsData> m_GroupsSettingsList = new();
+
+        // Obsolete
+        [SerializeField]
+        string m_LastPivotModeTypeString;
+
+        // Obsolete
+        [SerializeField] 
+        string m_LastPivotRotationTypeString;
+
+        public static Type GetLastPivotModeType(Type ownerType)
         {
+            var state = instance.GetOrCreateStateForType(ownerType);
+            if (state != null) 
+                return state.lastPivotModeType;
+            
+            return null;
+        }
+
+        public static Type GetLastPivotRotationType(Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType);
+            if (state != null)
+                return state.lastPivotRotationType;
+            return null;
+        }
+
+        public static void SetLastPivotModeType(Type pivotModeType, Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType); 
+            if (state != null)
+                state.SetLastPivotModeType(pivotModeType);
+        }
+
+        public static void SetLastPivotRotationType(Type pivotRotationType, Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType); 
+            if (state != null)
+                state.SetLastPivotRotationType(pivotRotationType);
+        }
+
+        public static bool GetGroupSettings(Type groupType, Type ownerType, out GroupSettingsData groupSettings)
+        {
+            groupSettings = default;
+            var state = instance.GetOrCreateStateForType(ownerType); 
+            if (state != null)
+                return state.GetGroupSettings(groupType, out groupSettings);
+            return false;
+        }
+
+        public static void SetGroupCollapsed(Type groupType, bool collapsed, Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType); 
+            if (state != null)
+                state.SetGroupCollapsed(groupType, collapsed);
+        }
+
+        public static void SetGroupsCollapsed(bool collapsed, Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType); 
+            if (state != null)
+                state.SetGroupsCollapsed(collapsed);
+        }
+        
+        public override void OnEnable()
+        {
+            base.OnEnable();
             RefreshToolsData();
         }
         
-        void OnDisable()
+        public override void OnDisable()
         {
+            base.OnDisable();
             Save();
         }
         
@@ -72,111 +293,37 @@ namespace UnityEditor
             Save(true);
         }
 
-        static readonly List<string> s_GroupTypesToRemove = new();
         public void RefreshToolsData()
         {
-            var availableEditorTools = EditorToolUtility.availailableEditorTools;
-            
-            // Remove settings for no longer existing groups
-            s_GroupTypesToRemove.Clear();
-            foreach (var kvp in m_GroupToSettingsData)
-            {
-                var cachedGroupType = kvp.Key;
-                var found = false;
-                foreach (var editorTypeAssociation in availableEditorTools)
-                {
-                    var availableGroupType = editorTypeAssociation.group ?? editorTypeAssociation.targetBehaviour;
-                    if (availableGroupType == null)
-                        continue;
-                    
-                    if (availableGroupType.AssemblyQualifiedName.Equals(cachedGroupType))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (!found)
-                    s_GroupTypesToRemove.Add(cachedGroupType);
-            }
-            foreach (var groupType in s_GroupTypesToRemove)
-                m_GroupToSettingsData.Remove(groupType);
-
-            // Add group settings for new groups
-            foreach (var editorTypeAssociation in availableEditorTools)
-            {
-                var groupType = editorTypeAssociation.group ?? editorTypeAssociation.targetBehaviour;
-                if (groupType != null)
-                {
-                    var groupTypeName = groupType.AssemblyQualifiedName;
-                    if (!m_GroupToSettingsData.ContainsKey(groupTypeName))
-                        m_GroupToSettingsData.Add(groupTypeName, new GroupSettingsData(groupTypeName, false));
-                }
-            }
+            defaultState.RefreshToolsData();
+            foreach (var state in customStates)
+                state.RefreshToolsData();
         }
         
         public void SetGroupCollapsed(Type groupType, bool collapsed)
         {
-            if (groupType == null)
-                throw new ArgumentNullException(nameof(groupType));
-
-            if (GetGroupSettings(groupType, out var groupSettings))
-            {
-                groupSettings.collapsed = collapsed;
-                m_GroupToSettingsData[groupType.AssemblyQualifiedName] = groupSettings;
-            }
+            defaultState.SetGroupCollapsed(groupType, collapsed);
         }
 
-        static readonly List<string> s_KeysBuffer = new();
         public void SetGroupsCollapsed(bool collapsed)
         {
-            s_KeysBuffer.Clear();
-            s_KeysBuffer.AddRange(m_GroupToSettingsData.Keys);
-            
-            foreach (var groupTypeName in s_KeysBuffer)
-            {
-                var groupSettings = m_GroupToSettingsData[groupTypeName];
-                groupSettings.collapsed = collapsed;
-                m_GroupToSettingsData[groupTypeName] = groupSettings;
-            }
+            defaultState.SetGroupsCollapsed(collapsed);
         }
         
         public bool GetGroupSettings(Type groupType, out GroupSettingsData groupSettings)
         {
-            if (groupType == null)
-                throw new ArgumentNullException(nameof(groupType));
-
-            return m_GroupToSettingsData.TryGetValue(groupType.AssemblyQualifiedName, out groupSettings);
+            return defaultState.GetGroupSettings(groupType, out groupSettings);
         }
         
-        public void SetLastPivotModeType(Type pivotModeType)
+        public override void OnAfterDeserialize()
         {
-            m_LastPivotModeTypeString = pivotModeType?.AssemblyQualifiedName;
-        }
-
-        public void SetLastPivotRotationType(Type pivotRotationType)
-        {
-            m_LastPivotRotationTypeString = pivotRotationType?.AssemblyQualifiedName;
-        }
-        
-        public void OnBeforeSerialize()
-        {
-            m_GroupsSettingsList.Clear();
-            foreach (var dataPair in m_GroupToSettingsData)
+            base.OnAfterDeserialize();
+               
+            if (defaultState.MigrateObsoleteDataIfNeeded(m_GroupsSettingsList, m_LastPivotModeTypeString, m_LastPivotRotationTypeString))
             {
-                var groupSettings = dataPair.Value;
-                m_GroupsSettingsList.Add(new GroupSettingsData(groupSettings.groupType, groupSettings.collapsed));
-            }
-        }
-
-        public void OnAfterDeserialize()
-        {
-            m_GroupToSettingsData.Clear();
-            for (int i = 0; i < m_GroupsSettingsList.Count; ++i)
-            {
-                var groupSettings = m_GroupsSettingsList[i];
-                var groupToSettings = new GroupSettingsData(groupSettings.groupType, groupSettings.collapsed);
-                m_GroupToSettingsData.Add(groupSettings.groupType, groupToSettings);
+                m_GroupsSettingsList = null;
+                m_LastPivotModeTypeString = null;
+                m_LastPivotRotationTypeString = null;
             }
         }
     }
@@ -202,6 +349,27 @@ namespace UnityEditor
         public static void SetGroupsCollapsed(bool collapsed)
         {
             EditorToolsSettingsData.instance.SetGroupsCollapsed(collapsed);
+        }
+
+        public static bool IsGroupCollapsed(Type groupType, Type ownerType)
+        {
+            if (groupType == null)
+                return false;
+
+            if (EditorToolsSettingsData.GetGroupSettings(groupType, ownerType, out var groupSettings))
+                return groupSettings.collapsed;
+
+            return false;
+        }
+
+        public static void SetGroupCollapsed(Type groupType, bool collapsed, Type ownerType)
+        {
+            EditorToolsSettingsData.SetGroupCollapsed(groupType, collapsed, ownerType);
+        }
+
+        public static void SetGroupsCollapsed(bool collapsed, Type ownerType)
+        {
+            EditorToolsSettingsData.SetGroupsCollapsed(collapsed, ownerType);
         }
     }
 }

@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Multiplayer.Internal;
+using Unity.Multiplayer;
 
 namespace UnityEditor.Multiplayer.Internal
 {

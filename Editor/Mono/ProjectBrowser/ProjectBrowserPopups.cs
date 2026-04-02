@@ -128,7 +128,7 @@ namespace UnityEditor
                 }
             }
 
-            public IEnumerable<string> types
+            public IReadOnlyList<string> types
             {
                 get
                 {
@@ -469,9 +469,9 @@ namespace UnityEditor
                     m_SelectedCompletionIndex = query.Count() - 1;
 #pragma warning restore UA2005
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_EnteredTextCompletion = query.Skip(m_SelectedCompletionIndex).DefaultIfEmpty("").FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
             }
             AdjustRecycledEditorSelectionToCompletion();
         }

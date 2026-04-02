@@ -203,7 +203,11 @@ namespace Unity.Mathematics.Geometry
             Min = math.min(Min, point);
             Max = math.max(Max, point);
         }
-
+        /// <summary>
+        /// Determines whether the specified other AABB is equal to the current AABB.
+        /// </summary>
+        /// <param name="other">The other AABB to compare this one with.</param>
+        /// <returns>True if the specified other AABB is equal to this AABB; otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(MinMaxAABB other)
         {
@@ -217,6 +221,12 @@ namespace Unity.Mathematics.Geometry
         }
     }
 
+    /// <summary>
+    /// Class containing math functions for <see cref="MinMaxAABB"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use the static methods in this class to transform AABBs.
+    /// </remarks>
     public static partial class Math
     {
         /// <summary>

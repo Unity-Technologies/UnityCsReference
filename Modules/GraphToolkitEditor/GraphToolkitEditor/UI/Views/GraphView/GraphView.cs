@@ -1673,7 +1673,6 @@ namespace Unity.GraphToolkit.Editor
                 {
                     Dispatch(new ExpandSubgraphCommand(GraphModel, subgraphNodeModel, ContentViewContainer.WorldToLocal(menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition)));
                 }, subgraphNodeModel.GetSubgraphModel() is null ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
-                evt.menu.AppendSeparator();
             }
         }
 
@@ -1693,64 +1692,71 @@ namespace Unity.GraphToolkit.Editor
             });
         }
 
-        void AppendConvertToAssetSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        protected virtual void AppendConvertToAssetSubgraphMenuItem(ContextualMenuPopulateEvent evt)
         {
-            if (!GraphModel.AllowSubgraphCreation)
-                return;
-            if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
-            {
-                AppendConvertToAssetSubgraphAction(null);
-            }
-            else
-            {
-                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
-                {
-                    AppendConvertToAssetSubgraphAction(graphTemplate);
-                }
-            }
-
-            return;
-
-            void AppendConvertToAssetSubgraphAction(GraphTemplate template)
-            {
-                var data = SubgraphFromSelectionAction.CollectData(this, null, template?.GraphModelType ?? GraphModel.GetType());
-                if (!data.IsValid)
-                    return;
-
-                var menuItemName = "Convert to {0}Asset Subgraph" + (data.localSubgraphNodes.Count > 1 ? "s" : "") + "...";
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates?.Count < 2 || template == null ? "" : template.GraphTypeName + " ")),
-                    _ => Dispatch(new ConvertLocalToAssetSubgraphCommand(data.localSubgraphNodes, template)));
-            }
+            AppendConvertSubgraphMenuItem(evt, true, (subgraphNodeModel, template) => (template?.GraphModelType?? GraphModel.GetType()).IsInstanceOfType(subgraphNodeModel.GetSubgraphModel()));
         }
 
-        void AppendUnpackToLocalSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        protected virtual void AppendUnpackToLocalSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        {
+            AppendConvertSubgraphMenuItem(evt, false, (subgraphNodeModel, template) => (template?.GraphModelType?? GraphModel.GetType()).IsInstanceOfType(subgraphNodeModel.GetSubgraphModel()));
+        }
+
+        protected void AppendConvertSubgraphMenuItem(ContextualMenuPopulateEvent evt, bool isConvertToAsset, Func<SubgraphNodeModel, GraphTemplate, bool> isSameGraphType)
         {
             if (!GraphModel.AllowSubgraphCreation)
                 return;
 
+            const string convertToAssetString = "Convert to Asset Subgraph{0}...";
+            const string unpackToLocalString = "Unpack to Local Subgraph{0}";
+            var menuItemName = isConvertToAsset ? convertToAssetString : unpackToLocalString;
+
             if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
             {
-                AppendUnpackToLocalSubgraphAction(null);
-            }
-            else
-            {
-                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
-                {
-                    AppendUnpackToLocalSubgraphAction(graphTemplate);
-                }
-            }
-
-            return;
-
-            void AppendUnpackToLocalSubgraphAction(GraphTemplate template)
-            {
-                var data = SubgraphFromSelectionAction.CollectData(this, null, template?.GraphModelType ?? GraphModel.GetType());
+                var data = SubgraphFromSelectionAction.CollectData(this, null, isSameGraphType);
                 if (!data.IsValid)
                     return;
 
-                var menuItemName = "Unpack to {0}Local Subgraph" + (data.assetSubgraphNodes.Count > 1 ? "s" : "");
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates?.Count < 2 || template == null ? "" : template.GraphTypeName + " ")),
-                    _ => Dispatch(new ConvertAssetToLocalSubgraphCommand(data.assetSubgraphNodes, template)));
+                var subgraphNodes = isConvertToAsset ? data.localSubgraphNodes : data.assetSubgraphNodes;
+                if (subgraphNodes == null || subgraphNodes.Count == 0)
+                    return;
+
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodes.Count > 1 ? "s" : "")),
+                    _ => Dispatch(isConvertToAsset
+                        ? new ConvertLocalToAssetSubgraphCommand(subgraphNodes, null)
+                        : new ConvertAssetToLocalSubgraphCommand(subgraphNodes, null)));
+            }
+            else
+            {
+                var subgraphNodeCount = 0;
+                var subgraphNodesAndTemplates = new List<(GraphTemplate graphTemplate, List<SubgraphNodeModel> subgraphNodes)>();
+                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
+                {
+                    var data = SubgraphFromSelectionAction.CollectData(this, graphTemplate, isSameGraphType);
+                    var subgraphNodes = isConvertToAsset ? data.localSubgraphNodes : data.assetSubgraphNodes;
+
+                    if (!data.IsValid || subgraphNodes == null || subgraphNodes.Count == 0)
+                        continue;
+
+                    subgraphNodeCount += subgraphNodes.Count;
+                    subgraphNodesAndTemplates.Add((graphTemplate, subgraphNodes));
+                }
+
+                if (subgraphNodeCount == 0 || subgraphNodesAndTemplates.Count == 0)
+                    return;
+
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodeCount > 1 ? "s" : "")),
+                    _ =>
+                    {
+                        StartMergingUndoableCommands();
+                        foreach (var (template, subgraphNodes) in subgraphNodesAndTemplates)
+                        {
+                            Dispatch(isConvertToAsset
+                                ? new ConvertLocalToAssetSubgraphCommand(subgraphNodes, template)
+                                : new ConvertAssetToLocalSubgraphCommand(subgraphNodes, template));
+                        }
+                        StopMergingUndoableCommands();
+                    });
             }
         }
 
@@ -1760,17 +1766,17 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var associateFileObject = subgraphNodeModel.GetSubgraphModel()?.GraphObject;
-            // Only add the menu item if the asset can be found in the Project Window and is a main asset.
-            if (associateFileObject is null ||
-                !AssetDatabase.IsMainAsset(associateFileObject) ||
-                !AssetDatabaseHelper.TryGetGUIDAndLocalFileIdentifier(associateFileObject, out _, out _))
+            if (associateFileObject == null || string.IsNullOrEmpty(associateFileObject.FilePath))
+                return;
+
+            // Must be an asset-backed object that is pingable and selectable in the Project Window.
+            var obj = AssetDatabase.LoadMainAssetAtPath(associateFileObject.FilePath);
+            if (obj == null || !EditorUtility.IsPersistent(obj) || !AssetDatabase.Contains(obj))
                 return;
 
             evt.menu.AppendAction(L10n.Tr("Find Asset in Project"), _ =>
             {
-                EditorUtility.FocusProjectWindow();
-                Selection.activeObject = associateFileObject;
-                EditorGUIUtility.PingObject(associateFileObject);
+                associateFileObject.ShowGraphObjectInProjectWindow();
             });
         }
 
@@ -1961,7 +1967,6 @@ namespace Unity.GraphToolkit.Editor
             var placematIsBottom = placematModelsInGraph[0] == placematModels[0];
             var canBeReordered = placematModelsInGraph.Count > 1;
 
-            evt.menu.AppendSeparator();
             evt.menu.AppendAction(L10n.Tr("Bring to Front"),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToFront, placematModels)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -2974,9 +2979,9 @@ namespace Unity.GraphToolkit.Editor
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var renamableSelection = GetSelection().Where(x => x.IsRenamable());
 #pragma warning restore UA2001
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2012 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var lastSelectedItem = renamableSelection.LastOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2012
                     var lastSelectedItemUI = lastSelectedItem?.GetView<GraphElement>(this);
 
                     lastSelectedItemUI?.OnRenameKeyDown(e);
@@ -3016,9 +3021,9 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_SelectionDraggerWasActive = true;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var elemModel = GetSelection().OfType<AbstractNodeModel>().FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
                 var elem = elemModel?.GetView<GraphElement>(this);
                 if (elem == null)
                     return;
@@ -3209,7 +3214,7 @@ namespace Unity.GraphToolkit.Editor
                 if( selectionChangeset != null)
                     selectionAlreadyUpdatedModels.UnionWith(modelChangeSet.NewModels);
 
-                shouldUpdatePlacematContainer = newPlacemats.HasAny();
+                shouldUpdatePlacematContainer = newPlacemats.Count > 0;
 
                 //Update new and deleted node containers
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -3331,18 +3336,18 @@ namespace Unity.GraphToolkit.Editor
 
             k_UpdateAllUIs.Clear();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2012 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastSelectedNode = GetSelection().OfType<AbstractNodeModel>().LastOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2012
             if (lastSelectedNode != null && lastSelectedNode.IsAscendable())
             {
                 var nodeUI = lastSelectedNode.GetView<GraphElement>(this);
                 nodeUI?.BringToFront();
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2012 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastSelectedWire = GetSelection().OfType<WireModel>().LastOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2012
             if (lastSelectedWire != null && lastSelectedWire.IsAscendable())
             {
                 var wireUI = lastSelectedWire.GetView<GraphElement>(this);
@@ -3384,9 +3389,9 @@ namespace Unity.GraphToolkit.Editor
                 guid.AppendAllViews(this, null, k_UpdateAllUIs);
                 foreach (var ui in k_UpdateAllUIs)
                 {
-                    if( ui is GraphElement ge)
+                    if (ui is GraphElement ge)
                         RemoveElement(ge);
-                    else if( ui is ModelView mv) // Port are not graph elements and will be removed by their node PortContainer, however,
+                    else if (ui is ModelView mv) // Port are not graph elements and will be removed by their node PortContainer, however,
                                                  // we need to clear their dependencies as they could be otherwise updated before the node containing
                                                  // (and potentially deleting) them is removed as the order in the changed models is not controlled.
                         mv.ClearDependencies();

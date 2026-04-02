@@ -370,7 +370,7 @@ namespace Unity.GraphToolkit.Editor
                 command.Group.MoveItemsAfter(newItems, command.InsertAfter);
 
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                graphModelState.GraphModel.DeleteGroups(duplicatedGroups.Where(g => !g.Items.HasAny() && g.IsDeletable()).ToList());
+                graphModelState.GraphModel.DeleteGroups(duplicatedGroups.Where(g => g.Items.Count == 0 && g.IsDeletable()));
 #pragma warning restore UA2001
                 graphModelState.GraphModel.UpdateSubGraphs();
 

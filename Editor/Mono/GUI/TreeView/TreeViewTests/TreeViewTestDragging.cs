@@ -38,7 +38,7 @@ namespace UnityEditor.TreeViewExamples
         public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
-            DragAndDrop.SetGenericData(k_GenericDragID, new FooDragData(GetItemsFromIDs(draggedItemIDs)));
+            DragAndDrop.SetGenericData(k_GenericDragID, new FooDragData(FindItemsFromIDs(draggedItemIDs)));
             string title = draggedItemIDs.Count + " Foo" + (draggedItemIDs.Count > 1 ? "s" : ""); // title is only shown on OSX (at the cursor)
             DragAndDrop.StartDrag(title);
         }
@@ -81,7 +81,7 @@ namespace UnityEditor.TreeViewExamples
             return true;
         }
 
-        private List<TreeViewItem> GetItemsFromIDs(IEnumerable<int> draggedItemIDs)
+        private List<TreeViewItem> FindItemsFromIDs(IReadOnlyList<int> draggedItemIDs)
         {
             // Note we only drag visible items here...
             return TreeViewUtility.FindItemsInList(draggedItemIDs, m_TreeView.data.GetRows());

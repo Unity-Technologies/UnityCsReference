@@ -14,9 +14,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string NewAssetName { get; }
 
+        public Type GraphType { get; }
+
         public GraphTemplateImp(Type graphType, string newAssetName = "New Graph")
             : base(newAssetName, GetGraphExtension(graphType))
         {
+            GraphType = graphType;
             GraphModelType = typeof(GraphModelImp);
             NewAssetName = newAssetName;
         }
@@ -28,13 +31,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
     }
     class SubgraphTemplateImp : GraphTemplateImp
     {
-        Type m_GraphType;
-
         public SubgraphTemplateImp(Type graphType, string graphTypeName = "Graph")
-            : base(graphType, graphTypeName)
-        {
-            m_GraphType = graphType;
-        }
+            : base(graphType, graphTypeName) { }
 
         internal override void InitLocalSubgraphsPreOnEnable(GraphModel graphModel)
         {
@@ -42,7 +40,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             var graphModelImp = graphModel as GraphModelImp;
             if (graphModelImp != null)
             {
-                graphModelImp.InstantiateGraph(m_GraphType);
+                graphModelImp.InstantiateGraph(GraphType);
             }
         }
     }

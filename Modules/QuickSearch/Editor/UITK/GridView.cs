@@ -481,7 +481,7 @@ namespace UnityEditor.Search
             m_ScrollOffset = m_ScrollView.scrollOffset;
         }
 
-        internal void Apply(KeyboardGridNavigationOperation operation, EventBase sourceEvent)
+        internal void Apply(KeyboardGridNavigationManipulator.KeyboardGridNavigationOperation operation, EventBase sourceEvent)
         {
             var shiftKey = sourceEvent is KeyDownEvent kde && kde.shiftKey ||
                            sourceEvent is INavigationEvent ne && ne.shiftKey;
@@ -530,7 +530,8 @@ namespace UnityEditor.Search
 
         public void AddToSelection(int index)
         {
-            AddToSelection(new[] { index });
+            Span<int> tmp = stackalloc int[1] { index };
+            AddToSelection(tmp);
         }
 
         public void AddToSelection(IList<int> indexes)
@@ -539,6 +540,17 @@ namespace UnityEditor.Search
                 return;
 
             foreach (var index in indexes)
+                AddToSelectionWithoutValidation(index);
+
+            NotifyOfSelectionChange();
+        }
+
+        public void AddToSelection(ReadOnlySpan<int> newSelection)
+        {
+            if (!HasValidDataAndBindings() || m_RowPool == null || newSelection.IsEmpty)
+                return;
+
+            foreach (var index in newSelection)
                 AddToSelectionWithoutValidation(index);
 
             NotifyOfSelectionChange();

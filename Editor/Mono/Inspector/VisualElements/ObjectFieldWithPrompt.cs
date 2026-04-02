@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
     {
         static readonly BindingId titleProperty = nameof(title);
         static readonly BindingId messageProperty = nameof(message);
+        static readonly BindingId removalMessageProperty = nameof(removalMessage);
         static readonly BindingId objectTypeProperty = nameof(objectType);
         static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
 
@@ -33,6 +34,7 @@ namespace UnityEditor.UIElements
                     new (nameof(objectType), "type", typeof(Object)),
                     new (nameof(title), "title"),
                     new (nameof(message), "message"),
+                    new (nameof(removalMessage), "removal-message"),
                 }, true);
             }
 
@@ -46,6 +48,8 @@ namespace UnityEditor.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
             [SerializeField] string message;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags message_UxmlAttributeFlags;
+            [SerializeField] string removalMessage;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags removalMessage_UxmlAttributeFlags;
             #pragma warning restore 649
             public override object CreateInstance() => new ObjectFieldWithPrompt();
 
@@ -62,6 +66,8 @@ namespace UnityEditor.UIElements
                     e.title = title;
                 if (ShouldWriteAttributeValue(message_UxmlAttributeFlags))
                     e.message = message;
+                if (ShouldWriteAttributeValue(removalMessage_UxmlAttributeFlags))
+                    e.removalMessage = removalMessage;
             }
         }
 
@@ -91,6 +97,20 @@ namespace UnityEditor.UIElements
                 if (m_Message == value) return;
                 m_Message = value;
                 NotifyPropertyChanged(messageProperty);
+            }
+        }
+
+        string m_RemovalMessage;
+
+        [CreateProperty]
+        public string removalMessage
+        {
+            get => m_RemovalMessage;
+            set
+            {
+                if (m_RemovalMessage == value) return;
+                m_RemovalMessage = value;
+                NotifyPropertyChanged(removalMessageProperty);
             }
         }
 
@@ -176,6 +196,15 @@ namespace UnityEditor.UIElements
             if (value != newValue)
             {
                 s_MessageBuilder.Clear();
+
+                // Use removal message if clearing the field, otherwise use the standard message
+                bool isRemoving = newValue == null && value != null;
+
+                if (isRemoving && !string.IsNullOrEmpty(removalMessage))
+                {
+                    s_MessageBuilder.AppendLine(removalMessage);
+                }
+
                 s_MessageBuilder.AppendLine(message);
                 s_MessageBuilder.AppendLine();
                 s_MessageBuilder.AppendLine($"Current Value: {(value ? value.name : "None")}.");

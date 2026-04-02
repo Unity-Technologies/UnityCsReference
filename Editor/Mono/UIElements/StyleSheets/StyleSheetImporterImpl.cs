@@ -811,9 +811,9 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 case k_ResourcePathFunctionName:
                     string resourcePath = null;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (functionToken.ArgumentTokens.FirstOrDefault() is StringToken stringToken)
-#pragma warning restore UA2001
+#pragma warning restore UA2011
                         resourcePath = stringToken.Data;
                     else
                     {
@@ -968,7 +968,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
         static readonly StylesheetParser s_Parser = new StylesheetParser();

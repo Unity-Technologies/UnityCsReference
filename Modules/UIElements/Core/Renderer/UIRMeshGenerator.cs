@@ -15,6 +15,8 @@ using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.UIElements.MeshGenerationContext;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEngine.UIElements.UIR
 {
     // For tests
@@ -76,6 +78,7 @@ namespace UnityEngine.UIElements.UIR
         public VisualElement currentElement { get; set; }
 
         public TextJobSystem textJobSystem { get; set; }
+
 
         public struct BorderParams
         {
@@ -666,7 +669,7 @@ namespace UnityEngine.UIElements.UIR
                     nativeMeshInfo = meshInfosMarshalSpan[i];
                     int glyphAmount = nativeMeshInfo.textElementInfos.Length;
                     remainingVertexCount = glyphAmount * 4;
-                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(nativeMeshInfo.textAssetId);
+                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
 
                     if (textAsset == null)
                         continue;
@@ -739,10 +742,10 @@ namespace UnityEngine.UIElements.UIR
                         }
                         else
                         {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
                         }
 
                         indices[j + 0] = (ushort)(vDst + 0);
@@ -834,18 +837,34 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false)
+        internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false)
         {
-            float dilate = 0.0f;
-            // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
-            if (vertex.uv2.y < 0.0f) dilate = 1.0f;
+            float x = vertex.uv2.y;
+
+            // vertex.uv2.y can be between -3 and 3, but we want negative to be less impactful than positive.
+            // -3 = -1, -1 = -0.33, 0 = 0, 1 = 1...
+            // We then encode it so it can be received as a byte on the shader side. (UnityUIE.cginc, extraDilate)
+            float dilate;
+            if(isTextCore)
+                dilate = x < 0.0f ? 1.0f : 0.0f;
+            else
+                dilate = x < 0.0f ? x / 3.0f : x;
+            float normalized = Mathf.Clamp01((dilate + 1.0f) / 4.0f);
+            byte encodedDilate = (byte)Mathf.RoundToInt(normalized * 255.0f);
+
+            var tint = vertex.color;
+            if (isColorGlyph)
+                tint = new Color32(255, 255, 255, tint.a);
+            if (isDynamicColor)
+                tint = new Color32(255, 255, 255, 255);
+
             return new Vertex
             {
                 position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
-                tint = isColorGlyph ? new Color32(255, 255, 255, vertex.color.a) : vertex.color,
+                tint = tint,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
-                flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
+                flags = new Color32(0, encodedDilate, 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
             };
         }
 
@@ -1811,7 +1830,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 }
 
-void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
+            void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
             {
                 if (rectParams.spriteTexture == IntPtr.Zero)
                     return; // Textureless sprites not supported, should use VectorImage instead
@@ -1832,6 +1851,10 @@ void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectP
                 var colorPage = rectParams.colorPage;
                 var pageAndID = colorPage.pageAndID;
 
+                // UUM-136987 Dynamic color is now applied as a multiplier tint, so we
+                // need to force the mesh color to white.
+                var color = (colorPage.isValid != 0) ? Color.white : rectParams.color;
+
                 var flags = new Color32(0, 0, 0, (colorPage.isValid != 0) ? (byte)1 : (byte)0);
                 var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
                 var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
@@ -1848,7 +1871,7 @@ void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectP
                     vertices[i] = new Vertex
                     {
                         position = new Vector3(v.x, v.y, Vertex.nearZ),
-                        tint = rectParams.color,
+                        tint = color,
                         uv = spriteUV[i],
                         flags = flags,
                         opacityColorPages = page,
@@ -1951,3 +1974,5 @@ void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectP
         #endregion // Dispose Pattern
     }
 }
+
+#pragma warning restore CS0618

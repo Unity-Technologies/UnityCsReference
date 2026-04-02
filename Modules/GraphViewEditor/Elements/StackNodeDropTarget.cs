@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
-using UnityEngine.UIElements.StyleSheets;
+using Unity.Collections;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -198,9 +198,7 @@ namespace UnityEditor.Experimental.GraphView
 
             int insertIndex = 0;
             Vector2 localMousePosition = graphView.ChangeCoordinatesTo(contentContainer, graphView.WorldToLocal(evt.mousePosition));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            int previewIndex = m_CurrentPreviews?.FirstOrDefault()?.parent.IndexOf(m_CurrentPreviews.First()) ?? -1;
-#pragma warning restore UA2001
+            int previewIndex = m_CurrentPreviews?.FirstOrDefault()?.parent.IndexOf(m_CurrentPreviews[0]) ?? -1;
             int maxIndex = 0;
 
             // If there is no child then add at index 0
@@ -225,9 +223,7 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // Call AcceptsElement to get the first insert index
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            AcceptsElement(m_DraggedElements.First(), ref insertIndex, maxIndex);
-#pragma warning restore UA2001
+            AcceptsElement(m_DraggedElements[0], ref insertIndex, maxIndex);
 
             // Do nothing if the insert index has not changed
             if (previewIndex == insertIndex)
@@ -263,10 +259,7 @@ namespace UnityEditor.Experimental.GraphView
             // If there is already a preview being removed then adjust the insert index of the new preview
             if (m_RemovedPreviews != null)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                int removePreviewIndex = m_RemovedPreviews.FirstOrDefault()?.parent.IndexOf(m_RemovedPreviews.First()) ?? -1;
-#pragma warning restore UA2001
-
+                int removePreviewIndex = m_RemovedPreviews.FirstOrDefault()?.parent.IndexOf(m_RemovedPreviews[0]) ?? -1;
                 if (removePreviewIndex < previewIndex)
                 {
                     previewIndex += m_RemovedPreviews.Count;

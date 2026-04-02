@@ -5,13 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditorInternal;
-using UnityEngine.Networking;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.UI;
+using Unity.Collections;
 
 using Button = UnityEngine.UIElements.Button;
 using Debug = UnityEngine.Debug;
@@ -289,9 +288,7 @@ namespace UnityEditor.Connect
         {
             m_NotificationSubscriber = new UIElementsNotificationSubscriber(rootVisualElement);
             var topics = notificationTopicsToSubscribe;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!topics.Contains(Notification.Topic.ProjectBind))
-#pragma warning restore UA2001
             {
                 topics = new Notification.Topic[notificationTopicsToSubscribe.Length + 1];
                 for (var i = 0; i < notificationTopicsToSubscribe.Length; i++)

@@ -11,11 +11,11 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class RestoreSceneManagerSetupNode : Node
+    class RestoreSceneManagerSetupNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<SceneSetup[]> ScenesSetup;
 
-        public RestoreSceneManagerSetupNode(string name) : base(name)
+        public RestoreSceneManagerSetupNode()
         {
             ScenesSetup = new(this);
         }

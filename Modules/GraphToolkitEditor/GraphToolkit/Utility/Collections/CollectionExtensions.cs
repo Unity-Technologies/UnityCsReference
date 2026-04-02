@@ -176,8 +176,9 @@ namespace Unity.GraphToolkit
             if (source.Count == 0)
                 throw new InvalidOperationException("The source sequence is empty.");
 
-            foreach (var element in source)
+            for (var index = 0; index < source.Count; index++)
             {
+                var element = source[index];
                 if (predicate(element))
                     return element;
             }

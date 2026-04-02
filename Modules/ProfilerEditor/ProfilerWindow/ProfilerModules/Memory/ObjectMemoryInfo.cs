@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEngine.Serialization;
 
 namespace UnityEditorInternal
@@ -13,7 +14,7 @@ namespace UnityEditorInternal
     [StructLayout(LayoutKind.Sequential)]
     public sealed class ObjectMemoryInfo
     {
-        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        [Obsolete("instanceId is deprecated. Use entityId instead.", true)]
         public int instanceId { get => entityId; set => entityId = value; }
         [FormerlySerializedAs("instanceId")]
         public EntityId entityId;
@@ -22,5 +23,27 @@ namespace UnityEditorInternal
         public int reason;
         public string name;
         public string className;
+
+        [RequiredByNativeCode]
+        internal static void ReconstructArrayElement(
+            ObjectMemoryInfo[] array,
+            int index,
+            EntityId entityId,
+            long memorySize,
+            int count,
+            int reason,
+            string name,
+            string className)
+        {
+            array[index] = new ObjectMemoryInfo
+            {
+                entityId = entityId,
+                memorySize = memorySize,
+                count = count,
+                reason = reason,
+                name = name,
+                className = className
+            };
+        }
     }
 }

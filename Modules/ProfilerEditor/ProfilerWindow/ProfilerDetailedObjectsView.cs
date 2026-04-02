@@ -42,7 +42,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         SplitterState m_VertSplit;
 
-        [SerializeField]
+        // NOTE: This was originally tagged [SerializeField], but the type was not serializable. UUM-132549
         ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
         ObjectsTreeView m_TreeView;
         Vector2 m_CallstackScrollViewPos;

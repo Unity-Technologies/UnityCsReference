@@ -145,18 +145,25 @@ namespace UnityEngine.UIElements.Internal
         /// The USS class name for MultiColumnCollectionHeader elements.
         /// </summary>
         public static readonly string ussClassName = "unity-multi-column-header";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name for column container elements of multi column headers.
         /// </summary>
         public static readonly string columnContainerUssClassName = ussClassName + "__column-container";
+        internal static readonly UniqueStyleString columnContainerUssClassNameUnique = new(columnContainerUssClassName);
+
         /// <summary>
         /// The USS class name for handle container elements of multi column headers.
         /// </summary>
         public static readonly string handleContainerUssClassName = ussClassName + "__resize-handle-container";
+        internal static readonly UniqueStyleString handleContainerUssClassNameUnique = new(handleContainerUssClassName);
+
         /// <summary>
         /// The USS class name for MultiColumnCollectionHeader elements that are in animated reorder mode.
         /// </summary>
         public static readonly string reorderableUssClassName = ussClassName + "__header";
+        internal static readonly UniqueStyleString reorderableUssClassNameUnique = new(reorderableUssClassName);
 
         bool m_SortingEnabled;
         List<SortColumnDescription> m_SortedColumns;
@@ -267,7 +274,7 @@ namespace UnityEngine.UIElements.Internal
         /// <param name="sortedColumns"></param>
         public MultiColumnCollectionHeader(Columns columns, SortColumnDescriptions sortDescriptions, List<SortColumnDescription> sortedColumns)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             this.columns = columns;
             m_SortedColumns = sortedColumns;
@@ -277,7 +284,7 @@ namespace UnityEngine.UIElements.Internal
             {
                 pickingMode = PickingMode.Ignore
             };
-            columnContainer.AddToClassList(columnContainerUssClassName);
+            columnContainer.AddToClassList(columnContainerUssClassNameUnique);
             Add(columnContainer);
 
             //Ensure that the resize handlers are on top of the columns.
@@ -285,7 +292,7 @@ namespace UnityEngine.UIElements.Internal
             {
                 pickingMode = PickingMode.Ignore
             };
-            resizeHandleContainer.AddToClassList(handleContainerUssClassName);
+            resizeHandleContainer.AddToClassList(handleContainerUssClassNameUnique);
             resizeHandleContainer.StretchToParentSize();
             Add(resizeHandleContainer);
 
@@ -356,9 +363,9 @@ namespace UnityEngine.UIElements.Internal
                     }
                 }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_OldSortedColumnStates.SequenceEqual(sortedColumnStates))
-#pragma warning restore UA2001
+#pragma warning restore UA2014
                     return;
 
                 m_SortedColumns.Clear();
@@ -765,8 +772,8 @@ namespace UnityEngine.UIElements.Internal
                 }
 
                 columnData.control.sortOrderLabel = "";
-                columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortedAscendingUssClassName);
-                columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName);
+                columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortedAscendingUssClassNameUnique);
+                columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortedDescendingUssClassNameUnique);
             }
 
             var sortedColumnDataList = new List<ColumnData>();
@@ -777,9 +784,9 @@ namespace UnityEngine.UIElements.Internal
                 {
                     sortedColumnDataList.Add(columnData);
                     if (sortedColumn.direction == SortDirection.Ascending)
-                        columnData.control.AddToClassList(MultiColumnHeaderColumn.sortedAscendingUssClassName);
+                        columnData.control.AddToClassList(MultiColumnHeaderColumn.sortedAscendingUssClassNameUnique);
                     else
-                        columnData.control.AddToClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName);
+                        columnData.control.AddToClassList(MultiColumnHeaderColumn.sortedDescendingUssClassNameUnique);
                 }
             }
 
@@ -816,11 +823,11 @@ namespace UnityEngine.UIElements.Internal
 
                 if (hasSortableColumns)
                 {
-                    columnData.control.AddToClassList(MultiColumnHeaderColumn.sortableUssClassName);
+                    columnData.control.AddToClassList(MultiColumnHeaderColumn.sortableUssClassNameUnique);
                 }
                 else
                 {
-                    columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortableUssClassName);
+                    columnData.control.RemoveFromClassList(MultiColumnHeaderColumn.sortableUssClassNameUnique);
                 }
             }
         }

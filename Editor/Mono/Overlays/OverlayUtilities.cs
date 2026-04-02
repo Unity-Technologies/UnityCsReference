@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -63,9 +64,7 @@ namespace UnityEditor.Overlays
 
                     for (int i = 0; i < len; i++)
                     {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var overlayAttribute = (OverlayAttribute)ovrls[i].GetCustomAttributes(typeof(OverlayAttribute), false).FirstOrDefault();
-#pragma warning restore UA2001
 
                         // Overlays that are implemented as instances don't need to define a target editor window.
                         if (overlayAttribute?.editorWindowType == null)
@@ -178,7 +177,15 @@ namespace UnityEditor.Overlays
                     OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) :
                     OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) && filter(overlays[i].overlayId);
                 if (shouldAddOverlayType)
+                {
+                    // Do not add overlay to the current window if the overlay targets tool owner windows but
+                    // the given windowType is not a valid/registered tool owner.
+                    if (overlays[i].editorWindowType == typeof(ISupportsToolsOverlays) &&
+                        !EditorToolUtility.IsRegisteredToolOwner(windowType))
+                        continue;
+                    
                     res.Add(overlays[i].overlay);
+                }
             }
 
             return res;
@@ -285,25 +292,21 @@ namespace UnityEditor.Overlays
             overlay.displayName = $"{overlay.GetType().Name}";
         }
 
-        internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)
+        internal static bool EnsureValidId(IReadOnlyList<Overlay> existing, Overlay overlay)
         {
             if (overlay == null)
                 return false;
             var id = string.IsNullOrEmpty(overlay.id) ? $"{overlay.GetType()}" : overlay.id;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var ret = EnsureUniqueId(existing.Select(x => x.id), id);
-#pragma warning restore UA2001
+            var ret = EnsureUniqueId(existing, id);
             if (string.IsNullOrEmpty(ret))
                 return false;
             overlay.id = ret;
             return true;
         }
 
-        static string EnsureUniqueId(IEnumerable<string> existing, string name)
+        static string EnsureUniqueId(IReadOnlyList<Overlay> existing, string name)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!existing.Contains(name))
-#pragma warning restore UA2001
+            if (!existing.Exists(e => e.id == name))
                 return name;
 
             // 256 has no special meaning, it's just a failsafe to prevent this method from locking up the editor
@@ -313,9 +316,7 @@ namespace UnityEditor.Overlays
             for (int n = 0; n < 256; ++n)
             {
                 var inc = $"{name} ({n})";
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!existing.Contains(inc))
-#pragma warning restore UA2001
+                if (!existing.Exists(e => e.id == inc))
                     return inc;
             }
 

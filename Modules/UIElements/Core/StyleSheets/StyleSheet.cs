@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
-using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -36,7 +35,7 @@ namespace UnityEngine.UIElements
     public class StyleSheet : ScriptableObject
     {
         [Flags]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal enum RebuildOptions
         {
             None,
@@ -134,35 +133,6 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal ScalableImage[] scalableImages = Array.Empty<ScalableImage>();
 
-        // This enum is used to retrieve a given "TableType" at specific index in the related array
-        internal enum OrderedSelectorType
-        {
-            None = -1,
-            Name = 0,
-            Type = 1,
-            Class = 2,
-            Length = 3 // Used to initialize the array
-        }
-
-        [NonSerialized]
-        internal TableType[] m_Tables;
-
-        internal TableType[] tables => m_Tables ??= new[]
-        {
-            // OrderedSelectorType.Name
-            new TableType(StringComparer.Ordinal),
-            // OrderedSelectorType.Type
-            new TableType(StringComparer.Ordinal),
-            // OrderedSelectorType.Class
-            new TableType(StringComparer.Ordinal)
-        };
-
-        [NonSerialized] internal int nonEmptyTablesMask;
-
-        [NonSerialized] internal StyleComplexSelector firstRootSelector;
-
-        [NonSerialized] internal StyleComplexSelector firstWildCardSelector;
-
         [NonSerialized]
         private bool m_IsDefaultStyleSheet;
 
@@ -215,6 +185,12 @@ namespace UnityEngine.UIElements
         internal virtual void OnEnable()
         {
             SetupReferences();
+            UIElementsUtility.MarkStyleSheetAsLoaded(this);
+        }
+
+        internal virtual void OnDisable()
+        {
+            UIElementsUtility.MarkStyleSheetAsUnloaded(this);
         }
 
         internal void FlattenImportedStyleSheetsRecursive()
@@ -243,13 +219,13 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRule() => AddRuleAtIndex(-1);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRuleAtIndex(int index) => AddRuleAtIndex(index, null);
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleRule AddRule(string selector) => AddRuleAtIndex(-1, selector);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRuleAtIndex(int index, string selector)
         {
             if (index == -1)
@@ -356,17 +332,6 @@ namespace UnityEngine.UIElements
 
         internal void SetupReferences()
         {
-            if (tables != null)
-            {
-                tables[(int)OrderedSelectorType.Name].Clear();
-                tables[(int)OrderedSelectorType.Type].Clear();
-                tables[(int)OrderedSelectorType.Class].Clear();
-            }
-
-            nonEmptyTablesMask = 0;
-            firstRootSelector = null;
-            firstWildCardSelector = null;
-
             if (rules == null || rules.Length == 0)
             {
                 m_RequiresRebuild = false;
@@ -385,72 +350,9 @@ namespace UnityEngine.UIElements
                 {
                     complexSelector.rule = rule;
                     complexSelector.ruleIndex = index;
-                    complexSelector.nextInTable = null;
                     complexSelector.CachePseudoStateMasks(this);
                     complexSelector.CalculateHashes();
                     complexSelector.orderInStyleSheet = orderInStyleSheet++;
-                    // Here we set-up runtime-only pointers
-
-                    var lastSelector = complexSelector.selectors[^1];
-                    var part = lastSelector.parts[0];
-
-                    var key = part.value;
-
-                    var tableToUse = OrderedSelectorType.None;
-
-                    switch (part.type)
-                    {
-                        case StyleSelectorType.Class:
-                            tableToUse = OrderedSelectorType.Class;
-                            break;
-                        case StyleSelectorType.ID:
-                            tableToUse = OrderedSelectorType.Name;
-                            break;
-                        case StyleSelectorType.Type:
-                            key = part.value;
-                            tableToUse = OrderedSelectorType.Type;
-                            break;
-
-                        case StyleSelectorType.Wildcard:
-                            if (firstWildCardSelector != null)
-                                complexSelector.nextInTable = firstWildCardSelector;
-                            firstWildCardSelector = complexSelector;
-                            break;
-
-                        case StyleSelectorType.PseudoClass:
-                            // :root selector are put separately because they apply to very few elements
-                            if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
-                            {
-                                if (firstRootSelector != null)
-                                    complexSelector.nextInTable = firstRootSelector;
-                                firstRootSelector = complexSelector;
-                            }
-                            // in this case we assume a wildcard selector
-                            // since a selector such as ":selected" applies to all elements
-                            else
-                            {
-                                if (firstWildCardSelector != null)
-                                    complexSelector.nextInTable = firstWildCardSelector;
-                                firstWildCardSelector = complexSelector;
-                            }
-
-                            break;
-                        default:
-                            Debug.LogError($"Invalid first part type {part.type}", this);
-                            break;
-                    }
-
-                    if (tableToUse != OrderedSelectorType.None)
-                    {
-                        var table = tables[(int)tableToUse];
-                        if (table.TryGetValue(key, out var previous))
-                        {
-                            complexSelector.nextInTable = previous;
-                        }
-
-                        nonEmptyTablesMask |= (1 << (int)tableToUse);
-                        table[key] = complexSelector;
-                    }
                 }
 
                 rule.customPropertiesCount = 0;
@@ -532,7 +434,7 @@ namespace UnityEngine.UIElements
             return AddValueToArray(ref strings, valueStr);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleValueKeyword ReadKeyword(StyleValueHandle handle)
         {
             return (StyleValueKeyword)handle.valueIndex;
@@ -545,7 +447,7 @@ namespace UnityEngine.UIElements
             return handle.valueType == StyleValueType.Keyword;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal float ReadFloat(StyleValueHandle handle)
         {
             // Handle dimension for properties with optional unit
@@ -568,7 +470,7 @@ namespace UnityEngine.UIElements
             return isDimension;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Dimension ReadDimension(StyleValueHandle handle)
         {
             // If the value is 0 (without unit) it's stored as a float
@@ -592,7 +494,7 @@ namespace UnityEngine.UIElements
             return isFloat;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Color ReadColor(StyleValueHandle handle)
         {
             if (handle.valueType == StyleValueType.Enum)
@@ -617,7 +519,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal string ReadString(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.String, handle);
@@ -628,7 +530,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(strings, StyleValueType.String, handle, out value);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal string ReadEnum(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Enum, handle);
@@ -662,7 +564,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal string ReadVariable(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Variable, handle);
@@ -700,7 +602,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Object ReadAssetReference(StyleValueHandle handle)
         {
             return CheckAccess(assets, StyleValueType.AssetReference, handle);
@@ -778,6 +680,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Length ReadLength(StyleValueHandle handle)
         {
             if (handle.valueType == StyleValueType.Keyword)
@@ -823,6 +726,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Angle ReadAngle(StyleValueHandle handle)
         {
             if (handle.valueType == StyleValueType.Keyword)
@@ -907,7 +811,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteKeyword(ref StyleValueHandle handle, StyleValueKeyword value)
         {
             handle.valueType = StyleValueType.Keyword;
@@ -915,7 +819,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteFloat(ref StyleValueHandle handle, float value)
         {
             if (handle.valueType == StyleValueType.Float)
@@ -932,7 +836,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteDimension(ref StyleValueHandle handle, Dimension dimension)
         {
             if (handle.valueType == StyleValueType.Dimension)
@@ -949,7 +853,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteColor(ref StyleValueHandle handle, Color color)
         {
             if (handle.valueType == StyleValueType.Color)
@@ -966,7 +870,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteString(ref StyleValueHandle handle, string value)
         {
             if (handle.valueType == StyleValueType.String)
@@ -991,7 +895,7 @@ namespace UnityEngine.UIElements
             WriteEnumAsString(ref handle, valueStr);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteEnumAsString(ref StyleValueHandle handle, string valueStr)
         {
             if (handle.valueType == StyleValueType.Enum)
@@ -1060,7 +964,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteAssetReference(ref StyleValueHandle handle, Object value)
         {
             if (handle.valueType == StyleValueType.AssetReference)
@@ -1147,6 +1051,7 @@ namespace UnityEngine.UIElements
             MarkAsChanged();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteLength(ref StyleValueHandle handle, Length value)
         {
             if (value.IsAuto())
@@ -1157,6 +1062,7 @@ namespace UnityEngine.UIElements
                 WriteDimension(ref handle, value.ToDimension());
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteAngle(ref StyleValueHandle handle, Angle value)
         {
             if (value.IsNone())
@@ -1165,6 +1071,7 @@ namespace UnityEngine.UIElements
                 WriteDimension(ref handle, value.ToDimension());
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void WriteTimeValue(ref StyleValueHandle handle, TimeValue value)
         {
             WriteDimension(ref handle, value.ToDimension());

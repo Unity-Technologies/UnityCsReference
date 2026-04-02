@@ -9,8 +9,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class PackageValidator
     {
+        // The maximum value of a package name follows this documentation: https://docs.unity3d.com/Manual/cus-naming.html
+        public const int k_MaxAllowedCharsInTechnicalName = 214;
         private const string k_AllowedCharsInTechnicalName = @"a-z\d\-\._";
-        private static readonly Regex k_CompleteTechnicalNameRegEx = new Regex(@"^([a-z\d][" + k_AllowedCharsInTechnicalName + "]{0,213})$");
+        private static readonly Regex k_CompleteTechnicalNameRegEx = new Regex(@"^([a-z\d][" + k_AllowedCharsInTechnicalName + "]{0," + (k_MaxAllowedCharsInTechnicalName - 1) + "})$");
         private static readonly Regex k_AllowedSemverRegEx = new Regex(@"^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$");
         private static readonly Regex k_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex k_UnityMinorVersionRegEx = new Regex(@"^([0-9])$");

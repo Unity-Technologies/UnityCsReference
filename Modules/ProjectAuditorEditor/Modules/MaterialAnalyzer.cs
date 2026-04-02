@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEngine;
@@ -63,9 +64,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                     foundTextureNames.Add(texture.name);
 
+                    var location = new Location(textureImporter.assetPath);
+                    var dependencyNode = new TextureDependencyNode { Location = location };
+
                     yield return context.CreateIssue(IssueCategory.AssetIssue,
                         k_MaterialNormalMapTexturesDescriptor.Id, context.Name, texture.name)
-                        .WithLocation(textureImporter.assetPath);
+                        .WithDependencies(dependencyNode)
+                        .WithLocation(location);
                 }
             }
 
@@ -83,9 +88,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                     foundTextureNames.Add(texture.name);
 
+                    var location = new Location(textureImporter.assetPath);
+                    var dependencyNode = new TextureDependencyNode { Location = location };
+
                     yield return context.CreateIssue(IssueCategory.AssetIssue,
                         k_MaterialNormalMapTexturesDescriptor.Id, context.Name, texture.name)
-                        .WithLocation(textureImporter.assetPath);
+                        .WithDependencies(dependencyNode)
+                        .WithLocation(location);
                 }
             }
         }

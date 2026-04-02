@@ -275,6 +275,7 @@ namespace UnityEngine
         public Vector4 uv1;
         public Vector4 uv2;
         public Vector4 uv3;
+        public Vector4 prevPosition;
 
         private static readonly Color32 s_DefaultColor = new Color32(255, 255, 255, 255);
         private static readonly Vector4 s_DefaultTangent = new Vector4(1.0f, 0.0f, 0.0f, -1.0f);
@@ -288,7 +289,8 @@ namespace UnityEngine
             uv0 = Vector4.zero,
             uv1 = Vector4.zero,
             uv2 = Vector4.zero,
-            uv3 = Vector4.zero
+            uv3 = Vector4.zero,
+            prevPosition = Vector4.zero
         };
     }
 

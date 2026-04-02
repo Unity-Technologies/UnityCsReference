@@ -7,7 +7,7 @@ using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+    [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey, version: 2)]
     internal class PackageManagerDialogAnalytics : IAnalytic
     {
         private const string k_EventName = "packageManagerDialogs";

@@ -144,6 +144,11 @@ namespace Unity.ProjectAuditor.Editor
         GameObject,
 
         /// <summary>
+        /// A library of deprecated API
+        /// </summary>
+        ObsoleteAPI,
+
+        /// <summary>
         /// Enum value indicating the first available custom category
         /// </summary>
         FirstCustomCategory

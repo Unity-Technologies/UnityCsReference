@@ -62,7 +62,10 @@ internal readonly record struct DuplicateElementsCommand
         }
 
         foreach (var vta in set)
+        {
             EditorUtility.SetDirty(vta);
+            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
+        }
 
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
     }

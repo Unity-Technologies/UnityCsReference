@@ -14,6 +14,9 @@ namespace UnityEditor.Overlays
         public const string className = "unity-overlay-actions";
         public const string toolbarToggleName = "ToolbarModeToggle";
         public const string minimizedToggleName = "MinimizedModeToggle";
+        public readonly string togglePanelTooltip = L10n.Tr("Expand as dynamic panel");
+        public readonly string toggleToolbarTooltip = L10n.Tr("Show as toolbar");
+        public readonly string toggleMinimizeTooltip = L10n.Tr("Minimize");
 
         public event Action<State> stateChanged;
 
@@ -69,6 +72,9 @@ namespace UnityEditor.Overlays
                 SetState(args.newValue ? State.Minimized : State.Panel);
             });
             RegisterCallback<GeometryChangedEvent>(DelayPickingModeSet);
+
+            //Init the values and tooltips
+            UpdateElements();
         }
 
         // The overlay canvas turns off all picking when initialized (before overlay are added)
@@ -94,6 +100,22 @@ namespace UnityEditor.Overlays
         {
             m_ToolbarToggle.SetValueWithoutNotify(m_State == State.Toolbar || m_State == State.Minimized);
             m_MinimizedToggle.SetValueWithoutNotify(m_State == State.Minimized);
+
+            if (m_State == State.Panel)
+            {
+                m_ToolbarToggle.tooltip = toggleToolbarTooltip;
+                m_MinimizedToggle.tooltip = toggleMinimizeTooltip;
+            }
+            else if (m_State == State.Toolbar)
+            {
+                m_ToolbarToggle.tooltip = togglePanelTooltip;
+                m_MinimizedToggle.tooltip = toggleMinimizeTooltip;
+            }
+            else // minimize
+            {
+                m_ToolbarToggle.tooltip = toggleToolbarTooltip;
+                m_MinimizedToggle.tooltip = togglePanelTooltip;
+            }
         }
     }
 }

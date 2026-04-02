@@ -2,14 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine.Pool;
-
 namespace UnityEngine.UIElements;
 
-internal class PhysicsDocumentPicker
+internal static class PhysicsDocumentPicker
 {
-    private void Pick(Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out VisualElement pickedElement, out float distance)
+    // pickedElement is a visualElement but is not identified as such for code stripping reasons
+    private static void Pick(Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out IEventHandler pickedElement, out float distance)
     {
         var result = WorldSpaceInput.PickDocument3D(worldRay, maxDistance, layerMask);
         collider = result.collider;
@@ -18,7 +16,8 @@ internal class PhysicsDocumentPicker
         distance = result.distance;
     }
 
-    public bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out VisualElement elementUnderPointer, out float distance, out bool captured)
+    // pickedElement is a visualElement but is not identified as such for code stripping reasons
+    public static bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out IEventHandler elementUnderPointer, out float distance, out bool captured)
     {
         captured = GetCapturingDocument(pointerId, out var capturingDocument);
         if (!captured)
@@ -42,26 +41,26 @@ internal class PhysicsDocumentPicker
         return false;
     }
 
-    bool GetCapturingDocument(int pointerId, out IPanelComponent capturingComponent)
+    static bool GetCapturingDocument(int pointerId, out IPanelComponent capturingComponent)
     {
-        var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
-        if (capturingElement is VisualElement capturingVE)
+        IRuntimePanel.uIElementsRuntimeUtility.GetCapturingElement(pointerId, out var panel, out var capturingElement);
+        if (capturingElement is not null)
         {
-            var capturingElementPanel = capturingVE.elementPanel;
+            var capturingElementPanel = panel;
             if (capturingElementPanel != null && !capturingElementPanel.isFlat)
             {
-                capturingComponent = capturingVE.FindRootPanelComponent();
+                capturingComponent = ((VisualElement)capturingElement).FindRootPanelComponent();
                 if (capturingComponent != null) // UUM-117081: don't hang on to an invalid capture
                     return true;
             }
         }
 
-        var capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
+        var capturingPanel = IRuntimePanel.pointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
         if (capturingPanel != null)
         {
             if (!capturingPanel.isFlat)
             {
-                capturingComponent = PointerDeviceState.GetWorldSpaceDocumentWithSoftPointerCapture(pointerId);
+                capturingComponent = IRuntimePanel.pointerDeviceState.GetWorldSpacePanelComponentWithSoftPointerCapture(pointerId);
                 if (capturingComponent != null) // UUM-117081: don't hang on to an invalid capture
                     return true;
             }
@@ -72,9 +71,9 @@ internal class PhysicsDocumentPicker
     }
 }
 
-internal class ScreenOverlayPanelPicker
+internal static class ScreenOverlayPanelPicker
 {
-    public bool TryPick(BaseRuntimePanel panel, int pointerId, Vector2 screenPosition, Vector2 delta,
+    public static bool TryPick(IRuntimePanel panel, int pointerId, Vector2 screenPosition, Vector2 delta,
         int? targetDisplay, out bool captured)
     {
         // Even if we have capture, we don't have a way to compute panel position from another display so we need to
@@ -104,16 +103,16 @@ internal class ScreenOverlayPanelPicker
         return false;
     }
 
-    bool GetCapturingPanel(int pointerId, out BaseVisualElementPanel capturingPanel)
+    static bool GetCapturingPanel(int pointerId, out IRuntimePanel capturingPanel)
     {
-        var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
-        if (capturingElement is VisualElement capturingVE)
+        IRuntimePanel.uIElementsRuntimeUtility.GetCapturingElement(pointerId, out var panel, out var capturingElement);
+        if (capturingElement != null )
         {
-            capturingPanel = capturingVE.elementPanel;
+            capturingPanel = panel;
         }
         else
         {
-            capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
+            capturingPanel = IRuntimePanel.pointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
         }
 
         return capturingPanel != null;

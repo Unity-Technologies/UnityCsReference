@@ -10,50 +10,12 @@ using UnityEngine.TextCore.LowLevel;
 
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 
+#pragma warning disable CS0618 // TextShaderUtilities, TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap are obsolete; handled natively by ATG
+
 namespace UnityEditor.TextCore.Text
 {
     internal static class FontAsset_CreationMenu
     {
-        /// <summary>
-        /// Enables the creation of a font asset with unique face info attributes but sharing the same atlas texture and material.
-        /// </summary>
-        [MenuItem("Assets/Create/Text Core/Font Asset Variant", false, 105)]
-        internal static void CreateFontAssetVariant()
-        {
-            Object target = Selection.activeObject;
-
-            // Make sure the selection is a font file
-            if (target == null || target.GetType() != typeof(FontAsset))
-            {
-                Debug.LogWarning("A Font Asset must first be selected in order to create a Font Asset Variant.");
-                return;
-            }
-
-            FontAsset sourceFontAsset = (FontAsset)target;
-
-            string sourceFontFilePath = AssetDatabase.GetAssetPath(target);
-
-            string folderPath = Path.GetDirectoryName(sourceFontFilePath);
-            string assetName = Path.GetFileNameWithoutExtension(sourceFontFilePath);
-
-            string newAssetFilePathWithName = AssetDatabase.GenerateUniqueAssetPath(folderPath + "/" + assetName + " - Variant.asset");
-
-            // Set Texture and Material reference to the source font asset.
-            FontAsset fontAsset = ScriptableObject.Instantiate<FontAsset>(sourceFontAsset);
-            AssetDatabase.CreateAsset(fontAsset, newAssetFilePathWithName);
-
-            fontAsset.atlasPopulationMode = AtlasPopulationMode.Static;
-
-            // Initialize array for the font atlas textures.
-            fontAsset.atlasTextures = sourceFontAsset.atlasTextures;
-            fontAsset.material = sourceFontAsset.material;
-
-            // Not sure if this is still necessary in newer versions of Unity.
-            EditorUtility.SetDirty(fontAsset);
-
-            AssetDatabase.SaveAssets();
-        }
-
         [MenuItem("Assets/Create/Text Core/Font Asset/SDF", false, 100)]
         static void CreateFontAssetSDF()
         {
@@ -220,3 +182,5 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

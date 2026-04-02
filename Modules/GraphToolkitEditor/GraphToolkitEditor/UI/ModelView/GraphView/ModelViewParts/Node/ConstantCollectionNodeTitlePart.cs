@@ -28,7 +28,7 @@ namespace Unity.GraphToolkit.Editor
             (TitleLabel as Label).text = TypeHelpers.GetFriendlyName(Constant.Type).Nicify();
             SubTitle.text = "Constant";
 
-            m_OwnerElement.EnableInClassList(emptySubtitleUssClassName, false);
+            m_OwnerElement.EnableInClassList(emptyUssClassName, false);
         }
 
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)

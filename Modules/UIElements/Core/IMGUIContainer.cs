@@ -161,21 +161,32 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-imgui-container";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
-        internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
-        internal static readonly List<string> ussFoldoutChildDepthClassNames;
+        //These 2 are copied in order to help with code stripping
+        internal static readonly string ussFoldoutChildDepthClassName = $"{FoldoutConstants.ussClassName}__{ussClassName}--depth-";
+        internal static readonly int ussFoldoutMaxDepth = FoldoutConstants.ussFoldoutMaxDepth;
+
+        internal static readonly List<UniqueStyleString> ussFoldoutChildDepthClassNames;
 
         internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = true; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
         internal struct NotUITKScope : IDisposable { private bool wasUITK; public NotUITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = false; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
 
         static IMGUIContainer()
         {
-            ussFoldoutChildDepthClassNames = new List<string>(Foldout.ussFoldoutMaxDepth + 1);
-            for (int i = 0; i <= Foldout.ussFoldoutMaxDepth; i++)
+            ussFoldoutChildDepthClassNames = new(ussFoldoutMaxDepth + 1);
+            for (int i = 0; i <= ussFoldoutMaxDepth; i++)
             {
-                ussFoldoutChildDepthClassNames.Add(ussFoldoutChildDepthClassName + i);
+                ussFoldoutChildDepthClassNames.Add(new(ussFoldoutChildDepthClassName + i));
             }
-            ussFoldoutChildDepthClassNames.Add(ussFoldoutChildDepthClassName + "max");
+            ussFoldoutChildDepthClassNames.Add(new(ussFoldoutChildDepthClassName + "max"));
+
+
+            GUIUtility.takeCapture += () => TakeCapture();
+            GUIUtility.releaseCapture += () => ReleaseCapture();
+
+            GUIUtility.endContainerGUIFromException += exception => EndContainerGUIFromException(exception);
+            GUIUtility.guiChanged += () => MakeCurrentIMGUIContainerDirty();
         }
 
         /// <summary>
@@ -194,7 +205,7 @@ namespace UnityEngine.UIElements
         {
             isIMGUIContainer = true;
 
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             this.onGUIHandler = onGUIHandler;
             contextType = ContextType.Editor;
@@ -287,7 +298,7 @@ namespace UnityEngine.UIElements
             var previousMeasuredWidth = layoutMeasuredWidth;
             var previousMeasuredHeight = layoutMeasuredHeight;
 
-            UIElementsIMGUIUtility.BeginContainerGUI(cache, evt, this);
+            BeginContainerGUI(cache, evt, this);
 
             // For the IMGUI, we need to update the GUI.color with the actual play mode tint ...
             // In fact, this is taken from EditorGUIUtility.ResetGUIState().
@@ -491,7 +502,7 @@ namespace UnityEngine.UIElements
                     // This will copy Event.current into evt. End the container by now since the container
                     // should end at this point no matter an exception occured or not.
                     // Not ending the container will make the GUIDepth off by 1.
-                    UIElementsIMGUIUtility.EndContainerGUI(evt, layoutSize);
+                    EndContainerGUI(evt, layoutSize);
 
                     RestoreGlobals();
                 }
@@ -676,7 +687,6 @@ namespace UnityEngine.UIElements
             {
                 return false;
             }
-
             using var scope = new NotUITKScope();
 
             EventType originalEventType = e.rawType;
@@ -943,6 +953,116 @@ namespace UnityEngine.UIElements
             if (disposeManaged)
             {
                 m_ObjectGUIState?.Dispose();
+            }
+        }
+
+        private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
+
+
+        private static void TakeCapture()
+        {
+            if (s_ContainerStack.Count > 0)
+            {
+                var topmostContainer = s_ContainerStack.Peek();
+                topmostContainer.CaptureMouse();
+            }
+        }
+
+        private static void ReleaseCapture()
+        {
+            PointerCaptureHelper.ReleaseEditorMouseCapture();
+        }
+
+        private static bool EndContainerGUIFromException(Exception exception)
+        {
+
+            // only End if we have a current container
+            if (s_ContainerStack.Count > 0)
+            {
+                GUIUtility.EndContainer();
+                s_ContainerStack.Pop();
+            }
+
+            return GUIUtility.ShouldRethrowException(exception);
+        }
+
+        internal static IMGUIContainer GetCurrentIMGUIContainer()
+        {
+            if (s_ContainerStack.Count > 0)
+            {
+                return s_ContainerStack.Peek();
+            }
+
+            return null;
+        }
+
+        internal static void MakeCurrentIMGUIContainerDirty()
+        {
+            if (s_ContainerStack.Count > 0)
+            {
+                s_ContainerStack.Peek().MarkDirtyLayout();
+            }
+        }
+
+        internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)
+        {
+            if (container.useOwnerObjectGUIState)
+            {
+                GUIUtility.BeginContainerFromOwner(container.elementPanel.ownerObject);
+            }
+            else
+            {
+                GUIUtility.BeginContainer(container.guiState);
+            }
+
+            s_ContainerStack.Push(container);
+            GUIUtility.s_SkinMode = (int)container.contextType;
+            GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetEntityId();
+
+            if (Event.current == null)
+            {
+                Event.current = evt;
+            }
+            else
+            {
+                Event.current.CopyFrom(evt);
+            }
+
+            // call AFTER setting current event
+            if (UIElementsIMGUIUtility.s_BeginContainerCallback != null)
+                UIElementsIMGUIUtility.s_BeginContainerCallback(container);
+
+            GUI.enabled = container.enabledInHierarchy;
+            GUILayoutUtility.BeginContainer(cache);
+            GUIUtility.ResetGlobalState();
+        }
+
+
+        // End the 2D GUI.
+        internal static void EndContainerGUI(Event evt, Rect layoutSize)
+        {
+            if (Event.current.type == EventType.Layout
+                && s_ContainerStack.Count > 0)
+            {
+                GUILayoutUtility.LayoutFromContainer(layoutSize.width, layoutSize.height);
+            }
+            // restore cache
+            GUILayoutUtility.SelectIDListLayout(GUIUtility.s_OriginalID);
+            GUIContent.ClearStaticCache();
+
+            if (s_ContainerStack.Count > 0)
+            {
+                IMGUIContainer container = s_ContainerStack.Peek();
+                if (UIElementsIMGUIUtility.s_EndContainerCallback != null)
+                    UIElementsIMGUIUtility.s_EndContainerCallback(container);
+            }
+
+            evt.CopyFrom(Event.current);
+
+            if (s_ContainerStack.Count > 0)
+            {
+                GUIUtility.EndContainer();
+                s_ContainerStack.Pop();
             }
         }
     }

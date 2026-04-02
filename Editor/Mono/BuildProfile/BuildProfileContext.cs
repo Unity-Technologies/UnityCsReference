@@ -13,6 +13,9 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
+using UnityEngine.Events;
+
 using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
@@ -30,6 +33,14 @@ namespace UnityEditor.Build.Profile
         const string k_BuildProfilePath = "Library/BuildProfiles";
         const string k_SharedProfilePath = $"{k_BuildProfilePath}/SharedProfile.asset";
         static BuildProfileContext s_Instance;
+
+        /// <summary>
+        /// Collection of all build profile initilization metadata.
+        /// Kept in order to track progress across domain reloads or
+        /// editor restarts.
+        /// </summary>
+        [SerializeField]
+        List<BuildProfileInitialization> m_BuildProfileInitializations = new();
 
         [SerializeField]
         string[] m_CachedEditorScriptingDefines = Array.Empty<string>();
@@ -69,10 +80,12 @@ namespace UnityEditor.Build.Profile
             get
             {
                 var profile = EditorUserBuildSettings.activeBuildProfile;
-                
+
+
                 if (profile == null || !profile)
                     return null;
-                    
+
+
                 return profile;
             }
 
@@ -118,7 +131,7 @@ namespace UnityEditor.Build.Profile
                 activeProfileChanged?.Invoke(prev, value);
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
-                
+
                 if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines))
                     BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
@@ -126,50 +139,6 @@ namespace UnityEditor.Build.Profile
 
         [VisibleToOtherModules]
         internal static PlatformPackageServiceInfoProvider packageServiceInfoProvider = new();
-
-        [SerializeField]
-        List<BuildProfilePackageAddInfo> m_PackageAddInfos = new();
-
-        [VisibleToOtherModules]
-        internal bool TryGetPackageAddInfo(BuildProfile profile, out BuildProfilePackageAddInfo result)
-        {
-            var profileGuid = GetProfileGUID(profile);
-            foreach (var packageAddInfo in m_PackageAddInfos)
-            {
-                if (packageAddInfo.profileGuid == profileGuid)
-                {
-                    result = packageAddInfo;
-                    return true;
-                }
-            }
-            result = null;
-            return false;
-        }
-
-        [VisibleToOtherModules]
-        internal void AddPackageAddInfo(BuildProfile profile, string[] packagesToAdd, int preconfiguredSettingsVariant)
-        {
-            if ((packagesToAdd.Length == 0) && (preconfiguredSettingsVariant == BuildProfilePackageAddInfo.preconfiguredSettingsVariantNotSet))
-                return;
-
-            var profileGuid = GetProfileGUID(profile);
-            var packageAddInfo = new BuildProfilePackageAddInfo()
-            {
-                profileGuid = profileGuid,
-                packagesToAdd = packagesToAdd,
-                preconfiguredSettingsVariant = preconfiguredSettingsVariant
-            };
-            m_PackageAddInfos.Add(packageAddInfo);
-        }
-
-        [VisibleToOtherModules]
-        internal void ClearPackageAddInfo(BuildProfile profile)
-        {
-            if (TryGetPackageAddInfo(profile, out BuildProfilePackageAddInfo packageAddInfo))
-            {
-                m_PackageAddInfos.Remove(packageAddInfo);
-            }
-        }
 
         static string GetProfileGUID(BuildProfile profile)
         {
@@ -341,6 +310,47 @@ namespace UnityEditor.Build.Profile
         internal BuildProfile GetForClassicPlatform(GUID platformGuid)
         {
             return m_PlatformIdToClassicPlatformProfile.GetValueOrDefault(platformGuid);
+        }
+
+        internal void RegisterProfileAwaitingInitialization(
+            BuildProfile profile,
+            string[] packagesToAdd,
+            int preconfiguredSettingsVariant,
+            UnityAction<BuildProfile> onProfileCreated)
+        {
+            var initInfo = BuildProfileInitialization.Create(
+                profile,
+                GetProfileGUID(profile),
+                packagesToAdd,
+                preconfiguredSettingsVariant,
+                onProfileCreated);
+
+            if (initInfo.state != BuildProfileInitialization.State.Ready)
+                m_BuildProfileInitializations.Add(initInfo);
+        }
+
+        /// <summary>
+        /// Checks if there's initialization work for the specified build profile.
+        /// </summary>
+        internal void UpdateBuildProfileInitialization(BuildProfile profile)
+        {
+            if (m_BuildProfileInitializations.Count == 0)
+                return;
+
+            if (!TryGetInitializationInfo(profile, out BuildProfileInitialization initializationInfo))
+                return;
+
+            if (initializationInfo.state == BuildProfileInitialization.State.Ready)
+            {
+                ClearBuildProfileInitialization(profile);
+                return;
+            }
+
+            var curState = initializationInfo.OnState(profile);
+            if (curState == BuildProfileInitialization.State.Ready)
+            {
+                ClearBuildProfileInitialization(profile);
+            }
         }
 
         /// <summary>
@@ -524,6 +534,8 @@ namespace UnityEditor.Build.Profile
 
         void OnEnable()
         {
+            BuildTargetDiscovery.ValidateSDKPlatformProviders();
+            
             EditorUserBuildSettings.isBuildProfileAvailable = true;
             EditorApplication.quitting -= SyncActiveProfileToFallback;
             EditorApplication.quitting += SyncActiveProfileToFallback;
@@ -727,9 +739,9 @@ namespace UnityEditor.Build.Profile
             {
                 s_Instance = buildProfileContext[0] as BuildProfileContext;
                 if (s_Instance == null)
-                    Debug.LogError("BuildProfileContext asset exists but could not be loaded.");
+                    Debug.LogWarning("BuildProfileContext asset exists but could not be loaded. Creating a new one.");
             }
-            else if (s_Instance == null)
+            if (s_Instance == null)
             {
                 s_Instance = CreateInstance<BuildProfileContext>();
                 s_Instance.hideFlags = HideFlags.DontSave;
@@ -840,6 +852,42 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
+        static GraphicsStateCollection GetActiveGraphicsStateCollection()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return null;
+
+            return activeProfile?.graphicsSettings.graphicsStateCollection;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string GetActiveTraceSavePath()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return string.Empty;
+
+            return activeProfile?.graphicsSettings.traceSavePath;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static GraphicsStateCollection[] GetActiveAdditionalWarmupCollections()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return null;
+
+            return activeProfile?.graphicsSettings.additionalWarmupCollections;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string GetActiveCacheMissCollectionPath()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return string.Empty;
+
+            return activeProfile?.graphicsSettings.cacheMissCollectionPath;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
         static ShaderVariantCollection[] GetActiveShaderVariantCollections()
         {
             if (!ActiveProfileHasGraphicsSettings())
@@ -877,22 +925,32 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        static bool SetActiveShaderBuildSettings(ShaderBuildSettings settings)
+        static bool SetActiveShaderBuildSettings(ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, string[] defines)
         {
             if (!ActiveProfileHasGraphicsSettings())
                 return false;
 
-            activeProfile.graphicsSettings.shaderBuildSettings = settings;
+            activeProfile.graphicsSettings.shaderBuildSettings = new ShaderBuildSettings
+            {
+                keywordDeclarationOverrides = keywordDeclarationOverrides,
+                defines = defines
+            };
             return true;
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        static ShaderBuildSettings GetActiveShaderBuildSettings()
+        static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines)
         {
             if (!ActiveProfileHasGraphicsSettings())
-                return new ShaderBuildSettings();
+            {                
+                keywordDeclarationOverrides = null;
+                defines = null;
+                return;
+            }
 
-            return activeProfile.graphicsSettings.shaderBuildSettings;
+            var shaderBuildSettings = activeProfile.graphicsSettings.shaderBuildSettings;
+            keywordDeclarationOverrides = shaderBuildSettings.keywordDeclarationOverrides;
+            defines = shaderBuildSettings.defines;
         }
 
         [RequiredByNativeCode]
@@ -952,7 +1010,13 @@ namespace UnityEditor.Build.Profile
             if (activeProfile == null || platformGuid.Empty())
                 return false;
 
-            return platformGuid == activeProfile.platformGuid;
+            if (platformGuid == activeProfile.platformGuid)
+                return true;
+
+            if (activeProfile.isMultiTarget && platformGuid == activeProfile.activePlatformGuid)
+                return true;
+
+            return false;
         }
 
         static bool IsSharedSettingEnabledInActiveProfile(string settingName)
@@ -993,6 +1057,37 @@ namespace UnityEditor.Build.Profile
             profile.SerializePlayerSettings();
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssetIfDirty(profile);
+        }
+
+        public bool TryGetInitializationInfo(BuildProfile profile, out BuildProfileInitialization result)
+        {
+            var profileGuid = GetProfileGUID(profile);
+            foreach (var initializationInfo in m_BuildProfileInitializations)
+            {
+                if (initializationInfo.assetGUID != profileGuid) continue;
+                result = initializationInfo;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
+        void ClearBuildProfileInitialization(BuildProfile profile)
+        {
+            if (m_BuildProfileInitializations.Count == 0)
+                return;
+
+            string assetGuid = GetProfileGUID(profile);
+            BuildProfileInitialization initializationInstance = null;
+            for(int index = m_BuildProfileInitializations.Count - 1; index >= 0; index--)
+            {
+                initializationInstance = m_BuildProfileInitializations[index];
+                if (initializationInstance.assetGUID == assetGuid)
+                {
+                    m_BuildProfileInitializations.RemoveAt(index);
+                    return;
+                }
+            }
         }
     }
 }

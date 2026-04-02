@@ -34,7 +34,7 @@ namespace UnityEditor.Presets
             //Re-used method from ComponentDropdownItem
             if (command.StartsWith("SCRIPT"))
             {
-                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Update int.Parse to long.Parse when EntityId size changes");
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(long), "Update int.Parse to long.Parse when EntityId size changes");
                 var scriptId = int.Parse(command.Substring(6));
                 var obj = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)scriptId)) as MonoScript;
                 presetType = new PresetType(obj.GetClass());

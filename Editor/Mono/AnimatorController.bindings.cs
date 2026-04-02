@@ -78,7 +78,7 @@ namespace UnityEditor.Animations
         [FreeFunction("AnimatorControllerBindings::Internal_CreateNewStateMachineBehaviour")]
         extern public static EntityId CreateNewStateMachineBehaviour(MonoScript script);
 
-        [Obsolete("CreateStateMachineBehaviour is deprecated. Use CreateNewStateMachineBehaviour instead.", false)]
+        [Obsolete("CreateStateMachineBehaviour is deprecated. Use CreateNewStateMachineBehaviour instead.", true)]
         public static int CreateStateMachineBehaviour(MonoScript script) => (int)CreateNewStateMachineBehaviour(script);
 
         [FreeFunction("AnimatorControllerBindings::CanAddStateMachineBehaviours")]

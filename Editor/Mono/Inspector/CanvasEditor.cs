@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEditor.AnimatedValues;
-using System.Linq;
 
 namespace UnityEditor
 {
@@ -58,7 +57,7 @@ namespace UnityEditor
         private bool m_AllOverlay = false;
         private bool m_NoneOverlay = false;
 
-        private string[] shaderChannelOptions = { "TexCoord1", "TexCoord2", "TexCoord3", "Normal", "Tangent" };
+        private string[] shaderChannelOptions = { "TexCoord1", "TexCoord2", "TexCoord3", "Normal", "Tangent", "Previous Position" };
 
 
         enum PixelPerfect
@@ -145,9 +144,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_RenderMode);
             if (EditorGUI.EndChangeCheck())
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
-#pragma warning restore UA2001
+                var rectTransforms = System.Array.ConvertAll(targets, c => (c as Canvas).transform);
                 Undo.RegisterCompleteObjectUndo(rectTransforms, "Modified RectTransform Values");
                 serializedObject.ApplyModifiedProperties();
                 foreach (Canvas canvas in targets)

@@ -177,7 +177,7 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
 
         container.Add(foldout);
 
-        CreatePropertyFields(foldout, property);
+        CreateChildPropertiesGUI(foldout, property);
     }
 
     /// <summary>
@@ -192,11 +192,11 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
     }
 
     /// <summary>
-    /// Creates property fields for each serialized property in the UxmlSerializedData.
+    /// Creates property fields for each visible serialized property in the specified UxmlSerializedData.
     /// </summary>
     /// <param name="container">The VisualElement parent where to add the created fields</param>
     /// <param name="property">A property of the UxmlSerializedData to view</param>
-    void CreatePropertyFields(VisualElement container, SerializedProperty property)
+    protected virtual void CreateChildPropertiesGUI(VisualElement container, SerializedProperty property)
     {
         var uxmlSerializedData = property.managedReferenceValue as UxmlSerializedData;
 

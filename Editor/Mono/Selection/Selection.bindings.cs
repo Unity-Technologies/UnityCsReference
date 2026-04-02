@@ -30,7 +30,7 @@ namespace UnityEditor
         // Return a selection that only contains top level selection of all visible assets
         //TopLevelAssets = 64,
         // Renamed to Editable
-        [Obsolete("'OnlyUserModifiable' is obsolete. Use 'Editable' instead. (UnityUpgradeable) -> Editable", true)]
+        [Obsolete("'OnlyUserModifiable' is obsolete. Use 'Editable' instead. (UnityUpgradable) -> Editable", true)]
         OnlyUserModifiable = 8
     }
 
@@ -87,10 +87,10 @@ namespace UnityEditor
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         extern internal static void SetSelectionWithActiveEntityId([NotNull] EntityId[] newSelection, EntityId activeObject);
 
-        [Obsolete("Use SetSelectionWithActiveEntityId instead.")]
+        [Obsolete("Use SetSelectionWithActiveEntityId instead.", true)]
         internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject)
         {
-            SetSelectionWithActiveEntityId(newSelection.ToEntityIdArray(), activeObject);
+            throw new InvalidOperationException("Use SetSelectionWithActiveEntityId.");
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
@@ -99,10 +99,10 @@ namespace UnityEditor
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelectionByID([NotNull]EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint);
 
-        [Obsolete("Use EntityId version of SetFullSelectionByID instead.")]
+        [Obsolete("Use EntityId version of SetFullSelectionByID instead.", true)]
         internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint)
         {
-            SetFullSelectionByID(newSelection.ToEntityIdArray(), activeObjectInstanceID, contextInstanceID, dataModeHint);
+            throw new InvalidOperationException("Use EntityId version of SetFullSelectionByID.");
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
@@ -126,7 +126,7 @@ namespace UnityEditor
         [NativeName("ActiveID")]
         extern public static EntityId activeEntityId { get; set; }
 
-        [Obsolete("Use activeEntityId instead.")]
+        [Obsolete("Use activeEntityId instead.", true)]
         public static int activeInstanceID
         {
             get
@@ -144,7 +144,7 @@ namespace UnityEditor
         [NativeName("ActiveContextID")]
         extern internal static EntityId activeContextEntityId { get; }
 
-        [Obsolete("Use activeEntityId instead.")]
+        [Obsolete("Use activeEntityId instead.", true)]
         internal static int activeContextInstanceID { get => activeContextEntityId; }
 
         // The actual unfiltered selection from the Scene.
@@ -155,8 +155,8 @@ namespace UnityEditor
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         public static EntityId[] entityIds { get => GetEntityIds(); set => SetEntityIds(value); }
 
-        [Obsolete("Use entityIds instead.")]
-        public static int[] instanceIDs { get => GetInstanceIDs(); set => SetInstanceIDs(value); }
+        [Obsolete("Use entityIds instead.", true)]
+        public static int[] instanceIDs { get => throw new NotImplementedException("Use entityIds instead."); set => SetInstanceIDs(value); }
 
         /// <summary>
         /// Returns the current selection as a <see cref="ReadOnlySpan{EntityId}"/>.
@@ -170,10 +170,6 @@ namespace UnityEditor
         [NativeName("GetEntityIds")]
         internal extern static ReadOnlySpan<EntityId> GetEntityIdsUnsafe();
 
-        [Obsolete("Use GetEntityIds() instead.")]
-        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern static int[] GetInstanceIDs();
-
         /// <summary>
         /// Sets the current selection to the provided <see cref="ReadOnlySpan{EntityId}"/>.
         /// </summary>
@@ -182,12 +178,11 @@ namespace UnityEditor
         [NativeName("SetEntityIds")]
         internal extern static void SetEntityIdsUnsafe(ReadOnlySpan<EntityId> entityIds);
 
-        [Obsolete("Use SetEntityIds() instead.")]
+        [Obsolete("Use SetEntityIds() instead.", true)]
         static void SetInstanceIDs(int[] instanceIDs)
         {
-            SetEntityIds(instanceIDs.ToEntityIdArray());
+            throw new InvalidOperationException("SetInstanceIDs obsolete, use SetEntityIds instead.");
         }
-
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         extern static EntityId[] GetEntityIds();
@@ -198,7 +193,7 @@ namespace UnityEditor
         [NativeMethod("IsSelected")]
         extern public static bool Contains(EntityId entityId);
 
-        [Obsolete("Use Contains() with EntityId instead.")]
+        [Obsolete("Use Contains() with EntityId instead.", true)]
         public static bool Contains(int instanceID)
         {
             return Contains((EntityId)instanceID);

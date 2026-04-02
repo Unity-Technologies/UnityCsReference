@@ -60,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetDatabaseProxy m_AssetDatabase;
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
         private readonly IAssetStoreClient m_AssetStoreClient;
+        private readonly ISampleCache m_SampleCache;
 
         public PageRefreshHandler(IPageManager pageManager,
             IApplicationProxy application,
@@ -68,7 +69,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageManagerPrefs packageManagerPrefs,
             IUpmClient upmClient,
             IUpmRegistryClient upmRegistryClient,
-            IAssetStoreClient assetStoreClient)
+            IAssetStoreClient assetStoreClient,
+            ISampleCache sampleCache)
         {
             m_PageManager = RegisterDependency(pageManager);
             m_Application = RegisterDependency(application);
@@ -78,6 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetDatabase = RegisterDependency(assetDatabase);
             m_PackageManagerPrefs = RegisterDependency(packageManagerPrefs);
             m_AssetStoreClient = RegisterDependency(assetStoreClient);
+            m_SampleCache = RegisterDependency(sampleCache);
         }
 
         public void OnBeforeSerialize()
@@ -100,6 +103,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnActivePageChanged(IPage page)
         {
+            if (m_PageManager.lastActivePage != null)
+                CancelRefresh(m_PageManager.lastActivePage.refreshOptions);
+
             if (!IsInitialFetchingDone(page))
                 Refresh(page);
         }
@@ -132,8 +138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (options.Contains(RefreshOptions.UpmListOffline))
                 m_UpmClient.List(true);
-            if (options.Contains(RefreshOptions.LocalInfo))
-                RefreshLocalInfos();
             if (options.Contains(RefreshOptions.Purchased))
             {
                 var page = m_PageManager.GetPage(MyAssetsPage.k_Id);
@@ -141,46 +145,69 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var queryArgs = new PurchasesQueryArgs(0, numItems, page.trimmedSearchText, page.filters);
                 m_AssetStoreClient.ListPurchases(queryArgs);
             }
+            if (options.Contains(RefreshOptions.LocalInfo))
+                FulScanLocalInfosIfNeeded();
             if (options.Contains(RefreshOptions.ImportedAssets))
-                RefreshImportedAssets();
+                FullScanImportedAssetsIfNeeded();
+            if (options.Contains(RefreshOptions.ImportedSamples))
+                FullScanImportedSamplesIfNeeded();
         }
 
         private void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            // if a full scan was never done, it needs to be done now
-            // otherwise, we want to avoid doing a full scan on every OnPostprocessAllAssets trigger for performance, so
-            //  if a full scan was done already, just modify the cached assets according to the parameters passed by the event
-            if (RefreshImportedAssets())
-                return;
+            // If a full scan was never done, it needs to be done now. Otherwise, we want to avoid doing a full scan and just call
+            // the incremental update function for better performance.
+            // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
+            if (!FullScanImportedAssetsIfNeeded())
+            {
+                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
+                m_AssetStoreClient.UpdateImportedAssetsOnAssetsChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
+            }
 
-            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
-            m_AssetStoreClient.OnPostProcessAllAssets(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
+            if (!FullScanImportedSamplesIfNeeded())
+            {
+                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, DateTime.Now.Ticks);
+                m_SampleCache.UpdateImportedSamplesOnAssetChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
+            }
         }
 
         // returns true if a full scan was done, false if not
-        private bool RefreshImportedAssets()
+        private bool FullScanImportedAssetsIfNeeded()
         {
-            var needRefresh = GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0;
+            var needFullScan = GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0;
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
             SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
 
-            if (needRefresh)
-                m_AssetStoreClient.RefreshImportedAssets();
-            return needRefresh;
+            if (needFullScan)
+                m_AssetStoreClient.FullScanImportedAssets();
+            return needFullScan;
         }
 
-        private void RefreshLocalInfos()
+        // returns true if a full scan was done, false if not
+        private bool FullScanImportedSamplesIfNeeded()
         {
-            var needRefresh = GetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo) == 0;
+            var needFullScan = GetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples) == 0;
+            // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
+            // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
+            // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
+            SetRefreshTimestampSingleFlag(RefreshOptions.ImportedSamples, DateTime.Now.Ticks);
+
+            if (needFullScan)
+                m_SampleCache.FullScanImportedSamples();
+            return needFullScan;
+        }
+
+        private void FulScanLocalInfosIfNeeded()
+        {
+            var needFullScan = GetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo) == 0;
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
             // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
             SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, DateTime.Now.Ticks);
-
-            if (needRefresh)
-                m_AssetStoreClient.RefreshLocal();
+            if (needFullScan)
+                m_AssetStoreClient.FullScanLocalInfos();
         }
 
         public void CancelRefresh(RefreshOptions options)

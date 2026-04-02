@@ -60,6 +60,8 @@ namespace UnityEditor
         [CacheProperty("indexFormat")]
         protected SerializedProperty m_IndexFormat;
 
+        [CacheProperty("importUVs")]
+        protected SerializedProperty m_ImportUVs;
         [CacheProperty("swapUVChannels")]
         SerializedProperty m_SwapUVChannels;
 
@@ -108,6 +110,9 @@ namespace UnityEditor
 
         [CacheProperty]
         SerializedProperty m_StrictVertexDataChecks;
+
+        [CacheProperty("importVertexColors")]
+        protected SerializedProperty m_ImportVertexColors;
 
 #pragma warning restore 0649
 
@@ -169,8 +174,9 @@ namespace UnityEditor
             public static GUIContent BlendShapeNormalsLabel = EditorGUIUtility.TrTextContent("Blend Shape Normals", "Source of blend shape normals. If Import is selected and a blend shape has no normals, they will be calculated instead.");
             public static GUIContent NormalSmoothingSourceLabel = EditorGUIUtility.TrTextContent("Smoothness Source", "How to determine which edges should be smooth and which should be sharp.");
 
+            public static GUIContent ImportUVs = EditorGUIUtility.TrTextContent("Import UVs", "Determine which UV channels are imported from the source model.");
             public static GUIContent SwapUVChannels = EditorGUIUtility.TrTextContent("Swap UVs", "Swaps the 2 UV channels in meshes. Use if your diffuse texture uses UVs from the lightmap.");
-            public static GUIContent GenerateSecondaryUV = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV2.");
+            public static GUIContent GenerateSecondaryUV = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV1.");
             public static GUIContent GenerateSecondaryUVAdvanced = EditorGUIUtility.TrTextContent("Lightmap UVs settings", "Advanced settings for Lightmap UVs generation");
 
             public static GUIContent secondaryUVAngleDistortion       = EditorGUIUtility.TrTextContent("Angle Error", "Measured in percents. Angle error measures deviation of UV angles from geometry angles. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled.");
@@ -182,6 +188,8 @@ namespace UnityEditor
             public static GUIContent secondaryUVMinObjectScale        = EditorGUIUtility.TrTextContent("Min Object Scale", "The smallest scale at which this mesh will be used. Used to determine a packing which ensures no texel bleeding.");
 
             public static GUIContent secondaryUVMinLightmapResolutionNotice = EditorGUIUtility.TrTextContent("The active scene's Lightmap Resolution is less than the specified Min Lightmap Resolution.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
+
+            public static GUIContent ImportVertexColors = EditorGUIUtility.TrTextContent("Import Vertex Colors", "Import the vertex colors channel from the source model.");
 
             public static GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = EditorGUIUtility.TrTextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.");
             public static GUIContent BakeAxisConversion = EditorGUIUtility.TrTextContent("Bake Axis Conversion", "Perform axis conversion on all content for models defined in an axis system that differs from Unity's (left handed, Z forward, Y-up).");
@@ -348,6 +356,8 @@ namespace UnityEditor
 
             UvsGUI();
 
+            EditorGUILayout.PropertyField(m_ImportVertexColors, Styles.ImportVertexColors);
+
             EditorGUILayout.PropertyField(m_StrictVertexDataChecks, Styles.StrictVertexDataChecks);
         }
 
@@ -479,6 +489,7 @@ namespace UnityEditor
 
         protected void UvsGUI()
         {
+            m_ImportUVs.intValue = (int)(ModelImporterUVs)EditorGUILayout.EnumFlagsField(Styles.ImportUVs, (ModelImporterUVs)m_ImportUVs.intValue);
             EditorGUILayout.PropertyField(m_SwapUVChannels, Styles.SwapUVChannels);
             EditorGUILayout.PropertyField(m_GenerateSecondaryUV, Styles.GenerateSecondaryUV);
             if (m_GenerateSecondaryUV.boolValue)

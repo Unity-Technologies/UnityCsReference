@@ -28,6 +28,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string buildProfilesName = L10n.Tr("Build Profiles");
         public static readonly string platforms = L10n.Tr("Platforms");
         public static readonly string build = L10n.Tr("Build");
+        public static readonly string deploy = L10n.Tr("Deploy");
         public static readonly string cloudBuild = L10n.Tr("Cloud Build");
         public static readonly string cloudBuildRequiresProfileTooltip = L10n.Tr("Add a Build Profile to use Build Automation");
         public static readonly string cloudBuildUnsupportedTooltip = L10n.Tr("This platform is not supported by Build Automation");
@@ -42,6 +43,8 @@ namespace UnityEditor.Build.Profile
         public static readonly string addOpenScenes = L10n.Tr("Add Open Scenes");
         public static readonly string sceneListOverride = L10n.Tr("Override Global Scene List");
         public static readonly string openSceneList = L10n.Tr("Open Scene List");
+        public static readonly string platformSelectionDropdown = L10n.Tr("Build Platform");
+        public static readonly string switchProfilePlatformButton = L10n.Tr("Switch Build Platform");
         public static readonly string compilingMessage = L10n.Tr("Cannot build player while editor is importing assets or compiling scripts.");
         public static readonly string invalidVirtualTexturingSettingMessage = L10n.Tr("Cannot build player because Virtual Texturing is enabled, but the target platform or graphics API does not support Virtual Texturing. Go to Player Settings to resolve the incompatibility.");
         public static readonly string scriptingDefines = L10n.Tr("Scripting Defines");
@@ -93,7 +96,12 @@ namespace UnityEditor.Build.Profile
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");
         public static readonly string notSupportedWarning = L10n.Tr("Target platform does not currently support build profiles.");
         public static readonly string active = L10n.Tr("Active");
+        public static readonly string installedPlatforms = L10n.Tr("Installed Platforms: {0}");
+        public static readonly string availablePlatforms = L10n.Tr("Available Platforms: {0}");
+        public static readonly string noPlatformsFound =  L10n.Tr("None");
         public static readonly string description = L10n.Tr("Description");
+        public static readonly string keyFeaturesTitle = L10n.Tr("Key Features");
+        public static readonly string resourcesTitle = L10n.Tr("Resources & Links");
         public static readonly string packageInstalled = L10n.Tr("Package already installed.");
         public static readonly string packageContainerTitle = L10n.Tr("Packages");
         public static readonly string partnerPackageListTitle = L10n.Tr("Partner Packages");

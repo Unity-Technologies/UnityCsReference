@@ -4,13 +4,13 @@
 
 using UnityEngine;
 using System;
-using System.Linq;
 using UnityEditor.Build;
 using System.Collections.Generic;
 using UnityEditor.Modules;
 
 namespace UnityEditor
 {
+    [Serializable]
     internal abstract class BaseTextureImportPlatformSettings
     {
         static class Styles
@@ -239,7 +239,6 @@ namespace UnityEditor
             set { m_PlatformSettings = value; }
         }
 
-        [SerializeField]
         private SerializedProperty m_SerializedPlatformSettings = null;
 
         public SerializedProperty platformTextureSettingsProp
@@ -255,7 +254,7 @@ namespace UnityEditor
             set { m_OverriddenIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_OverriddenProperty = null;
+        private SerializedProperty m_OverriddenProperty = null;
         public SerializedProperty overriddenProperty
         {
             get { return m_OverriddenProperty; }
@@ -279,7 +278,7 @@ namespace UnityEditor
             set { m_MaxTextureSizeIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_MaxTextureSizeProperty = null;
+        private SerializedProperty m_MaxTextureSizeProperty = null;
         public SerializedProperty maxTextureSizeProperty
         {
             get { return m_MaxTextureSizeProperty; }
@@ -294,7 +293,7 @@ namespace UnityEditor
             set { m_ResizeAlgorithmIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_ResizeAlgorithmProperty = null;
+        private SerializedProperty m_ResizeAlgorithmProperty = null;
         public SerializedProperty resizeAlgorithmProperty
         {
             get { return m_ResizeAlgorithmProperty; }
@@ -309,7 +308,7 @@ namespace UnityEditor
             set { m_TextureCompressionIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_TextureCompressionProperty = null;
+        private SerializedProperty m_TextureCompressionProperty = null;
         public SerializedProperty textureCompressionProperty
         {
             get { return m_TextureCompressionProperty; }
@@ -324,7 +323,7 @@ namespace UnityEditor
             set { m_CompressionQualityIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_CompressionQualityProperty = null;
+        private SerializedProperty m_CompressionQualityProperty = null;
         public SerializedProperty compressionQualityProperty
         {
             get { return m_CompressionQualityProperty; }
@@ -339,7 +338,7 @@ namespace UnityEditor
             set { m_CrunchedCompressionIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_CrunchedCompressionProperty = null;
+        private SerializedProperty m_CrunchedCompressionProperty = null;
         public SerializedProperty crunchedCompressionProperty
         {
             get { return m_CrunchedCompressionProperty; }
@@ -354,7 +353,7 @@ namespace UnityEditor
             set { m_TextureFormatIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_TextureFormatProperty = null;
+        private SerializedProperty m_TextureFormatProperty = null;
         public SerializedProperty textureFormatProperty
         {
             get { return m_TextureFormatProperty; }
@@ -369,7 +368,7 @@ namespace UnityEditor
             set { m_AlphaSplitIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_AlphaSplitProperty = null;
+        private SerializedProperty m_AlphaSplitProperty = null;
         public SerializedProperty alphaSplitProperty
         {
             get { return m_AlphaSplitProperty; }
@@ -385,7 +384,7 @@ namespace UnityEditor
             set { m_AndroidETC2FallbackOverrideIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_AndroidETC2FallbackOverrideProperty = null;
+        private SerializedProperty m_AndroidETC2FallbackOverrideProperty = null;
         public SerializedProperty androidETC2FallbackOverrideProperty
         {
             get { return m_AndroidETC2FallbackOverrideProperty; }
@@ -556,9 +555,7 @@ namespace UnityEditor
         public TextureImportPlatformSettings(string name, BuildTarget target, TextureImporterInspector inspector) : base(name, target)
         {
             m_Inspector = inspector;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Importers = inspector.targets.Select(x => x as TextureImporter).ToArray();
-#pragma warning restore UA2001
+            m_Importers = Array.ConvertAll(inspector.targets, x => x as TextureImporter);
             Init();
         }
 

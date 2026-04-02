@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.rareData.Write().unitySliceType = SliceType.Sliced;
             s_InitialStyle.inheritedData.Write().unityTextAlign = TextAnchor.UpperLeft;
             s_InitialStyle.inheritedData.Write().unityTextAutoSize = StyleKeyword.None.ToTextAutoSize();
-            s_InitialStyle.inheritedData.Write().unityTextGenerator = TextGeneratorType.Standard;
+            s_InitialStyle.inheritedData.Write().unityTextGenerator = TextGeneratorType.Advanced;
             s_InitialStyle.inheritedData.Write().unityTextOutlineColor = Color.clear;
             s_InitialStyle.inheritedData.Write().unityTextOutlineWidth = 0f;
             s_InitialStyle.rareData.Write().unityTextOverflowPosition = TextOverflowPosition.End;

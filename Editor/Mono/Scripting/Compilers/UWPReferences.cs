@@ -82,11 +82,9 @@ namespace UnityEditor.Scripting.Compilers
         public static UWPSDK MinimumSupportedUWPSDK { get { return kMinimumSupportedUWPSDK; } }
         public static string GetBinPath(UWPSDK sdk, string architecture)
         {
-            
             var folder = GetWindowsKit10();
             if (string.IsNullOrEmpty(folder))
                 return null;
-                
             var version = SdkVersionToString(sdk.Version);
 
             var binPath = CombinePaths(folder, "bin", version, architecture);
@@ -153,15 +151,15 @@ namespace UnityEditor.Scripting.Compilers
             return sdkVersion;
         }
 
-        public static IEnumerable<UWPSDK> GetInstalledSDKs()
+        public static List<UWPSDK> GetInstalledSDKs()
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-                return Array.Empty<UWPSDK>();
+                return new List<UWPSDK>();
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
-                return Array.Empty<UWPSDK>();
+                return new List<UWPSDK>();
 
             var allSDKs = new List<UWPSDK>();
 
@@ -191,9 +189,9 @@ namespace UnityEditor.Scripting.Compilers
                         if (version < kMinimumSupportedUWPVersion)
                             continue;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var minVSVersionString = platformElement.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
 
                         // Get supported previous versionss
                         var previousVersionPath = Path.Combine(Path.GetDirectoryName(platformXmlFile), "PreviousPlatforms.xml");

@@ -80,16 +80,12 @@ namespace UnityEditor.IMGUI.Controls
             if (columnIndices.Length > state.maximumNumberOfSortedColumns)
                 throw new ArgumentException("The maximum number of sorted columns is " + state.maximumNumberOfSortedColumns + ". Trying to set " + columnIndices.Length + " columns.");
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (columnIndices.Length != columnIndices.DistinctCount())
-#pragma warning restore UA2001
                 throw new ArgumentException("Duplicate column indices are not allowed", "columnIndices");
 
             bool changed = false;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!columnIndices.SequenceEqual(state.sortedColumns))
-#pragma warning restore UA2001
+            if (!columnIndices.AsSpan().SequenceEqual(state.sortedColumns))
             {
                 state.sortedColumns = columnIndices;
                 changed = true;
@@ -168,9 +164,7 @@ namespace UnityEditor.IMGUI.Controls
                 if (state.visibleColumns[i] == columnIndex)
                     return i;
             }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            string visibleIndices = string.Join(", ", state.visibleColumns.Select(t => t.ToString()).ToArray());
-#pragma warning restore UA2001
+            string visibleIndices = string.Join(", ", state.visibleColumns);
             throw new ArgumentException(string.Format("Invalid columnIndex: {0}. The index is not part of the current visible columns: {1}", columnIndex, visibleIndices), "columnIndex");
         }
 
@@ -234,7 +228,7 @@ namespace UnityEditor.IMGUI.Controls
             // We create a guiclip to let the header be able to scroll horizontally according to the tree view's horizontal scroll
             // If the tree view is inside a UI Toolkit scroll view, however, we don't need the x scroll offset.
             Vector2 scrollOffset = Vector2.zero;
-            var container = UIElementsIMGUIUtility.GetCurrentIMGUIContainer();
+            var container = IMGUIContainer.GetCurrentIMGUIContainer();
             var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
             if (uiScrollView == null)
             {
@@ -540,9 +534,7 @@ namespace UnityEditor.IMGUI.Controls
                 var column = state.columns[i];
                 var menuText = !string.IsNullOrEmpty(column.contextMenuText) ? column.contextMenuText : column.headerContent.text;
                 if (column.allowToggleVisibility)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     menu.AddItem(new GUIContent(menuText), state.visibleColumns.Contains(i), ToggleVisibility, i);
-#pragma warning restore UA2001
                 else
                     menu.AddDisabledItem(new GUIContent(menuText));
             }

@@ -6,18 +6,15 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace Unity.Hierarchy.Editor
 {
     [VisibleToOtherModules]
     internal sealed class HierarchyGlobalSelectionHandler : IDisposable
     {
-        const int k_DefaultBufferSize = 1024;
-
         readonly HierarchyView m_HierarchyView;
         readonly EditorGUIUtility.EditorLockTracker m_LockTracker;
-        HierarchyNode[] m_NodeBuffer = new HierarchyNode[k_DefaultBufferSize];
-        EntityId[] m_EntityIdBuffer = new EntityId[k_DefaultBufferSize];
         bool m_SkipNextGlobalSelectionEvent;
 
         public HierarchyGlobalSelectionHandler(HierarchyView view, EditorGUIUtility.EditorLockTracker lockTracker)
@@ -41,8 +38,18 @@ namespace Unity.Hierarchy.Editor
             HierarchyLogging.Log($"HierarchyGlobalSelectionHandler.SyncViewModelFromGlobalSelection(frameSelection={frameSelection})");
             var globalSelection = Selection.GetEntityIdsUnsafe();
 
+            if (globalSelection.Length == 0)
+            {
+                m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
+                return;
+            }
+
             // Set the selection
-            var nodes = FillNodeBufferFromEntityIds(globalSelection);
+            using var nodes = globalSelection.Length <= 16
+                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[globalSelection.Length])
+                : new RentSpanUnmanaged<HierarchyNode>(globalSelection.Length);
+            m_HierarchyView.Source.GetNodes(globalSelection, nodes);
+
             using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel, notify: false))
             {
                 m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
@@ -60,13 +67,58 @@ namespace Unity.Hierarchy.Editor
         public void SyncGlobalSelectionFromViewModel()
         {
             HierarchyLogging.Log("HierarchyGlobalSelectionHandler.SyncGlobalSelectionFromViewModel()");
-            var viewModelSelection = FillEntityIdBufferFromViewModel();
+            var count = m_HierarchyView.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+            if (count == 0)
+            {
+                Selection.SetEntityIdsUnsafe(stackalloc EntityId[0]);
+                return;
+            }
 
-            if (Selection.GetEntityIdsUnsafe().SequenceEqual(viewModelSelection))
+            // Get all the selected nodes
+            using var nodes = count <= 16
+                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[count])
+                : new RentSpanUnmanaged<HierarchyNode>(count);
+            m_HierarchyView.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, nodes);
+
+            // Convert the nodes to entity ids
+            using var selectedEntityIds = count <= 16
+                ? new RentSpanUnmanaged<EntityId>(stackalloc EntityId[count])
+                : new RentSpanUnmanaged<EntityId>(count);
+            using var existingNodes = count <= 16
+                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[count])
+                : new RentSpanUnmanaged<HierarchyNode>(count);
+            var existingNodeCount = FilterMissingNodes(nodes, existingNodes);
+            var trimmedNodes = existingNodes.Span[..existingNodeCount];
+            var trimmedEntityIds = selectedEntityIds.Span[..existingNodeCount];
+            m_HierarchyView.Source.GetEntityIds(trimmedNodes, trimmedEntityIds);
+
+            if (Selection.GetEntityIdsUnsafe().SequenceEqual(trimmedEntityIds))
                 return;
 
             m_SkipNextGlobalSelectionEvent = true;
-            Selection.SetEntityIdsUnsafe(viewModelSelection);
+            Selection.SetEntityIdsUnsafe(trimmedEntityIds);
+        }
+
+        int FilterMissingNodes(ReadOnlySpan<HierarchyNode> nodes, Span<HierarchyNode> existingNodes)
+        {
+            using var exists = nodes.Length <= 16
+                ? new RentSpanUnmanaged<bool>(stackalloc bool[nodes.Length])
+                : new RentSpanUnmanaged<bool>(nodes.Length);
+
+            if (m_HierarchyView.Source.Exists(nodes, exists))
+            {
+                nodes.CopyTo(existingNodes);
+                return nodes.Length;
+            }
+
+            var count = 0;
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                if (!exists.Span[i]) continue;
+
+                existingNodes[count++] = nodes[i];
+            }
+            return count;
         }
 
         void OnGlobalSelectionChanged()
@@ -80,45 +132,6 @@ namespace Unity.Hierarchy.Editor
             {
                 SyncViewModelFromGlobalSelection(frameSelection: true);
             });
-        }
-
-        ReadOnlySpan<EntityId> FillEntityIdBufferFromViewModel()
-        {
-            var count = m_HierarchyView.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
-            if (count == 0)
-                return ReadOnlySpan<EntityId>.Empty;
-
-            // Get all the selected nodes
-            var nodes = GetNodeBuffer(count);
-            m_HierarchyView.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, nodes);
-
-            // Convert the nodes to entity ids
-            var entityIds = GetEntityIdBuffer(count);
-            m_HierarchyView.Source.GetEntityIds(nodes, entityIds);
-
-            return entityIds;
-        }
-
-        ReadOnlySpan<HierarchyNode> FillNodeBufferFromEntityIds(ReadOnlySpan<EntityId> entityIds)
-        {
-            // Convert the entity ids to nodes
-            var nodes = GetNodeBuffer(entityIds.Length);
-            m_HierarchyView.Source.GetNodes(entityIds, nodes);
-            return nodes;
-        }
-
-        Span<HierarchyNode> GetNodeBuffer(int count)
-        {
-            if (m_NodeBuffer.Length < count)
-                m_NodeBuffer = new HierarchyNode[count];
-            return m_NodeBuffer.AsSpan(0, count);
-        }
-
-        Span<EntityId> GetEntityIdBuffer(int count)
-        {
-            if (m_EntityIdBuffer.Length < count)
-                m_EntityIdBuffer = new EntityId[count];
-            return m_EntityIdBuffer.AsSpan(0, count);
         }
 
         internal static class TestHelper

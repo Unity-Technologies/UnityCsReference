@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 using Microsoft.CSharp;
@@ -83,9 +82,7 @@ namespace UnityEditor.AddComponent
         {
             if (m_Directory.IndexOfAny(kInvalidPathChars) >= 0)
                 return true;
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (TargetDir().Split(kPathSepChars, StringSplitOptions.None).Contains(string.Empty))
-#pragma warning restore UA2001
                 return true;
             return false;
         }

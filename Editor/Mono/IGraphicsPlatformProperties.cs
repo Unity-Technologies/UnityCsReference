@@ -31,4 +31,7 @@ internal interface IGraphicsPlatformProperties : IPlatformProperties
 
     // The PlayerSettings.ResolutionSectionGUI method uses this property to determine whether or not to display retina support
     bool RetinaSupport => false;
+
+    // Hardware profiles are used by user
+    bool HardwareProfilesUsed => false;
 }

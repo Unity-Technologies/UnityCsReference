@@ -58,11 +58,13 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             m_ToggleButtonGroup = new ToggleButtonGroup();
-            m_ToggleButtonGroup.AddToClassList(alignedFieldUssClassName);
+            m_ToggleButtonGroup.AddToClassList(alignedFieldUssClassNameUnique);
 
             var enumType = typeof(T);
             var kebabCase = k_SpecialEnumNamesCases.GetValueOrDefault(enumType.Name, enumType.Name.ToKebabCase());
+#pragma warning disable RS0030
             m_ToggleButtonGroup.AddToClassList($"{ToggleButtonGroup.ussClassName}_{kebabCase}-field");
+#pragma warning restore RS0030
 
             foreach (Enum item in Enum.GetValues(enumType))
             {

@@ -409,7 +409,7 @@ namespace UnityEditor.Profiling
 
             public string name => m_Name;
             public int nativeTypeIndex => m_NativeTypeIndex;
-            [Obsolete("relatedGameObjectInstanceId is obsolete. Use relatedGameObjectEntityId instead.")]
+            [Obsolete("relatedGameObjectInstanceId is obsolete. Use relatedGameObjectEntityId instead.", true)]
             public int relatedGameObjectInstanceId => m_RelatedGameObjectEntityId;
             public EntityId relatedGameObjectEntityId => m_RelatedGameObjectEntityId;
             public ulong allocationRootId => m_RootId;
@@ -418,7 +418,7 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true)]
         public extern bool GetUnityObjectInfo(EntityId entityId, out UnityObjectInfo info);
 
-        [Obsolete("GetUnityObjectInfo(int, out UnityObjectInfo) is obsolete. Use GetUnityObjectInfo(EntityId, out UnityObjectInfo) instead.")]
+        [Obsolete("GetUnityObjectInfo(int, out UnityObjectInfo) is obsolete. Use GetUnityObjectInfo(EntityId, out UnityObjectInfo) instead.", true)]
         public bool GetUnityObjectInfo(int instanceId, out UnityObjectInfo info) => GetUnityObjectInfo((EntityId)instanceId, out info);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -451,7 +451,7 @@ namespace UnityEditor.Profiling
 
             public ulong relatedAllocationRootId => m_RootId;
             public EntityId relatedEntityId => m_EntityId;
-            [Obsolete("relatedInstanceId is obsolete. Use relatedEntityId instead.", false)]
+            [Obsolete("relatedInstanceId is obsolete. Use relatedEntityId instead.", true)]
             public int relatedInstanceId => m_EntityId;
         }
 

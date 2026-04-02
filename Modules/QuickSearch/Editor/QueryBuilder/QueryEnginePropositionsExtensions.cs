@@ -186,7 +186,7 @@ namespace UnityEditor.Search
             var filters = queryEngine.GetAllFilters();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetCombiningOperatorPropositions(props).Concat(filters.SelectMany(f => f.GetPropositions()));
-#pragma warning restore UA2001
+            #pragma warning restore UA2001
         }
 
         public static IEnumerable<SearchProposition> GetPropositions(this IQueryEngineFilter filter)
@@ -199,7 +199,7 @@ namespace UnityEditor.Search
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var propositionKeys = filter.metaInfo.Keys.Where(key => key.StartsWith(k_BaseSearchPropositionDataKey, StringComparison.Ordinal)).ToList();
-#pragma warning restore UA2001
+            #pragma warning restore UA2001
             if (propositionKeys.Count == 0)
                 return Array.Empty<SearchProposition>();
 
@@ -208,7 +208,7 @@ namespace UnityEditor.Search
                 globalProposition = GetDefaultValidProposition();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var validPropositions = propositionKeys.Select(key => filter.GetPropositionFromKey(key)).Where(p => p.valid);
-#pragma warning restore UA2001
+            #pragma warning restore UA2001
             var customPropositions = MergePropositions(globalProposition, validPropositions);
             return MergePropositions(globalProposition, customPropositions);
         }
@@ -270,9 +270,9 @@ namespace UnityEditor.Search
         static IEnumerable<SearchProposition> GetPropositionsFromType(IQueryEngineFilter filter, Type type, string category = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default)
         {
             var filterId = filter.token;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultOperator = filter.supportedOperators?.FirstOrDefault() ?? ":";
-#pragma warning restore UA2001
+#pragma warning restore UA2011
             if (type.IsEnum)
                 return SearchUtils.FetchEnumPropositions(type, category, filterId, defaultOperator, blockType, priority, icon, color);
 

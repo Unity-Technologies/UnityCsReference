@@ -163,6 +163,14 @@ namespace UnityEngine.UIElements
             ReleaseResourcesIfPossible();
         }
 
+        public override void AddToPermanentCache()
+        {
+            if (useAdvancedText)
+            {
+                CacheTextGenerationInfo();
+            }
+        }
+
         TextOverflowMode GetTextOverflowMode()
         {
             ref var style = ref m_TextElement.computedStyle;

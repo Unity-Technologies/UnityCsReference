@@ -38,7 +38,7 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal TextField RunDevice;
     internal Label RunDeviceName;
 
-    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings)
+    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings)
     {
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -119,7 +119,7 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
             RunDeviceName = new Label("Run Device");
             RunDevice.SetEnabled(false);
 
-            if (settings.DeviceName == "")
+            if (userSettings.DeviceName == "")
             {
                 RunDevice.SetValueWithoutNotify("No Device Selected");
                 warnIcon.style.display = DisplayStyle.Flex;
@@ -127,7 +127,7 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
             }
             else
             {
-                RunDevice.SetValueWithoutNotify(settings.DeviceName);
+                RunDevice.SetValueWithoutNotify(userSettings.DeviceName);
                 warnIcon.style.display = DisplayStyle.None;
             }
             RunDevice.tooltip = "Selected device the instance will run on";

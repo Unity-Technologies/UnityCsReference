@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
 using System;
-using System.Collections;
+using Unity.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -33,14 +33,12 @@ namespace UnityEditor
         {
             var commands = new List<MonoGizmoMethod>();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var mi in EditorAssemblies.GetAllMethodsWithAttribute<DrawGizmo>(BindingFlags.Static).Where(m => m.DeclaringType.Assembly == assembly))
-#pragma warning restore UA2001
+            foreach (var mi in EditorAssemblies.GetAllMethodsWithAttribute<DrawGizmo>(BindingFlags.Static))
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var attrs = mi.GetCustomAttributes(typeof(DrawGizmo), false).Cast<DrawGizmo>();
-#pragma warning restore UA2001
-                foreach (var gizmoAttr in attrs)
+                if (mi.DeclaringType.Assembly != assembly)
+                    continue;
+                var attrs = mi.GetCustomAttributes(typeof(DrawGizmo), false);
+                foreach (DrawGizmo gizmoAttr in attrs)
                 {
                     var parameters = mi.GetParameters();
                     if (parameters.Length != 2)
@@ -155,9 +153,7 @@ namespace UnityEditor
 
             foreach (var type in TypeCache.GetTypesWithAttribute<CreateAssetMenuAttribute>())
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attr = type.GetCustomAttributes(typeof(CreateAssetMenuAttribute), false).FirstOrDefault() as CreateAssetMenuAttribute;
-#pragma warning restore UA2001
                 if (attr == null)
                     continue;
 
@@ -260,7 +256,7 @@ namespace UnityEditor
                 Debug.LogError(MethodToString(method) + " does not match " + attributeType + " expected signature.\n Use " + MethodToString(validSignatures[0]));
             else
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Debug.LogError(MethodToString(method) + " does not match any of " + attributeType + " expected signatures.\n Valid signatures are: " + string.Join(" , ", validSignatures.Select((a) => MethodToString(a)).ToArray()));
+                Debug.LogError(MethodToString(method) + " does not match any of " + attributeType + " expected signatures.\n Valid signatures are: " + string.Join(" , ", validSignatures.Select(MethodToString)));
 #pragma warning restore UA2001
             return false;
         }
@@ -285,7 +281,7 @@ namespace UnityEditor
 #pragma warning restore UA2001
             }
 
-            public IEnumerable<MethodWithAttribute> methodsWithAttributes { get; }
+            public IReadOnlyList<MethodWithAttribute> methodsWithAttributes { get; }
         }
 
         static Dictionary<Type, MethodInfoSorter> s_DecoratedMethodsByAttrTypeCache = new Dictionary<Type, MethodInfoSorter>();

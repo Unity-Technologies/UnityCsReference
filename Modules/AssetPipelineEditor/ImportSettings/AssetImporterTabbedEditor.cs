@@ -50,7 +50,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
+        [Obsolete("Please use DiscardChanges.")]
         protected override void ResetValues()
         {
             DiscardChanges();

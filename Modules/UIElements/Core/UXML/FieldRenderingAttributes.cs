@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class LayerDecoratorAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class BindingModeDrawerAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -53,7 +53,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class BindingPathDrawerAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class ConverterDrawerAttribute : PropertyAttribute
     {
         public bool isConverterToSource;

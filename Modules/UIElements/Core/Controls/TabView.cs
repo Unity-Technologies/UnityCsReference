@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TabView|UXML element TabView]].
     /// </remarks>
-    [UxmlElement(null, typeof(Tab))]
+    [UxmlElement(null, typeof(Tab), libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/TabView.png")]
     public partial class TabView : VisualElement
     {
@@ -138,41 +138,49 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-tab-view";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// USS class name for the header container of this type.
         /// </summary>
         public static readonly string headerContainerClassName = ussClassName + "__header-container";
+        internal static readonly UniqueStyleString headerContainerClassNameUnique = new(headerContainerClassName);
 
         /// <summary>
         /// USS class name for the content container of this type.
         /// </summary>
         public static readonly string contentContainerUssClassName = ussClassName + "__content-container";
+        internal static readonly UniqueStyleString contentContainerUssClassNameUnique = new(contentContainerUssClassName);
 
         /// <summary>
         /// The USS class name for reorderable tab view.
         /// </summary>
         public static readonly string reorderableUssClassName = ussClassName + "__reorderable";
+        internal static readonly UniqueStyleString reorderableUssClassNameUnique = new(reorderableUssClassName);
 
         /// <summary>
         /// The USS class name for vertical tab view.
         /// </summary>
         public static readonly string verticalUssClassName = ussClassName + "__vertical";
+        internal static readonly UniqueStyleString verticalUssClassNameUnique = new(verticalUssClassName);
 
         /// <summary>
         /// USS class name for the content viewport of this type.
         /// </summary>
         public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
+        internal static readonly UniqueStyleString viewportUssClassNameUnique = new(viewportUssClassName);
 
         /// <summary>
         /// USS class name for the scroll next button of this type.
         /// </summary>
         public static readonly string nextButtonUssClassName = ussClassName + "__next-button";
+        internal static readonly UniqueStyleString nextButtonUssClassNameUnique = new(nextButtonUssClassName);
 
         /// <summary>
         /// USS class name for the scroll previous button of this type.
         /// </summary>
         public static readonly string previousButtonUssClassName = ussClassName + "__previous-button";
+        internal static readonly UniqueStyleString previousButtonUssClassNameUnique = new(previousButtonUssClassName);
 
         /// <summary>
         /// The container for the content of the <see cref="TabView"/>.
@@ -305,7 +313,7 @@ namespace UnityEngine.UIElements
                 if (m_Reorderable == value)
                     return;
                 m_Reorderable = value;
-                EnableInClassList(reorderableUssClassName, value);
+                EnableInClassList(reorderableUssClassNameUnique, value);
                 foreach (var tab in m_Tabs)
                 {
                     tab.EnableTabDragHandles(value);
@@ -319,24 +327,24 @@ namespace UnityEngine.UIElements
         /// </summary>
         public TabView()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             contentViewport = new VisualElement();
-            contentViewport.AddToClassList(viewportUssClassName);
+            contentViewport.AddToClassList(viewportUssClassNameUnique);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.pickingMode = PickingMode.Ignore;
 
             hierarchy.Add(contentViewport);
 
-            m_HeaderContainer = new VisualElement() { name = headerContainerClassName, classList = { headerContainerClassName }};
+            m_HeaderContainer = new VisualElement() { name = headerContainerClassName }.WithClassList(headerContainerClassNameUnique);
             header.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.Add(m_HeaderContainer);
 
-            m_ContentContainer = new TabViewContentContainer() { name = contentContainerUssClassName, classList = { contentContainerUssClassName }};
+            m_ContentContainer = new TabViewContentContainer() { name = contentContainerUssClassName }.WithClassList(contentContainerUssClassNameUnique);
             hierarchy.Add(m_ContentContainer);
 
-            nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { nextButtonUssClassName }, acceptClicksIfDisabled = true };
-            previousButton = new RepeatButton(OnPreviousClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { previousButtonUssClassName }, acceptClicksIfDisabled = true };
+            nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { acceptClicksIfDisabled = true }.WithClassList(nextButtonUssClassName);
+            previousButton = new RepeatButton(OnPreviousClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { acceptClicksIfDisabled = true }.WithClassList(previousButtonUssClassName);
 
             contentViewport.Add(nextButton);
             contentViewport.Add(previousButton);

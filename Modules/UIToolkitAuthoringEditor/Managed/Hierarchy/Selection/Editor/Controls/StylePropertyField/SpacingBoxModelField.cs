@@ -70,12 +70,12 @@ namespace Unity.UIToolkit.Editor
 
             m_Layer1 = new VisualElement()
             {
-                name = "BoxModelViewLayer1", classList = { InspectorCompositeStyleRowElementClassName }
-            };
+                name = "BoxModelViewLayer1"
+            }.WithClassList(InspectorCompositeStyleRowElementClassName);
             m_Layer2 = new VisualElement()
             {
-                name = "BoxModelViewLayer2", classList = { InspectorCompositeStyleRowElementClassName }
-            };
+                name = "BoxModelViewLayer2"
+            }.WithClassList(InspectorCompositeStyleRowElementClassName);
             m_Layer2.pickingMode = PickingMode.Ignore;
             m_Layer2.StretchToParentSize();
 
@@ -100,14 +100,8 @@ namespace Unity.UIToolkit.Editor
             m_Layer2.Add(m_BottomTextFieldPaddingContainer);
             m_Layer2.Add(m_BottomTextFieldMarginContainer);
 
-            m_ContentBox = new VisualElement()
-            {
-                classList =
-                {
-                    InspectorCompositeStyleRowElementClassName,
-                    BoxModelClassName, ContainerContentClassName
-                }
-            };
+            m_ContentBox = new VisualElement().WithClassList(InspectorCompositeStyleRowElementClassName,
+                    BoxModelClassName, ContainerContentClassName);
             m_ContentBox.tooltip = "Size";
             m_ContentBox.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Content);
 

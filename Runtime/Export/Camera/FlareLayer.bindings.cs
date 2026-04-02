@@ -7,6 +7,7 @@ using System;
 namespace UnityEngine
 {
     [RequireComponent(typeof(Camera))]
+    [Obsolete("The Flare Layer component is deprecated now that the Built-In Render Pipeline is deprecated. To use an alternative, refer to the documentation in the component help icon. #from(6000.5)", false)]
     public class FlareLayer : Behaviour
     {
         internal FlareLayer() {}

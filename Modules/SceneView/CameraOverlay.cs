@@ -577,13 +577,12 @@ namespace UnityEditor
                 if (m_SavedStateBeforeReduceMode.previousHeight > 0)
                     return;
 
-                m_SavedStateBeforeReduceMode = new OverlaySavedState(sizeOverridden, size.y);
-
                 float delta = m_CameraPreview != null? m_CameraPreview.resolvedStyle.height : 0;
                 var targetHeight = resizeTarget.resolvedStyle.height;
                 if (collapsed && popup != null)
                     targetHeight = popup.resolvedStyle.height;
 
+                m_SavedStateBeforeReduceMode = new OverlaySavedState(sizeOverridden, targetHeight);
                 m_CurrentBaseHeight = targetHeight - delta + 5f;
 
                 // Lock the height. User can't resize the Overlay vertically in reduce mode.
@@ -601,8 +600,13 @@ namespace UnityEditor
                 ResetSize();
 
                 // Restore the size used before this overlay got reduced.
-                if (m_SavedStateBeforeReduceMode.sizeWasOverriden || size.x != k_DefaultMaxSize.x)
-                    size = new Vector2(size.x, m_SavedStateBeforeReduceMode.previousHeight);
+                var currentWidth = size.x;
+
+                if (collapsed && popup != null)
+                    currentWidth = popup.resolvedStyle.width;
+
+                if (m_SavedStateBeforeReduceMode.sizeWasOverriden || currentWidth != k_DefaultMaxSize.x)
+                    size = new Vector2(currentWidth, m_SavedStateBeforeReduceMode.previousHeight);
 
                 m_SavedStateBeforeReduceMode = default;
                 UpdateOverlayStyling(isInReducedView: false);

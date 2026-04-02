@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -119,6 +121,43 @@ namespace UnityEditor
             loadableRef.m_LocalIdentifierInFile = fileID;
             loadableRef.m_ObjectIdHash = new Hash128();
             return loadableRef;
+        }
+
+        /// <summary>
+        /// Draws an IMGUI field for a LoadableReference property. Used by LoadableReferenceDrawer and LoadableDrawer for nested m_LoadableRef.
+        /// </summary>
+        /// <param name="position">Rect to draw the field in.</param>
+        /// <param name="property">SerializedProperty of type LoadableReference.</param>
+        /// <param name="label">Label for the field.</param>
+        /// <param name="objectType">Type of Unity Object that can be assigned (e.g. Texture2D, or UnityEngine.Object for any).</param>
+        [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
+        internal static void DrawLoadableReferenceField(Rect position, SerializedProperty property, GUIContent label, Type objectType)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            var loadableRef = property.loadableReferenceValue;
+            var currentObj = LoadableReferenceToObject(loadableRef);
+
+            var fieldRect = EditorGUI.PrefixLabel(position, label);
+            int id = GUIUtility.GetControlID(FocusType.Keyboard, fieldRect);
+            EditorGUI.BeginChangeCheck();
+            var newObj = EditorGUI.DoLoadableObjectField(fieldRect, fieldRect, id, currentObj, null, objectType, property, null, false);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                try
+                {
+                    var newRef = ObjectToLoadableReference(newObj);
+                    if (newObj != null && !newRef.isValid)
+                        Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableReference."));
+                    else
+                        property.loadableReferenceValue = newRef;
+                }
+                catch (ArgumentException e)
+                {
+                    Debug.LogWarning(string.Format(L10n.Tr("The selected object cannot be used as a LoadableReference: {0}"), e.Message));
+                }
+            }
+            EditorGUI.EndProperty();
         }
 
         [FreeFunction("LoadableReferenceUtility::LoadableReferenceToObject", ThrowsException = true)]

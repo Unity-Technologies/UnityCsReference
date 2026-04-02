@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
@@ -221,7 +222,10 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool RequiresInitialization()
         {
             var dataType = DataType.Resolve();
-            return dataType.IsValueType || dataType == typeof(string);
+            return dataType.IsValueType ||
+                   dataType == typeof(string) ||
+                   typeof(UnityEngine.Object).IsAssignableFrom(dataType) ||
+                   TypeExtensions.IsListOrArray(dataType);
         }
 
         /// <summary>
@@ -235,12 +239,13 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>If this variable is used in the graph, it won't be selected when select unused is dispatched.</returns>
         public virtual bool IsUsed()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var node in GraphModel.NodeModels.OfType<VariableNodeModel>())
-#pragma warning restore UA2001
+            foreach (var node in GraphModel.NodeModels)
             {
-                if (ReferenceEquals(node.VariableDeclarationModel, this) && node.GetPorts().HasAny(t => t.IsConnected()))
-                    return true;
+                if (node is VariableNodeModel nodeModel)
+                {
+                    if (ReferenceEquals(nodeModel.VariableDeclarationModel, this) && nodeModel.GetPorts().Exists(t => t.IsConnected()))
+                        return true;
+                }
             }
 
             return false;

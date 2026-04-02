@@ -217,6 +217,15 @@ namespace Unity.GraphToolkit.Editor
         public Graph Graph => (m_Implementation?.GraphModel as GraphModelImp)?.Graph;
 
         /// <summary>
+        /// The globally unique identifier for this node.
+        /// </summary>
+        /// <remarks>
+        /// This GUID uniquely identifies the node instance and persists across sessions.
+        /// When a node is duplicated or copy-pasted, it receives a new GUID.
+        /// </remarks>
+        public Hash128 Guid => m_Implementation?.Guid ?? default;
+
+        /// <summary>
         /// The text displayed when hovering over the node's header.
         /// </summary>
         public string Tooltip

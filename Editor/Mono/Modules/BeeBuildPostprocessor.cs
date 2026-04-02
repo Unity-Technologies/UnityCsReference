@@ -48,7 +48,25 @@ namespace UnityEditor.Modules
 
         public virtual bool SupportsInstallInBuildFolder() => false;
 
-        public virtual bool SupportsLz4Compression() => false;
+        private Compression[] m_supportedCompressionsCache = null;
+
+        // Override 'GetSupportedCompressionsForPlatform' in platform files to correctly obtain the compression types that platform supports.
+        protected abstract Compression[] GetSupportedCompressionsForPlatform();
+
+        public ReadOnlySpan<Compression> GetSupportedCompressions() => m_supportedCompressionsCache ??= GetSupportedCompressionsForPlatform();
+
+        public bool SupportsCompression(Compression compression)
+        {
+            ReadOnlySpan<Compression> supportCompressions = GetSupportedCompressions();
+            foreach (Compression supportedCompression in supportCompressions)
+            {
+                if (supportedCompression == compression)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public virtual Compression GetDefaultCompression() => Compression.None;
 
@@ -363,7 +381,10 @@ namespace UnityEditor.Modules
                     (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 ||
-                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard),
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard ||
+#pragma warning disable CS0618
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET),
+#pragma warning restore CS0618
                 CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.canUploadReports,
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AdditionalCppFiles = PluginImporter.GetImporters(args.target)
@@ -386,6 +407,7 @@ namespace UnityEditor.Modules
                 ExtraTypes = extraTypesFile?.ToString(),
                 GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(namedBuildTarget) == Il2CppStacktraceInformation.MethodFileLineNumber,
                 UsymtoolPath = GetUsymtoolPath(),
+                LtoMode = (BuildProgramLTOMode)PlayerSettings.GetIl2CppLTOMode(namedBuildTarget)
             };
         }
 

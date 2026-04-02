@@ -69,25 +69,25 @@ namespace Unity.UIToolkit.Editor
             : base(text)
         {
             var topRow = new OverrideRow() { name = k_TopPropertyName };
-            topField = new StyleColorField("Top") { name = k_TopPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            topField = new StyleColorField("Top") { name = k_TopPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             topField.SetBinding("value", new StylePropertyBinding(k_TopPropertyName));
             topRow.Add(topField);
             Add(topRow);
 
             var rightRow = new OverrideRow() { name = k_RightPropertyName };
-            rightField = new StyleColorField("Right") { name = k_RightPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            rightField = new StyleColorField("Right") { name = k_RightPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             rightField.SetBinding("value", new StylePropertyBinding(k_RightPropertyName));
             rightRow.Add(rightField);
             Add(rightRow);
 
             var bottomRow = new OverrideRow() { name = k_BottomPropertyName };
-            bottomField = new StyleColorField("Bottom") { name = k_BottomPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            bottomField = new StyleColorField("Bottom") { name = k_BottomPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             bottomField.SetBinding("value", new StylePropertyBinding(k_BottomPropertyName));
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
             var leftRow = new OverrideRow() { name = k_LeftPropertyName };
-            leftField = new StyleColorField("Left") { name = k_LeftPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            leftField = new StyleColorField("Left") { name = k_LeftPropertyName }.WithClassList(TextField.alignedFieldUssClassName);
             leftField.SetBinding("value", new StylePropertyBinding(k_LeftPropertyName));
             leftRow.Add(leftField);
             Add(leftRow);
@@ -104,22 +104,26 @@ namespace Unity.UIToolkit.Editor
 
             topField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleColor>.valueProperty)
+                if (e.property == BaseField<StyleColor>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             rightField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleColor>.valueProperty)
+                if (e.property == BaseField<StyleColor>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             bottomField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleColor>.valueProperty)
+                if (e.property == BaseField<StyleColor>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
             leftField.RegisterCallback<PropertyChangedEvent>(e =>
             {
-                if (e.property == BaseField<StyleColor>.valueProperty)
+                if (e.property == BaseField<StyleColor>.valueProperty ||
+                    e.property == enabledSelfProperty)
                     UpdateFromChildFields();
             });
 
@@ -164,13 +168,17 @@ namespace Unity.UIToolkit.Editor
 
         public override void UpdateFromChildFields()
         {
+            var shouldBeEnabled = true;
             for (int i = 0; i < fields.Count; ++i)
             {
+                shouldBeEnabled &= fields[i].enabledSelf;
                 var value = GetCommonValueFromChildFields();
                 headerInputField.SetValueWithoutNotify(value);
 
                 m_MixedValueLine.style.display = isMixed ? DisplayStyle.Flex : DisplayStyle.None;
             }
+
+            enabledSelf = shouldBeEnabled;
         }
 
         public Color GetCommonValueFromChildFields()

@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -145,7 +147,6 @@ namespace Unity.GraphToolkit.Editor
 
                     m_CurrentIconClasses = firstUssClasses;
 
-                    m_Icon.PreallocForMoreClasses(m_CurrentIconClasses.Count);
                     foreach (var ussClass in m_CurrentIconClasses)
                     {
                         m_Icon.AddToClassList(ussClass);
@@ -165,6 +166,27 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 m_Icon.AddToClassList(emptyIconUssClassName);
+            }
+
+            var model = m_Models[0] as VariableDeclarationModel;
+            if (model != null)
+            {
+                bool overrideIcon = true;
+                Type elementStyle = model.DataType.Resolve();
+                (Texture2D icon, Color color)? typeStyle = model.GraphModel.GetDataTypeStyle(elementStyle);
+
+                if (!typeStyle.HasValue && elementStyle.IsListOrArray())
+                {
+                    typeStyle = model.GraphModel.GetDataTypeStyle(elementStyle.GetCollectionElementType());
+                    overrideIcon = false;
+                }
+
+                if (typeStyle.HasValue)
+                {
+                    if (overrideIcon)
+                        m_Icon.image = typeStyle.Value.icon;
+                    m_Icon.tintColor = typeStyle.Value.color;
+                }
             }
 
             if (allRenamable)

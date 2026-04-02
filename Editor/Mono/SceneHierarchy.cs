@@ -820,9 +820,9 @@ namespace UnityEditor
         bool IsTreeViewSelectionInSyncWithBackend()
         {
             if (m_TreeView != null)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_TreeView.state.selectedIDs.SequenceEqual(Selection.entityIds);
-#pragma warning restore UA2001
+#pragma warning restore UA2014
             return false;
         }
 
@@ -1315,18 +1315,14 @@ namespace UnityEditor
             // Prefab menu items that only make sense if a single object is selected.
             PopulateGenericMenuWithPrefabMenuItems(menu, contextClickedItemID);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
-#pragma warning restore UA2001
+            GameObject[] selectedGameObjects = Array.ConvertAll(Selection.transforms, t => t.gameObject);
 
             // All Create GameObject menu items
             {
                 menu.AddSeparator("");
 
                 var targetSceneForCreation = selectedGameObjects.Length > 0
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    ? selectedGameObjects.Last().scene.handle
-#pragma warning restore UA2001
+                    ? selectedGameObjects[^1].scene.handle
                     : SceneManager.GetActiveScene().handle;
 
                 // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
@@ -1393,9 +1389,7 @@ namespace UnityEditor
 
         protected void AddCreateGameObjectItemsToSceneMenu(GenericMenu menu, Scene scene)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            MenuUtils.AddCreateGameObjectItemsToMenu(menu, Selection.transforms.Select(t => t.gameObject).ToArray(), false, false, true, scene.handle,
-#pragma warning restore UA2001
+            MenuUtils.AddCreateGameObjectItemsToMenu(menu, Array.ConvertAll(Selection.transforms, t => t.gameObject), false, false, true, scene.handle,
                 MenuUtils.ContextMenuOrigin.Scene, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
         }
 
@@ -1838,15 +1832,20 @@ namespace UnityEditor
             CloseSelectedScenes(removeScenesFromHierarchy);
         }
 
-        internal static bool UserAllowedDiscardingChanges(Scene[] modifiedScenes)
+        internal static bool UserAllowedDiscardingChanges(ReadOnlySpan<Scene> modifiedScenes)
         {
             string title = LocalizationDatabase.GetLocalizedString("Discard Changes");
             string message = LocalizationDatabase.GetLocalizedString("Are you sure you want to discard the changes in the following scenes:\n\n   {0}\n\nYour changes will be lost.");
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            string sceneNames = string.Join("\n   ", modifiedScenes.Select(scene => scene.name).ToArray());
-#pragma warning restore UA2001
-            message = string.Format(message, sceneNames);
+            var sceneNamesBuilder = new StringBuilder();
+            for (int i = 0; i < modifiedScenes.Length; i++)
+            {
+                if (i > 0)
+                    sceneNamesBuilder.Append("\n   ");
+                sceneNamesBuilder.Append(modifiedScenes[i].name);
+            }
+            
+            message = string.Format(message, sceneNamesBuilder);
 
             return EditorUtility.DisplayDialog(title, message, LocalizationDatabase.GetLocalizedString("OK"), LocalizationDatabase.GetLocalizedString("Cancel"));
         }

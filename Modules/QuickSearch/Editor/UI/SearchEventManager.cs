@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.Search
 {
@@ -95,7 +94,7 @@ namespace UnityEditor.Search
     {
         bool hasResults { get; }
         object result { get; }
-        IEnumerable<object> results { get; }
+        IReadOnlyList<object> results { get; }
         SearchEventResultStatus status { get; }
         int handlersWithResultsCount { get; }
     }
@@ -170,19 +169,15 @@ namespace UnityEditor.Search
         readonly struct SearchEventResult : ISearchEventResult
         {
             public bool hasResults { get; }
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public object result => hasResults ? results.First() : null;
-#pragma warning restore UA2001
-            public IEnumerable<object> results { get; }
+            public object result => hasResults ? results[0] : null;
+            public IReadOnlyList<object> results { get; }
             public SearchEventResultStatus status { get; }
             public int handlersWithResultsCount { get; }
 
-            public SearchEventResult(IEnumerable<object> results, int handlersWithResultsCount, SearchEventResultStatus status)
+            public SearchEventResult(IReadOnlyList<object> results, int handlersWithResultsCount, SearchEventResultStatus status)
             {
                 this.results = results;
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                hasResults = results != null && results.Any();
-#pragma warning restore UA2002
+                hasResults = results != null && results.Count > 0;
                 this.handlersWithResultsCount = handlersWithResultsCount;
                 this.status = status;
             }

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -140,6 +141,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 var resolution = context.Texture.width + "x" + context.Texture.height;
 
+                var location = new Location(assetPath);
+                var dependencyNode = new TextureDependencyNode { Location = location };
+
                 issues.Add(context.CreateInsight(IssueCategory.Texture, context.Texture.name)
                     .WithCustomProperties(
                         [
@@ -153,7 +157,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             context.Size,
                             context.Importer.streamingMipmaps
                         ])
-                    .WithLocation(new Location(assetPath)));
+                    .WithDependencies(dependencyNode)
+                    .WithLocation(location));
 
                 foreach (var analyzer in analyzers)
                 {

@@ -26,8 +26,6 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private static readonly string k_DefaultTemplateFolder = "Resources/PackageManager/PackageTemplates/standard";
     private static readonly string k_TempFolder = "Temp/";
     private static readonly string k_PackagesFolder = "Packages/";
-    // The maximum value of a package name follows this documentation: https://docs.unity3d.com/Manual/cus-naming.html
-    private const int k_MaxPackageNameLength = 214;
 
     private const string k_DefaultOrgName = "Undefined";
     private const string k_DefaultDisplayName = "New Package";
@@ -82,10 +80,9 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
                 IOUtils.PathsCombine(EditorApplication.applicationContentsPath, k_DefaultTemplateFolder);
             m_IOProxy.DirectoryCopy(templateFolderPath, tempFolder);
 
-            var templateFiles = m_IOProxy.GetFiles(tempFolder, "*.*", true);
-            foreach (var file in templateFiles)
+            var templateFiles = m_IOProxy.GetFiles(tempFolder, "*.*", SearchOption.AllDirectories);
+            foreach (var filePath in templateFiles)
             {
-                var filePath = file.ToString();
                 var fileAttributes = m_IOProxy.GetFileAttributes(filePath);
                 if ((fileAttributes & (FileAttributes.Hidden | FileAttributes.ReadOnly)) == 0)
                     m_IOProxy.SetFileAttributes(filePath,
@@ -146,7 +143,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
 
         var newSuffix = 0;
-        while (m_UpmCache.GetInstalledPackageInfo(packageName) != null)
+        while (m_UpmCache.GetInstalledPackageInfoByName(packageName) != null)
         {
             newSuffix++;
             packageName = $"{packageNameWithoutSuffixNumber}{newSuffix}";
@@ -155,7 +152,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         if (newSuffix > 0)
             displayName = $"{RemoveSuffixNumber(displayName)} {newSuffix}";
 
-        if (packageName.Length > k_MaxPackageNameLength)
+        if (packageName.Length > PackageValidator.k_MaxAllowedCharsInTechnicalName)
             throw new ArgumentException(k_NameIsTooLongErrorMessage);
 
         return packageName;

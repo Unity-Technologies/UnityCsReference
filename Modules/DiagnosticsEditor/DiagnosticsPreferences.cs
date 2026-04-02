@@ -94,9 +94,7 @@ namespace UnityEditor
 
         public override void OnTitleBarGUI()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            using (new EditorGUI.DisabledGroupScope(m_Switches.All(group => !group.HasAnyChangedValues)))
-#pragma warning restore UA2001
+            using (new EditorGUI.DisabledGroupScope(m_Switches.TrueForAll(group => !group.HasAnyChangedValues)))
             {
                 if (GUILayout.Button("Reset all"))
                 {

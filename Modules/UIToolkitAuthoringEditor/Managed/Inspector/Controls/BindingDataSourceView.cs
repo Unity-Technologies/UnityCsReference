@@ -7,6 +7,7 @@ using Unity.Properties;
 using System.Diagnostics;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -30,19 +31,37 @@ internal partial class BindingDataSourceView : BindableElement
         [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
         public new static void Register()
         {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
+            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [
+                new(nameof(bindingEditingMode), "binding-editing-mode"),
+            ], true);
         }
 
         public override object CreateInstance()
         {
             return new BindingDataSourceView();
         }
+
+        public override void Deserialize(object obj)
+        {
+            base.Deserialize(obj);
+
+            var e = (BindingDataSourceView)obj;
+            if (ShouldWriteAttributeValue(bindingEditingMode_UxmlAttributeFlags))
+                e.IsBindingEditingMode = bindingEditingMode;
+        }
+
+#pragma warning disable 649
+        [SerializeField] bool bindingEditingMode;
+        [SerializeField, UxmlIgnore, HideInInspector]
+        UxmlAttributeFlags bindingEditingMode_UxmlAttributeFlags;
+#pragma warning restore 649
     }
 
     public const string UssClassName = "unity-binding-data-source-view";
     public const string TabButtonUssClassName = "unity-binding-data-source-tab-button";
     const string k_DataSourceObjectTabStatusIndicatorName = "DataSourceAsObjTabStatusIndicator";
     const string k_DataSourceTypeTabStatusIndicatorName = "DataSourceAsTypeTabStatusIndicator";
+    const string k_IsFieldConfiguredPropertyId = "__BindingDataSourceView_FieldConfigured";
     static readonly string k_DataSourceLabel = L10n.Tr("Data Source");
 
     internal const string k_DataSourceUnityObjectPropertyId = nameof(dataSourceUnityObject);
@@ -62,6 +81,7 @@ internal partial class BindingDataSourceView : BindableElement
         public AnyObjectField dataSourceObjectField_VisualInput;
         public UxmlTypeReferenceField dataSourceTypeField_VisualInput;
         public TextField dataSourcePathField_VisualInput;
+        public DataSourcePathCompleter dataSourcePathCompleter;
         public HelpBox pathWarningBox;
         public VisualElement dataSourceObjectTabStatusIndicator;
         public VisualElement dataSourceTypeTabStatusIndicator;
@@ -77,6 +97,7 @@ internal partial class BindingDataSourceView : BindableElement
         dataSourceObjectField_VisualInput = m_DataSourceObjectField.Q<AnyObjectField>(),
         dataSourceTypeField_VisualInput = m_DataSourceTypeField.Q<UxmlTypeReferenceField>(),
         dataSourcePathField_VisualInput = m_DataSourcePathField.Q<TextField>(),
+        dataSourcePathCompleter = m_DataSourcePathCompleter,
         pathWarningBox = m_PathWarningBox,
         dataSourceObjectTabStatusIndicator = m_DataSourceObjectTabStatusIndicator,
         dataSourceTypeTabStatusIndicator = m_DataSourceTypeTabStatusIndicator,
@@ -88,13 +109,16 @@ internal partial class BindingDataSourceView : BindableElement
     UxmlAttributeField m_DataSourceObjectField;
     UxmlAttributeField m_DataSourceTypeField;
     UxmlAttributeField m_DataSourcePathField;
+    DataSourcePathCompleter m_DataSourcePathCompleter;
     HelpBox m_PathWarningBox;
+
+    bool m_IsBindingEditingMode;
 
     IVisualElementScheduledItem m_UpdateControlsScheduledItem;
 
     bool m_UsesDataSourceObject;
 
-    bool usesDataSourceObject
+    bool UsesDataSourceObject
     {
         get => m_UsesDataSourceObject;
         set
@@ -113,6 +137,19 @@ internal partial class BindingDataSourceView : BindableElement
         }
     }
 
+    public bool IsBindingEditingMode
+    {
+        get => m_IsBindingEditingMode;
+        set
+        {
+            if (m_IsBindingEditingMode == value)
+                return;
+
+            m_IsBindingEditingMode = value;
+            m_DataSourceObjectField.bindingPath = value ? "dataSource" : "dataSourceUnityObject";
+        }
+    }
+
     public BindingDataSourceView()
     {
         AddToClassList(UssClassName);
@@ -122,8 +159,10 @@ internal partial class BindingDataSourceView : BindableElement
 
         m_DataSourceButtonStrip = this.Q<ToggleButtonGroup>();
         m_DataSourceButtonStrip.AddToClassList(ToggleButtonGroup.alignedFieldUssClassName);
-        m_DataSourceObjectTabStatusIndicator = m_DataSourceButtonStrip.Q<VisualElement>(k_DataSourceObjectTabStatusIndicatorName);
-        m_DataSourceTypeTabStatusIndicator = m_DataSourceButtonStrip.Q<VisualElement>(k_DataSourceTypeTabStatusIndicatorName);
+        m_DataSourceObjectTabStatusIndicator =
+            m_DataSourceButtonStrip.Q<VisualElement>(k_DataSourceObjectTabStatusIndicatorName);
+        m_DataSourceTypeTabStatusIndicator =
+            m_DataSourceButtonStrip.Q<VisualElement>(k_DataSourceTypeTabStatusIndicatorName);
 
         // Allows buttons to be clicked even when the view is disabled
         foreach (var button in m_DataSourceButtonStrip.Query<Button>().ToList())
@@ -133,7 +172,7 @@ internal partial class BindingDataSourceView : BindableElement
 
         m_DataSourceButtonStrip.RegisterValueChangedCallback(evt =>
         {
-            usesDataSourceObject = evt.newValue[0];
+            UsesDataSourceObject = evt.newValue[0];
             DelayedUpdateControls();
         });
 
@@ -144,8 +183,14 @@ internal partial class BindingDataSourceView : BindableElement
         {
             var field = m_DataSourceObjectField.Q<AnyObjectField>();
 
+            if (field.HasProperty(k_IsFieldConfiguredPropertyId))
+            {
+                return;
+            }
+
+            field.SetProperty(k_IsFieldConfiguredPropertyId, true);
             field.label = k_DataSourceLabel;
-            field?.RegisterValueChangedCallback(OnFieldValueChanged);
+            field.RegisterValueChangedCallback(OnFieldValueChanged);
         };
 
         // Data Source Type
@@ -155,8 +200,14 @@ internal partial class BindingDataSourceView : BindableElement
         {
             var field = m_DataSourceTypeField.Q<UxmlTypeReferenceField>();
 
+            if (field.HasProperty(k_IsFieldConfiguredPropertyId))
+            {
+                return;
+            }
+
+            field.SetProperty(k_IsFieldConfiguredPropertyId, true);
             field.label = k_DataSourceLabel;
-            field?.RegisterValueChangedCallback(OnFieldValueChanged);
+            field.RegisterValueChangedCallback(OnFieldValueChanged);
         };
 
         // Data Source Path
@@ -165,12 +216,39 @@ internal partial class BindingDataSourceView : BindableElement
         {
             var field = m_DataSourcePathField.Q<TextField>();
 
-            field?.RegisterValueChangedCallback(OnFieldValueChanged);
+            if (field.HasProperty(k_IsFieldConfiguredPropertyId))
+            {
+                return;
+            }
+
+            field.SetProperty(k_IsFieldConfiguredPropertyId, true);
+            field.isDelayed = true;
+            field.RegisterValueChangedCallback(OnFieldValueChanged);
+            m_DataSourcePathCompleter = new DataSourcePathCompleter(field);
+            // HACK: We pass the text field as the field to "edit" by the completer.
+            // When writing directly into the field (so not choosing an item from the auto-complete),
+            // it triggers a ChangeEvent<string>, which is picked up by the PropertyField to change
+            // the data inside the UXMLSerializedData. When choosing an item using the completer,
+            // the event is not sent, so we need to rely on the itemChosen API to be notified of it.
+            // Since we still need to go through the PropertyField, we fake a change event that will
+            // be picked up by the PropertyField.
+            // Changing the behaviour of the completer to send an event would break variable handling
+            // of the DimensionStyleFields.
+            m_DataSourcePathCompleter.ItemChosen += i =>
+            {
+                var path = m_DataSourcePathCompleter.Results[i].propertyPath.ToString();
+                using (var evt = ChangeEvent<string>.GetPooled(path, path))
+                {
+                    var textField = m_DataSourcePathField.Q<TextField>();
+                    evt.elementTarget = textField;
+                    textField.SendEvent(evt);
+                }
+            };
         };
 
         m_PathWarningBox = this.Q<HelpBox>("PathWarningBox");
         UpdateSourceVisibility();
-        usesDataSourceObject = true;
+        UsesDataSourceObject = true;
 
         m_DataSourceObjectField.Q<PropertyField>()
             ?.RegisterCallback<SerializedPropertyBindEvent>(OnDataSourceObjectFieldBound);
@@ -205,11 +283,17 @@ internal partial class BindingDataSourceView : BindableElement
 
     void UpdateTabsIndicators()
     {
-        bool showDataSourceObjectIndicator = m_DataSourceButtonStrip.value != new ToggleButtonGroupState(0b01, 2) && m_DataSourceObjectField.decorator.affordanceElement.fieldAffordanceData.sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
-        bool showDataSourceTypeIndicator =  m_DataSourceButtonStrip.value == new ToggleButtonGroupState(0b01, 2)  && m_DataSourceTypeField.decorator.affordanceElement.fieldAffordanceData.sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
+        bool showDataSourceObjectIndicator = m_DataSourceButtonStrip.value != new ToggleButtonGroupState(0b01, 2) &&
+                                             m_DataSourceObjectField.decorator.affordanceElement.fieldAffordanceData
+                                                 .sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
+        bool showDataSourceTypeIndicator = m_DataSourceButtonStrip.value == new ToggleButtonGroupState(0b01, 2) &&
+                                           m_DataSourceTypeField.decorator.affordanceElement.fieldAffordanceData
+                                               .sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
 
-        m_DataSourceObjectTabStatusIndicator.style.visibility = showDataSourceObjectIndicator ? Visibility.Visible : Visibility.Hidden ;
-        m_DataSourceTypeTabStatusIndicator.style.visibility = showDataSourceTypeIndicator? Visibility.Visible  : Visibility.Hidden ;
+        m_DataSourceObjectTabStatusIndicator.style.visibility =
+            showDataSourceObjectIndicator ? Visibility.Visible : Visibility.Hidden;
+        m_DataSourceTypeTabStatusIndicator.style.visibility =
+            showDataSourceTypeIndicator ? Visibility.Visible : Visibility.Hidden;
     }
 
     /// <summary>
@@ -239,7 +323,9 @@ internal partial class BindingDataSourceView : BindableElement
     /// </summary>
     public object GetInheritedDataSourceObject()
     {
-        var startingElement = m_DataSourceObjectField.decorator.context?.element?.parent;
+        var startingElement = IsBindingEditingMode
+            ? m_DataSourceObjectField.decorator.context?.element
+            : m_DataSourceObjectField.decorator.context?.element?.parent;
         if (startingElement == null)
             return null;
 
@@ -252,7 +338,9 @@ internal partial class BindingDataSourceView : BindableElement
     /// </summary>
     public Type GetInheritedDataSourceType()
     {
-        var startingElement = m_DataSourceTypeField.decorator.context?.element?.parent;
+        var startingElement = IsBindingEditingMode
+            ? m_DataSourceObjectField.decorator.context?.element
+            : m_DataSourceTypeField.decorator.context?.element?.parent;
         if (startingElement == null)
             return null;
 
@@ -348,7 +436,29 @@ internal partial class BindingDataSourceView : BindableElement
 
     void UpdateCompleter()
     {
-        // TODO: WIll udpdate the conpleter of the path field when implemented
+        if (m_DataSourcePathCompleter == null || m_DataSourceObjectField == null || m_DataSourceTypeField == null
+            || m_DataSourcePathField?.Context == null || m_DataSourcePathField?.boundProperty == null)
+            return;
+
+        var context = m_DataSourcePathField.Context;
+
+        m_DataSourcePathCompleter.Element = context.element;
+        m_DataSourcePathCompleter.BindingDataSourceObject =
+            GetDataSourceObjectValue() ?? GetInheritedDataSourceObject();
+        m_DataSourcePathCompleter.BindingDataSourceType = GetDataSourceTypeValue() ?? GetInheritedDataSourceType();
+
+        var parentProperty = m_DataSourcePathField.boundProperty.Copy();
+
+        parentProperty.Parent();
+
+        using (new UxmlAttributesEditingContext.DisableUndoScope(context))
+        {
+            var result = UxmlAssetUtilities.SynchronizePath(context, parentProperty.propertyPath, true);
+
+            m_DataSourcePathCompleter.Binding = result.attributeOwner as DataBinding;
+        }
+
+        m_DataSourcePathCompleter.UpdateResults(UsesDataSourceObject);
     }
 
     void UpdateWarningBox()
@@ -398,7 +508,7 @@ internal partial class BindingDataSourceView : BindableElement
 
     void UpdateSourceVisibility()
     {
-        m_DataSourceObjectField.style.display = usesDataSourceObject ? DisplayStyle.Flex : DisplayStyle.None;
-        m_DataSourceTypeField.style.display = usesDataSourceObject ? DisplayStyle.None : DisplayStyle.Flex;
+        m_DataSourceObjectField.style.display = UsesDataSourceObject ? DisplayStyle.Flex : DisplayStyle.None;
+        m_DataSourceTypeField.style.display = UsesDataSourceObject ? DisplayStyle.None : DisplayStyle.Flex;
     }
 }

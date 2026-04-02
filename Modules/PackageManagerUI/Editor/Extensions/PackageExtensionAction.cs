@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDropdownIcon()
         {
-            var anyDropdownItemsVisible = m_DropdownItems.AnyMatches(i => i.visible);
+            var anyDropdownItemsVisible = m_DropdownItems.Exists(i => i.visible);
             if (anyDropdownItemsVisible && dropdownButton.menu == null)
                 dropdownButton.menu = new DropdownMenu();
             else if (!anyDropdownItemsVisible && dropdownButton.menu != null)

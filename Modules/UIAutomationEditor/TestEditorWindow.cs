@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 
 namespace UnityEditor.UIAutomation
@@ -10,6 +11,7 @@ namespace UnityEditor.UIAutomation
     [UIFramework(UIFrameworkUsage.Excluded)]
     class TestEditorWindow : EditorWindow
     {
+        [NonSerialized]
         public FakeCursor fakeCursor = new FakeCursor();
     }
 }

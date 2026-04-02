@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -123,9 +124,6 @@ namespace Unity.GraphToolkit.Editor
             directionLabel.EnableInClassList(withToggleUssClassName, showToggle);
             secondLine.Add(directionLabel);
 
-            var spacer = new VisualElement();
-            spacer.AddToClassList("spacer");
-            secondLine.Add(spacer);
             m_InputOutput = new ToggleButtonGroup();
             m_InputOutput.Add(new Button { text = "Input" });
             m_InputOutput.Add(new Button { text = "Output" });
@@ -135,10 +133,13 @@ namespace Unity.GraphToolkit.Editor
             m_InputOutput.isMultipleSelection = false;
             m_InputOutput.allowEmptySelection = false;
             secondLine.Add(m_InputOutput);
+            var spacer = new VisualElement();
+            spacer.AddToClassList("spacer");
+            secondLine.Add(spacer);
             m_ToggleContentContainer.Add(secondLine);
 
             // If at least one output is selected, we don't show the display settings as it is not relevant.
-            if (!m_Variables.HasAny(f => f.IsOutput))
+            if (!m_Variables.Exists(f => f.IsOutput))
             {
                 var thirdLine = new VisualElement();
                 thirdLine.AddToClassList(lineUssClassName);

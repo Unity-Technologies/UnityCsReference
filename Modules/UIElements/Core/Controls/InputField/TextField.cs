@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A TextField accepts and displays text input. For more information, refer to [[wiki:UIE-uxml-element-TextField|UXML element TextField]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/TextField.png")]
     public partial class TextField : TextInputBaseField<string>
     {
@@ -90,14 +91,19 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-text-field";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
 
         /// <summary>
         /// Creates a new textfield.
@@ -131,9 +137,9 @@ namespace UnityEngine.UIElements
         public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
             : base(label, maxLength, maskChar, new TextInput())
         {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            AddToClassList(ussClassNameUnique);
+            labelElement.AddToClassList(labelUssClassNameUnique);
+            visualInput.AddToClassList(inputUssClassNameUnique);
 
             pickingMode = PickingMode.Ignore;
             SetValueWithoutNotify("");

@@ -25,11 +25,11 @@ internal class VisualTreeAssetExporter
 
         public string indent { get; set; } = "    ";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal string[] ignoreAttributeList { get; set; } = Array.Empty<string>();
+        public bool consistentAttributeOrder = false;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal string[] ignoreTypeList { get; set; } = Array.Empty<string>();
+        public string[] ignoreAttributeList { get; set; } = Array.Empty<string>();
+
+        public string[] ignoreTypeList { get; set; } = Array.Empty<string>();
 
         public StyleSheetExporter styleExporter
         {
@@ -39,16 +39,14 @@ internal class VisualTreeAssetExporter
 
         public StyleSheetExporter.UssExportOptions styleExporterOptions { get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal bool IsAttributeIgnored(string attributeName)
+        public bool IsAttributeIgnored(string attributeName)
         {
             if (ignoreAttributeList == null)
                 return false;
             return Array.IndexOf(ignoreAttributeList, attributeName) >= 0;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal bool IsTypeIgnored(string typeName)
+        public bool IsTypeIgnored(string typeName)
         {
             if (ignoreTypeList == null)
                 return false;
@@ -215,7 +213,18 @@ internal class VisualTreeAssetExporter
 
         WriteElementTypeName(ref ctx, resolvedTypename.prefix, resolvedTypename.typename);
         WriteXmlNamespaces(ref ctx, asset.namespaceDefinitions);
-        WriteProperties(ref ctx, asset.properties);
+
+        if (asset.properties != null && ctx.options.consistentAttributeOrder)
+        {
+            using var _ = ListPool<UxmlProperty>.Get(out var properties);
+            properties.AddRange(asset.properties);
+            properties.Sort((lhs, rhs) => string.CompareOrdinal(lhs.name, rhs.name));
+            WriteProperties(ref ctx, properties);
+        }
+        else
+        {
+            WriteProperties(ref ctx, asset.properties);
+        }
 
         if (asset is VisualElementAsset vea)
         {

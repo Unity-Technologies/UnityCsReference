@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
     /// **Note**: This is the Image control for the UI Toolkit framework. This is not related to the
     /// <a href="https://docs.unity3d.com/Packages/com.unity.ugui@latest/index.html?subfolder=/api/UnityEngine.UI.Image.html">UnityEngine.UI.Image</a> uGUI control.
     /// </remarks>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Image.png")]
     public partial class Image : VisualElement
     {
@@ -224,13 +225,14 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-image";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public Image()
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             m_ScaleMode = ScaleMode.ScaleToFit;
             m_TintColor = Color.white;

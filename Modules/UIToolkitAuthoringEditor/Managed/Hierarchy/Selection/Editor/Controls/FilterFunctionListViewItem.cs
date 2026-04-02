@@ -19,11 +19,15 @@ namespace Unity.UIToolkit.Editor
         const string k_RemoveButtonClass = k_BaseClass + "__remove-filter-button";
         const string k_FilterFunctionTypeName = "filter-function-type";
         const string k_ParamtersContainerName = "parameters-container";
+        const int k_MaxParameters = 4;
 
         private VisualElement m_ParametersContainer;
         public VisualElement parametersContainer => m_ParametersContainer;
 
         private EnumField m_FilterFunctionTypeField;
+        private ObjectField m_CustomDefinitionField;
+        private FloatField[] m_FloatFields;
+        private ColorField[] m_ColorFields;
 
         FilterFunction m_FilterFunction;
         public FilterFunction filterFunction => m_FilterFunction;
@@ -43,6 +47,35 @@ namespace Unity.UIToolkit.Editor
             m_FilterFunctionTypeField.RegisterValueChangedCallback(OnFilterFunctionTypeChanged);
 
             m_ParametersContainer = this.Q<VisualElement>(k_ParamtersContainerName);
+
+            // Create custom definition field
+            m_CustomDefinitionField = new ObjectField("Definition");
+            m_CustomDefinitionField.objectType = typeof(FilterFunctionDefinition);
+            m_CustomDefinitionField.RegisterValueChangedCallback(OnCustomValueChanged);
+            m_CustomDefinitionField.style.display = DisplayStyle.None;
+            m_ParametersContainer.Add(m_CustomDefinitionField);
+
+            // Create pool of float fields
+            m_FloatFields = new FloatField[k_MaxParameters];
+            for (int i = 0; i < k_MaxParameters; ++i)
+            {
+                var field = new FloatField();
+                field.RegisterValueChangedCallback(OnParameterValueChanged);
+                field.style.display = DisplayStyle.None;
+                m_FloatFields[i] = field;
+                m_ParametersContainer.Add(field);
+            }
+
+            // Create pool of color fields
+            m_ColorFields = new ColorField[k_MaxParameters];
+            for (int i = 0; i < k_MaxParameters; ++i)
+            {
+                var field = new ColorField();
+                field.RegisterValueChangedCallback(OnParameterValueChanged);
+                field.style.display = DisplayStyle.None;
+                m_ColorFields[i] = field;
+                m_ParametersContainer.Add(field);
+            }
 
             AddToClassList(k_BaseClass);
         }
@@ -69,29 +102,28 @@ namespace Unity.UIToolkit.Editor
             m_FilterFunction = func;
             m_FilterFunctionTypeField.SetValueWithoutNotify(func.type);
 
-            foreach (var field in m_ParametersContainer.Children())
+            // Hide all fields initially
+            m_CustomDefinitionField.style.display = DisplayStyle.None;
+            for (int i = 0; i < k_MaxParameters; ++i)
             {
-                if (field is FloatField floatField)
-                    floatField.UnregisterValueChangedCallback(OnParameterValueChanged);
-                else if (field is ColorField colorField)
-                    colorField.UnregisterValueChangedCallback(OnParameterValueChanged);
-                else if (field is ObjectField objectField)
-                    objectField.UnregisterValueChangedCallback(OnCustomValueChanged);
+                m_FloatFields[i].style.display = DisplayStyle.None;
+                m_ColorFields[i].style.display = DisplayStyle.None;
             }
-            m_ParametersContainer.Clear();
 
             var def = func.GetDefinition();
 
+            // Show custom definition field if needed
             if (func.type == FilterFunctionType.Custom)
             {
-                var field = new ObjectField("Definition");
-                field.objectType = typeof(FilterFunctionDefinition);
-                field.value = def;
-                field.RegisterValueChangedCallback(OnCustomValueChanged);
-                m_ParametersContainer.Add(field);
+                m_CustomDefinitionField.SetValueWithoutNotify(def);
+                m_CustomDefinitionField.style.display = DisplayStyle.Flex;
             }
 
+            // Show and configure parameter fields
             int paramCount = def?.parameters.Length ?? 0;
+            var floatFieldIndex = 0;
+            var colorFieldIndex = 0;
+
             for (int i = 0; i < paramCount; ++i)
             {
                 var pDef = def?.parameters[i] ?? new FilterParameterDeclaration();
@@ -103,21 +135,19 @@ namespace Unity.UIToolkit.Editor
 
                 if (pVal.type == FilterParameterType.Float)
                 {
-                    var field = new FloatField();
+                    var field = m_FloatFields[floatFieldIndex++];
                     field.label = label;
-                    field.value = pVal.floatValue;
+                    field.SetValueWithoutNotify(pVal.floatValue);
                     field.userData = i;
-                    field.RegisterValueChangedCallback(OnParameterValueChanged);
-                    m_ParametersContainer.Add(field);
+                    field.style.display = DisplayStyle.Flex;
                 }
                 else if (pVal.type == FilterParameterType.Color)
                 {
-                    var field = new ColorField();
+                    var field = m_ColorFields[colorFieldIndex++];
                     field.label = label;
-                    field.value = pVal.colorValue;
+                    field.SetValueWithoutNotify(pVal.colorValue);
                     field.userData = i;
-                    field.RegisterValueChangedCallback(OnParameterValueChanged);
-                    m_ParametersContainer.Add(field);
+                    field.style.display = DisplayStyle.Flex;
                 }
             }
         }
@@ -131,7 +161,7 @@ namespace Unity.UIToolkit.Editor
             f.ClearParameters();
             for (int i = 0; i < newDef?.parameters.Length; ++i)
             {
-                // Default values aren't specifed for custom definitions, so we use the interpolation default value instead.
+                // Default values aren't specified for custom definitions, so we use the interpolation default value instead.
                 f.AddParameter(newDef.parameters[i].interpolationDefaultValue);
             }
 

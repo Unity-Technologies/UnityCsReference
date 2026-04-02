@@ -35,6 +35,9 @@ namespace UnityEditor.Build.Profile
             if (buildProfile == null)
                 return;
 
+            if (buildProfile.isMultiTarget)
+                buildProfile.activePlatformGuid = buildProfile.selectedPlatformGuid;
+
             BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(buildProfile);
         }
 
@@ -170,6 +173,23 @@ namespace UnityEditor.Build.Profile
                 throw new ArgumentException($"The component {typeof(T).Name} is required and cannot be removed from the build profile {name}.");
 
             AssetDatabase.RemoveObjectFromAsset(objectToRemove);
+        }
+
+        /// <summary>
+        /// Forcibly removes the first occurrence of a component of type T from the build profile.
+        /// For internal use only to accommodate required components.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal void ForceRemoveComponent<T>() where T : UnityEngine.Object
+        {
+            var found = GetComponent<T>();
+            if (found == null)
+            {
+                Debug.LogWarning($"The component {typeof(T).Name} does not exist in the build profile {name}. ");
+                return;
+            }
+
+            AssetDatabase.RemoveObjectFromAsset(found);
         }
 
         /// <summary>

@@ -55,7 +55,7 @@ internal abstract class UpdateActionBase : PackageAction
             }
         }
 
-        if (!m_OperationDispatcher.Install(targetVersion))
+        if (!m_OperationDispatcher.Install(targetVersion, OperationType.Update))
             return false;
 
         var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";

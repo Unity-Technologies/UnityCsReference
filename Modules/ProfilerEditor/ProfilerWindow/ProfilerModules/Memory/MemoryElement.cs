@@ -18,7 +18,6 @@ namespace UnityEditor
         public string className;
     }
 
-    [System.Serializable]
     internal class MemoryElement
     {
         public List<MemoryElement> children = null;

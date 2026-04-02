@@ -11,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
+using Unity.Collections;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.SceneTemplate
@@ -114,13 +115,8 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorApplication.delayCall += () =>
                 {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!titlePropertyField.Children().Any())
-#pragma warning restore UA2002
-                        return;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (titlePropertyField.Children().First() is TextField titlePropertyFieldTextField)
-#pragma warning restore UA2001
+                    var first = titlePropertyField.children.FirstOrDefault();
+                    if (first is TextField titlePropertyFieldTextField)
                     {
                         titlePropertyFieldTextField.maxLength = 1024;
                         m_TitleTextFieldReady = true;
@@ -138,14 +134,8 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorApplication.delayCall += () =>
                 {
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!description.Children().Any())
-#pragma warning restore UA2002
-                        return;
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var descriptionTextField = description.Children().First() as TextField;
-#pragma warning restore UA2001
-                    if (descriptionTextField != null)
+                    var first = description.children.FirstOrDefault();
+                    if (first is TextField descriptionTextField)
                     {
                         descriptionTextField.AddToClassList(Styles.classWrappingText);
                         descriptionTextField.multiline = true;
@@ -273,9 +263,7 @@ namespace UnityEditor.SceneTemplate
             toggle.AddToClassList(Styles.classInspectorFoldoutHeader);
             var titleElement = new Label(title);
             titleElement.AddToClassList(Styles.classInspectorFoldoutHeaderText);
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            toggle.Children().First().Add(titleElement);
-#pragma warning restore UA2001
+            toggle.children[0].Add(titleElement);
             foldout.Add(element);
 
             foldout.RegisterValueChangedCallback(e =>

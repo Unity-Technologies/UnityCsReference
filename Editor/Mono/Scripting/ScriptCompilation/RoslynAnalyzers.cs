@@ -45,9 +45,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
                         .Where(a => a.scriptAssemblyFileName == null ||
                                     a.scriptAssemblyFileName == scriptAssembly.Filename ||
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                    scanPrecompiledReferences && scriptAssembly.References.Select(Path.GetFileName).Contains(a.scriptAssemblyFileName))
-#pragma warning restore UA2001
+                                    scanPrecompiledReferences && Array.Exists(scriptAssembly.References, b => Path.GetFileName(b) == a.scriptAssemblyFileName))
                         .Select(a => a.analyzerDll))
                     .Distinct()
                     .ToArray();
@@ -83,12 +81,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var analyzerAssemblies = analyzerDlls.Select(analyzerDll =>
 #pragma warning restore UA2001
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var potentialAnalyzerOwner = potentialAnalyzerOwners
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
                     .Where(targetAssembly => targetAssembly.PathFilter(analyzerDll) > 0)
-                    .OrderBy(targetAssembly => targetAssembly.PathFilter(analyzerDll))
-                    .LastOrDefault();
+                    .OrderByDescending(targetAssembly => targetAssembly.PathFilter(analyzerDll))
+                    .FirstOrDefault();
 
                 return (potentialOwnerOfAnalyzer: potentialAnalyzerOwner?.Filename, dll: analyzerDll);
 

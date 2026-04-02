@@ -176,7 +176,15 @@ namespace UnityEditor
             return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
         }
 
-        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null)
+        internal delegate void ObjectFieldIconAndTextRepaintDelegate(Rect position, int id, Object obj, GUIContent content, ObjectFieldVisualType visualType, GUIStyle objectFieldStyle, GUIStyle buttonStyle);
+
+        [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
+        internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, EditorStyles.objectField, EditorStyles.objectFieldButton, null, null, customIconAndTextRepaint);
+        }
+
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint = null)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -212,7 +220,8 @@ namespace UnityEditor
 
                 if (FillPropertyContextMenu(property, null, contextMenu) != null)
                     contextMenu.AddSeparator("");
-                contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
+                if (actualObject != null)
+                    contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
                 contextMenu.DropDown(position);
                 Event.current.Use();
             }
@@ -432,12 +441,17 @@ namespace UnityEditor
                         switch (visualType)
                         {
                             case ObjectFieldVisualType.IconAndText:
-                                BeginHandleMixedValueContentColor();
-                                style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
+                                if (customIconAndTextRepaint != null)
+                                    customIconAndTextRepaint(position, id, obj, temp, visualType, style, buttonStyle);
+                                else
+                                {
+                                    BeginHandleMixedValueContentColor();
+                                    style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
 
-                                Rect buttonRect = buttonStyle.margin.Remove(GetButtonRect(visualType, position));
-                                buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
-                                EndHandleMixedValueContentColor();
+                                    Rect buttonRect = buttonStyle.margin.Remove(GetButtonRect(visualType, position));
+                                    buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
+                                    EndHandleMixedValueContentColor();
+                                }
                                 break;
                             case ObjectFieldVisualType.LargePreview:
                                 DrawObjectFieldLargeThumb(position, id, obj, temp);

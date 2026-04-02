@@ -150,6 +150,7 @@ namespace UnityEditor.VFX
         public VFXTaskType type;
         public VFXMapping[] buffers;
         public VFXMappingTemporary[] temporaryBuffers;
+        [NativeName("uniforms")]
         public VFXMapping[] values;
         public VFXMapping[] parameters;
         public UnityObject processor;
@@ -185,6 +186,7 @@ namespace UnityEditor.VFX
     internal struct VFXEventDesc
     {
         public string name;
+        [NativeName("playSystems")]
         public uint[] startSystems;
         public uint[] stopSystems;
         public uint[] initSystems;

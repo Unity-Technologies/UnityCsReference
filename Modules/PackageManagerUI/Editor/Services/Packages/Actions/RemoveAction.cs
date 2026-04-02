@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -104,7 +103,7 @@ internal class RemoveAction : PackageAction
         // If the user is removing a package that is part of a feature set, lock it after removing from manifest
         // Having this check condition should be more optimal once we implement caching of Feature Set Dependents for each package
         if (m_PackageDatabase.IsUsedByFeature(version.package.versions.installed))
-            m_PageManager.activePage.SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
+            m_PageManager.activePage.SetUserUnlockedState(new [] { version.package.uniqueId }, false);
 
         // Remove
         m_OperationDispatcher.Uninstall(version.package);
@@ -165,8 +164,6 @@ internal class RemoveAction : PackageAction
 
     private void DeselectPackages(IReadOnlyCollection<IPackage> packages)
     {
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_PageManager.activePage.RemoveSelection(packages.Select(p => p.uniqueId));
-#pragma warning restore UA2001
+        m_PageManager.activePage.RemoveSelection(packages.SelectAsEnumerable(p => p.uniqueId), false);
     }
 }

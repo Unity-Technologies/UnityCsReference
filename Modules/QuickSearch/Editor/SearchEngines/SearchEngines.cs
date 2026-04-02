@@ -216,13 +216,13 @@ namespace UnityEditor.Search
 
         public static void SetSearchContext(string query, ProjectSearchContext project, SearchContext context)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (project.requiredTypeNames != null && project.requiredTypeNames.FirstOrDefault() != null)
-#pragma warning restore UA2001
+#pragma warning restore UA2011
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.filterType = Utils.GetTypeFromName(project.requiredTypeNames.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             }
             else
             {
@@ -298,13 +298,13 @@ namespace UnityEditor.Search
                 return;
 
             searchSession.context.searchText = query;
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (context.requiredTypeNames != null && context.requiredTypeNames.FirstOrDefault() != null)
-#pragma warning restore UA2001
+#pragma warning restore UA2011
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
             }
             else
             {

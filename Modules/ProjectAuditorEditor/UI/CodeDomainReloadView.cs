@@ -35,29 +35,18 @@ To open the Preferences window, go to Edit > Preferences (macOS: Unity > Setting
 
         public override void DrawFilters()
         {
-            EditorGUI.BeginChangeCheck();
-
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Show:", GUILayout.ExpandWidth(true), GUILayout.Width(80));
+                EditorGUILayout.LabelField(SharedContents.Show, GUILayout.ExpandWidth(true), ProjectAuditorWindow.LayoutSize.FilterOptionsLabelWidth);
 
-                var guiContent = m_Table.showIgnoredIssues
-                    ? Contents.ShowIgnoredIssuesButton
-                    : Contents.HideIgnoredIssuesButton;
-
-                var wasShowingIgnored = m_Table.showIgnoredIssues;
-                m_Table.showIgnoredIssues = EditorGUILayout.ToggleLeft("Show Ignored Issues",
-                    m_Table.showIgnoredIssues, GUILayout.Width(170));
-
-                if (wasShowingIgnored != m_Table.showIgnoredIssues)
+                EditorGUI.BeginChangeCheck();
+                m_Table.showIgnoredIssues = EditorGUILayout.ToggleLeft(SharedContents.ShowIgnoredIssues, m_Table.showIgnoredIssues, GUILayout.Width(170));
+                if (EditorGUI.EndChangeCheck())
                 {
                     m_ViewManager.OnIgnoredIssuesVisibilityChanged?.Invoke(m_Table.showIgnoredIssues);
                     MarkDirty();
                 }
             }
-
-            if (EditorGUI.EndChangeCheck())
-                MarkDirty();
         }
     }
 }

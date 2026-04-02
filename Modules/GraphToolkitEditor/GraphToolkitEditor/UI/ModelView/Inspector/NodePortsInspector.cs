@@ -82,21 +82,19 @@ namespace Unity.GraphToolkit.Editor
         {
             if (field is ConstantField constantField)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!ports.SequenceEqual(constantField.Owners))
-#pragma warning restore UA2001
+#pragma warning restore UA2014
                     return true;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (ports[0].EmbeddedValue.Type != constantField.ConstantModels.First().Type)
-#pragma warning restore UA2001
+                if (ports[0].EmbeddedValue.Type != constantField.ConstantModels[0].Type)
                     return true;
             }
             else if (field is ExpandablePortPropertyField expandablePortPropertyField)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2014 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!ports.SequenceEqual(expandablePortPropertyField.ExpandablePorts))
-#pragma warning restore UA2001
+#pragma warning restore UA2014
                     return true;
 
                 if (expandablePortPropertyField.ShouldRebuildFields())
@@ -123,9 +121,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>A list of lists of ports to display, each list of ports contains ports for the same property in case of a multi selection.</returns>
         protected virtual IReadOnlyList<List<PortModel>> GetPortsToDisplay()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var portNodeModel = m_Models.OfType<PortNodeModel>().FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2011
 
             if (portNodeModel == null)
                 return Array.Empty<List<PortModel>>();
@@ -138,9 +136,7 @@ namespace Unity.GraphToolkit.Editor
             for (int i = 0; i < portList.Count; ++i)
             {
                 var ports = portList[i];
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var firstPort = ports.First();
-#pragma warning restore UA2001
+                var firstPort = ports[0];
 
                 // Only keep ports that are common to all the models.
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

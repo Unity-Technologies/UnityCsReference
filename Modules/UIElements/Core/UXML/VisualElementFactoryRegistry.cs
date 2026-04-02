@@ -39,7 +39,6 @@ namespace UnityEngine.UIElements
                 {
                     s_Factories = new Dictionary<string, List<IUxmlFactory>>();
                     s_MovedTypesFactories = new Dictionary<string, List<IUxmlFactory>>(50);
-                    RegisterEngineFactories();
                     RegisterUserFactories();
                 }
 
@@ -99,80 +98,6 @@ namespace UnityEngine.UIElements
 
             factoryList = null;
             return false;
-        }
-
-        // Core UI Toolkit elements must be registered manually for both Editor and Player use cases.
-        // For performance in the Player we want to avoid scanning any builtin Unity assembly with reflection.
-        // Ideally a mechanism similar to the TypeCache in the Player would exist and remove the need for this.
-        static void RegisterEngineFactories()
-        {
-            IUxmlFactory[] factories =
-            {
-                // Dummy factories. Just saying that these types exist and what are their attributes.
-                // Used for schema generation.
-                new UxmlRootElementFactory(),
-                new UxmlTemplateFactory(),
-                new UxmlStyleFactory(),
-                new UxmlAttributeOverridesFactory(),
-
-                // Real object instantiating factories.
-                new Button.UxmlFactory(),
-                new ToggleButtonGroup.UxmlFactory(),
-                new VisualElement.UxmlFactory(),
-                new IMGUIContainer.UxmlFactory(),
-                new Image.UxmlFactory(),
-                new Label.UxmlFactory(),
-                new RepeatButton.UxmlFactory(),
-                new ScrollView.UxmlFactory(),
-                new Scroller.UxmlFactory(),
-                new Slider.UxmlFactory(),
-                new SliderInt.UxmlFactory(),
-                new MinMaxSlider.UxmlFactory(),
-                new GroupBox.UxmlFactory(),
-                new RadioButton.UxmlFactory(),
-                new RadioButtonGroup.UxmlFactory(),
-                new Toggle.UxmlFactory(),
-                new TextField.UxmlFactory(),
-                new TemplateContainer.UxmlFactory(),
-                new Box.UxmlFactory(),
-                new EnumField.UxmlFactory(),
-                new DropdownField.UxmlFactory(),
-                new HelpBox.UxmlFactory(),
-                new PopupWindow.UxmlFactory(),
-                new ProgressBar.UxmlFactory(),
-                new ListView.UxmlFactory(),
-                new TwoPaneSplitView.UxmlFactory(),
-                new TreeView.UxmlFactory(),
-                new Foldout.UxmlFactory(),
-                new MultiColumnListView.UxmlFactory(),
-                new MultiColumnTreeView.UxmlFactory(),
-                new BindableElement.UxmlFactory(),
-                new TextElement.UxmlFactory(),
-                new ButtonStripField.UxmlFactory(),
-                new FloatField.UxmlFactory(),
-                new DoubleField.UxmlFactory(),
-                new Hash128Field.UxmlFactory(),
-                new IntegerField.UxmlFactory(),
-                new LongField.UxmlFactory(),
-                new UnsignedIntegerField.UxmlFactory(),
-                new UnsignedLongField.UxmlFactory(),
-                new RectField.UxmlFactory(),
-                new Vector2Field.UxmlFactory(),
-                new RectIntField.UxmlFactory(),
-                new Vector3Field.UxmlFactory(),
-                new Vector4Field.UxmlFactory(),
-                new Vector2IntField.UxmlFactory(),
-                new Vector3IntField.UxmlFactory(),
-                new BoundsField.UxmlFactory(),
-                new BoundsIntField.UxmlFactory(),
-                new Tab.UxmlFactory(),
-                new TabView.UxmlFactory(),
-            };
-
-            foreach (var factory in factories)
-            {
-                RegisterFactory(factory);
-            }
         }
 
         internal static void RegisterUserFactories()

@@ -430,7 +430,7 @@ namespace UnityEditor.UIElements
                         EditorGUI.BeginChangeCheck();
                         serializedProperty.serializedObject.Update();
 
-                        if (classList.Contains(inspectorElementUssClassName))
+                        if (ClassListContains(inspectorElementUssClassName))
                         {
                             var spacing = 0f;
 
@@ -490,7 +490,7 @@ namespace UnityEditor.UIElements
                             }
                         }
 
-                        if (!classList.Contains(inspectorElementUssClassName))
+                        if (!ClassListContains(inspectorElementUssClassName))
                         {
                             if (m_FoldoutDepth > 0)
                                 EditorGUI.indentLevel -= m_FoldoutDepth;
@@ -508,7 +508,7 @@ namespace UnityEditor.UIElements
                 {
                     EditorGUIUtility.wideMode = originalWideMode;
                     EditorGUIUtility.hierarchyMode = originalHierarchyMode;
-                    if (classList.Contains(inspectorElementUssClassName))
+                    if (ClassListContains(inspectorElementUssClassName))
                     {
                         EditorGUIUtility.labelWidth = oldLabelWidth;
                     }
@@ -842,6 +842,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
         internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
             field.labelElement.AddToClassList(labelUssClassName);
@@ -1211,6 +1212,9 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.EntityId:
                     return ConfigureField<EntityIdField, EntityId>(originalField as EntityIdField, property, () => new EntityIdField());
 
+                case SerializedPropertyType.LoadableReference:
+                    return ConfigureField<LoadableReferenceField, LoadableReference>(originalField as LoadableReferenceField, property, () => new LoadableReferenceField());
+
                 case SerializedPropertyType.Generic:
                     if (property.type == nameof(ToggleButtonGroupState))
                     {
@@ -1240,6 +1244,7 @@ namespace UnityEditor.UIElements
             customPropertyDrawer.RegisterCallback<ChangeEvent<string>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<Color>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<UnityEngine.Object>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<LoadableReference>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             // SerializedPropertyType.LayerMask -> int
             // SerializedPropertyType.Enum is handled either by string or
             customPropertyDrawer.RegisterCallback<ChangeEvent<Enum>>((changeEvent) => AsyncDispatchPropertyChangedEvent());

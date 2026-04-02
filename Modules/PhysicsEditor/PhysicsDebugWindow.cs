@@ -60,7 +60,6 @@ namespace UnityEditor
 
         // To avoid reallocations when hashing the selection
         #region Pre-allocations
-        [SerializeField]
         private HashSet<Transform> m_TemporarySelection                       = new HashSet<Transform>();
         private LinkedList<RenderedTransform> m_ObjectsToAdd                  = new LinkedList<RenderedTransform>();
         private LinkedList<Transform> m_ObjectsToRemove                       = new LinkedList<Transform>();

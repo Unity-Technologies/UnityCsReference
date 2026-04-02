@@ -128,6 +128,7 @@ namespace UnityEditor
         int m_IgnorePngGamma;
 
         [SerializeField]
+        [NativeName("m_CookieLightType")]
         int m_CookieMode;
 
         // memory layout of these is in TextureSettings.h

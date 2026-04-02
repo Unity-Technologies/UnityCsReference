@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -130,9 +129,7 @@ namespace UnityEditor
 
         public AvatarMask maskSource { get { return m_MaskSource; } set { m_MaskSource = value; } }
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public AnimationEvent[] events { get { return m_AnimationEventsBlittable.Select(AnimationEventBlittable.ToAnimationEvent).ToArray(); } set { m_AnimationEventsBlittable = value.Select(AnimationEventBlittable.FromAnimationEvent).ToArray(); } }
-#pragma warning restore UA2001
+        public AnimationEvent[] events { get { return Array.ConvertAll(m_AnimationEventsBlittable, AnimationEventBlittable.ToAnimationEvent); } set { m_AnimationEventsBlittable = Array.ConvertAll(value, AnimationEventBlittable.FromAnimationEvent); } }
         public ClipAnimationInfoCurve[] curves { get { return m_AdditionnalCurves; } set { m_AdditionnalCurves = value; } }
 
         public bool maskNeedsUpdating { get { return m_MaskNeedsUpdating; } }
@@ -367,6 +364,21 @@ namespace UnityEditor
         Calculate = 1,
     }
 
+    [Flags, NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterUVs
+    {
+        None = 0,
+        UV0 = 1 << 0,
+        UV1 = 1 << 1,
+        UV2 = 1 << 2,
+        UV3 = 1 << 3,
+        UV4 = 1 << 4,
+        UV5 = 1 << 5,
+        UV6 = 1 << 6,
+        UV7 = 1 << 7,
+        All = ~0
+    }
+
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAvatarSetup
     {
@@ -574,6 +586,26 @@ namespace UnityEditor
         }
 
         public extern bool preserveHierarchy
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Determines which UV channels are imported from the source model.
+        /// </summary>
+        public extern ModelImporterUVs importUVs
+        {
+            [NativeMethod("GetUVOptions")]
+            get;
+            [NativeMethod("SetUVOptions")]
+            set;
+        }
+
+        /// <summary>
+        /// Imports the vertex color channel from the source model.
+        /// </summary>
+        public extern bool importVertexColors
         {
             get;
             set;

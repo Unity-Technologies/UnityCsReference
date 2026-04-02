@@ -22,7 +22,9 @@ namespace UnityEditor.EditorTools
             get
             {
                 var focus = EditorWindow.focusedWindow;
-                return focus is SceneView || focus is SceneHierarchyWindow;
+                return focus is SceneView ||
+                       focus is SceneHierarchyWindow ||
+                       (focus != null && EditorToolUtility.IsRegisteredToolOwner(focus.GetType()));
             }
         }
     }

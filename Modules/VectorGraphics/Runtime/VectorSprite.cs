@@ -9,8 +9,6 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.U2D;
-
-using UnityEngine.Experimental.U2D;
 using UnityEngine.Experimental.Rendering;
 
 namespace Unity.VectorGraphics

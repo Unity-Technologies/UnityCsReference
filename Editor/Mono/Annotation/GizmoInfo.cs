@@ -95,19 +95,45 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Thumb == null)
-                {
-                    // Icon for scripts
-                    if (script != null)
-                        m_Thumb = EditorGUIUtility.GetIconForObject(m_Script);
-                    // Icon for builtin components
-                    else if (hasIcon)
-                        m_Thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(m_ClassID);
-                }
-
+                EnsureThumbResolved();
                 return m_Thumb;
             }
-    }
+        }
+
+
+        [NonSerialized] bool m_ThumbResolved;
+
+        void EnsureThumbResolved()
+        {
+            if (m_ThumbResolved) return;
+            m_ThumbResolved = true;
+
+            // Try script icons
+            var scriptObj = script;
+            if (scriptObj != null)
+            {
+                // 1) [Icon] attribute path
+                if (scriptObj is MonoScript monoScript)
+                {
+                    var type = monoScript.GetClass();
+                    if (type != null)
+                    {
+                        var path = EditorGUIUtility.GetIconPathFromAttribute(type);
+                        if (!string.IsNullOrEmpty(path))
+                            m_Thumb = EditorGUIUtility.LoadIcon(path);
+                    }
+                }
+                if (m_Thumb != null) return;
+
+                // 2) Unity's normal script icon (meta icon etc.)
+                m_Thumb = EditorGUIUtility.GetIconForObject(scriptObj);
+                if (m_Thumb != null) return;
+            }
+
+            // Builtin component icons
+            if (m_Thumb == null && hasIcon)
+                m_Thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(m_ClassID);
+        }
 
         public int CompareTo(object obj)
         {

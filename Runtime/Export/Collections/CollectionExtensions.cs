@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace Unity.Collections
 {
@@ -89,7 +90,7 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
-        internal static T Min<T>([DisallowNull]this IList<T> list, IComparer<T> comparer = null)
+        internal static T Min<T>([DisallowNull] this IList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)
                 throw new InvalidOperationException("list contains no elements");
@@ -110,7 +111,7 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
-        internal static T Max<T>([DisallowNull]this IList<T> list, IComparer<T> comparer = null)
+        internal static T Max<T>([DisallowNull] this IList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)
                 throw new InvalidOperationException("list contains no elements");
@@ -213,7 +214,7 @@ namespace Unity.Collections
                     firstAssignment = true;
                 }
 
-                if(comparer.Compare(e, element) < 0)
+                if (comparer.Compare(e, element) < 0)
                     element = e;
             }
 
@@ -285,15 +286,31 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="item">The item to locate in the array.</param>
-        public static bool Contains<T>([DisallowNull]this T[] array, T item) => Array.IndexOf(array, item) != -1;
-		
-		    /// <summary>
-        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        public static bool Contains<T>([DisallowNull] this T[] array, T item) => Array.IndexOf(array, item) != -1;
+
+        /// <summary>
+        /// Returns whether the list contains the specified item.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="item">The item to locate in the list.</param>
+        public static bool Contains<T>([DisallowNull] this IReadOnlyList<T> list, T item)
+        {
+            if (list is List<T> l)
+                return l.Contains(item);
+
+#pragma warning disable UA2007 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return System.Linq.Enumerable.Contains(list, item);
+#pragma warning restore UA2007
+        }
+
+        /// <summary>
+        /// Check if a predicate is true for any element in a collection. This method replaces the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
         /// </summary>
         /// <param name="collection">Collection to inspect</param>
         /// <param name="match">Predicate to call</param>
         /// <typeparam name="T">Collection type</typeparam>
-        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <returns>True if predicate is true for any element and False if not</returns>
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
         public static bool Exists<T>(this T[] collection, Predicate<T> match)
         {
@@ -301,12 +318,12 @@ namespace Unity.Collections
         }
 
         /// <summary>
-        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        /// Check if a predicate is true for any element in a collection. This method replaces the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
         /// </summary>
         /// <param name="collection">Collection to inspect</param>
         /// <param name="match">Predicate to call</param>
         /// <typeparam name="T">Collection type</typeparam>
-        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <returns>True if predicate is true for any element and False if not</returns>
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
         public static bool Exists<T>(this IReadOnlyCollection<T> collection, Predicate<T> match)
         {
@@ -314,12 +331,12 @@ namespace Unity.Collections
         }
 
         /// <summary>
-        /// Check if a predicate is true for any element in a collection. This method replace the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
+        /// Check if a predicate is true for any element in a collection. This method replaces the Linq implementation of Any(), and calls Array.Exists or List.Exists where applicable.
         /// </summary>
         /// <param name="collection">Collection to inspect</param>
         /// <param name="match">Predicate to call</param>
         /// <typeparam name="T">Collection type</typeparam>
-        /// <returns>True if any predicate is true for any element and False if not</returns>
+        /// <returns>True if predicate is true for any element and False if not</returns>
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
         public static bool Exists<T>(this ICollection<T> collection, Predicate<T> match)
         {
@@ -355,6 +372,73 @@ namespace Unity.Collections
         }
 
         /// <summary>
+        /// Check if a predicate is true for all elements in a collection. This method replaces the Linq implementation of All(), and calls Array.TrueForAll or List.TrueForAll where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if predicate is true for all elements and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool TrueForAll<T>(this T[] collection, Predicate<T> match)
+        {
+            return Array.TrueForAll(collection, match);
+        }
+
+        /// <summary>
+        /// Check if a predicate is true for all elements in a collection. This method replaces the Linq implementation of All(), and calls Array.TrueForAll or List.TrueForAll where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if predicate is true for all elements and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool TrueForAll<T>(this IReadOnlyCollection<T> collection, Predicate<T> match)
+        {
+            return TrueForAllInternal(collection, match);
+        }
+
+        /// <summary>
+        /// Check if a predicate is true for all elements in a collection. This method replaces the Linq implementation of All(), and calls Array.TrueForAll or List.TrueForAll where applicable.
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="match">Predicate to call</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>True if predicate is true for all elements and False if not</returns>
+        /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        public static bool TrueForAll<T>(this ICollection<T> collection, Predicate<T> match)
+        {
+            return TrueForAllInternal(collection, match);
+        }
+
+        private static bool TrueForAllInternal<T>(this IEnumerable<T> enumerable, Predicate<T> match)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+            if (match == null)
+                throw new ArgumentNullException(nameof(match));
+
+            // Fast path: concrete List<T>
+            if (enumerable is List<T> list)
+            {
+                return list.TrueForAll(match); // uses List<T>.TrueForAll
+            }
+
+            // Fast path: T[] array
+            if (enumerable is T[] array)
+            {
+                return Array.TrueForAll(array, match); // uses Array.TrueForAll
+            }
+
+            // Fallback for any other IEnumerable<T> implementation
+            // Profiling using DotNetBenchmark showed that even on NET 8, which contains optimizations
+            // for Spans, having detection of arrays and lists resulted in a 2.5-3.0x performance
+            // benefit compared to calling System.Linq.All directly.
+#pragma warning disable UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return System.Linq.Enumerable.All(enumerable, match.Invoke);
+#pragma warning restore UA2008
+        }
+
+        /// <summary>
         /// Check how many unique elements an enumerable contains. Logically equivalent to Distinct().Count() in Linq.
         /// </summary>
         /// <param name="enumerable">Enumerable to inspect</param>
@@ -363,7 +447,13 @@ namespace Unity.Collections
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
         public static int DistinctCount<T>(this IEnumerable<T> enumerable)
         {
-            var set = new HashSet<T>(enumerable);
+            if (enumerable is HashSet<T> hashSet)
+                return hashSet.Count;
+
+            using var _ = HashSetPool<T>.Get(out var set);
+            foreach (var item in enumerable)
+                set.Add(item);
+
             return set.Count;
         }
 
@@ -377,7 +467,11 @@ namespace Unity.Collections
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
         public static bool DistinctCountGreaterThan<T>(this IEnumerable<T> enumerable, int count)
         {
-            var set = new HashSet<T>(count + 1);
+            if (enumerable is HashSet<T> hashSet)
+                return hashSet.Count > count;
+
+            using var _ = HashSetPool<T>.Get(out var set);
+            set.EnsureCapacity(count + 1);
             foreach (var item in enumerable)
             {
                 if (set.Add(item))
@@ -388,6 +482,288 @@ namespace Unity.Collections
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of FirstOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first element, if present, otherwise default</returns>
+        public static T FirstOrDefault<T>(this T[] collection)
+        {
+            return collection.Length == 0 ? default : collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of FirstOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first element, if present, otherwise default</returns>
+        public static T FirstOrDefault<T>(this List<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of FirstOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first element, if present, otherwise default</returns>
+        public static T FirstOrDefault<T>(this IReadOnlyList<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of FirstOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first element, if present, otherwise default</returns>
+        public static T FirstOrDefault<T>(this IList<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[0];
+        }
+
+        /// <summary>
+        /// Returns the last element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of LastOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The last element, if present, otherwise default</returns>
+        public static T LastOrDefault<T>(this T[] collection)
+        {
+            return collection.Length == 0 ? default : collection[^1];
+        }
+
+        /// <summary>
+        /// Returns the last element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of LastOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The last element, if present, otherwise default</returns>
+        public static T LastOrDefault<T>(this List<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[^1];
+        }
+
+        /// <summary>
+        /// Returns the last element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of LastOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The last element, if present, otherwise default</returns>
+        public static T LastOrDefault<T>(this IReadOnlyList<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[^1];
+        }
+
+        /// <summary>
+        /// Returns the last element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of LastOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The last element, if present, otherwise default</returns>
+        public static T LastOrDefault<T>(this IList<T> collection)
+        {
+            return collection.Count == 0 ? default : collection[^1];
+        }
+
+        /// <summary>
+        /// Returns an element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of ElementAtOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="index">Index to access</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The element at the specificed index, if present, otherwise default</returns>
+        public static T ElementAtOrDefault<T>(this T[] collection, int index)
+        {
+            return index < collection.Length ? collection[index] : default;
+        }
+
+        /// <summary>
+        /// Returns an element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of ElementAtOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="index">Index to access</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The element at the specificed index, if present, otherwise default</returns>
+        public static T ElementAtOrDefault<T>(this List<T> collection, int index)
+        {
+            return index < collection.Count ? collection[index] : default;
+        }
+
+        /// <summary>
+        /// Returns an element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of ElementAtOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="index">Index to access</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The element at the specificed index, if present, otherwise default</returns>
+        public static T ElementAtOrDefault<T>(this IReadOnlyList<T> collection, int index)
+        {
+            return index < collection.Count ? collection[index] : default;
+        }
+
+        /// <summary>
+        /// Returns an element of a collection if present, otherwise returns the default. This method replaces the Linq implementation of ElementAtOrDefault().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <param name="index">Index to access</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The element at the specificed index, if present, otherwise default</returns>
+        public static T ElementAtOrDefault<T>(this IList<T> collection, int index)
+        {
+            return index < collection.Count ? collection[index] : default;
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if it is the only element, otherwise throws an exception. This method replaces the Linq implementation of Single().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first and only element in the container</returns>
+        public static T Single<T>(this T[] collection)
+        {
+            if (collection.Length != 1)
+                throw new InvalidOperationException($"collection contains {collection.Length} elements");
+            return collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if it is the only element, otherwise throws an exception. This method replaces the Linq implementation of Single().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first and only element in the container</returns>
+        public static T Single<T>(this List<T> collection)
+        {
+            if (collection.Count != 1)
+                throw new InvalidOperationException($"collection contains {collection.Count} elements");
+            return collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if it is the only element, otherwise throws an exception. This method replaces the Linq implementation of Single().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first and only element in the container</returns>
+        public static T Single<T>(this IReadOnlyList<T> collection)
+        {
+            if (collection.Count != 1)
+                throw new InvalidOperationException($"collection contains {collection.Count} elements");
+            return collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a collection if it is the only element, otherwise throws an exception. This method replaces the Linq implementation of Single().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="T">Collection type</typeparam>
+        /// <returns>The first and only element in the container</returns>
+        public static T Single<T>(this IList<T> collection)
+        {
+            if (collection.Count != 1)
+                throw new InvalidOperationException($"collection contains {collection.Count} elements");
+            return collection[0];
+        }
+
+        /// <summary>
+        /// Returns the first element of a set. This method replaces the Linq implementation of First().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="K">Collection key type</typeparam>
+        /// <typeparam name="V">Collection value type</typeparam>
+        /// <returns>The first element in the container</returns>
+        public static KeyValuePair<K,V> First<K,V>(this Dictionary<K,V> collection)
+        {
+            if (collection.Count == 0)
+                throw new InvalidOperationException("collection is empty");
+
+            var e = collection.GetEnumerator();
+            try
+            {
+                e.MoveNext();
+                return e.Current;
+            }
+            finally
+            {
+                e.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Returns the first element of a set. This method replaces the Linq implementation of First().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="K">Collection key type</typeparam>
+        /// <typeparam name="V">Collection value type</typeparam>
+        /// <returns>The first element in the container</returns>
+        public static KeyValuePair<K, V> First<K, V>(this SortedDictionary<K, V> collection)
+        {
+            if (collection.Count == 0)
+                throw new InvalidOperationException("collection is empty");
+
+            var e = collection.GetEnumerator();
+            try
+            {
+                e.MoveNext();
+                return e.Current;
+            }
+            finally
+            {
+                e.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Returns the first element of a set. This method replaces the Linq implementation of First().
+        /// </summary>
+        /// <param name="collection">Collection to inspect</param>
+        /// <typeparam name="K">Collection type</typeparam>
+        /// <returns>The first element in the container</returns>
+        public static K First<K>(this HashSet<K> collection)
+        {
+            if (collection.Count == 0)
+                throw new InvalidOperationException("collection is empty");
+
+            var e = collection.GetEnumerator();
+            try
+            {
+                e.MoveNext();
+                return e.Current;
+            }
+            finally
+            {
+                e.Dispose();
+            }
+        }
+    }
+
+    [VisibleToOtherModules]
+    internal static class ArrayExtensions
+    {
+        public static T[] CreateWithDefaultValue<T>(T value, int count)
+        {
+            var result = new T[count];
+            Array.Fill(result, value);
+            return result;
+        }
+    }
+
+    [VisibleToOtherModules]
+    internal static class ListExtensions
+    {
+        public static List<T> CreateWithDefaultValue<T>(T value, int count)
+        {
+            var result = new List<T>(count);
+            for (int i = 0; i < count; i++)
+                result.Add(value);
+            return result;
         }
     }
 }

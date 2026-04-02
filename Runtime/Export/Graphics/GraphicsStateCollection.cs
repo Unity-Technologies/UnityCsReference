@@ -4,10 +4,11 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Rendering;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public sealed partial class GraphicsStateCollection : Object
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -29,7 +30,8 @@ namespace UnityEngine.Experimental.Rendering
             public int shadingRateIndex;
             public int multiviewCount;
             public int sampleCount;
-            public bool hasEyeTexture;
+            [System.Obsolete("hasEyeTexture is obsolete and no longer used for defining the graphics state.", true)]
+            public bool hasEyeTexture; // Unused, see UUM-136642
             public bool wireframe;
             public bool invertCulling;
             public bool negativeScale;
@@ -57,10 +59,7 @@ namespace UnityEngine.Experimental.Rendering
                 this.keywords = material.enabledKeywords;
             }
         }
-    }
 
-    public sealed partial class GraphicsStateCollection : Object
-    {
         public GraphicsStateCollection() { Internal_Create(this); }
         public GraphicsStateCollection(string filePath) { Internal_Create(this); LoadFromFile(filePath); }
 

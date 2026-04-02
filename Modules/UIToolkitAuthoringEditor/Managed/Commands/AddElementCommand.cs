@@ -52,6 +52,7 @@ internal readonly record struct AddElementCommand
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         toSelectAssets.Add(vea);
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
     }
 
     void HandlePositioning(VisualElementAsset newVea)

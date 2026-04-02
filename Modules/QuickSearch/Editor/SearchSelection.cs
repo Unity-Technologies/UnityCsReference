@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.Pool;
 
 namespace UnityEditor.Search
@@ -14,6 +16,8 @@ namespace UnityEditor.Search
     /// </summary>
     public class SearchSelection : IReadOnlyCollection<SearchItem>
     {
+        internal const int InvalidIndex = -1;
+
         int m_ListInitialCount;
         int m_InitialSelectionCount;
         ISearchList m_List;
@@ -177,6 +181,24 @@ namespace UnityEditor.Search
             }
 
             return false;
+        }
+
+        internal SearchItem[] ToArray()
+        {
+            if (m_Items == null)
+                BuildSelection();
+            if (m_Items == null)
+                return Array.Empty<SearchItem>();
+            return m_Items.ToArray();
+        }
+
+        internal IReadOnlyList<SearchItem> ToReadOnlyList()
+        {
+            if (m_Items == null)
+                BuildSelection();
+            if (m_Items == null)
+                return Array.Empty<SearchItem>();
+            return m_Items;
         }
     }
 }

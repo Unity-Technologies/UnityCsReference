@@ -108,7 +108,9 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning restore UA2001
             var report = analysisParams.ExistingReport;
             if (report == null)
+            {
                 report = new Report(analysisParams);
+            }
             else
             {
                 // incremental analysis
@@ -132,7 +134,6 @@ namespace Unity.ProjectAuditor.Editor
                     report.ClearIssues(category);
                 }
             }
-
 
             var platform = analysisParams.Platform;
             if (!analysisParams.SupportedBuildTarget(BuildPipeline.GetBuildTargetGroup(platform), platform))
@@ -163,7 +164,39 @@ namespace Unity.ProjectAuditor.Editor
                 return;
             }
 
+            analysisParams.DependencyCrawler = new DependencyCrawler();
+
+            Action<Report> onCompletedInternal = null;
+            onCompletedInternal = (report) =>
+            {
+                analysisParams.DependencyCrawler.BuildHierarchies(report.GetAllIssues());
+                analysisParams.DependencyCrawler = null;
+
+                foreach (var d in report.UnfixedIssues)
+                {
+                    // bump severity if issue is found in a hot-path
+                    if (!d.IsMajorOrCritical() && d.Dependencies != null && d.Dependencies.PerfCriticalContext)
+                    {
+                        switch (d.Severity)
+                        {
+                            case Severity.Minor:
+                                d.Severity = Severity.Moderate;
+                                break;
+                            case Severity.Moderate:
+                                d.Severity = Severity.Major;
+                                break;
+                        }
+                    }
+                }
+
+                analysisParams.OnCompleted -= onCompletedInternal;
+            };
+
+            analysisParams.OnCompleted += onCompletedInternal;
+
             AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", supportedModules.Length);
+
+            var categoriesSet = new HashSet<IssueCategory>(categories);
 
             var logTimingsInfo = UserPreferences.LogTimingsInfo;
             var stopwatch = Stopwatch.StartNew();
@@ -176,9 +209,23 @@ namespace Unity.ProjectAuditor.Editor
                 {
                     OnIncomingIssues = results =>
                     {
+                        if (analysisParams.ExistingReport != null)
+                        {
+                            // During incremental analysis, modules may emit items for categories that were not
+                            // requested (e.g. TextureModule runs because it also handles AssetIssue, but also
+                            // emits Texture items that were never cleared from the report). Filter to only the
+                            // categories that were explicitly cleared and re-analyzed to prevent duplication.
+                            #pragma warning disable UA2001
+                            results = results.Where(i => categoriesSet.Contains(i.Category));
+                            #pragma warning restore UA2001
+                        }
+
                         var resultsList = new List<ReportItem>(results);
-                        report.AddIssues(resultsList);
-                        analysisParams.OnIncomingIssues?.Invoke(resultsList);
+                        if (resultsList.Count > 0)
+                        {
+                            report.AddIssues(resultsList);
+                            analysisParams.OnIncomingIssues?.Invoke(resultsList);
+                        }
                     },
                     OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                     {

@@ -11,13 +11,13 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class DeleteFileNode : Node
+    class DeleteFileNode : ExecutionNode
     {
         [SerializeReference] private NodeInput<string> m_FilePath;
 
         public NodeInput<string> FilePath => m_FilePath;
 
-        public DeleteFileNode(string name) : base(name)
+        public DeleteFileNode()
         {
             m_FilePath = new(this);
         }

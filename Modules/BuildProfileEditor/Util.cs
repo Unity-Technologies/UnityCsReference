@@ -52,6 +52,23 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
+        internal static bool UpdateSupportedPlatformStatusHelpBox(HelpBox helpbox, GUID platformGuid)
+        {
+            if (helpbox == null)
+                return false;
+
+            ClearHelpBox(helpbox);
+
+            if (BuildProfileModuleUtil.UpdateHelpBoxForSupportedPlatformStatus(platformGuid, helpbox))
+            {
+                helpbox.Show();
+                return true;
+            }
+
+            helpbox.Hide();
+            return false;
+        }
+
         static void ClearHelpBox(HelpBox helpbox)
         {
             if (helpbox == null)

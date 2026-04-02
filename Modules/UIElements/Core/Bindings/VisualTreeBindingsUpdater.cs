@@ -91,6 +91,11 @@ namespace UnityEngine.UIElements
             return ve.GetProperty(s_AdditionalBindingObjectVEPropertyName) as IBinding;
         }
 
+        public static List<IBindingRequest> GetBindingRequests(VisualElement ve)
+        {
+            return ve.GetProperty(s_BindingRequestObjectVEPropertyName) as List<IBindingRequest>;
+        }
+
         public static void AddBindingRequest(VisualElement ve, IBindingRequest req)
         {
             List<IBindingRequest> l = ve.GetProperty(s_BindingRequestObjectVEPropertyName) as List<IBindingRequest>;
@@ -258,9 +263,9 @@ namespace UnityEngine.UIElements
                     long startTime = CurrentTime();
                     while (m_ElementsToBind.Count > 0 && ShouldProcessBindings(startTime))
                     {
-                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var element = m_ElementsToBind.FirstOrDefault();
-#pragma warning restore UA2001
+#pragma warning restore UA2011
 
                         if (element != null)
                         {

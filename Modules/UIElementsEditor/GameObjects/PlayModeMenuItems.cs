@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.UIElements.GameObjects
+namespace UnityEditor.UIElements
 {
     internal static class PlayModeMenuItems
     {
@@ -19,6 +19,31 @@ namespace UnityEditor.UIElements.GameObjects
         private const string k_AssetsFolder = "Assets";
         private static readonly string k_PanelSettingsAssetPath = k_UITKEssentialResourcesFolderPath + "/PanelSettings.asset";
         private static string[] k_AssetsFolderFilter = new[] { k_AssetsFolder };
+
+        /// <summary>
+        /// Returns a PanelSettings from the project if one exists, otherwise creates one with the project default theme and saves it.
+        /// </summary>
+        internal static PanelSettings GetPanelSettingsFromProjectOrCreate()
+        {
+            var guids = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);
+            if (guids != null && guids.Length > 0)
+            {
+                return AssetDatabase.LoadAssetAtPath<PanelSettings>(
+                    AssetDatabase.GUIDToAssetPath(guids[0]));
+            }
+
+            var (_, projectTheme) = ThemeUtility.GetProjectDefaultTheme(false);
+            var themeToUse = projectTheme ?? PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme();
+            var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            panelSettings.themeStyleSheet = themeToUse;
+            panelSettings.AssignICUData();
+
+            if (!AssetDatabase.IsValidFolder(k_UITKEssentialResourcesFolderPath))
+                AssetDatabase.CreateFolder(k_AssetsFolder, k_UITKEssentialResourcesFolderName);
+
+            AssetDatabase.CreateAsset(panelSettings, k_PanelSettingsAssetPath);
+            return AssetDatabase.LoadAssetAtPath<PanelSettings>(k_PanelSettingsAssetPath);
+        }
 
         [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 9)]
         public static void AddPanelInputConfiguration(MenuCommand menuCommand)
@@ -50,17 +75,6 @@ namespace UnityEditor.UIElements.GameObjects
             }
 
             Selection.activeGameObject = root;
-        }
-
-        [MenuItem("GameObject/UI Toolkit/Legacy/UI Document with Asset", false, 11)]
-        public static void AddPreFilledUIDocument(MenuCommand menuCommand)
-        {
-            // Creates new asset and upon successful rename will create the UIDoc & link asset
-            UIElementsTemplate.CreateUXMLAssetWithCallback((instanceID =>
-            {
-                var uiDocument = AddPanelComponentHelper<UIDocument>(menuCommand);
-                uiDocument.visualTreeAsset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
-            }));
         }
 
         [MenuItem("GameObject/UI Toolkit/Legacy/UI Document", false, 10)]
@@ -109,37 +123,7 @@ namespace UnityEditor.UIElements.GameObjects
             // Set a PanelSettings instance so that the UI appears immediately on selecting the UXML.
             // If the Panel Component was created as a child of another Panel Component, this step is not necessary.
             if (panelComponent.parentUI == null)
-            {
-                var panelSettingsInProject = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);
-                if (panelSettingsInProject != null && panelSettingsInProject.Length > 0)
-                {
-                    // Use the first one found.
-                    PanelSettings panelSettings =
-                        AssetDatabase.LoadAssetAtPath<PanelSettings>(
-                            AssetDatabase.GUIDToAssetPath(panelSettingsInProject[0]));
-                    panelComponent.panelSettings = panelSettings;
-                }
-                else
-                {
-                    // Create one.
-                    PanelSettings panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
-
-                    if (!AssetDatabase.IsValidFolder(k_UITKEssentialResourcesFolderPath))
-                        AssetDatabase.CreateFolder(k_AssetsFolder, k_UITKEssentialResourcesFolderName);
-
-                    AssetDatabase.CreateAsset(panelSettings, k_PanelSettingsAssetPath);
-                    panelSettingsInProject = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);
-
-                    // We just created the asset, it MUST exist so if it doesn't there's something wrong.
-                    Debug.Assert(panelSettingsInProject != null && panelSettingsInProject.Length > 0,
-                        "PanelSettings asset not found for assigning to created UIDocument");
-
-                    panelSettings =
-                        AssetDatabase.LoadAssetAtPath<PanelSettings>(
-                            AssetDatabase.GUIDToAssetPath(panelSettingsInProject[0]));
-                    panelComponent.panelSettings = panelSettings;
-                }
-            }
+                panelComponent.panelSettings = GetPanelSettingsFromProjectOrCreate();
 
             return panelComponent;
         }

@@ -42,6 +42,7 @@ namespace Unity.UIToolkit.Editor
             OverrideFoldout.UxmlSerializedData.Register();
             OverrideRow.UxmlSerializedData.Register();
             PercentSlider.UxmlSerializedData.Register();
+            Popup.UxmlSerializedData.Register();
             PositionStyleEnumField.UxmlSerializedData.Register();
             SpacingBoxModelField.UxmlSerializedData.Register();
             StyleBackgroundField.UxmlSerializedData.Register();
@@ -72,6 +73,7 @@ namespace Unity.UIToolkit.Editor
             VisibilityStyleEnumField.UxmlSerializedData.Register();
             WhiteSpaceStyleEnumField.UxmlSerializedData.Register();
             WrapStyleEnumField.UxmlSerializedData.Register();
+            VariablesInspector.UxmlSerializedData.Register();
         }
     }
 }

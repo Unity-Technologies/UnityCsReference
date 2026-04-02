@@ -13,124 +13,12 @@ namespace UnityEngine.UIElements
 
     internal static class UIElementsIMGUIUtility
     {
-        private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
+
 
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         internal static Action<IMGUIContainer> s_EndContainerCallback;
 
-        static UIElementsIMGUIUtility()
-        {
-            GUIUtility.takeCapture += () => TakeCapture();
-            GUIUtility.releaseCapture += () => ReleaseCapture();
-            GUIUtility.endContainerGUIFromException += exception => EndContainerGUIFromException(exception);
-            GUIUtility.guiChanged += () => MakeCurrentIMGUIContainerDirty();
-        }
 
-        private static void TakeCapture()
-        {
-            if (s_ContainerStack.Count > 0)
-            {
-                var topmostContainer = s_ContainerStack.Peek();
-                topmostContainer.CaptureMouse();
-            }
-        }
-
-        private static void ReleaseCapture()
-        {
-            PointerCaptureHelper.ReleaseEditorMouseCapture();
-        }
-
-        private static bool EndContainerGUIFromException(Exception exception)
-        {
-
-            // only End if we have a current container
-            if (s_ContainerStack.Count > 0)
-            {
-                GUIUtility.EndContainer();
-                s_ContainerStack.Pop();
-            }
-
-            return GUIUtility.ShouldRethrowException(exception);
-        }
-
-        internal static IMGUIContainer GetCurrentIMGUIContainer()
-        {
-            if (s_ContainerStack.Count > 0)
-            {
-                return s_ContainerStack.Peek();
-            }
-
-            return null;
-        }
-
-        internal static void MakeCurrentIMGUIContainerDirty()
-        {
-            if (s_ContainerStack.Count > 0)
-            {
-                s_ContainerStack.Peek().MarkDirtyLayout();
-            }
-        }
-
-        internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)
-        {
-            if (container.useOwnerObjectGUIState)
-            {
-                GUIUtility.BeginContainerFromOwner(container.elementPanel.ownerObject);
-            }
-            else
-            {
-                GUIUtility.BeginContainer(container.guiState);
-            }
-
-            s_ContainerStack.Push(container);
-            GUIUtility.s_SkinMode = (int)container.contextType;
-            GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetEntityId();
-
-            if (Event.current == null)
-            {
-                Event.current = evt;
-            }
-            else
-            {
-                Event.current.CopyFrom(evt);
-            }
-
-            // call AFTER setting current event
-            if (s_BeginContainerCallback != null)
-                s_BeginContainerCallback(container);
-
-            GUI.enabled = container.enabledInHierarchy;
-            GUILayoutUtility.BeginContainer(cache);
-            GUIUtility.ResetGlobalState();
-        }
-
-        // End the 2D GUI.
-        internal static void EndContainerGUI(Event evt, Rect layoutSize)
-        {
-            if (Event.current.type == EventType.Layout
-                && s_ContainerStack.Count > 0)
-            {
-                GUILayoutUtility.LayoutFromContainer(layoutSize.width, layoutSize.height);
-            }
-            // restore cache
-            GUILayoutUtility.SelectIDListLayout(GUIUtility.s_OriginalID);
-            GUIContent.ClearStaticCache();
-
-            if (s_ContainerStack.Count > 0)
-            {
-                IMGUIContainer container = s_ContainerStack.Peek();
-                if (s_EndContainerCallback != null)
-                    s_EndContainerCallback(container);
-            }
-
-            evt.CopyFrom(Event.current);
-
-            if (s_ContainerStack.Count > 0)
-            {
-                GUIUtility.EndContainer();
-                s_ContainerStack.Pop();
-            }
-        }
 
         internal static EventBase CreateEvent(Event systemEvent)
         {
@@ -232,6 +120,7 @@ namespace UnityEngine.UIElements
         internal static float singleLineHeight = 18;
 
         public const string hiddenClassName = "unity-hidden";
+        internal static readonly UniqueStyleString hiddenClassNameUnique = new(hiddenClassName);
 
         internal static bool s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
@@ -360,12 +249,15 @@ namespace UnityEngine.UIElements
             return displayValue;
         }
 
-        internal static int m_InMemoryAssetsHierarchyVersion { get; private set; } = 0;
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static void InMemoryAssetsHierarchyHaveBeenChanged()
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static void MarkVisualTreeAssetAsChanged(VisualTreeAsset visualTreeAsset)
         {
-            m_InMemoryAssetsHierarchyVersion++;
+            var iterator = GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+                panel.liveReloadSystem.OnVisualTreeAssetChanged(visualTreeAsset);
+            }
         }
 
 
@@ -379,6 +271,7 @@ namespace UnityEngine.UIElements
             if (!styleSheet)
                 return;
             s_StyleSheetsRequiringRebuilding.Add(styleSheet);
+            SelectorAccelerationCache.shared.Remove(styleSheet);
         }
 
         internal static void MarkStyleSheetAsChanged(string styleSheetPath)
@@ -386,6 +279,17 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(styleSheetPath))
                 return;
             s_ReimportedStyleSheetsPath.Add(styleSheetPath);
+            SelectorAccelerationCache.shared.Remove(styleSheetPath);
+        }
+
+        internal static void MarkStyleSheetAsLoaded(StyleSheet styleSheet)
+        {
+            // does nothing currently, but it is the mirror for MarkStyleSheetAsUnloaded()
+        }
+
+        internal static void MarkStyleSheetAsUnloaded(StyleSheet styleSheet)
+        {
+            SelectorAccelerationCache.shared.Remove(styleSheet);
         }
 
         static void NotifyPanelsThatStyleSheetChanged(List<StyleSheet> styleSheets, List<string> styleSheetPaths)

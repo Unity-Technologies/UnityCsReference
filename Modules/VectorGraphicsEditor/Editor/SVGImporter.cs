@@ -326,15 +326,17 @@ namespace Unity.VectorGraphics.Editor
                     TessellationMode = TessellationMode.Triangulation;
             }
 
-            if (m_SvgType != SVGType.VectorImage && TessellationMode == TessellationMode.AntialiasedArcEncodings)
+            // UUM-136307: Determine the effective tessellation mode without modifying the serialized property
+            TessellationMode effectiveTessellationMode = TessellationMode;
+            if (m_SvgType != SVGType.VectorImage && effectiveTessellationMode == TessellationMode.AntialiasedArcEncodings)
             {
                 // ArcAA is only supported for VectorImage for now
-                TessellationMode = TessellationMode.Triangulation;
+                effectiveTessellationMode = TessellationMode.Triangulation;
             }
 
-            if (TessellationMode == TessellationMode.Triangulation)
+            if (effectiveTessellationMode == TessellationMode.Triangulation)
                 ImportWithTriangulation(ctx, sceneInfo);
-            else if (TessellationMode == TessellationMode.AntialiasedArcEncodings)
+            else if (effectiveTessellationMode == TessellationMode.AntialiasedArcEncodings)
                 ImportWithArcAA(ctx, sceneInfo);
         }
 
@@ -437,7 +439,7 @@ namespace Unity.VectorGraphics.Editor
 
             ctx.AddObjectToAsset("sprite", sprite);
 
-            Material mat = GetSVGMaterial(sprite.texture != null);
+            Material mat = GetSVGMaterial(sprite.texture != null, false);
 
             var gameObject = new GameObject(name);
             gameObject.transform.name = "transform";
@@ -461,7 +463,7 @@ namespace Unity.VectorGraphics.Editor
 
             ctx.AddObjectToAsset("sprite", sprite);
 
-            Material mat = GetSVGMaterial(sprite.texture != null);
+            Material mat = GetSVGMaterial(sprite.texture != null, true);
 
             var gameObject = new GameObject(name);
             gameObject.transform.name = "transform";
@@ -597,7 +599,7 @@ namespace Unity.VectorGraphics.Editor
                 textureHeight = TextureHeight;
             }
 
-            Material mat = GetSVGMaterial(sprite.texture != null);
+            Material mat = GetSVGMaterial(sprite.texture != null, false);
 
             // Expand edges to avoid bilinear filter "edge outlines" caused by transparent black background.
             // Not necessary when using point filtering with 1 sample.
@@ -627,7 +629,7 @@ namespace Unity.VectorGraphics.Editor
             {
                 var sprite = GetSprite();
                 var size = ((Vector2)sprite.bounds.size) * sprite.pixelsPerUnit;
-                var mat = SVGImporter.GetSVGMaterial(sprite.texture != null);
+                var mat = SVGImporter.GetSVGMaterial(sprite.texture != null, false);
 
                 readableTexture = VectorUtils.RenderSpriteToTexture2D(sprite, (int)size.x, (int)size.y, mat, 4);
 
@@ -698,7 +700,48 @@ namespace Unity.VectorGraphics.Editor
             sprite.OverridePhysicsShape(validOutlines);
         }
 
-        internal static Material GetSVGMaterial(bool hasTexture)
+        // Used by the package ISpriteEditorDataProvider implementation to get the material for the Sprite Editor preview
+        internal static Material GetSVGMaterial(bool hasTexture, bool isUGUI = false)
+        {
+
+            Material material = null;
+
+            // The package should be installed when importing Vector Sprite assets, so
+            // we try to get the package material first.
+            if (isVectorGraphicsPackageInstalled)
+                material = GetPackageMaterialForSVGSprite(hasTexture, isUGUI);
+
+            if (material == null)
+            {
+                // Fallback to the builtin material if the package is not installed or the material can't be found.
+                // There's no builtin UGUI materials, so the standard Vector material will be
+                // used in that case, which will still work, but won't support masking.
+                material = GetBuiltinMaterialForSVGSprite(hasTexture);
+            }
+
+            return material;
+        }
+
+        static Material GetPackageMaterialForSVGSprite(bool hasTexture, bool isUGUI)
+        {
+            const string k_PackagePath = "Packages/com.unity.vectorgraphics";
+
+            string path;
+            if (hasTexture)
+                // When texture is present, use the VectorGradient shader
+                path = k_PackagePath + "/Runtime/Materials/Unlit_VectorGradient";
+            else
+                path = k_PackagePath + "/Runtime/Materials/Unlit_Vector";
+
+            if (isUGUI)
+                path += "UI";
+
+            path += ".mat";
+
+            return AssetDatabase.LoadAssetAtPath<Material>(path);
+        }
+
+        static Material GetBuiltinMaterialForSVGSprite(bool hasTexture)
         {
             string path;
             if (!hasTexture)

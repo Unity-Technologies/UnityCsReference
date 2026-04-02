@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -47,9 +46,7 @@ internal class ResetAction : PackageAction
         if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
             return false;
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_PageManager.activePage.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
-#pragma warning restore UA2001
+        m_PageManager.activePage.SetUserUnlockedState(packagesToUninstall.SelectAsEnumerable(p => p.uniqueId), false);
         m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
         PackageManagerWindowAnalytics.SendEvent("reset", version.uniqueId);

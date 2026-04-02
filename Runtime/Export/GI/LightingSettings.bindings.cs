@@ -352,4 +352,24 @@ namespace UnityEngine
         public extern bool repackUnderutilizedLightmaps { get; set; }
         #endregion
     }
+
+    internal enum LightSamplingMode
+    {
+        RIS = 0,
+        Uniform,
+        RoundRobin,
+    };
+
+    internal enum LightAccelerationStructure
+    {
+        LightGrid = 0,
+        None,
+    };
+
+    internal enum EmissiveSamplingMode
+    {
+        LightSampling = 0,
+        BRDFSampling,
+        MIS,
+    };
 }

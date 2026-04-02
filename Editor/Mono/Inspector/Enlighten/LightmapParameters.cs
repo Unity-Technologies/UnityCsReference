@@ -104,7 +104,8 @@ namespace UnityEditor
             if (m_BakedGISettings.value)
             {
                 EditorGUI.indentLevel++;
-                if (!Lightmapping.UnifiedBaker)
+                var usingComputeLightBaker = UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker;
+                if (!usingComputeLightBaker)
                 {
                     if (m_AntiAliasingSamples.hasMultipleDifferentValues)
                     {

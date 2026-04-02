@@ -52,6 +52,7 @@ namespace UnityEditor.VersionControl
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(CustomCommand customCommand) => customCommand.m_Self;
+            public static CustomCommand ConvertToManaged(IntPtr ptr) => new CustomCommand { m_Self = ptr };
         }
     }
 }

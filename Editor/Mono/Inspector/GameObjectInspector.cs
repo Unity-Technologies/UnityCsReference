@@ -763,9 +763,7 @@ namespace UnityEditor
                         if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive))
                         {
                             if (targets.Length > 1)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                PopupWindow.Show(rect, new PrefabOverridesWindow(targets.Select(e => (GameObject)e).ToArray()));
-#pragma warning restore UA2001
+                                PopupWindow.Show(rect, new PrefabOverridesWindow(Array.ConvertAll(targets, e => (GameObject)e)));
                             else
                                 PopupWindow.Show(rect, new PrefabOverridesWindow((GameObject)target));
                             GUIUtility.ExitGUI();

@@ -80,9 +80,9 @@ namespace UnityEditor.Search
             if (m_ColumnIndexes.TryGetValue(i.id, out var column))
                 properties.Add(column);
             else if (i.userData is AdvancedDropdownItem addAllItem)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001, UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AddAll(properties, addAllItem.childList, addAllItem.childList.Where(c => c.userData is SearchColumn).All(c => c.hasChildren));
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2008
 
             m_AddColumnsHandler?.Invoke(properties, m_ActiveColumnIndex);
         }

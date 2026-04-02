@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
             }
 
             public PropertyBag()
+                :base(2)
             {
                 AddProperty(new FontProperty());
                 AddProperty(new FontAssetProperty());

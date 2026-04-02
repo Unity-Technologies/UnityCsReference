@@ -3,14 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
-using UnityEditor.AnimatedValues;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
-using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -219,22 +214,14 @@ namespace UnityEditor
             window.Show();
         }
 
-        public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased, bool useInteractiveLightBakingData, float exposure)
+        public static void CreateLightmapPreviewWindowIndexedWithExposure(int lightmapId, bool realtimeLightmap, bool useInteractiveLightBakingData, float exposure)
         {
             LightmapPreviewWindow window = EditorWindow.CreateInstance<LightmapPreviewWindow>();
-            window.exposure = exposure;
-            window.minSize = new Vector2(360, 390);
+            window.minSize = new Vector2(370, 390);
             window.isRealtimeLightmap = realtimeLightmap;
-
-            if (indexBased)
-                window.lightmapIndex = lightmapId;
-            else
-            {
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                window.entityId = EntityId.FromULong((ulong)lightmapId);
-            }
-
+            window.lightmapIndex = lightmapId;
             window.useInteractiveLightBakingData = useInteractiveLightBakingData;
+            window.exposure = exposure;
 
             window.Show();
         }
@@ -628,14 +615,8 @@ namespace UnityEditor
                 {
                     Hash128[] mainHashes = Lightmapping.GetMainSystemHashes();
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_RealtimeTextureHash.isValid || !mainHashes.Contains(m_RealtimeTextureHash))
-#pragma warning restore UA2001
-                    {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_RealtimeTextureHash = mainHashes.ElementAtOrDefault(m_LightmapIndex);
-#pragma warning restore UA2001
-                    }
                 }
             }
             else // instance based

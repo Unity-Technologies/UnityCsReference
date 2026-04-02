@@ -13,6 +13,7 @@
     <Nullable>disable</Nullable>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
     <RootNamespace>Unity.CecilTools</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
@@ -26,7 +27,6 @@
     <Compile Include="Extensions\ResolutionExtensions.cs" />
     <Compile Include="Extensions\TypeDefinitionExtensions.cs" />
     <Compile Include="Extensions\TypeReferenceExtensions.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Pdb.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Mdb.dll" />

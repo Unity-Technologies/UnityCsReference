@@ -71,6 +71,9 @@ namespace Unity.UI.Builder
             m_SupportsImage = supportImage;
             m_SupportsFont = supportFont;
 
+            // Prevent builtin resources from being selected
+            objectField.allowBuiltinResources = false;
+
             if (m_SupportsImage)
             {
                 AddType(typeof(Texture2D), "Texture");

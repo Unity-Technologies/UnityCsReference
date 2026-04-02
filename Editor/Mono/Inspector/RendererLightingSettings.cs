@@ -159,9 +159,7 @@ namespace UnityEditor
         {
             m_SerializedObject = serializedObject;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_GameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
-#pragma warning restore UA2001
+            m_GameObjectsSerializedObject = new SerializedObject(System.Array.ConvertAll(serializedObject.targetObjects, t => ((Component)t).gameObject));
 
             m_ImportantGI = m_SerializedObject.FindProperty("m_ImportantGI");
             m_StitchLightmapSeams = m_SerializedObject.FindProperty("m_StitchLightmapSeams");
@@ -474,9 +472,7 @@ namespace UnityEditor
 
             // show a warning if not all renderers are valid, even when not active or enabled
             if (contributeGI || mixedValue)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (m_Renderers != null && !m_Renderers.All(Lightmapping.IsRendererValid))
-#pragma warning restore UA2001
+                if (m_Renderers != null && !System.Array.TrueForAll(m_Renderers, Lightmapping.IsRendererValid))
                     EditorGUILayout.HelpBox(m_Renderers.Length > 1 ? Styles.giMeshNotValidMultiple.text : Styles.giMeshNotValid.text, MessageType.Warning);
 
             EditorGUI.showMixedValue = false;

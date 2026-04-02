@@ -184,12 +184,7 @@ namespace UnityEditor.SceneManagement
 
         static void StopAnimationPlaybackAndPreviewing()
         {
-            var animWindows = AnimationWindow.GetAllAnimationWindows();
-            foreach (var animWindow in animWindows)
-            {
-                animWindow.previewing = false;
-                animWindow.playing = false;
-            }
+            AnimationWindowCallbacks.StopAnimationPlaybackAndPreviewing?.Invoke();
         }
 
         internal bool SwitchToStage(Stage stage, bool setAsFirstItemAfterMainStage, Analytics.ChangeType changeTypeAnalytics)

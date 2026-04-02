@@ -17,5 +17,7 @@ namespace UnityEditor.Build.Reporting
         Failed       = 2,
         ///<summary>Indicates that the build was cancelled by the user.</summary>
         Cancelled    = 3,
+        /// <summary>Build is actively running, or the Unity editor process was aborted during the build and it never reached a completed state.</summary>
+        Pending      = 4
     }
 }

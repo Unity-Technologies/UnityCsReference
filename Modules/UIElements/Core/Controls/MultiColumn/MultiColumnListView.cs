@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A list view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnListView|MultiColumnListView]].
     /// </summary>
+    [UxmlElement(libraryPath = "Containers")]
     [Icon("UIToolkit/Icons/MultiColumnListView.png")]
     public partial class MultiColumnListView : BaseListView
     {

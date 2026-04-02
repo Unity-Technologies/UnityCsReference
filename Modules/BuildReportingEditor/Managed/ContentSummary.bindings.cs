@@ -12,13 +12,22 @@ namespace UnityEditor.Build.Reporting
     /// <summary>
     /// Statistics for a specific Unity Object type included in a build.
     /// </summary>
+    /// <seealso cref="ContentSummary.typeStats"/>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
     /*UCBP-PUBLIC*/ internal struct TypeStats
     {
+        /// <summary>
+        /// The Unity Object type, such as <see cref="Texture2D"/> or <see cref="Mesh"/>.
+        /// </summary>
+        /// <remarks>
+        /// All <see cref="MonoBehaviour"/> and <see cref="ScriptableObject"/> derived types
+        /// are aggregated under <see cref="MonoBehaviour"/>.
+        /// </remarks>
         public Type type { get; }
 
         /// <summary>
-        /// Size, in bytes, of the serialized fields and resource data for all objects this type.
+        /// Total size, in bytes, of the serialized fields and referenced resource data
+        /// for all objects of this type in the build output.
         /// </summary>
         public ulong size { get; }
 
@@ -28,39 +37,41 @@ namespace UnityEditor.Build.Reporting
         public int objectCount { get; }
 
         /// <summary>
-        /// Number of binary data blobs referenced from objects of this type.
+        /// Number of binary data blobs (resource streams) referenced by objects of this type.
         /// </summary>
         public int resourceCount { get; }
     }
 
     /// <summary>
-    /// Statistics for a specific Asset included in a build.
+    /// Statistics for a specific source Asset included in a build.
     /// </summary>
+    /// <seealso cref="ContentSummary.assetStats"/>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
     /*UCBP-PUBLIC*/ internal struct AssetStats
     {
         /// <summary>
-        /// AssetDatabase GUID of the Asset.
+        /// The AssetDatabase GUID of the source Asset.
         /// </summary>
         public GUID sourceAssetGUID { get; }
 
         /// <summary>
-        /// Path at the time of build.
+        /// The Asset path at the time of the build.
         /// </summary>
         public string sourceAssetPath { get; }
 
         /// <summary>
-        /// Size, in bytes, of the serialized fields and resource data for all objects originating from this source asset.
+        /// Total size, in bytes, of the serialized fields and referenced resource data
+        /// for all objects originating from this source Asset.
         /// </summary>
         public ulong size { get; }
 
         /// <summary>
-        /// Number of objects from this Asset in the build output.
+        /// Number of objects from this source Asset in the build output.
         /// </summary>
         public int objectCount { get; }
 
         /// <summary>
-        /// Number of binary data blobs referenced from objects from this Asset.
+        /// Number of binary data blobs (resource streams) referenced by objects from this source Asset.
         /// </summary>
         public int resourceCount { get; }
     }
@@ -69,11 +80,21 @@ namespace UnityEditor.Build.Reporting
     /// Provides a high-level summary of the content included in a build.
     /// </summary>
     /// <remarks>
-    /// ContentSummary is only populated for builds created with <see cref="BuildPipeline.BuildContentDirectory"/>. It is not
-    /// populated for Player or AssetBundle builds.
-    ///
-    /// This provides a high-level summary of the content of the build that is much more compact than the <see cref="PackedAssets"/> data. It
-    /// includes aggregate statistics such as total sizes, counts, and breakdowns by type and source asset.
+    /// <para>
+    /// ContentSummary provides a compact overview of build content that is more efficient to work with than
+    /// the detailed <see cref="PackedAssets"/> data. It includes aggregate statistics such as total sizes,
+    /// object counts, and breakdowns by Unity Object type and source Asset.
+    /// </para>
+    /// <para>
+    /// ContentSummary is populated for Player builds, AssetBundle builds, and
+    /// ContentDirectory builds.
+    /// It is not populated for scripts-only Player builds (see <see cref="BuildOptions.BuildScriptsOnly"/>).
+    /// </para>
+    /// <para>
+    /// For incremental AssetBundle builds, the statistics only reflect the content of the
+    /// AssetBundles that were rebuilt in the current build invocation. AssetBundles that were
+    /// unchanged and reused from previous build results are not included.
+    /// </para>
     /// </remarks>
     /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
     /// <seealso cref="BuildReport"/>
@@ -82,11 +103,12 @@ namespace UnityEditor.Build.Reporting
     /*UCBP-PUBLIC*/ internal sealed class ContentSummary : Object
     {
         /// <summary>
-        /// Size of the content portion of the build.  This is the size prior to any compression that is applied if the content is built into Unity Archives.
+        /// Total size, in bytes, of the serialized files in the build output.
         /// </summary>
         /// <remarks>
-        /// Padding is used for better data alignment and the actual content files on disk may be slightly larger than the reported size.
-        /// This size is calculated before any compression is applied.
+        /// This is the uncompressed size prior to any compression that may be applied when content is packed
+        /// into AssetBundles or other Unity Archives. Padding used for data alignment may cause actual files on disk to be
+        /// slightly larger than the reported size.
         /// </remarks>
         public ulong serializedFileSize
         {
@@ -94,35 +116,40 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Size of the content portion of the build that is newly created in this build.
+        /// Size, in bytes, of the serialized files reused from previous builds rather than rebuilt.
         /// </summary>
         /// <remarks>
-        /// This size is calculated similarly to <see cref="serializedFileSize"/>,
-        /// but it only includes the serialized files and resource files that are newly generated and not retrieved from previous build results.
-        /// These files may not be copied to the output destination if identical files already exist there.
-        /// This size is calculated before any compression is applied.
+        /// This only accounts for serialized files. Resource files are excluded because resource
+        /// content can be shared across multiple serialized files, making per-file reuse attribution
+        /// inaccurate. This size is calculated before any compression is applied.
         /// </remarks>
-        public ulong generatedFileSize
+        public ulong reusedSerializedFileSize
         {
-            get => GetGeneratedFileSize();
+            get => GetReusedSerializedFileSize();
         }
 
         /// <summary>
-        /// Size of all files at the output destination that remain unaltered and are reused in the current build.
+        /// Size, in bytes, of all files at the output destination that remain unaltered and are reused
+        /// in the current build.
         /// </summary>
         /// <remarks>
-        /// This size reflects the total after files have been compressed.
+        /// This size reflects the total after files have been compressed. This value is only populated
+        /// for ContentDirectory builds; it is zero for Player and AssetBundle builds.
         /// </remarks>
-        public ulong sizeReusedContentInOutputDirectory
+        internal ulong sizeReusedContentInOutputDirectory
         {
             get => GetSizeReusedContentInOutputDirectory();
         }
 
         /// <summary>
-        /// Total size of the header section of each Serialized File in the build output.
+        /// Total size, in bytes, of the header sections across all serialized files in the build output.
         /// </summary>
         /// <remarks>
+        /// Each serialized file has a header and metadata section, that contains the object table, TypeTrees
+        /// and external file dependency information.  The rest of each file is dedicated to storing the
+        /// serialized state of the Unity Objects assigned to that file.
         /// This size is calculated before any compression is applied.
+        /// Header size is included in the <see cref="serializedFileSize"/> total.
         /// </remarks>
         public ulong headerSize
         {
@@ -130,11 +157,13 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Total size of the referenced data inside .resS and .Resource files.
+        /// Total size, in bytes, of the binary data stored in <c>.resS</c> and <c>.resource</c> files.
         /// </summary>
         /// <remarks>
-        /// Padding is used to better data alignment, so the actual files may be slightly larger than the reported size.
-        /// This size is calculated before any compression is applied.
+        /// Resource files contain large binary data such as textures, audio, and meshes that are
+        /// referenced from serialized objects. Padding used for data alignment may cause actual files
+        /// on disk to be slightly larger than the reported size.
+        /// This size is calculated before any compression is applied if the file is inside a Unity Archive.
         /// </remarks>
         public ulong resourceDataSize
         {
@@ -142,23 +171,34 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Number of serialized files (.cf file extension) in the build output.
+        /// Number of serialized files in the build output.
         /// </summary>
+        /// <remarks>
+        /// Serialized files are the specific Unity binary format used to store serialized Unity Objects.
+        /// For example level files, shared assets and content files are all examples of serialized files.
+        /// This count does not include other file formats, such as files with the .resS and .resource extension.
+        /// The count includes serialized files located inside AssetBundles or other Unity Archive files.
+        /// </remarks>
         public int serializedFileCount
         {
             get => GetSerializedFileCount();
         }
 
         /// <summary>
-        /// Number of newly built serialized files and resource files in the build output.
+        /// Number of serialized files reused from previous builds rather than rebuilt.
         /// </summary>
-        public int generatedFileCount
+        /// <remarks>
+        /// The ratio of <c>reusedSerializedFileCount</c> to <see cref="serializedFileCount"/>
+        /// indicates what fraction of serialized files were reused versus rebuilt.
+        /// For Player and AssetBundle builds this value is always zero.
+        /// </remarks>
+        public int reusedSerializedFileCount
         {
-            get => GetGeneratedFileCount();
+            get => GetReusedSerializedFileCount();
         }
 
         /// <summary>
-        /// Number of Resource files (.resS and .resource file extensions) in the build output.
+        /// Number of resource files (<c>.resS</c> and <c>.resource</c> extensions) in the build output.
         /// </summary>
         public int resourceFileCount
         {
@@ -174,10 +214,12 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Retrieve an array containing statistics for each Unity Object type that is included in the build.
+        /// Returns an array containing statistics for each Unity Object type included in the build.
         /// </summary>
         /// <remarks>
-        /// In this form all MonoBehaviour and ScriptableObject derived objects are counted together with the MonoBehaviour type.
+        /// All <see cref="MonoBehaviour"/> and <see cref="ScriptableObject"/> derived types are
+        /// aggregated under <c>typeof(MonoBehaviour)</c>. A new array is allocated each time this
+        /// property is accessed.
         /// </remarks>
         public TypeStats[] typeStats
         {
@@ -185,11 +227,12 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Retrieve an array with statistics for each Scene and Asset that contributed content into the build output.
+        /// Returns an array with statistics for each source Asset that contributed content to the build output.
         /// </summary>
         /// <remarks>
-        /// For large builds this array can grow large, based on the number of Assets that were build.
-        /// It is best to retrieve it once into a local variable that is enumerated, rather than calling assetStats more than once.
+        /// For large builds this array can be large, proportional to the number of source Assets
+        /// included in the build. A new array is allocated each time this property is accessed;
+        /// cache the result in a local variable rather than accessing it repeatedly.
         /// </remarks>
         public AssetStats[] assetStats
         {
@@ -197,12 +240,12 @@ namespace UnityEditor.Build.Reporting
         }
 
         private extern ulong GetSerializedFileSize();
-        private extern ulong GetGeneratedFileSize();
+        private extern ulong GetReusedSerializedFileSize();
         private extern ulong GetSizeReusedContentInOutputDirectory();
         private extern ulong GetHeaderSize();
         private extern ulong GetResourceDataSize();
         private extern int GetSerializedFileCount();
-        private extern int GetGeneratedFileCount();
+        private extern int GetReusedSerializedFileCount();
         private extern int GetResourceFileCount();
         private extern int GetObjectCount();
         private extern TypeStats[] GetTypeStats();

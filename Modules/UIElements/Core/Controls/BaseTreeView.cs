@@ -58,6 +58,8 @@ namespace UnityEngine.UIElements
         /// this class affects every TreeView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-tree-view";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name for TreeView item elements.
         /// </summary>
@@ -66,6 +68,8 @@ namespace UnityEngine.UIElements
         /// this class affects every item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string itemUssClassName = ussClassName + "__item";
+        internal new static readonly UniqueStyleString itemUssClassNameUnique = new(itemUssClassName);
+
         /// <summary>
         /// The USS class name for TreeView item toggle elements.
         /// </summary>
@@ -74,6 +78,8 @@ namespace UnityEngine.UIElements
         /// this class affects every item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemToggleUssClassName = ussClassName + "__item-toggle";
+        internal static readonly UniqueStyleString itemToggleUssClassNameUnique = new(itemToggleUssClassName);
+
         /// <summary>
         /// The USS class name for TreeView indent container elements.
         /// </summary>
@@ -83,6 +89,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         [Obsolete("Individual item indents are no longer used, see itemIndentUssClassName instead", false)]
         public static readonly string itemIndentsContainerUssClassName = ussClassName + "__item-indents"; // Obsoleted with warning in 2023.2.
+
         /// <summary>
         /// The USS class name for TreeView indent element.
         /// </summary>
@@ -91,6 +98,8 @@ namespace UnityEngine.UIElements
         /// this class affects every item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemIndentUssClassName = ussClassName + "__item-indent";
+        internal static readonly UniqueStyleString itemIndentUssClassNameUnique = new(itemIndentUssClassName);
+
         /// <summary>
         /// The USS class name for TreeView item container elements.
         /// </summary>
@@ -99,6 +108,7 @@ namespace UnityEngine.UIElements
         /// this class affects every item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemContentContainerUssClassName = ussClassName + "__item-content";
+        internal static readonly UniqueStyleString itemContentContainerUssClassNameUnique = new(itemContentContainerUssClassName);
 
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
@@ -276,7 +286,7 @@ namespace UnityEngine.UIElements
         public BaseTreeView(int itemHeight) : base(null, itemHeight)
         {
             m_ExpandedItemIds = new List<int>();
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }

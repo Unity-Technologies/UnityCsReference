@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -198,9 +197,7 @@ namespace UnityEditor
             }
 
             // Selection.transform does not provide correct list order, so we have to do it manually
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            selected = selected.ToList().OrderBy(g => g.GetSiblingIndex()).ToArray();
-#pragma warning restore UA2001
+            Array.Sort(selected, (a, b) => { return a.GetSiblingIndex().CompareTo(b.GetSiblingIndex()); });
 
             GameObject go = ObjectFactory.CreateGameObject("GameObject");
 

@@ -4,14 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using UnityEditor;
 using UnityEditor.UIElements.Bindings;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
+using Unity.Collections;
 
 namespace Unity.UI.Builder
 {
@@ -372,9 +371,7 @@ namespace Unity.UI.Builder
             CenterCanvas();
         }
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public void FitViewport() => FitViewport(selection.selection.FirstOrDefault());
-#pragma warning restore UA2001
 
         public void FitViewport(VisualElement target)
         {
@@ -735,9 +732,7 @@ namespace Unity.UI.Builder
             if (m_Selection.isEmpty || m_Selection.selectionCount > 1)
                 ClearInnerSelection();
             else
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                SetInnerSelection(m_Selection.selection.First());
-#pragma warning restore UA2001
+                SetInnerSelection(m_Selection.selection[0]);
         }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
@@ -750,11 +745,7 @@ namespace Unity.UI.Builder
                 return;
 
             if (styles.Contains("display"))
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                SetInnerSelection(m_Selection.selection.First());
-#pragma warning restore UA2001
-            }
+                SetInnerSelection(m_Selection.selection[0]);
 
             if (m_Selection.selectionType == BuilderSelectionType.Element ||
                 m_Selection.selectionType == BuilderSelectionType.VisualTreeAsset)

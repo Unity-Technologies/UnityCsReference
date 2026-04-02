@@ -59,7 +59,7 @@ namespace UnityEditor
 
         internal VisualElement baseRootVisualElement
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_UIRootElement ??= CreateRoot();
         }
 
@@ -123,6 +123,13 @@ namespace UnityEditor
             get;
         } = new List<EditorWindow>();
 
+        /// <summary>
+        /// Event that is triggered when the window's geometry changes, such as during a resize. Subscribers can use this
+        /// event to adjust their layout or reposition themselves accordingly.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal event EventHandler OnWindowGeometryChanged;
+
         internal void SaveViewData()
         {
             m_RequestedViewDataSave = true;
@@ -170,7 +177,7 @@ namespace UnityEditor
         bool m_DisableInputEvents;
 
         // Dockarea we're inside.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [NonSerialized]
         internal HostView m_Parent;
 
@@ -194,7 +201,15 @@ namespace UnityEditor
             GUI.EndWindows();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        // Make it available to UIBuilder and UIToolkitAuthoring tests
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal void NotifyWindowGeometryChanged()
+        {
+            OnResized();
+            OnWindowGeometryChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void OnResized()  {}
 
         internal virtual void OnBackgroundViewResized(Rect pos) {}
@@ -256,7 +271,7 @@ namespace UnityEditor
 
         internal CustomYieldInstruction WaitUntilPresented() => new WaitUntil(() => m_IsPresented);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal GUIContent GetLocalizedTitleContent()
         {
             return GetLocalizedTitleContentFromType(GetType());
@@ -653,7 +668,7 @@ namespace UnityEditor
         // 'windowSize' is used for setting up initial size
         // 'locationPriorityOrder' is for manual popup direction, if null it uses default order: down, up, left or right
         // 'giveFocus' is for whether the window should immediately be given focus (default true)
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode, bool giveFocus)
         {
             // Setup position before bringing window live (otherwise the dropshadow on Windows will be placed in 0,0 first frame)
@@ -1481,6 +1496,20 @@ namespace UnityEditor
         {
             if(args.context is OverlayShortcutContext context)
                 context.editorWindow.overlayCanvas.HideHoveredOverlay();
+        }
+
+        [Shortcut("Overlays/Cycle Left Dynamic Panel Mode", typeof(OverlayShortcutContext))]
+        static void CycleLeftDynamicPanel(ShortcutArguments args)
+        {
+            if (args.context is OverlayShortcutContext context)
+                context.editorWindow.overlayCanvas.CycleDynamicPanelState(DynamicPanelZone.LeftDynamicPanel);
+        }
+
+        [Shortcut("Overlays/Cycle Right Dynamic Panel Mode", typeof(OverlayShortcutContext))]
+        static void CycleRightDynamicPanel(ShortcutArguments args)
+        {
+            if (args.context is OverlayShortcutContext context)
+                context.editorWindow.overlayCanvas.CycleDynamicPanelState(DynamicPanelZone.RightDynamicPanel);
         }
 
         public bool TryGetOverlay(string id, out Overlay match)

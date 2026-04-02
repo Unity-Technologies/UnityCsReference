@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UObject = UnityEngine.Object;
@@ -79,14 +79,10 @@ namespace UnityEditor
             Texture2D m_CheckeredTexture;
 
             public bool[] availableDisplayModes { get => m_AvailableDisplayModes; set => SetValue(ref m_AvailableDisplayModes, value); }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool[] m_AvailableDisplayModes = Enumerable.Repeat(true, 7).ToArray();
-#pragma warning restore UA2001
+            bool[] m_AvailableDisplayModes = ArrayExtensions.CreateWithDefaultValue(true, 7);
 
             public bool[] availableUVChannels { get => m_AvailableUVChannels; set => SetValue(ref m_AvailableUVChannels, value); }
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool[] m_AvailableUVChannels = Enumerable.Repeat(true, 8).ToArray();
-#pragma warning restore UA2001
+            bool[] m_AvailableUVChannels = ArrayExtensions.CreateWithDefaultValue(true, 8);
 
             public event Action changed;
 

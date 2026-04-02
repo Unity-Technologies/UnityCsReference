@@ -6,12 +6,70 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal static class InspectorWindowUtils
     {
+        internal class DismissableDeprecationHelpBox : HelpBox
+        {
+            private Action<bool> m_OnPreferenceChanged;
+
+            public DismissableDeprecationHelpBox(string message, HelpBoxMessageType messageType)
+                : base(message, messageType)
+            {
+                // Set up the dismiss button
+                buttonText = L10n.Tr("Dismiss...");
+                onButtonClicked += OnDismissClicked;
+
+                // Store the callback so we can unsubscribe later
+                m_OnPreferenceChanged = OnPreferenceChanged;
+
+                // Subscribe to preference changes
+                PreferencesProvider.hideDeprecationWarningsChanged += m_OnPreferenceChanged;
+
+                // Set initial visibility
+                UpdateVisibility();
+
+                // Clean up when removed from hierarchy
+                RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+            }
+
+            private void OnPreferenceChanged(bool hide)
+            {
+                UpdateVisibility();
+            }
+
+            private void UpdateVisibility()
+            {
+                style.display = PreferencesProvider.hideDeprecationWarnings
+                    ? DisplayStyle.None
+                    : DisplayStyle.Flex;
+            }
+
+            private void OnDismissClicked()
+            {
+                if (EditorUtility.DisplayDialog(L10n.Tr("Hide deprecation warnings?"),
+                    L10n.Tr("Do you want to hide the deprecation warnings for deprecated components? You can re-enable the warnings in the Preferences window at any time."),
+                    L10n.Tr("Hide All"), L10n.Tr("Cancel")))
+                {
+                    PreferencesProvider.hideDeprecationWarnings = true;
+                }
+            }
+
+            private void OnDetachedFromPanel(DetachFromPanelEvent evt)
+            {
+                // Clean up all subscriptions to prevent memory leaks
+                PreferencesProvider.hideDeprecationWarningsChanged -= m_OnPreferenceChanged;
+                onButtonClicked -= OnDismissClicked;
+                UnregisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+
+                m_OnPreferenceChanged = null;
+            }
+        }
+
         public struct LayoutGroupChecker : IDisposable
         {
             // cache the layout group we expect to have at the end of drawing this editor
@@ -64,12 +122,12 @@ namespace UnityEditor
                 if (type.GetConstructor(Type.EmptyTypes) == null)
                 {
                     Debug.LogError($"{type} does not contain a default constructor, it will not be registered as a " +
-                        $"preview handler. Use the Initialize function to set up your object instead.");
+                                   $"preview handler. Use the Initialize function to set up your object instead.");
                     continue;
                 }
 
                 // Record only the types with a CustomPreviewAttribute.
-                var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false) as CustomPreviewAttribute[];
+                var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false);
                 foreach (CustomPreviewAttribute previewAttr in attrs)
                 {
                     if (previewAttr.m_Type == null)
@@ -86,6 +144,7 @@ namespace UnityEditor
                             types = new List<Type>();
                             previewableTypes.Add(customPreviewType, types);
                         }
+
                         types.Add(type);
                     }
                 }
@@ -109,38 +168,37 @@ namespace UnityEditor
             return null;
         }
 
+        internal static bool TryCreateObsoleteHelpBox(Editor editor, out HelpBox helpBox)
+        {
+            helpBox = null;
+
+            if (!ObsoleteMessageHelper.TryGetObsoleteMessage(editor, out var messageContainer))
+                return false;
+
+            // If there is no replacement, just show the message and a dismiss button.
+            if (messageContainer.replacementType == null)
+            {
+                helpBox = new DismissableDeprecationHelpBox(messageContainer.message, messageContainer.messageType);
+                return true;
+            }
+
+            helpBox = new HelpBox(messageContainer.message, messageContainer.messageType);
+            // If we have a replacement, show the message and a button to add the new component to the inspected objects.
+            helpBox.buttonText = messageContainer.buttonText;
+            helpBox.onButtonClicked += () =>
+            {
+                foreach (var target in editor.targets)
+                {
+                    if (target is Component component)
+                        Undo.AddComponent(component.gameObject, messageContainer.replacementType);
+                }
+            };
+            return true;
+        }
+
         internal static bool IsExcludedClass(Object target)
         {
             return ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
-        }
-
-        private static Dictionary<Type, ObsoleteAttribute> s_ObsoleteTypes;
-
-        public static void DisplayDeprecationMessageIfNecessary(Editor editor)
-        {
-            if (!editor || !editor.target)
-            {
-                return;
-            }
-
-            if (s_ObsoleteTypes == null)
-            {
-                var obsoleteTypes = TypeCache.GetTypesWithAttribute<ObsoleteAttribute>();
-                s_ObsoleteTypes = new Dictionary<Type, ObsoleteAttribute>(obsoleteTypes.Count);
-                foreach (var type in obsoleteTypes)
-                {
-                    var attr = (ObsoleteAttribute)Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute));
-                    s_ObsoleteTypes[type] = attr;
-                }
-            }
-
-            if (!s_ObsoleteTypes.TryGetValue(editor.target.GetType(), out var obsoleteAttribute))
-            {
-                return;
-            }
-
-            var message = string.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
-            EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
         }
 
         public static void DrawAddedComponentBackground(Rect position, Object[] targets, float adjust = 0)
@@ -155,7 +213,8 @@ namespace UnityEditor
                 {
                     // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
                     // and extends down to exactly touch the separator line between/after components.
-                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust, position.width,
+                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust,
+                        position.width,
                         position.height - 2));
                 }
             }

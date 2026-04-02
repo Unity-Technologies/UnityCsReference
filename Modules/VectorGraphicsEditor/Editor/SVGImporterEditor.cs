@@ -12,7 +12,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine.U2D;
-using UnityEngine.Experimental.U2D;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEditor.AssetImporters;
@@ -563,13 +562,12 @@ namespace Unity.VectorGraphics.Editor
             var vi = obj as VectorImage;
             if (sprite != null)
             {
-                var mat = SVGImporter.GetSVGMaterial(sprite.texture != null);
+                var mat = SVGImporter.GetSVGMaterial(sprite.texture != null, false);
                 previewTex = VectorUtils.RenderSpriteToTexture2D(sprite, width, height, mat, 4);
             }
             else if (vi != null)
             {
-                var mat = SVGImporter.GetSVGMaterial(vi.atlas != null);
-                previewTex = VectorImageUtils.RenderVectorImageToTexture2D(vi, width, height, mat, 4);
+                previewTex = VectorImageUtils.RenderVectorImageToTexture2D(vi, width, height, 4);
             }
             return previewTex;
         }

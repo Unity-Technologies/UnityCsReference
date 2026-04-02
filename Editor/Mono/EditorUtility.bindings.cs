@@ -57,21 +57,14 @@ namespace UnityEditor
         [NativeMethod(IsThreadSafe = true)]
         public static extern int NaturalCompare(string a, string b);
 
-        [Obsolete("InstanceIDToObject(int) is obsolete. Use EditorUtility.EntityIdToObject instead.")]
+        [Obsolete("InstanceIDToObject(int) is obsolete. Use EditorUtility.EntityIdToObject instead.", true)]
         public static Object InstanceIDToObject(int instanceID) => EntityIdToObject((EntityId)instanceID);
 
         public static extern Object EntityIdToObject(EntityId entityId);
         public static extern void CompressTexture([NotNull] Texture2D texture, TextureFormat format, int quality);
         public static extern void CompressCubemapTexture([NotNull] Cubemap texture, TextureFormat format, int quality);
 
-        private extern static int[] RemapInstanceIds(UnityEngine.Object[] objects, EntityId[] srcIds, EntityId[] dstIds);
-
-        internal static int[] RemapInstanceIds(UnityEngine.Object[] objects, Dictionary<EntityId, EntityId> idMap)
-        {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return RemapInstanceIds(objects, idMap.Keys.ToArray(), idMap.Values.ToArray());
-#pragma warning restore UA2001
-        }
+        private extern static EntityId[] RemapInstanceIds(UnityEngine.Object[] objects, EntityId[] srcIds, EntityId[] dstIds);
 
         private extern static void RemapAssetReferences(UnityEngine.Object[] objects, string[] sourceAssetPaths, string[] dstAssetPaths, EntityId[] srcIds, EntityId[] dstIds);
 
@@ -269,12 +262,12 @@ namespace UnityEditor
         [FreeFunction("LoadPlatformSupportNativeLibrary")]
         internal static extern void LoadPlatformSupportNativeLibrary(string nativeLibrary);
 
-        [Obsolete("GetDirtyCount(int) is deprecated. Use GetDirtyCount(EntityId) instead.")]
+        [Obsolete("GetDirtyCount(int) is deprecated. Use GetDirtyCount(EntityId) instead.", true)]
         public static int GetDirtyCount(int instanceID) => GetDirtyCount((EntityId)instanceID);
         [NativeMethod("GetDirtyIndex")]
         public static extern int GetDirtyCount(EntityId entityId);
         public static int GetDirtyCount(Object target) { return target != null ? GetDirtyCount(target.GetEntityId()) : 0; }
-        [Obsolete("IsDirty(int) is deprecated. Use IsDirty(EntityId) instead.")]
+        [Obsolete("IsDirty(int) is deprecated. Use IsDirty(EntityId) instead.", true)]
         public static bool IsDirty(int instanceID) => IsDirty((EntityId)instanceID);
         public static extern bool IsDirty(EntityId entityId);
         public static bool IsDirty(Object target) => target != null && IsDirty(target.GetEntityId());

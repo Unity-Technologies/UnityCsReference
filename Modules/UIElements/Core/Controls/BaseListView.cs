@@ -177,7 +177,7 @@ namespace UnityEngine.UIElements
                     if (makeHeader != null)
                         return;
 
-                    EnableInClassList(listViewWithHeaderUssClassName, value);
+                    EnableInClassList(listViewWithHeaderUssClassNameUnique, value);
                     if (m_ShowFoldoutHeader)
                     {
                         AddFoldout();
@@ -230,7 +230,7 @@ namespace UnityEngine.UIElements
             m_Foldout.toggle.tabIndex = k_FoldoutTabIndex;
             m_Foldout.toggle.acceptClicksIfDisabled = true;
 
-            m_Foldout.AddToClassList(foldoutHeaderUssClassName);
+            m_Foldout.AddToClassList(foldoutHeaderUssClassNameUnique);
             hierarchy.Add(m_Foldout);
             m_Foldout.Add(scrollView);
         }
@@ -255,14 +255,14 @@ namespace UnityEngine.UIElements
             if (m_ArraySizeField == null)
             {
                 m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName, tabIndex = k_ArraySizeFieldTabIndex };
-                m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
+                m_ArraySizeField.AddToClassList(arraySizeFieldUssClassNameUnique);
                 m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
                 m_ArraySizeField.isDelayed = true;
                 m_ArraySizeField.focusable = true;
             }
 
-            m_ArraySizeField.EnableInClassList(arraySizeFieldWithFooterUssClassName, showAddRemoveFooter);
-            m_ArraySizeField.EnableInClassList(arraySizeFieldWithHeaderUssClassName, showFoldoutHeader);
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithFooterUssClassNameUnique, showAddRemoveFooter);
+            m_ArraySizeField.EnableInClassList(arraySizeFieldWithHeaderUssClassNameUnique, showFoldoutHeader);
 
             if (showFoldoutHeader)
             {
@@ -406,8 +406,8 @@ namespace UnityEngine.UIElements
                         hierarchy.Add(drawnFooter);
                         hierarchy.BringToFront(drawnFooter);
                     }
-                    EnableInClassList(listViewWithFooterUssClassName,true);
-                    scrollView.EnableInClassList(scrollViewWithFooterUssClassName, true);
+                    EnableInClassList(listViewWithFooterUssClassNameUnique,true);
+                    scrollView.EnableInClassList(scrollViewWithFooterUssClassNameUnique, true);
                 }
                 else
                 {
@@ -447,7 +447,7 @@ namespace UnityEngine.UIElements
                     EnableFooter(value);
 
                 if (value && m_ArraySizeField != null)
-                    m_ArraySizeField.AddToClassList(arraySizeFieldWithFooterUssClassName);
+                    m_ArraySizeField.AddToClassList(arraySizeFieldWithFooterUssClassNameUnique);
 
                 if (previous != showFoldoutHeader)
                     NotifyPropertyChanged(showAddRemoveFooterProperty);
@@ -462,15 +462,15 @@ namespace UnityEngine.UIElements
 
         void EnableFooter(bool enabled)
         {
-            EnableInClassList(listViewWithFooterUssClassName, enabled);
-            scrollView.EnableInClassList(scrollViewWithFooterUssClassName, enabled);
+            EnableInClassList(listViewWithFooterUssClassNameUnique, enabled);
+            scrollView.EnableInClassList(scrollViewWithFooterUssClassNameUnique, enabled);
 
             if (enabled)
             {
                 if (m_Footer == null)
                 {
                     m_Footer = new VisualElement() { name = footerUssClassName };
-                    m_Footer.AddToClassList(footerUssClassName);
+                    m_Footer.AddToClassList(footerUssClassNameUnique);
 
                     m_AddButton = new Button(OnAddClicked) { name = footerAddButtonName, text = "+" };
                     m_AddButton.SetEnabled(allowAdd);
@@ -679,8 +679,8 @@ namespace UnityEngine.UIElements
                 m_ListViewLabel = null;
             }
 
-            m_ListViewLabel?.EnableInClassList(emptyLabelUssClassName, noItemsCount);
-            m_ListViewLabel?.EnableInClassList(overMaxMultiEditLimitClassName, m_IsOverMultiEditLimit);
+            m_ListViewLabel?.EnableInClassList(emptyLabelUssClassNameUnique, noItemsCount);
+            m_ListViewLabel?.EnableInClassList(overMaxMultiEditLimitClassNameUnique, m_IsOverMultiEditLimit);
         }
 
         /// <summary>
@@ -1045,6 +1045,8 @@ namespace UnityEngine.UIElements
         /// this class affects every ListView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-list-view";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// The USS class name of item elements in ListView elements.
         /// </summary>
@@ -1053,6 +1055,8 @@ namespace UnityEngine.UIElements
         /// this class affects every item element located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string itemUssClassName = ussClassName + "__item";
+        internal new static readonly UniqueStyleString itemUssClassNameUnique = new(itemUssClassName);
+
         /// <summary>
         /// The USS class name for label displayed when ListView is empty.
         /// </summary>
@@ -1061,6 +1065,7 @@ namespace UnityEngine.UIElements
         /// this class affects every empty label located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string emptyLabelUssClassName = ussClassName + "__empty-label";
+        internal static readonly UniqueStyleString emptyLabelUssClassNameUnique = new(emptyLabelUssClassName);
 
         /// <summary>
         /// The USS class name for label displayed when ListView is trying to edit too many items.
@@ -1069,6 +1074,7 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to the label displayed if the ListView is trying to edit too many items at once.
         /// </remarks>
         public static readonly string overMaxMultiEditLimitClassName = ussClassName + "__over-max-multi-edit-limit-label";
+        internal static readonly UniqueStyleString overMaxMultiEditLimitClassNameUnique = new(overMaxMultiEditLimitClassName);
 
         /// <summary>
         /// The USS class name for reorderable animated ListView elements.
@@ -1078,6 +1084,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every ListView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string reorderableUssClassName = ussClassName + "__reorderable";
+        internal static readonly UniqueStyleString reorderableUssClassNameUnique = new(reorderableUssClassName);
+
         /// <summary>
         /// The USS class name for item elements in reorderable animated ListView.
         /// </summary>
@@ -1086,6 +1094,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every element located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string reorderableItemUssClassName = reorderableUssClassName + "-item";
+        internal static readonly UniqueStyleString reorderableItemUssClassNameUnique = new(reorderableItemUssClassName);
+
         /// <summary>
         /// The USS class name for item container in reorderable animated ListView.
         /// </summary>
@@ -1094,6 +1104,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every item container located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string reorderableItemContainerUssClassName = reorderableItemUssClassName + "__container";
+        internal static readonly UniqueStyleString reorderableItemContainerUssClassNameUnique = new(reorderableItemContainerUssClassName);
+
         /// <summary>
         /// The USS class name for drag handle in reorderable animated ListView.
         /// </summary>
@@ -1102,6 +1114,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every drag handle located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string reorderableItemHandleUssClassName = reorderableUssClassName + "-handle";
+        internal static readonly UniqueStyleString reorderableItemHandleUssClassNameUnique = new(reorderableItemHandleUssClassName);
+
         /// <summary>
         /// The USS class name for drag handle bar in reorderable animated ListView.
         /// </summary>
@@ -1110,6 +1124,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every drag handle bar located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string reorderableItemHandleBarUssClassName = reorderableItemHandleUssClassName + "-bar";
+        internal static readonly UniqueStyleString reorderableItemHandleBarUssClassNameUnique = new(reorderableItemHandleBarUssClassName);
+
         /// <summary>
         /// The USS class name for the footer of the ListView.
         /// </summary>
@@ -1118,6 +1134,8 @@ namespace UnityEngine.UIElements
         /// affects every ListView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string footerUssClassName = ussClassName + "__footer";
+        internal static readonly UniqueStyleString footerUssClassNameUnique = new(footerUssClassName);
+
         /// <summary>
         /// The USS class name for the foldout header of the ListView.
         /// </summary>
@@ -1126,6 +1144,8 @@ namespace UnityEngine.UIElements
         /// affects every foldout located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string foldoutHeaderUssClassName = ussClassName + "__foldout-header";
+        internal static readonly UniqueStyleString foldoutHeaderUssClassNameUnique = new(foldoutHeaderUssClassName);
+
         /// <summary>
         /// The USS class name for the size field of the ListView when show bound collection size is enabled
         /// </summary>
@@ -1134,6 +1154,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string arraySizeFieldUssClassName = ussClassName + "__size-field";
+        internal static readonly UniqueStyleString arraySizeFieldUssClassNameUnique = new(arraySizeFieldUssClassName);
+
         /// <summary>
         /// The USS class name for the size field of the ListView when foldout header is enabled.
         /// </summary>
@@ -1142,6 +1164,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string arraySizeFieldWithHeaderUssClassName = arraySizeFieldUssClassName + "--with-header";
+        internal static readonly UniqueStyleString arraySizeFieldWithHeaderUssClassNameUnique = new(arraySizeFieldWithHeaderUssClassName);
+
         /// <summary>
         /// The USS class name for the size field of the ListView when the footer is enabled.
         /// </summary>
@@ -1150,6 +1174,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every size field located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string arraySizeFieldWithFooterUssClassName = arraySizeFieldUssClassName + "--with-footer";
+        internal static readonly UniqueStyleString arraySizeFieldWithFooterUssClassNameUnique = new(arraySizeFieldWithFooterUssClassName);
+
         /// <summary>
         /// The USS class name for ListView when foldout header is enabled.
         /// </summary>
@@ -1158,6 +1184,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every list located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string listViewWithHeaderUssClassName = ussClassName + "--with-header";
+        internal static readonly UniqueStyleString listViewWithHeaderUssClassNameUnique = new(listViewWithHeaderUssClassName);
+
         /// <summary>
         /// The USS class name for ListView when add/remove footer is enabled.
         /// </summary>
@@ -1166,6 +1194,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every list located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string listViewWithFooterUssClassName = ussClassName + "--with-footer";
+        internal static readonly UniqueStyleString listViewWithFooterUssClassNameUnique = new(listViewWithFooterUssClassName);
+
         /// <summary>
         /// The USS class name for scroll view when add/remove footer is enabled.
         /// </summary>
@@ -1174,6 +1204,8 @@ namespace UnityEngine.UIElements
         /// Any styling applied to this class affects every list located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string scrollViewWithFooterUssClassName = ussClassName + "__scroll-view--with-footer";
+        internal static readonly UniqueStyleString scrollViewWithFooterUssClassNameUnique = new(scrollViewWithFooterUssClassName);
+
         /// <summary>
         /// The name of the add button element in the footer.
         /// </summary>
@@ -1181,6 +1213,8 @@ namespace UnityEngine.UIElements
         /// Unity uses this name of <see cref="BaseListView"/> add button when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
         /// </remarks>
         public static readonly string footerAddButtonName = ussClassName + "__add-button";
+        internal static readonly UniqueStyleString footerAddButtonNameUnique = new(footerAddButtonName);
+
         /// <summary>
         /// The name of the remove button element in the footer.
         /// </summary>
@@ -1188,6 +1222,7 @@ namespace UnityEngine.UIElements
         /// Unity uses this name of <see cref="BaseListView"/> remove button when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
         /// </remarks>
         public static readonly string footerRemoveButtonName = ussClassName + "__remove-button";
+        internal static readonly UniqueStyleString footerRemoveButtonNameUnique = new(footerRemoveButtonName);
 
         string m_MaxMultiEditStr;
         static readonly string k_EmptyListStr = "List is empty";
@@ -1209,7 +1244,7 @@ namespace UnityEngine.UIElements
         public BaseListView(IList itemsSource, float itemHeight = ItemHeightUnset)
             : base(itemsSource, itemHeight)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             pickingMode = PickingMode.Ignore;
             allowAdd = true;
             allowRemove = true;

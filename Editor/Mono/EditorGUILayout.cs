@@ -335,6 +335,7 @@ sealed partial class EditorGUILayout
         DelayedTextField(property, label, EditorStyles.textField, options);
     }
 
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal static string ToolbarSearchField(string text, params GUILayoutOption[] options)
     {
         Rect r = s_LastRect = GUILayoutUtility.GetRect(0, kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, options);

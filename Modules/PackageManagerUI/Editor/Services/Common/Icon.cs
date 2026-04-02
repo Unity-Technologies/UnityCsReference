@@ -10,6 +10,7 @@ internal enum Icon
 
     InProjectPage,
     UpdatesPage,
+    SamplesPage,
     UnityRegistryPage,
     MyAssetsPage,
     BuiltInPage,
@@ -25,6 +26,7 @@ internal enum Icon
     Pause,
     Resume,
     Cancel,
+    UpdateAvailable,
 
     Info,
     Error,

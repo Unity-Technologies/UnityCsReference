@@ -124,9 +124,7 @@ namespace UnityEditor
 
                 var valueToPopulate = value == 0 ? SelectionModes.None : SelectionModes.All;
                 m_SelectionMatch = new SelectionModes[m_LayerCount];
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
-#pragma warning restore UA2001
+                Array.Fill(m_SelectionMatch, valueToPopulate);
             }
         }
 
@@ -342,9 +340,7 @@ namespace UnityEditor
                 ChangeMaskValues(int.MaxValue, changedTo);
                 var valueToPopulate = changedTo ? SelectionModes.All : SelectionModes.None;
                 m_SelectionMatch = new SelectionModes[m_OptionCount];
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
-#pragma warning restore UA2001
+                Array.Fill(m_SelectionMatch, valueToPopulate);
             }
         }
 

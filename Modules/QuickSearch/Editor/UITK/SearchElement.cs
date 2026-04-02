@@ -151,6 +151,7 @@ namespace UnityEditor.Search
 
         public virtual SearchContext context => m_ViewModel.context;
         public virtual SearchViewState viewState => m_ViewModel.state;
+        public ISearchView viewModel => m_ViewModel;
 
         public bool attachedToPanel { get; private set; }
         public bool geometryRealized { get; private set; }
@@ -382,7 +383,19 @@ namespace UnityEditor.Search
             return viewState.globalEventManager.RegisterGlobalEventHandler(eventHandler, priority);
         }
 
+        public Action RegisterGlobalEventHandler<T>(SearchGlobalEventHandlerWithResult<T> eventHandler, int priority)
+            where T : EventBase
+        {
+            return viewState.globalEventManager.RegisterGlobalEventHandler(eventHandler, priority);
+        }
+
         public void UnregisterGlobalEventHandler<T>(SearchGlobalEventHandler<T> eventHandler)
+            where T : EventBase
+        {
+            viewState.globalEventManager.UnregisterGlobalEventHandler(eventHandler);
+        }
+
+        public void UnregisterGlobalEventHandler<T>(SearchGlobalEventHandlerWithResult<T> eventHandler)
             where T : EventBase
         {
             viewState.globalEventManager.UnregisterGlobalEventHandler(eventHandler);

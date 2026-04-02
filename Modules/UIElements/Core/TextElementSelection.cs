@@ -222,7 +222,7 @@ namespace UnityEngine.UIElements
 
                 focusable = value;
                 m_IsSelectable = value;
-                EnableInClassList(selectableUssClassName, value);
+                EnableInClassList(selectableUssClassNameUnique, value);
                 NotifyPropertyChanged(isSelectableProperty);
             }
         }

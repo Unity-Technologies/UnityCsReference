@@ -120,9 +120,10 @@ namespace Unity.GraphToolkit.Editor
 
         WireConnector m_WireConnector;
         VisualElement m_ConnectorCache;
-        protected Label m_ConnectorLabel;
 
         TypeHandle m_CurrentTypeHandle;
+
+        bool m_HasContextualMenuBeenBuilt; // for testing purposes
 
         /// <summary>
         /// The default port color.
@@ -418,8 +419,6 @@ namespace Unity.GraphToolkit.Editor
                 var parentNode = GetParentNode(this);
                 parentNode?.DisableCullingForFrame();
 
-                this.PreallocForMoreClasses(6); // hidden, connected, direction, capacity, datatype, type
-
                 // A port should be hidden if it has no wire and has the Hidden option.
                 var hidden = PortModel != null && PortModel.GetConnectedWires().Count == 0 && PortHasOption(PortModel.Options, PortModelOptions.Hidden);
                 EnableClass(hiddenUssClassName, hidden);
@@ -463,7 +462,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The connector visual content generator.</returns>
         protected virtual Action<MeshGenerationContext> GetConnectorVisualContentGenerator()
         {
-            if (PortModel.DataTypeHandle == TypeHandle.ExecutionFlow)
+            if (PortModel.DataTypeHandle.Resolve() == TypeHandle.Untyped.Resolve())
                 return OnGenerateTriangleConnectorVisualContent;
 
             return OnGenerateCircleConnectorVisualContent;
@@ -542,11 +541,39 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
+            // Don't handle the contextual menu if the click is on the title of a capsule node.
+            // The title of a capsule node is part of the port container but shouldn't open the port's contextual menu.
+            if (IsMouseOnCapsuleNodeTitle(evt.mousePosition))
+            {
+                m_HasContextualMenuBeenBuilt = false;
+                return;
+            }
+
             // Build the contextual menu for the port in the Port class, not in GraphView. Ports cannot be selected, so we don't want to use the GraphView's contextual menu.
             var menuActionMap = new Dictionary<string, Action>();
             PopulateMenuActionMap(menuActionMap, evt);
             ViewSelection.BuildContextualMenu(ContextualMenuHelpers.CategorizeMenuItems(PortModel.ContextualMenuItems), evt, menuActionMap);
+            m_HasContextualMenuBeenBuilt = true;
             evt.StopPropagation();
+        }
+
+        bool IsMouseOnCapsuleNodeTitle(Vector2 mousePosition)
+        {
+            var isCapsuleNode = PortModel.NodeModel is ISingleInputPortNodeModel || PortModel.NodeModel is ISingleOutputPortNodeModel;
+            if (!isCapsuleNode)
+                return false;
+
+            if (PartList.GetPart(connectorPartName) is not PortConnectorPart portConnectorPart)
+                return false;
+
+            // The hit box limit element is either the root of the node title part or the constant editor part. We check if it is the node title part.
+            var hitBoxElement = portConnectorPart.HitBoxLimitElement;
+            if (hitBoxElement == null || hitBoxElement.name != CollapsibleInOutNodeView.titleIconContainerPartName)
+                return false;
+
+            // Transform mouse position to local space and check if it is within the element
+            Vector2 localPos = hitBoxElement.WorldToLocal(mousePosition);
+            return hitBoxElement.ContainsPoint(localPos);
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -722,14 +749,18 @@ namespace Unity.GraphToolkit.Editor
                     {
                         if (!port.PortModel.IsPolymorphic)
                         {
-                            var expandToggleX = portConnectorPart.ExpandToggle.worldBound.xMax;
+                            // Adjust the hit box for an output expandable port so it starts at the right edge of the expand toggle and does not overlap it.
+                            var expandToggleX = portConnectorPart.HitBoxLimitElement.worldBound.xMax;
                             var newSize = x + hitBoxSize.x - expandToggleX;
                             x = expandToggleX;
                             hitBoxSize.x = newSize;
                         }
                     }
                     else
+                    {
+                        // Adjust the hit box for an input expandable port so it ends at the left edge of the expand toggle and does not overlap it.
                         hitBoxSize.x = portConnectorPart.ExpandToggle.worldBound.xMin - x;
+                    }
                 }
 
                 return new Rect(new Vector2(x, y), hitBoxSize);
@@ -790,7 +821,12 @@ namespace Unity.GraphToolkit.Editor
 
         PortModel GetPortToConnect(GraphElementModel selectable)
         {
-            return (selectable as PortNodeModel)?.GetPortFitToConnectTo(PortModel);
+            var port =  (selectable as ISingleOutputPortNodeModel)?.OutputPort ?? (selectable as ISingleInputPortNodeModel)?.InputPort;
+
+            if (port?.GraphModel?.IsCompatiblePort(PortModel, port) ?? false)
+                return port;
+
+            return null;
         }
 
         protected void OnGenerateTriangleConnectorVisualContent(MeshGenerationContext mgc)
@@ -899,12 +935,30 @@ namespace Unity.GraphToolkit.Editor
 
         bool TrySetPortColorFromTypeStyle()
         {
-            var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(PortModel.PortDataType);
+            Type elementStyle = PortModel.PortDataType;
+            var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(elementStyle);
+
+            if (!typeStyle.HasValue && PortModel.PortDataType.IsListOrArray())
+                typeStyle = PortModel.GraphModel?.GetDataTypeStyle(PortModel.PortDataType.GetCollectionElementType());
+
             if (!typeStyle.HasValue)
                 return false;
 
             PortColor = typeStyle.Value.color;
             return true;
+        }
+
+        internal class TestAccess
+        {
+            readonly Port m_Port;
+
+            public TestAccess(Port port)
+            {
+                m_Port = port;
+            }
+
+            public bool HasContextualMenuBeenBuilt => m_Port.m_HasContextualMenuBeenBuilt;
+            public void CallBuildContextualMenu(ContextualMenuPopulateEvent e) => m_Port.BuildContextualMenu(e);
         }
     }
 }

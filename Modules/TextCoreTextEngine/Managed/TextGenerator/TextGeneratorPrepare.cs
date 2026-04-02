@@ -9,6 +9,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 
+#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+
 namespace UnityEngine.TextCore.Text
 {
     internal partial class TextGenerator
@@ -594,7 +596,7 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
-            if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+            if (!textSettings.isFallbackOSFontAssetsInitialized && !canWriteOnAsset)
                 return null;
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
             character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
@@ -1369,7 +1371,7 @@ namespace UnityEngine.TextCore.Text
             // Search the setting's general fallback list
             if (character == null)
             {
-                if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                if (!textSettings.isFallbackOSFontAssetsInitialized && !canWriteOnAsset)
                     return false;
                 character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? generationSettings.fontSize : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
@@ -1409,7 +1411,7 @@ namespace UnityEngine.TextCore.Text
             // Search the setting's general fallback list
             if (character == null)
             {
-                if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                if (!textSettings.isFallbackOSFontAssetsInitialized && !canWriteOnAsset)
                     return false;
                 character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(0x5F, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? generationSettings.fontSize : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
@@ -1460,3 +1462,5 @@ namespace UnityEngine.TextCore.Text
         }
     }
 }
+
+#pragma warning restore CS0618

@@ -173,22 +173,22 @@ struct USSStatsStyleProfiler : IStyleProfiler
     public void BeginMatchingElement(VisualElement element)
     {
         m_ElementHasName = !string.IsNullOrEmpty(element.name);
-        m_ElementClassCount = element.classList.Count;
+        m_ElementClassCount = element.classListCount;
     }
 
-    public void BeginMatchingStyleSheet(StyleSheet styleSheet)
+    public void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry)
     {
         m_StyleSheetStats = m_StyleSheetStatsCache[styleSheet];
 
         m_StyleSheetStats.elementCount++;
 
-        if (m_ElementHasName && (styleSheet.nonEmptyTablesMask & (1 << (int)StyleSheet.OrderedSelectorType.Name)) != 0)
+        if (m_ElementHasName && (accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)SelectorAccelerationTableType.Name)) != 0)
             m_StyleSheetStats.totalQueryCount++;
 
-        if ((styleSheet.nonEmptyTablesMask & (1 << (int)StyleSheet.OrderedSelectorType.Class)) != 0)
+        if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)SelectorAccelerationTableType.Class)) != 0)
             m_StyleSheetStats.totalQueryCount += m_ElementClassCount;
 
-        if ((styleSheet.nonEmptyTablesMask & (1 << (int)StyleSheet.OrderedSelectorType.Type)) != 0)
+        if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)SelectorAccelerationTableType.Type)) != 0)
             m_StyleSheetStats.totalQueryCount++;
 
         m_StyleSheetStopwatch.Restart();

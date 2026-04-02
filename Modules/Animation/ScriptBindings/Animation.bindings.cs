@@ -5,10 +5,10 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -222,6 +222,80 @@ namespace UnityEngine
         {
             public static IntPtr ConvertToNative(AnimationState animationState) => animationState.m_Ptr;
         }
+    }
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public ref struct AnimationEventInfo
+    {
+        private IntPtr m_EventPtr;
+        private float m_Time;
+        private float m_FloatParameter;
+        private int m_IntParameter;
+
+        private int m_MessageOptions;
+        private AnimationEventSource m_Source;
+        private AnimatorStateInfo m_AnimatorStateInfo;
+        private AnimatorClipInfo m_AnimatorClipInfo;
+        
+        public string stringParameter => GetStringParameterInternal(m_EventPtr);
+        public float floatParameter => m_FloatParameter;
+        public int intParameter => m_IntParameter;
+        public Object objectReferenceParameter => GetObjectReferenceParameterInternal(m_EventPtr);
+        public string functionName => GetFunctionNameParameter(m_EventPtr);
+        public float time => m_Time;
+
+        public bool isFiredByLegacy => m_Source == AnimationEventSource.Legacy;
+        public bool isFiredByAnimator => m_Source == AnimationEventSource.Animator;
+
+        public AnimationState animationState
+        {
+            get
+            {
+                if (!isFiredByLegacy)
+                    Debug.LogError("AnimationEvent was not fired by Animation component, you shouldn't use AnimationEvent.animationState");
+
+
+                return GetStateSenderInternal(m_EventPtr);
+            }
+        }
+
+        [FreeFunction("AnimationBindings::GetEventStringParameter")]
+        extern static string GetStringParameterInternal(IntPtr eventPtr);
+
+
+        [FreeFunction("AnimationBindings::GetEventFunctionName")]
+        extern static string GetFunctionNameParameter(IntPtr eventPtr);
+
+
+        [FreeFunction("AnimationBindings::GetEventObjectReferenceParameter")]
+        extern static Object GetObjectReferenceParameterInternal(IntPtr eventPtr);
+
+        [FreeFunction("AnimationBindings::GetEventAnimationState")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        extern static AnimationState GetStateSenderInternal(IntPtr eventPtr);
+
+        public AnimatorStateInfo animatorStateInfo
+        {
+            get
+            {
+                if (!isFiredByAnimator)
+                    Debug.LogError("AnimationEvent was not fired by Animator component, you shouldn't use AnimationEvent.animatorStateInfo");
+                return m_AnimatorStateInfo;
+            }
+        }
+
+        public AnimatorClipInfo animatorClipInfo
+        {
+            get
+            {
+                if (!isFiredByAnimator)
+                    Debug.LogError("AnimationEvent was not fired by Animator component, you shouldn't use AnimationEvent.animatorClipInfo");
+                return m_AnimatorClipInfo;
+            }
+        }
+
+      
     }
 
     [System.Serializable]

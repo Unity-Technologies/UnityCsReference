@@ -27,6 +27,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public SerializableEnum<IssueCategory>[] categories;
 
         public int currentCategoryIndex;
+        [NonSerialized]
         public Utility.DropdownItem[] dropdown;
     }
 }

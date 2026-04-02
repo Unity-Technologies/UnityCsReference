@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
+
 namespace UnityEngine.AdaptivePerformance
 {
     internal class CpuTimeProvider
@@ -19,7 +21,7 @@ namespace UnityEngine.AdaptivePerformance
             {
                 if (GetLatestTimings() >= 1)
                 {
-                    double cpuFrameTime = m_FrameTimings[0].cpuMainThreadFrameTime + m_FrameTimings[0].cpuRenderThreadFrameTime;
+                    double cpuFrameTime = Math.Max(m_FrameTimings[0].cpuMainThreadFrameTime, m_FrameTimings[0].cpuRenderThreadFrameTime);
                     if (cpuFrameTime > 0.0)
                         return (float)(cpuFrameTime * 0.001);
                 }

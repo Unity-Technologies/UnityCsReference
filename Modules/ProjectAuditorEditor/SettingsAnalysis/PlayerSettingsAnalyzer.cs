@@ -55,37 +55,30 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 
         static readonly Descriptor k_IL2CPPCompilerConfigurationMasterDescriptor = new Descriptor(
             PAS1004,
-            "Player: IL2CPP Compiler Configuration is set to Master",
+            "Player: IL2CPP Compiler Configuration is set to 'Master'",
             Areas.BuildTime,
             "<b>C++ Compiler Configuration</b> in Player Settings is set to <b>Master</b>. This mode is intended for shipping builds and will significantly increase build times.",
             "Change <b>Project Settings > Player > Other Settings > Configuration > C++ Compiler Configuration</b> to <b>Release</b>.")
         {
-            Fixer = (issue, analysisParams) =>
-            {
-                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(analysisParams.Platform);
-                SetIL2CPPConfigurationToRelease(buildTargetGroup);
-                return true;
-            },
-
-            MessageFormat = "Player: C++ Compiler Configuration is set to 'Master'"
+            Fixer = FixIL2CPPConfigurationToRelease,
         };
 
         static readonly Descriptor k_IL2CPPCompilerConfigurationDebugDescriptor = new Descriptor(
             PAS1005,
-            "Player: IL2CPP Compiler Configuration is set to Debug",
+            "Player: IL2CPP Compiler Configuration is set to 'Debug'",
             Areas.CPU,
             "<b>C++ Compiler Configuration</b> is set to <b>Debug</b>. This mode is intended for debugging and might have an impact on runtime CPU performance.",
             "Change <b>Project Settings > Player > Other Settings > Configuration > C++ Compiler Configuration</b> to <b>Release</b>.")
         {
-            Fixer = (issue, analysisParams) =>
-            {
-                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(analysisParams.Platform);
-                SetIL2CPPConfigurationToRelease(buildTargetGroup);
-                return true;
-            },
-
-            MessageFormat = "Player: C++ Compiler Configuration is set to 'Debug'"
+            Fixer = FixIL2CPPConfigurationToRelease,
         };
+
+        static bool FixIL2CPPConfigurationToRelease(ReportItem issue, AnalysisParams analysisParams)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(analysisParams.Platform);
+            SetIL2CPPConfigurationToRelease(buildTargetGroup);
+            return true;
+        }
 
         static readonly Descriptor k_LightmapStreamingEnabledDescriptor = new Descriptor(
             PAS1006,
@@ -130,7 +123,6 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
                     .WithLocation("Project/Player");
             }
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(context.Params.Platform);
             if (CheckIL2CPPCompilerConfiguration(Il2CppCompilerConfiguration.Master, context.Params))
             {
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_IL2CPPCompilerConfigurationMasterDescriptor.Id)
@@ -141,6 +133,8 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_IL2CPPCompilerConfigurationDebugDescriptor.Id)
                     .WithLocation("Project/Player");
             }
+
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(context.Params.Platform);
             if (!PlayerSettingsUtil.IsLightmapStreamingEnabled(buildTargetGroup))
             {
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_LightmapStreamingEnabledDescriptor.Id)

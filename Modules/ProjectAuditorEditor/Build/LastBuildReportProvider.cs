@@ -3,18 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Build
 {
-    internal class LastBuildReportProvider : IPostprocessBuildWithReport
+    internal class LastBuildReportProvider
     {
-        internal const string k_LastBuildReportPath = "Library/LastBuild.buildreport";
-        internal const string k_LastCleanBuildReportPath = "Library/LastCleanBuild.buildreport";
-
         public int callbackOrder => 0;
         static BuildReport s_LastBuildReport = null;
 
@@ -24,63 +21,60 @@ namespace Unity.ProjectAuditor.Editor.Build
             if (s_LastBuildReport != null)
                 return s_LastBuildReport;
 
-            // Cached in Library folder
-            s_LastBuildReport = LoadBuildReport(platform, k_LastCleanBuildReportPath, false);
-            if (s_LastBuildReport != null)
-                return s_LastBuildReport;
-
-            // Last resort: Try the standard build report path, see if it was a clean build
-            s_LastBuildReport = LoadBuildReport(platform, k_LastBuildReportPath, true);
+            // Use BuildHistory API to find the last full player build
+            s_LastBuildReport = LoadLastFullPlayerBuild(platform);
             return s_LastBuildReport;
         }
 
-        BuildReport LoadBuildReport(BuildTarget platform, string path, bool saveCopy)
+        /// <summary>
+        /// Loads the most recent full Player build report for the specified platform using BuildHistory API.
+        /// A "full" build has packedAssets.Length > 0 (not an incremental build that skipped asset packing).
+        /// </summary>
+        /// <remarks>
+        /// In all versions of Unity 20xx / 6.X, the "incremental" build pipeline is actually all-or-nothing.
+        /// An incremental build in which no assets (or settings that could affect assets) has changed
+        /// will skip asset packing and packedAssets.Length will be 0, which means much of the build report
+        /// information will be absent.  So rather than pick that build we look for earlier full build.
+        /// </remarks>
+        BuildReport LoadLastFullPlayerBuild(BuildTarget platform)
         {
-            if (!File.Exists(path))
-                return null;
-
-            UnityEngine.Object[] objects =
-                UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(path);
-
-            foreach (var obj in objects)
+            try
             {
-                if (obj is BuildReport)
-                {
-                    var report = (BuildReport)obj;
+                // Get all builds from BuildHistory, sorted by most recent first
+                GUID[] builds = BuildHistory.GetAllBuilds();
 
-                    if (report.summary.platform == platform && report.packedAssets.Length > 0)
+                foreach (var buildGuid in builds)
+                {
+                    try
                     {
-                        if (saveCopy)
+                        BuildReportSummary summary = BuildHistory.GetBuildSummary(buildGuid);
+
+                        // ProjectAuditor only supports Player build analysis
+                        if (summary.BuildType != BuildType.Player)
+                            continue;
+
+                        if (summary.Platform != platform)
+                            continue;
+
+                        // This build looks promising so load the full BuildReport
+                        BuildReport report = BuildHistory.LoadBuildReport(buildGuid);
+                        if (report != null && report.packedAssets.Length > 0)
                         {
-                            File.Copy(k_LastBuildReportPath, k_LastCleanBuildReportPath, true);
+                            return report;
                         }
-                        return report;
+                    }
+                    catch (ArgumentException)
+                    {
+                        continue;
                     }
                 }
             }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to load build report from BuildHistory: {e.Message}");
+            }
 
             return null;
-        }
-
-        public void OnPostprocessBuild(BuildReport report)
-        {
-            // In all versions of Unity 20xx, the "incremental" build pipeline is actually all-or-nothing.
-            // An incremental build in which no assets (or settings that could affect assets) has changed will skip asset packing and packedAssets.Length will be 0.
-            // In all other cases, packedAssets will include information on all the assets in the build.
-            if (report.packedAssets.Length > 0)
-            {
-                // Cache build report in memory in case some script wants to retrieve it this frame
-                s_LastBuildReport = report;
-
-                // Library/LastBuild.buildreport is only created AFTER OnPostprocessBuild so we need to defer the copy of the file
-                EditorApplication.update += DelayedBuildReportCopy;
-            }
-        }
-
-        static void DelayedBuildReportCopy()
-        {
-            File.Copy(k_LastBuildReportPath, k_LastCleanBuildReportPath, true);
-            EditorApplication.update -= DelayedBuildReportCopy;
         }
     }
 }

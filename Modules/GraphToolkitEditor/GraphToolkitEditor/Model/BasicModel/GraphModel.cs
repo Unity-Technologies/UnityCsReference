@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -880,7 +881,7 @@ namespace Unity.GraphToolkit.Editor
             if (oldPort != null)
             {
                 CurrentGraphChangeDescription.AddChangedModel(oldPort, ChangeHint.GraphTopology);
-                if (oldPort.PortType == PortType.MissingPort && !oldPort.GetConnectedWires().HasAny())
+                if (oldPort.PortType == PortType.MissingPort && oldPort.GetConnectedWires().Count == 0)
                     oldPort.NodeModel?.RemoveUnusedMissingPort(oldPort);
             }
 
@@ -1599,10 +1600,10 @@ namespace Unity.GraphToolkit.Editor
             m_PortWireIndex?.WireRemoved(wireModel);
 
             // Remove missing port with no connections.
-            if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().HasAny() ?? false))
+            if (wireModel.ToPort?.PortType == PortType.MissingPort && ((wireModel.ToPort?.GetConnectedWires().Count ?? 0) == 0))
                 wireModel.ToPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.ToPort);
 
-            if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().HasAny() ?? false))
+            if (wireModel.FromPort?.PortType == PortType.MissingPort && ((wireModel.FromPort?.GetConnectedWires().Count ?? 0) == 0))
                 wireModel.FromPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.FromPort);
         }
 
@@ -1875,7 +1876,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var allowMultipleDataOutputInstances = AllowMultipleDataOutputInstances != AllowMultipleDataOutputInstances.Disallow;
             return allowMultipleDataOutputInstances
-                || variable.DataType == TypeHandle.ExecutionFlow
+                || variable.DataType == TypeHandle.Untyped
                 || variable.Modifiers != ModifierFlags.Write
                 || graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count == 0;
         }
@@ -2082,9 +2083,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (inputPortModel != null && outputPortModel != null)
             {
-                if (inputPortModel.Capacity == PortCapacity.Single && inputPortModel.GetConnectedWires().HasAny())
+                if (inputPortModel.Capacity == PortCapacity.Single && inputPortModel.GetConnectedWires().Count > 0)
                     return null;
-                if (outputPortModel.Capacity == PortCapacity.Single && outputPortModel.GetConnectedWires().HasAny())
+                if (outputPortModel.Capacity == PortCapacity.Single && outputPortModel.GetConnectedWires().Count > 0)
                     return null;
 
                 if (reuseExistingWire)
@@ -3204,7 +3205,7 @@ namespace Unity.GraphToolkit.Editor
         /// Deletes the given group models.
         /// </summary>
         /// <param name="groupModels">The group models to delete.</param>
-        public void DeleteGroups(IReadOnlyCollection<GroupModel> groupModels)
+        public void DeleteGroups(IEnumerable<GroupModel> groupModels)
         {
             using var dirtyScope = AssetDirtyScope();
 
@@ -3225,12 +3226,13 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var groupModel in groupModels.Where(v => v.IsDeletable()))
-#pragma warning restore UA2001
+            foreach (var groupModel in groupModels)
             {
-                (groupModel.ParentGroup as GroupModel)?.RemoveItem(groupModel);
-                RecurseRemoveGroup(groupModel);
+                if (groupModel.IsDeletable())
+                {
+                    (groupModel.ParentGroup as GroupModel)?.RemoveItem(groupModel);
+                    RecurseRemoveGroup(groupModel);
+                }
             }
 
             DeleteVariableDeclarations(deletedVariables);
@@ -3546,7 +3548,8 @@ namespace Unity.GraphToolkit.Editor
             else
             {
                 portalName = nodeModel.Title ?? "";
-                var portName = outputPortModel.Title ?? "";
+
+                var portName = outputPortModel.ComputePortLabel(true) ?? "";
                 if (!string.IsNullOrEmpty(portName))
                     portalName += " - " + portName;
             }
@@ -4254,7 +4257,7 @@ namespace Unity.GraphToolkit.Editor
             var nodeMapping = new Dictionary<AbstractNodeModel, AbstractNodeModel>();
             var variableMapping = new Dictionary<VariableDeclarationModelBase, VariableDeclarationModelBase>();
 
-            if (sourceGraphModel.VariableDeclarations.HasAny())
+            if (sourceGraphModel.VariableDeclarations.Count > 0)
             {
                 var variableDeclarationModels = sourceGraphModel.VariableDeclarations;
                 for (var i = 0; i < variableDeclarationModels.Count; i++)
@@ -4458,9 +4461,7 @@ namespace Unity.GraphToolkit.Editor
                     var block = context.GetBlock(i);
 
                     // Create placeholders for null models for which the data is not serialized anymore.
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (block == null && context.BlockPlaceholders.All(t => t.Guid != context.BlockGuids[i]))
-#pragma warning restore UA2001
+                    if (block == null && context.BlockPlaceholders.TrueForAll(t => t.Guid != context.BlockGuids[i]))
                         CreateBlockNodePlaceholder(PlaceholderModelHelper.missingTypeWontBeRestored, context.BlockGuids[i], context);
                 }
             }

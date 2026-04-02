@@ -98,14 +98,17 @@ public struct AuthoringIdPath : IEquatable<AuthoringIdPath>
         return hash.ToHashCode();
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    internal string PathToCsvString(char seperator)
+    {
+        if (path.Length == 0)
+            return string.Empty;
+        return string.Join(seperator, m_PathIds);
+    }
+
     /// <summary>
     /// Returns a string representation of the AuthoringIdPath.
     /// </summary>
     /// <returns>The string version of the path.</returns>
-    public override string ToString()
-    {
-        if (path.Length == 0)
-            return "AuthoringIdPath []";
-        return "AuthoringIdPath [" + string.Join(",", m_PathIds) + "]";
-    }
+    public override string ToString() => $"AuthoringIdPath [{PathToCsvString(',')}]";
 }

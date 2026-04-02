@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
     /// To create buttons, add <see cref="Button"/> elements directly to the ToggleButtonGroup. This will automatically
     /// style and configure the button to work properly.
     /// </remarks>
-    [UxmlElement(null, typeof(Button))]
+    [UxmlElement(null, typeof(Button), libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/ToggleButtonGroup.png")]
     public partial class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
     {
@@ -66,47 +66,56 @@ namespace UnityEngine.UIElements
         /// USS class name of elements for this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-toggle-button-group";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         // TO-DO : Fix this - it's only being used as a name
         /// <summary>
         /// USS class name of container element of this type.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
+        internal static readonly UniqueStyleString containerUssClassNameUnique = new(containerUssClassName);
 
         /// <summary>
         /// USS class name of container element of this type.
         /// </summary>
         public static readonly string buttonGroupClassName = "unity-button-group";
+        internal static readonly UniqueStyleString buttonGroupClassNameUnique = new(buttonGroupClassName);
 
         /// <summary>
         /// USS class name for any Buttons in the group.
         /// </summary>
         public static readonly string buttonClassName = buttonGroupClassName + "__button";
+        internal static readonly UniqueStyleString buttonClassNameUnique = new(buttonClassName);
 
         /// <summary>
         /// USS class name for the leftmost Button in the group.
         /// </summary>
         public static readonly string buttonLeftClassName = buttonClassName + "--left";
+        internal static readonly UniqueStyleString buttonLeftClassNameUnique = new(buttonLeftClassName);
 
         /// <summary>
         /// USS class name for any Buttons in the middle of the group.
         /// </summary>
         public static readonly string buttonMidClassName = buttonClassName + "--mid";
+        internal static readonly UniqueStyleString buttonMidClassNameUnique = new(buttonMidClassName);
 
         /// <summary>
         /// USS class name for the rightmost Button in the group.
         /// </summary>
         public static readonly string buttonRightClassName = buttonClassName + "--right";
+        internal static readonly UniqueStyleString buttonRightClassNameUnique = new(buttonRightClassName);
 
         /// <summary>
         /// USS class name for the Button if only one is available in the group.
         /// </summary>
         public static readonly string buttonStandaloneClassName = buttonClassName + "--standalone";
+        internal static readonly UniqueStyleString buttonStandaloneClassNameUnique = new(buttonStandaloneClassName);
 
         /// <summary>
         /// USS class name for empty state label.
         /// </summary>
         public static readonly string emptyStateLabelClassName = buttonGroupClassName + "__empty-label";
+        internal static readonly UniqueStyleString emptyStateLabelClassNameUnique = new(emptyStateLabelClassName);
 
         // Main container that will hold the group of buttons. This is what we set as the visualInput element.
         VisualElement m_ButtonGroupContainer;
@@ -229,8 +238,8 @@ namespace UnityEngine.UIElements
         public ToggleButtonGroup(string label, ToggleButtonGroupState toggleButtonGroupState)
             : base(label)
         {
-            AddToClassList(ussClassName);
-            visualInput = new ButtonGroupContainer(this) { name = containerUssClassName, classList = { buttonGroupClassName }, delegatesFocus = true};
+            AddToClassList(ussClassNameUnique);
+            visualInput = new ButtonGroupContainer(this) { name = containerUssClassName, delegatesFocus = true}.WithClassList(buttonGroupClassNameUnique);
             m_ButtonGroupContainer = visualInput;
 
             SetValueWithoutNotify(toggleButtonGroupState);
@@ -285,7 +294,7 @@ namespace UnityEngine.UIElements
             {
                 newValue = new ToggleButtonGroupState(0, 0);
 
-                m_EmptyLabel ??= new Label(k_EmptyStateLabel) { name = emptyStateLabelClassName, classList = { emptyStateLabelClassName } };
+                m_EmptyLabel ??= new Label(k_EmptyStateLabel) { name = emptyStateLabelClassName }.WithClassList(emptyStateLabelClassName);
                 visualInput.Insert(0, m_EmptyLabel);
             }
             else
@@ -329,7 +338,7 @@ namespace UnityEngine.UIElements
             }
 
             // Assign the required class and functionality to the button being added.
-            button.AddToClassList(buttonClassName);
+            button.AddToClassList(buttonClassNameUnique);
             button.clickable.clickedWithEventInfo += OnOptionChange;
             button.clickable.acceptClicksIfDisabled = acceptClicksIfDisabled;
 
@@ -474,10 +483,10 @@ namespace UnityEngine.UIElements
                 var isRightButton = i == buttonCount - 1 && !isStandaloneButton;
                 var isMiddleButton = !isLeftButton && !isRightButton && !isStandaloneButton;
 
-                button.EnableInClassList(buttonStandaloneClassName, isStandaloneButton);
-                button.EnableInClassList(buttonLeftClassName, isLeftButton);
-                button.EnableInClassList(buttonRightClassName, isRightButton);
-                button.EnableInClassList(buttonMidClassName, isMiddleButton);
+                button.EnableInClassList(buttonStandaloneClassNameUnique, isStandaloneButton);
+                button.EnableInClassList(buttonLeftClassNameUnique, isLeftButton);
+                button.EnableInClassList(buttonRightClassNameUnique, isRightButton);
+                button.EnableInClassList(buttonMidClassNameUnique, isMiddleButton);
             }
         }
     }

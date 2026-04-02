@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
 
         TextAutoSizeStyleField m_TextAutoSizeField;
         EnumField m_TextGeneratorField;
-        BuilderStyleRow m_AtgWarningRow;
+        BuilderStyleRow m_StandardGeneratorWarningRow;
         BuilderStyleRow m_AutoSizeWarningRow;
         BuilderStyleRow m_BitmapWarningRow;
         FontDefinitionStyleField m_FontDefinitionField;
@@ -277,6 +277,7 @@ namespace Unity.UI.Builder
 
             // Load styles.
             AddToClassList(s_UssClassName);
+
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorWindow));
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorWindow_Themed));
 
@@ -396,19 +397,18 @@ namespace Unity.UI.Builder
         {
             m_TextGeneratorField   = this.Q<EnumField>("textgenerator-field");
             m_TextAutoSizeField    = this.Q<TextAutoSizeStyleField>("text-auto-size");
-            m_AtgWarningRow        = this.Q<BuilderStyleRow>("atg-warning-row");
+            m_StandardGeneratorWarningRow = this.Q<BuilderStyleRow>("standard-generator-warning-row");
             m_AutoSizeWarningRow   = this.Q<BuilderStyleRow>("autosize-warning-row");
 
-            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateAdvancedTextHelpBox());
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += _ => UpdateAdvancedTextHelpBox();
+            m_TextGeneratorField?.RegisterValueChangedCallback(_ => UpdateTextGeneratorHelpBoxes());
+            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateTextGeneratorHelpBoxes());
         }
 
-        internal void UpdateAdvancedTextHelpBox()
+        internal void UpdateTextGeneratorHelpBoxes()
         {
             bool isAdvanced = m_TextGeneratorField?.value != null && (TextGeneratorType)m_TextGeneratorField.value == TextGeneratorType.Advanced;
 
-            bool showAtg = isAdvanced && !UIToolkitProjectSettings.enableAdvancedText;
-            m_AtgWarningRow.style.display = showAtg ? DisplayStyle.Flex : DisplayStyle.None;
+            m_StandardGeneratorWarningRow.style.display = !isAdvanced ? DisplayStyle.Flex : DisplayStyle.None;
 
             bool bestFit = m_TextAutoSizeField != null && m_TextAutoSizeField.IsBestFit;
             bool showAutoSize = !isAdvanced && bestFit;
@@ -835,8 +835,8 @@ namespace Unity.UI.Builder
                 }
                 else if (id == StylePropertyId.Filter)
                 {
-                    var filterStyleField = field.GetFirstAncestorOfType<FilterStyleField>();
-                    styleFields.RefreshStyleField(filterStyleField);
+                    var filterField = field.GetFirstAncestorOfType<FilterStyleField>();
+                    styleFields.RefreshStyleField(filterField);
                 }
                 else if (id == StylePropertyId.UnityMaterial)
                 {
@@ -1356,7 +1356,8 @@ namespace Unity.UI.Builder
                         Section.Header |
                         Section.ElementAttributes |
                         Section.ElementInheritedStyles |
-                        Section.LocalStyles);
+                        Section.LocalStyles |
+                        Section.Variables);
                     break;
                 case BuilderSelectionType.VisualTreeAsset:
                     EnableSections(Section.VisualTreeAsset);
@@ -1394,7 +1395,7 @@ namespace Unity.UI.Builder
             // Create the fields for the overridable styles.
             m_LocalStylesSection.Refresh();
 
-            m_VariablesSection.Refresh();
+            m_VariablesSection.Refresh(currentRule);
 
             m_CanvasSection.Refresh();
 
@@ -1781,9 +1782,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    field = fields.First();
-#pragma warning restore UA2001
+                    field = fields[0];
                 }
             }
             if (expand)

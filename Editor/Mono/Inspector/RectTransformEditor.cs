@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using System.Linq;
 using UnityEditor.AnimatedValues;
-using System.Globalization;
 using Unity.Collections;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -56,6 +56,7 @@ namespace UnityEditor
 
         private const string kShowAnchorPropsPrefName = "RectTransformEditor.showAnchorProperties";
         private const string kLockRectPrefName = "RectTransformEditor.lockRect";
+        private const float kMaxCameraDistance = 200000f;
 
         private static Vector2 kShadowOffset = new Vector2(1, -1);
         private static Color kShadowColor = new Color(0, 0, 0, 0.5f);
@@ -218,9 +219,7 @@ namespace UnityEditor
             if (!sceneView.drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(target))
                 return;
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SceneView.activeEditors.Contains(this) || SceneView.activeEditors.Contains(target))
-#pragma warning restore UA2001
                 return;
 
             RectTransform gui = target as RectTransform;
@@ -334,9 +333,7 @@ namespace UnityEditor
             Transform t = target as Transform;
             if (t != null)
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (m_ConstrainProportionsScale.Initialize(serializedObject.targetObjects) && !s_ScaleDisabledMask.All(x => x))
-#pragma warning restore UA2001
+                if (m_ConstrainProportionsScale.Initialize(serializedObject.targetObjects) && !Array.TrueForAll(s_ScaleDisabledMask, x => x))
                 {
                     //AxisModified values [-1;2] : [none, x, y, z]
                     int axisModified = -1;
@@ -769,6 +766,10 @@ namespace UnityEditor
             if (!target)
                 return;
             RectTransform gui = target as RectTransform;
+
+            // UUM-132309 - Avoid drawing labels and dotted lines with shadows when the camera is too far
+            if (SceneView.currentDrawingSceneView.cameraDistance > kMaxCameraDistance)
+                return;
 
             Rect rectInOwnSpace = gui.rect;
             Rect rectInUserSpace = rectInOwnSpace;

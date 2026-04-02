@@ -101,6 +101,12 @@ namespace UnityEditor
         /// If not specified, the leaf folder name of <see cref="outputPath"/> is used as the default.
         /// </remarks>
         public string name { get; set; }
+
+        /// <summary>
+        /// Internal: path to the build metadata directory, set by BuildHistory.ReserveBuildMetadataPath
+        /// before calling into native code.
+        /// </summary>
+        internal string metadataPath { get; set; }
     }
 }
 

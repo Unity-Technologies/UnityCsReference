@@ -55,12 +55,8 @@ namespace UnityEditor
             public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.");
             public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials using the current import settings.");
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] ReflectionProbeUsageNames = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            public static GUIContent[] WindQualityNames = SpeedTreeImporter.windQualityNames.Select(s => new GUIContent(s)).ToArray();
-#pragma warning restore UA2001
+            public static GUIContent[] ReflectionProbeUsageNames = Array.ConvertAll(Enum.GetNames(typeof(ReflectionProbeUsage)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
+            public static GUIContent[] WindQualityNames = Array.ConvertAll(SpeedTreeImporter.windQualityNames, s => new GUIContent(s));
             public static GUIContent[] UnitConversionNames =
             {
                   new GUIContent("Leave As Is")
@@ -171,12 +167,8 @@ namespace UnityEditor
             m_ShowCrossFadeWidthOptions.value = m_AnimateCrossFading.hasMultipleDifferentValues || !m_AnimateCrossFading.boolValue;
             m_ShowCrossFadeWidthOptions.valueChanged.AddListener(Repaint);
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_AllAreV8 = importers.All(im => im.isV8);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_AllAreNotV8 = importers.All(im => !im.isV8);
-#pragma warning restore UA2001
+            m_AllAreV8 = Array.TrueForAll(targets, im => ((SpeedTreeImporter)im).isV8);
+            m_AllAreNotV8 = Array.TrueForAll(targets, im => !((SpeedTreeImporter)im).isV8);
 
             ResetFoldoutLists();
         }
@@ -267,21 +259,20 @@ namespace UnityEditor
                 return false;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var prefabs = assetTargets?.Cast<GameObject>()?.ToArray();
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var importerArray = importers.ToArray();
-#pragma warning restore UA2001
+            var prefabs = assetTargets;
+            var importerArray = targets;
 
             // In tests assetTargets can become null
             for (int i = 0; i < Math.Min(importerArray.Length, prefabs?.Length ?? 0); ++i)
             {
-                var im = importerArray[i];
+                var im = (SpeedTreeImporter)importerArray[i];
                 var defaultShader = im.defaultShader;
                 var defaultBillboardShader = im.defaultBillboardShader;
 
-                foreach (var mr in prefabs[i].transform.GetComponentsInChildren<MeshRenderer>())
+                var prefab = (GameObject)prefabs[i];
+                var transform = prefab.transform;
+
+                foreach (var mr in transform.GetComponentsInChildren<MeshRenderer>())
                 {
                     foreach (var mat in mr.sharedMaterials)
                     {
@@ -292,7 +283,7 @@ namespace UnityEditor
 
                 if (defaultBillboardShader != null)
                 {
-                    foreach (var br in prefabs[i].transform.GetComponentsInChildren<BillboardRenderer>())
+                    foreach (var br in transform.GetComponentsInChildren<BillboardRenderer>())
                     {
                         if (br.billboard.material?.shader != defaultBillboardShader)
                             return true;
@@ -378,9 +369,7 @@ namespace UnityEditor
 
         bool ShouldRenderHueVariationDropdown()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SpeedTreeImporter importer = importers.First();
-#pragma warning restore UA2001
+            var importer = (SpeedTreeImporter)targets[0];
 
             if (importer.enableHueByDefault)
             {
@@ -507,14 +496,12 @@ namespace UnityEditor
                     if (GUI.Button(buttonRect, Styles.ResetLOD, EditorStyles.miniButton))
                     {
                         var dropDownMenu = new GenericMenu();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        foreach (var importer in targets.Cast<SpeedTreeImporter>())
-#pragma warning restore UA2001
+                        foreach (SpeedTreeImporter importer in targets)
                         {
                             var menuText = String.Format("{0}: {1}",
                                 Path.GetFileNameWithoutExtension(importer.assetPath),
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                String.Join(" | ", importer.LODHeights.Select(height => string.Format("{0:0}%", height * 100)).ToArray()));
+                                string.Join(" | ", importer.LODHeights.Select(height => string.Format("{0:0}%", height * 100))));
 #pragma warning restore UA2001
                             dropDownMenu.AddItem(new GUIContent(menuText), false, OnResetLODMenuClick, importer);
                         }
@@ -694,12 +681,8 @@ namespace UnityEditor
         }
         private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGUI.LODInfo> lodInfoList)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            GameObject[] prefabs = assetTargets?.Cast<GameObject>().ToArray(); // In tests assetTargets can become null
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SpeedTreeImporter[] importerArray = importers.ToArray();
-#pragma warning restore UA2001
+            var prefabs = assetTargets; // In tests assetTargets can become null
+            var importerArray = targets;
             int numSelectedAssets = Math.Min(importerArray.Length, prefabs?.Length ?? 0);
             bool isDrawingSelectedLODGroup = m_SelectedLODRange == lodGroupIndex;
 
@@ -707,13 +690,15 @@ namespace UnityEditor
             // ensures the numLODs match for all the selected assets (see HasSameLODConfig() calls)
             int numLODs = m_LODSettings.arraySize;
 
-            string LODFoldoutHeaderLabel = (importerArray[0].hasBillboard && lodGroupIndex == m_LODSettings.arraySize - 1)
+            var importer = (SpeedTreeImporter)importerArray[0];
+
+            string LODFoldoutHeaderLabel = (importer.hasBillboard && lodGroupIndex == m_LODSettings.arraySize - 1)
                 ? "Billboard"
                 : $"LOD {lodGroupIndex}";
 
             // primitive and submesh counts are displayed only when a single asset is selected
             string LODFoldoutHeaderGroupAdditionalText = numSelectedAssets == 1
-                ? GetLODSubmeshAndTriCountLabel(numLODs, lodGroupIndex, importerArray[0], prefabs[0].GetComponentInChildren<LODGroup>())
+                ? GetLODSubmeshAndTriCountLabel(numLODs, lodGroupIndex, importer, ((GameObject)prefabs[0]).GetComponentInChildren<LODGroup>())
                 : "";
 
             // ------------------------------------------------------------------------------------------------------------------------------
@@ -745,9 +730,8 @@ namespace UnityEditor
 
         private void DrawLODSettingCustomizationGUI(List<LODGUI.LODInfo> lods, int lodIndex)
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            bool isBillboard = (lodIndex == lods.Count - 1) && importers.First().hasBillboard;
-#pragma warning restore UA2001
+            var importer = (SpeedTreeImporter)targets[0];
+            bool isBillboard = (lodIndex == lods.Count - 1) && importer.hasBillboard;
             int windQuality = m_HighestWindQuality.intValue;
             if (isBillboard)
             {

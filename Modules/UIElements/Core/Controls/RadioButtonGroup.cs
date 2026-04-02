@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others. For more information, refer to [[wiki:UIE-uxml-element-RadioButtonGroup|UXML element RadioButtonGroup]].
     /// </summary>
+    [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/RadioButtonGroup.png")]
     public partial class RadioButtonGroup : BaseField<int>, IGroupBox
     {
@@ -59,14 +60,19 @@ namespace UnityEngine.UIElements
         /// this class affects every RadioButtonGroup located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-radio-button-group";
+        internal new static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of container element of this type.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
+        internal static readonly UniqueStyleString containerUssClassNameUnique = new(containerUssClassName);
+
         /// <summary>
         /// Name of the content container element of this type.
         /// </summary>
         internal static readonly string containerName =  "contentContainer";
+
         /// <summary>
         /// Name of the container element where the RadioButtons created from choices are added.
         /// </summary>
@@ -216,13 +222,13 @@ namespace UnityEngine.UIElements
         public RadioButtonGroup(string label, List<string> radioButtonChoices = null)
             : base(label, null)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
 
             visualInput.Add(m_ChoiceRadioButtonContainer = new VisualElement { name = choicesContainerName });
-            m_ChoiceRadioButtonContainer.AddToClassList(containerUssClassName);
+            m_ChoiceRadioButtonContainer.AddToClassList(containerUssClassNameUnique);
 
             visualInput.Add(m_ContentContainer = new VisualElement { name = containerName });
-            m_ContentContainer.AddToClassList(containerUssClassName);
+            m_ContentContainer.AddToClassList(containerUssClassNameUnique);
 
             m_GetAllRadioButtonsQuery = this.Query<RadioButton>();
 

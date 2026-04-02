@@ -95,6 +95,9 @@ namespace UnityEditor.Experimental.GraphView
         private Attacher m_TextAttacher = null;
         private string m_BadgeType;
 
+        // Controls whether or not the badge will manually set its label's width/height
+        internal bool m_ComputeTextBoundingBox = true;
+
         public IconBadge()
         {
             m_IsAttached = false;
@@ -255,31 +258,35 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (m_TextElement != null)
             {
-                float maxWidth = m_TextElement.resolvedStyle.maxWidth == StyleKeyword.None ? float.NaN : m_TextElement.resolvedStyle.maxWidth.value;
-                Vector2 newSize = m_TextElement.DoMeasure(maxWidth, MeasureMode.AtMost,
-                    0, MeasureMode.Undefined);
+                float textElementHeight = m_TextElement.resolvedStyle.height;
+                if (m_ComputeTextBoundingBox)
+                {
+                    float maxWidth = m_TextElement.resolvedStyle.maxWidth == StyleKeyword.None ? float.NaN : m_TextElement.resolvedStyle.maxWidth.value;
+                    Vector2 newSize = m_TextElement.DoMeasure(maxWidth, MeasureMode.AtMost,
+                        0, MeasureMode.Undefined);
 
-                m_TextElement.style.width = newSize.x +
-                    m_TextElement.resolvedStyle.marginLeft +
-                    m_TextElement.resolvedStyle.marginRight +
-                    m_TextElement.resolvedStyle.borderLeftWidth +
-                    m_TextElement.resolvedStyle.borderRightWidth +
-                    m_TextElement.resolvedStyle.paddingLeft +
-                    m_TextElement.resolvedStyle.paddingRight;
+                    m_TextElement.style.width = newSize.x +
+                        m_TextElement.resolvedStyle.marginLeft +
+                        m_TextElement.resolvedStyle.marginRight +
+                        m_TextElement.resolvedStyle.borderLeftWidth +
+                        m_TextElement.resolvedStyle.borderRightWidth +
+                        m_TextElement.resolvedStyle.paddingLeft +
+                        m_TextElement.resolvedStyle.paddingRight;
 
-                float height = newSize.y +
-                    m_TextElement.resolvedStyle.marginTop +
-                    m_TextElement.resolvedStyle.marginBottom +
-                    m_TextElement.resolvedStyle.borderTopWidth +
-                    m_TextElement.resolvedStyle.borderBottomWidth +
-                    m_TextElement.resolvedStyle.paddingTop +
-                    m_TextElement.resolvedStyle.paddingBottom;
+                    textElementHeight = newSize.y +
+                        m_TextElement.resolvedStyle.marginTop +
+                        m_TextElement.resolvedStyle.marginBottom +
+                        m_TextElement.resolvedStyle.borderTopWidth +
+                        m_TextElement.resolvedStyle.borderBottomWidth +
+                        m_TextElement.resolvedStyle.paddingTop +
+                        m_TextElement.resolvedStyle.paddingBottom;
 
-                m_TextElement.style.height = height;
+                    m_TextElement.style.height = textElementHeight;
+                }
 
                 if (m_TextAttacher != null)
                 {
-                    m_TextAttacher.offset = new Vector2(0, height);
+                    m_TextAttacher.offset = new Vector2(0, textElementHeight);
                 }
 
                 PerformTipLayout();

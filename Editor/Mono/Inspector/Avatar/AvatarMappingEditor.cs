@@ -610,10 +610,9 @@ namespace UnityEditor
 
                             if (!string.IsNullOrEmpty(bone.error))
                             {
-                                GUILayout.BeginHorizontal();
-                                GUILayout.Space(EditorGUI.indent + AvatarSetupTool.BoneWrapper.kIconSize + 4);
-                                GUILayout.Label(bone.error, s_Styles.errorLabel);
-                                GUILayout.EndHorizontal();
+                                GUILayout.Space(4);
+                                EditorGUILayout.HelpBox(bone.error, MessageType.Error);
+                                GUILayout.Space(4);
                             }
                         }
                     }

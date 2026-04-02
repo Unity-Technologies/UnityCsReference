@@ -86,7 +86,7 @@ namespace Unity.UIToolkit.Editor
                 name = id != null && id.EndsWith(uxmlElementAttribute.name, StringComparison.Ordinal) ? uxmlElementAttribute.name : name;
             }
 
-            return name;
+            return UnityEditor.ObjectNames.NicifyVariableName(name);
         }
     }
 }

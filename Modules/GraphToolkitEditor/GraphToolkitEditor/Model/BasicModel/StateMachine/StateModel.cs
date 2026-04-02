@@ -76,7 +76,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
-        public override IReadOnlyCollection<PortModel> GetPorts() => new[] { GetOutPort(), GetInPort() };
+        public override IReadOnlyList<PortModel> GetPorts() => [ GetOutPort(), GetInPort() ];
 
         /// <summary>
         /// Whether this state is the default entry state of the graph.

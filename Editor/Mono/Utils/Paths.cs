@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace UnityEditor.Utils
 {
@@ -120,9 +121,9 @@ namespace UnityEditor.Utils
 
         public static string GetPathRelativeToProjectDirectory(string filePath)
         {
-            return String.Join(separator: "/",
+            return string.Join("/",
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                value: filePath.ConvertSeparatorsToUnity().TrimTrailingSlashes().Split('/').SkipWhile(s => s != "assets" && s != "Assets").ToArray());
+                filePath.ConvertSeparatorsToUnity().TrimTrailingSlashes().Split('/').SkipWhile(s => s != "assets" && s != "Assets"));
 #pragma warning restore UA2001
         }
 
@@ -361,9 +362,7 @@ namespace UnityEditor.Utils
             while (charEnum.MoveNext())
             {
                 var c = charEnum.GetTextElement();
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (c.Length == 1 && invalidFilenameChars.Contains(c[0]))
-#pragma warning restore UA2001
                     continue;
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c, 0);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)
@@ -396,7 +395,7 @@ namespace UnityEditor.Utils
             for (int i = commonParts; i < filePathComponents.Length; i++)
                 relativePathParts.Add(filePathComponents[i]);
 
-            return string.Join("\\", relativePathParts.ToArray());
+            return string.Join("\\", relativePathParts);
         }
     }
 }

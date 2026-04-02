@@ -47,26 +47,26 @@ namespace UnityEditor.Search.Providers
             new SearchProposition(label: "layer:", "layer>0", "Search object by layer (number)"),
             new SearchProposition(label: "size:", null, "Search object by volume size"),
             new SearchProposition(label: "components:", "components>=2", "Search object with more than # components"),
-            new SearchProposition(label: "is:", null, "Search object by state"),
-            new SearchProposition(label: "is:child", null, "Search object with a parent"),
-            new SearchProposition(label: "is:leaf", null, "Search object without children"),
-            new SearchProposition(label: "is:root", null, "Search root objects"),
-            new SearchProposition(label: "is:visible", null, "Search view visible objects"),
-            new SearchProposition(label: "is:hidden", null, "Search hierarchically hidden objects"),
-            new SearchProposition(label: "is:static", null, "Search static objects"),
-            new SearchProposition(label: "is:prefab", null, "Search prefab objects"),
-            new SearchProposition(label: "prefab:root", null, "Search prefab roots"),
-            new SearchProposition(label: "prefab:top", null, "Search top-level prefab root instances"),
-            new SearchProposition(label: "prefab:instance", null, "Search objects that are part of a prefab instance"),
-            new SearchProposition(label: "prefab:nonasset", null, "Search prefab objects that are not part of an asset"),
-            new SearchProposition(label: "prefab:asset", null, "Search prefab objects that are part of an asset"),
-            new SearchProposition(label: "prefab:model", null, "Search prefab objects that are part of a model"),
-            new SearchProposition(label: "prefab:regular", null, "Search regular prefab objects"),
-            new SearchProposition(label: "prefab:variant", null, "Search variant prefab objects"),
-            new SearchProposition(label: "prefab:modified", null, "Search modified prefab assets"),
-            new SearchProposition(label: "prefab:altered", null, "Search modified prefab instances"),
-            new SearchProposition(label: "t:", null, "Search object by type", priority: -1),
-            new SearchProposition(label: "ref:", null, "Search object references"),
+            new SearchProposition(label: "is=", null, "Search object by state"),
+            new SearchProposition(label: "is=child", null, "Search object with a parent"),
+            new SearchProposition(label: "is=leaf", null, "Search object without children"),
+            new SearchProposition(label: "is=root", null, "Search root objects"),
+            new SearchProposition(label: "is=visible", null, "Search view visible objects"),
+            new SearchProposition(label: "is=hidden", null, "Search hierarchically hidden objects"),
+            new SearchProposition(label: "is=static", null, "Search static objects"),
+            new SearchProposition(label: "is=prefab", null, "Search prefab objects"),
+            new SearchProposition(label: "prefab=root", null, "Search prefab roots"),
+            new SearchProposition(label: "prefab=top", null, "Search top-level prefab root instances"),
+            new SearchProposition(label: "prefab=instance", null, "Search objects that are part of a prefab instance"),
+            new SearchProposition(label: "prefab=nonasset", null, "Search prefab objects that are not part of an asset"),
+            new SearchProposition(label: "prefab=asset", null, "Search prefab objects that are part of an asset"),
+            new SearchProposition(label: "prefab=model", null, "Search prefab objects that are part of a model"),
+            new SearchProposition(label: "prefab=regular", null, "Search regular prefab objects"),
+            new SearchProposition(label: "prefab=variant", null, "Search variant prefab objects"),
+            new SearchProposition(label: "prefab=modified", null, "Search modified prefab assets"),
+            new SearchProposition(label: "prefab=altered", null, "Search modified prefab instances"),
+            new SearchProposition(label: "t=", null, "Search object by type", priority: -1),
+            new SearchProposition(label: "ref=", null, "Search object references"),
         };
 
         protected class GOD
@@ -124,7 +124,7 @@ namespace UnityEditor.Search.Providers
             filter.AddTypeParser(EntityIdTypeParser);
 
             m_QueryEngine.AddFilter("path", GetPath);
-            m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
+            m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { "=", ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
             var refFilter = m_QueryEngine.SetFilter<ulong>("ref", GetReferences, new[] { "=", ":" });
@@ -403,7 +403,6 @@ namespace UnityEditor.Search.Providers
                 var gocs = go.GetComponents<Component>();
                 if (gocs.Length > 1)
                 {
-                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                     refs.Add(EntityId.ToULong(obj.GetEntityId()));
                 }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
@@ -466,11 +465,9 @@ namespace UnityEditor.Search.Providers
             if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
 
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
             refs.Add(EntityId.ToULong(p.objectReferenceValue.GetEntityId()));
             if (p.objectReferenceValue is Component c)
             {
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                 refs.Add(EntityId.ToULong(c.gameObject.GetEntityId()));
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
@@ -492,7 +489,6 @@ namespace UnityEditor.Search.Providers
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
                 var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
-                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                 refs.Add(EntityId.ToULong(mainEntityId));
             }
 
@@ -594,7 +590,6 @@ namespace UnityEditor.Search.Providers
         {
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<ulong>.none;
-            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
             return new ParseResult<ulong>(true, EntityId.ToULong(GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid)));
         }
 

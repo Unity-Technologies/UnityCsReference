@@ -97,38 +97,55 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-base-dropdown";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string itemUssClassName = ussClassName + "__item";
+        internal static readonly UniqueStyleString itemUssClassNameUnique = new(itemUssClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string itemContentUssClassName = ussClassName + "__item-content";
+        internal static readonly UniqueStyleString itemContentUssClassNameUnique = new(itemContentUssClassName);
+
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+
         /// <summary>
         /// USS class name of inner containers in elements of this type.
         /// </summary>
         public static readonly string containerInnerUssClassName = ussClassName + "__container-inner";
+        internal static readonly UniqueStyleString containerInnerUssClassNameUnique = new(containerInnerUssClassName);
+
         /// <summary>
         /// USS class name of outer containers in elements of this type.
         /// </summary>
         public static readonly string containerOuterUssClassName = ussClassName + "__container-outer";
+        internal static readonly UniqueStyleString containerOuterUssClassNameUnique = new(containerOuterUssClassName);
+
         /// <summary>
         /// USS class name of separators in elements of this type.
         /// </summary>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        internal static readonly UniqueStyleString checkmarkUssClassNameUnique = new(checkmarkUssClassName);
+
         /// <summary>
         /// USS class name of separators in elements of this type.
         /// </summary>
         public static readonly string separatorUssClassName = ussClassName + "__separator";
+        internal static readonly UniqueStyleString separatorUssClassNameUnique = new(separatorUssClassName);
+
         /// <summary>
         /// USS class name that's added when the GenericDropdownMenu fits the width of its content.
         /// </summary>
         public static readonly string contentWidthUssClassName = ussClassName + "--content-width-menu";
+        internal static readonly UniqueStyleString contentWidthUssClassNameUnique = new(contentWidthUssClassName);
 
         const float k_MenuItemPadding = 20f;
         const float k_MenuPadding = 2f;
@@ -184,14 +201,14 @@ namespace UnityEngine.UIElements
         public GenericDropdownMenu()
         {
             m_MenuContainer = new VisualElement();
-            m_MenuContainer.AddToClassList(ussClassName);
+            m_MenuContainer.AddToClassList(ussClassNameUnique);
 
             m_OuterContainer = new VisualElement();
-            m_OuterContainer.AddToClassList(containerOuterUssClassName);
+            m_OuterContainer.AddToClassList(containerOuterUssClassNameUnique);
             m_MenuContainer.Add(m_OuterContainer);
 
             m_ScrollView = new ScrollView();
-            m_ScrollView.AddToClassList(containerInnerUssClassName);
+            m_ScrollView.AddToClassList(containerInnerUssClassNameUnique);
             m_ScrollView.pickingMode = PickingMode.Position;
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
@@ -510,7 +527,7 @@ namespace UnityEngine.UIElements
         {
             // TODO path is not used. This is because IGenericMenu requires it, but this is not great.
             var separator = new VisualElement();
-            separator.AddToClassList(separatorUssClassName);
+            separator.AddToClassList(separatorUssClassNameUnique);
             separator.pickingMode = PickingMode.Ignore;
             m_ScrollView.Add(separator);
         }
@@ -530,15 +547,15 @@ namespace UnityEngine.UIElements
                     return null;
 
             var rowElement = new VisualElement();
-            rowElement.AddToClassList(itemUssClassName);
+            rowElement.AddToClassList(itemUssClassNameUnique);
             rowElement.SetEnabled(isEnabled);
             rowElement.userData = data;
 
             var itemContent = new VisualElement { pickingMode = PickingMode.Ignore };
-            itemContent.AddToClassList(itemContentUssClassName);
+            itemContent.AddToClassList(itemContentUssClassNameUnique);
 
             var checkElement = new VisualElement();
-            checkElement.AddToClassList(checkmarkUssClassName);
+            checkElement.AddToClassList(checkmarkUssClassNameUnique);
             checkElement.pickingMode = PickingMode.Ignore;
             itemContent.Add(checkElement);
 
@@ -548,7 +565,7 @@ namespace UnityEngine.UIElements
             }
 
             var label = new Label(itemName);
-            label.AddToClassList(labelUssClassName);
+            label.AddToClassList(labelUssClassNameUnique);
             label.pickingMode = PickingMode.Ignore;
             itemContent.Add(label);
 
@@ -734,7 +751,7 @@ namespace UnityEngine.UIElements
         void SetFitContentWidth(bool fit)
         {
             m_FitContentWidth = fit;
-            m_OuterContainer.EnableInClassList(contentWidthUssClassName, m_FitContentWidth);
+            m_OuterContainer.EnableInClassList(contentWidthUssClassNameUnique, m_FitContentWidth);
         }
 
         private void OnTargetElementDetachFromPanel(DetachFromPanelEvent evt)

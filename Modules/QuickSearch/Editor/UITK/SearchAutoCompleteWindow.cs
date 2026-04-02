@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Search
 {
@@ -207,6 +206,11 @@ namespace UnityEditor.Search
             m_ToolbarSearchField = m_SearchToolbar.searchField.searchField;
             m_ToolbarSearchField.RegisterValueChangedCallback(HandleTextFieldChanged);
             m_TextField = m_ToolbarSearchField?.Q<TextField>();
+
+            // Ensure the TextElement uses Standard text generator to avoid cursor index issues
+            var textElement = m_TextField?.Q<TextElement>();
+            if (textElement != null)
+                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
         }
 
         void ClearSearchField()
@@ -234,6 +238,12 @@ namespace UnityEditor.Search
         void Show()
         {
             m_AboutToFocusWindow = false;
+
+            // Ensure the TextElement uses Standard text generator before accessing cursorIndex
+            var textElement = m_TextField?.Q<TextElement>();
+            if (textElement != null)
+                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
+
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
             propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
             propositions.Sort();
@@ -268,17 +278,16 @@ namespace UnityEditor.Search
 
         bool InitializeCustomStyleValues()
         {
-            if (!TryReadStyleDimension(m_AttachedRoot?.computedStyle.customProperties, k_MetricsLineHeightName, out m_ItemHeight, EditorGUIUtility.singleLineHeight))
+            if (!TryReadStyleDimension(m_AttachedRoot, k_MetricsLineHeightName, out m_ItemHeight, EditorGUIUtility.singleLineHeight))
                 return false;
 
             return true;
         }
 
-        static bool TryReadStyleDimension(Dictionary<string, StylePropertyValue> customProperties, string propertyName, out float value, float defaultValue = 0.0f)
+        static bool TryReadStyleDimension(VisualElement element, string propertyName, out float value, float defaultValue = 0.0f)
         {
             value = defaultValue;
-            if (customProperties != null &&
-                customProperties.TryGetValue(propertyName, out var customProp))
+            if (element != null && element.computedStyle.customProperties.TryGetValue((UniqueStyleString)propertyName, out var customProp))
             {
                 if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
                 {
@@ -353,7 +362,11 @@ namespace UnityEditor.Search
             InitializeSearchField();
 
             var textElement = m_TextField.Q<TextElement>();
-            textElement.generateVisualContent += HandleTextElementGenerateVisualContent;
+            if (textElement != null)
+            {
+                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
+                textElement.generateVisualContent += HandleTextElementGenerateVisualContent;
+            }
         }
 
         void HandleTextElementGenerateVisualContent(MeshGenerationContext obj)
@@ -421,9 +434,7 @@ namespace UnityEditor.Search
                     m_TextField.value = proposition.replacement;
                     m_SearchToolbar.searchField.MoveCursor(TextCursorPlacement.MoveLineEnd, -1);
                 }
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                else if (!options.tokens.All(t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
-#pragma warning restore UA2001
+                else if (!Array.TrueForAll(options.tokens, t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
                 {
                     var insertion = ReplaceText(m_TextField.text, proposition.replacement, options.cursor, out var insertTokenPos);
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
@@ -449,6 +460,11 @@ namespace UnityEditor.Search
 
         void HandleTextFieldChanged(ChangeEvent<string> evt)
         {
+            // Ensure the TextElement uses Standard text generator before accessing cursorIndex
+            var textElement = m_TextField?.Q<TextElement>();
+            if (textElement != null)
+                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
+
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
             propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
             propositions.Sort();

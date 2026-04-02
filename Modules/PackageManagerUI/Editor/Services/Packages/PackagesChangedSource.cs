@@ -7,6 +7,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal enum PackagesChangedSource
     {
         AddAndRemove,
+        UpmList,
         Other
     }
 }

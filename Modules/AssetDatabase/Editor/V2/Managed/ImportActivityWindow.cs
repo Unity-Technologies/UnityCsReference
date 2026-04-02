@@ -145,7 +145,6 @@ namespace UnityEditor
             public (IMGUIContainer container, ArtifactBrowserTreeView<ProjectAnalysisTreeViewItem> treeView) importProcessAnalysis;
         }
 
-        [Serializable]
         internal struct ToolBarContainer
         {
             public (IMGUIContainer container, ArtifactBrowserToolbar toolbar) options;
@@ -1848,7 +1847,7 @@ namespace UnityEditor
                 {
                     headerContent = EditorGUIUtility.TrTextContent(col.Name),
                     headerTextAlignment = TextAlignment.Left,
-                    sortingArrowAlignment = TextAlignment.Right,
+                    sortingArrowAlignment = TextAlignment.Center,
                     autoResize = false,
                     width = col.Width,
                 };
@@ -2800,9 +2799,7 @@ namespace UnityEditor
                 m_PrevSelectedIndices = selectedIds;
 
                 // First element is counted from 1 onwards, not 0, thus subtracting 1 to have a 0 based index
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_SelectedItem = selectedIds.Count > 0 ? selectedIds.First() - 1 : -1;
-#pragma warning restore UA2001
+                m_SelectedItem = selectedIds.Count > 0 ? selectedIds[0] - 1 : -1;
                 SelectionChangedCallback?.Invoke(m_SelectedItem);
             }
 
@@ -2885,17 +2882,13 @@ namespace UnityEditor
                 if (m_ItemList == null || m_ItemList.Count == 0)
                     return;
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedItems = state.selectedIDs.Select(id => m_ItemList[Math.Max(0, id - 1)]).ToList();
-#pragma warning restore UA2001
+                var selectedItems = state.selectedIDs.ConvertAll(id => m_ItemList[Math.Max(0, id - 1)]);
 
                 var rows = GetRows();
                 Sort(rows);
 
                 //Restore the selection
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var prevSelectedItems = selectedItems.Select(e => m_ItemList.IndexOf(e) + 1).ToList();
-#pragma warning restore UA2001
+                var prevSelectedItems = selectedItems.ConvertAll(e => m_ItemList.IndexOf(e) + 1);
                 SetSelection(prevSelectedItems);
             }
 
@@ -2954,7 +2947,7 @@ namespace UnityEditor
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var guids = importedAssets
 #pragma warning restore UA2001
-                .Where(path => allAssetsDictionary.ContainsKey(path)) // Select existing assets which were reimported
+                .Where(allAssetsDictionary.ContainsKey) // Select existing assets which were reimported
                 .Select(AssetDatabase.GUIDFromAssetPath)
                 .ToArray();
 

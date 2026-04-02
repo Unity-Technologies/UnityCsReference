@@ -4,14 +4,22 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 
 namespace Unity.Profiling.Editor.UI
 {
     class FrameSummaryViewController : SummaryViewController
     {
+        static class Content
+        {
+            public static readonly string k_NoDataText = L10n.Tr("Select a frame from the charts above to see its details here.");
+            public static readonly string k_MainThreadUtilizationTitle = L10n.Tr("Main thread utilization");
+            public static readonly string k_SystemsImpactTitle = L10n.Tr("Systems impact in frame");
+        }
+
         // Model.
-        CancellationTokenSource m_BuildModelCancellation;
+        FrameBottlenecksModel m_FrameBottlenecksModel;
 
         // Children.
         PieChartViewController m_MainThreadUtilizationViewController;
@@ -28,11 +36,21 @@ namespace Unity.Profiling.Editor.UI
 
         }
 
-        public void ReloadData(int frameIndex)
+        public void ReloadData(int frameIndex, Action<IDetailsProvider> onDetailsProviderReady = null)
         {
             UnityEngine.Debug.Assert(IsViewLoaded);
+
+            // If we have no data, show the no data view.
+            if (m_DataService.FrameCount == 0 || frameIndex < m_DataService.FirstFrameIndex)
+            {
+                HideContentViewsAndShowNoDataView();
+                m_SelectedRange = new Range(0, 0);
+                onDetailsProviderReady?.Invoke(null);
+                return;
+            }
+
             m_SelectedRange = new Range(frameIndex, frameIndex);
-            ReloadDataAsync(frameIndex);
+            ReloadDataAsync(m_SelectedRange, onDetailsProviderReady);
         }
 
         public void CancelReloadDataIfNecessary()
@@ -44,14 +62,14 @@ namespace Unity.Profiling.Editor.UI
         {
             base.ViewLoaded();
 
-            m_NoDataLabel.text = "Select a frame from the charts above to see its details here.";
+            m_NoDataLabel.text = Content.k_NoDataText;
 
             // Embed child view controllers.
-            m_MainThreadUtilizationViewController = new PieChartViewController("Main thread utilization");
+            m_MainThreadUtilizationViewController = new PieChartViewController(Content.k_MainThreadUtilizationTitle);
             m_BottlenecksContainer.Add(m_MainThreadUtilizationViewController.View);
             AddChild(m_MainThreadUtilizationViewController);
 
-            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, "Systems impact in frame");
+            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, Content.k_SystemsImpactTitle);
             m_SystemsImpactContainer.Add(m_SystemsImpactViewController.View);
             AddChild(m_SystemsImpactViewController);
 
@@ -68,102 +86,39 @@ namespace Unity.Profiling.Editor.UI
             AddChild(m_FrameAllocationsSectionViewController);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override async Task BuildModelAsync(Range range, CancellationToken cancellationToken)
         {
-            if (disposing)
-            {
-                m_BuildModelCancellation?.Cancel();
-            }
-
-            base.Dispose(disposing);
+            var frameIndex = range.Start.Value;
+            var modelBuilder = new FrameSummaryModelBuilder(
+                m_DataService,
+                frameIndex);
+            await modelBuilder.BuildAsync(
+                cancellationToken,
+                OnMainThreadUtilizationCompleted: m_MainThreadUtilizationViewController.RefreshView,
+                OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
+                OnFrameBottlenecksBuildCompleted: (model) => {
+                    m_FrameBottlenecksModel = model;
+                    m_SingleFrameTimesSectionViewController.RefreshFrameBottlenecksView(model);
+                },
+                OnTopFrameMarkersBuildCompleted: m_SingleFrameTimesSectionViewController.RefreshTopFrameMarkersView,
+                OnFrameGCAllocationsBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCAllocationsView,
+                OnTopGCMarkersBuildCompleted: m_FrameAllocationsSectionViewController.RefreshTopGCMarkersView,
+                OnFrameGCCollectBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCCollectView
+            );
         }
 
-        async void ReloadDataAsync(int frameIndex)
+        protected override IDetailsProvider CreateDetailsProvider(Range range)
         {
-            // If there is already a builder in flight, cancel it.
-            m_BuildModelCancellation?.Cancel();
-
-            // Show the content views.
-            ShowContentViewsAndHideNoDataView();
-            ShowContentActivityIndicators();
-
-            // Build the data model asynchronously. Refresh UI as models are built.
-            var success = true;
-            using (var buildModelCancellation = new CancellationTokenSource())
-            {
-                // Store a reference to the source so we can cancel it.
-                m_BuildModelCancellation = buildModelCancellation;
-
-                try
-                {
-                    var modelBuilder = new FrameSummaryModelBuilder(
-                        m_DataService,
-                        frameIndex);
-                    await modelBuilder.BuildAsync(
-                        buildModelCancellation.Token,
-                        OnMainThreadUtilizationCompleted: m_MainThreadUtilizationViewController.RefreshView,
-                        OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
-                        OnFrameBottlenecksBuildCompleted: m_SingleFrameTimesSectionViewController.RefreshFrameBottlenecksView,
-                        OnTopFrameMarkersBuildCompleted: m_SingleFrameTimesSectionViewController.RefreshTopFrameMarkersView,
-                        OnFrameGCAllocationsBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCAllocationsView,
-                        OnTopGCMarkersBuildCompleted: m_FrameAllocationsSectionViewController.RefreshTopGCMarkersView,
-                        OnFrameGCCollectBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCCollectView
-                    );
-                }
-                catch (OperationCanceledException e) when (e.CancellationToken == buildModelCancellation.Token)
-                {
-                    // The operation was cancelled.
-                    success = false;
-                }
-                catch (ProfilerFrameIndexOutOfBounds)
-                {
-                    // The frame index is invalid, cancel the operation.
-                    buildModelCancellation.Cancel();
-                    success = false;
-                }
-                catch (Exception e)
-                {
-                    success = false;
-                    UnityEngine.Debug.LogException(e);
-                }
-
-                // It's possible for an async reload operation to reach here after another has
-                // been started, i.e. it is not the current builder.
-                var isCurrentBuilder = m_BuildModelCancellation == buildModelCancellation;
-                if (isCurrentBuilder)
-                {
-                    // Nullify the source reference if it is the current one.
-                    m_BuildModelCancellation = null;
-
-                    if (success == false)
-                    {
-                        HideContentActivityIndicators();
-                        HideContentViewsAndShowNoDataView();
-                    }
-                }
-            }
+            return new FrameSummaryDetailsProvider(
+                m_ProfilerWindow,
+                m_DataService,
+                m_SettingsService,
+                range,
+                m_FrameBottlenecksModel.CpuDurationNs,
+                m_FrameBottlenecksModel.GpuDurationNs);
         }
 
-        void ShowContentViewsAndHideNoDataView()
-        {
-            SetContentViewsVisible(true);
-        }
-
-        void HideContentViewsAndShowNoDataView()
-        {
-            SetContentViewsVisible(false);
-        }
-
-        void SetContentViewsVisible(bool visible)
-        {
-            UIUtility.SetElementDisplay(m_TopSection, visible);
-            UIUtility.SetElementDisplay(m_FrameTimesContainer, visible);
-            UIUtility.SetElementDisplay(m_AllocationsContainer, visible);
-
-            UIUtility.SetElementDisplay(m_NoDataLabel, !visible);
-        }
-
-        void ShowContentActivityIndicators()
+        protected override void ShowContentActivityIndicators()
         {
             // The purpose of the delay is to avoid visual flickering when very fast
             // asynchronous operations are queued in quick succession, such as when
@@ -176,12 +131,42 @@ namespace Unity.Profiling.Editor.UI
             m_FrameAllocationsSectionViewController.ShowActivityIndicatorAfterDelay(k_DelayMs);
         }
 
-        void HideContentActivityIndicators()
+        protected override void HideContentActivityIndicators()
         {
             m_MainThreadUtilizationViewController.SetActivityIndicatorVisible(false);
             m_SystemsImpactViewController.SetActivityIndicatorVisible(false);
             m_SingleFrameTimesSectionViewController.SetActivityIndicatorVisible(false);
             m_FrameAllocationsSectionViewController.SetActivityIndicatorVisible(false);
+        }
+    }
+
+    class FrameSummaryDetailsProvider : SummaryDetailsProvider
+    {
+        readonly ulong m_CpuTimeNs;
+        readonly ulong m_GpuTimeNs;
+
+        public FrameSummaryDetailsProvider(
+            ProfilerWindow profilerWindow,
+            IProfilerCaptureDataService dataService,
+            IProfilerPersistentSettingsService settingsService,
+            Range frameRange,
+            ulong cpuTimeNs,
+            ulong gpuTimeNs)
+            : base(profilerWindow, dataService, settingsService, frameRange)
+        {
+            m_CpuTimeNs = cpuTimeNs;
+            m_GpuTimeNs = gpuTimeNs;
+        }
+
+        public override ViewController GetDetailsViewController(IProfilerCaptureDataService dataService)
+        {
+            return new SummaryDetailsPanelViewController(
+                m_ProfilerWindow,
+                m_DataService,
+                m_SettingsService,
+                m_FrameRange,
+                m_CpuTimeNs,
+                m_GpuTimeNs);
         }
     }
 }

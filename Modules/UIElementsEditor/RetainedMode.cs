@@ -25,6 +25,7 @@ namespace UnityEditor
 
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+            Panel.getAssetPathFunc = AssetDatabase.GetAssetPath;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             BindingExtensions.bindingImpl = new DefaultSerializedObjectBindingImplementation();
             EditorWindowBackendManager.defaultWindowBackend = (model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() :  new DefaultWindowBackend();
@@ -62,6 +63,7 @@ namespace UnityEditor
         {
             private const string k_UxmlExtension = ".uxml";
             private const string k_UssExtension = ".uss";
+            private const string k_TssExtension = ".tss";
             private const string k_UssExtensionGenerated = ".uss.asset"; // for editor_resources project
 
             static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
@@ -75,10 +77,10 @@ namespace UnityEditor
                 var uxmlDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UxmlExtension)));
 #pragma warning restore UA2001
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var ussImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UssExtension) || MatchesFileExtension(x, k_UssExtensionGenerated)));
+                var ussImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UssExtension) || MatchesFileExtension(x, k_UssExtensionGenerated) || MatchesFileExtension(x, k_TssExtension)));
 #pragma warning restore UA2001
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var ussDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UssExtension)));
+                var ussDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UssExtension) || MatchesFileExtension(x, k_TssExtension)));
 #pragma warning restore UA2001
 
                 if (uxmlImportedAssets.Count == 0 && uxmlDeletedAssets.Count == 0 &&

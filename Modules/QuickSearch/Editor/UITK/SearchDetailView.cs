@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -283,8 +284,6 @@ namespace UnityEditor.Search
             var fixedActions = new string[] { "select", "open" };
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var actions = firstItem.provider.actions.Where(a => a.enabled(selection));
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var remainingActions = actions.Where(a => !fixedActions.Contains(a.id)).ToArray();
 #pragma warning restore UA2001
 
@@ -413,9 +412,7 @@ namespace UnityEditor.Search
                 m_InteractivePreviewElement.style.height = 256;
                 m_InteractivePreviewElement.onGUIHandler = () =>
                 {
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (editorWithPreview.targets.All(t => t))
-#pragma warning restore UA2001
+                    if (Array.TrueForAll(editorWithPreview.targets, t => t))
                         editorWithPreview.DrawPreview(m_InteractivePreviewElement.contentRect);
                 };
                 ShowElements(m_InteractivePreviewElement);

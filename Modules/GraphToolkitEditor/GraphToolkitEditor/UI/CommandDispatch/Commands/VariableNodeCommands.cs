@@ -244,7 +244,7 @@ namespace Unity.GraphToolkit.Editor
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (createdElements.HasAny())
+            if (createdElements.Count > 0)
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
@@ -296,7 +296,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeVariableDeclarationCommand command)
         {
-            if (!command.Models.HasAny())
+            if (command.Models.Count == 0)
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

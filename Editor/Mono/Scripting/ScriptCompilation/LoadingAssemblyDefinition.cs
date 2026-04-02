@@ -217,9 +217,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
             var prefixToFilePathLookup = m_SkipCustomScriptAssemblyGraphValidation ?
                 null :
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001, UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 CustomScriptAssemblies.GroupBy(x => x.PathPrefix).ToDictionary(x => x.First().PathPrefix, x => new List<string>() { x.First().FilePath }, StringComparer.OrdinalIgnoreCase);
-#pragma warning restore UA2001
+#pragma warning restore UA2001, UA2010
 
             for (var i = 0; i < paths.Length; ++i)
             {

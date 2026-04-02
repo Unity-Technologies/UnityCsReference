@@ -9,6 +9,7 @@ using UnityEditor.Search.Providers;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -31,9 +32,22 @@ namespace UnityEditor.Search
         private VisualElement m_QueriesContainer;
         private SearchEmptyViewMode m_DisplayMode;
 
-        float IResultView.itemSize => m_ViewModel.itemIconSize;
-        Rect IResultView.rect => worldBound;
-        bool IResultView.showNoResultMessage => true;
+        bool IResultView.ShowNoResultMessage => true;
+        bool IResultView.UpdateNeeded => false;
+
+        // This event is not used in the SearchEmptyView
+        public event IResultView.SelectionChangedEventHandler SelectionChanged
+        {
+            add { }
+            remove { }
+        }
+
+        // This event is not used in the SearchEmptyView
+        public event IResultView.PopulateItemsContextMenuHandler PopulateItemsContextMenu
+        {
+            add { }
+            remove { }
+        }
 
         enum SearchEmptyViewMode
         {
@@ -47,6 +61,7 @@ namespace UnityEditor.Search
         }
 
         public SearchViewFlags searchViewFlags { get; set; }
+        public string ViewId => "empty";
 
         int IResultView.ComputeVisibleItemCapacity(float width, float height)
         {
@@ -98,6 +113,26 @@ namespace UnityEditor.Search
         public void UpdateView()
         {
             BuildView();
+        }
+
+        public bool UpdateViewIncremental()
+        {
+            return false;
+        }
+
+        public bool UpdateViewIncrementalTimed(TimeSpan timeLimit)
+        {
+            return false;
+        }
+
+        public void SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
+        {
+            // Nothing to do
+        }
+
+        public void SetSelectionWithoutNotify(SearchSelection selection)
+        {
+            // Nothing to do
         }
 
         private SearchEmptyViewMode GetDisplayMode()
@@ -228,9 +263,7 @@ namespace UnityEditor.Search
             #pragma warning disable UA2005 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searches.UpdateTitle(filteredQueries.Count());
 #pragma warning restore UA2005
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            container.Children().LastOrDefault()?.AddToClassList("last-child");
-#pragma warning restore UA2001
+            container.children.LastOrDefault()?.AddToClassList("last-child");
             return container;
         }
 
@@ -429,7 +462,7 @@ namespace UnityEditor.Search
         {
             var q = new SearchQuery() { searchText = queryStr };
             q.isTextOnlyQuery = true;
-            q.viewState.itemSize = SearchSettings.itemIconSize;
+            q.viewState.itemIconSize = SearchSettings.itemIconSize;
             return q;
         }
 

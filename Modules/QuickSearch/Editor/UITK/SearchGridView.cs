@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEditor.Search.GridView.KeyboardGridNavigationManipulator;
 
 namespace UnityEditor.Search
 {
@@ -52,10 +51,39 @@ namespace UnityEditor.Search
         private Delayer m_Throttler;
         private readonly GridView m_GridView;
         private const float m_LabelHeight = 23f;
+        private readonly SearchResultViewGlobalEventHandler m_GlobalKeyboardHandler;
 
-        Rect IResultView.rect => worldBound;
-        float IResultView.itemSize => m_ViewModel.itemIconSize;
-        bool IResultView.showNoResultMessage => true;
+        internal static string resultViewId = "grid";
+        public string ViewId => resultViewId;
+        bool IResultView.ShowNoResultMessage => true;
+        bool IResultView.UpdateNeeded => false;
+
+        public event IResultView.SelectionChangedEventHandler SelectionChanged;
+
+        // This event is not used in the SearchGridView
+        public event IResultView.PopulateItemsContextMenuHandler PopulateItemsContextMenu
+        {
+            add { }
+            remove { }
+        }
+
+        public static SearchGridView Create(ISearchView viewModel)
+        {
+            return new SearchGridView(viewModel);
+        }
+
+        public static Texture2D FetchIcon()
+        {
+            return EditorGUIUtility.LoadIconRequired("GridView");
+        }
+
+        public static SearchResultViewDescriptor GetDescriptor()
+        {
+            return new SearchResultViewDescriptor(resultViewId, Create, FetchIcon,
+                (float)DisplayMode.List + 1, (float)DisplayMode.Limit, (float)DisplayMode.Grid,
+                description: "Grid View",
+                buttonClassName: "search-statusbar__grid-mode-button");
+        }
 
         public SearchGridView(ISearchView viewModel)
             : base("SearchGridView", viewModel)
@@ -68,8 +96,35 @@ namespace UnityEditor.Search
             };
 
             Add(m_GridView);
+
+            var targetHandler = m_GridView.Q<ScrollView>().contentContainer;
+            m_GlobalKeyboardHandler = new SearchResultViewGlobalEventHandler(
+                this,
+                targetHandler,
+                null,
+                GetCurrentIndex,
+                GetItemCount,
+                SetSelectedIndex,
+                SelectionContains,
+                AddToSelection,
+                RemoveFromSelection,
+                Frame,
+                GetVisibleItemCount,
+                GenerateLocalKeyDownEvent);
         }
 
+        KeyDownEvent GenerateLocalKeyDownEvent(KeyDownEvent globalEvent)
+        {
+            switch (globalEvent.keyCode)
+            {
+                case KeyCode.UpArrow:
+                    return KeyDownEvent.GetPooled(globalEvent.character, KeyCode.LeftArrow, globalEvent.modifiers);
+                case KeyCode.DownArrow:
+                    return KeyDownEvent.GetPooled(globalEvent.character, KeyCode.RightArrow, globalEvent.modifiers);
+                default:
+                    return KeyDownEvent.GetPooled(globalEvent.character, globalEvent.keyCode, globalEvent.modifiers);
+            }
+        }
 
         int IResultView.ComputeVisibleItemCapacity(float width, float height)
         {
@@ -120,12 +175,11 @@ namespace UnityEditor.Search
                 UpdateView();
             }, TimeSpan.FromSeconds(SearchView.resultViewUpdateThrottleDelay), true);
 
-            m_GridView.itemsBuilt += UpdateSelection;
+            m_GridView.itemsBuilt += OnItemsBuilt;
             m_GridView.itemsChosen += OnItemsChosen;
             m_GridView.selectedIndicesChanged += HandleItemsSelected;
-            On(SearchEvent.SelectionHasChanged, OnSelectionChanged);
 
-            RegisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation, 20);
+            m_GlobalKeyboardHandler.RegisterGlobalEventHandlers();
             RegisterCallback<PointerDownEvent>(OnPointerDown);
         }
 
@@ -134,14 +188,18 @@ namespace UnityEditor.Search
             m_Throttler?.Dispose();
 
             UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            UnregisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation);
+            m_GlobalKeyboardHandler.UnregisterGlobalEventHandler();
 
-            Off(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             m_GridView.selectedIndicesChanged -= HandleItemsSelected;
             m_GridView.itemsChosen -= OnItemsChosen;
-            m_GridView.itemsBuilt -= UpdateSelection;
+            m_GridView.itemsBuilt -= OnItemsBuilt;
 
             base.OnDetachFromPanel(evt);
+        }
+
+        private void OnItemsBuilt()
+        {
+            SetSelectionWithoutNotify(m_ViewModel?.selection);
         }
 
         private void OnItemsChosen(IEnumerable<object> chosenItems)
@@ -152,155 +210,12 @@ namespace UnityEditor.Search
             m_ViewModel.ExecuteAction(null, convertedItems, true);
         }
 
-        private void OnSelectionChanged(ISearchEvent evt)
-        {
-            if (evt.sourceElement != this)
-                UpdateSelection();
-        }
-
         private void HandleItemsSelected(IEnumerable<int> selection)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ViewModel.SetSelection(selection.ToArray());
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var selArray = selection.ToArray();
+            SelectionChanged?.Invoke(selArray);
 #pragma warning restore UA2001
-            Dispatcher.Emit(SearchEvent.SelectionHasChanged, new SearchEventPayload(this, selection));
-        }
-
-        private bool IsValidKey(IKeyboardEvent evt)
-        {
-            switch (evt.keyCode)
-            {
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                case KeyCode.DownArrow:
-                case KeyCode.UpArrow:
-                case KeyCode.RightArrow:
-                case KeyCode.LeftArrow:
-                    return true;
-
-                case KeyCode.PageUp:
-                case KeyCode.PageDown:
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void OnNavigationMove(NavigationMoveEvent evt)
-        {
-            var itemCount = m_GridView.itemsSource.Count;
-            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices[^1];
-            var nextSelectedIndex = -1;
-            if (evt.direction == NavigationMoveEvent.Direction.Right)
-                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-            else if (evt.direction == NavigationMoveEvent.Direction.Left)
-                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-
-            VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
-
-            m_GridView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            evt.StopImmediatePropagation();
-        }
-
-        private bool VerifySelectionChanged(int currentIndex, int nextSelectedIndex, EventBase evt)
-        {
-            var selectionHasChanged = currentIndex != nextSelectedIndex;
-            if (selectionHasChanged && nextSelectedIndex != -1)
-            {
-                var shiftKey = evt is KeyDownEvent kde && kde.shiftKey || evt is INavigationEvent ne && ne.shiftKey;
-                if (!shiftKey)
-                    m_GridView.selectedIndex = nextSelectedIndex;
-                else
-                {
-                    if (!m_GridView.IndexIsSelected(nextSelectedIndex))
-                    {
-                        var newSelection = new List<int>();
-                        if (nextSelectedIndex > currentIndex)
-                        {
-                            for (int i = currentIndex++; i <= nextSelectedIndex; ++i)
-                                newSelection.Add(i);
-                        }
-                        else
-                        {
-                            for (int i = currentIndex--; i >= nextSelectedIndex; --i)
-                                newSelection.Add(i);
-                        }
-                        m_GridView.AddToSelection(newSelection);
-                    }
-                    else
-                    {
-                        if (nextSelectedIndex > currentIndex)
-                        {
-                            for (int i = currentIndex; i < nextSelectedIndex; ++i)
-                                m_GridView.RemoveFromSelection(i);
-                        }
-                        else
-                        {
-                            for (int i = currentIndex; i > nextSelectedIndex; --i)
-                                m_GridView.RemoveFromSelection(i);
-                        }
-
-                        m_GridView.RemoveFromSelection(currentIndex);
-                    }
-                }
-
-                m_GridView.ScrollToItem(nextSelectedIndex);
-            }
-
-            return selectionHasChanged;
-        }
-
-        private bool OnKeyNavigation(KeyDownEvent evt)
-        {
-            if (evt.target is not VisualElement ve || !IsValidKey(evt))
-                return false;
-
-            // In focus.
-            var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices[^1];
-            var itemCount = m_GridView.itemsSource.Count;
-            if (m_GridView == ve || m_GridView.Contains(ve))
-            {
-                if ((currentIndex == itemCount - 1 && evt.keyCode == KeyCode.RightArrow) || (currentIndex == 0 && evt.keyCode == KeyCode.LeftArrow))
-                    m_GridView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-
-                return false;
-            }
-
-            // Key handling when GridView is not in focus.
-            if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_GridView.selectedIndex != -1)
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var items = m_GridView.selectedItems.Cast<SearchItem>().ToArray();
-#pragma warning restore UA2001
-                var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
-                m_ViewModel.ExecuteAction(action, items, true);
-                return true;
-            }
-
-            var nextSelectedIndex = -1;
-            var selectionHasChanged = false;
-            if (evt.keyCode == KeyCode.DownArrow)
-            {
-                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-                selectionHasChanged = VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
-            }
-            else if (evt.keyCode == KeyCode.UpArrow)
-            {
-                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
-                selectionHasChanged = VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
-            }
-            if (evt.keyCode == KeyCode.PageDown)
-            {
-                m_GridView.Apply(KeyboardGridNavigationOperation.PageDown, evt);
-                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count == 0 ? -1 : m_GridView.selectedIndices[^1]);
-            }
-            else if (evt.keyCode == KeyCode.PageUp)
-            {
-                m_GridView.Apply(KeyboardGridNavigationOperation.PageUp, evt);
-                selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count == 0 ? -1 : m_GridView.selectedIndices[^1]);
-            }
-
-            return selectionHasChanged;
         }
 
         private void OnPointerDown(PointerDownEvent evt)
@@ -329,21 +244,6 @@ namespace UnityEditor.Search
             }
         }
 
-        private void UpdateSelection()
-        {
-            if (m_ViewModel == null || m_ViewModel.selection == null)
-                return;
-
-            var selectedIndexes = m_ViewModel.selection.indexes;
-            var span = NoAllocHelpers.CreateReadOnlySpan(selectedIndexes);
-            if (m_GridView.MatchesExistingSelection(span))
-                return;
-            var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
-            m_GridView.SetSelectionWithoutNotify(span);
-            if (firstSelection != -1)
-                m_GridView.ScrollToItem(firstSelection);
-        }
-
         void IResultView.OnGroupChanged(string prevGroupId, string newGroupId)
         {
             Refresh();
@@ -366,6 +266,36 @@ namespace UnityEditor.Search
         void IResultView.UpdateView()
         {
             UpdateView();
+        }
+
+        bool IResultView.UpdateViewIncremental()
+        {
+            return false;
+        }
+
+        bool IResultView.UpdateViewIncrementalTimed(TimeSpan timeLimit)
+        {
+            return false;
+        }
+
+        void IResultView.SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
+        {
+            UpdateView();
+        }
+
+        public void SetSelectionWithoutNotify(SearchSelection selection)
+        {
+            if (selection == null)
+                return;
+
+            var selectedIndexes = selection.indexes;
+            var span = NoAllocHelpers.CreateReadOnlySpan(selectedIndexes);
+            if (m_GridView.MatchesExistingSelection(span))
+                return;
+            var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
+            m_GridView.SetSelectionWithoutNotify(span);
+            if (firstSelection != -1)
+                m_GridView.ScrollToItem(firstSelection);
         }
 
         void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
@@ -402,5 +332,47 @@ namespace UnityEditor.Search
             // which means there is no delay.
             m_Throttler?.Execute();
         }
+
+        #region Global Event Handler
+        bool SelectionContains(int index)
+        {
+            return m_GridView.IndexIsSelected(index);
+        }
+
+        int GetCurrentIndex()
+        {
+            return m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices[^1];
+        }
+
+        int GetItemCount()
+        {
+            return m_GridView.itemsSource.Count;
+        }
+
+        void SetSelectedIndex(int nextSelectedIndex)
+        {
+            m_GridView.selectedIndex = nextSelectedIndex;
+        }
+
+        void AddToSelection(ReadOnlySpan<int> newSelection)
+        {
+            m_GridView.AddToSelection(newSelection);
+        }
+
+        void RemoveFromSelection(int index)
+        {
+            m_GridView.RemoveFromSelection(index);
+        }
+
+        void Frame(int index)
+        {
+            m_GridView.ScrollToItem(index);
+        }
+
+        int GetVisibleItemCount()
+        {
+            return m_GridView.visibleItemCount;
+        }
+        #endregion
     }
 }

@@ -189,9 +189,9 @@ namespace UnityEditor.ShortcutManagement
 
             var builder = new StringBuilder();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2010 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             builder.Append(keyCombinations.First());
-#pragma warning restore UA2001
+#pragma warning restore UA2010
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var keyCombination in keyCombinations.Skip(1))

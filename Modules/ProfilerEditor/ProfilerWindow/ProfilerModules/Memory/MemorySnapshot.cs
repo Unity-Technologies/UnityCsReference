@@ -13,13 +13,13 @@ using MemoryProfilerAPI = Unity.Profiling.Memory.MemoryProfiler;
 // A new API for reading the snapshots will eventually be exposed through the Memory Profiler Package (com.unity.memoryprofiler).
 namespace UnityEditor.MemoryProfiler
 {
-    // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+    // Not automatically Upgradable as the new API won't fire an event but calls a callback instead.
     // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
     // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
     [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler instead")]
     public static class MemorySnapshot
     {
-        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Not automatically Upgradable as the new API won't fire an event but calls a callback instead.
         // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
         // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
         [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
@@ -46,7 +46,7 @@ namespace UnityEditor.MemoryProfiler
             }
         }
 
-        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Not automatically Upgradable as the new API won't fire an event but calls a callback instead.
         // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
         // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
         [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
@@ -56,7 +56,7 @@ namespace UnityEditor.MemoryProfiler
             string projectName = s[s.Length - 2];
             return Path.Combine(Application.temporaryCachePath, projectName + ".snap");
         }
-        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Not automatically Upgradable as the new API won't fire an event but calls a callback instead.
         // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
         // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
         [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
@@ -109,6 +109,8 @@ namespace UnityEditor.MemoryProfiler
             ulong[]  cacheULong = new ulong[cacheCapacity];
             ulong[]  cacheULong2 = new ulong[cacheCapacity];
             byte[][]  cacheBytes = new byte[cacheCapacity][];
+            EntityId[]    cacheEntityId = new EntityId[cacheCapacity];
+            EntityId[]    cacheEntityId2 = new EntityId[cacheCapacity];
 
             m_NativeTypes = new PackedNativeType[snapshot.nativeTypes.GetNumEntries()];
             {
@@ -136,7 +138,7 @@ namespace UnityEditor.MemoryProfiler
                     uint size = (uint)Math.Min(m_NativeObjects.Length - offset, cacheCapacity);
 
                     snapshot.nativeObjects.objectName.GetEntries((uint)offset, size, ref cacheString);
-                    snapshot.nativeObjects.instanceId.GetEntries((uint)offset, size, ref cacheInt);
+                    snapshot.nativeObjects.entityId.GetEntries((uint)offset, size, ref cacheEntityId);
                     snapshot.nativeObjects.size.GetEntries((uint)offset, size, ref cacheULong);
                     snapshot.nativeObjects.nativeTypeArrayIndex.GetEntries((uint)offset, size, ref cacheInt2);
                     snapshot.nativeObjects.hideFlags.GetEntries((uint)offset, size, ref cacheHideFlags);
@@ -147,7 +149,7 @@ namespace UnityEditor.MemoryProfiler
                     {
                         m_NativeObjects[offset + i] = new PackedNativeUnityEngineObject(
                             cacheString[i],
-                            cacheInt[i],
+                            cacheEntityId[i],
                             (int)cacheULong[i],
                             cacheInt2[i],
                             cacheHideFlags[i],
@@ -178,12 +180,12 @@ namespace UnityEditor.MemoryProfiler
                 {
                     uint size = (uint)Math.Min(m_Connections.Length - offset, cacheCapacity);
 
-                    snapshot.connections.from.GetEntries((uint)offset, (uint)size, ref cacheInt);
-                    snapshot.connections.to.GetEntries((uint)offset, (uint)size, ref cacheInt2);
+                    snapshot.connections.fromEntityId.GetEntries((uint)offset, (uint)size, ref cacheEntityId);
+                    snapshot.connections.toEntityId.GetEntries((uint)offset, (uint)size, ref cacheEntityId2);
 
                     for (uint i = 0; i < size; i++)
                     {
-                        m_Connections[offset + i] = new Connection(cacheInt[i], cacheInt2[i]);
+                        m_Connections[offset + i] = new Connection(cacheEntityId[i], cacheEntityId2[i]);
                     }
                 }
             }
@@ -297,7 +299,7 @@ namespace UnityEditor.MemoryProfiler
         internal string m_Name;
 
         [SerializeField]
-        internal int m_InstanceId;
+        internal EntityId m_EntityId;
 
         [SerializeField]
         internal int m_Size;
@@ -314,10 +316,18 @@ namespace UnityEditor.MemoryProfiler
         [SerializeField]
         internal long m_NativeObjectAddress;
 
+
+
+        [Obsolete("Use the constructor taking an EntityId instead, this will be removed in a future version", true)]
         public PackedNativeUnityEngineObject(string name, int instanceId, int size, int nativeTypeArrayIndex, UnityEngine.HideFlags hideFlags, ObjectFlags flags, long nativeObjectAddress)
         {
+            throw new InvalidOperationException("PackedNativeUnityEngineObject(string name, int instanceId, int size, int nativeTypeArrayIndex, UnityEngine.HideFlags hideFlags, ObjectFlags flags, long nativeObjectAddress) is obsolete, use the EntityId version instead.");
+        }
+
+        public PackedNativeUnityEngineObject(string name, EntityId entityId, int size, int nativeTypeArrayIndex, UnityEngine.HideFlags hideFlags, ObjectFlags flags, long nativeObjectAddress)
+        {
             m_Name = name;
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Size = size;
             m_NativeTypeArrayIndex = nativeTypeArrayIndex;
             m_HideFlags = hideFlags;
@@ -329,9 +339,10 @@ namespace UnityEditor.MemoryProfiler
         public bool isDontDestroyOnLoad { get { return (m_Flags & ObjectFlags.IsDontDestroyOnLoad) != 0; } }
         public bool isManager { get { return (m_Flags & ObjectFlags.IsManager) != 0; } }
         public string name { get { return m_Name; } }
-        public int instanceId { get { return m_InstanceId; } }
+        [Obsolete("Use entityId instead, this will be removed in a future version", true)]
+        public int instanceId {get => throw new InvalidOperationException("instanceId is obsolete, use entityId instead.");}
+        public EntityId entityId { get { return m_EntityId; } }
         public int size { get { return m_Size; } }
-
         [Obsolete("PackedNativeUnityEngineObject.classId is obsolete. Use PackedNativeUnityEngineObject.nativeTypeArrayIndex instead (UnityUpgradable) -> nativeTypeArrayIndex")]
         public int classId { get { return m_NativeTypeArrayIndex; } }
         public int nativeTypeArrayIndex { get { return m_NativeTypeArrayIndex; } }
@@ -367,19 +378,29 @@ namespace UnityEditor.MemoryProfiler
     public struct Connection
     {
         [SerializeField]
-        private int m_From;
+        private EntityId m_From;
 
         [SerializeField]
-        private int m_To;
+        private EntityId m_To;
 
-        public Connection(int from, int to)
+        public Connection(EntityId from, EntityId to)
         {
             m_From = from;
             m_To = to;
         }
 
-        public int from { get { return m_From; } set { m_From = value; } }
-        public int to { get { return m_To; } set { m_To = value; } }
+        [Obsolete("Connection.from is obsolete. Use Connection.fromEntityId instead, this will be removed in a future version.", true)]
+        public int from {
+            get => throw new InvalidOperationException("Connection.from is obsolete. Use Connection.fromEntityId");
+            set => throw new InvalidOperationException("Connection.from is obsolete. Use Connection.fromEntityId");
+        }
+        public EntityId fromEntityId { get { return m_From; } set { m_From = value; } }
+        [Obsolete("Connection.to is obsolete. Use Connection.toEntityId instead, this will be removed in a future version.", true)]
+        public int to  {
+            get => throw new InvalidOperationException("Connection.to is obsolete. Use Connection.toEntityId");
+            set => throw new InvalidOperationException("Connection.to is obsolete. Use Connection.toEntityId");
+        }
+        public EntityId toEntityId { get { return m_To; } set { m_To = value; } }
     }
 
     [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]

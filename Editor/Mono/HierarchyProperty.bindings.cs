@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -36,7 +34,7 @@ namespace UnityEditor
 
     [NativeHeader("Editor/Src/Utility/HierarchyProperty.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
-    [Obsolete("HierarchyProperty is deprecated. Use HierarchyIterator instead.")]
+    [Obsolete("HierarchyProperty is deprecated. Use HierarchyIterator instead.", true)]
     public sealed class HierarchyProperty
     {
         internal static HierarchyProperty UnsafeCastFrom(HierarchyIterator iterator)
@@ -86,15 +84,13 @@ namespace UnityEditor
         {
             if (scenes == null)
                 throw new ArgumentNullException(nameof(scenes));
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SetCustomScenes(scenes.Select(s => s.handle).ToArray());
-#pragma warning restore UA2001
+            SetCustomScenes(Array.ConvertAll(scenes, s => s.handle));
         }
 
         [FreeFunction("HierarchyPropertyBindings::SetCustomScenes", HasExplicitThis = true)]
         public extern void SetCustomScenes([NotNull] SceneHandle[] sceneHandles);
 
-        [Obsolete("SetCustomScenes(int[]) is deprecated. Use SetCustomScenes(SceneHandle[]) instead.")]
+        [Obsolete("SetCustomScenes(int[]) is deprecated. Use SetCustomScenes(SceneHandle[]) instead.",true)]
         public void SetCustomScenes(int[] sceneHandles) => SetCustomScenes(sceneHandles?.ToSceneHandleArray() ?? Array.Empty<SceneHandle>());
 
         [FreeFunction("HierarchyPropertyBindings::SetSubScenes", HasExplicitThis = true)]
@@ -132,14 +128,11 @@ namespace UnityEditor
 
         public extern bool hasChildren { [NativeName("HasChildren")] get; }
         public extern int depth { get; }
-        public extern int[] ancestors { get; }
+        public int[] ancestors { get { throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead."); } }
         public extern int row { get; }
         public extern int colorCode { get; }
 
-        [FreeFunction("HierarchyPropertyBindings::IsExpanded", HasExplicitThis = true)]
-        private extern bool IsExpanded_internal(int[] expanded, bool nonNullEmptyArray);
-
-        public bool IsExpanded(int[] expanded) => IsExpanded_internal(expanded, expanded != null && expanded.Length == 0);
+        public bool IsExpanded(int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
 
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
         public extern GUID assetGUID { [FreeFunction("HierarchyPropertyBindings::GetAssetGUID", HasExplicitThis = true)] get; }
@@ -153,25 +146,13 @@ namespace UnityEditor
         public extern bool isFolder { [NativeName("IsFolder")] get; }
         public extern GUID[] dynamicDependencies { get; }
 
-        [FreeFunction("HierarchyPropertyBindings::Next", HasExplicitThis = true)]
-        private extern bool Next_internal(int[] expanded, bool nonNullEmptyArray);
-        public bool Next(int[] expanded) => Next_internal(expanded, expanded != null && expanded.Length == 0);
-        [FreeFunction("HierarchyPropertyBindings::NextWithDepthCheck", HasExplicitThis = true)]
-        private extern bool NextWithDepthCheck_internal(int[] expanded, int minDepth, bool nonNullEmptyArray);
-        public bool NextWithDepthCheck(int[] expanded, int minDepth) => NextWithDepthCheck_internal(expanded, minDepth, expanded != null && expanded.Length == 0);
-        [FreeFunction("HierarchyPropertyBindings::Previous", HasExplicitThis = true)]
-        private extern bool Previous_internal(int[] expanded, bool nonNullEmptyArray);
-        public bool Previous(int[] expanded) => Previous_internal(expanded, expanded != null && expanded.Length == 0);
+        public bool Next(int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
+        public bool NextWithDepthCheck(int[] expanded, int minDepth) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
+        public bool Previous(int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
         public extern bool Parent();
-        [FreeFunction("HierarchyPropertyBindings::Find", HasExplicitThis = true)]
-        private extern bool Find_internal(EntityId instanceID, int[] expanded, bool nonNullEmptyArray);
-        public bool Find(int instanceID, int[] expanded) => Find_internal((EntityId)instanceID, expanded, expanded != null && expanded.Length == 0);
-        [FreeFunction("HierarchyPropertyBindings::Skip", HasExplicitThis = true)]
-        private extern bool Skip_internal(int count, int[] expanded, bool nonNullEmptyArray);
-        public bool Skip(int count, int[] expanded) =>Skip_internal(count, expanded, expanded != null && expanded.Length == 0);
-        [FreeFunction("HierarchyPropertyBindings::CountRemaining", HasExplicitThis = true)]
-        private extern int CountRemaining_internal(int[] expanded, bool nonNullEmptyArray);
-        public int CountRemaining(int[] expanded) => CountRemaining_internal(expanded, expanded != null && expanded.Length == 0);
+        public bool Find(int instanceID, int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
+        public bool Skip(int count, int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
+        public int CountRemaining(int[] expanded) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
 
         internal extern EntityId GetEntityIdIfImported();
         public int GetInstanceIDIfImported() => GetEntityIdIfImported();
@@ -199,8 +180,7 @@ namespace UnityEditor
 
         public static void FilterSingleSceneObject(int instanceID, bool otherVisibilityState) => FilterSingleSceneObject((EntityId)instanceID, otherVisibilityState);
 
-        [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
-        public extern int[] FindAllAncestors(int[] instanceIDs);
+        public int[] FindAllAncestors(int[] instanceIDs) => throw new System.NotImplementedException("HierarchyProperty is deprecated. Use HierarchyIterator instead.");
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]
         public static extern void ClearSceneObjectsFilter();
 
@@ -208,5 +188,12 @@ namespace UnityEditor
         {
             public static IntPtr ConvertToNative(HierarchyProperty prop) => prop.m_Ptr;
         }
+    }
+
+    internal static class HierarchyPropertyCustomMarshaller
+    {
+        [Obsolete("HierarchyProperty is deprecated. This attribute is needed to avoid errors.")]
+        public static IntPtr ConvertToUnmanaged(HierarchyProperty prop)
+                => prop != null ? prop.m_Ptr : IntPtr.Zero;
     }
 }

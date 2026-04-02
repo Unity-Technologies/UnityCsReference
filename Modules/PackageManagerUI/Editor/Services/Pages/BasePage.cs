@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -17,10 +15,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
         public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
         public event Action<ListUpdateArgs> onListUpdate = delegate {};
-        public event Action<IPage> onListRebuild = delegate {};
-        public event Action<PageFilters> onFiltersChange = delegate {};
-        public event Action<string> onTrimmedSearchTextChanged = delegate {};
-        public event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
+        public event Action<PageStateChangeArgs> onStageChanged = delegate {};
+        public event Action onListRebuild = delegate {};
+        public event Action<PageFiltersChangeArgs> onFiltersChanged = delegate {};
+        public event Action onTrimmedSearchTextChanged = delegate {};
 
         [SerializeField]
         private PageSelection m_Selection = new();
@@ -30,6 +28,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_SearchText = string.Empty;
+
+        public virtual bool visible => true;
+
         public string searchText
         {
             get => m_SearchText;
@@ -46,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_TrimmedSearchText = newTrimmedSearchText;
                 RefreshListOnSearchTextChange();
-                onTrimmedSearchTextChanged?.Invoke(newTrimmedSearchText);
+                onTrimmedSearchTextChanged?.Invoke();
             }
         }
 
@@ -55,26 +56,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string trimmedSearchText => m_TrimmedSearchText;
 
         [SerializeField]
-        private PageFilters m_Filters;
-        public PageFilters filters
-        {
-            get
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Filters ??= new PageFilters { sortOption = supportedSortOptions?.FirstOrDefault() ?? PageSortOption.NameAsc };
-#pragma warning restore UA2001
-                return m_Filters;
-            }
-            protected set => m_Filters = value;
-        }
+        private PageFilters m_Filters = new ();
+        public IPageFilters filters => m_Filters;
 
-        public abstract PageCapability capability { get; }
-        public abstract IReadOnlyList<PageFilters.Status> supportedStatusFilters { get; }
-        public abstract IReadOnlyList<PageSortOption> supportedSortOptions { get; }
+        // Most of the time we know all the supported filters from the page content and the supported filters are always
+        // in sync with the page content, so by default we do nothing for this async function
+        public virtual void UpdateSupportedFiltersAsync() {}
+
+        public virtual PageCapability capability => PageCapability.None;
 
         [SerializeField]
         private bool m_IsActive;
-        public bool isActivePage => m_IsActive;
+        public bool isActive => m_IsActive;
 
         public abstract string id { get; }
         public abstract string displayName { get; }
@@ -84,250 +77,191 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual RegistryInfo scopedRegistry => null;
 
-        [NonSerialized]
-        protected IPackageDatabase m_PackageDatabase;
-        [ExcludeFromCodeCoverage]
-        public void ResolveDependencies(IPackageDatabase packageDatabase)
-        {
-            m_PackageDatabase = packageDatabase;
-        }
-
-        protected BasePage(IPackageDatabase packageDatabase)
-        {
-            ResolveDependencies(packageDatabase);
-        }
-
-        public virtual void OnEnable()
-        {
-            m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
-        }
-
-        public virtual void OnDisable()
-        {
-            m_PackageDatabase.onPackageUniqueIdFinalize -= OnPackageUniqueIdFinalize;
-        }
+        public abstract void OnEnable();
+        public abstract void OnDisable();
 
         public bool ClearFilters(bool resetSortOptionToDefault = false)
         {
-            var newFilters = filters.Clone();
-            newFilters.status = PageFilters.Status.None;
-            newFilters.categories = new List<string>();
-            newFilters.labels = new List<string>();
+            var newFilters = new PageFilters(filters);
+            var changedTypes = newFilters.Clear();
             if (resetSortOptionToDefault)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                newFilters.sortOption = supportedSortOptions.FirstOrDefault();
-#pragma warning restore UA2001
-            return UpdateFilters(newFilters);
-        }
-
-        public virtual bool UpdateFilters(PageFilters newFilters)
-        {
-            if (filters.Equals(newFilters))
+                changedTypes |= newFilters.ResetSortOptionToDefault();
+            if (changedTypes == PageFilters.ChangedTypes.None)
                 return false;
-            filters = newFilters?.Clone();
-            onFiltersChange?.Invoke(filters);
+            UpdateFiltersInternal(newFilters, changedTypes);
             return true;
         }
 
-        public abstract bool ShouldInclude(IPackage package);
-
-        public virtual void OnPackagesChanged(PackagesChangeArgs args)
+        private static PageFilters.ChangedTypes FindChangedTypes(IPageFilters first, IPageFilters second)
         {
-            var addList = new List<IPackage>();
-            var updateList = new List<IPackage>();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var removeList = args.removed.Filter(p => visualStates.Contains(p.uniqueId)).ToList();
-#pragma warning restore UA2001
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var package in args.added.Join(args.updated))
-#pragma warning restore UA2001
-            {
-                if (ShouldInclude(package))
-                {
-                    if (visualStates.Contains(package.uniqueId))
-                        updateList.Add(package);
-                    else
-                        addList.Add(package);
-                }
-                else if (visualStates.Contains(package.uniqueId))
-                    removeList.Add(package);
-            }
-
-            if (addList.Count > 0 || updateList.Count > 0 || removeList.Count > 0)
-            {
-                RebuildAndReorderVisualStates();
-
-                TriggerOnListUpdate(addList, updateList, removeList);
-
-                CheckEntitlementStatusAndTriggerEvents(addList, updateList, removeList);
-
-                FilterPackagesBySearchText();
-            }
+            if (ReferenceEquals(first, second) || first == null || second == null)
+                return PageFilters.ChangedTypes.None;
+            var result = PageFilters.ChangedTypes.None;
+            if (first.status != second.status)
+                result |= PageFilters.ChangedTypes.Status;
+            if (first.sortOption != second.sortOption)
+                result |= PageFilters.ChangedTypes.SortOption;
+            if (!first.categories.IsSequenceEqual(second.categories))
+                result |= PageFilters.ChangedTypes.Categories;
+            if (!first.labels.IsSequenceEqual(second.labels))
+                result |= PageFilters.ChangedTypes.Labels;
+            if (!first.packageUniqueIds.IsSequenceEqual(second.packageUniqueIds))
+                result |= PageFilters.ChangedTypes.Packages;
+            return result;
         }
 
-        private void OnPackageUniqueIdFinalize(string tempPackageUniqueId, string finalPackageUniqueId)
+        public bool UpdateFilters(IPageFilters newFilters)
         {
-            if (!GetSelection().Contains(tempPackageUniqueId))
-                return;
-            AmendSelection(new[] { finalPackageUniqueId }, new[] { tempPackageUniqueId });
+            // We only check changed filters but not supported changed filter because we don't support changing supported filters externally
+            var changedTypes = FindChangedTypes(m_Filters, newFilters);
+            if (changedTypes == PageFilters.ChangedTypes.None)
+                return false;
+            UpdateFiltersInternal(new PageFilters(newFilters), changedTypes);
+            return true;
         }
 
-        public virtual void FilterPackagesBySearchText()
+        public bool UpdateSortOption(PageSortOption newSortOption)
         {
-            var changedVisualStates = new List<VisualState>();
-            foreach (var state in visualStates)
-            {
-                var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
-                var visible = package?.versions.primary.MatchesSearchText(trimmedSearchText) == true;
-                if (state.visible == visible)
-                    continue;
-                state.visible = visible;
-                changedVisualStates.Add(state);
-            }
-
-            if (changedVisualStates.Count > 0)
-                TriggerOnVisualStateChange(changedVisualStates);
+            if (filters.sortOption == newSortOption)
+                return false;
+            var newFilters = new PageFilters(filters);
+            var changedTypes = newFilters.UpdateSortOption(newSortOption);
+            UpdateFiltersInternal(newFilters, changedTypes);
+            return true;
         }
 
-        public virtual void OnActivated()
+        protected bool UpdateFilterStatus(PageFilterStatus newStatus)
+        {
+            if (filters.status == newStatus)
+                return false;
+            var newFilters = new PageFilters(filters);
+            var changedTypes = newFilters.UpdateStatus(newStatus);
+            UpdateFiltersInternal(newFilters, changedTypes);
+            return true;
+        }
+
+        protected virtual void UpdateFiltersInternal(PageFilters newFilters, PageFilters.ChangedTypes changedTypes, bool triggerEvent = true)
+        {
+            var previousFilters = m_Filters;
+            m_Filters = newFilters;
+            if (triggerEvent)
+                onFiltersChanged?.Invoke(new PageFiltersChangeArgs { page = this, previousFilters = previousFilters, filterTypesChanged = changedTypes });
+        }
+
+        private bool UpdateSupportedFilters(Func<PageFilters, PageFilters.ChangedTypes> changeFunction, bool triggerChangeEvent)
+        {
+            if (changeFunction == null)
+                return false;
+            var newFilters = new PageFilters(filters);
+            var changedTypes = changeFunction(newFilters);
+            if (changedTypes == PageFilters.ChangedTypes.None)
+                return false;
+            UpdateFiltersInternal(newFilters, changedTypes, triggerChangeEvent);
+            return true;
+        }
+
+        protected bool UpdateSupportedSortOptions(IReadOnlyList<PageSortOption> newSortOptions, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedSortOptions(newSortOptions), triggerChangeEvent);
+
+        protected bool UpdateSupportedStatuses(IReadOnlyList<PageFilterStatus> newStatuses, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedStatuses(newStatuses), triggerChangeEvent);
+
+        protected bool UpdateSupportedCategories(IReadOnlyList<string> newCategories, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedCategories(newCategories), triggerChangeEvent);
+
+        protected bool UpdateSupportedLabels(IReadOnlyList<string> newLabels, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedLabels(newLabels), triggerChangeEvent);
+
+        protected bool UpdateSupportedPackages(IReadOnlyList<string> newPackageUniqueIds, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedPackages(newPackageUniqueIds), triggerChangeEvent);
+
+        public virtual void Activate()
         {
             m_IsActive = true;
         }
 
-        public virtual void OnDeactivated()
+        public virtual void Deactivate()
         {
             m_IsActive = false;
+            ResetStatesOnDeactivate();
         }
 
         protected abstract void RefreshListOnSearchTextChange();
 
-        public abstract void RebuildAndReorderVisualStates();
-
-        // Returns true if SupportedStatusFilter changed
-        public virtual bool RefreshSupportedStatusFiltersOnEntitlementPackageChange() => false;
-
-        protected virtual void TriggerOnListUpdate(IReadOnlyCollection<IPackage> added = null, IReadOnlyCollection<IPackage> updated = null, IReadOnlyCollection<IPackage> removed = null)
+        protected void TriggerOnListUpdate(IReadOnlyCollection<string> added = null, IReadOnlyCollection<string> updated = null, IReadOnlyCollection<string> removed = null)
         {
-            added ??= Array.Empty<IPackage>();
-            updated ??= Array.Empty<IPackage>();
-            removed ??= Array.Empty<IPackage>();
-            var anyAddedOrUpdated = added.Count > 0 || updated.Count > 0;
-            if (!anyAddedOrUpdated && removed.Count == 0)
-                return;
-
-            var reorder = (capability & PageCapability.SupportLocalReordering) != 0 && anyAddedOrUpdated;
-            onListUpdate?.Invoke(new ListUpdateArgs
-                { page = this, added = added, updated = updated, removed = removed, reorder = reorder });
+            added ??= Array.Empty<string>();
+            updated ??= Array.Empty<string>();
+            removed ??= Array.Empty<string>();
+            if (added.Count > 0 || updated.Count > 0 || removed.Count > 0)
+                onListUpdate?.Invoke(new ListUpdateArgs { page = this, added = added, updated = updated, removed = removed });
         }
 
-        protected void CheckEntitlementStatusAndTriggerEvents(IList<IPackage> added = null, IList<IPackage> updated = null, IList<IPackage> removed = null)
+        protected void TriggerOnStateChange()
         {
-            if ((capability & PageCapability.DynamicEntitlementStatus) == 0)
-                return;
-
-            added ??= Array.Empty<IPackage>();
-            updated ??= Array.Empty<IPackage>();
-            removed ??= Array.Empty<IPackage>();
-            #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!added.Join(updated).Join(removed).Any(p => p.hasEntitlements))
-#pragma warning restore UA2006
-                return;
-
-            if (!RefreshSupportedStatusFiltersOnEntitlementPackageChange())
-                return;
-
-            // For now, this will only happens if the last entitlement package is removed and the Subscription Based filter was selected
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!supportedStatusFilters.ContainsMatches(filters.status) && filters.status != PageFilters.Status.None)
-#pragma warning restore UA2001
-            {
-                var newFilters = filters.Clone();
-                newFilters.status = PageFilters.Status.None;
-                UpdateFilters(newFilters);
-            }
-            TriggerSupportedFiltersChanged();
+            onStageChanged?.Invoke(new PageStateChangeArgs{ page = this, visible = visible, icon = icon});
         }
 
         protected void TriggerListRebuild()
         {
-            onListRebuild?.Invoke(this);
+            onListRebuild?.Invoke();
         }
 
-        protected void TriggerSupportedFiltersChanged()
+        protected void TriggerOnVisualStateChange(IReadOnlyCollection<VisualState> changedVisualStates)
         {
-            onSupportedStatusFiltersChanged?.Invoke(this);
+            if (changedVisualStates?.Count > 0)
+                onVisualStateChange?.Invoke(new VisualStateChangeArgs { page = this, changed = changedVisualStates });
         }
 
-        protected void TriggerOnVisualStateChange(IEnumerable<VisualState> changedVisualStates)
-        {
-            onVisualStateChange?.Invoke(new VisualStateChangeArgs
-            {
-                page = this,
-                visualStates = changedVisualStates
-            });
-        }
-
-        public virtual void TriggerOnSelectionChanged(bool isExplicitUserSelection = false)
+        public virtual void TriggerOnSelectionChanged(bool isDirectMouseSelection)
         {
             onSelectionChanged?.Invoke(new PageSelectionChangeArgs
             {
                 page = this,
                 selection = GetSelection(),
-                isExplicitUserSelection = isExplicitUserSelection
+                isDirectMouseSelection = isDirectMouseSelection
             });
         }
 
         public PageSelection GetSelection() => m_Selection;
 
-        public IEnumerable<VisualState> GetSelectedVisualStates()
+        public virtual bool SetNewSelection(string itemUniqueId, bool isDirectMouseSelection)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Selection.Select(s => visualStates.Get(s)).Filter(v => v != null);
-#pragma warning restore UA2001
+            return SetNewSelection(new[] { itemUniqueId }, isDirectMouseSelection);
         }
 
-        public virtual bool SetNewSelection(IPackage package, bool isExplicitUserSelection = false)
+        public virtual bool SetNewSelection(IEnumerable<string> itemUniqueIds, bool isDirectMouseSelection)
         {
-            return SetNewSelection(new[] { package?.uniqueId }, isExplicitUserSelection);
-        }
-
-        public virtual bool SetNewSelection(string packageUniqueId, bool isExplicitUserSelection = false)
-        {
-            return SetNewSelection(new[] { packageUniqueId }, isExplicitUserSelection);
-        }
-
-        public virtual bool SetNewSelection(IEnumerable<string> packageUniqueIds, bool isExplicitUserSelection = false)
-        {
-            if (!m_Selection.SetNewSelection(packageUniqueIds) && !isExplicitUserSelection)
+            if (!m_Selection.SetNewSelection(itemUniqueIds) && !isDirectMouseSelection)
                 return false;
 
-            TriggerOnSelectionChanged(isExplicitUserSelection);
+            TriggerOnSelectionChanged(isDirectMouseSelection);
             return true;
         }
 
-        public virtual void RemoveSelection(IEnumerable<string> toRemove, bool isExplicitUserSelection = false)
+        public virtual void RemoveSelection(IEnumerable<string> itemUniqueIds, bool isDirectMouseSelection)
         {
-            var previousFirstSelection = GetSelection().firstSelection;
-            AmendSelection(Array.Empty<string>(), toRemove, isExplicitUserSelection);
+            var previousFirstSelection = GetSelection().first;
+            AmendSelection(Array.Empty<string>(), itemUniqueIds, isDirectMouseSelection);
             if (GetSelection().Count == 0)
-                SetNewSelection(new[] { previousFirstSelection }, isExplicitUserSelection);
+                SetNewSelection(new[] { previousFirstSelection }, isDirectMouseSelection);
         }
 
-        public virtual bool AmendSelection(IEnumerable<string> toAddOrUpdate, IEnumerable<string> toRemove, bool isExplicitUserSelection = false)
+        public virtual bool AmendSelection(IEnumerable<string> toAdd, IEnumerable<string> toRemove, bool isDirectMouseSelection)
         {
-            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove) && !isExplicitUserSelection)
+            if (!m_Selection.AmendSelection(toAdd, toRemove) && !isDirectMouseSelection)
                 return false;
 
-            TriggerOnSelectionChanged(isExplicitUserSelection);
+            TriggerOnSelectionChanged(isDirectMouseSelection);
             return true;
         }
 
-        public virtual bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false)
+        public virtual bool ToggleSelection(string itemUniqueId, bool isDirectMouseSelection)
         {
-            if (!m_Selection.ToggleSelection(packageUniqueId) && !isExplicitUserSelection)
+            if (!m_Selection.ToggleSelection(itemUniqueId) && !isDirectMouseSelection)
                 return false;
 
-            TriggerOnSelectionChanged(isExplicitUserSelection);
+            TriggerOnSelectionChanged(isDirectMouseSelection);
             return true;
         }
 
@@ -335,29 +269,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var selection = GetSelection();
 
-            var invalidSelectionsToRemove = new List<string>();
-            foreach (var packageUniqueId in selection)
-            {
-                var package = m_PackageDatabase.GetPackage(packageUniqueId);
-                var visualState = visualStates.Get(packageUniqueId);
-                if (package == null || visualState?.visible != true)
-                    invalidSelectionsToRemove.Add(packageUniqueId);
-            }
-
+            var invalidSelectionsToRemove = new List<string>(selection.Filter(i => visualStates.Get(i) is not { visible: true }));
             if (selection.Count > 0 && invalidSelectionsToRemove.Count == 0)
                 return false;
 
             var newSelectionToAdd = new List<string>();
             if (invalidSelectionsToRemove.Count == selection.Count)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var firstVisible = visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
-#pragma warning restore UA2001
+                var firstVisible = visualStates.FirstMatch(v => v.visible && !selection.Contains(v.itemUniqueId));
                 if (firstVisible != null)
-                    newSelectionToAdd.Add(firstVisible.packageUniqueId);
+                    newSelectionToAdd.Add(firstVisible.itemUniqueId);
             }
 
-            return AmendSelection(newSelectionToAdd, invalidSelectionsToRemove);
+            return AmendSelection(newSelectionToAdd, invalidSelectionsToRemove, false);
         }
 
         public bool IsGroupExpanded(string groupName)
@@ -373,14 +297,36 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_CollapsedGroups.Add(groupName);
         }
 
-        public virtual string GetGroupName(IPackage package) => string.Empty;
+        public void SetUserUnlockedState(IEnumerable<string> itemUniqueIds, bool unlocked)
+        {
+            var changedVisualStates = new HashSet<VisualState>();
+            foreach (var uniqueId in itemUniqueIds)
+            {
+                var visualState = visualStates.Get(uniqueId);
+                if (visualState == null || visualState.userUnlocked == unlocked)
+                    continue;
+                visualState.userUnlocked = unlocked;
+                changedVisualStates.Add(visualState);
+            }
+            TriggerOnVisualStateChange(changedVisualStates);
+        }
 
-        public abstract void LoadMore(long numberOfPackages);
-        public abstract void Load(string packageUniqueId);
-        public abstract void LoadExtraItems(IEnumerable<IPackage> packages);
+        public void ResetStatesOnDeactivate()
+        {
+            var unlockedVisualStates = new List<VisualState>(visualStates.Filter(v => v.userUnlocked));
+            foreach (var visualState in unlockedVisualStates)
+                visualState.userUnlocked = false;
+            TriggerOnVisualStateChange(unlockedVisualStates);
 
-        public abstract void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked);
-        public abstract void ResetUserUnlockedState();
-        public abstract bool GetDefaultLockState(IPackage package);
+            if (m_Selection.Count == 0)
+                return;
+
+            foreach (var group in m_Selection.SelectNonEmpty(s => visualStates.Get(s)?.groupName).EnumerateDistinct())
+                SetGroupExpanded(group, true);
+        }
+
+        public virtual void LoadMore(long numberOfItems) {}
+        public virtual void Load(string itemUniqueId) {}
+        public virtual void LoadExtraItems(IEnumerable<string> itemUniqueIds) {}
     }
 }

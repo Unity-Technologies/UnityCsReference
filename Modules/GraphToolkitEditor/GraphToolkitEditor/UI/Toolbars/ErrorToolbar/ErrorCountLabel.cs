@@ -18,6 +18,8 @@ namespace Unity.GraphToolkit.Editor
     internal class ErrorCountLabel : Label, IAccessContainerWindow, IToolbarElement
     {
         public const string id = "GraphToolkit/Error/Count";
+        static readonly string k_ErrorStr = L10n.Tr("alert");
+        static readonly string k_ErrorStrMultiple = L10n.Tr($"{k_ErrorStr}s");
 
         ErrorToolbarUpdateObserver m_UpdateObserver;
 
@@ -80,10 +82,12 @@ namespace Unity.GraphToolkit.Editor
             var errorCount = 0;
             for (var i = 0; i < GraphView.GraphViewModel.ProcessingErrorsState.Errors.Count; i++)
             {
-                if (GraphView.GraphViewModel.ProcessingErrorsState.Errors[i].GetParentModel(GraphView.GraphModel) is not null)
+                if (GraphView.GraphViewModel.ProcessingErrorsState.Errors[i]
+                        .GetParentModel(GraphView.GraphModel) is not null)
                     errorCount++;
             }
-            text = errorCount == 1 ? $"{errorCount} error" : $"{errorCount} errors";
+
+            text = errorCount == 1 ? $"{errorCount} {k_ErrorStr}" : $"{errorCount} {k_ErrorStrMultiple}";
         }
     }
 }

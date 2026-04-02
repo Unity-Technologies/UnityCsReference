@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Collections;
 
 namespace UnityEditor.UIElements
 {
@@ -112,11 +113,7 @@ namespace UnityEditor.UIElements
         /// </summary>
         public void PopItem()
         {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (Children().Any() && Children().Last() is BreadcrumbItem)
-#pragma warning restore UA2001
-#pragma warning restore UA2002
+            if (children.LastOrDefault() is BreadcrumbItem)
                 RemoveAt(childCount - 1);
             else
                 throw new InvalidOperationException("Last child isn't a BreadcrumbItem");

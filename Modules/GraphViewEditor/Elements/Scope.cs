@@ -141,9 +141,7 @@ namespace UnityEditor.Experimental.GraphView
             if (element == null)
                 throw new ArgumentException("Cannot add null element");
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (containedElements.Contains(element))
-#pragma warning restore UA2001
+            if (ContainsElement(element))
             {
                 throw new ArgumentException("The specified element is already contained in this scope.");
             }
@@ -193,23 +191,38 @@ namespace UnityEditor.Experimental.GraphView
         public void RemoveElement(GraphElement element)
         {
             RemoveElementInternal(element);
-            OnElementsRemoved(new[] {element});
+            OnElementsRemoved(new[] { element });
         }
 
-        private void RemoveElementInternal(GraphElement element)
+        internal bool TryRemoveElement(GraphElement element)
+        {
+            var removed = TryRemoveElementInternal(element);
+            if (removed)
+                OnElementsRemoved(new[] { element });
+            return removed;
+        }
+
+        private bool TryRemoveElementInternal(GraphElement element)
         {
             if (element == null)
                 throw new ArgumentException("Cannot remove null element from this scope");
 
-            if (!m_ContainedElements.Contains(element))
-                throw new ArgumentException("This element is not contained in this scope");
+            if (m_ContainedElements.Remove(element) == false)
+                return false;
 
             element.UnregisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
-            m_ContainedElements.Remove(element);
 
             element.SetContainingScope(null);
 
             ScheduleUpdateGeometryFromContent();
+
+            return true;
+        }
+
+        private void RemoveElementInternal(GraphElement element)
+        {
+            if (TryRemoveElementInternal(element) == false)
+                throw new ArgumentException("This element is not contained in this scope");
         }
 
         protected virtual void OnElementsRemoved(IEnumerable<GraphElement> elements)
