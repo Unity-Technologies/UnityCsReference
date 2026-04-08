@@ -258,7 +258,7 @@ namespace UnityEditor.Search
                     }
                     return true;
                 }
-                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None)
+                else if (evt.keyCode == KeyCode.Tab && evt.modifiers == EventModifiers.None && !viewState.queryBuilderEnabled)
                 {
                     m_SearchAutoCompleteWindow.Show(m_SearchToolbar);
                     return true;

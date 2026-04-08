@@ -567,6 +567,9 @@
     <Compile Include="..\..\Editor\Mono\Audio\AudioGeneratorSerializableInterfaceDrawer.cs">
       <Link>Editor\Mono\Audio\AudioGeneratorSerializableInterfaceDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\AudioRandomContainerExtensions.cs">
+      <Link>Editor\Mono\Audio\AudioRandomContainerExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs">
       <Link>Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs</Link>
     </Compile>
@@ -7886,6 +7889,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs">
       <Link>Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\AssemblyInfo.cs">
+      <Link>Modules\PhysicsEditor\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs">
       <Link>Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs</Link>

@@ -335,6 +335,7 @@ namespace UnityEditorInternal
         private void PurgeSelection()
         {
             linkedWithSequencer = false;
+            m_Selection?.Dispose();
             m_Selection = new FallbackSelectionItem();
         }
 

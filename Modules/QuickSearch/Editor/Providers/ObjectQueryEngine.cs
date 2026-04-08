@@ -45,26 +45,26 @@ namespace UnityEditor.Search.Providers
             new SearchProposition(label: "layer:", "layer>0", "Search object by layer (number)"),
             new SearchProposition(label: "size:", null, "Search object by volume size"),
             new SearchProposition(label: "components:", "components>=2", "Search object with more than # components"),
-            new SearchProposition(label: "is:", null, "Search object by state"),
-            new SearchProposition(label: "is:child", null, "Search object with a parent"),
-            new SearchProposition(label: "is:leaf", null, "Search object without children"),
-            new SearchProposition(label: "is:root", null, "Search root objects"),
-            new SearchProposition(label: "is:visible", null, "Search view visible objects"),
-            new SearchProposition(label: "is:hidden", null, "Search hierarchically hidden objects"),
-            new SearchProposition(label: "is:static", null, "Search static objects"),
-            new SearchProposition(label: "is:prefab", null, "Search prefab objects"),
-            new SearchProposition(label: "prefab:root", null, "Search prefab roots"),
-            new SearchProposition(label: "prefab:top", null, "Search top-level prefab root instances"),
-            new SearchProposition(label: "prefab:instance", null, "Search objects that are part of a prefab instance"),
-            new SearchProposition(label: "prefab:nonasset", null, "Search prefab objects that are not part of an asset"),
-            new SearchProposition(label: "prefab:asset", null, "Search prefab objects that are part of an asset"),
-            new SearchProposition(label: "prefab:model", null, "Search prefab objects that are part of a model"),
-            new SearchProposition(label: "prefab:regular", null, "Search regular prefab objects"),
-            new SearchProposition(label: "prefab:variant", null, "Search variant prefab objects"),
-            new SearchProposition(label: "prefab:modified", null, "Search modified prefab assets"),
-            new SearchProposition(label: "prefab:altered", null, "Search modified prefab instances"),
-            new SearchProposition(label: "t:", null, "Search object by type", priority: -1),
-            new SearchProposition(label: "ref:", null, "Search object references"),
+            new SearchProposition(label: "is=", null, "Search object by state"),
+            new SearchProposition(label: "is=child", null, "Search object with a parent"),
+            new SearchProposition(label: "is=leaf", null, "Search object without children"),
+            new SearchProposition(label: "is=root", null, "Search root objects"),
+            new SearchProposition(label: "is=visible", null, "Search view visible objects"),
+            new SearchProposition(label: "is=hidden", null, "Search hierarchically hidden objects"),
+            new SearchProposition(label: "is=static", null, "Search static objects"),
+            new SearchProposition(label: "is=prefab", null, "Search prefab objects"),
+            new SearchProposition(label: "prefab=root", null, "Search prefab roots"),
+            new SearchProposition(label: "prefab=top", null, "Search top-level prefab root instances"),
+            new SearchProposition(label: "prefab=instance", null, "Search objects that are part of a prefab instance"),
+            new SearchProposition(label: "prefab=nonasset", null, "Search prefab objects that are not part of an asset"),
+            new SearchProposition(label: "prefab=asset", null, "Search prefab objects that are part of an asset"),
+            new SearchProposition(label: "prefab=model", null, "Search prefab objects that are part of a model"),
+            new SearchProposition(label: "prefab=regular", null, "Search regular prefab objects"),
+            new SearchProposition(label: "prefab=variant", null, "Search variant prefab objects"),
+            new SearchProposition(label: "prefab=modified", null, "Search modified prefab assets"),
+            new SearchProposition(label: "prefab=altered", null, "Search modified prefab instances"),
+            new SearchProposition(label: "t=", null, "Search object by type", priority: -1),
+            new SearchProposition(label: "ref=", null, "Search object references"),
         };
 
         protected class GOD
@@ -118,7 +118,7 @@ namespace UnityEditor.Search.Providers
             m_Objects = objects.ToList();
             m_QueryEngine.AddFilter<int>("id", GetId);
             m_QueryEngine.AddFilter("path", GetPath);
-            m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
+            m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { "=", ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
             var refFilter = m_QueryEngine.SetFilter<int>("ref", GetReferences, new[] { "=", ":" });

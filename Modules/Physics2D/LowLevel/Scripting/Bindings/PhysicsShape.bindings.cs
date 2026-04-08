@@ -14,14 +14,14 @@ namespace UnityEngine.LowLevelPhysics2D
     {
         [NativeMethod(Name = "PhysicsShape::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsShapeDefinition PhysicsShape_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsShape::GetDefaultSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetDefaultSurfaceMaterial();
-        [NativeMethod(Name = "PhysicsShape::CreateCircleShape")] extern internal static PhysicsShape PhysicsShape_CreateCircleShape(PhysicsBody body, CircleGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreatePolygonShape")] extern internal static PhysicsShape PhysicsShape_CreatePolygonShape(PhysicsBody body, PolygonGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreateCapsuleShape")] extern internal static PhysicsShape PhysicsShape_CreateCapsuleShape(PhysicsBody body, CapsuleGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreateSegmentShape")] extern internal static PhysicsShape PhysicsShape_CreateSegmentShape(PhysicsBody body, SegmentGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreateChainSegmentShape")] extern internal static PhysicsShape PhysicsShape_CreateChainSegmenShapet(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreateShapeBatch")] extern internal static PhysicsBuffer PhysicsShape_CreateShapeBatch(PhysicsBody body, PhysicsBuffer spanGeometry, PhysicsShape.ShapeType shapeType, PhysicsShapeDefinition definition, Allocator allocator);
-        [NativeMethod(Name = "PhysicsShape::Destroy")] extern internal static bool PhysicsShape_Destroy(PhysicsShape shape, bool updateBodyMass, int ownerKey);
-        [NativeMethod(Name = "PhysicsShape::DestroyBatch")] extern internal static void PhysicsShape_DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass);
+        [NativeMethod(Name = "PhysicsShape::CreateCircleShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateCircleShape(PhysicsBody body, CircleGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreatePolygonShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreatePolygonShape(PhysicsBody body, PolygonGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreateCapsuleShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateCapsuleShape(PhysicsBody body, CapsuleGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreateSegmentShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateSegmentShape(PhysicsBody body, SegmentGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreateChainSegmentShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateChainSegmenShapet(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreateShapeBatch", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsShape_CreateShapeBatch(PhysicsBody body, PhysicsBuffer spanGeometry, PhysicsShape.ShapeType shapeType, PhysicsShapeDefinition definition, Allocator allocator);
+        [NativeMethod(Name = "PhysicsShape::Destroy", IsThreadSafe = true)] extern internal static bool PhysicsShape_Destroy(PhysicsShape shape, bool updateBodyMass, int ownerKey);
+        [NativeMethod(Name = "PhysicsShape::DestroyBatch", IsThreadSafe = true)] extern internal static void PhysicsShape_DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass);
         [NativeMethod(Name = "PhysicsShape::WriteDefinition")] extern internal static void PhysicsShape_WriteDefinition(PhysicsShape shape, PhysicsShapeDefinition definition, bool onlyExtendedProperties);
         [NativeMethod(Name = "PhysicsShape::ReadDefinition")] extern internal static PhysicsShapeDefinition PhysicsShape_ReadDefinition(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsValid(PhysicsShape shape);

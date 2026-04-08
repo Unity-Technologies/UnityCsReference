@@ -13,10 +13,10 @@ namespace UnityEngine.LowLevelPhysics2D
     internal static partial class PhysicsLowLevelScripting2D
     {
         [NativeMethod(Name = "PhysicsBody::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsBodyDefinition PhysicsBody_GetDefaultDefinition(bool useSettings);
-        [NativeMethod(Name = "PhysicsBody::Create")] extern internal static PhysicsBody PhysicsBody_Create(PhysicsWorld world, PhysicsBodyDefinition definition);
-        [NativeMethod(Name = "PhysicsBody::CreateBatch")] extern internal static PhysicsBuffer PhysicsBody_CreateBatch(PhysicsWorld world, ReadOnlySpan<PhysicsBodyDefinition> definitions, int bodyCount, Allocator allocator);
-        [NativeMethod(Name = "PhysicsBody::Destroy")] extern internal static bool PhysicsBody_Destroy(PhysicsBody body, int ownerKey);
-        [NativeMethod(Name = "PhysicsBody::DestroyBatch")] extern internal static void PhysicsBody_DestroyBatch(ReadOnlySpan<PhysicsBody> bodies);
+        [NativeMethod(Name = "PhysicsBody::Create", IsThreadSafe = true)] extern internal static PhysicsBody PhysicsBody_Create(PhysicsWorld world, PhysicsBodyDefinition definition);
+        [NativeMethod(Name = "PhysicsBody::CreateBatch", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsBody_CreateBatch(PhysicsWorld world, ReadOnlySpan<PhysicsBodyDefinition> definitions, int bodyCount, Allocator allocator);
+        [NativeMethod(Name = "PhysicsBody::Destroy", IsThreadSafe = true)] extern internal static bool PhysicsBody_Destroy(PhysicsBody body, int ownerKey);
+        [NativeMethod(Name = "PhysicsBody::DestroyBatch", IsThreadSafe = true)] extern internal static void PhysicsBody_DestroyBatch(ReadOnlySpan<PhysicsBody> bodies);
         [NativeMethod(Name = "PhysicsBody::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsBody_IsValid(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetBatchVelocity", IsThreadSafe = true)] extern internal static void PhysicsBody_SetBatchVelocity(ReadOnlySpan<PhysicsBody.BatchVelocity> batch);
         [NativeMethod(Name = "PhysicsBody::SetBatchForce", IsThreadSafe = true)] extern internal static void PhysicsBody_SetBatchForce(ReadOnlySpan<PhysicsBody.BatchForce> batch);
@@ -26,8 +26,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::ReadDefinition")] extern internal static PhysicsBodyDefinition PhysicsBody_ReadDefinition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsBody_GetWorld(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetBodyType", IsThreadSafe = true)] extern internal static PhysicsBody.BodyType PhysicsBody_GetBodyType(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetBodyType")] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, PhysicsBody.BodyType type);
-        [NativeMethod(Name = "PhysicsBody::SetBodyConstraints")] extern internal static void PhysicsBody_SetBodyConstraints(PhysicsBody body, PhysicsBody.BodyConstraints constraints);
+        [NativeMethod(Name = "PhysicsBody::SetBodyType", IsThreadSafe = true)] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, PhysicsBody.BodyType type);
+        [NativeMethod(Name = "PhysicsBody::SetBodyConstraints", IsThreadSafe = true)] extern internal static void PhysicsBody_SetBodyConstraints(PhysicsBody body, PhysicsBody.BodyConstraints constraints);
         [NativeMethod(Name = "PhysicsBody::GetBodyConstraints", IsThreadSafe = true)] extern internal static PhysicsBody.BodyConstraints PhysicsBody_GetBodyConstraints(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetPosition", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetPosition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetPosition", IsThreadSafe = true)] extern internal static void PhysicsBody_SetPosition(PhysicsBody body, Vector2 position);
@@ -46,9 +46,12 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::SetLinearVelocity", IsThreadSafe = true)] extern internal static void PhysicsBody_SetLinearVelocity(PhysicsBody body, Vector2 linearVelocity);
         [NativeMethod(Name = "PhysicsBody::GetAngularVelocity", IsThreadSafe = true)] extern internal static float PhysicsBody_GetAngularVelocity(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetAngularVelocity", IsThreadSafe = true)] extern internal static void PhysicsBody_SetAngularVelocity(PhysicsBody body, float angularVelocity);
+        [NativeMethod(Name = "PhysicsBody::SetMass", IsThreadSafe = true)] extern internal static void PhysicsBody_SetMass(PhysicsBody body, float mass);
         [NativeMethod(Name = "PhysicsBody::GetMass", IsThreadSafe = true)] extern internal static float PhysicsBody_GetMass(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetRotationalInertia", IsThreadSafe = true)] extern internal static void PhysicsBody_SetRotationalInertia(PhysicsBody body, float rotationalInertia);
         [NativeMethod(Name = "PhysicsBody::GetRotationalInertia", IsThreadSafe = true)] extern internal static float PhysicsBody_GetRotationalInertia(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::GetLocalCenterOfMass", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetLocalCenterOfMass(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetLocalCenterOfMass", IsThreadSafe = true)] extern internal static void PhysicsBody_SetLocalCenterOfMass(PhysicsBody body, Vector2 localCenterOfMass);
+        [NativeMethod(Name = "PhysicsBody::GetLocalCenterOfMass", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetLocalCenterOfMass(PhysicsBody body); 
         [NativeMethod(Name = "PhysicsBody::GetWorldCenterOfMass", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetWorldCenterOfMass(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetMassConfiguration", IsThreadSafe = true)] extern internal static void PhysicsBody_SetMassConfiguration(PhysicsBody body, PhysicsBody.MassConfiguration massData);
         [NativeMethod(Name = "PhysicsBody::GetMassConfiguration", IsThreadSafe = true)] extern internal static PhysicsBody.MassConfiguration PhysicsBody_GetMassConfiguration(PhysicsBody body);
@@ -65,7 +68,9 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::GetSleepingAllowed", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetSleepingAllowed(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetSleepThreshold", IsThreadSafe = true)] extern internal static void PhysicsBody_SetSleepThreshold(PhysicsBody body, float threshold);
         [NativeMethod(Name = "PhysicsBody::GetSleepThreshold", IsThreadSafe = true)] extern internal static float PhysicsBody_GetSleepThreshold(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetEnabled")] extern internal static void PhysicsBody_SetEnabled(PhysicsBody body, bool flag);
+        [NativeMethod(Name = "PhysicsBody::SetCollisionThreshold", IsThreadSafe = true)] extern internal static void PhysicsBody_SetCollisionThreshold(PhysicsBody body, float threshold);
+        [NativeMethod(Name = "PhysicsBody::GetCollisionThreshold", IsThreadSafe = true)] extern internal static float PhysicsBody_GetCollisionThreshold(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetEnabled", IsThreadSafe = true)] extern internal static void PhysicsBody_SetEnabled(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetEnabled", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetEnabled(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetFastRotationAllowed", IsThreadSafe = true)] extern internal static void PhysicsBody_SetFastRotationAllowed(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetFastRotationAllowed", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetFastRotationAllowed(PhysicsBody body);

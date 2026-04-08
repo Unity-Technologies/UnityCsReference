@@ -51,6 +51,7 @@ namespace UnityEditor.Search
 
             m_Expression = expression;
             m_ArgumentBuilders = expression.parameters.Select(p => ExpressionBlock.Create(p.outerText.ToString())).ToList();
+            @readonly = true;
         }
 
         public override string ToString() => m_Expression.outerText.ToString();

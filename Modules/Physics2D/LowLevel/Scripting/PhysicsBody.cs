@@ -804,38 +804,45 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// The calculated mass of the body, usually in kilograms.
-        /// See <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
+        /// This can be accessed as a union of <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/> using <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly float mass => PhysicsBody_GetMass(this);
+        public readonly float mass { get => PhysicsBody_GetMass(this); set => PhysicsBody_SetMass(this, value); }
 
         /// <summary>
         /// The rotational inertia of the body, usually in kg*m^2.
-        /// See <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
+        /// This can be accessed as a union of <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/> using <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly float rotationalInertia => PhysicsBody_GetRotationalInertia(this);
+        public readonly float rotationalInertia { get => PhysicsBody_GetRotationalInertia(this); set => PhysicsBody_SetRotationalInertia(this, value); }
 
         /// <summary>
         /// The center of mass position of the body in local space.
+        /// This can be accessed as a union of <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/> using <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly Vector2 localCenterOfMass => PhysicsBody_GetLocalCenterOfMass(this);
+        public readonly Vector2 localCenterOfMass { get => PhysicsBody_GetLocalCenterOfMass(this); set => PhysicsBody_SetLocalCenterOfMass(this, value); }
 
         /// <summary>
-        /// The center of mass position of the body in world space.
+        /// Get the center of mass position of the body in world space.
+        /// This can be accessed as a union of <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/> using <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
         public readonly Vector2 worldCenterOfMass => PhysicsBody_GetWorldCenterOfMass(this);
 
         /// <summary>
-        /// The body mass configuration. Normally this is computed automatically using the shape geometry and density.
-        /// This information changes if a shape is added or removed or if the body type changes.
-        /// See <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/>.
+        /// The body mass configuration comprised of the <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/>.
+        /// Normally this is computed automatically as each <see cref="LowLevelPhysics2D.PhysicsShape"/> is added, removed or changed on a body.
+        /// This will automatically change if the body type changes, for instance, a Static or Kinematic body always have zero mass and rotational inertia.
+        /// The individual properties of the <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/> and be accessed using <see cref="LowLevelPhysics2D.PhysicsBody.mass"/>, <see cref="LowLevelPhysics2D.PhysicsBody.rotationalInertia"/> and <see cref="LowLevelPhysics2D.PhysicsBody.localCenterOfMass"/>.
+        /// The <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> will be overwritten when setting this property or if <see cref="LowLevelPhysics2D.PhysicsBody.ApplyMassFromShapes"/> is called or when adding, removing or changing <see cref="PhysicsShape"/> with <see cref="PhysicsShapeDefinition.startMassUpdate"/> enabled.
         /// </summary>
         public readonly MassConfiguration massConfiguration { get => PhysicsBody_GetMassConfiguration(this); set => PhysicsBody_SetMassConfiguration(this, value); }
 
         /// <summary>
-        /// This updates the mass configuration to the sum of the mass configuration of all the attached shapes.
-        /// This normally does not need to be called unless you set the mass configuration to override the mass and you later want to reset the mass.
-        ///	You should call this regardless of body type.
-        /// Note that sensor shapes may have mass.
+        /// Typically a body will automatically calculate the <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> using all the attached shapes.
+        /// The <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> is automatically updated whenever a <see cref="LowLevelPhysics2D.PhysicsShape"/> is added, removed or modified.
+        /// When adding many shapes to a body, you can choose to stop this automatic calculation, therefore improving performance, by disabling <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startMassUpdate"/> for each shape being added to the body.
+        /// This call will result in the <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> being calculated using the currently added <see cref="LowLevelPhysics2D.PhysicsShape"/> so is typically called after many shapes are added if they have <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startMassUpdate"/> disabled.
+        /// Alternately, if you wish to assign your own <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> then disabling the automatic calculation also makes sense.
+        /// In either case, you must call this method or set <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/> before any simulation step occurs otherwise the <see cref="LowLevelPhysics2D.PhysicsBody"/> will exhibit unstable collision behaviour.
+        /// The <see cref="LowLevelPhysics2D.PhysicsBody.MassConfiguration"/> will be overwritten when calling <see cref="LowLevelPhysics2D.PhysicsBody.ApplyMassFromShapes"/>, if <see cref="PhysicsBody.massConfiguration"/> is set or when adding, removing or changing <see cref="PhysicsShape"/> with <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startMassUpdate"/> enabled.
         /// </summary>
         public readonly void ApplyMassFromShapes() => PhysicsBody_ApplyMassFromShapes(this);
 
@@ -870,9 +877,21 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool sleepingAllowed { get => PhysicsBody_GetSleepingAllowed(this); set => PhysicsBody_SetSleepingAllowed(this, value); }
 
         /// <summary>
-        /// The threshold below which the body will sleep, usually in m/s.
+        /// The threshold below which the body will sleep, in meters/sec.
         /// </summary>
         public readonly float sleepThreshold { get => PhysicsBody_GetSleepThreshold(this); set => PhysicsBody_SetSleepThreshold(this, value); }
+
+        /// <summary>
+        /// A threshold used to control when continuous collision detection is used when a body moves.
+        /// The value is used to compare the body linear velocity movement against the extents of all the shapes added to the body scaled by this threshold.
+        /// If the movement exceeds the extents scaled by the threshold then continuous collision detection is used to stop tunneling.
+        /// Lower values reduce the distance the body must move before continuous collision detection is used and can have a considerable impact on performance!
+        /// Higher values increase the distance the body must move before continuous collision detection is used.
+        /// Too low a threshold will result in continuous collision detection being used more often therefore affecting performance so this should be limited to specific bodies only.
+        /// The default threshold is 0.5 which equates to half the total shape extents.
+        /// The threshold is clamped to a range of 0.0 to 1.0 with 0.0 meaning continuous collision detection will always be used.
+        /// </summary>
+        public readonly float collisionThreshold { get => PhysicsBody_GetCollisionThreshold(this); set => PhysicsBody_SetCollisionThreshold(this, value); }
 
         /// <summary>
         /// The enabled state of the body. If false, the body and anything attached to it will not participate in the simulation.

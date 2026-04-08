@@ -11,7 +11,6 @@ using UnityEditor.UIElements;
 using System.Runtime.CompilerServices;
 using IPhysicsProjectSettingsECSInspectorExtension = UnityEditorInternal.IPhysicsProjectSettingsECSInspectorExtension;
 
-[assembly: InternalsVisibleTo("Unity.Physics.Editor.ProjectSettingsBridge")]
 namespace UnityEditor
 {
     class PhysicsManagerInspector

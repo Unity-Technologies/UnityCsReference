@@ -120,18 +120,15 @@ namespace UnityEditor.Build.Profile
         void OnInstall()
         {
             var request = PackageManager.Client.Add(k_PackageId);
-            if (m_TargetProfile.GetComponent<BuildAutomationSettings>() is not null)
-            {
-                BuildAutomationSettingsEditor.AddBuildAutomationSettings(m_TargetProfile);
-                m_ParentWindow.RepaintBuildProfileInspector();
-            }
+            BuildAutomationSettingsEditor.AddBuildAutomationSettings(m_TargetProfile);
+            m_ParentWindow.RepaintBuildProfileInspector();
 
             Close();
         }
 
         void OnAddCredentialsObject()
         {
-            if (m_TargetProfile.GetComponent<BuildAutomationSettings>() is not null)
+            if (PackageManager.PackageInfo.IsPackageRegistered(k_PackageId))
             {
                 BuildAutomationSettingsEditor.AddBuildAutomationSettings(m_TargetProfile);
                 m_ParentWindow.RepaintBuildProfileInspector();

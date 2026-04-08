@@ -365,6 +365,12 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal TextInfo Update()
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("TextHandle.Update should not be used with Advanced Text, use TextHandle.ComputeSettingsAndUpdate() instead.");
+                return null;
+            }
+                
             return UpdateWithHash(settings.GetHashCode());
         }
 

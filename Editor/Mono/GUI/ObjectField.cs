@@ -212,7 +212,8 @@ namespace UnityEditor
 
                 if (FillPropertyContextMenu(property, null, contextMenu) != null)
                     contextMenu.AddSeparator("");
-                contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
+                if (actualObject != null)
+                    contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
                 contextMenu.DropDown(position);
                 Event.current.Use();
             }

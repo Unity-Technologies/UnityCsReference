@@ -672,15 +672,7 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var buildProfiles = BuildProfileModuleUtil.GetAllBuildProfiles();
-            var profilesWithQualityLevelOverrides = 0;
-            foreach (var profile in buildProfiles)
-            {
-                if (profile.qualitySettings != null)
-                {
-                    profilesWithQualityLevelOverrides++;
-                }
-            }
+            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
             if (profilesWithQualityLevelOverrides > 0)
             {
                 if (profilesWithQualityLevelOverrides == 1)

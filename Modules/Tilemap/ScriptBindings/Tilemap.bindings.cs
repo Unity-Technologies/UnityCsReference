@@ -517,6 +517,11 @@ namespace UnityEngine.Tilemaps
         }
 
         internal extern void OnSpriteAtlasRegistered(SpriteAtlas atlas);
+
+        [FreeFunction(Name = "TilemapRendererBindings::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt(UInt32 v);
+        public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
+        [FreeFunction(Name = "TilemapRendererBindings::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
+        public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
     }
 
     [RequiredByNativeCode]
