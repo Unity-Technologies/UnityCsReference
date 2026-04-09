@@ -275,6 +275,13 @@ namespace Unity.U2D.Physics
         public static void DestroyBatch(ReadOnlySpan<PhysicsJoint> joints) => PhysicsJoint.DestroyBatch(joints);
 
         /// <summary>
+        /// Enable/Disable unpinned mode where only Body A is affected and body B and its local anchor point is ignored.
+        /// Body B must still be assigned so it is typical to assign a static ground body, preferably shared/reused.
+        /// 
+        /// </summary>
+        public readonly bool enableUnpinned { get => HingeJoint_GetEnableUnpinned(this); set => HingeJoint_SetEnableUnpinned(this, value); }
+
+        /// <summary>
         /// Enable/Disable the rotational spring.
         /// </summary>
         public readonly bool enableSpring { get => HingeJoint_GetEnableSpring(this); set => HingeJoint_SetEnableSpring(this, value); }

@@ -251,8 +251,8 @@ namespace UnityEngine.TextCore.Text
         [FreeFunction("FontAsset::Destroy")]
         static extern void Destroy(IntPtr ptr, IntPtr managedObject);
 
-        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        // Resetting the Unity FontObject destroys the FontEngine; hb faces may be invalid until recreated on the main thread.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         [FreeFunction("FontAsset::CreateHbFaceIfNeeded")]
         internal static extern void CreateHbFaceIfNeeded();
 

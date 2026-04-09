@@ -76,6 +76,21 @@ namespace UnityEditor
 
         internal static string k_ResourcesSDKPlatformInfoPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/SDKPlatformInfo");
 
+        static readonly string k_SDKPlatformInfoFailToParseError = L10n.Tr("Failed to parse SDK platform manifest '{0}': {1}.");
+        static readonly string k_SDKPlatformInfoFailToParseUnknownError = L10n.Tr("Failed to parse SDK platform manifest '{0}'.");
+        static readonly string k_SDKPlatformInfoMissingGuidError = L10n.Tr("SDK platform manifest '{0}' is missing a valid guid.");
+        static readonly string k_SDKPlatformInfoInvalidVersionError = L10n.Tr("SDK platform manifest '{0}' has an invalid version ({1}).");
+        static readonly string k_SDKPlatformGuidAlreadyUsedError = L10n.Tr("SDK platform guid '{0}' is already used by another platform.");
+        static readonly string k_SDKPlatformMissingBaseGuidError = L10n.Tr("SDK platform '{0}' is a derived platform but is missing a valid base platform guid.");
+        static readonly string k_SDKPlatformNoSupportedGuidsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no supported platform guids.");
+        static readonly string k_SDKPlatformMissingDisplayNameWarning = L10n.Tr("SDK platform '{0}' is missing a display name.");
+        static readonly string k_SDKPlatformMissingPlatformGroupWarning = L10n.Tr("SDK platform '{0}' does not reference any platform group. The platform was registered but will not appear in any group.");
+        static readonly string k_SDKPlatformUnknownPlatformGroupWarning = L10n.Tr("SDK platform '{0}' references unknown platform group '{1}'. The platform was registered but will not appear in any group.");
+        internal static readonly string k_SDKProviderMissingPlatformInfoError = L10n.Tr("The SDK platform provider '{0}' does not reference a valid platform.");
+        static readonly string k_SDKProviderNotMultiTargetError = L10n.Tr("The SDK platform provider '{0}' with guid '{1}' references a platform that is not marked as a multi-target platform.");
+        internal static readonly string k_SDKProviderNotDerivedTargetError = L10n.Tr("The SDK platform provider '{0}' with guid '{1}' references a platform that is not marked as a derived platform.");
+        static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.");
+
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
         public static extern bool PlatformGroupHasFlag(BuildTargetGroup group, TargetAttributes flag);
@@ -1005,21 +1020,37 @@ namespace UnityEditor
                 {
                     sdkPlatformInfo = JsonUtility.FromJson(text, typeof(SDKPlatformInfo)) as SDKPlatformInfo;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Debug.LogError(string.Format(k_SDKPlatformInfoFailToParseError, sdkPlatformFile, e.Message));
                     continue;
                 }
 
-                if (sdkPlatformInfo == null || string.IsNullOrEmpty(sdkPlatformInfo.guid))
+                if (sdkPlatformInfo == null)
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformInfoFailToParseUnknownError, sdkPlatformFile));
                     continue;
+                }
+
+                var sdkPlatformGuid = new GUID(sdkPlatformInfo.guid);
+                if (sdkPlatformGuid.Empty())
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformInfoMissingGuidError, sdkPlatformFile));
+                    continue;
+                }
 
                 var version = sdkPlatformInfo.version;
                 if (version <= 0)
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformInfoInvalidVersionError, sdkPlatformFile, version));
                     continue;
+                }
 
-                var sdkPlatformGuid = new GUID(sdkPlatformInfo.guid);
                 if (allPlatforms.ContainsKey(sdkPlatformGuid))
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformGuidAlreadyUsedError, sdkPlatformGuid));
                     continue;
+                }
 
                 var basePlatformGuid = new GUID(sdkPlatformInfo.basePlatformGuid);
                 var (baseBuildTarget, _) = GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
@@ -1030,21 +1061,31 @@ namespace UnityEditor
                     case SDKPlatformType.Derived:
                         flags |= PlatformAttributes.IsDerivedBuildTarget;
                         if (baseBuildTarget <= 0)
+                        {
+                            Debug.LogError(string.Format(k_SDKPlatformMissingBaseGuidError, sdkPlatformGuid));
                             continue;
+                        }
                         break;
                     case SDKPlatformType.MultiTarget:
                         flags |= PlatformAttributes.IsMultiTargetPlatform;
                         if (sdkPlatformInfo.supportedPlatformGuids == null || sdkPlatformInfo.supportedPlatformGuids.Length <= 0)
+                        {
+                            Debug.LogError(string.Format(k_SDKPlatformNoSupportedGuidsError, sdkPlatformGuid));
                             continue;
+                        }
                         break;
                 }
+
+                var displayName = sdkPlatformInfo.displayName ?? string.Empty;
+                if (string.IsNullOrEmpty(displayName))
+                    Debug.LogWarning(string.Format(k_SDKPlatformMissingDisplayNameWarning, sdkPlatformGuid));
 
                 PlatformInfo platformInfo = new()
                 {
                     supportedPlatformGuids = sdkPlatformInfo.flags.platformType == SDKPlatformType.MultiTarget ?
                         Array.ConvertAll(sdkPlatformInfo.supportedPlatformGuids, s => new GUID(s)) : Array.Empty<GUID>(),
                     buildTarget = baseBuildTarget,
-                    displayName = sdkPlatformInfo.displayName ?? string.Empty,
+                    displayName = displayName,
                     description = sdkPlatformInfo.description ?? string.Empty,
                     instructions = sdkPlatformInfo.instructions ?? string.Empty,
                     keyFeatures = sdkPlatformInfo.keyFeatures ?? string.Empty,
@@ -1059,13 +1100,19 @@ namespace UnityEditor
                 };
                 allPlatforms.Add(sdkPlatformGuid, platformInfo);
 
-                if (string.IsNullOrEmpty(sdkPlatformInfo.platformGroupName))
+                var targetGroupName = sdkPlatformInfo.platformGroupName;
+                if (string.IsNullOrEmpty(targetGroupName))
+                {
+                    Debug.LogWarning(string.Format(k_SDKPlatformMissingPlatformGroupWarning, sdkPlatformGuid));
                     continue;
+                }
 
-                var targetGroupName = L10n.Tr(sdkPlatformInfo.platformGroupName);                                                            
                 var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName);
                 if (groupIndex < 0)
+                {
+                    Debug.LogWarning(string.Format(k_SDKPlatformUnknownPlatformGroupWarning, sdkPlatformGuid, targetGroupName));
                     continue;
+                }
 
                 var platformsList = new List<GUID>(allPlatformGroups[groupIndex].platforms);
                 platformsList.Add(sdkPlatformGuid);
@@ -1131,12 +1178,21 @@ namespace UnityEditor
                 if (!TryCreateIPlatformProvider(type, out var provider))
                     continue;
 
-                var sdkPlatformProvider = SDKPlatformProvider.TryCreateMultiTargetProvider(provider);
+                var sdkPlatformProvider = SDKPlatformProvider.TryCreateMultiTargetPlatformProvider(provider);
                 if (sdkPlatformProvider == null)
                     continue;
 
                 if (!allPlatforms.TryGetValue(sdkPlatformProvider.guid, out PlatformInfo platformInfo))
+                {
+                    Debug.LogError(string.Format(k_SDKProviderMissingPlatformInfoError, sdkPlatformProvider.providerType.FullName));
                     continue;
+                }
+
+                if (!platformInfo.HasFlag(PlatformAttributes.IsMultiTargetPlatform))
+                {
+                    Debug.LogError(string.Format(k_SDKProviderNotMultiTargetError, sdkPlatformProvider.providerType.FullName, sdkPlatformProvider.guid));
+                    continue;
+                }
 
                 var supportedBuildTargets = new List<IBuildTarget>();
                 foreach (var supportedGuid in platformInfo.supportedPlatformGuids)
@@ -1167,7 +1223,11 @@ namespace UnityEditor
             try
             {
                 provider = Activator.CreateInstance(type) as IPlatformProvider;
-                return provider != null;
+                if (provider != null)
+                    return true;
+
+                Debug.LogError(string.Format(k_CreateIPlatformProviderFailedError, type.FullName));
+                return false;
             }
             catch (Exception exception)
             {

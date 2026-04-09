@@ -259,13 +259,7 @@ namespace Unity.Hierarchy.Editor
                     : DropdownMenuAction.Status.Disabled);
 
             menu.AppendSeparator();
-
-            var gameObjectHandler = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
-            var customParentNode = gameObjectHandler?.GetCustomParentNode() ?? HierarchyNode.Null;
-            menu.AppendAction(L10n.Tr("Delete GameObject"), _ => Unsupported.DeleteGameObjectSelection(),
-                view.IsSelectedOrAnyAncestorSelected(in customParentNode)
-                    ? DropdownMenuAction.Status.Disabled
-                    : DropdownMenuAction.Status.Normal);
+            menu.AppendAction(L10n.Tr("Delete"), _ => Unsupported.DeleteGameObjectSelection());
         }
 
         static void AddCustomSubSceneHeaderContextMenuItems(GenericMenu menu, Scene subScene)

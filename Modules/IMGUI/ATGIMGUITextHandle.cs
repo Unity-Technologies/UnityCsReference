@@ -397,6 +397,7 @@ namespace UnityEngine
         {
             ParseRichText(ref nativeSettingsIMGUI);
             m_Links = m_TempLinks;
+            FontAsset.CreateHbFaceIfNeeded();
             nativeTextInfo = textLib.GenerateText(nativeSettingsIMGUI, textGenerationInfo, ref isCached);
             pixelPreferedSize = new Vector2(nativeTextInfo.totalWidth / 64.0f, nativeTextInfo.totalHeight / 64.0f);
             m_IsElided = nativeTextInfo.isElided;

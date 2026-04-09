@@ -482,6 +482,32 @@ namespace Unity.U2D.Physics
             AnyPlayer,
         };
 
+        /// <summary>
+        /// Controls which properties of a <see cref="PhysicsShape.ContactManifold.ManifoldPoint"/> are drawn when drawing contact points.
+        /// </summary>
+        public enum DrawContactType
+        {
+            /// <summary>
+            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.point"/>.
+            /// </summary>
+            Point = 1,
+
+            /// <summary>
+            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.anchorA"/>.
+            /// </summary>
+            AnchorA = 2,
+
+            /// <summary>
+            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.anchorB"/>.
+            /// </summary>
+            AnchorB = 3,
+
+            /// <summary>
+            /// This will draw the position half-way between <see cref="PhysicsShape.ContactManifold.ManifoldPoint.anchorA"/> and <see cref="PhysicsShape.ContactManifold.ManifoldPoint.anchorB"/>.
+            /// </summary>
+            Average = 4
+        }
+
         #region Globals
 
         /// <summary>
@@ -960,6 +986,16 @@ namespace Unity.U2D.Physics
         public readonly float contactDamping { get => PhysicsWorld_GetContactDamping(this); set => PhysicsWorld_SetContactDamping(this, value); }
 
         /// <summary>
+        /// The contact recycle distance, in meters.
+        /// Setting this to zero disables contact point recycling.
+        /// Contact recycling reuses contact points across simulation time-steps when the relative movement is small.
+        /// This feature improves stability and performance by around 25% (approximately).
+        /// Contact points are not recalculated until shapes move more than 5cm (default) relative to each other.
+        /// Contact recycling skips some updates such as friction, pre-solve (etc) until the contacts are no longer recycled.
+        /// </summary>
+        public readonly float contactRecycleDistance { get => PhysicsWorld_GetContactRecycleDistance(this); set => PhysicsWorld_SetContactRecycleDistance(this, value); }
+
+        /// <summary>
         /// The contact speed used to solve overlaps, in meters per second.
         /// </summary>
         public readonly float contactSpeed { get => PhysicsWorld_GetContactSpeed(this); set => PhysicsWorld_SetContactSpeed(this, value); }
@@ -976,6 +1012,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get/Set the simulation worker count for the world.
+        /// A single simulation worker is always used for simulation therefore a worker count of one means single thread simulation only.
         /// The actual quantity of workers used will always be capped to those available on the current device and reading the property will return the number of workers actually being used by the device.
         /// Changing the worker count continuously is not recommend and will impact performance as it requires the task queue be recreated.
         /// See <see cref="PhysicsWorldDefinition.simulationWorkers"/>.
@@ -3079,6 +3116,11 @@ namespace Unity.U2D.Physics
         /// Controls what colors are used to draw <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsJoint"/> etc.
         /// </summary>
         public readonly DrawColors drawColors { get => PhysicsWorld_GetDrawColors(this); set => PhysicsWorld_SetDrawColors(this, value); }
+
+        /// <summary>
+        /// Controls the <see cref="PhysicsWorld.DrawContactType"/> used when drawing contact points.
+        /// </summary>
+        public readonly DrawContactType drawContactType { get => PhysicsWorld_GetDrawContactType(this); set => PhysicsWorld_SetDrawContactType(this, value);  }
 
         /// <summary>
         /// Controls the element depth.

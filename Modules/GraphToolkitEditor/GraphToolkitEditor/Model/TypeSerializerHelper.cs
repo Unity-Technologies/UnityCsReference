@@ -6,16 +6,22 @@ using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+
+using Profiler = UnityEngine.Profiling.Profiler;
 
 namespace Unity.GraphToolkit.Editor
 {
-    [InitializeOnLoad]
     static class TypeSerializerHelper
     {
         static TypeSerializerHelper()
         {
             InternalTypeHelpers.GetMovedFromType = GetMovedFromType;
+        }
+        public static void EnsureStaticConstructorIsCalled()
+        {
+
         }
 
         static Dictionary<string, Type> s_MovedFromTypes;
@@ -24,11 +30,13 @@ namespace Unity.GraphToolkit.Editor
         {
             if (s_MovedFromTypes == null)
             {
+                Profiler.BeginSample("GraphToolkit.TypeSerializerHelper.GetMovedFromTypes");
                 s_MovedFromTypes = new Dictionary<string, Type>();
                 var movedFromTypes = TypeCache.GetTypesWithAttribute<MovedFromAttribute>();
                 foreach (var t in movedFromTypes)
                 {
                     var attributes = Attribute.GetCustomAttributes(t, typeof(MovedFromAttribute), false);
+                    Profiler.BeginSample($"GraphToolkit.TypeSerializerHelper.GetMovedFromTypes.MovedFromTypesLoop.AttributeLoop.{t.FullName}");
                     foreach (var attribute in attributes)
                     {
                         var movedFromAttribute = (MovedFromAttribute)attribute;
@@ -50,7 +58,9 @@ namespace Unity.GraphToolkit.Editor
 
                         s_MovedFromTypes.Add(oldAssemblyQualifiedName, t);
                     }
+                    Profiler.EndSample();
                 }
+                Profiler.EndSample();
             }
 
             return s_MovedFromTypes;

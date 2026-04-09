@@ -73,7 +73,7 @@ namespace UnityEditor
             private readonly GUIContent[] m_SupportedArchitectureNames;
 
             public DesktopMultiCPUProperty(BuildTarget buildTarget, params DesktopPluginCPUArchitecture[] supportedArchitectures) :
-                base(cpuKey, cpuKey, DesktopPluginCPUArchitecture.None, BuildPipeline.GetBuildTargetName(buildTarget))
+                base(cpuKey, cpuKey, DesktopPluginCPUArchitecture.AnyCPU, BuildPipeline.GetBuildTargetName(buildTarget))
             {
                 // Add "None" and "AnyCPU" architectures to the supported architecture list
                 m_SupportedArchitectures = new DesktopPluginCPUArchitecture[supportedArchitectures.Length + 2];

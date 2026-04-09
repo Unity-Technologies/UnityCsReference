@@ -152,7 +152,16 @@ namespace UnityEditor.Modules
         void LoadSDKDerivedPlatformExtension(SDKPlatformProvider sdkPlatformProvider, IBuildTarget baseIBuildTarget, CreateBuildProfileExtensionFunction createBaseBuildProfileExtensionFunction)
         {
             if (!BuildTargetDiscovery.TryGetPlatformInfo(sdkPlatformProvider.guid, out var platformInfo))
+            {
+                Debug.LogError(string.Format(BuildTargetDiscovery.k_SDKProviderMissingPlatformInfoError, sdkPlatformProvider.providerType.FullName));
                 return;
+            }
+
+            if (!BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(sdkPlatformProvider.guid))
+            {
+                Debug.LogError(string.Format(BuildTargetDiscovery.k_SDKProviderNotDerivedTargetError, sdkPlatformProvider.providerType.FullName, sdkPlatformProvider.guid));
+                return;
+            }
 
             if (platformInfo.buildTarget != m_BuildTarget)
                 return;

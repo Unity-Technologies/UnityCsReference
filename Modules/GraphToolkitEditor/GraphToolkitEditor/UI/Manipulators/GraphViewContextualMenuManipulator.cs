@@ -32,7 +32,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(SelectOnMouseDown, TrickleDown.TrickleDown);
+            target.RegisterCallback<MouseDownEvent>(SelectOnMouseDown);
             base.RegisterCallbacksOnTarget();
         }
 
