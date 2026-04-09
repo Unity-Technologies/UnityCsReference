@@ -108,7 +108,8 @@ namespace UnityEditor.Build.Profile
                         menu.AddItem(new GUIContent(level), false, () => AddQualityLevel(level));
                 }
 
-                menu.AddSeparator(string.Empty);
+                if (menu.GetItemCount() > 0)
+                    menu.AddSeparator(string.Empty);
                 menu.AddItem(k_qualitySettingsWindow, false, () => SettingsService.OpenProjectSettings(k_QualitySettingsWindow));
                 menu.ShowAsContext();
             };

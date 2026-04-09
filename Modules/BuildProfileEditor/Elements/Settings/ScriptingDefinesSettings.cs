@@ -94,7 +94,7 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
 
                 var lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
-                if (property.arraySize != lastCompiledDefines.Length)
+                if (property.arraySize < lastCompiledDefines.Length)
                 {
                     recompileDefinesButton.SetEnabled(true);
                     revertDefinesButton.SetEnabled(true);
@@ -103,11 +103,24 @@ namespace UnityEditor.Build.Profile.Elements
 
                 for (int i = 0; i < property.arraySize; i++)
                 {
-                    if (property.GetArrayElementAtIndex(i).stringValue != lastCompiledDefines[i])
+                    var element = property.GetArrayElementAtIndex(i);
+                    if (i < lastCompiledDefines.Length)
                     {
-                        recompileDefinesButton.SetEnabled(true);
-                        revertDefinesButton.SetEnabled(true);
-                        return;
+                        if (element.stringValue != lastCompiledDefines[i])
+                        {
+                            recompileDefinesButton.SetEnabled(true);
+                            revertDefinesButton.SetEnabled(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(element.stringValue))
+                        {
+                            recompileDefinesButton.SetEnabled(true);
+                            revertDefinesButton.SetEnabled(true);
+                            return;
+                        }
                     }
                 }
 
@@ -141,14 +154,15 @@ namespace UnityEditor.Build.Profile.Elements
                 if (EditorApplication.isPlayingOrWillChangePlaymode)
                     return;
 
-                var lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+                var lastCompiledDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(BuildProfileContext.instance.cachedEditorScriptingDefines);
+                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
                 if (ArrayUtility.ArrayEquals(m_Profile.scriptingDefines, lastCompiledDefines))
                 {
                     return;
                 }
 
                 bool isAutomatedEnvironment = UnityEngine.Application.isBatchMode || BuildPipeline.isBuildingPlayer;
-        
+
                 if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
                 {
                     m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);

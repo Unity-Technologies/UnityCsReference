@@ -317,7 +317,25 @@ namespace UnityEditor
     sealed class CameraPreview : IMGUIContainer
     {
         readonly string k_NoCameraDisplayLabel = L10n.Tr("No camera selected");
+        const string k_ClipUIShaderKeyword = "CLIP_UV";
 
+        static Material s_PreviewMaterial = null;
+        
+        Material previewMaterial
+        {
+            get
+            {
+                if (s_PreviewMaterial == null)
+                {
+                    s_PreviewMaterial = new Material(EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+                    s_PreviewMaterial.EnableKeyword(k_ClipUIShaderKeyword);
+                    EditorGUIUtility.RegisterResourceForCleanupOnDomainReload(s_PreviewMaterial);
+                }
+
+                return s_PreviewMaterial;
+            }
+        }
+        
         CamerasOverlay m_Overlay;
 
         public CameraPreview(CamerasOverlay overlay)
@@ -383,8 +401,7 @@ namespace UnityEditor
                 settings.useHDR = (m_Overlay.containerWindow as SceneView).SceneViewIsRenderingHDR();
 
                 var previewTexture = CameraPreviewUtils.GetPreview(m_Overlay.viewpoint, settings);
-
-                Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+                Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, previewMaterial);
             }
         }
     }
