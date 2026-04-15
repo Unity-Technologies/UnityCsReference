@@ -150,6 +150,11 @@ namespace UnityEngine
             return UnityEngine.SystemInfo.SupportsRandomWriteOnRenderTextureFormat(format);
         }
 
+        public virtual bool SupportsTypedUAVShaderLoadStoreOnGraphicsFormat(GraphicsFormat graphicsFormat, bool isLoad)
+        {
+            return UnityEngine.SystemInfo.SupportsTypedUAVShaderLoadStoreOnGraphicsFormat(graphicsFormat, isLoad);
+        }
+
         public virtual bool SupportsTextureFormat(TextureFormat format)
         {
             return UnityEngine.SystemInfo.SupportsTextureFormat(format);

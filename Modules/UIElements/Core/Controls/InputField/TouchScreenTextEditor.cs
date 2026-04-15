@@ -7,7 +7,6 @@ namespace UnityEngine.UIElements
     internal class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
         private IVisualElementScheduledItem m_TouchKeyboardPoller = null;
-        private bool m_TouchKeyboardAllowsInPlaceEditing = false;
         private bool m_IsClicking = false;
 
         // For UI Test Framework.
@@ -20,9 +19,7 @@ namespace UnityEngine.UIElements
 
         void PollTouchScreenKeyboard()
         {
-            m_TouchKeyboardAllowsInPlaceEditing = TouchScreenKeyboard.isInPlaceEditingAllowed;
-
-            if (TouchScreenKeyboard.isSupported && !m_TouchKeyboardAllowsInPlaceEditing)
+            if (TouchScreenKeyboard.isSupported)
             {
                 if (m_TouchKeyboardPoller == null)
                     m_TouchKeyboardPoller = textElement?.schedule.Execute(DoPollTouchScreenKeyboard).Every(100);
@@ -35,7 +32,7 @@ namespace UnityEngine.UIElements
         {
             ++Frame;
 
-            if (editingUtilities.TouchScreenKeyboardShouldBeUsed())
+            if (editingUtilities.TouchScreenKeyboardCanBeUsed() && !textElement.edition.hideSoftKeyboard)
             {
                 if (textElement.m_TouchScreenKeyboard == null)
                     return;
@@ -70,7 +67,7 @@ namespace UnityEngine.UIElements
                     {
                         edition.UpdateTextFromValue?.Invoke();
                     }
-                    
+
                     textElement.Blur();
 
                     return;
@@ -164,7 +161,6 @@ namespace UnityEngine.UIElements
                 textElement.m_TouchScreenKeyboard.active = false;
                 textElement.m_TouchScreenKeyboard = null;
                 m_TouchKeyboardPoller?.Pause();
-                TouchScreenKeyboard.hideInput = true;
             }
             activeTouchScreenKeyboard = null;
         }
@@ -204,7 +200,7 @@ namespace UnityEngine.UIElements
         {
             base.HandleEventBubbleUp(evt);
 
-            if (!editingUtilities.TouchScreenKeyboardShouldBeUsed() || textElement.edition.isReadOnly)
+            if (!editingUtilities.TouchScreenKeyboardCanBeUsed() || textElement.edition.isReadOnly || textElement.edition.hideSoftKeyboard)
                 return;
 
             switch (evt)
@@ -280,7 +276,8 @@ namespace UnityEngine.UIElements
                 pendingFocusedTextElement == null ||
                 pendingFocusedTextElement.edition.keyboardType != currentFocusedTextElement.edition.keyboardType ||
                 pendingFocusedTextElement.edition.multiline != currentFocusedTextElement.edition.multiline ||
-                pendingFocusedTextElement.edition.hideMobileInput != currentFocusedTextElement.edition.hideMobileInput)
+                pendingFocusedTextElement.edition.hideMobileInput != currentFocusedTextElement.edition.hideMobileInput ||
+                pendingFocusedTextElement.edition.hideSoftKeyboard != currentFocusedTextElement.edition.hideSoftKeyboard)
             {
                 CloseTouchScreenKeyboard();
             }

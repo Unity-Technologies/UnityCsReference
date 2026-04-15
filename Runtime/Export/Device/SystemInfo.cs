@@ -271,6 +271,11 @@ namespace UnityEngine.Device
             return ShimManager.systemInfoShim.SupportsRandomWriteOnRenderTextureFormat(format);
         }
 
+        public static bool SupportsTypedUAVShaderLoadStoreOnGraphicsFormat(GraphicsFormat graphicsFormat, bool isLoad)
+        {
+            return ShimManager.systemInfoShim.SupportsTypedUAVShaderLoadStoreOnGraphicsFormat(graphicsFormat, isLoad);
+        }
+
         public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
         {
             return ShimManager.systemInfoShim.GetTiledRenderTargetStorageSize(format, sampleCount);

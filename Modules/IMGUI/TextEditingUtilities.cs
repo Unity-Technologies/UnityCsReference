@@ -63,16 +63,19 @@ namespace UnityEngine
             set => m_TextSelectingUtility.cursorIndex = value;
         }
 
-        private int cursorIndexNoValidation {
+        private int cursorIndexNoValidation
+        {
             get => m_TextSelectingUtility.cursorIndexNoValidation;
             set => m_TextSelectingUtility.cursorIndexNoValidation = value;
         }
-        private int selectIndexNoValidation {
+        private int selectIndexNoValidation
+        {
             get => m_TextSelectingUtility.selectIndexNoValidation;
             set => m_TextSelectingUtility.selectIndexNoValidation = value;
         }
 
-        private int stringCursorIndexNoValidation {
+        private int stringCursorIndexNoValidation
+        {
             get => textHandle.GetCorrespondingStringIndex(m_TextSelectingUtility.cursorIndexNoValidation);
         }
 
@@ -211,20 +214,20 @@ namespace UnityEngine
             switch (operation)
             {
                 // NOTE the TODOs below:
-                case TextEditOp.MoveLeft:           m_TextSelectingUtility.MoveLeft(); break;
-                case TextEditOp.MoveRight:          m_TextSelectingUtility.MoveRight(); break;
-                case TextEditOp.MoveUp:             m_TextSelectingUtility.MoveUp(); break;
-                case TextEditOp.MoveDown:           m_TextSelectingUtility.MoveDown(); break;
-                case TextEditOp.MoveLineStart:      m_TextSelectingUtility.MoveLineStart(); break;
-                case TextEditOp.MoveLineEnd:        m_TextSelectingUtility.MoveLineEnd(); break;
-                case TextEditOp.MoveWordRight:      m_TextSelectingUtility.MoveWordRight(); break;
-                case TextEditOp.MoveToStartOfNextWord:      m_TextSelectingUtility.MoveToStartOfNextWord(); break;
-                case TextEditOp.MoveToEndOfPreviousWord:        m_TextSelectingUtility.MoveToEndOfPreviousWord(); break;
-                case TextEditOp.MoveWordLeft:       m_TextSelectingUtility.MoveWordLeft(); break;
-                case TextEditOp.MoveTextStart:      m_TextSelectingUtility.MoveTextStart(); break;
-                case TextEditOp.MoveTextEnd:        m_TextSelectingUtility.MoveTextEnd(); break;
-                case TextEditOp.MoveParagraphForward:   m_TextSelectingUtility.MoveParagraphForward(); break;
-                case TextEditOp.MoveParagraphBackward:  m_TextSelectingUtility.MoveParagraphBackward(); break;
+                case TextEditOp.MoveLeft: m_TextSelectingUtility.MoveLeft(); break;
+                case TextEditOp.MoveRight: m_TextSelectingUtility.MoveRight(); break;
+                case TextEditOp.MoveUp: m_TextSelectingUtility.MoveUp(); break;
+                case TextEditOp.MoveDown: m_TextSelectingUtility.MoveDown(); break;
+                case TextEditOp.MoveLineStart: m_TextSelectingUtility.MoveLineStart(); break;
+                case TextEditOp.MoveLineEnd: m_TextSelectingUtility.MoveLineEnd(); break;
+                case TextEditOp.MoveWordRight: m_TextSelectingUtility.MoveWordRight(); break;
+                case TextEditOp.MoveToStartOfNextWord: m_TextSelectingUtility.MoveToStartOfNextWord(); break;
+                case TextEditOp.MoveToEndOfPreviousWord: m_TextSelectingUtility.MoveToEndOfPreviousWord(); break;
+                case TextEditOp.MoveWordLeft: m_TextSelectingUtility.MoveWordLeft(); break;
+                case TextEditOp.MoveTextStart: m_TextSelectingUtility.MoveTextStart(); break;
+                case TextEditOp.MoveTextEnd: m_TextSelectingUtility.MoveTextEnd(); break;
+                case TextEditOp.MoveParagraphForward: m_TextSelectingUtility.MoveParagraphForward(); break;
+                case TextEditOp.MoveParagraphBackward: m_TextSelectingUtility.MoveParagraphBackward(); break;
                 //      case TextEditOp.MovePageUp:     return MovePageUp (); break;
                 //      case TextEditOp.MovePageDown:       return MovePageDown (); break;
                 case TextEditOp.MoveGraphicalLineStart: m_TextSelectingUtility.MoveGraphicalLineStart(); break;
@@ -595,13 +598,14 @@ namespace UnityEngine
             m_TextSelectingUtility.SelectNone();
         }
 
-        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
-        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
+        // When in-place editing is allowed (e.g. WebGL/desktop with physical keyboard), TouchScreenKeyboard may
+        // report status Done immediately and never Visible; the UITK touch-keyboard poller would then Blur() the
+        // field on first tick (see TouchScreenTextEditorEventHandler.DoPollTouchScreenKeyboard). Match legacy
+        // TouchScreenKeyboardShouldBeUsed: only use the touch-keyboard path when we actually need the OS keyboard.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool TouchScreenKeyboardShouldBeUsed()
+        internal bool TouchScreenKeyboardCanBeUsed()
         {
-            RuntimePlatform platform = Application.platform;
-            switch (platform)
+            switch (Application.platform)
             {
                 case RuntimePlatform.Android:
                 case RuntimePlatform.WebGLPlayer:
@@ -612,6 +616,12 @@ namespace UnityEngine
                 default:
                     return TouchScreenKeyboard.isSupported;
             }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool PhysicalKeyboardCanBeUsed()
+        {
+            return TouchScreenKeyboard.isSupported ? TouchScreenKeyboard.isInPlaceEditingAllowed : true;
         }
     }
 }

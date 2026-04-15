@@ -318,10 +318,7 @@ namespace UnityEngine.UIElements.UIR
             if (ve.layout.width >= UIRUtility.k_Epsilon && ve.layout.height >= UIRUtility.k_Epsilon)
             {
                 var style = ve.resolvedStyle;
-                if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
-                    style.borderTopColor != Color.clear && style.borderTopWidth > 0.0f ||
-                    style.borderRightColor != Color.clear && style.borderRightWidth > 0.0f ||
-                    style.borderBottomColor != Color.clear && style.borderBottomWidth > 0.0f)
+                if (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f)
                 {
                     var borderParams = new MeshGenerator.BorderParams
                     {

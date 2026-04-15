@@ -596,9 +596,9 @@ namespace UnityEditor.Build.Profile
             {
                 s_Instance = buildProfileContext[0] as BuildProfileContext;
                 if (s_Instance == null)
-                    Debug.LogError("BuildProfileContext asset exists but could not be loaded.");
+                    Debug.LogWarning("BuildProfileContext asset exists but could not be loaded. Creating a new one.");
             }
-            else if (s_Instance == null)
+            if (s_Instance == null)
             {
                 s_Instance = CreateInstance<BuildProfileContext>();
                 s_Instance.hideFlags = HideFlags.DontSave;
