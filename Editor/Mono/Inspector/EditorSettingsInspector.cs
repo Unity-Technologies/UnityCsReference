@@ -759,7 +759,18 @@ namespace UnityEditor
             GUILayout.Label(Content.buildProfileSettings, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_HideBuildProfileClassicPlatforms, Content.buildProfileClassicPlatforms);
+
+            bool isActiveProfileClassic = BuildProfile.GetActiveBuildProfile() == null;
+            if (isActiveProfileClassic && !m_HideBuildProfileClassicPlatforms.boolValue)
+                EditorGUILayout.HelpBox("This setting cannot be enabled while a Classic Build Profile is Active.", MessageType.Warning);
+
+            // Don't allow 'Hide Classic Platforms' to be enabled while a classic platform is active.
+            //  Disabling is still allowed to cover an edge case where a hidden classic platform would activate.
+            using (new EditorGUI.DisabledScope(isActiveProfileClassic && !m_HideBuildProfileClassicPlatforms.boolValue))
+            {
+                EditorGUILayout.PropertyField(m_HideBuildProfileClassicPlatforms, Content.buildProfileClassicPlatforms);
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();

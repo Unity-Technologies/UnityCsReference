@@ -630,6 +630,26 @@ namespace Unity.GraphToolkit.Editor
             OnAfterLoad();
         }
 
+        internal void ShowGraphObjectInProjectWindow()
+        {
+            if (string.IsNullOrEmpty(FilePath))
+            {
+                Debug.LogWarning("Could not show the asset in the project window because its file path is null or empty.");
+                return;
+            }
+
+            EditorUtility.FocusProjectWindow();
+            var obj = AssetDatabase.LoadMainAssetAtPath(FilePath);
+            if (obj == null)
+            {
+                Debug.LogWarning("Could not show the asset in the project window because it could not be loaded at path: " + FilePath);
+                return;
+            }
+
+            Selection.activeObject = obj;
+            EditorGUIUtility.PingObject(obj);
+        }
+
         /// <summary>
         /// Apply all change needed for migration:
         /// assembly Unity.GraphToolkit.Internal renamed to UnityEditor.GraphToolkitModule

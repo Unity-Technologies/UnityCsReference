@@ -38,14 +38,8 @@ namespace Unity.GraphToolkit.Editor
             if (graphEditorWindow is null)
                 return;
 
-            var graphObject = graphEditorWindow.GraphView?.GraphViewModel.GraphModelState.GraphModel.GraphObject;
-            if (graphObject != null)
-            {
-                EditorUtility.FocusProjectWindow();
-                var obj = AssetDatabase.LoadMainAssetAtPath(graphObject.FilePath);
-                Selection.activeObject = obj;
-                EditorGUIUtility.PingObject(obj);
-            }
+            var graphObject = graphEditorWindow.GraphView?.GraphViewModel?.GraphModelState?.GraphModel?.GraphObject;
+            graphObject?.ShowGraphObjectInProjectWindow();
         }
     }
 }

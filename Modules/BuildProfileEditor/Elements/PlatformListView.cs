@@ -35,6 +35,8 @@ namespace UnityEditor.Build.Profile.Elements
         internal const string buildProfileClassicPlatformVisualElement = "build-profile-classic-platforms";
         internal const string buildProfileSharedSceneListElement = "shared-scene-list-elem";
 
+        const string k_CustomSelectionDataKey = "bp-profile-list-custom-selection-guid";
+        const string k_ClassicSelectionDataKey = "bp-profile-list-classic-selection-index";
         readonly BuildProfileWindow m_Parent;
         readonly BuildProfileDataSource m_DataSource;
         readonly ListView m_PlatformListView;
@@ -53,6 +55,8 @@ namespace UnityEditor.Build.Profile.Elements
 
         public void HideClassicPlatformListView() => m_PlatformListView.Hide();
         public void ShowClassicPlatformListView() => m_PlatformListView.Show();
+
+        internal bool IsClassicPlatformSelected() => m_PlatformListView.selectedIndex >= 0;
 
         internal void Create()
         {
@@ -97,7 +101,10 @@ namespace UnityEditor.Build.Profile.Elements
             m_PlatformListView.selectionChanged += (items) =>
             {
                 if (m_PlatformListView.selectedIndex < 0)
+                {
+                    EditorPrefs.DeleteKey(k_ClassicSelectionDataKey);
                     return;
+                }
 
                 var data = (ClassicItemData)m_PlatformListView.selectedItem;
 
@@ -110,6 +117,8 @@ namespace UnityEditor.Build.Profile.Elements
                         m_Parent.OnMissingClassicPlatformSelected(data.platformId);
                         break;
                 }
+
+                EditorPrefs.SetInt(k_ClassicSelectionDataKey, m_PlatformListView.selectedIndex);
             };
             m_PlatformListView.unbindItem = UnbindItem;
 
@@ -139,6 +148,7 @@ namespace UnityEditor.Build.Profile.Elements
                 element.RegisterCallback<PointerEnterEvent, BuildProfile>(PointerEntersBuildProfileElement, profile);
             };
             m_BuildProfilesListView.selectionChanged += m_Parent.OnCustomProfileSelected;
+            m_BuildProfilesListView.selectionChanged += StoreCustomProfileSelection;
             m_BuildProfilesListView.unbindItem = UnbindItem;
 
             // Check if we need to select a recently enabled platform
@@ -147,6 +157,88 @@ namespace UnityEditor.Build.Profile.Elements
             {
                 m_PlatformListView.RegisterCallback<GeometryChangedEvent>(SelectLastEnabledPlatformOnGeometryChange);
             }
+        }
+
+        /// <summary>
+        /// Stores the GUIDs of all selected custom build profiles.
+        /// </summary>
+        void StoreCustomProfileSelection(IEnumerable<object> selectedItems)
+        {
+            if (selectedItems == null)
+            {
+                EditorPrefs.DeleteKey(k_CustomSelectionDataKey);
+                return;
+            }
+
+            List<string> guidsToStore = new List<string>();
+            foreach (var item in selectedItems)
+            {
+                if (item is BuildProfile profile)
+                {
+                    string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(profile));
+                    if (!string.IsNullOrEmpty(guid))
+                    {
+                        guidsToStore.Add(guid);
+                    }
+                }
+            }
+
+            if (guidsToStore.Count > 0)
+            {
+                // Using a comma as a separator between GUIDs
+                string data = string.Join(",", guidsToStore);
+                EditorPrefs.SetString(k_CustomSelectionDataKey, data);
+            }
+            else
+            {
+                EditorPrefs.DeleteKey(k_CustomSelectionDataKey);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to select multiple profiles based on saved GUIDs.
+        /// </summary>
+        bool TrySelectStoredCustomProfile()
+        {
+            string savedData = EditorPrefs.GetString(k_CustomSelectionDataKey, string.Empty);
+            if (string.IsNullOrEmpty(savedData))
+                return false;
+
+            HashSet<string> savedGuids = new HashSet<string>(savedData.Split(','));
+            List<int> indicesToSelect = new List<int>();
+
+            for (int i = 0; i < m_DataSource.customBuildProfiles.Count; i++)
+            {
+                var profile = m_DataSource.customBuildProfiles[i];
+                if (profile == null) continue;
+
+                string currentGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(profile));
+                if (savedGuids.Contains(currentGuid))
+                {
+                    indicesToSelect.Add(i);
+                }
+            }
+
+            if (indicesToSelect.Count > 0)
+            {
+                m_BuildProfilesListView.SetSelection(indicesToSelect);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Attempts to select a classic platform based on saved index.
+        /// </summary>
+        bool TrySelectStoredClassicPlatform()
+        {
+            int savedIndex = EditorPrefs.GetInt(k_ClassicSelectionDataKey, -1);
+            if (savedIndex < 0 || savedIndex >= m_PlatformListView.itemsSource.Count)
+                return false;
+
+            SelectInstalledPlatform(savedIndex);
+            return true;
         }
 
         private static void PointerEntersBuildProfileElement(PointerEnterEvent evt, BuildProfile profile)
@@ -243,10 +335,17 @@ namespace UnityEditor.Build.Profile.Elements
         internal void HideCustomBuildProfiles() => m_BuildProfilesListView.Hide();
 
         /// <summary>
-        /// Selects active profile from available custom build profiles or installed platforms.
+        /// Restores build profile selection from editor prefs, or falls back to selecting
+        /// the active profile from available custom build profiles or installed platforms.
         /// </summary>
-        internal void SelectActiveProfile()
+        internal void RestoreBuildProfileSelection()
         {
+            if (TrySelectStoredCustomProfile())
+                return;
+
+            if (!EditorSettings.hideBuildProfileClassicPlatforms && TrySelectStoredClassicPlatform())
+                return;
+
             if (TrySelectCustomBuildProfile())
                 return;
 

@@ -109,8 +109,12 @@ namespace UnityEditor.Build.Profile
             if (!HasOpenInstances<BuildProfileWindow>())
                 return;
 
-            var window = GetWindow<BuildProfileWindow>();
-            window.UpdateFromEditorSettings();
+            // Get the existing window without switching focus to it
+            var windows = Resources.FindObjectsOfTypeAll<BuildProfileWindow>();
+            if (windows.Length > 0)
+            {
+                windows[0].UpdateFromEditorSettings();
+            }
         }
 
         public void CreateGUI()
@@ -176,7 +180,7 @@ namespace UnityEditor.Build.Profile
 
             // When creating the profile lists, the bind callbacks (which set the active profile index)
             // will be called after this, so we need to find the active profile to select it in here
-            m_ProfileListViews.SelectActiveProfile();
+            m_ProfileListViews.RestoreBuildProfileSelection();
 
             // Set up event handlers.
             m_BuildAndRunButton.clicked += () =>
@@ -391,7 +395,7 @@ namespace UnityEditor.Build.Profile
             // the selectionChanged event will not be called. This ensures that the build profile
             // inspector is updated accordingly.
             m_BuildProfileSelection.ClearListViewSelection(ListViewSelectionType.Custom);
-            m_ProfileListViews.SelectActiveProfile();
+            m_ProfileListViews.RestoreBuildProfileSelection();
         }
 
         /// <summary>
@@ -474,7 +478,7 @@ namespace UnityEditor.Build.Profile
         /// <param name="next"></param>
         void OnWorkflowStateChanged(BuildProfileWorkflowState next)
         {
-            if (next == m_WindowState && buildProfileEditor is not null)
+            if (next == m_WindowState && buildProfileEditor != null)
             {
                 // When refreshing the window state, if there's a build profile selected
                 // then the corresponding editor state should be considered.
@@ -786,6 +790,12 @@ namespace UnityEditor.Build.Profile
                 m_WelcomeMessageElement.Hide();
                 m_PlatformListLabel.Hide();
                 m_ProfileListViews.HideClassicPlatformListView();
+
+                if (m_ProfileListViews.IsClassicPlatformSelected() && 
+                    m_BuildProfileDataSource.customBuildProfiles.Count > 0)
+                {
+                    m_BuildProfileSelection.visualElement.SelectBuildProfile(0);
+                }
             }
             else
             {

@@ -250,7 +250,11 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly struct ManifoldPoint
             {
                 /// <summary>
-                /// Location of the contact point in world space. Subject to precision loss at large coordinates.
+                /// Location of the contact point in world space.
+                /// Subject to precision loss at large coordinates.
+                /// This point lags behind when contact recycling is used.
+                /// Preference should be to use anchorA and/or anchorB for game logic.
+                /// This is also known as the "clip" point.
                 /// </summary>
                 public readonly Vector2 point => m_Point;
 
@@ -294,7 +298,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
                 /// <summary>
                 /// Uniquely identifies a contact point between two shapes.
-                /// This should not be confused with <see cref="LowLevelPhysics2D.PhysicsShape.ContactId"/>.
+                /// This should not be confused with <see cref="PhysicsShape.ContactId"/>.
                 /// </summary>
                 public readonly UInt16 id => m_Id;
 
@@ -314,9 +318,10 @@ namespace UnityEngine.LowLevelPhysics2D
                 readonly Vector2 m_AnchorA;
                 readonly Vector2 m_AnchorB;
                 readonly float m_Separation;
+                readonly float m_BaseSeparation; // We don't want to expose this as it's not that useful.
                 readonly float m_NormalImpulse;
                 readonly float m_TangentImpulse;
-	            readonly float m_TotalNormalImpulse;
+                readonly float m_TotalNormalImpulse;
                 readonly float m_NormalVelocity;
                 readonly UInt16 m_Id;
                 readonly bool m_Persisted;

@@ -562,11 +562,11 @@ namespace UnityEditor
 
             InitViewMode(m_ViewMode);
 
+            InitListArea(); // UUM-137174 : InitList area is needed before EnsureValidSetup when loading layout with locked ProjectBrowser
             EnsureValidSetup();
 
             RefreshSearchText();
             SyncFilterGUI();
-            InitListArea();
         }
 
         public void SetSearch(string searchString)

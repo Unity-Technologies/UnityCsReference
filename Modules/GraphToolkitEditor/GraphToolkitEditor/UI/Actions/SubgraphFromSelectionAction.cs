@@ -31,7 +31,7 @@ namespace Unity.GraphToolkit.Editor
             public bool shouldConvertToPlacemat;
         }
 
-        internal static SubgraphFromSelectionActionData CollectData(GraphView view, Type graphObjectType, Type graphModelType)
+        internal static SubgraphFromSelectionActionData CollectData(GraphView view, GraphTemplate template, Func<SubgraphNodeModel, GraphTemplate, bool> isSameGraphTypeFunc)
         {
             if (!view.GraphModel.AllowSubgraphCreation)
                 return InvalidData;
@@ -60,7 +60,7 @@ namespace Unity.GraphToolkit.Editor
                 if (model is not StickyNoteModel)
                     allStickyNotes = false;
 
-                if (model is SubgraphNodeModel subgraphNode && graphModelType != null && graphModelType.IsInstanceOfType(subgraphNode.GetSubgraphModel()))
+                if (model is SubgraphNodeModel subgraphNode && (isSameGraphTypeFunc == null || isSameGraphTypeFunc.Invoke(subgraphNode, template)))
                 {
                     if (subgraphNode.GetSubgraphModel()?.GraphObject == null || !subgraphNode.IsReferencingLocalSubgraph)
                     {

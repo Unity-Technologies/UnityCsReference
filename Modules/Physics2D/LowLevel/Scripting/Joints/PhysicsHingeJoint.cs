@@ -229,7 +229,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose, typically by the owner only.
         /// </summary>
         /// <param name="physicsUserData">The user data to set.</param>
-        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="LowLevelPhysics2D.PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
         public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => m_Id.SetOwnerUserData(physicsUserData, ownerKey);
 
         /// <summary>
@@ -255,6 +255,12 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         /// <param name="joints">The joints to destroy.</param>
         public static void DestroyBatch(ReadOnlySpan<PhysicsJoint> joints) => PhysicsJoint.DestroyBatch(joints);
+
+        /// <summary>
+        /// Enable/Disable unpinned mode where only Body A is affected and body B and its local anchor point is ignored.
+        /// Body B must still be assigned so it is typical to assign a static ground body, preferably shared/reused.
+        /// </summary>
+        public readonly bool enableUnpinned { get => HingeJoint_GetEnableUnpinned(this); set => HingeJoint_SetEnableUnpinned(this, value); }
 
         /// <summary>
         /// Enable/Disable the rotational spring.

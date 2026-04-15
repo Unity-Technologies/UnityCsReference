@@ -846,7 +846,7 @@ namespace UnityEditor.Build.Profile
         {
             var alreadyLoadedBuildProfiles = Resources.FindObjectsOfTypeAll<BuildProfile>();
 
-            const string buildProfileAssetSearchString = $"t:{nameof(BuildProfile)}";
+            string buildProfileAssetSearchString = $"t:{typeof(BuildProfile).FullName}";
             var assetsGuids = AssetDatabase.FindAssets(buildProfileAssetSearchString);
             var result = new List<BuildProfile>(assetsGuids.Length);
 

@@ -449,7 +449,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public ConvertAssetToLocalSubgraphCommand()
         {
-            UndoString = "Convert Asset To Local Subgraph";
+            UndoString = "Unpack To Local Subgraph";
         }
 
         /// <summary>

@@ -319,13 +319,19 @@ namespace Unity.VectorGraphics
         /// <returns>A <see cref="VectorImage"/> constructed from the vector scene definition.</returns>
         public static VectorImage BuildVectorImage(SVGParser.SceneInfo sceneInfo)
         {
+            return BuildVectorImage(sceneInfo, Rect.zero);
+        }
+
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
+        internal static VectorImage BuildVectorImage(SVGParser.SceneInfo sceneInfo, Rect viewport)
+        {
             using (var p = new Painter2D())
             {
                 var root = sceneInfo.Scene.Root;
                 DrawSceneWithPainter2D(root, root.Transform, p, 1.0f, sceneInfo.NodeOpacity);
 
                 var result = ScriptableObject.CreateInstance<VectorImage>();
-                p.SaveToVectorImage(result);
+                p.SaveToVectorImage(result, viewport);
 
                 return result;
             }
@@ -335,6 +341,14 @@ namespace Unity.VectorGraphics
         {
             if (node == null)
                 return;
+
+            // Handle clipping
+            bool hasClipper = node.Clipper != null;
+            if (hasClipper)
+            {
+                DrawClipPathWithPainter2D(node.Clipper, matrix, painter);
+                painter.PushClip();
+            }
 
             if (node.Shapes != null)
             {
@@ -408,7 +422,9 @@ namespace Unity.VectorGraphics
                             painter.strokeColor = stroke.Color;
                         }
 
-                        painter.lineWidth = stroke.HalfThickness * 2.0f;
+                        // Scale stroke width by the transform's scale factor
+                        float transformScale = Mathf.Sqrt(matrix.m00 * matrix.m00 + matrix.m01 * matrix.m01);
+                        painter.lineWidth = stroke.HalfThickness * 2.0f * transformScale;
                         painter.lineJoin = pathProps.Corners == PathCorner.Tipped ? LineJoin.Miter : (pathProps.Corners == PathCorner.Beveled ? LineJoin.Bevel : LineJoin.Round);
                         painter.lineCap = (pathProps.Head == PathEnding.Round || pathProps.Tail == PathEnding.Round) ? LineCap.Round : LineCap.Butt;
                         painter.SetDashPattern(stroke.Pattern);
@@ -431,6 +447,64 @@ namespace Unity.VectorGraphics
                     var transform = matrix * child.Transform;
 
                     DrawSceneWithPainter2D(child, transform, painter, opacity, nodeOpacities);
+                }
+            }
+
+            // Pop the clip if we had one
+            if (hasClipper)
+            {
+                painter.PopClip();
+            }
+        }
+
+        static void DrawClipPathWithPainter2D(SceneNode clipperNode, Matrix2D matrix, Painter2D painter)
+        {
+            if (clipperNode == null)
+                return;
+
+            painter.BeginPath();
+
+            // Draw all shapes in the clipper node as paths
+            if (clipperNode.Shapes != null)
+            {
+                foreach (var shape in clipperNode.Shapes)
+                {
+                    if (shape.Contours == null || shape.Contours.Length == 0)
+                        continue;
+
+                    foreach (var contour in shape.Contours)
+                    {
+                        var segments = contour.Segments;
+                        if (segments == null || segments.Length == 0)
+                            continue;
+
+                        painter.MoveTo(matrix.MultiplyPoint(segments[0].P0));
+
+                        for (int i = 0; i < (segments.Length - 1); ++i)
+                        {
+                            var seg0 = segments[i];
+                            var seg1 = segments[i + 1];
+                            painter.BezierCurveTo(matrix.MultiplyPoint(seg0.P1), matrix.MultiplyPoint(seg0.P2), matrix.MultiplyPoint(seg1.P0));
+                        }
+
+                        if (contour.Closed)
+                        {
+                            var seg0 = segments[segments.Length - 1];
+                            var seg1 = segments[0];
+                            painter.BezierCurveTo(matrix.MultiplyPoint(seg0.P1), matrix.MultiplyPoint(seg0.P2), matrix.MultiplyPoint(seg1.P0));
+                            painter.ClosePath();
+                        }
+                    }
+                }
+            }
+
+            // Recursively draw clipper children
+            if (clipperNode.Children != null)
+            {
+                foreach (var child in clipperNode.Children)
+                {
+                    var transform = matrix * child.Transform;
+                    DrawClipPathWithPainter2D(child, transform, painter);
                 }
             }
         }

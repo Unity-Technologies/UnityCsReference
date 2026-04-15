@@ -51,7 +51,7 @@ namespace Unity.GraphToolkit.Editor
         /// The USS class name added to write-only nodes.
         /// </summary>
         public static readonly string writeOnlyUssClassName = ussClassName.WithUssModifier(GraphElementHelper.writeOnlyUssModifier);
-        
+
         /// <summary>
         /// The USS class name added if any input port is connected.
         /// </summary>
@@ -188,7 +188,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
-                EnableInClassList(disabledNodeUssClassName, NodeModel.State == ModelState.Disabled);
+                // [UUM-137461] : Force removal of the disabledNodeUssClassName to avoid migration issue with the UI of
+                // a node and since the feature isn't accessible anymore.
+                EnableInClassList(disabledNodeUssClassName, false);
                 if (NodeModel.HasNodePreview)
                 {
                     var showPreviewButton = GetNodeToolbarButton(ShowPreviewButton.previewButtonName);

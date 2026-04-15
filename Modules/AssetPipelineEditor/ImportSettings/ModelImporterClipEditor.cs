@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using UnityEditor.AssetImporters;
@@ -219,6 +220,8 @@ namespace UnityEditor
             public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
             public GUIContent RemoveConstantScaleCurves = EditorGUIUtility.TrTextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.");
             public GUIContent ClipList = EditorGUIUtility.TrTextContent("Animation Clip List", "List of animation clips included in the model.");
+            public GUIContent UnreferencedTakesMessage = EditorGUIUtility.TrTextContentWithIcon("This file contains animation take(s) that are not in the Clips list. You can add them using the Source Take dropdown on each clip, or import all unreferenced takes below.", MessageType.Info);
+            public GUIContent ImportUnreferencedTakes = EditorGUIUtility.TrTextContent("Import Unreferenced Takes", "Add clips for all takes from the file that are not yet in the Clips list.");
 
             public Styles()
             {
@@ -298,6 +301,34 @@ namespace UnityEditor
             m_AnimationClipEditor.ShowRange(info);
             m_AnimationClipEditor.mask = m_Mask;
             AnimationCurvePreviewCache.ClearCache();
+        }
+
+        void GetUnreferencedTakeInfos(List<TakeInfo> unreferenced)
+        {
+            unreferenced.Clear();
+            if (m_DefaultClipsSerializedObject != null || singleImporter.importedTakeInfos.Length == 0)
+                return;
+
+            using var _ = HashSetPool<string>.Get(out var referencedTakeNames);
+            for (int i = 0; i < m_ClipAnimations.arraySize; i++)
+            {
+                var prop = m_ClipAnimations.GetArrayElementAtIndex(i);
+                var takeNameProp = prop.FindPropertyRelative(nameof(ModelImporterClipAnimation.takeName));
+                if (takeNameProp != null)
+                    referencedTakeNames.Add(takeNameProp.stringValue);
+            }
+
+            foreach (TakeInfo takeInfo in singleImporter.importedTakeInfos)
+            {
+                if (!referencedTakeNames.Contains(takeInfo.name))
+                    unreferenced.Add(takeInfo);
+            }
+        }
+
+        void ImportUnreferencedTakes(List<TakeInfo> unreferenced)
+        {
+            foreach (TakeInfo takeInfo in unreferenced)
+                AddClip(takeInfo);
         }
 
         private void SetupDefaultClips()
@@ -778,6 +809,24 @@ namespace UnityEditor
             if (singleImporter.importedTakeInfos.Length > 0 || isEditorPreset)
             {
                 m_ClipList.DoLayoutList();
+
+                // Notify when there are takes in the file that are not in the Clips list (UUM-130850)
+                using (ListPool<TakeInfo>.Get(out var unreferencedTakes))
+                {
+                    GetUnreferencedTakeInfos(unreferencedTakes);
+                    if (unreferencedTakes.Count > 0)
+                    {
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.HelpBox(styles.UnreferencedTakesMessage);
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button(styles.ImportUnreferencedTakes))
+                        {
+                            ImportUnreferencedTakes(unreferencedTakes);
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
 
                 EditorGUI.BeginChangeCheck();
                 // Show unique Preset editor

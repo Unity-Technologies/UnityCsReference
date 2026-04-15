@@ -1074,7 +1074,6 @@ namespace Unity.GraphToolkit.Editor
             // Nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.deleteAndReconnectItem.Name, () => AppendDeleteAndReconnectMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.toggleCollapseItem.Name, () => AppendToggleCollapseMenuItem(evt, selection));
-            menuActionMap.Add(ContextualMenuHelpers.disableNodeItem.Name, () => AppendDisableNodeMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.disconnectAllWiresItem.Name, () => AppendDisconnectAllWiresMenuItem(evt, selection));
             // TODO (GTF-2216): Implement the Edit Subtitle functionality.
             // TODO: Implement the Bypass functionality.
@@ -1506,43 +1505,6 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        void AppendDisableNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
-        {
-            var nodes = new List<AbstractNodeModel>();
-            var willDisable = false;
-            var isContext = true;
-            var isBlock = true;
-
-            foreach (var elementModel in selection)
-            {
-                if (elementModel is not AbstractNodeModel node)
-                    continue;
-
-                // If the graph element cannot be disabled, don't append this menu item.
-                if (!elementModel.IsDisableable())
-                    return;
-
-                // If all nodes are disabled, we set the item name to "Enable nodes". If at least 1 is enabled, we set the item name to "Disable nodes".
-                if (node.State == ModelState.Enabled)
-                    willDisable = true;
-
-                if (node is not ContextNodeModel)
-                    isContext = false;
-
-                if (node is not BlockNodeModel)
-                    isBlock = false;
-
-                nodes.Add(node);
-            }
-
-            var isPlural = nodes.Count > 1;
-            var nodeWord = (isContext ? "Context" : isBlock ? "Block" : "Node") + (isPlural ? "s" : "");
-            evt.menu.AppendAction(L10n.Tr(willDisable ? "Disable " + nodeWord : "Enable " + nodeWord), _ =>
-            {
-                Dispatch(new ChangeNodeStateCommand(willDisable ? ModelState.Disabled : ModelState.Enabled, nodes.Where(t => t.IsDisableable()).ToList()));
-            });
-        }
-
         void AppendDisconnectAllWiresMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
             var connectedNodes = new List<AbstractNodeModel>();
@@ -1657,7 +1619,6 @@ namespace Unity.GraphToolkit.Editor
                 {
                     Dispatch(new ExpandSubgraphCommand(GraphModel, subgraphNodeModel, ContentViewContainer.WorldToLocal(menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition)));
                 }, subgraphNodeModel.GetSubgraphModel() is null ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
-                evt.menu.AppendSeparator();
             }
         }
 
@@ -1677,64 +1638,71 @@ namespace Unity.GraphToolkit.Editor
             });
         }
 
-        void AppendConvertToAssetSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        protected virtual void AppendConvertToAssetSubgraphMenuItem(ContextualMenuPopulateEvent evt)
         {
-            if (!GraphModel.AllowSubgraphCreation)
-                return;
-            if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
-            {
-                AppendConvertToAssetSubgraphAction(null);
-            }
-            else
-            {
-                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
-                {
-                    AppendConvertToAssetSubgraphAction(graphTemplate);
-                }
-            }
-
-            return;
-
-            void AppendConvertToAssetSubgraphAction(GraphTemplate template)
-            {
-                var data = SubgraphFromSelectionAction.CollectData(this, null, template?.GraphModelType ?? GraphModel.GetType());
-                if (!data.IsValid)
-                    return;
-
-                var menuItemName = "Convert to {0}Asset Subgraph" + (data.localSubgraphNodes.Count > 1 ? "s" : "") + "...";
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates?.Count < 2 || template == null ? "" : template.GraphTypeName + " ")),
-                    _ => Dispatch(new ConvertLocalToAssetSubgraphCommand(data.localSubgraphNodes, template)));
-            }
+            AppendConvertSubgraphMenuItem(evt, true, (subgraphNodeModel, template) => (template?.GraphModelType?? GraphModel.GetType()).IsInstanceOfType(subgraphNodeModel.GetSubgraphModel()));
         }
 
-        void AppendUnpackToLocalSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        protected virtual void AppendUnpackToLocalSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        {
+            AppendConvertSubgraphMenuItem(evt, false, (subgraphNodeModel, template) => (template?.GraphModelType?? GraphModel.GetType()).IsInstanceOfType(subgraphNodeModel.GetSubgraphModel()));
+        }
+
+        protected void AppendConvertSubgraphMenuItem(ContextualMenuPopulateEvent evt, bool isConvertToAsset, Func<SubgraphNodeModel, GraphTemplate, bool> isSameGraphType)
         {
             if (!GraphModel.AllowSubgraphCreation)
                 return;
 
+            const string convertToAssetString = "Convert to Asset Subgraph{0}...";
+            const string unpackToLocalString = "Unpack to Local Subgraph{0}";
+            var menuItemName = isConvertToAsset ? convertToAssetString : unpackToLocalString;
+
             if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
             {
-                AppendUnpackToLocalSubgraphAction(null);
-            }
-            else
-            {
-                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
-                {
-                    AppendUnpackToLocalSubgraphAction(graphTemplate);
-                }
-            }
-
-            return;
-
-            void AppendUnpackToLocalSubgraphAction(GraphTemplate template)
-            {
-                var data = SubgraphFromSelectionAction.CollectData(this, null, template?.GraphModelType ?? GraphModel.GetType());
+                var data = SubgraphFromSelectionAction.CollectData(this, null, isSameGraphType);
                 if (!data.IsValid)
                     return;
 
-                var menuItemName = "Unpack to {0}Local Subgraph" + (data.assetSubgraphNodes.Count > 1 ? "s" : "");
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates?.Count < 2 || template == null ? "" : template.GraphTypeName + " ")),
-                    _ => Dispatch(new ConvertAssetToLocalSubgraphCommand(data.assetSubgraphNodes, template)));
+                var subgraphNodes = isConvertToAsset ? data.localSubgraphNodes : data.assetSubgraphNodes;
+                if (subgraphNodes == null || subgraphNodes.Count == 0)
+                    return;
+
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodes.Count > 1 ? "s" : "")),
+                    _ => Dispatch(isConvertToAsset
+                        ? new ConvertLocalToAssetSubgraphCommand(subgraphNodes, null)
+                        : new ConvertAssetToLocalSubgraphCommand(subgraphNodes, null)));
+            }
+            else
+            {
+                var subgraphNodeCount = 0;
+                var subgraphNodesAndTemplates = new List<(GraphTemplate graphTemplate, List<SubgraphNodeModel> subgraphNodes)>();
+                foreach (var graphTemplate in GraphModel.SubgraphTemplates)
+                {
+                    var data = SubgraphFromSelectionAction.CollectData(this, graphTemplate, isSameGraphType);
+                    var subgraphNodes = isConvertToAsset ? data.localSubgraphNodes : data.assetSubgraphNodes;
+
+                    if (!data.IsValid || subgraphNodes == null || subgraphNodes.Count == 0)
+                        continue;
+
+                    subgraphNodeCount += subgraphNodes.Count;
+                    subgraphNodesAndTemplates.Add((graphTemplate, subgraphNodes));
+                }
+
+                if (subgraphNodeCount == 0 || subgraphNodesAndTemplates.Count == 0)
+                    return;
+
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodeCount > 1 ? "s" : "")),
+                    _ =>
+                    {
+                        StartMergingUndoableCommands();
+                        foreach (var (template, subgraphNodes) in subgraphNodesAndTemplates)
+                        {
+                            Dispatch(isConvertToAsset
+                                ? new ConvertLocalToAssetSubgraphCommand(subgraphNodes, template)
+                                : new ConvertAssetToLocalSubgraphCommand(subgraphNodes, template));
+                        }
+                        StopMergingUndoableCommands();
+                    });
             }
         }
 
@@ -1744,17 +1712,17 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var associateFileObject = subgraphNodeModel.GetSubgraphModel()?.GraphObject;
-            // Only add the menu item if the asset can be found in the Project Window and is a main asset.
-            if (associateFileObject is null ||
-                !AssetDatabase.IsMainAsset(associateFileObject) ||
-                !AssetDatabaseHelper.TryGetGUIDAndLocalFileIdentifier(associateFileObject, out _, out _))
+            if (associateFileObject == null || string.IsNullOrEmpty(associateFileObject.FilePath))
+                return;
+
+            // Must be an asset-backed object that is pingable and selectable in the Project Window.
+            var obj = AssetDatabase.LoadMainAssetAtPath(associateFileObject.FilePath);
+            if (obj == null || !EditorUtility.IsPersistent(obj) || !AssetDatabase.Contains(obj))
                 return;
 
             evt.menu.AppendAction(L10n.Tr("Find Asset in Project"), _ =>
             {
-                EditorUtility.FocusProjectWindow();
-                Selection.activeObject = associateFileObject;
-                EditorGUIUtility.PingObject(associateFileObject);
+                associateFileObject.ShowGraphObjectInProjectWindow();
             });
         }
 
@@ -1943,7 +1911,6 @@ namespace Unity.GraphToolkit.Editor
             var placematIsBottom = placematModelsInGraph[0] == placematModels[0];
             var canBeReordered = placematModelsInGraph.Count > 1;
 
-            evt.menu.AppendSeparator();
             evt.menu.AppendAction(L10n.Tr("Bring to Front"),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToFront, placematModels)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -4744,7 +4711,6 @@ namespace Unity.GraphToolkit.Editor
             public void AppendAlignAndDistributeElementsMenuItems(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendAlignAndDistributeElementsMenuItems(evt, selection);
             public void AppendCreateEmptyLocalSubgraph(ContextualMenuPopulateEvent evt) => m_GraphView.AppendCreateEmptyLocalSubgraph(evt);
             public void AppendToggleCollapseMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendToggleCollapseMenuItem(evt, selection);
-            public void AppendDisableNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendDisableNodeMenuItem(evt, selection);
             public void AppendSetAsDefaultStateMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendSetAsDefaultStateMenuItem(evt, selection);
             public void AppendCreateTransitionMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, TransitionSupportKind transitionKind) => m_GraphView.AppendCreateTransitionMenuItem(evt, selection, transitionKind);
             public void AppendCreateLocalSubgraphFromSelectionMenuItem(ContextualMenuPopulateEvent evt) => m_GraphView.AppendCreateLocalSubgraphFromSelectionMenuItem(evt);

@@ -14,9 +14,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string NewAssetName { get; }
 
+        public Type GraphType { get; }
+
         public GraphTemplateImp(Type graphType, string newAssetName = "New Graph")
             : base(newAssetName, GetGraphExtension(graphType))
         {
+            GraphType = graphType;
             GraphModelType = typeof(GraphModelImp);
             NewAssetName = newAssetName;
         }
@@ -28,22 +31,17 @@ namespace Unity.GraphToolkit.Editor.Implementation
     }
     class SubgraphTemplateImp : GraphTemplateImp
     {
-        Type m_GraphType;
-
         public SubgraphTemplateImp(Type graphType, string graphTypeName = "Graph")
-            : base(graphType, graphTypeName)
-        {
-            m_GraphType = graphType;
-        }
+            : base(graphType, graphTypeName) { }
 
         public override void InitBasicGraph(GraphModel graphModel)
         {
             base.InitBasicGraph(graphModel);
 
             // the GraphModel will first use the graphtype from its GraphObjectImp, we need to change it to the subgraph type.
-            if (graphModel is GraphModelImp graphModelImp && !m_GraphType.IsInstanceOfType(graphModelImp.Graph))
+            if (graphModel is GraphModelImp graphModelImp && !GraphType.IsInstanceOfType(graphModelImp.Graph))
             {
-                graphModelImp.RecreateGraph(m_GraphType);
+                graphModelImp.RecreateGraph(GraphType);
             }
         }
     }

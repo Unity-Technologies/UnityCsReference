@@ -2,11 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -43,6 +39,26 @@ namespace Unity.GraphToolkit.Editor.Implementation
         public override GraphView CreateSimplePreview()
         {
             return new PreviewGraphViewImp(null, null, "",  null, null, GraphViewDisplayMode.NonInteractive);
+        }
+
+        protected override void AppendConvertToAssetSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        {
+            AppendConvertSubgraphMenuItem(evt, true, (subgraphNodeModel, template) =>
+            {
+                var graphType = (template as GraphTemplateImp)?.GraphType ?? GraphModel.GetType();
+                return subgraphNodeModel is SubgraphNodeModelImp subgraphNodeModelImp &&
+                       graphType.IsInstanceOfType(subgraphNodeModelImp.GetSubgraph());
+            });
+        }
+
+        protected override void AppendUnpackToLocalSubgraphMenuItem(ContextualMenuPopulateEvent evt)
+        {
+            AppendConvertSubgraphMenuItem(evt, false, (subgraphNodeModel, template) =>
+            {
+                var graphType = (template as GraphTemplateImp)?.GraphType ?? GraphModel.GetType();
+                return subgraphNodeModel is SubgraphNodeModelImp subgraphNodeModelImp &&
+                       graphType.IsInstanceOfType(subgraphNodeModelImp.GetSubgraph());
+            });
         }
 
         internal void CallBuildContextualMenuForTests(ContextualMenuPopulateEvent evt)
