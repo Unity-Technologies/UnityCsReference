@@ -34,6 +34,7 @@ namespace UnityEditor
             public static GUIContent idleWorkerShutdownDelay = EditorGUIUtility.TrTextContent("Idle Import Worker Shutdown Delay", "When an importer worker has been idle for this amount of seconds in will be shutdown unless it would take the worker count below the standby worker count setting.");
 
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Accelerator Cache Server (project specific)");
+            public static GUIContent checkConnection = EditorGUIUtility.TrTextContent("Check Connection");
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
             public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
@@ -821,8 +822,9 @@ namespace UnityEditor
                     }
 
                     EditorGUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
+                    if (GUILayout.Button(Content.checkConnection, GUILayout.Width(150)))
                     {
                         var address = EditorSettings.cacheServerEndpoint.Split(':');
                         if(address.Length > 0)
@@ -851,7 +853,7 @@ namespace UnityEditor
                         
                     }
 
-                    GUILayout.Space(25);
+                    EditorGUILayout.EndHorizontal();
 
                     switch (m_CacheServerConnectionState)
                     {
@@ -864,11 +866,9 @@ namespace UnityEditor
                             break;
 
                         case CacheServerConnectionState.Unknown:
-                            GUILayout.Space(44);
+                            GUILayout.Space(10);
                             break;
                     }
-
-                    EditorGUILayout.EndHorizontal();
 
                     var oldPrefix = EditorSettings.cacheServerNamespacePrefix;
                     var newPrefix = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, oldPrefix);

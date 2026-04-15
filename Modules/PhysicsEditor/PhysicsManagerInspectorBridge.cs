@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 using System;
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Unity.Physics.Editor.ProjectSettingsBridge")]
 namespace UnityEditorInternal
 {
     internal interface IPhysicsProjectSettingsECSInspectorExtension

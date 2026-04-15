@@ -11,6 +11,7 @@ using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Bindings;
+using Unity.Loading;
 
 namespace UnityEditor.UIElements
 {
@@ -25,6 +26,10 @@ namespace UnityEditor.UIElements
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
         internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static readonly string listViewUssClassName = "unity-list-view-property-field";
+        internal static readonly UniqueStyleString listViewUssClassNameUnique = new(listViewUssClassName);
+
         static readonly string listViewNamePrefix = "unity-list-";
         static readonly string buttonGroupNamePrefix = "unity-button-group-";
 
@@ -882,7 +887,7 @@ namespace UnityEditor.UIElements
             listView.name = listViewName;
             listView.SetProperty(listViewBoundFieldProperty, this);
             listView.SetProperty(BaseField<string>.serializedPropertyCopyName, propertyCopy);
-
+            listView.AddToClassList(listViewUssClassNameUnique);
             if (property.serializedObject.inspectorMode is InspectorMode.Debug or InspectorMode.DebugInternal)
             {
                 ConfigureListViewDebugHelpers(listView);
@@ -1212,8 +1217,8 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.EntityId:
                     return ConfigureField<EntityIdField, EntityId>(originalField as EntityIdField, property, () => new EntityIdField());
 
-                case SerializedPropertyType.LoadableReference:
-                    return ConfigureField<LoadableReferenceField, LoadableReference>(originalField as LoadableReferenceField, property, () => new LoadableReferenceField());
+                case SerializedPropertyType.LoadableObjectId:
+                    return ConfigureField<LoadableObjectIdField, LoadableObjectId>(originalField as LoadableObjectIdField, property, () => new LoadableObjectIdField());
 
                 case SerializedPropertyType.Generic:
                     if (property.type == nameof(ToggleButtonGroupState))
@@ -1244,7 +1249,7 @@ namespace UnityEditor.UIElements
             customPropertyDrawer.RegisterCallback<ChangeEvent<string>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<Color>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             customPropertyDrawer.RegisterCallback<ChangeEvent<UnityEngine.Object>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
-            customPropertyDrawer.RegisterCallback<ChangeEvent<LoadableReference>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<LoadableObjectId>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
             // SerializedPropertyType.LayerMask -> int
             // SerializedPropertyType.Enum is handled either by string or
             customPropertyDrawer.RegisterCallback<ChangeEvent<Enum>>((changeEvent) => AsyncDispatchPropertyChangedEvent());

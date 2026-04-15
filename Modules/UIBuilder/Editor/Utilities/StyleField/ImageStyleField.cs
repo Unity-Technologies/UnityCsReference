@@ -38,7 +38,6 @@ namespace Unity.UI.Builder
         const string k_2DSpriteEditorInstallationURL =
             "https://docs.unity3d.com/Packages/com.unity.2d.sprite@1.0/manual/index.html";
         const string k_FieldInputName = "unity-visual-input";
-        const string k_ImageStyleFieldContainerName = "unity-image-style-field-container";
         const string k_ImageStyleFieldContainerClassName = "unity-image-style-field__container";
         const string k_ImageStyleFieldEditButtonHiddenClassName = "unity-image-style-field__button--hidden";
 
@@ -53,21 +52,23 @@ namespace Unity.UI.Builder
 
         public ImageStyleField() : this(null) {}
 
-        public ImageStyleField(string label) : base(label)
+        public ImageStyleField(string label) : base(label, new VisualElement())
         {
             AddType(typeof(Texture2D), "Texture");
             AddType(typeof(RenderTexture), "Render Texture");
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
-            var fieldContainer = new VisualElement {name = k_ImageStyleFieldContainerName};
-            fieldContainer.AddToClassList(k_ImageStyleFieldContainerClassName);
 
             m_2DSpriteEditorButtonTooltip = BuilderExternalPackages.is2DSpriteEditorInstalled
                 ? k_2DSpriteEditorButtonTooltip_Installed
                 : k_2DSpriteEditorButtonTooltip_NotInstalled;
+
             var fieldInput = this.Q(k_FieldInputName);
+
             // Move visual input over to field container
-            fieldContainer.Add(fieldInput);
+            visualInput.Add(fieldInput);
+            visualInput.name = StyleField<int>.VisualInputName;
+            visualInput.AddToClassList(k_ImageStyleFieldContainerClassName);
 
             var editButton = new Button(OnEditButton)
             {
@@ -75,9 +76,7 @@ namespace Unity.UI.Builder
                 tooltip = m_2DSpriteEditorButtonTooltip
             };
             editButton.RegisterCallback<PointerEnterEvent>(OnEnterEditButton);
-            fieldContainer.Add(editButton);
-
-            Add(fieldContainer);
+            visualInput.Add(editButton);
 
             var optionsPopup = this.Q<PopupField<string>>();
             optionsPopup.formatSelectedValueCallback += formatValue =>

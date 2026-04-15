@@ -507,10 +507,12 @@ namespace UnityEditorInternal
             ];
         }
 
-        internal static string GetExePath(string toolName)
+        internal static string GetExePath(string toolName) => GetExePath(toolName, out _);
+
+        internal static string GetExePath(string toolName, out bool isDevelopmentLocation)
         {
             var platform = Application.platform;
-            var il2CppFolder = GetIl2CppFolder(out var isDevelopmentLocation);
+            var il2CppFolder = GetIl2CppFolder(out isDevelopmentLocation);
             var expectedToolExecutableName = $"{toolName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
 
             if (isDevelopmentLocation)

@@ -229,8 +229,15 @@ namespace UnityEditor.Build.Profile
             if (BuildProfileContext.activeProfile != this)
                 return;
 
-            var playerSettings = (HasSerializedPlayerSettings() && !activeWillBeRemoved) ? m_PlayerSettings : s_GlobalPlayerSettings;
-            PlayerSettings.SetOverridePlayerSettingsInternal(playerSettings);
+            if (HasSerializedPlayerSettings() && !activeWillBeRemoved)
+            {
+                PlayerSettings.SetOverridePlayerSettingsInternal(m_PlayerSettings);
+            }
+            else
+            {
+                TryLoadProjectSettingsAssetPlayerSettings();
+                PlayerSettings.SetOverridePlayerSettingsInternal(s_GlobalPlayerSettings);
+            }
         }
 
         internal static void TrySetProjectSettingsAssetAsGlobalManagerPlayerSettings()

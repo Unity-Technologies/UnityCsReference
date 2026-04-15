@@ -10,31 +10,29 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     struct PickingObject : System.IEquatable<PickingObject>
     {
-        Object m_Target;
+        EntityId m_TargetId;
         int m_MaterialIndex;
 
-        public Object target => m_Target;
+        public EntityId targetId => m_TargetId;
         public int materialIndex => m_MaterialIndex;
 
-        public static PickingObject Empty => new PickingObject(null);
+        public static PickingObject Empty => new (EntityId.None);
 
-        public EntityId GetEntityId() => m_Target == null ? EntityId.None : m_Target.GetEntityId();
-
-        public PickingObject(Object obj, int matIndex = 0)
+        public PickingObject(EntityId id, int matIndex = 0)
         {
-            m_Target = obj;
+            m_TargetId = id;
             m_MaterialIndex = Mathf.Max(0, matIndex);
         }
 
-        public static explicit operator Object(PickingObject picking) => picking.target;
-        public static explicit operator PickingObject(Object @object) => new PickingObject(@object);
+        public static explicit operator EntityId(PickingObject picking) => picking.targetId;
+        public static explicit operator PickingObject(EntityId id) => new (id);
 
         public static bool operator ==(PickingObject lhs, PickingObject rhs) => lhs.Equals(rhs);
         public static bool operator !=(PickingObject lhs, PickingObject rhs) => !(lhs == rhs);
 
         public bool Equals(PickingObject other)
         {
-            return Equals(m_Target, other.m_Target)
+            return Equals(m_TargetId, other.m_TargetId)
                 && m_MaterialIndex == other.m_MaterialIndex;
         }
 
@@ -45,14 +43,14 @@ namespace UnityEditor
 
         public override string ToString()
         {
-            return $"{m_Target} ({materialIndex})";
+            return $"{m_TargetId} ({materialIndex})";
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = (m_Target != null ? m_Target.GetHashCode() : 0);
+                var hashCode = m_TargetId.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_MaterialIndex;
                 return hashCode;
             }
@@ -60,7 +58,8 @@ namespace UnityEditor
 
         public bool TryGetComponent<T>(out T value) where T : Component
         {
-            return TryGetComponent<T>(target, out value);
+            var obj = EditorUtility.EntityIdToObject(targetId);
+            return TryGetComponent(obj, out value);
         }
 
         internal static bool TryGetComponent<T>(Object obj, out T value) where T : Component
@@ -85,11 +84,19 @@ namespace UnityEditor
             return false;
         }
 
+        public bool TryGetObject(out Object obj)
+        {
+            obj = EditorUtility.EntityIdToObject(targetId);
+            return obj != null;
+        }
+
         public bool TryGetGameObject(out GameObject gameObject)
         {
-            if (target is GameObject go)
+            var obj = EditorUtility.EntityIdToObject(targetId);
+
+            if (obj is GameObject go)
                 gameObject = go;
-            else if (target is Component component)
+            else if (obj is Component component)
                 gameObject = component.gameObject;
             else
                 gameObject = null;

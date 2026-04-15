@@ -124,6 +124,7 @@ namespace UnityEngine.UIElements
         MatchDocumentRect = 2,
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IPanelSettings
     {
         BindingLogLevel bindingLogLevel { get; }
@@ -131,16 +132,23 @@ namespace UnityEngine.UIElements
         bool clearColor { get; }
         bool clearDepthStencil { get; }
         DynamicAtlasSettings dynamicAtlasSettings { get; }
+        float fallbackDpi { get; }
         bool forceGammaRendering { get; }
+        float match { get; }
         float pixelsPerUnit { get; }
+        float referenceDpi { get; }
+        Vector2Int referenceResolution { get; }
         float referenceSpritePixelsPerUnit { get; }
         PanelRenderMode renderMode { get; }
         float resolvedScale { get; }
-        float ScreenDPI { get; }
+        float scale { get; }
+        PanelScaleMode scaleMode { get; }
+        float screenDpi { get; }
+        PanelScreenMatchMode screenMatchMode { get; }
         int targetDisplay { get; }
         Rect targetRect { get; }
         TextureSlotCount textureSlotCount { get; }
-        uint vertexBudget { get; set; }
+        uint vertexBudget { get; }
     }
 
     /// <summary>
@@ -273,6 +281,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void CacheDisplayRectAndScale()
         {
 
@@ -281,7 +290,7 @@ namespace UnityEngine.UIElements
             if (renderMode == PanelRenderMode.WorldSpace)
                 m_ResolvedScale = 1.0f; // No panel scaling for world-space
             else
-                m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
+                m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size); // dpi should be constant across all displays
         }
 
         [SerializeField]
@@ -846,8 +855,9 @@ namespace UnityEngine.UIElements
             m_PanelAccess.DisposePanel();
         }
 
-        private float ScreenDPI { get; set; }
-        float IPanelSettings.ScreenDPI => ScreenDPI;
+        // Internal for tests.
+        internal float ScreenDPI { get; set; }
+        float IPanelSettings.screenDpi => ScreenDPI;
 
         private IDebugPanelChangeReceiver m_PanelChangeReceiver = null;
 
@@ -1020,58 +1030,7 @@ namespace UnityEngine.UIElements
 
         private Func<Vector2, Vector3> m_AssignedScreenToPanel;
 
-        internal float ResolveScale(Rect currentTargetRect, float screenDpi)
-        {
-            // Calculate scaling
-            float resolvedScale = 1.0f;
-            switch (scaleMode)
-            {
-                case PanelScaleMode.ConstantPixelSize:
-                    break;
-                case PanelScaleMode.ConstantPhysicalSize:
-                {
-                    var dpi = screenDpi == 0.0f ? fallbackDpi : screenDpi;
-                    if (dpi != 0.0f)
-                        resolvedScale = referenceDpi / dpi;
-                }
-                break;
-                case PanelScaleMode.ScaleWithScreenSize:
-                    if (referenceResolution.x * referenceResolution.y != 0)
-                    {
-                        var refSize = (Vector2)referenceResolution;
-                        var sizeRatio = new Vector2(currentTargetRect.width / refSize.x, currentTargetRect.height / refSize.y);
 
-                        var denominator = 0.0f;
-                        switch (screenMatchMode)
-                        {
-                            case PanelScreenMatchMode.Expand:
-                                denominator = Mathf.Min(sizeRatio.x, sizeRatio.y);
-                                break;
-                            case PanelScreenMatchMode.Shrink:
-                                denominator = Mathf.Max(sizeRatio.x, sizeRatio.y);
-                                break;
-                            default: // PanelScreenMatchMode.MatchWidthOrHeight:
-                                var widthHeightRatio = Mathf.Clamp01(match);
-                                denominator = Mathf.Lerp(sizeRatio.x, sizeRatio.y, widthHeightRatio);
-                                break;
-                        }
-                        if (denominator != 0.0f)
-                            resolvedScale = 1.0f / denominator;
-                    }
-                    break;
-            }
-
-            if (scale > 0.0f)
-            {
-                resolvedScale /= scale;
-            }
-            else
-            {
-                resolvedScale = 0.0f;
-            }
-
-            return resolvedScale;
-        }
 
         internal Rect GetDisplayRect()
         {

@@ -36,9 +36,7 @@ namespace Unity.U2D.Physics
         public static PhysicsWorldDefinition defaultDefinition { get => PhysicsWorld_GetDefaultDefinition(true); }
 
         /// <summary>
-        /// Get/Set the simulation worker count for the world.
-        /// The actual quantity of workers used will always be capped to those available on the current device and reading the property will return the number of workers actually being used by the device.
-        /// Changing the worker count continuously is not recommend and will impact performance as it requires the task queue be recreated.
+        /// Get/Set the gravity vector applied to all bodies in the world, usually in m/s^2.
         /// See <see cref="PhysicsWorld.gravity"/>.
         /// </summary>
         public Vector2 gravity { readonly get => m_Gravity; set => m_Gravity = value; }
@@ -58,6 +56,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get/Set the simulation worker count for the world.
+        /// A single simulation worker is always used for simulation therefore a worker count of one means single thread simulation only.
         /// The actual quantity of workers used will always be capped to those available on the current device and reading the property will return the number of workers actually being used by the device.
         /// Changing the worker count continuously is not recommend and will impact performance as it requires the task queue be recreated.
         /// See <see cref="PhysicsWorld.simulationWorkers"/>.
@@ -188,6 +187,17 @@ namespace Unity.U2D.Physics
         public float contactSpeed { readonly get => m_ContactSpeed; set => m_ContactSpeed = Mathf.Max(0f, value); }
 
         /// <summary>
+        /// The contact recycle distance, in meters.
+        /// Setting this to zero disables contact point recycling.
+        /// Contact recycling reuses contact points across simulation time-steps when the relative movement is small.
+        /// This feature improves stability and performance by around 25% (approximately).
+        /// Contact points are not recalculated until shapes move more than 5cm (default) relative to each other.
+        /// Contact recycling skips some updates such as friction, pre-solve (etc) until the contacts are no longer recycled.
+        /// See <see cref="PhysicsWorld.contactRecycleDistance"/>.
+        /// </summary>
+        public float contactRecycleDistance { readonly get => m_ContactRecycleDistance; set => m_ContactRecycleDistance = Mathf.Max(0f, value); }
+
+        /// <summary>
         /// Get/Set the maximum linear speed.
         /// See <see cref="PhysicsWorld.maximumLinearSpeed"/>.
         /// </summary>
@@ -204,6 +214,12 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.DrawFillOptions"/>.
         /// </summary>
         public PhysicsWorld.DrawFillOptions drawFillOptions { readonly get => m_DrawFillOptions; set => m_DrawFillOptions = value; }
+
+        /// <summary>
+        /// Controls how contact points are drawn.
+        /// See <see cref="PhysicsWorld.DrawContactType"/>.
+        /// </summary>
+        public PhysicsWorld.DrawContactType drawContactType { readonly get => m_DrawContactType; set => m_DrawContactType = value; }
 
         /// <summary>
         /// Limits what gets drawn to a narrow selection.
@@ -254,7 +270,7 @@ namespace Unity.U2D.Physics
         [SerializeField] Vector2 m_Gravity;
         [SerializeField] [FormerlySerializedAs("m_SimulationMode")] PhysicsWorld.SimulationType m_SimulationType;
         [SerializeField] [Min(1)] int m_SimulationSubSteps;
-        [SerializeField] [Range(0, PhysicsConstants.MaxWorkers)] int m_SimulationWorkers;
+        [SerializeField] [Range(1, PhysicsConstants.MaxWorkers)] int m_SimulationWorkers;
         [SerializeField] PhysicsWorld.TransformWriteMode m_TransformWriteMode;
         [SerializeField] [FormerlySerializedAs("m_TransformTweening")] PhysicsWorld.TransformTweenMode m_TransformTweenMode;
         [SerializeField] PhysicsWorld.TransformPlane m_TransformPlane;
@@ -273,9 +289,11 @@ namespace Unity.U2D.Physics
         [SerializeField] [Min(0.0f)] float m_ContactFrequency;
         [SerializeField] [Min(0.0f)] float m_ContactDamping;
         [SerializeField] [Min(0.0f)] float m_ContactSpeed;
+        [SerializeField] [Min(0.0f)] float m_ContactRecycleDistance;
         [SerializeField] [Min(0.0f)] float m_MaximumLinearSpeed;
         [SerializeField] PhysicsWorld.DrawOptions m_DrawOptions;
         [SerializeField] PhysicsWorld.DrawFillOptions m_DrawFillOptions;
+        [SerializeField] PhysicsWorld.DrawContactType m_DrawContactType;
         [SerializeField] PhysicsWorld.IgnoreFilter m_DrawFilter;
         [SerializeField] [Range(1f, 5f)] float m_DrawThickness;
         [SerializeField] [Range(0f, 1f)] float m_DrawFillAlpha;

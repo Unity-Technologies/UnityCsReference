@@ -55,6 +55,12 @@ namespace Unity.U2D.Physics
         public PhysicsTransform localAnchorB { readonly get => m_LocalAnchorB; set => m_LocalAnchorB = value; }
 
         /// <summary>
+        /// Enable/Disable unpinned mode where only Body A is affected and body B and its local anchor point is ignored.
+        /// Body B must still be assigned so it is typical to assign a static ground body, preferably shared/reused.
+        /// </summary>
+        public bool enableUnpinned { readonly get => m_EnableUnpinned; set => m_EnableUnpinned = value; }
+
+        /// <summary>
         /// Enable/Disable the rotational spring.
         /// </summary>
         public bool enableSpring { readonly get => m_EnableSpring; set => m_EnableSpring = value; }
@@ -149,6 +155,7 @@ namespace Unity.U2D.Physics
         PhysicsBody m_BodyB;
         [SerializeField] PhysicsTransform m_LocalAnchorA;
         [SerializeField] PhysicsTransform m_LocalAnchorB;
+        [SerializeField] bool m_EnableUnpinned;
         [SerializeField] bool m_EnableSpring;
         [SerializeField] float m_SpringTargetAngle;
         [SerializeField] [Min(0.0f)] float m_SpringFrequency;

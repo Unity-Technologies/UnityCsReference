@@ -4,7 +4,7 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Loading;
+using Unity.Loading;
 using UnityEngine.Scripting;
 
 namespace UnityEditor

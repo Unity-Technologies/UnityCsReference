@@ -175,17 +175,9 @@ namespace Unity.UI.Builder
             if (veas.Count > 0)
             {
                 BuilderEditorUtility.systemCopyBuffer =
-                    new VisualTreeAssetExporter().ToUxmlString(
+                    VisualTreeAssetExporter.Default.ToUxmlString(
                         m_PaneWindow.document.visualTreeAsset,
-                        veas,
-                        new VisualTreeAssetExporter.ExportOptions
-                        {
-                            ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
-                            styleExporterOptions = new StyleSheetExporter.UssExportOptions
-                            {
-                                ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
-                            }
-                        }
+                        veas
                     );
 
                 return true;
@@ -456,17 +448,7 @@ namespace Unity.UI.Builder
 
             newRootVea.Add(vea);
 
-            var uxml = new VisualTreeAssetExporter().ToUxmlString(
-                newVta,
-                new VisualTreeAssetExporter.ExportOptions
-                {
-                    ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
-                    styleExporterOptions = new StyleSheetExporter.UssExportOptions
-                    {
-                        ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
-                    }
-                }
-            );
+            var uxml = VisualTreeAssetExporter.Default.ToUxmlString(newVta);
 
             if (!m_PaneWindow.document.SaveNewTemplateFileFromHierarchy(path, uxml))
             {

@@ -303,6 +303,29 @@ namespace UnityEngine.TextCore.Text
             #endregion Setup UVs
         }
 
+        void EnsureMeshInfoCapacityForMaterialReferences(TextInfo textInfo, TextGenerationSettings generationSettings)
+        {
+            int materialCount = m_MaterialReferenceIndexLookup.Count;
+            if (materialCount <= textInfo.meshInfo.Length)
+                return;
+
+            int oldLength = textInfo.meshInfo.Length;
+            TextInfo.Resize(ref textInfo.meshInfo, materialCount, false);
+            for (int i = oldLength; i < materialCount; i++)
+            {
+                int referenceCount = m_MaterialReferences[i].referenceCount;
+                if (textInfo.meshInfo[i].vertexData == null)
+                    textInfo.meshInfo[i] = new MeshInfo(referenceCount > 0 ? referenceCount + 1 : 1, generationSettings.isIMGUI);
+                else if (textInfo.meshInfo[i].vertexBufferSize < referenceCount * 4)
+                    textInfo.meshInfo[i].ResizeMeshInfo(referenceCount > 1024 ? referenceCount + 256 : Mathf.NextPowerOfTwo(referenceCount), generationSettings.isIMGUI);
+
+                textInfo.meshInfo[i].material = m_MaterialReferences[i].material;
+                textInfo.meshInfo[i].glyphRenderMode = m_MaterialReferences[i].fontAsset.atlasRenderMode;
+            }
+
+            textInfo.materialCount = materialCount;
+        }
+
         /// <summary>
         /// Method to add the underline geometry.
         /// </summary>
@@ -323,6 +346,7 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
+            EnsureMeshInfoCapacityForMaterialReferences(textInfo, generationSettings);
 
             int underlineMaterialIndex = m_Underline.materialIndex;
             const int k_VertexIncrease = 12;

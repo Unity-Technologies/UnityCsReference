@@ -127,10 +127,6 @@ namespace UnityEditor
 
             public static GUIContent avatar = EditorGUIUtility.TrTextContent("Animator");
             public static GUIContent configureAvatar = EditorGUIUtility.TrTextContent("Configure...");
-            public static GUIContent avatarValid = EditorGUIUtility.TrTextContent("\u2713");
-            public static GUIContent avatarInvalid = EditorGUIUtility.TrTextContent("\u2715");
-            public static GUIContent avatarPending = EditorGUIUtility.TrTextContent("...");
-
 
             public static GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
             public static GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
@@ -433,24 +429,13 @@ namespace UnityEditor
                 GUILayout.Label(string.Format("Not enough bones to create human avatar (requires {0})", HumanTrait.RequiredBoneCount), EditorStyles.helpBox);
             }
 
-            // Validation text
-            GUIContent validationContent;
-            if (m_Avatar && !HasModified())
+            if (!m_Avatar || HasModified())
             {
-                if (m_Avatar.isHuman)
-                    validationContent = Styles.avatarValid;
-                else
-                    validationContent = Styles.avatarInvalid;
-            }
-            else
-            {
-                validationContent = Styles.avatarPending;
                 GUILayout.Label("The avatar can be configured after settings have been applied.", EditorStyles.helpBox);
             }
 
             Rect r = EditorGUILayout.GetControlRect();
             const int buttonWidth = 80;
-            GUI.Label(new Rect(r.xMax - buttonWidth - 18, r.y, 18, r.height), validationContent, EditorStyles.label);
 
             // Configure button
             using (new EditorGUI.DisabledScope(m_Avatar == null))

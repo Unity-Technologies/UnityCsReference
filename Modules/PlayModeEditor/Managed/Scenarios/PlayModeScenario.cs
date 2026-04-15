@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -51,12 +53,12 @@ namespace Unity.PlayMode.Editor
         internal abstract void ExecuteStop();
 
         /// <summary>
-        /// Implement this method to create additional UI elements for the play mode top bar when this play mode config is active.
+        /// Implement this method to create additional toolbar elements for the play mode top bar when this play mode config is active.
         /// </summary>
         /// <returns>
-        /// Returns the visual element that will be added to the top bar.
+        /// Returns an enumerable of MainToolbarElement instances that will be added to the top bar.
         /// </returns>
-        internal virtual VisualElement CreateTopbarUI() => null;
+        internal virtual IEnumerable<MainToolbarElement> CreateTopbarUI() => null;
 
         /// <summary>
         /// Implement this method to create the UI elements for the active scenario window when this play mode config is selected.

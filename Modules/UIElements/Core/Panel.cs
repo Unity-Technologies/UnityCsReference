@@ -265,6 +265,7 @@ namespace UnityEngine.UIElements
         DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor | DirtyDynamicPostProcessing | DirtyLargePixelCoverage,
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     struct PanelClearSettings
     {
         public bool clearDepthStencil;
@@ -590,6 +591,8 @@ namespace UnityEngine.UIElements
         }
 
         private float m_Scale = 1;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float scale
         {
             get { return m_Scale; }
@@ -613,6 +616,7 @@ namespace UnityEngine.UIElements
         internal LayoutConfig layoutConfig;
 
         private float m_PixelsPerPoint = 1;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float pixelsPerPoint
         {
             get { return m_PixelsPerPoint; }
@@ -644,8 +648,10 @@ namespace UnityEngine.UIElements
 
         public float referenceSpritePixelsPerUnit { get; set; } = 100.0f;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal PanelClearSettings clearSettings { get; set; } = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal IPanelRenderer panelRenderer;
 
         // For debug panels, over which panel is it overlayed. Null otherwise.
@@ -690,12 +696,14 @@ namespace UnityEngine.UIElements
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
         // Need virtual for tests
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual DataBindingManager dataBindingManager { get; set; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }
         public abstract EventDispatcher dispatcher { get; set; }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
             using var scope = new IMGUIContainer.UITKScope();
@@ -940,6 +948,7 @@ namespace UnityEngine.UIElements
 
         public virtual void Render() => panelRenderer.Render();
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Func<AbstractGenericMenu> CreateMenuFunctor;
 
         internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
@@ -1161,7 +1170,7 @@ namespace UnityEngine.UIElements
 
         internal static Func<Object, string> getAssetPathFunc { private get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
             // TODO make the LoadResource function non-static.
@@ -1347,10 +1356,9 @@ namespace UnityEngine.UIElements
         // For tests only.
         internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
-            s_MarkerPickAll.Begin();
+            using var _ = s_MarkerPickAll.Auto(((BaseVisualElementPanel)root.panel)?.ownerObject);
             // Native implementation is 2-3 times faster, so we use it if we can.
             var result = PerformPickNative(root, point, picked, includeIgnoredElement);
-            s_MarkerPickAll.End();
             return result;
         }
 
@@ -1449,6 +1457,7 @@ namespace UnityEngine.UIElements
 
         public override void TickSchedulingUpdaters()
         {
+            beforeTickingAnyScheduledPanel?.Invoke(this);
             using var scope = new IMGUIContainer.UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
 
@@ -1541,7 +1550,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static internal event Action<Panel> beforeAnyRepaint;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static event Action<Panel> beforeTickingAnyScheduledPanel;
+
+        internal static event Action<Panel> beforeAnyRepaint;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static event Action<Panel> afterRepaint;
 
         public override void Repaint(Event e)
         {
@@ -1561,6 +1576,7 @@ namespace UnityEngine.UIElements
 
             panelDebug?.Refresh();
             (panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(e);
+            afterRepaint?.Invoke(this);
         }
 
         public override void Render()
@@ -1676,6 +1692,7 @@ namespace UnityEngine.UIElements
         internal event Action drawsInCamerasChanged;
         void InvokeDrawsInCamerasChanged() { drawsInCamerasChanged?.Invoke(); }
         bool m_DrawsInCameras;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool drawsInCameras
         {
             get { return m_DrawsInCameras; }
@@ -1691,18 +1708,22 @@ namespace UnityEngine.UIElements
         }
 
         float m_PixelsPerUnit = k_DefaultPixelsPerUnit;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float pixelsPerUnit {
             get { return m_PixelsPerUnit; }
             set { m_PixelsPerUnit = value; }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal RenderTexture targetTexture = null; // Render panel to a texture
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal int targetDisplay { get; set;}
 
         internal int screenRenderingWidth => getScreenRenderingWidth(targetDisplay);
         internal int screenRenderingHeight => getScreenRenderingHeight(targetDisplay);
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void Update()
         {
             TickSchedulingUpdaters();
@@ -1771,6 +1792,7 @@ namespace UnityEngine.UIElements
             set => m_ScreenToPanelSpace = value ?? DefaultScreenToPanelSpace;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Vector3 ScreenToPanel(Vector2 screen)
         {
             return screenToPanelSpace(screen) / scale;

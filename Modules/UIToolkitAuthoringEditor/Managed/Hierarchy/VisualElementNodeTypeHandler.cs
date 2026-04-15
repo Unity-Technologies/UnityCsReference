@@ -945,15 +945,11 @@ internal abstract class VisualElementNodeTypeHandler :
         return vta;
     }
 
-    private PanelSettings GetPanelSettings(VisualElement element)
+    protected virtual PanelSettings GetPanelSettings(VisualElement element)
     {
         var root = element.GetFirstOfType<IPanelComponentRootElement>();
         if (root != null)
             return root.panelComponent.panelSettings;
-
-        var panelElement = element.GetFirstOfType<PanelElement>();
-        if (panelElement != null)
-            return panelElement.PanelSettings;
 
         return null;
     }

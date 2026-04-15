@@ -239,7 +239,7 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         protected virtual void CreateDefaultFieldForType(Type type, string fieldTooltip, IReadOnlyList<Attribute> attributes = null)
         {
-            // PF TODO Eventually, add support for nested properties, arrays and Enum Flags.
+            // PF TODO Eventually, add support for nested properties and arrays.
 
             //if (EditorGUI.HasVisibleChildFields())
             //    return CreateFoldout();
@@ -396,34 +396,28 @@ namespace Unity.GraphToolkit.Editor
 
             if (typeof(Enum).IsAssignableFrom(type))
             {
-                /*if (propertyType.IsDefined(typeof(FlagsAttribute), false))
-                {
-                    var field = new EnumFlagsField { tooltip = fieldTooltip };
-                    return ConfigureField(field);
-                }
-                else*/
-                {
-                    var enumValues = Enum.GetValues(type);
-                    var defaultValue = enumValues.Length > 0 ? enumValues.GetValue(0) as Enum : null;
-                    var field = new EnumField(defaultValue);
-                    Setup(field, fieldTooltip);
+                var enumValues = Enum.GetValues(type);
+                var defaultValue = enumValues.Length > 0 ? enumValues.GetValue(0) as Enum : null;
+                BaseField<Enum> field = type.IsDefined(typeof(FlagsAttribute), false)
+                    ? new EnumFlagsField(defaultValue)
+                    : new EnumField(defaultValue);
+                Setup(field, fieldTooltip);
 
-                    m_ValueToDisplay = v =>
-                    {
-                        if (typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
-                            return ((EnumValueReference)v).ValueAsEnum();
-                        // Enums in collections are not wrapped in EnumValueReference
-                        return v;
-                    };
-                    m_ValueFromDisplay = v =>
-                    {
-                        if (typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
-                            return new EnumValueReference((Enum)v);
-                        // Enums in collections are not wrapped in EnumValueReference
-                        return v;
-                    };
-                    DisplayFieldValueType = typeof(Enum);
-                }
+                m_ValueToDisplay = v =>
+                {
+                    if (v != null && typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
+                        return ((EnumValueReference)v).ValueAsEnum();
+                    // Enums in collections are not wrapped in EnumValueReference
+                    return v;
+                };
+                m_ValueFromDisplay = v =>
+                {
+                    if (v != null && typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
+                        return new EnumValueReference((Enum)v);
+                    // Enums in collections are not wrapped in EnumValueReference
+                    return v;
+                };
+                DisplayFieldValueType = typeof(Enum);
             }
 
             if (type == typeof(Vector2))

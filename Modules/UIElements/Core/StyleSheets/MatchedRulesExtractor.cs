@@ -121,7 +121,6 @@ namespace UnityEngine.UIElements
                         if (thisImportedSheet != null)
                         {
                             name += "\n(" + thisImportedSheet.name + ")";
-                            matchingContext.AddStyleSheet(thisImportedSheet);
                             RecursivePrintStyleSheetNames(thisImportedSheet);
                         }
                     }

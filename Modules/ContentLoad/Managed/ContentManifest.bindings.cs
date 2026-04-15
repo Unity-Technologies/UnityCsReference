@@ -6,11 +6,11 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace Unity.ContentLoad
+namespace Unity.Loading
 {
     [NativeHeader("Modules/ContentLoad/Public/ContentManifest.h")]
     [UsedByNativeCode]
-    /*UCBP-PUBLIC*/ internal sealed class ContentManifest : IDisposable
+    internal sealed class ContentManifest : IDisposable
     {
         public static bool LoadFromFile(string path, out ContentManifest outCatalog)
         {

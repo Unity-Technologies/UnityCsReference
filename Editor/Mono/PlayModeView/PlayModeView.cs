@@ -25,6 +25,7 @@ namespace UnityEditor
     }
 
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
     internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
@@ -568,7 +569,7 @@ namespace UnityEditor
 
             return display;
         }
-        
+
         public virtual void OnBeforeSerialize()
         {
         }

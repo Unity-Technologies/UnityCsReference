@@ -98,7 +98,7 @@ namespace Unity.Profiling.Editor.UI
             public static readonly string k_RenderThreadName = L10n.Tr("Render");
 
             // Bottleneck description templates (with target set)
-            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>The {0} exceeded your target frame time in this frame.</b>");
+            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>{0} Bound: the {0} exceeded your target frame time in this frame.</b>");
             public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame.</b>");
             public static readonly string k_CpuBoundExplanationFormat = L10n.Tr("In this frame the CPU spent the majority of its time executing on the <b>{0} thread</b>. Therefore, you should initially focus on this to begin your investigation.");
             public static readonly string k_SuggestionTitle = L10n.Tr("<b>How to inspect further:</b>");
@@ -136,11 +136,6 @@ namespace Unity.Profiling.Editor.UI
             var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml("SummaryDetailsView.uxml");
             if (view == null)
                 throw new InvalidViewDefinedInUxmlException();
-
-            const string k_UssClass_Dark = "summary-details__dark";
-            const string k_UssClass_Light = "summary-details__light";
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
-            view.AddToClassList(themeUssClass);
 
             return view;
         }

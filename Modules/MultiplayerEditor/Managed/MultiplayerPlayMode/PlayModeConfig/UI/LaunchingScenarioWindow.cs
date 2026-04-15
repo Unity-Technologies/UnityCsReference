@@ -21,7 +21,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const string k_DeployLabel = "Deploying";
         private const string k_StartLabel = "Starting";
         private const string k_RunLabel = "Running";
-        private const string k_CleanupLabel = "Cleaning up";
+        private const string k_CleanupLabel = "Stopping";
         private const string k_LoadingIconName = "LoadingIcon";
 
         private const int k_WindowWidth = 400;

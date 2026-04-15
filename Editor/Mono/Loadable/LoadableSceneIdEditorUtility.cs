@@ -4,8 +4,10 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEditor;
-using UnityEngine.Loading;
+using Unity.Loading;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {

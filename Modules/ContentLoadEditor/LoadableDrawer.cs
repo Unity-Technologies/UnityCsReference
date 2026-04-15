@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Unity.Loading;
 
 namespace UnityEditor
 {
@@ -17,21 +18,21 @@ namespace UnityEditor
         // If only CreatePropertyGUI is overriden the property drawer wouldn't work in an IMGUI context (CBD-841).
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var loadableRefProp = property.FindPropertyRelative("m_LoadableRef");
+            var loadableObjectIdProp = property.FindPropertyRelative("m_LoadableObjectId");
             var loadableType = FindLoadableType(property);
-            var loadableReferenceField = new LoadableReferenceField(preferredLabel, loadableType);
-            loadableReferenceField.BindProperty(loadableRefProp);
+            var loadableObjectIdField = new LoadableObjectIdField(preferredLabel, loadableType);
+            loadableObjectIdField.BindProperty(loadableObjectIdProp);
 
-            PropertyField.ConfigureFieldStyles<LoadableReferenceField, LoadableReference>(loadableReferenceField);
+            PropertyField.ConfigureFieldStyles<LoadableObjectIdField, LoadableObjectId>(loadableObjectIdField);
 
-            return loadableReferenceField;
+            return loadableObjectIdField;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var loadableRefProp = property.FindPropertyRelative("m_LoadableRef");
+            var loadableObjectIdProp = property.FindPropertyRelative("m_LoadableObjectId");
             var loadableType = FindLoadableType(property);
-            LoadableReferenceEditorUtility.DrawLoadableReferenceField(position, loadableRefProp, label, loadableType);
+            LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, loadableObjectIdProp, label, loadableType);
         }
 
         private static Type FindLoadableType(SerializedProperty property)

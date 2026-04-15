@@ -38,9 +38,9 @@ namespace Unity.UI.Builder
 
         public ObjectField objectField => m_ObjectField;
 
-        protected MultiTypeField() : this(null) {}
+        protected MultiTypeField() : this(null, null) {}
 
-        protected MultiTypeField(string label) : base(label)
+        protected MultiTypeField(string label, VisualElement visualInput) : base(label, visualInput)
         {
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
 

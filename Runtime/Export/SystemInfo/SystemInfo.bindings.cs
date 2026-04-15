@@ -518,6 +518,13 @@ namespace UnityEngine
 
             return SupportsRandomWriteOnRenderTextureFormatNative(format);
         }
+        public static bool SupportsTypedUAVShaderLoadStoreOnGraphicsFormat(GraphicsFormat graphicsFormat, bool isLoad)
+        {
+            if (!IsValidEnumValue(graphicsFormat))
+                throw new ArgumentException("Failed SupportsTypedUAVShaderLoadStoreOnGraphicsFormat; format is not a valid GraphicsFormat");
+
+            return SupportsTypedUAVShaderLoadStoreOnGraphicsFormatNative(graphicsFormat, isLoad);
+        }
 
         public static bool SupportsTextureFormat(TextureFormat format)
         {
@@ -994,6 +1001,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsBlendingOnRenderTextureFormat")]
         static extern bool SupportsBlendingOnRenderTextureFormatNative(RenderTextureFormat format);
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsTypedUAVShaderLoadStoreOnGraphicsFormat")]
+        static extern bool SupportsTypedUAVShaderLoadStoreOnGraphicsFormatNative(GraphicsFormat graphicsFormat, bool isLoad);
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsRandomWriteOnRenderTextureFormat")]
         static extern bool SupportsRandomWriteOnRenderTextureFormatNative(RenderTextureFormat format);

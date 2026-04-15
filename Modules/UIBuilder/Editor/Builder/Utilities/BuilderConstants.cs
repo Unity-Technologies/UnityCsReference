@@ -83,7 +83,7 @@ namespace Unity.UI.Builder
         public static readonly string ElementClassNameClassName = "unity-builder-code-label--element-class-name";
         public static readonly string ElementAttachedStyleSheetClassName = "unity-builder-code-label--element-attached-stylesheet";
         public static readonly string ElementPseudoStateClassName = "unity-builder-code-label--element-pseudo-state";
-        public static readonly string TagPillClassName = "unity-builder-tag-pill";
+        public static readonly string TagPillClassName = "unity-tag-pill";
         public static readonly string StyleSelectorBelongsParent = "unity-selector-parent-subdocument";
         public static readonly string SeparatorLineStyleClassName = "unity-builder-separator-line";
 
@@ -151,7 +151,6 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStyleResetClassName = "unity-builder-inspector__style--reset"; // used to reset font style of children
         public static readonly string InspectorLocalStyleUnresolvedVariableClassName = "unity-builder-inspector__style--unresolved-variable";
         public static readonly string InspectorLocalStyleVariableClassName = "unity-builder-inspector__style--variable";
-        public static readonly string InspectorLocalStyleVariableEditingClassName = "unity-builder-inspector__style--variable-editing";
         public static readonly string InspectorLocalStyleInheritedClassName = "unity-builder-inspector__style--inherited";
         public static readonly string InspectorLocalStyleSelectorClassName = "unity-builder-inspector__style--uss-selector";
         public static readonly string InspectorLocalStyleBindingClassName = "unity-builder-inspector__style--binding";
@@ -161,7 +160,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
         public static readonly string InspectorClassPillNotInDocumentClassName = "unity-builder-class-pill--not-in-document";
         public static readonly string InspectorClassHelpBox = "unity-builder-inspector__help-box";
-        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
+        public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
         public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
         public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
         public static readonly string InspectorBindingIndicatorClassName = "unity-builder-foldout-binding-indicator";
@@ -494,7 +493,7 @@ namespace Unity.UI.Builder
 
         // Completion
         public static readonly string CompleterAnchoredControlScreenRectVEPropertyName = "__unity-ui-builder-completer-popup-window-screen-rect";
-        
+
         // Dimension Style Field specific
         public const float DimensionStyleFieldReducedDragStep = 0.1f;
 
@@ -603,12 +602,6 @@ namespace Unity.UI.Builder
         public static readonly string SelectedStyleRulePropertyName = "--ui-builder-selected-style-property";
         public static readonly string SelectedStyleSheetSelectorName = "__unity_ui_builder_selected_stylesheet";
         public static readonly string SelectedVisualTreeAssetSpecialElementTypeName = typeof(UnityUIBuilderSelectionMarker).FullName;
-
-        internal static readonly string[] IgnoredAttributesWhenExporting = { SelectedVisualElementAssetAttributeName };
-        internal static readonly string[] IgnoredTypesWhenExporting = { SelectedVisualTreeAssetSpecialElementTypeName };
-        internal static readonly string[] IgnoredStylePropertiesWhenExporting = { SelectedStyleRulePropertyName };
-        internal static readonly string[] IgnoredSelectorsWhenExporting = { SelectedStyleSheetSelectorName };
-        internal static readonly string[] IgnoredSelectorPrefixesWhenExporting = { StyleSelectorElementName };
 
         //
         // Canvas

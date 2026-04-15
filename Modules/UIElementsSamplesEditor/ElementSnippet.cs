@@ -88,6 +88,7 @@ namespace UnityEditor.UIElements.Samples
 
             text = text.Substring(actualStartIndex, endIndex - actualStartIndex);
             text = text.Replace(leadingWhiteSpace, goodEndLine);
+            text = Regex.Replace(text, @"(^\s*#region[^\n]*\n?)|(\n\s*#endregion[^\n]*)", "", RegexOptions.Multiline);
 
             return text;
         }
@@ -122,6 +123,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 text = addSyntaxColors_USS(text);
             }
+
+            text = text.Trim();
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lineCount = text.Count(x => x == '\n') + 1;

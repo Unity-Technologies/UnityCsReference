@@ -31,7 +31,7 @@ internal readonly record struct DuplicateElementsCommand
             Assert.IsNotNull(asset.visualTreeAsset);
         }
 
-        var exporter = new VisualTreeAssetExporter();
+        var exporter = VisualTreeAssetExporter.Default;
         using var exportListHandle = ListPool<UxmlAsset>.Get(out var exportList);
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);

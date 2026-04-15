@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -1068,7 +1069,7 @@ namespace Unity.UI.Builder
 
                 if (propValue.sheet.isDefaultStyleSheet)
                 {
-                    StyleVariableUtilities.editorVariableDescriptions.TryGetValue(variableName, out var variableDescription);
+                    StyleVariableUtility.editorVariableDescriptions.TryGetValue(variableName, out var variableDescription);
                 }
 
                 var propStyleSheet = propValue.sheet;

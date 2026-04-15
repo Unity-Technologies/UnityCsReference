@@ -149,6 +149,7 @@ namespace UnityEditor
         bool            m_IsShowingAssets;
         bool            m_SkipHiddenPackages;
         SavedInt        m_StartGridSize = new SavedInt("ObjectSelector.GridSize", 64);
+        bool            m_ExcludeSceneAssets;
 
         // UI Elememts
         UnityEditor.UIElements.Toolbar  m_Toolbar;
@@ -534,6 +535,10 @@ namespace UnityEditor
                     }
                 }
                 filter.skipHidden = m_SkipHiddenPackages;
+
+                if (m_ExcludeSceneAssets)
+                    filter.excludeSceneAssets = true;
+
             }
 
             return filter;
@@ -544,12 +549,12 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
-        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true)
+        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
-            Show(new [] { requiredType }, property, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, allowBuiltinResources);
+            Show(new [] { requiredType }, property, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, allowBuiltinResources, excludeSceneAssets);
         }
 
-        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true)
+        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
             if (requiredTypes == null)
             {
@@ -566,15 +571,15 @@ namespace UnityEditor
             UnityObject objectBeingEdited = property.serializedObject.targetObject;
             m_EditedProperty = property;
 
-            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, true, allowBuiltinResources);
+            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, true, allowBuiltinResources, excludeSceneAssets);
         }
 
-        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
+        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
-            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem, allowBuiltinResources);
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem, allowBuiltinResources, excludeSceneAssets);
         }
 
-        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
+        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
             SharedShow(
                 obj,
@@ -585,11 +590,12 @@ namespace UnityEditor
                 onObjectSelectorClosed,
                 onObjectSelectedUpdated,
                 showNoneItem,
-                allowBuiltinResources
+                allowBuiltinResources,
+                excludeSceneAssets
             );
         }
 
-        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true)
+        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
             // We can't rely on the fact that the window will always be closed when we call Show. For example,
             // if a user clicks on multiple object fields without closing the window first, there is no guarantee
@@ -599,6 +605,7 @@ namespace UnityEditor
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_AllowBuiltinResources = allowBuiltinResources;
+            m_ExcludeSceneAssets = excludeSceneAssets;
             m_IsShowingAssets = true;
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedEntityIds;

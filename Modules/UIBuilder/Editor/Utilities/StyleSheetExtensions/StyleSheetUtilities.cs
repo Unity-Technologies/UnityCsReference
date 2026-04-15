@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Text.RegularExpressions;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine.UIElements;
@@ -67,15 +67,7 @@ namespace Unity.UI.Builder
 
         public static string GetCleanVariableName(string value)
         {
-            if (string.IsNullOrEmpty(value))
-                return value;
-
-            var cleanName = Regex.Replace(value.Trim(), BuilderConstants.USSVariablePattern, BuilderConstants.USSVariableInvalidCharFiller);
-
-            if (!cleanName.StartsWith(BuilderConstants.UssVariablePrefix))
-                cleanName = BuilderConstants.UssVariablePrefix + cleanName;
-
-            return cleanName;
+            return VariableNameUtilities.GetCleanVariableName(value);
         }
     }
 }

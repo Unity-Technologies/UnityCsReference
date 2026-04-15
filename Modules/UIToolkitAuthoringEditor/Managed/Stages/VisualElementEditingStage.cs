@@ -10,6 +10,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEditor.UIElements;
+using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -29,21 +30,18 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private VisualTreeAssetEditingContext m_Context;
 
-    private VisualTreeAssetExporter m_VisualTreeAssetExporter;
-    private VisualTreeAssetExporter.ExportOptions m_VisualTreeAssetExporterOptions;
-
-    private StyleSheetExporter m_StyleSheetExporter;
-    private StyleSheetExporter.UssExportOptions m_StyleSheetExporterOptions;
-
     private PanelElement m_PanelElement;
 
     public event Action<VisualElementEditingStage> MainDocumentWasCloned;
+    public event Action<PanelElement> PanelWasRepainted;
 
     public override string assetPath => AssetDatabase.GetAssetPath(EditedVisualTreeAsset);
 
-    internal Panel GetAuthoringPanel() => m_PanelElement.NestedPanel;
+    internal Panel GetAuthoringPanel() => m_PanelElement.SubPanel;
 
     internal override bool isValid => ValidateContext();
+
+    internal PanelElement PanelElement => m_PanelElement;
 
     public VisualTreeAssetEditingContext Context
     {
@@ -76,31 +74,34 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         Context = context;
         m_HeaderContent.text = EditedVisualTreeAsset.name;
-        m_HeaderContent.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;;
+        m_HeaderContent.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
     }
 
     public VisualElementEditingStage()
     {
         m_HeaderContent = new GUIContent();
-        m_VisualTreeAssetExporter = new VisualTreeAssetExporter();
-        m_VisualTreeAssetExporterOptions = new VisualTreeAssetExporter.ExportOptions
-        {
-            ignoreAttributeList = ["__unity-builder-selected-element"],
-            styleExporterOptions = new StyleSheetExporter.UssExportOptions
-            {
-                ignorePropertyList = ["--ui-builder-selected-style-property"]
-            }
-        };
-        m_StyleSheetExporter = new StyleSheetExporter();
-        m_StyleSheetExporterOptions = new StyleSheetExporter.UssExportOptions
-        {
-            ignorePropertyList = ["--ui-builder-selected-style-property"]
-        };
     }
 
     public void RequestRefresh()
     {
         CloneTree();
+        PanelElement.FrameUpdate();
+    }
+
+    public void RequestCanvasSize(Vector2 viewportSize, Vector2 canvasSize, Vector2 offset, float zoomFactor)
+    {
+        if (m_PanelElement == null)
+            return;
+
+        m_PanelElement.ResizeRenderTexture(viewportSize);
+        m_PanelElement.Offset = offset;
+        m_PanelElement.ScaleFactor = zoomFactor;
+        m_PanelElement.Size = canvasSize;
+
+        if (viewportSize.x == 0 || viewportSize.y == 0)
+            return;
+
+        m_PanelElement.FrameUpdate();
     }
 
     internal override Scene GetSceneAt(int index)
@@ -113,18 +114,18 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private void CloneTree()
     {
-        m_PanelElement.nestedRootVisualElement.Clear();
+        m_PanelElement.subRootVisualElement.Clear();
 
         switch (Context.SubDocumentOptions)
         {
             case SubDocumentOptions.None:
-                Context.RootVisualTreeAsset.CloneTree(m_PanelElement.nestedRootVisualElement);
+                Context.RootVisualTreeAsset.CloneTree(m_PanelElement.subRootVisualElement);
                 break;
             case SubDocumentOptions.InContext:
-                Context.RootVisualTreeAsset.CloneTree(m_PanelElement.nestedRootVisualElement);
+                Context.RootVisualTreeAsset.CloneTree(m_PanelElement.subRootVisualElement);
                 break;
             case SubDocumentOptions.Isolation:
-                EditedVisualTreeAsset.CloneTree(m_PanelElement.nestedRootVisualElement);
+                EditedVisualTreeAsset.CloneTree(m_PanelElement.subRootVisualElement);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -136,8 +137,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         base.OnEnable();
         m_PanelElement = new PanelElement();
-        m_PanelElement.CreateNestedPanel();
-        Binding.SetPanelLogLevel(m_PanelElement.NestedPanel, BindingLogLevel.None);
+        m_PanelElement.OnAfterRepaint += OnPanelRepainted;
+        m_PanelElement.CreateSubPanel();
+        Binding.SetPanelLogLevel(m_PanelElement.SubPanel, BindingLogLevel.None);
+        m_PanelElement.SetPanelSize(new Vector2Int(480, 640));
         DoDeserialize();
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
@@ -152,8 +155,9 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         base.OnDisable();
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         StageNavigationManager.instance.beforeSwitchingAwayFromStage -= BeforeLeavingStage;
-        m_PanelElement.nestedRootVisualElement.Clear();
-        m_PanelElement.DestroyNestedPanel();
+        m_PanelElement.subRootVisualElement.Clear();
+        m_PanelElement.DestroySubPanel();
+        m_PanelElement.OnAfterRepaint -= OnPanelRepainted;
         m_Clipboard.Dispose();
         m_Clipboard = null;
     }
@@ -161,7 +165,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     protected internal override bool OnOpenStage()
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
-        CloneTree();
+        RequestRefresh();
         m_MenuScope = new ScopedMenuItemGenerator();
         return true;
     }
@@ -171,7 +175,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         if (stage != this)
             return;
 
-        m_PanelElement.nestedRootVisualElement.Clear();
+        m_PanelElement.subRootVisualElement.Clear();
     }
 
     void OnUndoRedoPerformed()
@@ -182,7 +186,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     protected override void OnCloseStage()
     {
-        m_PanelElement?.DestroyNestedPanel();
+        m_PanelElement?.DestroyPanelPermanently();
         m_PanelElement = null;
         m_MenuScope?.Dispose();
         m_MenuScope = null;
@@ -234,7 +238,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                     if (string.IsNullOrEmpty(styleSheetPath))
                         // [TODO] Figure out Save as...
                         continue;
-                    var styleSheetStr = m_StyleSheetExporter.ToUssString(styleSheet, m_StyleSheetExporterOptions);
+                    var styleSheetStr = StyleSheetExporter.Default.ToUssString(styleSheet);
                     succeeded &= WriteTextFileToDisk(styleSheetPath, styleSheetStr);
                     AssetDatabase.ImportAsset(styleSheetPath);
                 }
@@ -249,7 +253,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             if (EditorUtility.IsDirty(EditedVisualTreeAsset))
             {
                 VisualTreeAsset.HarmonizeIds(EditedVisualTreeAsset);
-                var assetStr = m_VisualTreeAssetExporter.ToUxmlString(EditedVisualTreeAsset, m_VisualTreeAssetExporterOptions);
+                var assetStr = VisualTreeAssetExporter.Default.ToUxmlString(EditedVisualTreeAsset);
                 succeeded &= WriteTextFileToDisk(assetPath, assetStr);
                 AssetDatabase.ImportAsset(assetPath);
             }
@@ -456,5 +460,16 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             }
         }
         return true;
+    }
+
+    void OnPanelRepainted(PanelElement panel)
+    {
+        PanelWasRepainted?.Invoke(panel);
+    }
+
+    internal void ContentOverflowMode(Overflow overflow)
+    {
+        if (m_PanelElement != null)
+            m_PanelElement.ContentOverflowMode = overflow;
     }
 }

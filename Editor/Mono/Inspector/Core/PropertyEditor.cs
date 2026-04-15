@@ -525,13 +525,13 @@ namespace UnityEditor
                 m_HasPreviewPeriodicCheckDelayer?.Execute();
         }
 
-        static Editor[] s_Editors = new Editor[10];
+        static readonly List<Editor> s_Editors = new List<Editor>();
 
         [UsedImplicitly]
         protected virtual void Update()
         {
-            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, ref s_Editors);
-            if (s_Editors.Length == 0)
+            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, s_Editors);
+            if (s_Editors.Count == 0)
                 return;
 
             bool wantsRepaint = false;
@@ -2656,18 +2656,30 @@ namespace UnityEditor
             }
         }
 
+        // GC-safe proxy for native code to call PrivateRequestRebuild with a borrowed native pointer
         [RequiredByNativeCode]
-        private static bool PrivateRequestRebuild(ActiveEditorTracker tracker)
+        private static bool PrivateRequestRebuild(IntPtr activeEditorTrackerNativeHandle)
         {
-            foreach (var inspector in Resources.FindObjectsOfTypeAll<PropertyEditor>())
-            {
-                if (inspector.tracker.Equals(tracker))
-                {
-                    return ContainerWindow.CanClose(inspector);
-                }
-            }
+            // Create wrapper with borrowed native pointer, skipping native allocation
+            var tracker = new ActiveEditorTracker(activeEditorTrackerNativeHandle);
 
-            return true;
+            try
+            {
+                foreach (var inspector in Resources.FindObjectsOfTypeAll<PropertyEditor>())
+                {
+                    if (inspector.tracker.Equals(tracker))
+                    {
+                        return ContainerWindow.CanClose(inspector);
+                    }
+                }
+
+                return true;
+            }
+            finally
+            {
+                // Clear to prevent finalizer from deleting the borrowed native pointer
+                tracker.ClearNativeHandle();
+            }
         }
 
         private void DrawSelectionPickerList()

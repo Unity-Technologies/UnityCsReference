@@ -435,8 +435,8 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal void ResetToGlobalQualitySettingsValues()
         {
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroupName(buildTarget);
-            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
+            var namedBuildTargetName = NamedBuildTarget.FromTargetAndSubtarget(buildTarget, (int)subtarget).TargetName;
+            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(namedBuildTargetName);
 
             var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];
 
@@ -446,7 +446,7 @@ namespace UnityEditor.Build.Profile
                 newBuildProfileQualityLevels[i] = QualitySettings.names[globalQualityLevels[i]];
             }
 
-            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(buildTargetGroupString);
+            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(namedBuildTargetName);
             if (globalDefaultQualityLevelIndex != -1)
                 qualitySettings.defaultQualityLevel = QualitySettings.names[globalDefaultQualityLevelIndex];
             else
@@ -570,6 +570,7 @@ namespace UnityEditor.Build.Profile
             BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
             BuildProfileModuleUtil.RemoveGraphicsSettings(targetBuildProfile);
             BuildProfileModuleUtil.RemoveQualitySettings(targetBuildProfile);
+            BuildProfileModuleUtil.RemoveNonRequiredSubAssets(targetBuildProfile);
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
             BuildProfileModuleUtil.UpdateActiveEditors(targetBuildProfile);

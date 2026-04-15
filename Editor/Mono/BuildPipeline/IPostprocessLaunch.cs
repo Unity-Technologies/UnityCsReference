@@ -15,7 +15,7 @@ namespace UnityEditor.Build
         ///<summary>The application is successfully launched on some target devices, but not all.</summary>
         ///<remarks>For example, Android allows an application to launch on multiple devices at once. In this case, the application might fail to launch on some devices, but succeed on others.</remarks>
         PartiallySucceeded = 2,
-        ///<summary>The application is failed to launch.</summary>
+        ///<summary>The application failed to launch.</summary>
         Failed = 3
     }
 
@@ -64,7 +64,29 @@ namespace UnityEditor.Build
         ///* Xbox Series X|S.</remarks>
         ///<param name="launchReport">A report containing information about the launch, such as the target platform on which the application was launched and outcome of the process. Some platforms such as Android provide additional launch information which you can obtain by performing a necessary cast.</param>
         ///<example>
-        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/IPostprocessLaunch_OnPostprocessLaunch.cs"/>
+        ///  <code><![CDATA[
+        ///using UnityEngine;
+        ///using UnityEditor;
+        ///using UnityEditor.Build;
+        ///
+        ///public class PostprocessLaunchExample : IPostprocessLaunch
+        ///{
+        ///    public int callbackOrder => 0;
+        ///
+        ///    private void Log(string message)
+        ///    {
+        ///        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, message);
+        ///    }
+        ///
+        ///    public void OnPostprocessLaunch(ILaunchReport launchReport)
+        ///    {
+        ///        Log($"Launch callback on {launchReport.buildTarget.TargetName}, result: {launchReport.result}");
+        ///
+        ///        // On Android, cast the report to access per-device launch details
+        ///        // var androidReport = UnityEditor.Android.AndroidLaunchReportExtensions.AsAndroidReport(launchReport);
+        ///    }
+        ///}
+        ///]]></code>
         ///</example>
         ///<seealso cref="Android.AndroidLaunchReportExtensions.AsAndroidReport" />
         void OnPostprocessLaunch(ILaunchReport launchReport);

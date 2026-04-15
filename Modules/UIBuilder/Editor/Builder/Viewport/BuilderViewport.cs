@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 using Unity.Collections;
+using Unity.UIToolkit.Editor;
 
 namespace Unity.UI.Builder
 {

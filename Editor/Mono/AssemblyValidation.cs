@@ -31,10 +31,10 @@ namespace UnityEditor
         [StructLayout(LayoutKind.Sequential)]
         public struct Error
         {
-            public ErrorFlags flags;
             public string message;
             public string assemblyPath;
             public string assemblyName;
+            public ErrorFlags flags;
 
             public void Add(ErrorFlags newFlags, string newMessage)
             {

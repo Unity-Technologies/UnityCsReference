@@ -6,8 +6,9 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEngine.Loading;
+using Unity.Loading;
 using Object = UnityEngine.Object;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -23,61 +24,65 @@ namespace UnityEditor
             var guidProperty = property.FindPropertyRelative(kSceneGUIDPropName);
             Debug.Assert(guidProperty != null, $"{nameof(LoadableSceneIdDrawer)} cannot find {kSceneGUIDPropName} property.");
 
-            var objectField = new ObjectField(property.displayName)
-            {
-                allowSceneObjects = false,
-                objectType = typeof(SceneAsset)
-            };
-            objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
-            objectField.labelElement.AddToClassList(PropertyField.labelUssClassName);
+            var field = new LoadableSceneIdField(preferredLabel);
+            PropertyField.ConfigureFieldStyles<LoadableSceneIdField, Object>(field);
 
             var guid = guidProperty.guidValue;
             if (!guid.Empty())
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                objectField.value = AssetDatabase.LoadAssetAtPath(path, typeof(SceneAsset));
+                field.SetValueWithoutNotify(AssetDatabase.LoadAssetAtPath(path, typeof(SceneAsset)));
             }
 
-            objectField.RegisterValueChangedCallback(evt => OnValueChanged(evt.newValue, property, guidProperty));
+            field.RegisterValueChangedCallback(evt => OnLoadableSceneIdValueChanged(evt.newValue, property, guidProperty));
 
-            return objectField;
+            return field;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var guidProperty = property.FindPropertyRelative("m_SceneGUID");
+            var guidProperty = property.FindPropertyRelative(kSceneGUIDPropName);
+            DrawLoadableSceneIdField(position, property, guidProperty, label);
+        }
 
+        /// <summary>
+        /// Draws an IMGUI field for LoadableSceneId. Uses the same loadable-style object field as DrawLoadableReferenceField.
+        /// </summary>
+        /// <param name="position">Rect to draw the field in.</param>
+        /// <param name="parentProperty">Parent serialized property (e.g. LoadableSceneId) used for BeginProperty and context menu.</param>
+        /// <param name="guidProperty">SerializedProperty for the GUID field (e.g. m_SceneGUID).</param>
+        /// <param name="label">Label for the field.</param>
+        internal void DrawLoadableSceneIdField(Rect position, SerializedProperty parentProperty, SerializedProperty guidProperty, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, parentProperty);
             Object value = null;
             var guid = guidProperty.guidValue;
+            var objectType = typeof(SceneAsset);
             if (!guid.Empty())
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                value = AssetDatabase.LoadAssetAtPath(path, typeof(SceneAsset));
+                value = AssetDatabase.LoadAssetAtPath(path, objectType);
             }
+
+            var fieldRect = EditorGUI.PrefixLabel(position, label);
+            int id = GUIUtility.GetControlID(FocusType.Keyboard, fieldRect);
 
             EditorGUI.BeginChangeCheck();
-            label = EditorGUI.BeginProperty(position, label, property);
-            value = EditorGUI.ObjectField(position, label, value, typeof(SceneAsset), false);
-
+            var newObj = EditorGUI.DoLoadableObjectField(fieldRect, fieldRect, id, value, null, objectType, parentProperty, EditorGUI.ValidateObjectFieldAssignment, false);
             if (EditorGUI.EndChangeCheck())
-                OnValueChanged(value, property, guidProperty);
+                OnLoadableSceneIdValueChanged(newObj, parentProperty, guidProperty);
+
+            EditorGUI.EndProperty();
         }
 
-        private static void OnValueChanged(Object value, SerializedProperty property, SerializedProperty guidProp)
+        internal static void OnLoadableSceneIdValueChanged(Object value, SerializedProperty property, SerializedProperty guidProp)
         {
             if (value == null)
-            {
                 guidProp.guidValue = default;
-            }
             else if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(value, out var guid, out _))
-            {
                 guidProp.guidValue = new GUID(guid);
-            }
             else
-            {
                 Debug.LogWarning("Unable to assign LoadableSceneId.", value);
-            }
-
             property.serializedObject.ApplyModifiedProperties();
         }
     }

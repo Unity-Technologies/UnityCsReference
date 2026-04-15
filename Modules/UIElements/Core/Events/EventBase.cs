@@ -14,6 +14,25 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class EventBase : IDisposable
     {
+        internal class TypeData
+        {
+            public readonly long eventTypeId;
+            public readonly EventCategory eventCategory;
+            public readonly int eventCategories;
+            public readonly Type eventType;
+
+            public TypeData(
+                long eventTypeId, EventCategory eventCategory
+                , Type eventType
+            )
+            {
+                this.eventTypeId = eventTypeId;
+                this.eventCategory = eventCategory;
+                eventCategories = 1 << (int)eventCategory;
+                this.eventType = eventType;
+            }
+        }
+
         private static long s_LastTypeId = 0;
 
         /// <summary>
@@ -33,7 +52,7 @@ namespace UnityEngine.UIElements
         public virtual long eventTypeId => -1;
 
         [Flags]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal enum EventPropagation
         {
             None = 0,
@@ -82,8 +101,9 @@ namespace UnityEngine.UIElements
 
         internal EventPropagation propagation
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
-            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             set;
         }
 
@@ -585,6 +605,9 @@ namespace UnityEngine.UIElements
         {
             timestamp = time;
         }
+
+        internal abstract void InvokeCallback(Delegate userCallback);
+        internal abstract void InvokeCallback<TArg>(Delegate userCallback, in TArg arg);
     }
 
     /// <summary>
@@ -623,6 +646,11 @@ namespace UnityEngine.UIElements
         }
 
         internal static readonly EventCategory EventCategory = EventInterestReflectionUtils.GetEventCategory(typeof(T));
+
+        internal static readonly TypeData k_TypeData = new(s_TypeId, EventCategory
+                , typeof(T)
+            );
+
 
         /// <summary>
         /// Resets all event members to their initial values.
@@ -698,5 +726,15 @@ namespace UnityEngine.UIElements
         /// See <see cref="EventBase.eventTypeId"/>.
         /// </summary>
         public override long eventTypeId => s_TypeId;
+
+        internal override void InvokeCallback(Delegate userCallback)
+        {
+            ((EventCallback<T>)userCallback).Invoke((T)this);
+        }
+
+        internal override void InvokeCallback<TArg>(Delegate userCallback, in TArg arg)
+        {
+            ((EventCallback<T, TArg>)userCallback).Invoke((T)this, arg);
+        }
     }
 }

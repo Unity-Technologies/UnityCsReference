@@ -7,6 +7,8 @@ using UnityEditor;
 using InternalManager = UnityEditor.Multiplayer.Internal.EditorMultiplayerManager;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Unity.Multiplayer.Internal;
+using UnityEditor.PackageManager;
 
 namespace Unity.Multiplayer.Editor
 {
@@ -19,8 +21,21 @@ namespace Unity.Multiplayer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            Events.registeredPackages += Reinitialize;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
             InternalManager.drawingMultiplayerRoleField += MultiplayerRoleHeaderItem;
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnGameObjectHeader;
+        }
+
+        private static void Reinitialize(PackageRegistrationEventArgs args)
+        {
+            Events.registeredPackages -= Reinitialize;
+            InternalManager.drawingMultiplayerRoleField -= MultiplayerRoleHeaderItem;
+            UnityEditor.Editor.finishedDefaultHeaderGUI -= OnGameObjectHeader;
+            Init();
         }
 
         private static void OnGameObjectHeader(UnityEditor.Editor editor)

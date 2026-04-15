@@ -32,7 +32,7 @@ namespace UnityEditor.Build
         internal IEnumerable<(NPath dst, NPath src)> StreamingAssets => StreamingAssetFiles.Select(e => (e.Key, e.Value));
 #pragma warning restore UA2001
 
-        ///<summary>Add an additional build metadata path to the BuildPlayerOptions.previousBuildMetadataLocations array passed in as part of the build.
+        ///<summary>Adds an additional build metadata path to the BuildPlayerOptions.previousBuildMetadataLocations array passed in as part of the build.
         ///</summary>
         ///<remarks>
         /// This is useful if you want the player build
@@ -44,8 +44,7 @@ namespace UnityEditor.Build
         ///
         /// For more information on locating the build metadata directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.</remarks>
         ///<param name="metadataPath">The path to a build metadata directory. If the path is invalid, an error will be thrown during the build process.</param>
-        /*UCBP-PUBLIC*/
-        internal void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
+        public void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
         {
             if (!AdditionalMetadataLocations.Contains(metadataPath))
                 AdditionalMetadataLocations.Add(metadataPath);

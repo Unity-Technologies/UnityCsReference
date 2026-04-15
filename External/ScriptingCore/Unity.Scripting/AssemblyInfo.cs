@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Private.Scripting")]
 [assembly: InternalsVisibleTo("Unity.Scripting.ObjectTransfer")]
 [assembly: InternalsVisibleTo("UnityEngine.CoreModule")]
+[assembly: InternalsVisibleTo("UnityEngine.ScriptingModule")]
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
 
 [assembly: InternalsVisibleTo("UnityEngine")]

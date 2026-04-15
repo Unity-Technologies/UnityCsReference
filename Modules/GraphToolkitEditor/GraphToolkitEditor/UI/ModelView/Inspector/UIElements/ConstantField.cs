@@ -606,6 +606,7 @@ namespace Unity.GraphToolkit.Editor
 
             // Special Types
             if (element is EnumField enumF) { enumF.SetValueWithoutNotify((Enum)value); return; }
+            if (element is EnumFlagsField enumFlagsF) { enumFlagsF.SetValueWithoutNotify((Enum)value); return; }
             
             // LayerMaskField takes 'int', but the value might be 'LayerMask' struct
             if (element is LayerMaskField layF) 

@@ -23,8 +23,6 @@ internal class ResetAction : PackageAction
         m_PageManager = pageManager;
     }
 
-    public override Icon icon => Icon.Customized;
-
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
         var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.Resettable);

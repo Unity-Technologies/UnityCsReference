@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Loading;
 
 namespace UnityEditor.Search
 {
@@ -171,7 +172,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Hash128: return p.hash128Value.ToString();
                 case SerializedPropertyType.GUID: return p.guidValue.ToString();
                 case SerializedPropertyType.EntityId: return p.entityIdValue.ToString();
-                case SerializedPropertyType.LoadableReference: return UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(p.loadableReferenceValue);
+                case SerializedPropertyType.LoadableObjectId: return UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(p.loadableObjectIdValue);
 
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.Generic:
@@ -306,9 +307,11 @@ namespace UnityEditor.Search
             return value;
         }
 
-        static class SerializedPropertyColumnProvider
+        internal static class SerializedPropertyColumnProvider
         {
-            [SearchColumnProvider("SerializedProperty")]
+            public const string k_ProviderId = "SerializedProperty";
+
+            [SearchColumnProvider(k_ProviderId)]
             public static void InitializeSerializedPropertyColumn(SearchColumn column)
             {
                 column.getter = args => Getter(args.item, args.column);

@@ -92,7 +92,7 @@ namespace UnityEditor.UIElements
             for (int i = 0; i < (int)VisualTreeEditorUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                using (updater.profilerMarker.Auto())
+                using (updater.profilerMarker.Auto(m_Panel.ownerObject))
                 {
                     updater.Update();
                     ++updater.FrameCount;
@@ -103,7 +103,7 @@ namespace UnityEditor.UIElements
         public void UpdateVisualTreePhase(VisualTreeEditorUpdatePhase phase)
         {
             var updater = m_UpdaterArray[phase];
-            using (updater.profilerMarker.Auto())
+            using (updater.profilerMarker.Auto(m_Panel.ownerObject))
             {
                 updater.Update();
                 ++updater.FrameCount;

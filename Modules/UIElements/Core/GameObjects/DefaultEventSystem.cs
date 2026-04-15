@@ -368,7 +368,9 @@ namespace UnityEngine.UIElements
             var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                if (ScreenOverlayPanelPicker.TryPick((IRuntimePanel)panels[i], pointerId, mousePosition, delta,
+                if (panels[i] is not IRuntimePanel runtimePanel)
+                    continue;
+                if (ScreenOverlayPanelPicker.TryPick(runtimePanel, pointerId, mousePosition, delta,
                         targetDisplay, out _))
                 {
                     target = elementUnderPointer = null;

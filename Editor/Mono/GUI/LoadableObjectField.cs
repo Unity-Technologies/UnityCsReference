@@ -12,8 +12,6 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUI
     {
-        static readonly string k_LoadableFieldTooltip = L10n.Tr("References an object that will be included in the Content Directory build and can be loaded asynchronously on demand.");
-
         static bool loadableIsProSkin = false;
 
         static Texture2D s_LoadableStripesTexture;
@@ -95,7 +93,7 @@ namespace UnityEditor
         /// Event handling and behaviour are shared with ObjectField via a custom repaint delegate.
         /// </summary>
         [VisibleToOtherModules]
-        internal static Object DoLoadableObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects)
+        internal static Object DoLoadableObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, Type objType, SerializedProperty property, ObjectFieldValidator validator, bool excludeSceneAssets)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -113,8 +111,8 @@ namespace UnityEditor
                 return obj;
             }
 
-            // Do not pass property: LoadableReference is not a PPtr. Caller assigns return value via property.loadableReferenceValue.
-            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, validator, allowSceneObjects, DrawLoadableObjectFieldIconAndText);
+            // Do not pass property: LoadableReference is not a PPtr (reading objectReferenceEntityIdValue fails). Caller assigns return value via property.loadableReferenceValue.
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, validator, false, DrawLoadableObjectFieldIconAndText, excludeSceneAssets);
         }
 
         static void DrawLoadableObjectFieldIconAndText(Rect position, int id, Object obj, GUIContent content, ObjectFieldVisualType visualType, GUIStyle objectFieldStyle, GUIStyle buttonStyle)
@@ -124,6 +122,10 @@ namespace UnityEditor
             bool hasFocus = GUIUtility.keyboardControl == id;
 
             objectFieldStyle.Draw(position, GUIContent.none, id, DragAndDrop.activeControlID == id, isHovering || isDragging);
+
+            // GUIStyle.Draw above uses GUIContent.none so the Highlighter won't see the actual text.
+            // Register content text explicitly so Highlighter.Highlight can find this control.
+            Highlighter.Handle(position, content.text);
 
             Rect stripeRect = DrawLoadableStripeBackground(position, isDragging);
             Rect contentRect = new Rect(position.x, stripeRect.y, position.width, stripeRect.height);
@@ -148,8 +150,9 @@ namespace UnityEditor
                     false, false, Vector2.zero, Vector2.zero, Color.clear, Color.clear, GUI.contentColor,
                     0, 0, 0, 0, false, false);
 
+                string objectTooltip = LoadableObjectIdEditorUtility.GetLoadableObjectIdTooltip();
                 if (Event.current.type == EventType.Repaint && isHovering)
-                    GUIStyle.SetMouseTooltip(k_LoadableFieldTooltip, position);
+                    GUIStyle.SetMouseTooltip(objectTooltip, position);
 
                 Rect buttonRect = buttonStyle.margin.Remove(buttonRectFull);
                 buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));

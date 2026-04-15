@@ -13,7 +13,7 @@ using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct StylePropertyValue
     {
         public StyleSheet sheet;
@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct ImageSource
     {
         public Texture2D texture;
@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StylePropertyReader
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime

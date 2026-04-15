@@ -87,10 +87,14 @@ namespace UnityEditor
             sceneView.submeshOutlineMaterialId = targetMaterial.GetEntityId();
         }
 
-        static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt)
+        static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt, bool excludeSceneAssets = false)
         {
             Object[] references = { ObjectSelector.GetCurrentObject() };
             Object assigned = validator(references, objectType, property, ObjectFieldValidatorOptions.None);
+
+            // If scene assets are excluded and the selected object is a scene asset then reject
+            if (assigned != null && excludeSceneAssets && assigned is SceneAsset)
+                assigned = null;
 
             // Assign the value
             if (property != null)
@@ -179,12 +183,12 @@ namespace UnityEditor
         internal delegate void ObjectFieldIconAndTextRepaintDelegate(Rect position, int id, Object obj, GUIContent content, ObjectFieldVisualType visualType, GUIStyle objectFieldStyle, GUIStyle buttonStyle);
 
         [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
-        internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint)
+        internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint, bool excludeSceneAssets = false)
         {
-            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, EditorStyles.objectField, EditorStyles.objectFieldButton, null, null, customIconAndTextRepaint);
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, EditorStyles.objectField, EditorStyles.objectFieldButton, null, null, customIconAndTextRepaint, excludeSceneAssets);
         }
 
-        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint = null)
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null, ObjectFieldIconAndTextRepaintDelegate customIconAndTextRepaint = null, bool excludeSceneAssets = false)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -252,12 +256,13 @@ namespace UnityEditor
                         Object[] references = DragAndDrop.objectReferences;
                         Object validatedObject = validator(references, objType, property, ObjectFieldValidatorOptions.None);
 
-                        if (validatedObject != null)
-                        {
-                            // If scene objects are not allowed and object is a scene object then clear
-                            if (!allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
-                                validatedObject = null;
-                        }
+                        // If scene objects are not allowed and object is a scene object then clear
+                        if (validatedObject != null && !allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
+                            validatedObject = null;
+
+                        // If scene assets are not allowed and object is a scene asset then clear
+                        if (validatedObject != null && excludeSceneAssets && validatedObject is SceneAsset)
+                            validatedObject = null;
 
                         if (validatedObject != null)
                         {
@@ -298,9 +303,9 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
                                 var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                                 if (property != null)
-                                    ObjectSelector.get.Show(types, property, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
+                                    ObjectSelector.get.Show(types, property, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated, excludeSceneAssets: excludeSceneAssets);
                                 else
-                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
+                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated, excludeSceneAssets: excludeSceneAssets);
                                 ObjectSelector.get.objectSelectorID = id;
 
                                 evt.Use();
@@ -343,7 +348,7 @@ namespace UnityEditor
                 case EventType.ExecuteCommand:
                     string commandName = evt.commandName;
                     if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == id && (property == null || !property.isScript))
-                        return AssignSelectedObject(property, validator, objType, evt);
+                        return AssignSelectedObject(property, validator, objType, evt, excludeSceneAssets);
                     else if (commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == id && property != null && property.isScript)
                     {
                         if (ObjectSelector.get.GetEntityId() == EntityId.None)
@@ -352,7 +357,7 @@ namespace UnityEditor
                             evt.Use();
                             break;
                         }
-                        return AssignSelectedObject(property, validator, objType, evt);
+                        return AssignSelectedObject(property, validator, objType, evt, excludeSceneAssets);
                     }
                     else if ((evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete) && GUIUtility.keyboardControl == id)
                     {
@@ -408,9 +413,9 @@ namespace UnityEditor
                         {
                             var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                             if (property != null)
-                                ObjectSelector.get.Show(types, property, allowSceneObjects);
+                                ObjectSelector.get.Show(types, property, allowSceneObjects, excludeSceneAssets: excludeSceneAssets);
                             else
-                                ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects);
+                                ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects, excludeSceneAssets: excludeSceneAssets);
                             ObjectSelector.get.objectSelectorID = id;
                             evt.Use();
                             GUIUtility.ExitGUI();

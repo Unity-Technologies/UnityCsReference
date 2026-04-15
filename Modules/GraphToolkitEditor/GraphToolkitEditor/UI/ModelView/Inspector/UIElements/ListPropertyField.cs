@@ -267,6 +267,9 @@ namespace Unity.GraphToolkit.Editor
             // Enums
             if (m_ElementType.IsEnum)
             {
+                if (m_ElementType.IsDefined(typeof(FlagsAttribute), false))
+                    return CreateAndSetupField<Enum>(() => new EnumFlagsField((Enum)Activator.CreateInstance(m_ElementType)));
+
                 return CreateAndSetupField<Enum>(() => new EnumField((Enum)Activator.CreateInstance(m_ElementType)));
             }
 

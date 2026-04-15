@@ -11,8 +11,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             var choices = new List<string> { "First", "Second", "Third" };
 
             // Get a reference to the field from UXML and assign a value to it.
@@ -32,8 +32,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

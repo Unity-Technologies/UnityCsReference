@@ -1166,7 +1166,7 @@ namespace UnityEditor
         void OnOpenStatsWindow()
         {
             if (m_StatsWindowInstance != null)
-                return; 
+                return;
 
             const string path = "UXML/GameWindow/Stats_Window.uxml";
             var statsWindowAsset = EditorGUIUtility.Load(path) as VisualTreeAsset;
@@ -1174,7 +1174,7 @@ namespace UnityEditor
             if (statsWindowAsset != null)
             {
                 m_StatsWindowInstance = statsWindowAsset.CloneTree();
-                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);     
+                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);
                 InitializeFoldoutState(m_StatsWindowInstance, "SceneFoldout", true);
                 InitializeFoldoutState(m_StatsWindowInstance, "DrawsFoldout", false);
                 InitializeFoldoutState(m_StatsWindowInstance, "MemoryFoldout", false);
@@ -1217,7 +1217,7 @@ namespace UnityEditor
             var foldout = instance.Q<Foldout>(foldoutName);
             if (foldout == null)
             {
-                return; 
+                return;
             }
 
             string prefsKey = $"{this.GetType().Name}.{foldoutName}.IsExpanded";

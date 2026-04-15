@@ -17,13 +17,64 @@ namespace UnityEditor.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleSheetExporter
     {
+        public static readonly string SelectedStyleSheetSelectorName = "__unity_ui_builder_selected_stylesheet";
+        internal static readonly string[] IgnoredSelectorsWhenExporting = { SelectedStyleSheetSelectorName };
+
+        const string StyleSelectorElementName = "__unity-selector-element";
+        internal static readonly string[] IgnoredSelectorPrefixesWhenExporting = { StyleSelectorElementName };
+
+        const string SelectedStyleRulePropertyName = "--ui-builder-selected-style-property";
+        internal static readonly string[] IgnoredStylePropertiesWhenExporting = { SelectedStyleRulePropertyName };
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal class UssExportOptions
+        internal struct UssExportOptions
         {
-            public string propertyIndent { get; set; } = "    ";
-            public string[] ignoreSelectorList { get; set; } = Array.Empty<string>();
-            public string[] ignoreSelectorPrefixList { get; set; } = Array.Empty<string>();
-            public string[] ignorePropertyList { get; set; } = Array.Empty<string>();
+            const string k_DefaultIndex = "    ";
+
+            public static UssExportOptions Default => new()
+            {
+                propertyIndent  = k_DefaultIndex,
+                ignoreSelectorList = IgnoredSelectorsWhenExporting,
+                ignoreSelectorPrefixList = IgnoredSelectorPrefixesWhenExporting,
+                ignorePropertyList = IgnoredStylePropertiesWhenExporting
+            };
+
+            string m_PropertyIndent;
+            string[] m_IgnoreSelectorList;
+            string[] m_IgnoreSelectorPrefixList;
+            string[] m_IgnorePropertyList;
+
+            public string propertyIndent
+            {
+                get => m_PropertyIndent ?? k_DefaultIndex;
+                set => m_PropertyIndent = value;
+            }
+
+            public string[] ignoreSelectorList
+            {
+                get => m_IgnoreSelectorList ?? Array.Empty<string>();
+                set => m_IgnoreSelectorList = value;
+            }
+
+            public string[] ignoreSelectorPrefixList
+            {
+                get => m_IgnoreSelectorPrefixList ?? Array.Empty<string>();
+                set => m_IgnoreSelectorPrefixList = value;
+            }
+
+            public string[] ignorePropertyList
+            {
+                get => m_IgnorePropertyList ?? Array.Empty<string>();
+                set => m_IgnorePropertyList = value;
+            }
+
+            public UssExportOptions()
+            {
+                propertyIndent = "    ";
+                ignoreSelectorList = Array.Empty<string>();
+                ignoreSelectorPrefixList = Array.Empty<string>();
+                ignorePropertyList = Array.Empty<string>();
+            }
 
             public bool IsSelectorIgnored(StyleComplexSelector selector)
             {
@@ -63,11 +114,11 @@ namespace UnityEditor.UIElements
             private readonly UssExportOptions m_Options;
 
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-            internal ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options = null)
+            internal ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options)
             {
                 m_StyleSheet = styleSheet;
                 m_Builder = builder;
-                m_Options = options ?? new UssExportOptions();
+                m_Options = options;
             }
 
             public StyleSheet styleSheet => m_StyleSheet;
@@ -101,13 +152,22 @@ namespace UnityEditor.UIElements
             }
         }
 
+        public static StyleSheetExporter Default { get; } = new();
+
+        /// <summary>
+        /// Converts the provided <see cref="StyleSheet"/> to <see cref="string"/> using the default parameters.
+        /// </summary>
+        /// <param name="styleSheet">The stylesheet to export.</param>
+        /// <returns>A <see cref="string"/> version of the <see cref="StyleSheet"/>.</returns>
+        public string ToUssString(StyleSheet styleSheet) => ToUssString(styleSheet, UssExportOptions.Default);
+
         /// <summary>
         /// Converts the provided <see cref="StyleSheet"/> to <see cref="string"/>.
         /// </summary>
         /// <param name="styleSheet">The stylesheet to export.</param>
         /// <param name="options">To export options.</param>
         /// <returns>A <see cref="string"/> version of the <see cref="StyleSheet"/>.</returns>
-        public string ToUssString(StyleSheet styleSheet, UssExportOptions options = null)
+        public string ToUssString(StyleSheet styleSheet, UssExportOptions options)
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
@@ -116,13 +176,22 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
+        /// Converts the provided <see cref="StyleRule"/> to <see cref="string"/> using the default options.
+        /// </summary>
+        /// <param name="styleSheet">The style sheet to export.</param>
+        /// <param name="styleRule">The style rule to export.</param>
+        /// <returns>A <see cref="string"/> version of the <see cref="StyleRule"/>.</returns>
+        public string ToUssString(StyleSheet styleSheet, StyleRule styleRule) =>
+            ToUssString(styleSheet, styleRule, UssExportOptions.Default);
+
+        /// <summary>
         /// Converts the provided <see cref="StyleRule"/> to <see cref="string"/>.
         /// </summary>
         /// <param name="styleSheet">The style sheet to export.</param>
         /// <param name="styleRule">The style rule to export.</param>
         /// <param name="options">To export options.</param>
         /// <returns>A <see cref="string"/> version of the <see cref="StyleRule"/>.</returns>
-        public string ToUssString(StyleSheet styleSheet, StyleRule styleRule, UssExportOptions options = null)
+        public string ToUssString(StyleSheet styleSheet, StyleRule styleRule, UssExportOptions options)
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
@@ -131,13 +200,22 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
+        /// Converts the provided <see cref="StyleComplexSelector"/> to <see cref="string"/> using the default options.
+        /// </summary>
+        /// <param name="styleSheet">The style sheet to export.</param>
+        /// <param name="selector">The selector to export.</param>
+        /// <returns>A <see cref="string"/> version of the <see cref="StyleComplexSelector"/>.</returns>
+        public string ToUssString(StyleSheet styleSheet, StyleComplexSelector selector)
+            => ToUssString(styleSheet, selector, UssExportOptions.Default);
+
+        /// <summary>
         /// Converts the provided <see cref="StyleComplexSelector"/> to <see cref="string"/>.
         /// </summary>
         /// <param name="styleSheet">The style sheet to export.</param>
         /// <param name="selector">The selector to export.</param>
         /// <param name="options">To export options.</param>
         /// <returns>A <see cref="string"/> version of the <see cref="StyleComplexSelector"/>.</returns>
-        public string ToUssString(StyleSheet styleSheet, StyleComplexSelector selector, UssExportOptions options = null)
+        public string ToUssString(StyleSheet styleSheet, StyleComplexSelector selector, UssExportOptions options)
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
@@ -146,13 +224,22 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
+        /// Converts the provided <see cref="StyleProperty"/> to <see cref="string"/> using the default options.
+        /// </summary>
+        /// <param name="styleSheet">The style sheet to export.</param>
+        /// <param name="property">The property to export.</param>
+        /// <returns>A <see cref="string"/> version of the <see cref="StyleProperty"/>.</returns>
+        public string ToUssString(StyleSheet styleSheet, StyleProperty property)
+            => ToUssString(styleSheet, property, UssExportOptions.Default);
+
+        /// <summary>
         /// Converts the provided <see cref="StyleProperty"/> to <see cref="string"/>.
         /// </summary>
         /// <param name="styleSheet">The style sheet to export.</param>
         /// <param name="property">The property to export.</param>
         /// <param name="options">To export options.</param>
         /// <returns>A <see cref="string"/> version of the <see cref="StyleProperty"/>.</returns>
-        public string ToUssString(StyleSheet styleSheet, StyleProperty property, UssExportOptions options = null)
+        public string ToUssString(StyleSheet styleSheet, StyleProperty property, UssExportOptions options)
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
@@ -160,7 +247,10 @@ namespace UnityEditor.UIElements
             return stringBuilder.ToString();
         }
 
-        public string ExportInlineRule(StyleSheet styleSheet, StyleRule rule, UssExportOptions options = null)
+        public string ExportInlineRule(StyleSheet styleSheet, StyleRule rule)
+            => ExportInlineRule(styleSheet, rule, UssExportOptions.Default);
+
+        public string ExportInlineRule(StyleSheet styleSheet, StyleRule rule, UssExportOptions options)
         {
             using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
@@ -335,7 +425,7 @@ namespace UnityEditor.UIElements
             ctx.Append(";");
         }
 
-        protected void WriteStyleValueHandleBlock(ref ExportContext ctx, Span<StyleValueHandle> handles)
+        protected static void WriteStyleValueHandleBlock(ref ExportContext ctx, Span<StyleValueHandle> handles)
         {
             for (var handleIndex = 0; handleIndex < handles.Length; ++handleIndex)
             {
@@ -350,7 +440,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        protected void WriteStyleValueHandle(ref ExportContext ctx, Span<StyleValueHandle> handles, ref int handleIndex)
+        protected static void WriteStyleValueHandle(ref ExportContext ctx, Span<StyleValueHandle> handles, ref int handleIndex)
         {
             var handle = handles[handleIndex];
             switch (handle.valueType)
@@ -435,17 +525,17 @@ namespace UnityEditor.UIElements
             ctx.Append(value);
         }
 
-        protected void WriteKeywordValue(ref ExportContext ctx, StyleValueKeyword value)
+        protected static void WriteKeywordValue(ref ExportContext ctx, StyleValueKeyword value)
         {
             ctx.Append(value.ToUssString());
         }
 
-        protected void WriteFloatValue(ref ExportContext ctx, float value, string format = null)
+        protected static void WriteFloatValue(ref ExportContext ctx, float value, string format = null)
         {
             ctx.Append(value.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
-        protected void WriteDimensionValue(ref ExportContext ctx, Dimension dimension)
+        protected static void WriteDimensionValue(ref ExportContext ctx, Dimension dimension)
         {
             // Display 0 without a unit when using the default unit for the type. For time values, always include the unit regardless. (UUM-99023)
             if (dimension.value == 0 && (dimension.unit == Dimension.Unit.Pixel || dimension.unit == Dimension.Unit.Degree))
@@ -457,12 +547,12 @@ namespace UnityEditor.UIElements
             }
         }
 
-        protected void WriteDimensionUnit(ref ExportContext ctx, Dimension.Unit value)
+        protected static void WriteDimensionUnit(ref ExportContext ctx, Dimension.Unit value)
         {
             ctx.Append(StyleSheetUtility.GetDimensionUnitExportString(value));
         }
 
-        protected void WriteColor(ref ExportContext ctx, Color value)
+        protected static void WriteColor(ref ExportContext ctx, Color value)
         {
             var alpha = value.a.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat);
             if (alpha != "1")
@@ -498,7 +588,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        protected void WriteResourcePath(ref ExportContext ctx, ResolvedResourcePath value)
+        protected static void WriteResourcePath(ref ExportContext ctx, ResolvedResourcePath value)
         {
             WriteFunctionName(ref ctx, "resource");
             ctx.Append("(");
@@ -506,7 +596,7 @@ namespace UnityEditor.UIElements
             ctx.Append(")");
         }
 
-        protected void WriteAssetReference(ref ExportContext ctx, UnityEngine.Object value)
+        protected static void WriteAssetReference(ref ExportContext ctx, UnityEngine.Object value)
         {
             var path = URIHelpers.MakeAssetUri(value);
             WriteFunctionName(ref ctx, "url");
@@ -515,29 +605,29 @@ namespace UnityEditor.UIElements
             ctx.Append(")");
         }
 
-        protected void WritePath(ref ExportContext ctx, string path)
+        protected static void WritePath(ref ExportContext ctx, string path)
         {
             ctx.Append("\"");
             ctx.Append(path);
             ctx.Append("\"");
         }
 
-        protected void WriteEnum(ref ExportContext ctx, string value)
+        protected static void WriteEnum(ref ExportContext ctx, string value)
         {
             ctx.Append(value);
         }
 
-        protected void WriteVariable(ref ExportContext ctx, string value)
+        protected static void WriteVariable(ref ExportContext ctx, string value)
         {
             WriteIdentifier(ref ctx, value);
         }
 
-        protected void WriteIdentifier(ref ExportContext ctx, string value)
+        protected static void WriteIdentifier(ref ExportContext ctx, string value)
         {
             ctx.Append(value);
         }
 
-        protected void WriteFunction(ref ExportContext ctx, string functionName, Span<StyleValueHandle> handles)
+        protected static void WriteFunction(ref ExportContext ctx, string functionName, Span<StyleValueHandle> handles)
         {
             WriteFunctionName(ref ctx, functionName);
             ctx.Append("(");
@@ -545,22 +635,22 @@ namespace UnityEditor.UIElements
             ctx.Append(")");
         }
 
-        protected void WriteFunctionName(ref ExportContext ctx, string functionName)
+        protected static void WriteFunctionName(ref ExportContext ctx, string functionName)
         {
             ctx.Append(functionName);
         }
 
-        protected void WriteString(ref ExportContext ctx, string value)
+        protected static void WriteString(ref ExportContext ctx, string value)
         {
             ctx.Append(value);
         }
 
-        protected void WriteScalableImage(ref ExportContext ctx, ScalableImage value)
+        protected static void WriteScalableImage(ref ExportContext ctx, ScalableImage value)
         {
             WriteAssetReference(ref ctx, value.normalImage);
         }
 
-        protected void WriteMissingAssetReference(ref ExportContext ctx, string value)
+        protected static void WriteMissingAssetReference(ref ExportContext ctx, string value)
         {
             WriteFunctionName(ref ctx, "url");
             ctx.Append("(");
@@ -599,6 +689,41 @@ namespace UnityEditor.UIElements
         private static StyleValueType Peek(Span<StyleValueHandle> handles, int index)
         {
             return index < handles.Length ? handles[index].valueType : StyleValueType.Invalid;
+        }
+
+        public static string GetStylePropertyValueString(StyleSheet styleSheet, StyleProperty property) =>
+            GetStylePropertyValueString(styleSheet, property, UssExportOptions.Default);
+
+        public static string GetStylePropertyValueString(StyleSheet styleSheet, StyleProperty property, UssExportOptions options)
+        {
+            using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
+            var context = new ExportContext(styleSheet, stringBuilder, options);
+            WriteStyleValueHandleBlock(ref context, property.values.AsSpan());
+            return stringBuilder.ToString();
+        }
+
+        public static string GetStylePropertyValueString(StyleSheet styleSheet, StyleProperty property, int index) =>
+            GetStylePropertyValueString(styleSheet, property, index, UssExportOptions.Default);
+
+        public static string GetStylePropertyValueString(StyleSheet styleSheet, StyleProperty property, int index, UssExportOptions options)
+        {
+            using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
+            var context = new ExportContext(styleSheet, stringBuilder, options);
+            var handles = property.values.AsSpan();
+            WriteStyleValueHandle(ref context, handles, ref index);
+            return stringBuilder.ToString();
+        }
+
+        public static string GetStyleVariableValueString(StyleSheet styleSheet, StyleVariable variable, int index) =>
+            GetStyleVariableValueString(styleSheet, variable, index, UssExportOptions.Default);
+
+        public static string GetStyleVariableValueString(StyleSheet styleSheet, StyleVariable variable, int index, UssExportOptions options)
+        {
+            using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
+            var context = new ExportContext(styleSheet, stringBuilder, options);
+            var handles = variable.handles.AsSpan();
+            WriteStyleValueHandle(ref context, handles, ref index);
+            return stringBuilder.ToString();
         }
     }
 }

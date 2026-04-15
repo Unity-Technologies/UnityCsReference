@@ -9,7 +9,7 @@ using UnityEngine.UIElements.StyleSheets.Syntax;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct StyleVariable
     {
         public readonly string name;

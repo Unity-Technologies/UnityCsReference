@@ -122,7 +122,7 @@ namespace UnityEngine
         [NativeProperty("MeshLodSelectionBias")] extern public float meshLodSelectionBias { get; set; }
 
         [NativeProperty("StaticBatchRoot")] extern internal Transform staticBatchRootTransform { get; set; }
-        extern internal int staticBatchIndex { get; }
+        extern internal EntityId staticBatchIndex { get; }
         extern internal void SetStaticBatchInfo(int firstSubMesh, int subMeshCount);
         extern public bool isPartOfStaticBatch {[NativeName("IsPartOfStaticBatch")] get; }
 

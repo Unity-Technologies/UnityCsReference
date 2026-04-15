@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -38,6 +39,7 @@ namespace UnityEngine.UIElements
         All,
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     sealed class DataBindingManager : IDisposable
     {
         private  readonly List<BindingData> m_BindingDataLocalPool = new List<BindingData>(64);
@@ -49,6 +51,7 @@ namespace UnityEngine.UIElements
 
         BindingLogLevel? m_LogLevel;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal BindingLogLevel logLevel
         {
             get => m_LogLevel ?? globalLogLevel;

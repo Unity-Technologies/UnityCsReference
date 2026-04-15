@@ -31,28 +31,41 @@ namespace UnityEngine.UIElements.StyleSheets
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct SelectorMatchRecord : IEquatable<SelectorMatchRecord>
     {
-        public StyleSheet sheet;
-        public int styleSheetIndexInStack;
-        public StyleComplexSelector complexSelector;
+        public readonly StyleSheet sheet;
+        public readonly int styleSheetIndexInStack;
+        public readonly int importedStyleSheetIndex;
+        public readonly StyleComplexSelector complexSelector;
 
-        public SelectorMatchRecord(StyleSheet sheet, int styleSheetIndexInStack) : this()
+        public SelectorMatchRecord(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector)
         {
             this.sheet = sheet;
             this.styleSheetIndexInStack = styleSheetIndexInStack;
+            this.importedStyleSheetIndex = importedStyleSheetIndex;
+            this.complexSelector = complexSelector;
         }
 
         public static int Compare(SelectorMatchRecord a, SelectorMatchRecord b)
         {
+            // First compare absolute priority (Unity style sheets are always lower priority)
             if (a.sheet.isDefaultStyleSheet != b.sheet.isDefaultStyleSheet)
                 return a.sheet.isDefaultStyleSheet ? -1 : 1;
 
+            // Then use selector specificity according to standards
             int res = a.complexSelector.specificity.CompareTo(b.complexSelector.specificity);
 
+            // If they are same, use the order into which stylesheets were added to the element or its parents (later wins)
             if (res == 0)
             {
                 res = a.styleSheetIndexInStack.CompareTo(b.styleSheetIndexInStack);
             }
 
+            // If they are the same, use the index in the imported style sheets of the owner style sheets (later wins)
+            if (res == 0)
+            {
+                res = a.importedStyleSheetIndex.CompareTo(b.importedStyleSheetIndex);
+            }
+
+            // All else being equal, use the order in the style sheet itself
             if (res == 0)
             {
                 res = a.complexSelector.orderInStyleSheet.CompareTo(b.complexSelector.orderInStyleSheet);
@@ -230,14 +243,15 @@ namespace UnityEngine.UIElements.StyleSheets
             return false;
         }
 
-        static void TestSelectorList(List<StyleComplexSelector> selectorList,
-            List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, ref SelectorMatchRecord record)
+        static void TestSelectorList(List<StyleSelectorLookupEntry> selectorList,
+            List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, int currentStyleSheetIndexInStack)
         {
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
             {
                 for (int i = 0; i < selectorList.Count; i++)
                 {
-                    var currentComplexSelector = selectorList[i];
+                    var currentEntry = selectorList[i];
+                    var currentComplexSelector = currentEntry.selector;
                     profiler.BeginMatchingSelector(currentComplexSelector);
                     bool isCandidate = true;
                     bool isMatchRightToLeft = false;
@@ -260,8 +274,17 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     if (isMatchRightToLeft)
                     {
-                        record.complexSelector = currentComplexSelector;
-                        matchedSelectors.Add(record);
+                        if (currentEntry.importedStyleSheetIndex > -1)
+                        {
+                            var sheet = context.GetStyleSheetAt(currentStyleSheetIndexInStack);
+                            Debug.Assert(sheet.flattenedRecursiveImports[currentEntry.importedStyleSheetIndex] == currentComplexSelector.rule.styleSheet, "StyleSelectorLookupEntry is not consistent");
+                        }
+                        matchedSelectors.Add(new SelectorMatchRecord(
+                            currentComplexSelector.rule.styleSheet,
+                            currentStyleSheetIndexInStack,
+                            currentEntry.importedStyleSheetIndex,
+                            currentComplexSelector
+                        ));
                     }
 
                     profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
@@ -269,11 +292,11 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        static void FastLookup(IDictionary<string, List<StyleComplexSelector>> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, ref SelectorMatchRecord record)
+        static void FastLookup(IDictionary<string, List<StyleSelectorLookupEntry>> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, int currentStyleSheetIndexInStack)
         {
-            if (table.TryGetValue(input, out List<StyleComplexSelector> selectorList))
+            if (table.TryGetValue(input, out List<StyleSelectorLookupEntry> selectorList))
             {
-                TestSelectorList(selectorList, matchedSelectors, context, ref record);
+                TestSelectorList(selectorList, matchedSelectors, context, currentStyleSheetIndexInStack);
             }
         }
 
@@ -347,6 +370,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (!processedStyleSheets.Add(styleSheet))
                         continue;
 
+                    styleSheet.RebuildIfNecessary();
+
                     SelectorAccelerationCacheEntry accelerationCacheEntry = context.GetCacheEntryAt(i);
 
                     profiler.BeginMatchingStyleSheet(styleSheet, accelerationCacheEntry);
@@ -360,8 +385,6 @@ namespace UnityEngine.UIElements.StyleSheets
                     else
                         element.pseudoStates &= ~PseudoStates.Root;
 
-                    var record = new SelectorMatchRecord(styleSheet, i);
-
                     for (int j = 0; j < workItemsCount; j++)
                     {
                         var item = workItems[j];
@@ -371,17 +394,16 @@ namespace UnityEngine.UIElements.StyleSheets
 
                         var table = accelerationCacheEntry.tables[(int)item.type];
 
-                        FastLookup(table, matchedSelectors, context, item.input, ref record);
+                        FastLookup(table, matchedSelectors, context, item.input, i);
                     }
 
                     if (toggleRoot && accelerationCacheEntry.rootSelectors != null)
                     {
-                        TestSelectorList(accelerationCacheEntry.rootSelectors, matchedSelectors, context, ref record);
+                        TestSelectorList(accelerationCacheEntry.rootSelectors, matchedSelectors, context, i);
                     }
 
                     if (accelerationCacheEntry.wildCardSelectors != null)
-                        TestSelectorList(accelerationCacheEntry.wildCardSelectors, matchedSelectors, context, ref record);
-
+                        TestSelectorList(accelerationCacheEntry.wildCardSelectors, matchedSelectors, context, i);
                     profiler.EndMatchingStyleSheet(styleSheet);
                 }
 

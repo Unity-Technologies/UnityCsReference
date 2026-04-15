@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Loading;
+using Unity.Loading;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;

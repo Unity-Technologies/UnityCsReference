@@ -418,4 +418,11 @@ namespace UnityEditor
         Directional = 1,
         Point = 2
     }
+
+    // Sprite Tessellation Method
+    public enum SpriteTessellationMethod
+    {
+        LegacyTriangulation = 0,
+        DelaunaySubdivision = 1
+    }
 }

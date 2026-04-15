@@ -22,6 +22,7 @@ namespace UnityEditor.UIElements
         internal static readonly BindingId objectTypeProperty = nameof(objectType);
         internal static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
         internal static readonly BindingId allowBuiltinResourcesProperty = nameof(allowBuiltinResources);
+        internal static readonly BindingId excludeSceneAssetsProperty = nameof(excludeSceneAssets);
 
         private event Action m_OnObjectSelectorShow = () => { };
 
@@ -138,6 +139,23 @@ namespace UnityEditor.UIElements
         }
 
         bool m_AllowBuiltinResources = true;
+
+        private bool m_ExcludeSceneAssets;
+        /// <summary>
+        /// Prevent scene assets to be assigned to the field.
+        /// </summary>
+        [CreateProperty]
+        internal bool excludeSceneAssets
+        {
+            get => m_ExcludeSceneAssets;
+            set
+            {
+                if (m_ExcludeSceneAssets == value)
+                    return;
+                m_ExcludeSceneAssets = value;
+                NotifyPropertyChanged(excludeSceneAssetsProperty);
+            }
+        }
 
         /// <summary>
         /// Shows or hides built-in resources in the object selector popup. True by default to show built-in resources.
@@ -349,12 +367,13 @@ namespace UnityEditor.UIElements
                 {
                     var validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, type, property, EditorGUI.ObjectFieldValidatorOptions.None);
 
-                    if (validatedObject != null)
-                    {
-                        // If scene objects are not allowed and object is a scene object then clear
-                        if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
-                            validatedObject = null;
-                    }
+                    // If scene objects are not allowed and object is a scene object then clear
+                    if (validatedObject != null && !m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
+                        validatedObject = null;
+
+                    // If scenes are excluded and object is a scene then clear
+                    if (validatedObject != null && m_ObjectField.excludeSceneAssets && validatedObject is SceneAsset)
+                        validatedObject = null;
 
                     if (validatedObject)
                         return validatedObject;
@@ -513,7 +532,7 @@ namespace UnityEditor.UIElements
         internal void ShowObjectSelector()
         {
             // All the object changes will be notified through the OnObjectChanged and a "cancellation" (Escape key) on the ObjectSelector is calling the closing callback without any good object
-            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectSelectorClosed, OnObjectChanged, true, m_AllowBuiltinResources);
+            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectSelectorClosed, OnObjectChanged, true, m_AllowBuiltinResources, excludeSceneAssets);
             m_OnObjectSelectorShow?.Invoke();
         }
 

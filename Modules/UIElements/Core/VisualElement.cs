@@ -12,6 +12,7 @@ using Unity.Profiling;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
@@ -99,11 +100,6 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Indicates the directionality of the element's text. The value cascades to child elements.
     /// </summary>
-    /// <remarks>
-    /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
-    /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
-    /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
-    /// </remarks>
     /// <remarks>
     /// SA: [[wiki:ui-systems/language-direction|Language direction]]
     /// </remarks>
@@ -1401,7 +1397,7 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(worldTransform, ref transformData.WorldTransformInverse);
+            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref transformData.WorldTransformInverse);
             isWorldTransformInverseDirty = false;
         }
 
@@ -1413,7 +1409,7 @@ namespace UnityEngine.UIElements
 
         internal Rect worldClip
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 return renderData?.clippingRect ?? Rect.zero;
@@ -1838,11 +1834,14 @@ namespace UnityEngine.UIElements
         {
             try
             {
-                if (!resourcesReleased && LayoutManager.IsSharedManagerCreated)
+                if (!resourcesReleased)
                 {
-                    LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+                    if (LayoutManager.IsSharedManagerCreated)
+                    {
+                        LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+                    }
                 }
-				s_FinalizerCount++;
+                s_FinalizerCount++;
             }
             // Exceptions inside finalizers are not automatically logged by Unity
             // So let's report those in the console to make sure they don't go undetected
@@ -1906,7 +1905,13 @@ namespace UnityEngine.UIElements
             // Note: we already know the child list was pooled back when clearing the element
 
             m_ClassList.Clear();
-            m_CallbackRegistry?.Clear();
+
+            if (m_CallbackRegistry != null)
+            {
+                m_CallbackRegistry?.Clear();
+                m_CallbackRegistry?.Dispose();
+                m_CallbackRegistry = null;
+            }
         }
 
         internal void SetTooltip(TooltipEvent e)
@@ -2346,11 +2351,6 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
-        /// <remarks>
-        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
-        /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
-        /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
-        /// </remarks>
         [CreateProperty]
         public LanguageDirection languageDirection
         {
@@ -2717,6 +2717,7 @@ namespace UnityEngine.UIElements
             result = new LayoutSize(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetSize(Vector2 size)
         {
             style.width = size.x;

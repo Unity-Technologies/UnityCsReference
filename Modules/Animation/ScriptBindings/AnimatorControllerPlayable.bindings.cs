@@ -98,10 +98,20 @@ namespace UnityEngine.Animations
             SetFloatString(ref m_Handle, name, value);
         }
 
+        public void SetFloat(string name, float value, float dampTime, float deltaTime)
+        {
+            SetFloatStringDamp(ref m_Handle, name, value, dampTime, deltaTime);
+        }
+
         // Sets the value of a float parameter
         public void SetFloat(int id, float value)
         {
             SetFloatID(ref m_Handle, id, value);
+        }
+
+        public void SetFloat(int id, float value, float dampTime, float deltaTime)
+        {
+            SetFloatIDDamp(ref m_Handle, id, value, dampTime, deltaTime);
         }
 
         // Gets the value of a bool parameter
@@ -501,6 +511,12 @@ namespace UnityEngine.Animations
 
         [NativeMethod(ThrowsException = true)]
         extern private static void SetFloatID(ref PlayableHandle handle, int id, float value);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static void SetFloatStringDamp(ref PlayableHandle handle, string name, float value, float dampTime, float deltaTime);
+
+        [NativeMethod(ThrowsException = true)]
+        extern private static void SetFloatIDDamp(ref PlayableHandle handle, int id, float value, float dampTime, float deltaTime);
 
         [NativeMethod(ThrowsException = true)]
         extern private static float GetFloatString(ref PlayableHandle handle, string name);

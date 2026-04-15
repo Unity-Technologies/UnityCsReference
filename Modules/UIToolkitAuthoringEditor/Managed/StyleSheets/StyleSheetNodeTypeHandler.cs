@@ -33,7 +33,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
 {
     internal class StyleSheetEditorExporter : StyleSheetExporter
     {
-        public string ToUssString(StyleSheet styleSheet, StyleComplexSelector[] selectors, UssExportOptions options = null)
+        public string ToUssString(StyleSheet styleSheet, StyleComplexSelector[] selectors, UssExportOptions options)
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);

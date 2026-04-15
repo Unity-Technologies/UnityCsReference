@@ -21,9 +21,9 @@ namespace UnityEditor
         public PropertyModification previousValue;
         public PropertyModification currentValue;
         [NativeName("keepPrefabOverride")]
-        int m_KeepPrefabOverride;
+        bool m_KeepPrefabOverride;
 
-        public bool keepPrefabOverride { get { return m_KeepPrefabOverride != 0; } set { m_KeepPrefabOverride = value ? 1 : 0; } }
+        public bool keepPrefabOverride { get => m_KeepPrefabOverride; set => m_KeepPrefabOverride = value; }
     }
 
     [RequiredByNativeCode]
@@ -296,6 +296,30 @@ namespace UnityEditor
         private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");
 
         [RequiredByNativeCode]
+        internal static void InvokePostprocessModificationsReverseProxy(IntPtr modificationsNativePtr)
+        {
+            if (modificationsNativePtr == IntPtr.Zero)
+                return;
+
+            // Use bindings layer to pass non-blittable UndoPropertyModification[] to proxy call.
+            // Since the calls are child calls the native memory remains the same.
+            // GetPropertyModificationForInvokePostprocessModifications converts native vector to a managed array.
+            var modifications = GetPropertyModificationForInvokePostprocessModifications(modificationsNativePtr);
+            var remainingModifications = InvokePostprocessModifications(modifications);
+            // Only update the native vector if a callback returned a different array.
+            // The native UndoPropertyModification struct has fields (modificationDriver, keepDuplicate)
+            // not present in the managed struct. Unconditionally round-tripping would destroy those
+            // native-only field values.
+            if (remainingModifications != modifications)
+                UpdatePropertyModificationFromInvokePostprocessModifications(modificationsNativePtr, remainingModifications);
+        }
+
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        private static extern UndoPropertyModification[] GetPropertyModificationForInvokePostprocessModifications(IntPtr modificationsNativePtr);
+
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        private static extern void UpdatePropertyModificationFromInvokePostprocessModifications(IntPtr modificationsNativePtr, UndoPropertyModification[] remainingModifications);
+
         internal static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
         {
             if (postprocessModifications == null)

@@ -6,18 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using UnityEngine.Loading;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using Unity.Scripting.LifecycleManagement;
 using System.Runtime.InteropServices;
-using Unity.ContentLoad;
+using Object = UnityEngine.Object;
 
 #pragma warning disable CS1574 // XML comment with cref attribute to types in UnityEditor namespace
 
-namespace UnityEngine.Loading
+namespace Unity.Loading
 {
     /// <summary>
     /// Represents a handle to a content directory registered via the ContentLoadManager. This struct is used to encapsulate
@@ -114,7 +114,7 @@ namespace UnityEngine.Loading
         /// </remarks>
         /// <param name="manifest">The content manifest to register</param>
         /// <returns>Handle to the registered content directory</returns>
-        public static ContentDirectoryHandle RegisterContentDirectory(ContentManifest manifest)
+        internal static ContentDirectoryHandle RegisterContentDirectory(ContentManifest manifest)
         {
             var handle = RegisterInternalFromContentManifest(manifest);
             if (!handle.isValid)

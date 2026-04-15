@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System;
 using System.Globalization;
 using System.Linq;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -18,6 +19,7 @@ namespace UnityEditor
         void Load();
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class PrefColor : IPrefType
     {
         string m_Name;
@@ -175,6 +177,7 @@ namespace UnityEditor
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class PrefSettings
     {
         static List<IPrefType> m_AddedPrefs = new List<IPrefType>();

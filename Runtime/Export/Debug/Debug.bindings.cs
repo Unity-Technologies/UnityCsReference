@@ -320,10 +320,13 @@ namespace UnityEngine
             return s_DefaultLogger.logEnabled;
         }
 
-        internal static extern void LogSticky(EntityId identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+        internal static extern void LogSticky(EntityId entityId, LogType logType, LogOption logOptions, string message, Object context = null);
 
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static extern void RemoveLogEntriesByIdentifier(int identifier);
+
+        [FreeFunction("ICallType_Generated_UnityEngine_Debug::RemoveLogEntriesByEntityId")]
+        internal static extern void RemoveLogEntriesByEntityId(EntityId entityId);
 
         [NativeHeader("Runtime/Export/Debug/LogCapture.bindings.h")]
         [StructLayout(LayoutKind.Sequential)]

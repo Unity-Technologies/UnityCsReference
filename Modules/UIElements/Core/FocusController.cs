@@ -130,6 +130,7 @@ namespace UnityEngine.UIElements
         bool m_ExcludeFromFocusRing;
         internal bool excludeFromFocusRing
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get { return m_ExcludeFromFocusRing; }
             set
             {
@@ -509,7 +510,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Focusable GetLeafFocusedElement()
         {
             if (m_FocusedElements.Count > 0)
@@ -684,6 +685,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SwitchFocus(Focusable newFocusedElement, bool bIsFocusDelegated = false, DispatchMode dispatchMode = DispatchMode.Default)
         {
             SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified, bIsFocusDelegated, dispatchMode);

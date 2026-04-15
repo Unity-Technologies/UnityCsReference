@@ -4,9 +4,8 @@
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -347,12 +346,15 @@ namespace Unity.UI.Builder
                 // 1. Determine the value binding type
                 // Look for the USS variable bound to the field
                 var selectionIsSelector = BuilderSharedStyles.IsSelectorElement(inspector.currentVisualElement);
-                var varHandler = StyleVariableUtilities.GetOrCreateVarHandler(field as BindableElement);
-                var varName = VariableEditingHandler.GetBoundVariableName(varHandler);
+                var varHandler = StyleVariableUtility.GetOrCreateVarHandler(field as BindableElement,
+                    new BuilderVariableEditingContext(inspector),
+                    field.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow,
+                    field is DimensionStyleField or NumericStyleField or IntegerStyleField);
+                var varName = VariableEditingHandler.GetBoundVariableName(varHandler, selectionIsSelector || property == null);
 
                 if (!string.IsNullOrEmpty(varName))
                 {
-                    var varInfo = StyleVariableUtilities.FindVariable(inspector.currentVisualElement, varName, inspector.document.fileSettings.editorExtensionMode);
+                    var varInfo = StyleVariableUtility.FindVariable(inspector.currentVisualElement, varName, inspector.document.fileSettings.editorExtensionMode);
 
                     // If the variable cannot be resolved then at least set the name
                     if (!varInfo.IsValid())
@@ -375,10 +377,7 @@ namespace Unity.UI.Builder
                     if (selectionIsSelector)
                     {
                         var selectorMatchRecord =
-                            new SelectorMatchRecord(inspector.currentVisualElement.GetClosestStyleSheet(), 0)
-                            {
-                                complexSelector = inspector.currentVisualElement.GetStyleComplexSelector()
-                            };
+                            new SelectorMatchRecord(inspector.currentVisualElement.GetClosestStyleSheet(), 0, 0, inspector.currentVisualElement.GetStyleComplexSelector());
                         valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.LocalUSSSelector, new MatchedRule(selectorMatchRecord, AssetDatabase.GetAssetPath(selectorMatchRecord.sheet)));
                     }
                     else

@@ -62,18 +62,7 @@ namespace Unity.UI.Builder
             string result = null;
             try
             {
-                var exporter = new VisualTreeAssetExporter();
-                result = exporter.ToUxmlString(vta,
-                    new VisualTreeAssetExporter.ExportOptions
-                    {
-                        ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
-                        ignoreTypeList = BuilderConstants.IgnoredTypesWhenExporting,
-                        consistentAttributeOrder = UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting,
-                        styleExporterOptions = new StyleSheetExporter.UssExportOptions
-                        {
-                            ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
-                        }
-                    });
+                result = VisualTreeAssetExporter.Default.ToUxmlString(vta);
             }
             catch (Exception ex)
             {

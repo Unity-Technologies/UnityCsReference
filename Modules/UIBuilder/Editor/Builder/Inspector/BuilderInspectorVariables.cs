@@ -32,6 +32,9 @@ namespace Unity.UI.Builder
 
         protected override void OnStyleSheetModified()
         {
+            // Force immediate style resolution to update the element's variableContext
+            currentVisualElement.SetInlineRule(styleSheet, styleRule);
+
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             m_Selection.NotifyOfStylingChange();
         }

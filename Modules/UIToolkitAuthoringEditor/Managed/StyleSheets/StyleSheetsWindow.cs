@@ -35,6 +35,8 @@ internal class StyleSheetsWindow : EditorWindow
     VisualElement m_NoResultsLabelElement;
     VisualElement m_StagingModeLabelElement;
     VisualElement m_ContainerElement;
+
+    [NonSerialized]
     VisualElementEditingStage m_CurrentStage;
 
     [SerializeReference]

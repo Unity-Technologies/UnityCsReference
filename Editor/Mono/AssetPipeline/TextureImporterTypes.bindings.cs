@@ -108,7 +108,11 @@ namespace UnityEditor
         int m_AlphaIsTransparency;
 
         [SerializeField]
+        int m_SpriteTessellationMethod;
+        [SerializeField]
         float m_SpriteTessellationDetail;
+        [SerializeField]
+        float m_SpriteGeometrySubdivision;
 
         [SerializeField]
         int m_TextureType;
@@ -442,11 +446,24 @@ namespace UnityEditor
             set { m_SpritePixelsToUnits = value; }
         }
 
+        public int spriteTessellationMethod
+        {
+            get { return m_SpriteTessellationMethod; }
+            set { m_SpriteTessellationMethod = value; }
+        }
+
         public float spriteTessellationDetail
         {
             get {return m_SpriteTessellationDetail; }
             set { m_SpriteTessellationDetail = value; }
         }
+
+        public float spriteGeometrySubdivision
+        {
+            get { return m_SpriteGeometrySubdivision; }
+            set { m_SpriteGeometrySubdivision = value; }
+        }
+
         public uint spriteExtrude
         {
             get { return m_SpriteExtrude; }

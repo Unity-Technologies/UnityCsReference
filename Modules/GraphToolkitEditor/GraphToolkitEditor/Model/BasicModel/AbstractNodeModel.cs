@@ -343,7 +343,6 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.deleteAndReconnectItem,
             new ContextualMenuItem(ContextualMenuHelpers.editSubtitleItem, 0),
             new ContextualMenuItem(ContextualMenuHelpers.bypassNodeItem, 1),
-            new ContextualMenuItem(ContextualMenuHelpers.disableNodeItem, 2),
             new ContextualMenuItem(ContextualMenuHelpers.disconnectAllWiresItem, 3),
             new ContextualMenuItem(ContextualMenuHelpers.toggleCollapseItem, 5)
         };

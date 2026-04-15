@@ -37,9 +37,20 @@ namespace Unity.Multiplayer.Editor
         private static void Initialize()
         {
             Events.registeredPackages += OnPackagesRegistered;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             CleanupRestrictedComponents();
+        }
+
+        private static void Reinitialize()
+        {
+            Events.registeredPackages -= OnPackagesRegistered;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            Initialize();
         }
 
         public ContentSelectionSettings()
@@ -63,6 +74,7 @@ namespace Unity.Multiplayer.Editor
                 ProcessPackageAdded(package.name);
             }
             DedicatedServerMigrationUtility.Reinitialize();
+            Reinitialize();
         }
 
         internal static void ProcessPackageAdded(string packageName)

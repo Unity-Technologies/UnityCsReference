@@ -16,6 +16,7 @@ using UnityEditor.Search.Providers;
 using UnityEditor.Utils;
 using UnityEngine.Search;
 using Unity.Collections;
+using Unity.Loading;
 
 using UnityEditor.SceneManagement;
 
@@ -1595,9 +1596,9 @@ namespace UnityEditor.Search
                         var path = GetObjectPath(value as UnityEngine.Object, subAssetUseGlobalObjectId: true);
                         return EscapeLiteralString(path);
                     }
-                case SerializedPropertyType.LoadableReference:
+                case SerializedPropertyType.LoadableObjectId:
                     {
-                        var loadableObj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(prop.loadableReferenceValue);
+                        var loadableObj = UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(prop.loadableObjectIdValue);
                         if (loadableObj == null)
                             return "none";
                         var path = GetObjectPath(loadableObj, subAssetUseGlobalObjectId: true);

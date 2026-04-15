@@ -22,15 +22,20 @@ namespace UnityEditor.Build.Reporting
     {
         [NativeName("buildStartTime.ticks")]
         internal Int64 buildStartTimeTicks;
-        ///<summary>The time the build was started.</summary>
-        public DateTime buildStartedAt { get { return new DateTime(buildStartTimeTicks); } }
+        ///<summary>The time the build was started, in UTC.</summary>
+        ///<remarks>Call <c>.ToLocalTime()</c> to convert to the local timezone for display.
+        ///</remarks>
+        ///<example>
+        /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/BuildSummaryTimes.cs"/>
+        ///</example>
+        public DateTime buildStartedAt { get { return new DateTime(buildStartTimeTicks, DateTimeKind.Utc); } }
 
-        ///<summary>The build guid of a Player build.</summary>
-        ///<remarks>For successful player builds this guid is written to boot.config in the build output,
-        // unless <see cref="BuildOptions.NoUniqueIdentifier"/> is set.
-        // It is available in the runtime through <see cref="Application.buildGUID" />.
-        // Incremental builds that produce the same output may reuse a previously
-        // generated build GUID.
+        ///<summary>The GUID of a Player build.</summary>
+        ///<remarks>For successful Player builds this GUID is written to boot.config in the build output,
+        /// unless <see cref="BuildOptions.NoUniqueIdentifier"/> is set.
+        /// It is available in the runtime through <see cref="Application.buildGUID" />.
+        /// Incremental builds that produce the same output may reuse a previously
+        /// generated build GUID.
         ///</remarks>
         [NativeName("buildGUID")]
         public GUID guid { get; }
@@ -42,8 +47,7 @@ namespace UnityEditor.Build.Reporting
         ///Unlike <see cref="guid"/>, this identifier is not stored in the Player's built output, and is only used for Editor build tracking and analytics.
         ///</remarks>
         [NativeName("buildSessionGUID")]
-        /*UCBP-PUBLIC*/
-        internal GUID buildSessionGuid { get; }
+        public GUID buildSessionGuid { get; }
 
         ///<summary>The platform that the build was created for.</summary>
         ///<remarks>See <see cref="BuildTarget" /> for possible values.</remarks>
@@ -56,19 +60,18 @@ namespace UnityEditor.Build.Reporting
         public BuildOptions options { get; }
 
         ///<summary>If the build is a ContentDirectory build this returns the <see cref="BuildContentOptions" /> passed to <see cref="BuildPipeline.BuildContentDirectory" />.</summary>
-        /*UCBP-PUBLIC*/ internal BuildContentOptions buildContentOptions { get; }
+        public BuildContentOptions buildContentOptions { get; }
 
         ///<summary>If the build is an AssetBundle build this returns the <see cref="BuildAssetBundleOptions" /> passed to <see cref="BuildPipeline.BuildAssetBundles" />.</summary>
-        /*UCBP-PUBLIC*/ internal BuildAssetBundleOptions assetBundleOptions { get; }
+        public BuildAssetBundleOptions assetBundleOptions { get; }
 
         ///<summary>The output path for the build, as provided to <see cref="BuildPipeline.BuildPlayer" />.</summary>
         public string outputPath { get; }
-        ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this value of this will be identical to the output path.</summary>
+        ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this will be identical to the output path.</summary>
         public string dataPath { get; }
 
         ///<summary>For ContentDirectory builds this returns the build name. For Player builds this returns the product name from PlayerSettings.</summary>
-        /*UCBP-PUBLIC*/
-        internal string buildName { get; }
+        public string buildName { get; }
 
         internal uint crc { get; }
         ///<summary>The total size of the build output, in bytes.</summary>
@@ -77,8 +80,9 @@ namespace UnityEditor.Build.Reporting
         internal UInt64 totalTimeTicks;
         ///<summary>The total time taken by the build process.</summary>
         public TimeSpan totalTime { get { return new TimeSpan((long)totalTimeTicks); } }
-        ///<summary>The time the build ended.</summary>
-        public DateTime buildEndedAt {  get { return buildStartedAt + totalTime; } }
+        ///<summary>The time the build ended, in UTC.</summary>
+        ///<remarks>Calculated as <see cref="buildStartedAt"/> plus <see cref="totalTime"/>.</remarks>
+        public DateTime buildEndedAt { get { return buildStartedAt + totalTime; } }
 
         ///<summary>The total number of errors and exceptions recorded during the build process.</summary>
         public int totalErrors { get; }
@@ -98,8 +102,7 @@ namespace UnityEditor.Build.Reporting
         public bool multiProcessEnabled { get; }
 
         ///<summary>For ContentDirectory builds this returns the Hash128 of the build manifest. For other build types this returns a default Hash128.</summary>
-        /*UCBP-PUBLIC*/
-        internal Hash128 buildManifestHash { get; }
+        public Hash128 buildManifestHash { get; }
 
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {

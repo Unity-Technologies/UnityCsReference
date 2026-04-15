@@ -162,7 +162,9 @@ namespace UnityEditor.AssetImporters
             m_Settings.spriteBorder = Vector4.zero;
             m_Settings.alphaSource = TextureImporterAlphaSource.FromInput;
             m_Settings.alphaIsTransparency = false;
+            m_Settings.spriteTessellationMethod = (int)SpriteTessellationMethod.LegacyTriangulation;
             m_Settings.spriteTessellationDetail = -1;
+            m_Settings.spriteGeometrySubdivision = 0.5f;
             m_Settings.wrapMode = m_Settings.wrapModeU = m_Settings.wrapModeV = m_Settings.wrapModeW = TextureWrapMode.Repeat;
 
             // From TextureImporterSettings::ApplyTextureType

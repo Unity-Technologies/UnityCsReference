@@ -15,7 +15,7 @@ namespace UnityEngine
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [VisibleToOtherModules("UnityEngine.ContentLoadModule")]
-    /*UCBP-PUBLIC*/ internal struct CAHArtifactDirectoryHandle
+    internal struct CAHArtifactDirectoryHandle
     {
         internal UInt64 m_Handle;
 
@@ -34,7 +34,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/VirtualFileSystem/CAHFileSystem/CAHFileSystemSingleton.h")]
     [StaticAccessor("GetCAHFileSystem()", StaticAccessorType.Dot)]
     [VisibleToOtherModules("UnityEngine.ContentLoadModule")]
-    /*UCBP-PUBLIC*/ internal static class CAHFileSystem
+    internal static class CAHFileSystem
     {
         /// <summary>
         /// Registers an artifact directory with the CAH File System.

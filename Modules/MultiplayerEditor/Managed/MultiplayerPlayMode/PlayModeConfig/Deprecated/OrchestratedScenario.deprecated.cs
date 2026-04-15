@@ -21,6 +21,13 @@ sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCall
     // Because m_MainEditorInstance was serialized as reference we need to manually copy the old values to the new instance.
     [SerializeReference, FormerlySerializedAs("m_MainEditorInstance")] private MainEditorInstanceDescription m_MainEditorInstanceObsolete;
 
+    // For test use only, if needed to be exposed publicly, consider adding a property to the settings instead.
+    internal bool EnableEditors
+    {
+        get => m_EnableEditors;
+        set => m_EnableEditors = value;
+    }
+
     public void UpgradeSerialization()
     {
         if (m_MainEditorInstanceObsolete != null)

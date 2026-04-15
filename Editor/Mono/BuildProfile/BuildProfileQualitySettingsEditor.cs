@@ -215,10 +215,9 @@ namespace UnityEditor.Build.Profile
 
         public bool IsDataEqualToGlobalQualitySettings(BuildProfile profile)
         {
-            var buildTarget = profile.buildTarget;
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroupName(buildTarget);
+            var namedBuildTargetName = NamedBuildTarget.FromTargetAndSubtarget(profile.buildTarget, (int)profile.subtarget).TargetName;
 
-            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
+            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(namedBuildTargetName);
             if (m_QualityLevels.arraySize != globalQualityLevels.Length)
                 return false;
 
@@ -230,7 +229,7 @@ namespace UnityEditor.Build.Profile
                     return false;
             }
 
-            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(buildTargetGroupString);
+            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(namedBuildTargetName);
             if (globalDefaultQualityLevelIndex != -1)
             {
                 var globalDefaultQualityLevel = allQualityLevels[globalDefaultQualityLevelIndex];

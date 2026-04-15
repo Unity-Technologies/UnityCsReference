@@ -367,7 +367,7 @@ namespace UnityEditor
             Log("LoadModes");
 
             ScanModes();
-            
+
             var currentModeIndex = GetSessionModeIndex();
             if (currentModeIndex == -1)
             {
@@ -481,7 +481,7 @@ namespace UnityEditor
             {
                 var paths = modeFilePathCache.Split(';', StringSplitOptions.RemoveEmptyEntries);
                 var hasStaleCache = false;
-                
+
                 foreach(var path in paths)
                 {
                     if (File.Exists(path))
@@ -493,7 +493,7 @@ namespace UnityEditor
                         hasStaleCache = true;
                     }
                 }
-                
+
                 // If we detected stale cache entries, clear the cache and rescan
                 if (hasStaleCache)
                 {

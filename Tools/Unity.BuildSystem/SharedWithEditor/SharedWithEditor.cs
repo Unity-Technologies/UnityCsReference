@@ -20,10 +20,21 @@ namespace UnityEditorInternal
     internal class ModulePlatformResources
     {
         [Serializable]
+        internal class ModuleDependency
+        {
+            public string Name = null;
+
+            /// <summary>
+            /// In case of Install To Builds folder option, this can be used to reference source directly.
+            /// </summary>
+            public string SourceLocation = null;
+        }
+
+        [Serializable]
         internal class ModuleInformation
         {
             public string Name = null;
-            public string[] Dependencies = null;
+            public ModuleDependency[] Dependencies = null;
 
             public override string ToString()
             {

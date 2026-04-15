@@ -2548,8 +2548,8 @@
     <Compile Include="..\..\Editor\Mono\LODUtility.bindings.cs">
       <Link>Editor\Mono\LODUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Loadable\LoadableReferenceEditorUtility.cs">
-      <Link>Editor\Mono\Loadable\LoadableReferenceEditorUtility.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Loadable\LoadableObjectIdEditorUtility.cs">
+      <Link>Editor\Mono\Loadable\LoadableObjectIdEditorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Loadable\LoadableSceneIdEditorUtility.cs">
       <Link>Editor\Mono\Loadable\LoadableSceneIdEditorUtility.cs</Link>
@@ -4015,8 +4015,11 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerMaskField.cs">
       <Link>Editor\Mono\UIElements\Controls\LayerMaskField.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Controls\LoadableReferenceField.cs">
-      <Link>Editor\Mono\UIElements\Controls\LoadableReferenceField.cs</Link>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\LoadableObjectIdField.cs">
+      <Link>Editor\Mono\UIElements\Controls\LoadableObjectIdField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\LoadableSceneIdField.cs">
+      <Link>Editor\Mono\UIElements\Controls\LoadableSceneIdField.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\ObjectField.cs">
       <Link>Editor\Mono\UIElements\Controls\ObjectField.cs</Link>
@@ -5275,8 +5278,8 @@
     <Compile Include="..\..\Modules\ContentLoadEditor\LoadableDrawer.cs">
       <Link>Modules\ContentLoadEditor\LoadableDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ContentLoadEditor\LoadableReferenceDrawer.cs">
-      <Link>Modules\ContentLoadEditor\LoadableReferenceDrawer.cs</Link>
+    <Compile Include="..\..\Modules\ContentLoadEditor\LoadableObjectIdDrawer.cs">
+      <Link>Modules\ContentLoadEditor\LoadableObjectIdDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoadEditor\Managed\ContentLoadManagerResetHandler.cs">
       <Link>Modules\ContentLoadEditor\Managed\ContentLoadManagerResetHandler.cs</Link>
@@ -5461,8 +5464,8 @@
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PackageManagerButton.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\PackageManagerButton.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs">
-      <Link>Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs</Link>
+    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\Playbar.cs">
+      <Link>Modules\EditorToolbar\ToolbarElements\Playbar.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\QualityDropdown.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\QualityDropdown.cs</Link>
@@ -8416,9 +8419,6 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorSettingsDrawer.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorSettingsDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerPlayModeStatusButton.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerPlayModeStatusButton.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerRoleMaskField.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerRoleMaskField.cs</Link>
     </Compile>
@@ -8451,6 +8451,9 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\ScenarioConfigEditor.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\ScenarioConfigEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\Toolbar\MultiplayerStatusToolbarUtilities.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\Toolbar\MultiplayerStatusToolbarUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\UIPartsFactory.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\UIPartsFactory.cs</Link>
@@ -10639,6 +10642,9 @@
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs">
       <Link>Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\AssemblyInfo.cs">
+      <Link>Modules\PhysicsEditor\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs">
       <Link>Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs</Link>
     </Compile>
@@ -10768,17 +10774,11 @@
     <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\PlayModeScenariosWindow\PlayModeScenariosWindow.cs">
       <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\PlayModeScenariosWindow\PlayModeScenariosWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtonsExtension.cs">
-      <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtonsExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtonsView.cs">
-      <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtonsView.cs</Link>
+    <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtons.cs">
+      <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModeButtons.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModePopupContent.cs">
       <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlayModePopupContent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlaymodeDropdownButton.cs">
-      <Link>Modules\PlayModeEditor\Managed\Scenarios\UI\Toolbar\PlaymodeDropdownButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs">
       <Link>Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs</Link>
@@ -11079,6 +11079,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactDetailsProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactDetailsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactItem.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemImpactItem.cs</Link>
@@ -14497,9 +14500,6 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\UIElementsViewImporterEditor.cs">
       <Link>Modules\UIBuilder\Editor\UIElementsViewImporterEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs</Link>
     </Compile>
@@ -14593,6 +14593,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BuilderVariableEditingContext.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BuilderVariableEditingContext.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\CursorStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\CursorStyleField.cs</Link>
     </Compile>
@@ -14638,47 +14641,17 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldConstants.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldConstants.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldPopup.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldPopup.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldPopupWindow.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleFieldPopupWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleVariableUtilities.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleVariableUtilities.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TextShadowStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TextShadowStyleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TransformOriginSelector.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TransformOriginSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TransformOriginStyleField.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TransformOriginStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TranslateStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TranslateStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\USSVariablesStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\USSVariablesStyleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableCompleter.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableCompleter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableEditingHandler.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableEditingHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableField.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfo.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoTooltip.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoTooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoView.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableInfoView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs</Link>
@@ -14992,6 +14965,9 @@
     <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitProfilerModule.cs">
       <Link>Modules\UIElementsEditor\Profiler\UIToolkitProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitProfilerModuleDetailsView.cs">
+      <Link>Modules\UIElementsEditor\Profiler\UIToolkitProfilerModuleDetailsView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\ProjectSettingsThemeDropdown.cs">
       <Link>Modules\UIElementsEditor\ProjectSettingsThemeDropdown.cs</Link>
     </Compile>
@@ -15286,6 +15262,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\SceneVisualElementAnimationResponder.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\SceneVisualElementAnimationResponder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationAuthoringHandler.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationAuthoringHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
@@ -15403,8 +15382,29 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\WriteStyleRulePropertyValueCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\WriteStyleRulePropertyValueCommand.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\Background\CheckerboardBackground.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\Background\CheckerboardBackground.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\CodePreview.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\CodePreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\UssCodePreview.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\UssCodePreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\UxmlCodePreview.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\CodePreviews\UxmlCodePreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Events.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Events.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Panel.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Panel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Rendering.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Rendering.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelOwnerRegistry.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelOwnerRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Clipboard.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Clipboard.cs</Link>
@@ -15567,6 +15567,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleTranslateField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleTranslateField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\TransformOriginSelector.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\TransformOriginSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\TransformOriginStyleField.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\TransformOriginStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\ClassPill.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\ClassPill.cs</Link>
@@ -15778,6 +15784,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Fields\UxmlTypeReferenceField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Fields\UxmlTypeReferenceField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\IVariableEditingContext.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\IVariableEditingContext.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\LiveAttributePropertyController.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\LiveAttributePropertyController.cs</Link>
     </Compile>
@@ -15795,6 +15804,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleInspectorElement.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleInspectorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleValueTypeResolver.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleValueTypeResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleVariableUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\StyleVariableUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\TypeExtensions.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\TypeExtensions.cs</Link>
@@ -15820,6 +15835,24 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\UxmlSerializedDataPropertyDrawer.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\UxmlSerializedDataPropertyDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableCompleter.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableCompleter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableEditingHandler.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableEditingHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableField.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableInfo.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableInfoView.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableInfoView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableNameUtilities.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VariableNameUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VisualElementAttributesInspectorElement.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\VisualElementAttributesInspectorElement.cs</Link>
     </Compile>
@@ -15841,6 +15874,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Menu\MenuItemGenerator.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Menu\MenuItemGenerator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Preferences\ColorPreferences.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Preferences\ColorPreferences.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceField.cs</Link>
     </Compile>
@@ -15855,6 +15891,51 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceTools.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceTools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasSettings.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasSettingsRegistry.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasSettingsRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsEditor.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsHeader.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsInspector.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\Editor\CanvasSettingsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\SelectionHandle.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\SelectionHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\SelectionHandleManager.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\SelectionHandleManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvas.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasDocumentRoot.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasDocumentRoot.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasPanManipulator.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasPanManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasResizeManipulator.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasResizeManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasResizerHandle.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasResizerHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasZoomManipulator.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UICanvasZoomManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UIViewport.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UIViewport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\UIViewportWindow.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\UIViewportWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Search\UIElementsProvider.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Search\UIElementsProvider.cs</Link>
@@ -15906,6 +15987,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UMPE\Editor\ChannelClient.cs">
       <Link>Modules\UMPE\Editor\ChannelClient.cs</Link>
@@ -16162,7 +16246,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_9bfe/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_0f69/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_eabf/buildTools/UnityEditor.MSBuild.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_eabf/msbuild.host/Unity.BuildService.Host.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_eabf/buildTools/Unity.BuildService.dll" />

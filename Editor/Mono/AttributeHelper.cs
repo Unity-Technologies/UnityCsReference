@@ -186,6 +186,23 @@ namespace UnityEditor
             return result.ToArray();
         }
 
+        [RequiredByNativeCode]
+        static void DeconstructMonoCreateAssetItemArrayElementRaw(
+            MonoCreateAssetItem[] array,
+            int index,
+            out string menuItem,
+            out string fileName,
+            out int order,
+            out Type type)
+        {
+            var element = array[index];
+
+            menuItem = element.menuItem;
+            fileName = element.fileName;
+            order = element.order;
+            type = element.type;
+        }
+
         internal static bool GameObjectContainsAttribute<T>(GameObject go) where T : Attribute
         {
             var behaviours = go.GetComponents(typeof(Component));

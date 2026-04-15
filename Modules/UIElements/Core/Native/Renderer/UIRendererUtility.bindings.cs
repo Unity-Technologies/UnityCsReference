@@ -159,7 +159,7 @@ namespace UnityEngine.UIElements.UIR
         [NativeMethod(IsThreadSafe = true)] public extern static void WaitForCPUFencePassed(UInt32 fence);
         [NativeMethod(IsThreadSafe = true)] public extern static void SyncRenderThread();
         [NativeMethod(IsThreadSafe = true)] public extern static RectInt GetActiveViewport();
-        [NativeMethod(IsThreadSafe = true)] public extern static void ProfileDrawChainBegin();
+        [NativeMethod(IsThreadSafe = true)] public extern static void ProfileDrawChainBegin(EntityId owner);
         [NativeMethod(IsThreadSafe = true)] public extern static void ProfileDrawChainEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
         [NativeMethod(IsThreadSafe = true)] public extern static Matrix4x4 GetUnityProjectionMatrix();

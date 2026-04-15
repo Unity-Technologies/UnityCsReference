@@ -101,7 +101,6 @@ namespace UnityEngine.UIElements
         bool HasActiveDocuments();
 
         Object activeEventSystem { get; }
-        EventBase CreateEvent(Event systemEvent);
 
         int s_ResolvedSortingIndexMax { get; }
 
@@ -206,11 +205,6 @@ namespace UnityEngine.UIElements
         public void UnregisterEventSystem(Object eventSystem)
         {
             UIElementsRuntimeUtility.UnregisterEventSystem(eventSystem);
-        }
-
-        public EventBase CreateEvent(Event systemEvent)
-        {
-            return UIElementsRuntimeUtility.CreateEvent(systemEvent);
         }
 
         public List<IRuntimePanel> GetSortedPlayerPanelsInternal()

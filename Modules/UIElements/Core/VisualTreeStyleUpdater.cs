@@ -329,17 +329,7 @@ namespace UnityEngine.UIElements
             {
                 for (var i = 0; i < element.styleSheetList.Count; i++)
                 {
-                    var addedStyleSheet = element.styleSheetList[i];
-
-                    if (addedStyleSheet.flattenedRecursiveImports != null)
-                    {
-                        for (var j = 0; j < addedStyleSheet.flattenedRecursiveImports.Count; j++)
-                        {
-                            m_StyleMatchingContext.AddStyleSheet(addedStyleSheet.flattenedRecursiveImports[j]);
-                        }
-                    }
-
-                    m_StyleMatchingContext.AddStyleSheet(addedStyleSheet);
+                    m_StyleMatchingContext.AddStyleSheet(element.styleSheetList[i]);
                 }
             }
 

@@ -69,6 +69,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.PerformanceIntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
+[assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.Tests.Common.Editor")]
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
@@ -129,6 +130,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.PlayMode.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.ContentLoadModule")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
@@ -271,6 +274,10 @@ using UnityEngine;
 // Tests\CrossModulePackages\ScriptableRenderPipeline
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
+
+// Tests/Modules/Core/Tests/UTFTests/EditorViewports
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Selection.API.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Selection.Picking.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.BootConfig.Tests.Editor")]

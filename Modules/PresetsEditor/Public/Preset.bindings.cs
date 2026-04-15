@@ -28,7 +28,6 @@ namespace UnityEditor.Presets
         public extern PropertyModification[] PropertyModifications
         {
             [NativeName("GetManagedPropertyModifications")]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 

@@ -401,8 +401,10 @@ class USSStatsImpl : PanelDebugger
         public const string k_SheetTotalTime = "Total time spent processing this stylesheet, including selector matching time.";
         public const string k_SheetSelfTime = "Time spent in this stylesheet excluding selector matching time. This overhead grows with the number of elements and size of the style sheet.";
         public const string k_SheetSelectorTime = "Total time spent matching selectors in this stylesheet. This time grows with the number of elements and complexity of the selectors.";
-        public const string k_SheetApplicableElems = "Number of elements the stylesheet was applied to.";
-        public const string k_SheetQueries = "Total number of style queries performed for this stylesheet. An element leads to one query for its type, one for its name (if it is defined) and one for each class list.";
+        public const string k_SheetApplicableElems = "Number of elements the stylesheet was applied to. This counter is not incremented when this stylesheet is imported in another stylesheet.";
+        public const string k_SheetQueries = "Total number of style queries performed for this stylesheet. An element leads to one query for its type, one for its name (if it is defined) and one for each class list. This counter is not incremented when this stylesheet is imported in another stylesheet.";
+        public const string k_SheetImportCount = "Number of stylesheets imported in this stylesheet.";
+        public const string k_SheetAvoidQueryPct = "Percentage by which the potential number of style queries was reduced by importing other style sheets into this one";
         public const string k_SheetTests = "Total number of selector tests performed for this stylesheet.";
         public const string k_SheetMatches = "Total number of selector matches for this stylesheet.";
         public const string k_SheetRejRate = "Overall rejection rate for selectors in this stylesheet.";
@@ -426,6 +428,13 @@ class USSStatsImpl : PanelDebugger
             properties["Selector time"] = ($"{FormatTime(sheetResult.totalSelectorTimeMs)}", Tooltips.k_SheetSelectorTime);
             properties["Applicable elements"] = ($"{sheetResult.styleSheetStats.elementCount}", Tooltips.k_SheetApplicableElems);
             properties["Total query count"] = ($"{sheetResult.styleSheetStats.totalQueryCount}", Tooltips.k_SheetQueries);
+
+            if (sheetResult.styleSheetStats.importedStyleSheetsCount > 0)
+            {
+                properties["Imported stylesheets counted"] = ($"{sheetResult.styleSheetStats.importedStyleSheetsCount}", Tooltips.k_SheetImportCount);
+                properties["Avoided query percentage"] = ($"{FormatPct(sheetResult.styleSheetStats.avoidedQueryPercentage)}", Tooltips.k_SheetAvoidQueryPct);
+            }
+
             properties["Total selector tests"] = ($"{sheetResult.totalSelectorsTested}", Tooltips.k_SheetTests);
             properties["Total matches"] = ($"{sheetResult.totalSelectorsMatched}", Tooltips.k_SheetMatches);
 

@@ -371,6 +371,10 @@ namespace UnityEditor
 
                 return;
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (BuildFailedException)
             {
                 throw;

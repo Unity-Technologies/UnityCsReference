@@ -179,6 +179,7 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
             m_Decorator.boundProperty = evt.bindProperty;
             m_Decorator.boundField = evt.elementTarget;
             m_IsPropertyBoundToBindable = true;
+            m_Decorator.OnPropertyFieldReset();
         }
     }
 
@@ -249,6 +250,7 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
                 return;
             m_BoundProperty = value;
             UpdateBoundAttribute();
+            boundPropertyChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -297,6 +299,11 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
             }
         }
     }
+
+    /// <summary>
+    /// Event sent when the bound property of this decorator has changed.
+    /// </summary>
+    public event EventHandler boundPropertyChanged;
 
     /// <summary>
     /// Constructor for UxmlAttributeFieldDecorator.
@@ -519,5 +526,59 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
     {
         if (boundProperty.isValid)
             OnTrackedPropertyChanged?.Invoke(this, GetBindingPath(), TrackedPropertyType.StopTracking);
+    }
+
+    void OnPropertyFieldReset()
+    {
+        if (boundProperty == null)
+            return;
+
+        if (boundProperty.propertyType == SerializedPropertyType.Generic &&
+            boundProperty.type != nameof(ToggleButtonGroupState) &&
+            boundProperty.isArray)
+        {
+            HandleListProperty();
+        }
+    }
+
+    void HandleListProperty()
+    {
+        if (boundProperty == null)
+            return;
+
+        var propertyField = m_ContentContainer.bindable as PropertyField;
+
+        if (propertyField == null || propertyField.childCount == 0)
+            return;
+
+        bool isList = boundProperty.propertyType == SerializedPropertyType.Generic &&
+                      boundProperty.type != nameof(ToggleButtonGroupState) &&
+                      boundProperty.isArray;
+
+        if (!isList)
+            return;
+
+        var listView = propertyField.Q<ListView>(classes: PropertyField.listViewUssClassName);
+        if (listView == null)
+            return;
+
+        listView.Q(ListView.footerAddButtonName).EnableInClassList(ListView.footerAddButtonWithMenuNameUnique, boundAttributeDescription.uxmlObjectAcceptedTypes.Count > 1);
+        listView.overridingAddButtonBehavior = OnListViewAddButtonClicked;
+        listView.onRemove = OnListViewRemoveButtonClicked;
+    }
+
+    void OnListViewAddButtonClicked(BaseListView listView, Button button)
+    {
+        UxmlSerializedDataPropertyView.ShowAddUxmlObjectMenu(button, boundAttributeDescription, t =>
+        {
+            UxmlAssetUtilities.AddUxmlObjectToSerializedData(context, boundProperty, t);
+        });
+    }
+
+    void OnListViewRemoveButtonClicked(BaseListView listView)
+    {
+        var index = listView.selectedIndex >= 0 ? listView.selectedIndex : boundProperty.arraySize - 1;
+
+        UxmlAssetUtilities.RemoveArrayItemFromSerializedData(context, boundProperty, index);
     }
 }

@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Build.Content;
 using UnityEngine;
+using Unity.Loading;
 using Object = UnityEngine.Object;
 
 // ReSharper disable once CheckNamespace - we explicitly want UnityEditor namespace
@@ -427,8 +428,8 @@ namespace UnityEditor
                     var bi = p.boundsIntValue;
                     res["val"] = WriteBounds(new Bounds(bi.center, bi.size));
                     break;
-                case SerializedPropertyType.LoadableReference:
-                    res["val"] = WriteCustom(new LoadableReferenceWrapper(p.loadableReferenceValue));
+                case SerializedPropertyType.LoadableObjectId:
+                    res["val"] = WriteCustom(new LoadableObjectIdWrapper(p.loadableObjectIdValue));
                     break;
 
                 // Copy/Paste of these for generic serialized properties is not implemented yet.
@@ -549,9 +550,9 @@ namespace UnityEditor
                                 new Vector3Int((int)biValue.center.x, (int)biValue.center.y, (int)biValue.center.z),
                                 new Vector3Int((int)biValue.size.x, (int)biValue.size.y, (int)biValue.size.z));
                         break;
-                    case SerializedPropertyType.LoadableReference:
-                        if (ParseCustom<LoadableReferenceWrapper>(Convert.ToString(oval), out var loadableRefWrapper))
-                            prop.loadableReferenceValue = loadableRefWrapper.ToLoadableReference();
+                    case SerializedPropertyType.LoadableObjectId:
+                        if (ParseCustom<LoadableObjectIdWrapper>(Convert.ToString(oval), out var loadableObjectIdWrapper))
+                            prop.loadableObjectIdValue = loadableObjectIdWrapper.ToLoadableObjectId();
                         break;
 
                     // Copy/Paste of these for generic serialized properties is not implemented yet.
@@ -661,14 +662,14 @@ namespace UnityEditor
     }
 
     [Serializable]
-    internal class LoadableReferenceWrapper
+    internal class LoadableObjectIdWrapper
     {
-        public LoadableReferenceWrapper() { }
+        public LoadableObjectIdWrapper() { }
 
-        public LoadableReferenceWrapper(LoadableReference r) { loadableReference = r; }
+        public LoadableObjectIdWrapper(LoadableObjectId loadableObjectId) { this.loadableObjectId = loadableObjectId; }
 
-        public LoadableReference loadableReference;
+        public LoadableObjectId loadableObjectId;
 
-        public LoadableReference ToLoadableReference() => loadableReference;
+        public LoadableObjectId ToLoadableObjectId() => loadableObjectId;
     }
 }

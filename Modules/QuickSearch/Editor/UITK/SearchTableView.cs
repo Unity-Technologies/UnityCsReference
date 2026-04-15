@@ -15,6 +15,26 @@ namespace UnityEditor.Search
 {
     class SearchTableView : SearchBaseCollectionView<MultiColumnListView>, ITableView
     {
+        internal struct ItemCellDescriptor
+        {
+            public string itemId;
+            public string itemProvider;
+            public int columnId;
+
+            public bool valid => (itemId != null && itemProvider != null && columnId != 0);
+            public string cellItemId => GetCellItemId(itemId, itemProvider, columnId).ToString();
+
+            public static int GetCellItemId(SearchItem item, SearchColumn column)
+            {
+                return Utils.CombineHashCodes(item.id.GetHashCode(), item.provider.id.GetHashCode(), column.GetHashCode());
+            }
+
+            public static int GetCellItemId(string itemId, string itemProvider, int columnId)
+            {
+                return Utils.CombineHashCodes(itemId.GetHashCode(), itemProvider.GetHashCode(), columnId);
+            }
+        }
+
         public static readonly string ussClassName = "search-table-view";
         public static readonly string resultsListClassName = ussClassName.WithUssElement("results-list");
         public static readonly string addColumnButtonClassName = ussClassName.WithUssElement("add-column-button");
@@ -39,6 +59,14 @@ namespace UnityEditor.Search
         internal static string resultViewId = "table";
         public override string ViewId => resultViewId;
         public override bool ShowNoResultMessage => m_ViewModel.displayMode != DisplayMode.Table;
+
+        internal event Action<SearchTableView, SearchTableViewCell, object> cellValueChanged;
+        internal SearchTableViewCell editingCell => m_EditedCell;
+
+        private bool m_LastEventIsUndo;
+        private SearchTableViewCell m_EditedCell;
+        private ItemCellDescriptor m_EditedCellDescriptor;
+        private Action<SearchTableViewCell> m_StopListening;
 
         Columns viewColumns => m_ListView.columns;
 
@@ -81,6 +109,7 @@ namespace UnityEditor.Search
                 SetupColumns();
 
             SetupColumnSorting();
+            m_EditedCellDescriptor = k_InvalidDescriptor;
         }
 
         protected override void Dispose(bool disposing)
@@ -96,7 +125,7 @@ namespace UnityEditor.Search
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {
             base.OnAttachToPanel(evt);
-
+            m_EditedCellDescriptor = k_InvalidDescriptor;
             m_ListView.columnSortingChanged += OnSortColumn;
             m_ListView.columns.columnReordered += OnColumnReordered;
 
@@ -105,12 +134,24 @@ namespace UnityEditor.Search
 
             On(SearchEvent.SearchContextChanged, OnContextChanged);
             On(SearchEvent.RequestResultViewButtons, OnAddResultViewButtons);
+
+            RegisterCallback<FocusInEvent>(OnFocusIn);
+            RegisterCallback<FocusOutEvent>(OnFocusOut);
+            RegisterCallback<KeyDownEvent>(OnKeyDown);
+            Undo.undoRedoEvent += OnUndoRedoEvent;
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            UnregisterValueChange();
+
             Off(SearchEvent.SearchContextChanged, OnContextChanged);
             Off(SearchEvent.RequestResultViewButtons, OnAddResultViewButtons);
+
+            Undo.undoRedoEvent -= OnUndoRedoEvent;
+            UnregisterCallback<FocusInEvent>(OnFocusIn);
+            UnregisterCallback<FocusOutEvent>(OnFocusOut);
+            UnregisterCallback<KeyDownEvent>(OnKeyDown);
 
             var header = this.Q<MultiColumnCollectionHeader>();
             header.contextMenuPopulateEvent -= OnSearchColumnContextualMenu;
@@ -143,8 +184,11 @@ namespace UnityEditor.Search
             return ve.ClassListContains("unity-multi-column-view__row-container");
         }
 
+        #region ValueChange Event Handling
         protected override void OnPointerDown(PointerDownEvent evt)
         {
+            m_LastEventIsUndo = false;
+
             if (evt.clickCount != 1 && evt.button != 0)
                 return;
 
@@ -154,11 +198,530 @@ namespace UnityEditor.Search
             if (!IsTableViewRow(ve) && ve.GetFirstAncestorWhere((ve) => { return IsTableViewRow(ve); }) == null)
                 m_ListView.ClearSelection();
         }
+        
+        void OnFocusIn(FocusInEvent evt)
+        {
+            // This ensures we capture which cell is interacted with by our user.
+            m_LastEventIsUndo = false;
+            SetEditedCell(null);
+            if (evt.target is VisualElement targetEl)
+            {
+                if (targetEl is not SearchTableViewCell cell)
+                {
+                    cell = targetEl.GetFirstAncestorOfType<SearchTableViewCell>();
+                }
+                if (cell != null)
+                {
+                    SetEditedCell(cell);
+                }
+            }
+        }
+
+        void OnFocusOut(FocusOutEvent evt)
+        {
+            m_LastEventIsUndo = false;
+            SetEditedCell(null);
+        }
+
+        internal void SetEditedCell(SearchTableViewCell cell)
+        {
+            // EditedCell is the only cell that actively listens to valueChanged.
+            UnregisterValueChange();
+
+            m_EditedCell = cell;
+
+            if (m_EditedCell != null)
+            {
+                RegisterValueChange(m_EditedCell);
+            }
+        }
+
+        void OnKeyDown(KeyDownEvent evt)
+        {
+            m_LastEventIsUndo = false;
+        }
+
+        void OnUndoRedoEvent(in UndoRedoInfo info)
+        {
+            m_LastEventIsUndo = true;
+            Refresh();
+        }
+
+        bool RegisterMaterialProperty(SearchTableViewCell cell, MaterialProperty matProp)
+        {
+            var successfulRegistration = true;
+            switch (matProp.propertyType)
+            {
+                case UnityEngine.Rendering.ShaderPropertyType.Color:
+                    RegisterValueChange<Color>(cell);
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Vector:
+                    RegisterValueChange<Vector4>(cell);
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Float:
+                    RegisterValueChange<float>(cell);
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Texture:
+                    RegisterValueChange<UnityEngine.Object>(cell);
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Range:
+                    RegisterValueChange<float>(cell);
+                    break;
+                default:
+                    successfulRegistration = false;
+                    break;
+            }
+            return successfulRegistration;
+        }
+
+        bool RegisterSerializedProperty(SearchTableViewCell cell, SerializedProperty prop)
+        {
+            var successfulRegistration = true;
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                {
+                    RegisterValueChange<int>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Boolean:
+                {
+                    RegisterValueChange<bool>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Float:
+                {
+                    RegisterValueChange<float>(cell);
+                    break;
+                }
+                case SerializedPropertyType.String:
+                {
+                    RegisterValueChange<string>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Enum:
+                {
+                    // Note: PropertyField emit ValueChanged on string and NOT on Enum.
+                    RegisterValueChange<string>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Color:
+                {
+                    RegisterValueChange<Color>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Vector2:
+                {
+                    RegisterValueChange<Vector2>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Vector3:
+                {
+                    RegisterValueChange<Vector3>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Vector4:
+                {
+                    RegisterValueChange<Vector4>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Quaternion:
+                {
+                    RegisterValueChange<Quaternion>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Vector2Int:
+                {
+                    RegisterValueChange<Vector2Int>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Vector3Int:
+                {
+                    RegisterValueChange<Vector3Int>(cell);
+                    break;
+                }
+                case SerializedPropertyType.BoundsInt:
+                {
+                    RegisterValueChange<BoundsInt>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Bounds:
+                {
+                    RegisterValueChange<Bounds>(cell);
+                    break;
+                }
+                case SerializedPropertyType.Rect:
+                {
+                    RegisterValueChange<Rect>(cell);
+                    break;
+                }
+                case SerializedPropertyType.RectInt:
+                {
+                    RegisterValueChange<RectInt>(cell);
+                    break;
+                }
+                case SerializedPropertyType.ObjectReference:
+                {
+                    RegisterValueChange<UnityEngine.Object>(cell);
+                    break;
+                }
+                case SerializedPropertyType.LoadableObjectId:
+                {
+                    RegisterValueChange<UnityEngine.Object>(cell);
+                    break;
+                }
+                default:
+                    successfulRegistration = false;
+                    break;
+            }
+            return successfulRegistration;
+        }
+
+        bool RegisterValueChange(SearchTableViewCell cell, Type t, object value)
+        {
+            var successfulRegistration = true;
+            if (t == typeof(SerializedProperty))
+            {
+                var prop = (SerializedProperty)value;
+                return RegisterSerializedProperty(cell, prop);
+            }
+            else if (t == typeof(MaterialProperty))
+            {
+                var matProp = (MaterialProperty)value;
+                return RegisterMaterialProperty(cell, matProp);
+            }
+            else if (t == typeof(bool))
+            {
+                RegisterValueChange<bool>(cell);
+            }
+            else if (t == typeof(int))
+            {
+                RegisterValueChange<int>(cell);
+            }
+            else if (t == typeof(float))
+            {
+                RegisterValueChange<float>(cell);
+            }
+            else if (t == typeof(double))
+            {
+                RegisterValueChange<double>(cell);
+            }
+            else if (t == typeof(uint))
+            {
+                RegisterValueChange<uint>(cell);
+            }
+            else if (t == typeof(string))
+            {
+                RegisterValueChange<string>(cell);
+            }
+            else if (t == typeof(Color))
+            {
+                RegisterValueChange<Color>(cell);
+            }
+            else if (t.IsEnum)
+            {
+                RegisterValueChange<Enum>(cell);
+            }
+            else if (typeof(UnityEngine.Object).IsAssignableFrom(t))
+            {
+                RegisterValueChange<UnityEngine.Object>(cell);
+            }
+            else if (t == typeof(Vector2))
+            {
+                RegisterValueChange<Vector2>(cell);
+            }
+            else if (t == typeof(Vector3))
+            {
+                RegisterValueChange<Vector3>(cell);
+            }
+            else if (t == typeof(Vector4))
+            {
+                RegisterValueChange<Vector4>(cell);
+            }
+            else if (t == typeof(Rect))
+            {
+                RegisterValueChange<Rect>(cell);
+            }
+            else if (t == typeof(RectInt))
+            {
+                RegisterValueChange<RectInt>(cell);
+            }
+            else if (t == typeof(AnimationCurve))
+            {
+                RegisterValueChange<AnimationCurve>(cell);
+            }
+            else if (t == typeof(Bounds))
+            {
+                RegisterValueChange<Bounds>(cell);
+            }
+            else if (t == typeof(BoundsInt))
+            {
+                RegisterValueChange<BoundsInt>(cell);
+            }
+            else if (t == typeof(Gradient))
+            {
+                RegisterValueChange<Gradient>(cell);
+            }
+            else if (t == typeof(Quaternion))
+            {
+                RegisterValueChange<Quaternion>(cell);
+            }
+            else if (t == typeof(Vector2Int))
+            {
+                RegisterValueChange<Vector2Int>(cell);
+            }
+            else if (t == typeof(Vector3Int))
+            {
+                RegisterValueChange<Vector3Int>(cell);
+            }
+            else if (t == typeof(Hash128))
+            {
+                RegisterValueChange<Hash128>(cell);
+            }
+            else
+            {
+                successfulRegistration = false;
+            }
+            return successfulRegistration;
+        }
+
+        void RegisterValueChange<T>(SearchTableViewCell cell)
+        {
+            cell.RegisterCallback<ChangeEvent<T>>(OnValueChanged);
+            m_StopListening = _cell =>
+            {
+                _cell.UnregisterCallback<ChangeEvent<T>>(OnValueChanged);
+            };
+        }
+
+        void RegisterValueChangeAllTypes(SearchTableViewCell cell)
+        {
+            // This is used as a fallback case if we cannot determine the valueType of a cell (because its value might be null)
+            cell.RegisterCallback<ChangeEvent<SerializedProperty>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<bool>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<int>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<float>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<double>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<string>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<uint>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Color>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<UnityEngine.Object>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Enum>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Vector2>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Vector3>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Vector4>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Rect>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<AnimationCurve>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Bounds>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Gradient>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Quaternion>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Vector2Int>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<RectInt>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<BoundsInt>>(OnValueChanged);
+            cell.RegisterCallback<ChangeEvent<Hash128>>(OnValueChanged);
+
+            m_StopListening = UnregisterValueChangeAllTypes;
+        }
+
+        void RegisterValueChange(SearchTableViewCell cell)
+        {
+            cell.isEditingCell = true;
+
+            if (cell.searchColumn.drawer != null)
+                return;
+
+            var currentValue = cell.GetValue();
+            if (currentValue != null)
+            {
+                if (!RegisterValueChange(cell, currentValue.GetType(), currentValue))
+                    RegisterValueChangeAllTypes(cell);
+            }
+            else
+            {
+                RegisterValueChangeAllTypes(cell);
+            }
+        }
+
+        private SearchTableViewCell FindCell(VisualElement target)
+        {
+            return target.GetFirstAncestorOfType<SearchTableViewCell>();
+        }
+
+        private void OnValueChanged<ValueType>(ChangeEvent<ValueType> evt)
+        {
+            // IMPORTANT NOTE: OnValueChanged triggers at any time the model changes: undo/redo, user interaction, properties modifed through scripting.
+            // In our cases we want to react to ValueChanged ONLY when a cell is being interacted by a user (to provide multi edit)
+            
+            if (m_LastEventIsUndo)
+            {
+                // ValueChanged trigger through undo: refuse it.
+                m_LastEventIsUndo = false;
+                return;
+            }
+
+            // If no editedCell: user has NOT interacted with the cell. Do not call SetValue (or else it could trigger multi-edit).
+            if (m_EditedCell != null && m_EditedCell.SetValue(evt.newValue))
+            {
+                evt.StopPropagation();
+                cellValueChanged?.Invoke(this, m_EditedCell, evt.newValue);
+            }
+        }
+
+        void UnregisterValueChangeAllTypes(SearchTableViewCell cell)
+        {
+            cell.UnregisterCallback<ChangeEvent<SerializedProperty>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<bool>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<int>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<float>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<double>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<string>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<uint>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Color>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<UnityEngine.Object>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Enum>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Vector2>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Vector3>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Vector4>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Rect>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<AnimationCurve>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Bounds>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Gradient>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Quaternion>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Vector2Int>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<RectInt>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<BoundsInt>>(OnValueChanged);
+            cell.UnregisterCallback<ChangeEvent<Hash128>>(OnValueChanged);
+        }
+
+        void UnregisterValueChange()
+        {
+            if (m_EditedCell == null)
+                return;
+
+            m_EditedCell.isEditingCell = false;
+            m_StopListening?.Invoke(m_EditedCell);
+            m_StopListening = null;
+        }
+        #endregion
 
         protected override void OnGroupChanged(string prevGroupId, string newGroupId)
         {
             OnSortColumn();
             base.OnGroupChanged(prevGroupId, newGroupId);
+        }
+
+        ItemCellDescriptor GetCellDescriptor(SearchTableViewCell cell)
+        {
+            if (cell == null)
+                return default;
+            var item = cell.GetItem();
+            if (item == null || cell.rowIndex == -1)
+                return default;
+            var column = cell.searchColumn;
+            if (column == null)
+                return default;
+            return new ItemCellDescriptor
+            {
+                itemId = item.id,
+                itemProvider = item.provider.id,
+                columnId = column.GetHashCode()
+            };
+        }
+
+        static ItemCellDescriptor k_InvalidDescriptor = new();
+
+        SearchTableViewCell GetCell(ItemCellDescriptor descriptor)
+        {
+            if (!descriptor.valid)
+                return null;
+            var cell = m_ListView.Q<SearchTableViewCell>(descriptor.cellItemId);
+            if (cell != null)
+                return cell;
+            return null;
+        }
+
+        internal SearchTableViewCell GetCell(Vector2Int coord)
+        {
+            if (coord.x == -1 || coord.y == -1)
+                return null;
+            var row = m_ListView.GetRootElementForIndex(coord.x);
+            if (row == null || coord.y >= row.childCount)
+                return null;
+            var columnIndex = coord.y;
+            foreach (var rowItem in row.children)
+            {
+                if (columnIndex == 0)
+                {
+                    var cell = rowItem.Q<SearchTableViewCell>();
+                    return cell;
+                }
+                columnIndex--;
+            }
+            return null;
+        }
+        
+        protected override void UpdateView()
+        {
+            m_LastEventIsUndo = false;
+            if (UpdateNeeded == false)
+                return;
+
+            if (m_EditedCellDescriptor.valid)
+            {
+                base.UpdateView();
+
+                // Trying to restore edited cell that fails previously because Search wasn't completed.
+
+                var tryEditedCell = GetCell(m_EditedCellDescriptor);
+                if (tryEditedCell != null)
+                {
+                    SetEditedCell(tryEditedCell);
+                    m_EditedCellDescriptor = k_InvalidDescriptor;
+                }
+                else if (!m_ViewModel.context.searchInProgress)
+                {
+                    // Bailing out. Search is complete and we cannot reset the edited cell.
+                    m_EditedCellDescriptor = k_InvalidDescriptor;
+                }
+            }
+            else
+            {
+                m_EditedCellDescriptor = k_InvalidDescriptor;
+
+                if (m_EditedCell != null)
+                {
+                    // Since the cells will all be re bound and the editedCell might be recycled:
+                    // Remove edited Cell
+                    // Keep its "coord"
+                    // Try to restore the edited cell after refresh.
+
+                    var editedCellDescriptor = GetCellDescriptor(m_EditedCell);
+                    SetEditedCell(null);
+                    base.UpdateView();
+                    var tryEditedCell = GetCell(editedCellDescriptor);
+                    if (tryEditedCell != null)
+                    {
+                        // Everything is working according to plan
+                        SetEditedCell(tryEditedCell);
+                    }
+                    else if (m_ViewModel.context.searchInProgress && editedCellDescriptor.valid)
+                    {
+                        // We cannot find the cell at these coord BUT search is in progress. Try to postpone resetting this.
+                        m_EditedCellDescriptor = editedCellDescriptor;
+                    }
+                    else
+                    {
+                        // Bailing out. Search is complete and we cannot reset the edited cell.
+                        m_EditedCellDescriptor = k_InvalidDescriptor;
+                    }
+                }
+                else
+                {
+                    base.UpdateView();
+                }
+            }
         }
 
         public IEnumerable<SearchItem> GetElements()
@@ -468,9 +1031,12 @@ namespace UnityEditor.Search
             var oldColumns = tableConfig.columns ?? Array.Empty<SearchColumn>();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var uniqueColumns = newColumns.Where(newColumn => Array.TrueForAll(oldColumns, c => c.selector != newColumn.selector)).ToList();
-#pragma warning restore UA2001
             if (uniqueColumns.Count == 0)
+            {
+                Debug.LogWarning($"Column already exists in table view: {string.Join(",", newColumns.Select(c => c.ToString()))}");
                 return;
+            }
+            #pragma warning restore UA2001
 
             var searchColumns = new List<SearchColumn>(oldColumns);
             if (insertColumnAt == -1)

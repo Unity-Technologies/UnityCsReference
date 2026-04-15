@@ -8,11 +8,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Serialization;
+using Unity.Loading;
 
 using UnityObject = UnityEngine.Object;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using RefId = System.Int64;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -94,8 +96,8 @@ namespace UnityEditor
         // GUID value
         GUID = 28,
 
-        // LoadableReference value
-        LoadableReference = 29
+        // LoadableObjectId value
+        LoadableObjectId = 29
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -371,7 +373,7 @@ namespace UnityEditor
                     case SerializedPropertyType.Hash128: return hash128Value;
                     case SerializedPropertyType.GUID: return guidValue;
                     case SerializedPropertyType.EntityId: return entityIdValue;
-                    case SerializedPropertyType.LoadableReference: return loadableReferenceValue;
+                    case SerializedPropertyType.LoadableObjectId: return loadableObjectIdValue;
 
                     default:
                         throw new NotSupportedException(string.Format("The boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -460,7 +462,7 @@ namespace UnityEditor
                         case SerializedPropertyType.Hash128: hash128Value = (Hash128)value; break;
                         case SerializedPropertyType.GUID: guidValue = (GUID)value; break;
                         case SerializedPropertyType.EntityId: entityIdValue = (EntityId)value; break;
-                        case SerializedPropertyType.LoadableReference: loadableReferenceValue = (LoadableReference)value; break;
+                        case SerializedPropertyType.LoadableObjectId: loadableObjectIdValue = (LoadableObjectId)value; break;
 
                         default: // FixedBufferSize is read-only
                             throw new NotSupportedException(string.Format("Set on boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -1230,11 +1232,11 @@ namespace UnityEditor
         [NativeName("SetAnimationCurveValue")]
         private extern void SetAnimationCurveValueInternal(AnimationCurve value);
 
-        [NativeName("GetLoadableReferenceValue")]
-        private extern LoadableReference GetLoadableReferenceValueInternal();
+        [NativeName("GetLoadableObjectIdValue")]
+        private extern LoadableObjectId GetLoadableObjectIdValueInternal();
 
-        [NativeName("SetLoadableReferenceValue")]
-        private extern void SetLoadableReferenceValueInternal(LoadableReference value);
+        [NativeName("SetLoadableObjectIdValue")]
+        private extern void SetLoadableObjectIdValueInternal(LoadableObjectId value);
 
         // Value of a gradient property.
         public Gradient gradientValue
@@ -1819,17 +1821,17 @@ namespace UnityEditor
             }
         }
 
-        internal LoadableReference loadableReferenceValue
+        internal LoadableObjectId loadableObjectIdValue
         {
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return (LoadableReference)GetLoadableReferenceValueInternal();
+                return (LoadableObjectId)GetLoadableObjectIdValueInternal();
             }
             set
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                SetLoadableReferenceValueInternal(value);
+                SetLoadableObjectIdValueInternal(value);
             }
         }
 
@@ -2130,13 +2132,13 @@ namespace UnityEditor
             return StringValueEquals(value);
         }
 
-        [NativeName("LoadableReferenceValueEquals")]
-        extern private bool LoadableReferenceValueEquals(LoadableReference value);
+        [NativeName("LoadableObjectIdValueEquals")]
+        extern private bool LoadableObjectIdValueEquals(LoadableObjectId value);
 
-        internal bool ValueEquals(LoadableReference value)
+        internal bool ValueEquals(LoadableObjectId value)
         {
             Verify(VerifyFlags.IteratorNotAtEnd);
-            return LoadableReferenceValueEquals(value);
+            return LoadableObjectIdValueEquals(value);
         }
 
         internal bool unsafeMode {get; set; }
@@ -2175,6 +2177,51 @@ namespace UnityEditor
         {
             public static IntPtr ConvertToNative(SerializedProperty prop) => prop.m_NativePropertyPtr;
             public static SerializedProperty ConvertToManaged(IntPtr ptr) => new SerializedProperty(ptr);
+        }
+
+        // This character will never appear in a C# enum name so is used in cases where both a display name and underlying C# name are encoded together
+        // Must match the same constant in SerializedPropertyEnumHelper.cpp file!
+        private const char CUSTOM_DISPLAYNAME_TOKEN = '|';
+
+        private static string EncodeInspectorNameAttributeIfSpecified(FieldInfo fi)
+        {
+            var inspectorNameAttr = fi.GetCustomAttribute<InspectorNameAttribute>();
+            if (inspectorNameAttr == null)
+                return fi.Name;
+
+            // Label needs to be retrieved from the InspectorNameAttribute.displayName field
+            var displayName = inspectorNameAttr.displayName;
+
+            // Record both names with a simple, easy to parse syntax
+            // Note: This is a bit hacky and potentially better represented by a more explicit data structure. But inspectorNameAttribute is rare
+            // and using a data structure that is identical to VariableParameterMap keeps things simpler in higher layer code
+            return $"{CUSTOM_DISPLAYNAME_TOKEN}{fi.Name}{CUSTOM_DISPLAYNAME_TOKEN}{displayName}";
+        }
+
+        internal unsafe struct ExtractEnumValuesFromEnumCallbackData
+        {
+            // Note: the delegate signature must match AddEnumNameAndValueToCache method in SerializedPropertyEnumHelper.cpp file.
+            // We use SInt64 to pass enum value
+            public delegate* unmanaged[Cdecl]<ushort*, int, long, IntPtr, void> AddEnumNameAndValueToCacheCallback;
+            public IntPtr Context;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void ExtractEnumValuesFromEnum(Type type, IntPtr callbackDataPtr)
+        {
+            var callbackData = (ExtractEnumValuesFromEnumCallbackData*)callbackDataPtr;
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            foreach (var fi in fields)
+            {
+                var enumName = EncodeInspectorNameAttributeIfSpecified(fi);
+                var enumValueObj = fi.GetValue(null);
+                var enumValue = Convert.ToInt64(enumValueObj);
+
+                fixed (char* enumNamePtr = enumName)
+                {
+                    callbackData->AddEnumNameAndValueToCacheCallback((ushort*)enumNamePtr, enumName.Length, enumValue, callbackData->Context);
+                }
+            }
         }
     }
 }

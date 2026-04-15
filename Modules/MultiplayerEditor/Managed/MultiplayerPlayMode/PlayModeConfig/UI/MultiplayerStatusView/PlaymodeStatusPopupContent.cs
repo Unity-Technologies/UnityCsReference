@@ -13,8 +13,7 @@ using UnityEditor.Multiplayer.Internal;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     /// <summary>
-    /// The content of the status window that is shown, when a user clicks
-    /// <see cref="MultiplayerPlayModeStatusButton"/>
+    /// The content of the status window that is shown when a user clicks the status dropdown
     /// </summary>
     class PlaymodeStatusPopupContent : PopupWindowContent
     {

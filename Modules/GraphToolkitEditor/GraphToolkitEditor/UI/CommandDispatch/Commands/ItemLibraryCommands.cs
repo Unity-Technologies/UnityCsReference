@@ -404,7 +404,7 @@ namespace Unity.GraphToolkit.Editor
                         {
                             // Variable node should not be selected, their declaration should be (which is done in GraphVariablesObserver)
                             if (variableNode.VariableDeclarationModel.IsRenamable())
-                                graphUpdater.MarkForRename(createdElement);
+                                graphUpdater.MarkForRename(variableDeclaration);
 
                             // When a variable node is created on the graph with the "Create Variable" item,
                             // it should be expanded in the bb for the user to change its type more easily if needed

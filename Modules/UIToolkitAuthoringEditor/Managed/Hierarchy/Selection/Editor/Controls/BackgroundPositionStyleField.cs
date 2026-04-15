@@ -60,7 +60,7 @@ namespace Unity.UIToolkit.Editor
         static readonly string IconPath =  "UIToolkit/Icons";
         public static readonly string BackgroundPositionFieldName = "position";
         public static readonly string BackgroundPositionAlignFieldName = "align";
-        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
+        public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
 
         static readonly string BackgroundPositionXLeftTooltip = "Aligns the background image to the left side.";
         static readonly string BackgroundPositionXCenterTooltip = "Centers the background image horizontally.";

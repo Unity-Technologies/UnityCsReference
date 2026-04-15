@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     abstract class AtlasBase
     {
         public virtual bool TryGetAtlas(VisualElement ctx, Texture2D src, out TextureId atlas, out RectInt atlasRect)
@@ -133,6 +135,7 @@ namespace UnityEngine.UIElements
     /// </returns>
     public delegate bool DynamicAtlasCustomFilter(Texture2D texture, ref DynamicAtlasFilters filtersToApply);
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class DynamicAtlas : AtlasBase
     {
         internal class TextureInfo : LinkedPoolItem<TextureInfo>

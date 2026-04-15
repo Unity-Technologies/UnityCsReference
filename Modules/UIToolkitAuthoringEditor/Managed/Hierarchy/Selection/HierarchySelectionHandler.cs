@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -76,7 +77,9 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
 
         if (instance is VisualElementSelection visualElementSelection)
         {
+            visualElementSelection.Element?.ClearSelectionObject();
             visualElementSelection.Element = element;
+            element.SetSelectionObject(visualElementSelection);
         }
 
         SelectionMapping[element] = new RefCountedSelection(instance, 1);
@@ -94,6 +97,7 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
                     Object.DestroyImmediate(refCounted.SelectionObject);
                 }
                 SelectionMapping.Remove(element);
+                element.ClearSelectionObject();
                 return true;
             }
 
@@ -119,6 +123,7 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
         }
 
         var veSelection = Acquire<VisualElementSelection>(element);
+        element.SetSelectionObject(veSelection);
         veSelection.EditFlags = m_Manager?.GetEditFlags(element) ?? VisualElementEditFlags.None;
         veSelection.Element = element;
         return veSelection.GetEntityId();
@@ -131,6 +136,7 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
             element.ClearProperty(VisualElementRemapper.k_PanelComponentId);
         }
         Release(element);
+        element.ClearSelectionObject();
     }
 
    public void Remap(List<VisualElementRemap> remappings)

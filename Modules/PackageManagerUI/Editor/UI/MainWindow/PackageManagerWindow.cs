@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
 using UnityEditor.PackageManager.UI.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -39,6 +40,7 @@ namespace UnityEditor.PackageManager.UI
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal class PackageManagerWindow : EditorWindow
     {

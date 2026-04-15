@@ -184,14 +184,8 @@ namespace UnityEditor.Profiling
         [Obsolete("Deprecated, use GetItemMergedSamplesEntityId instead. This method will be removed in a future version.", true)]
         public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
         {
-            if (outInstanceIds == null)
-                throw new ArgumentNullException(nameof(outInstanceIds));
-
-            GetItemMergedSamplesInstanceIDInternal(id, outInstanceIds);
+            throw new NotSupportedException("Deprecated, use GetItemMergedSamplesEntityId instead.");
         }
-
-        [NativeMethod("GetItemMergedSamplesInstanceID", IsThreadSafe = true)]
-        extern void GetItemMergedSamplesInstanceIDInternal(int id, List<int> outInstanceIds);
 
         public void GetItemMergedSamplesEntityId(int id, List<EntityId> outEntityIds)
         {

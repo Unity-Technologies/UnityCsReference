@@ -56,8 +56,8 @@ namespace UnityEditor
                 ? HandleUtility.FindSelectionBaseForPicking(trs)
                 : null;
             // Selection base is only interesting if it's not the topmost
-            PickingObject selectionBase = new PickingObject(pickingBase);
-            PickingObject first = selectionBase.target == null ? topmost : selectionBase;
+            PickingObject selectionBase = new PickingObject(pickingBase != null ? pickingBase.GetEntityId() : EntityId.None);
+            PickingObject first = selectionBase.targetId == EntityId.None ? topmost : selectionBase;
             int topmostHash = topmost.GetHashCode();
             int prefixHash = topmostHash;
 
@@ -76,13 +76,13 @@ namespace UnityEditor
                 // Return selection base if exists and is not already selected, otherwise topmost game object
                 s_PreviousTopmostHash = topmostHash;
                 s_PreviousPrefixHash = prefixHash;
-                return Selection.activeObject == selectionBase.target ? topmost : first;
+                return Selection.activeEntityId == selectionBase.targetId ? topmost : first;
             }
 
             s_PreviousTopmostHash = topmostHash;
 
             // Pick potential selection base before topmost game object
-            if (Selection.activeObject == selectionBase.target)
+            if (Selection.activeEntityId == selectionBase.targetId)
             {
                 if (prefixHash == s_PreviousPrefixHash)
                     return topmost;
@@ -91,15 +91,15 @@ namespace UnityEditor
             }
 
             s_ActiveObjectFilter.Clear();
-            s_ActiveObjectFilter.Add((PickingObject)Selection.activeObject);
+            s_ActiveObjectFilter.Add((PickingObject)Selection.activeObject.GetEntityId());
 
             // Check if active game object will appear in selection stack
             PickingObject picked = HandleUtility.PickObject(mousePosition, false, null, s_ActiveObjectFilter);
 
-            if (picked == ((PickingObject)Selection.activeObject))
+            if (picked == ((PickingObject)Selection.activeEntityId))
             {
                 // Advance enumerator to active game object
-                while (enumerator.Current != ((PickingObject)Selection.activeObject))
+                while (enumerator.Current != ((PickingObject)Selection.activeEntityId))
                 {
                     if (!enumerator.MoveNext())
                     {
@@ -153,13 +153,25 @@ namespace UnityEditor
             {
                 PickingObject res = HandleUtility.PickObject(position, false, ignore, null);
 
-                if (res.target == null)
+                if (res.targetId == EntityId.None)
                     break;
 
                 if (res.TryGetGameObject(out var go) && SceneVisibilityManager.instance.IsPickingDisabled(go))
                 {
                     ignore.Add(res);
                     continue;
+                }
+                // Handle entities: if this authoring object has an associated entity,
+                // add the entity to the overlapping/ignore lists for proper pick cycling
+                if (res.TryGetObject(out var obj))
+                {
+                    var entityId = HandleUtility.GetEntityForAuthoringObject(obj);
+                    if (entityId != EntityId.None)
+                    {
+                        overlapping.Add((PickingObject)entityId);
+                        ignore.Add((PickingObject)entityId);
+                        yield return res;
+                    }
                 }
 
                 // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)

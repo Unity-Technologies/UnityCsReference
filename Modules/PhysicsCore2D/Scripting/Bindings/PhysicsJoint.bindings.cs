@@ -139,6 +139,8 @@ namespace Unity.U2D.Physics
         // PhysicsHingeJoint.
         [NativeMethod(Name = "PhysicsHingeJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsHingeJointDefinition HingeJoint_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsHingeJoint::Create", IsThreadSafe = true)] extern internal static PhysicsHingeJoint HingeJoint_Create(PhysicsWorld world, PhysicsHingeJointDefinition definition);
+        [NativeMethod(Name = "PhysicsHingeJoint::SetEnableUnpinned", IsThreadSafe = true)] extern internal static void HingeJoint_SetEnableUnpinned(PhysicsHingeJoint joint, bool enableUnpinned);
+        [NativeMethod(Name = "PhysicsHingeJoint::GetEnableUnpinned", IsThreadSafe = true)] extern internal static bool HingeJoint_GetEnableUnpinned(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetEnableSpring", IsThreadSafe = true)] extern internal static void HingeJoint_SetEnableSpring(PhysicsHingeJoint joint, bool enableSpring);
         [NativeMethod(Name = "PhysicsHingeJoint::GetEnableSpring", IsThreadSafe = true)] extern internal static bool HingeJoint_GetEnableSpring(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::SetSpringFrequency", IsThreadSafe = true)] extern internal static void HingeJoint_SetSpringFrequency(PhysicsHingeJoint joint, float springFrequency);

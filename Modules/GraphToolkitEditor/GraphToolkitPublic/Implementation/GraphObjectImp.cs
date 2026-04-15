@@ -50,6 +50,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override void OnEnable()
         {
+            PublicGraphFactory.EnsureStaticConstructorIsCalled();
+
             if (s_LoadingGraphObjectFromFileOnDisk)
                 return;
 

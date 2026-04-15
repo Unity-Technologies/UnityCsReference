@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Loading
+namespace Unity.Loading
 {
 
     // Record the mapping from Loadable's guid to the serialized file + LFID for the root of that Asset.

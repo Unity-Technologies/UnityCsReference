@@ -18,18 +18,18 @@ namespace Unity.Loading
     /// <summary>
     /// Base class for asynchronous object load operations from content directories.
     /// </summary>
-    /*UCBP-PUBLIC*/ internal abstract class ObjectLoadOperationBase : IEnumerator
+    internal abstract class ObjectLoadOperationBase : IEnumerator
     {
         protected ContentLoadingSystem.ResourceOperationHandle m_OperationHandle;
-        protected LoadableReference m_loadableReferenceId;
+        protected LoadableObjectId m_loadableObjectId;
 
         protected bool m_IsDone;
         protected bool m_Success;
 
         [ExcludeFromDocs]
-        internal ObjectLoadOperationBase(LoadableReference loadableReferenceId, ContentLoadingSystem.ResourceOperationHandle operationHandle)
+        internal ObjectLoadOperationBase(LoadableObjectId loadableObjectId, ContentLoadingSystem.ResourceOperationHandle operationHandle)
         {
-            m_loadableReferenceId = loadableReferenceId;
+            m_loadableObjectId = loadableObjectId;
             m_OperationHandle = operationHandle;
             m_IsDone = false;
             m_Success = false;
@@ -88,7 +88,7 @@ namespace Unity.Loading
     /// Asynchronous operation for loading an object of a specific type from a content directory.
     /// </summary>
     /// <typeparam name="T">The type of object to load, must inherit from UnityEngine.Object.</typeparam>
-    /*UCBP-PUBLIC*/ internal sealed class ObjectLoadOperation<T> : ObjectLoadOperationBase where T : UnityEngine.Object
+    internal sealed class ObjectLoadOperation<T> : ObjectLoadOperationBase where T : UnityEngine.Object
     {
         private T m_Result;
         private Action<ObjectLoadOperation<T>> m_Completed;
@@ -96,8 +96,8 @@ namespace Unity.Loading
         private bool m_HasBeenAwaited;
 
         [ExcludeFromDocs]
-        internal ObjectLoadOperation(LoadableReference loadableReferenceId, ContentLoadingSystem.ResourceOperationHandle operationHandle)
-            : base(loadableReferenceId, operationHandle)
+        internal ObjectLoadOperation(LoadableObjectId loadableObjectId, ContentLoadingSystem.ResourceOperationHandle operationHandle)
+            : base(loadableObjectId, operationHandle)
         {
             m_Result = null;
             m_CompletionSource = new AwaitableCompletionSource<T>();
@@ -139,9 +139,9 @@ namespace Unity.Loading
         {
             if (m_HasBeenAwaited)
             {
-                throw new Exception($"ObjectLoadOperation<{typeof(T).Name}> for {m_loadableReferenceId} is being awaited multiple times. " +
-                    "Awaiting the same operation more than once is not supported and may lead to unexpected behavior. " +
-                    "Use the 'result' property to access the loaded object after the first await completes.");
+                throw new Exception($"ObjectLoadOperation<{typeof(T).Name}> for {m_loadableObjectId} is being awaited multiple times. " +
+                                    "Awaiting the same operation more than once is not supported and may lead to unexpected behavior. " +
+                                    "Use the 'result' property to access the loaded object after the first await completes.");
             }
             m_HasBeenAwaited = true;
 
@@ -157,25 +157,25 @@ namespace Unity.Loading
             {
                 if (untypedResult != null)
                 {
-                    Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableReferenceId} cannot cast the loaded object to <{typeof(T)}>. The loaded object has type {untypedResult.GetType()}");
+                    Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableObjectId} cannot cast the loaded object to <{typeof(T)}>. The loaded object has type {untypedResult.GetType()}");
                 }
                 else
                 {
-                    Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableReferenceId} cannot be loaded. The asset might not exist in the build or it has already been released.");
+                    Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableObjectId} cannot be loaded. The asset might not exist in the build or it has already been released.");
                 }
             }
 
             m_IsDone = true;
             m_Success = m_Result != null;
 
-            ContentLoadingSystem.DebugLog($"ObjectLoadOperation<{typeof(T).Name}> completed: handle=0x{m_OperationHandle.value:X}, success={m_Success}, ref={m_loadableReferenceId}");
+            ContentLoadingSystem.DebugLog($"ObjectLoadOperation<{typeof(T).Name}> completed: handle=0x{m_OperationHandle.value:X}, success={m_Success}, ref={m_loadableObjectId}");
             try
             {
                 m_Completed?.Invoke(this);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableReferenceId} Exception thrown when invoking completed event: {ex}");
+                Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableObjectId} Exception thrown when invoking completed event: {ex}");
             }
 
             m_Completed = null;
@@ -186,7 +186,7 @@ namespace Unity.Loading
             }
             catch (Exception ex)
             {
-                Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableReferenceId} Exception thrown when invoking continuation action: {ex}");
+                Debug.LogError($"{nameof(ObjectLoadOperation<T>)}<{typeof(T)}> {m_loadableObjectId} Exception thrown when invoking continuation action: {ex}");
             }
 
             return m_Success;
@@ -196,7 +196,7 @@ namespace Unity.Loading
     /// <summary>
     /// Asynchronous operation for releasing an object that was loaded from a content directory.
     /// </summary>
-    /*UCBP-PUBLIC*/ internal sealed class ObjectReleaseOperation : IEnumerator
+    internal sealed class ObjectReleaseOperation : IEnumerator
     {
         private ContentLoadingSystem.ResourceOperationHandle m_OperationHandle;
         private bool m_IsDone;
@@ -315,7 +315,7 @@ namespace Unity.Loading
     /// Use <see cref="LoadObjectAsync{T}"/> to load objects asynchronously and
     /// <see cref="ReleaseObjectAsync"/> to release them when no longer needed.
     /// </remarks>
-    /*UCBP-PUBLIC*/ internal static partial class ContentLoadingSystem
+    internal static partial class ContentLoadingSystem
     {
         /// <summary>
         /// Represents a handle to a resource operation in the L1 loading system.
@@ -415,7 +415,7 @@ namespace Unity.Loading
         /// <param name="objectId">Reference to the object to load.</param>
         /// <param name="operationHandle">Receives the handle for this operation, used when releasing the object.</param>
         /// <returns>An operation that completes when the load finishes. Use <see cref="ObjectLoadOperation{T}.result"/>, <see cref="ObjectLoadOperation{T}.completed"/>, or await to get the result.</returns>
-        public static ObjectLoadOperation<T> LoadObjectAsync<T>(LoadableReference objectId, out ResourceOperationHandle operationHandle) where T : UnityEngine.Object
+        public static ObjectLoadOperation<T> LoadObjectAsync<T>(LoadableObjectId objectId, out ResourceOperationHandle operationHandle) where T : UnityEngine.Object
         {
             ObjectLoadOperation<T> operation = null;
             if (!s_Initialized)
@@ -430,7 +430,7 @@ namespace Unity.Loading
                 unsafe
                 {
                     ResourceHandle l0Handle;
-                    LoadableReference reference = objectId;
+                    LoadableObjectId reference = objectId;
                     NativeLoadingSystem.LoadAsync(&reference, &l0Handle, 1, s_ResultBuffer);
 
                     // L1 handle uses the same value as L0 handle

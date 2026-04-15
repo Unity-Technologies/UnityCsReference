@@ -916,6 +916,9 @@
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Cloth\Cloth.deprecated.cs">
+      <Link>Modules\Cloth\Cloth.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ClusterInput\ClusterInput.bindings.cs">
       <Link>Modules\ClusterInput\ClusterInput.bindings.cs</Link>
     </Compile>
@@ -2191,8 +2194,68 @@
     <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs">
       <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs">
+      <Link>Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs">
       <Link>Modules\Scripting\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\ArrayHandleOnStack.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\ArrayMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\ArrayMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BindingsHelpers.bindings.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\BindingsHelpers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableArrayWrapper.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\BlittableArrayWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableListWrapper.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\BlittableListWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\CollectionMarshallerAccessors.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\CollectionMarshallerAccessors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\ExceptionMarshaller.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\ExceptionMarshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\GCHandleMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\GCHandleMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\IntPtrObjectMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\IntPtrObjectMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\ManagedSpanWrapper.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\NativeInvokeLookupHelpers.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\NativeInvokeLookupHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\OutArrayMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\OutArrayMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\ReferenceTypeCreator.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\ReferenceTypeCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\StringMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\StringMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Marshalling\SystemReflectionMarshalling.cs">
+      <Link>Modules\Scripting\Scripting\Marshalling\SystemReflectionMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\MonoPInvokeAttribute.cs">
+      <Link>Modules\Scripting\Scripting\MonoPInvokeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\NoAllocHelpers.bindings.cs">
+      <Link>Modules\Scripting\Scripting\NoAllocHelpers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs">
+      <Link>Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SharedInternals\Attributes.cs">
       <Link>Modules\SharedInternals\Attributes.cs</Link>
@@ -3040,8 +3103,35 @@
     <Compile Include="..\..\Modules\U2DRuntime\Managed\Assembly.cs">
       <Link>Modules\U2DRuntime\Managed\Assembly.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\Geometry.cs">
+      <Link>Modules\U2DRuntime\Managed\Geometry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\U2DRuntime\Managed\Profiler2D.bindings.cs">
       <Link>Modules\U2DRuntime\Managed\Profiler2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\Array.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\Array.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\ArraySlice.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\ArraySlice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\PlanarGraph.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\PlanarGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\Refinery.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\Refinery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\Smoothen.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\Smoothen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\Tessellator.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\Tessellator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\UHull.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\UHull.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\UTess.cs">
+      <Link>Modules\U2DRuntime\Managed\UTess2D\UTess.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\AssemblyInfo.cs">
       <Link>Modules\UIElements\AssemblyInfo.cs</Link>
@@ -3198,6 +3288,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\DictionaryExtensions.cs">
       <Link>Modules\UIElements\Core\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\SortedPairListExtensions.cs">
+      <Link>Modules\UIElements\Core\Collections\SortedPairListExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\CollectionVirtualizationController.cs">
       <Link>Modules\UIElements\Core\Collections\Virtualization\CollectionVirtualizationController.cs</Link>
@@ -3472,9 +3565,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\StyleField\TimeValueField.cs">
       <Link>Modules\UIElements\Core\Controls\StyleField\TimeValueField.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Controls\StyleField\TransformOriginField.cs">
-      <Link>Modules\UIElements\Core\Controls\StyleField\TransformOriginField.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\StyleField\TranslateField.cs">
       <Link>Modules\UIElements\Core\Controls\StyleField\TranslateField.cs</Link>
     </Compile>
@@ -3711,6 +3801,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputSettings.cs">
+      <Link>Modules\UIElements\Core\GameObjects\PanelInputSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelSettings.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelSettings.cs</Link>
@@ -4227,6 +4320,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorHelper.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorLookupEntry.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorLookupEntry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSelectorPart.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleSelectorPart.cs</Link>
@@ -5239,9 +5335,6 @@
     <Compile Include="..\..\Runtime\Export\BurstLike\BurstLike.bindings.cs">
       <Link>Runtime\Export\BurstLike\BurstLike.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs">
-      <Link>Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.bindings.cs">
       <Link>Runtime\Export\Burst\BurstCompilerService.bindings.cs</Link>
     </Compile>
@@ -5740,8 +5833,8 @@
     <Compile Include="..\..\Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs">
       <Link>Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Loadable\LoadableReference.bindings.cs">
-      <Link>Runtime\Export\Loadable\LoadableReference.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Loadable\LoadableObjectId.bindings.cs">
+      <Link>Runtime\Export\Loadable\LoadableObjectId.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Loadable\LoadableSceneId.cs">
       <Link>Runtime\Export\Loadable\LoadableSceneId.cs</Link>
@@ -6145,9 +6238,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\BindingsHelpers.cs">
       <Link>Runtime\Export\Scripting\BindingsHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\BindingsLoader.cs">
-      <Link>Runtime\Export\Scripting\BindingsLoader.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Categorize.cs">
       <Link>Runtime\Export\Scripting\Categorize.cs</Link>
     </Compile>
@@ -6213,9 +6303,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\MonoBehaviour.bindings.cs">
       <Link>Runtime\Export\Scripting\MonoBehaviour.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\NoAllocHelpers.bindings.cs">
-      <Link>Runtime\Export\Scripting\NoAllocHelpers.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\RangeInt.cs">
       <Link>Runtime\Export\Scripting\RangeInt.cs</Link>
@@ -6484,8 +6571,8 @@
     <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.cs">
       <Link>Runtime\Export\Unsafe\UnsafeUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatched.cs">
-      <Link>Runtime\Export\Unsafe\UnsafeUtilityPatched.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatchedForwarder.cs">
+      <Link>Runtime\Export\Unsafe\UnsafeUtilityPatchedForwarder.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\WSA\WSAApplication.bindings.cs">
       <Link>Runtime\Export\WSA\WSAApplication.bindings.cs</Link>
@@ -6657,54 +6744,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs">
       <Link>Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs">
-      <Link>Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\ArrayMarshalling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs">
-      <Link>Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableArrayWrapper.cs">
-      <Link>Runtime\Scripting\Marshalling\BlittableArrayWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableListWrapper.cs">
-      <Link>Runtime\Scripting\Marshalling\BlittableListWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs">
-      <Link>Runtime\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\CollectionMarshallerAccessors.cs">
-      <Link>Runtime\Scripting\Marshalling\CollectionMarshallerAccessors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ExceptionMarshaller.cs">
-      <Link>Runtime\Scripting\Marshalling\ExceptionMarshaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\GCHandleMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\GCHandleMarshalling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
-      <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\NativeInvokeLookupHelpers.cs">
-      <Link>Runtime\Scripting\Marshalling\NativeInvokeLookupHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\OutArrayMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\OutArrayMarshalling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ReferenceTypeCreator.cs">
-      <Link>Runtime\Scripting\Marshalling\ReferenceTypeCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\StringMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\StringMarshalling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs">
-      <Link>Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\Managed\UIModuleHelpURL.cs">
       <Link>Runtime\Transform\Managed\UIModuleHelpURL.cs</Link>

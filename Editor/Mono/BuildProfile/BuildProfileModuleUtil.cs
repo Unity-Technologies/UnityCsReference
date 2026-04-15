@@ -18,6 +18,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 using InternalEditorUtility = UnityEditorInternal.InternalEditorUtility;
 using System.IO;
+using UnityEngine.Events;
 
 namespace UnityEditor.Build.Profile
 {
@@ -805,13 +806,17 @@ namespace UnityEditor.Build.Profile
         /// Create a new custom build profile asset with the user provided name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        public static void CreateNewAssetWithName(GUID platformId, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        public static void CreateNewAssetWithName(
+            GUID platformId, string customProfileName, string preconfiguredSettingsVariantName,
+            int preconfiguredSettingsVariant, string[] packagesToAdd, UnityAction<BuildProfile> onCreate)
         {
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
             BuildProfile.CreateInstance(
                 platformId
                 , GetProfilePathWithProvidedName(platformId, customProfileName, preconfiguredSettingsVariantName)
-                , preconfiguredSettingsVariant, packagesToAdd);
+                , preconfiguredSettingsVariant
+                , packagesToAdd
+                , onCreate);
         }
 
         /// <summary>
@@ -1041,6 +1046,12 @@ namespace UnityEditor.Build.Profile
             BuildTargetDiscovery.BuildPlatformKeyFeatures(platformGuid);
 
         /// <summary>
+        /// Check if the platform has samples in the package manager.
+        /// </summary>
+        public static bool HasSamplesInPackageManager(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformHasSamplesFlag(platformGuid);
+
+        /// <summary>
         /// Get platform resources text.
         /// </summary>
         public static string BuildPlatformResources(GUID platformGuid) =>
@@ -1137,6 +1148,10 @@ namespace UnityEditor.Build.Profile
                     if (ContainsPlayerSetting(settingsRequiringRestart, PlayerSettingsRequiringRestart.VirtualTexturing))
                     {
                         PlayerSettings.SyncVirtualTexturingState(nextPlayerSettings);
+                    }
+                    if (ContainsPlayerSetting(settingsRequiringRestart, PlayerSettingsRequiringRestart.GraphicsAPI))
+                    {
+                        PlayerSettings.SyncSettingsAndCleanSettings();
                     }
 
                     EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
@@ -1239,6 +1254,7 @@ namespace UnityEditor.Build.Profile
                     PlayerSettingsRequiringRestart.ActiveInputHandling => "Active Input Handling",
                     PlayerSettingsRequiringRestart.GraphicsJobs => "Graphics Jobs",
                     PlayerSettingsRequiringRestart.VirtualTexturing => "Virtual Texturing",
+                    PlayerSettingsRequiringRestart.GraphicsAPI => "Graphics API",
                     _ => string.Empty
                 };
                 settingsText.AppendLine(settingPromptText);
@@ -1447,6 +1463,29 @@ namespace UnityEditor.Build.Profile
             }
 
             return stringBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Removes Non-Required sub-assets from Build Profile.
+        /// </summary>
+        public static void RemoveNonRequiredSubAssets(BuildProfile profile)
+        {
+            var path = AssetDatabase.GetAssetPath(profile);
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+            foreach (var asset in subAssets)
+            {
+                if (asset == null || asset == profile)
+                    continue;
+
+                if (Array.IndexOf(profile.requiredComponents, asset) > -1)
+                    continue;
+
+                AssetDatabase.RemoveObjectFromAsset(asset);
+                UnityEngine.Object.DestroyImmediate(asset, true);
+            }
         }
     }
 }

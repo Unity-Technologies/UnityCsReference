@@ -558,6 +558,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         public unsafe void EvaluateChain(
+            EntityId owner,
             RenderChainCommand head,
             Material defaultMat,
             Texture gradientSettings,
@@ -569,7 +570,7 @@ namespace UnityEngine.UIElements.UIR
             bool isRenderingNestedTreeRT,
             ref Exception immediateException)
         {
-            Utility.ProfileDrawChainBegin();
+            Utility.ProfileDrawChainBegin(owner);
 
             bool doBreakBatches = this.breakBatches; // Keeping this on the stack for better performance
 

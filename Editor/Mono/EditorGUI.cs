@@ -28,6 +28,7 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine.Bindings;
+using Unity.Loading;
 
 namespace UnityEditor
 {
@@ -4490,21 +4491,21 @@ namespace UnityEditor
             DoObjectField(position, position, id, objType, property, validator, allowSceneObjects, style);
         }
 
-        private static void LoadableReferenceField(Rect position, SerializedProperty property, GUIContent label)
+        private static void LoadableObjectIdField(Rect position, SerializedProperty property, GUIContent label)
         {
-            Object currentObject = LoadableReferenceEditorUtility.LoadableReferenceToObject(property.loadableReferenceValue);
+            Object currentObject = LoadableObjectIdEditorUtility.LoadableObjectIdToObject(property.loadableObjectIdValue);
 
             BeginChangeCheck();
             Object newObject = ObjectField(position, label, currentObject, typeof(Object), false);
             if (EndChangeCheck())
             {
-                LoadableReference newLoadableRef = LoadableReferenceEditorUtility.ObjectToLoadableReference(newObject);
-                if (newObject != null && !newLoadableRef.isValid)
+                LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.ObjectToLoadableObjectId(newObject);
+                if (newObject != null && !newLoadableObjectId.isValid)
                 {
-                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableReference."));
+                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId."));
                     return;
                 }
-                property.loadableReferenceValue = newLoadableRef;
+                property.loadableObjectIdValue = newLoadableObjectId;
             }
         }
 
@@ -7639,7 +7640,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Hash128:
                 case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
-                case SerializedPropertyType.LoadableReference:
+                case SerializedPropertyType.LoadableObjectId:
                     return false;
             }
 
@@ -7953,9 +7954,9 @@ namespace UnityEditor
                         }
                         break;
                     }
-                    case SerializedPropertyType.LoadableReference:
+                    case SerializedPropertyType.LoadableObjectId:
                     {
-                        LoadableReferenceField(position, property, label);
+                        LoadableObjectIdField(position, property, label);
                         break;
                     }
                     default:

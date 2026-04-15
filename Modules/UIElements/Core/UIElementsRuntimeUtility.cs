@@ -503,7 +503,8 @@ namespace UnityEngine.UIElements
         {
             List<IRuntimePanel> outPanels = new ();
             foreach (var panel in GetSortedPlayerPanels())
-                outPanels.Add((IRuntimePanel)panel);
+                if(panel is IRuntimePanel p)
+                    outPanels.Add(p);
             return outPanels;
         }
 

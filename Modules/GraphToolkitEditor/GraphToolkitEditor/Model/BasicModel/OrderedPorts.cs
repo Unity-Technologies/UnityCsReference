@@ -5,8 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.Assertions;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -16,7 +14,6 @@ namespace Unity.GraphToolkit.Editor
     class OrderedPorts : IReadOnlyDictionary<string, PortModel>, IReadOnlyList<PortModel>
     {
         Dictionary<string, PortModel> m_Dictionary;
-        List<int> m_Order;
         List<PortModel> m_PortModels;
 
         /// <summary>
@@ -26,7 +23,6 @@ namespace Unity.GraphToolkit.Editor
         public OrderedPorts(int capacity = 0)
         {
             m_Dictionary = new Dictionary<string, PortModel>(capacity);
-            m_Order = new List<int>(capacity);
             m_PortModels = new List<PortModel>(capacity);
         }
 
@@ -38,7 +34,6 @@ namespace Unity.GraphToolkit.Editor
         {
             m_Dictionary.Add(portModel.UniqueName, portModel);
             m_PortModels.Add(portModel);
-            m_Order.Add(m_Order.Count);
 
             var graphModel = portModel.NodeModel?.GraphModel;
             graphModel?.PortWireIndex.MarkDirty();
@@ -46,12 +41,6 @@ namespace Unity.GraphToolkit.Editor
 
         public void InsertRange(int index, IReadOnlyList<PortModel> portModels)
         {
-            for (int i = 0; i < m_Order.Count; ++i)
-            {
-                if (m_Order[i] >= index)
-                    m_Order[i] += portModels.Count;
-            }
-
             m_Dictionary.EnsureCapacity(m_Dictionary.Count + portModels.Count);
             m_PortModels.Capacity = m_PortModels.Count + portModels.Count;
 
@@ -59,8 +48,6 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_Dictionary.Add(portModels[i].UniqueName, portModels[i]);
                 m_PortModels.Insert(index + i, portModels[i]);
-
-                m_Order.Insert(index + i, index + i);
             }
         }
 
@@ -114,34 +101,13 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_Dictionary.Remove(uniqueName);
                 found = true;
-                int index = m_PortModels.FindIndex(x => x == portModel);
                 m_PortModels.Remove(portModel);
-                m_Order.Remove(index);
-                for (int i = 0; i < m_Order.Count; ++i)
-                {
-                    if (m_Order[i] > index)
-                        --m_Order[i];
-                }
 
                 var graphModel = portModel.NodeModel?.GraphModel;
                 graphModel?.PortWireIndex.MarkDirty();
             }
 
             return found;
-        }
-
-        /// <summary>
-        /// Exchanges port positions in the container.
-        /// </summary>
-        /// <param name="a">The first port to swap.</param>
-        /// <param name="b">The second port to swap.</param>
-        public void SwapPortsOrder(PortModel a, PortModel b)
-        {
-            int indexA = m_PortModels.IndexOf(a);
-            int indexB = m_PortModels.IndexOf(b);
-            int oldAOrder = m_Order[indexA];
-            m_Order[indexA] = m_Order[indexB];
-            m_Order[indexB] = oldAOrder;
         }
 
         /// <inheritdoc />
@@ -201,16 +167,13 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>An enumerator for the ports stored in the container.</returns>
         IEnumerator<PortModel> IEnumerable<PortModel>.GetEnumerator()
         {
-            Assert.AreEqual(m_Order.Count, m_PortModels.Count, "these lists are supposed to always be of the same size");
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Order.Select(i => m_PortModels[i]).GetEnumerator();
-#pragma warning restore UA2001
+            return m_PortModels.GetEnumerator();
         }
 
         /// <summary>
         /// Gets the port at index.
         /// </summary>
         /// <param name="index">The index.</param>
-        public PortModel this[int index] => m_PortModels[m_Order[index]];
+        public PortModel this[int index] => m_PortModels[index];
     }
 }

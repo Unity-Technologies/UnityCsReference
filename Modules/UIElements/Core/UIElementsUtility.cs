@@ -164,15 +164,15 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void UpdateSchedulers()
         {
-            // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
-            // we make a copy first.
-            s_PanelsIterationList.Clear();
-            UIElementsUtility.GetAllPanels(s_PanelsIterationList, ContextType.Editor);
-
             if (LayoutManager.IsSharedManagerCreated)
             {
                 LayoutManager.SharedManager.Collect();
             }
+
+            // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
+            // we make a copy first.
+            s_PanelsIterationList.Clear();
+            UIElementsUtility.GetAllPanels(s_PanelsIterationList, ContextType.Editor);
 
             foreach (var panel in s_PanelsIterationList)
             {
@@ -265,6 +265,7 @@ namespace UnityEngine.UIElements
         internal static readonly HashSet<string> s_ReimportedStyleSheetsPath = new();
         internal static readonly List<StyleSheet> s_StyleSheetsRebuildList = new();
         internal static readonly List<string> s_ReimportedStyleSheetsPathList = new();
+        internal static bool s_StopRecordingStyleSheetUnloads = false;
 
         internal static void MarkStyleSheetAsChanged(StyleSheet styleSheet)
         {
@@ -282,6 +283,11 @@ namespace UnityEngine.UIElements
             SelectorAccelerationCache.shared.Remove(styleSheetPath);
         }
 
+        internal static void StopRecordingStyleSheetUnloads()
+        {
+            s_StopRecordingStyleSheetUnloads = true;
+        }
+
         internal static void MarkStyleSheetAsLoaded(StyleSheet styleSheet)
         {
             // does nothing currently, but it is the mirror for MarkStyleSheetAsUnloaded()
@@ -289,7 +295,10 @@ namespace UnityEngine.UIElements
 
         internal static void MarkStyleSheetAsUnloaded(StyleSheet styleSheet)
         {
-            SelectorAccelerationCache.shared.Remove(styleSheet);
+            // In some situations (i.e. domain reload), all StyleSheets will be unloaded
+            // We don't want to record those since the cache won't be used anymore
+            if (!s_StopRecordingStyleSheetUnloads)
+                SelectorAccelerationCache.shared.Remove(styleSheet);
         }
 
         static void NotifyPanelsThatStyleSheetChanged(List<StyleSheet> styleSheets, List<string> styleSheetPaths)

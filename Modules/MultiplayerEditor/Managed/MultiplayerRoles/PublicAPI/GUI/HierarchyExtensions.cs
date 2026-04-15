@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEngine;
 using InternalManager = UnityEditor.Multiplayer.Internal.EditorMultiplayerManager;
 using System;
+using Unity.Multiplayer.Internal;
+using UnityEditor.PackageManager;
 
 namespace Unity.Multiplayer.Editor
 {
@@ -15,9 +17,23 @@ namespace Unity.Multiplayer.Editor
         [InitializeOnLoadMethod]
         private static void Initialize()
         {
+            Events.registeredPackages += Reinitialize;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
             EditorApplication.hierarchyWindowItemByEntityIdOnGUI += OnItemGUI;
             InternalManager.enableMultiplayerRolesChanged += OnMultiplayerRolesStateChange;
             InternalManager.activeMultiplayerRoleChanged += OnMultiplayerRolesStateChange;
+        }
+
+        private static void Reinitialize(PackageRegistrationEventArgs args)
+        {
+            Events.registeredPackages -= Reinitialize;
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI -= OnItemGUI;
+            InternalManager.enableMultiplayerRolesChanged -= OnMultiplayerRolesStateChange;
+            InternalManager.activeMultiplayerRoleChanged -= OnMultiplayerRolesStateChange;   
+            Initialize();
         }
 
         private static void OnMultiplayerRolesStateChange()

@@ -16,6 +16,8 @@ namespace Unity.UI.Builder
 
     internal abstract class StyleField<T> : StyleFieldBase
     {
+        public static readonly string VisualInputName = "unity-visual-input";
+
         internal static readonly string s_NoOptionString = "-";
 
         static readonly string s_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleField.uss";
@@ -23,7 +25,6 @@ namespace Unity.UI.Builder
 
         static readonly string s_UssClassName = "unity-style-field";
         static readonly string s_OptionsPopupUssClassName = "unity-style-field__options-popup";
-        static readonly string s_VisualInputName = "unity-visual-input";
         static readonly string s_TextFieldName = "unity-text-field";
         static readonly string s_OptionsPopupContainerName = "unity-options-popup-container";
 
@@ -119,7 +120,7 @@ namespace Unity.UI.Builder
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(s_UxmlPath);
             template.CloneTree(this);
 
-            visualInput = this.Q(s_VisualInputName);
+            visualInput = this.Q(VisualInputName);
             m_TextField = this.Q<TextField>(s_TextFieldName);
             m_TextField.isDelayed = true;
 

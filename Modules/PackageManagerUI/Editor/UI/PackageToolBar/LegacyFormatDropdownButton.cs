@@ -78,7 +78,6 @@ internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMe
         {
             if (version.importedAssets?.Count > 0)
             {
-                SetIcon(Icon.Installed);
                 text = k_InProjectText;
                 mainButton.tooltip = string.Empty;
                 mainButton.SetEnabled(true);
@@ -94,7 +93,6 @@ internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMe
             var mainItem = visibleItems[mainActionIndex];
             clicked += () => mainItem.action.TriggerAction(version);
             text = mainItem.text;
-            SetIcon(mainItem.action.icon);
             mainButton.tooltip = mainItem.tooltip;
             mainButton.SetEnabled((mainItem.state & ActionState.Disabled) == ActionState.None);
         }

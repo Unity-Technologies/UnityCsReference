@@ -9,9 +9,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.PlayMode.Editor
 {
-    /// <summary>PlaymodePopupContent
-    /// Content of the PlaymodePopup that gets shown when the user presses the PlaymodeDropDownButton
-    /// <see cref="PlaymodeDropdownButton"/>
+    /// <summary>
+    /// Content of the PlaymodePopup that gets shown when the user opens the scenario dropdown
     /// </summary>
     class PlaymodePopupContent : PopupWindowContent
     {

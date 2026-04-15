@@ -39,7 +39,6 @@ namespace Unity.UI.Builder
         const string k_2DSpriteEditorInstallationURL =
             "https://docs.unity3d.com/Packages/com.unity.2d.sprite@1.0/manual/index.html";
         const string k_FieldInputName = "unity-visual-input";
-        const string k_AssetStyleFieldContainerName = "unity-asset-reference-style-field-container";
         const string k_AssetStyleFieldContainerClassName = "unity-asset-reference-style-field__container";
         const string k_AssetStyleFieldEditButtonHiddenClassName = "unity-asset-reference-style-field__button--hidden";
 
@@ -57,16 +56,15 @@ namespace Unity.UI.Builder
 
         public AssetReferenceStyleField() : this(null, true, true) {}
 
-        public AssetReferenceStyleField(string label, bool supportImage, bool supportFont) : base(label)
+        public AssetReferenceStyleField(string label, bool supportImage, bool supportFont) : base(label, new VisualElement())
         {
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
-            var fieldContainer = new VisualElement { name = k_AssetStyleFieldContainerName };
-            fieldContainer.AddToClassList(k_AssetStyleFieldContainerClassName);
+
             var fieldInput = this.Q(k_FieldInputName);
             // Move visual input over to field container
-            fieldContainer.Add(fieldInput);
-
-            Add(fieldContainer);
+            visualInput.Add(fieldInput);
+            visualInput.name = StyleField<int>.VisualInputName;
+            visualInput.AddToClassList(k_AssetStyleFieldContainerClassName);
 
             m_SupportsImage = supportImage;
             m_SupportsFont = supportFont;
@@ -85,7 +83,7 @@ namespace Unity.UI.Builder
 
                 var editButton = new Button(OnEditButton) { text = k_2DSpriteEditorButtonString, tooltip = m_2DSpriteEditorButtonTooltip };
                 editButton.RegisterCallback<PointerEnterEvent>(OnEnterEditButton);
-                fieldContainer.Add(editButton);
+                visualInput.Add(editButton);
 
                 var optionsPopup = this.Q<PopupField<string>>();
                 optionsPopup.formatSelectedValueCallback += formatValue =>

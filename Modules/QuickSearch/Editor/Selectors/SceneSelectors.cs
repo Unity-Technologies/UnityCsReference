@@ -89,6 +89,7 @@ namespace UnityEditor.Search
             var go = args.item.ToObject<GameObject>();
             if (!go)
                 return null;
+            Undo.RecordObject(go, "Toggle Active State");
             go.SetActive((bool)args.value);
             return go.activeSelf;
         }

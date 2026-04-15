@@ -345,6 +345,14 @@ namespace UnityEditor
         AlwaysAllowed = 2,
     }
 
+    [Flags]
+    public enum RayTracingFeatureFlags
+    {
+        None = 0,
+        RayTracingShaders = (1 << 0),
+        InlineRayTracing = (1 << 1),
+    }
+
     // Keep in synch with HttpAllowed enum from PlayerSettings.h
     [Flags]
     internal enum HttpAllowed
@@ -385,6 +393,7 @@ namespace UnityEditor
         ActiveInputHandling = 1,
         GraphicsJobs = 2,
         VirtualTexturing = 3,
+        GraphicsAPI = 4,
     }
 
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
@@ -396,7 +405,7 @@ namespace UnityEditor
     [StaticAccessor("GetPlayerSettings()")]
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
-        private PlayerSettings() {}
+        private PlayerSettings() { }
 
         private static SerializedObject _serializedObject;
 
@@ -684,7 +693,7 @@ namespace UnityEditor
         public static extern StereoRenderingPath stereoRenderingPath { get; set; }
 
         [Obsolete("protectGraphicsMemory is deprecated. This field has no effect.", false)]
-        public static bool protectGraphicsMemory { get { return false; } set {} }
+        public static bool protectGraphicsMemory { get { return false; } set { } }
 
         public static extern bool enableFrameTimingStats { get; set; }
         public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
@@ -1246,13 +1255,13 @@ namespace UnityEditor
             switch (level)
             {
                 case EditorAssembliesCompatibilityLevel.NET_Standard:
-                    {
-                        return ApiCompatibilityLevel.NET_Standard_2_0;
-                    }
+                {
+                    return ApiCompatibilityLevel.NET_Standard_2_0;
+                }
                 default:
-                    {
-                        return ApiCompatibilityLevel.NET_Unity_4_8;
-                    }
+                {
+                    return ApiCompatibilityLevel.NET_Unity_4_8;
+                }
             }
         }
 
@@ -1324,7 +1333,7 @@ namespace UnityEditor
         {
             get { return ScriptingRuntimeVersion.Latest; }
 
-            set {}
+            set { }
         }
 
         public static extern bool suppressCommonWarnings
@@ -1358,7 +1367,7 @@ namespace UnityEditor
         public static bool useReferenceAssemblies
         {
             get { return true; }
-            set {}
+            set { }
         }
 
         internal static extern bool gcWBarrierValidation
@@ -1384,7 +1393,7 @@ namespace UnityEditor
         public static string xboxTitleId
         {
             get { return String.Empty; }
-            set {}
+            set { }
         }
 
         // Xbox 360 ImageXex override configuration file path
@@ -1427,7 +1436,7 @@ namespace UnityEditor
         public static bool xboxDeployKinectHeadOrientation
         {
             get { return false; }
-            set {}
+            set { }
         }
 
         // Xbox 360 Kinect Head Position file deployment
@@ -1435,7 +1444,7 @@ namespace UnityEditor
         public static bool xboxDeployKinectHeadPosition
         {
             get { return false; }
-            set {}
+            set { }
         }
 
         // Xbox 360 splash screen
@@ -1449,7 +1458,7 @@ namespace UnityEditor
         public static int xboxAdditionalTitleMemorySize
         {
             get { return 0; }
-            set {}
+            set { }
         }
 
         // Xbox 360 Kinect title flag - if false, the Kinect APIs are inactive
@@ -1675,7 +1684,7 @@ namespace UnityEditor
         public static bool useDirect3D11
         {
             get { return GetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows); }
-            set {}  // setter does nothing; D3D11 is always the fallback
+            set { }  // setter does nothing; D3D11 is always the fallback
         }
 
         internal static extern bool submitAnalytics { get; set; }
@@ -1901,6 +1910,9 @@ namespace UnityEditor
         internal static extern void SyncVirtualTexturingState(PlayerSettings settings);
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SyncSettingsAndCleanSettings();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern PlayerSettingsRequiringRestart[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);
 
         /*
@@ -2006,7 +2018,7 @@ namespace UnityEditor
         [VisibleToOtherModules]
         internal extern bool GetEnableFrameTimingStats_Internal();
 
-        public static extern bool adjustIOSFPSUsingThermalState{ get; set; }
+        public static extern bool adjustIOSFPSUsingThermalState { get; set; }
 
         [NativeMethod("SetAdjustIOSFPSUsingThermalState")]
         [VisibleToOtherModules]
@@ -2017,5 +2029,14 @@ namespace UnityEditor
         internal extern bool GetAdjustIOSFPSUsingThermalState_Internal();
 
         public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
+     
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern RayTracingFeatureFlags GetRayTracingFeaturesSupportForPlatform_Internal(BuildTarget platform, bool checkGraphicsApisList);
+
+        public static RayTracingFeatureFlags GetRayTracingFeaturesSupportForPlatform(BuildTarget platform, bool checkGraphicsApisList)
+        {
+            return GetRayTracingFeaturesSupportForPlatform_Internal(platform, checkGraphicsApisList);
+        }    
     }
 }
+

@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Reporting
     /// </summary>
     /// <seealso cref="ContentSummary.typeStats"/>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
-    /*UCBP-PUBLIC*/ internal struct TypeStats
+    public struct TypeStats
     {
         /// <summary>
         /// The Unity Object type, such as <see cref="Texture2D"/> or <see cref="Mesh"/>.
@@ -47,7 +47,7 @@ namespace UnityEditor.Build.Reporting
     /// </summary>
     /// <seealso cref="ContentSummary.assetStats"/>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
-    /*UCBP-PUBLIC*/ internal struct AssetStats
+    public struct AssetStats
     {
         /// <summary>
         /// The AssetDatabase GUID of the source Asset.
@@ -98,10 +98,17 @@ namespace UnityEditor.Build.Reporting
     /// </remarks>
     /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
     /// <seealso cref="BuildReport"/>
+    /// <example>
+    /// <code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/ContentSummary.cs"/>
+    /// </example>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
     [NativeClass("BuildReporting::ContentSummary")]
-    /*UCBP-PUBLIC*/ internal sealed class ContentSummary : Object
+    public sealed class ContentSummary : Object
     {
+        private ContentSummary()
+        {
+        }
+
         /// <summary>
         /// Total size, in bytes, of the serialized files in the build output.
         /// </summary>

@@ -1080,7 +1080,6 @@ namespace Unity.GraphToolkit.Editor
             // Nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.deleteAndReconnectItem.Name, () => AppendDeleteAndReconnectMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.toggleCollapseItem.Name, () => AppendToggleCollapseMenuItem(evt, selection));
-            menuActionMap.Add(ContextualMenuHelpers.disableNodeItem.Name, () => AppendDisableNodeMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.disconnectAllWiresItem.Name, () => AppendDisconnectAllWiresMenuItem(evt, selection));
             // TODO (GTF-2216): Implement the Edit Subtitle functionality.
             // TODO: Implement the Bypass functionality.
@@ -1516,45 +1515,6 @@ namespace Unity.GraphToolkit.Editor
                     m_DeleteAndReconnectAction.ExecuteAction(this);
                 }, !canDeleteAndReconnect ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
-        }
-
-        void AppendDisableNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
-        {
-            var nodes = new List<AbstractNodeModel>();
-            var willDisable = false;
-            var isContext = true;
-            var isBlock = true;
-
-            foreach (var elementModel in selection)
-            {
-                if (elementModel is not AbstractNodeModel node)
-                    continue;
-
-                // If the graph element cannot be disabled, don't append this menu item.
-                if (!elementModel.IsDisableable())
-                    return;
-
-                // If all nodes are disabled, we set the item name to "Enable nodes". If at least 1 is enabled, we set the item name to "Disable nodes".
-                if (node.State == ModelState.Enabled)
-                    willDisable = true;
-
-                if (node is not ContextNodeModel)
-                    isContext = false;
-
-                if (node is not BlockNodeModel)
-                    isBlock = false;
-
-                nodes.Add(node);
-            }
-
-            var isPlural = nodes.Count > 1;
-            var nodeWord = (isContext ? "Context" : isBlock ? "Block" : "Node") + (isPlural ? "s" : "");
-            evt.menu.AppendAction(L10n.Tr(willDisable ? "Disable " + nodeWord : "Enable " + nodeWord), _ =>
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Dispatch(new ChangeNodeStateCommand(willDisable ? ModelState.Disabled : ModelState.Enabled, nodes.Where(t => t.IsDisableable()).ToList()));
-#pragma warning restore UA2001
-            });
         }
 
         void AppendDisconnectAllWiresMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
@@ -4818,7 +4778,6 @@ namespace Unity.GraphToolkit.Editor
             public void AppendAlignAndDistributeElementsMenuItems(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendAlignAndDistributeElementsMenuItems(evt, selection);
             public void AppendCreateEmptyLocalSubgraph(ContextualMenuPopulateEvent evt) => m_GraphView.AppendCreateEmptyLocalSubgraph(evt);
             public void AppendToggleCollapseMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendToggleCollapseMenuItem(evt, selection);
-            public void AppendDisableNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendDisableNodeMenuItem(evt, selection);
             public void AppendSetAsDefaultStateMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendSetAsDefaultStateMenuItem(evt, selection);
             public void AppendCreateTransitionMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, TransitionSupportKind transitionKind) => m_GraphView.AppendCreateTransitionMenuItem(evt, selection, transitionKind);
             public void AppendCreateLocalSubgraphFromSelectionMenuItem(ContextualMenuPopulateEvent evt) => m_GraphView.AppendCreateLocalSubgraphFromSelectionMenuItem(evt);

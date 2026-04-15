@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -180,24 +181,26 @@ namespace UnityEngine
         public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
 
 
-        public override string ToString() => ((int)(m_rawData & 0xFFFFFFFF)).ToString();
-        public string ToString(string format) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format);
-        public string ToString(string format, IFormatProvider formatProvider) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider);
+        public override string ToString() => m_rawData.ToString(CultureInfo.InvariantCulture);
+        public string ToString(string format) => m_rawData.ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(string format, IFormatProvider formatProvider) => m_rawData.ToString(format, formatProvider);
 
 
 
-        [FreeFunction("AllocateNextLowestEntityId")]
-        internal static extern EntityId AllocateNextLowestEntityId();
+        [FreeFunction("AllocateNextEntityId")]
+        internal static extern EntityId AllocateNextEntityId();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static EntityId Parse(string input)
         {
-            EntityId res = EntityId.None;
+            if (string.IsNullOrEmpty(input))
+                return EntityId.None;
 
-            if (int.TryParse(input, out var intResult))
-                res = FromULong(MagicVersion | (ulong)(uint)intResult);
+            // Same as native StringToEntityId: full raw UInt64, no reinterpretation (see EntityID.cpp).
+            if (!ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ulongResult))
+                return EntityId.None;
 
-            return res;
+            return FromULong(ulongResult);
         }
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
@@ -213,11 +216,17 @@ namespace UnityEngine
     }
     #pragma warning restore 612, 618
 
+    class AssetGCFilterTypeAttribute : Attribute
+    {
+        public AssetGCFilterTypeAttribute() {}
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = false)]
     [NativeHeader("Runtime/Export/Scripting/UnityEngineObject.bindings.h")]
     [NativeHeader("Runtime/GameCode/CloneObject.h")]
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
+    [AssetGCFilterType]
     public partial class Object
     {
 
@@ -712,6 +721,10 @@ namespace UnityEngine
             return FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.None);
 #pragma warning restore CS0618 // Type or member is obsolete
         }
+
+        // Allocates a batch of EntityIds
+        [FreeFunction("AllocateEntityIds")]
+        internal extern static EntityId[] AllocateEntityIds(int count);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]

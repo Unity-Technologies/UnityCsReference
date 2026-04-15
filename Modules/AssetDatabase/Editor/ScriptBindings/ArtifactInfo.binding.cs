@@ -100,6 +100,13 @@ namespace UnityEditor
             m_ImportResultID = kInvalidImportResultID;
         }
 
+        // Private constructor for marshalling - sets native pointer directly without calling Internal_Create
+        private ArtifactInfo(IntPtr nativePtr)
+        {
+            m_Ptr = nativePtr;
+            m_ImportResultID = null;
+        }
+
         ~ArtifactInfo()
         {
             Dispose(false);
@@ -308,6 +315,7 @@ namespace UnityEditor
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(ArtifactInfo artifactInfo) => artifactInfo.m_Ptr;
+            public static ArtifactInfo ConvertToManaged(IntPtr ptr) => new ArtifactInfo(ptr);
         }
     }
 }

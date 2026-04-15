@@ -164,8 +164,8 @@ namespace UnityEditor
                         propertyValue = $"{property.entityIdValue}";
                         break;
 
-                    case SerializedPropertyType.LoadableReference:
-                        propertyValue = $"{property.loadableReferenceValue}";
+                    case SerializedPropertyType.LoadableObjectId:
+                        propertyValue = $"{property.loadableObjectIdValue}";
                         break;
                 }
 

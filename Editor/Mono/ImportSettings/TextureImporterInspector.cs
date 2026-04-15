@@ -162,6 +162,7 @@ namespace UnityEditor
         readonly GUIContent m_EmptyContent = new GUIContent(" ");
 
         readonly int[] m_FilterModeOptions = (int[])(Enum.GetValues(typeof(FilterMode)));
+        readonly float[] m_MeshDetailOptions = { 0.0f, 0.00001f, 0.6f, 0.8f };
 
         string  m_ImportWarning = null;
         private void UpdateImportWarning()
@@ -341,6 +342,9 @@ namespace UnityEditor
 
             public readonly GUIContent spritePixelsPerUnit = EditorGUIUtility.TrTextContent("Pixels Per Unit", "How many pixels in the sprite correspond to one unit in the world.");
             public readonly GUIContent spriteExtrude = EditorGUIUtility.TrTextContent("Extrude Edges", "How much empty area to leave around the sprite in the generated mesh.");
+            public readonly GUIContent spriteTriangulation = EditorGUIUtility.TrTextContent("Sprite Mesh Triangulation Method", "Use Legacy for old method. And UTess for Delaunary with Subdivision");
+            public readonly GUIContent spriteOutline = EditorGUIUtility.TrTextContent("Sprite Outline Detail", "Sprite Outline Detail.");
+            public readonly GUIContent spriteSubdivision = EditorGUIUtility.TrTextContent("Sprite Mesh Subdivision", "Refine triangulation.");
             public readonly GUIContent spriteMeshType = EditorGUIUtility.TrTextContent("Mesh Type", "Type of sprite mesh to generate.");
             public readonly GUIContent spriteAlignment = EditorGUIUtility.TrTextContent("Pivot", "Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
             public readonly GUIContent[] spriteAlignmentOptions =
@@ -461,6 +465,9 @@ namespace UnityEditor
         SerializedProperty m_SpritePixelsToUnits;
         SerializedProperty m_SpriteExtrude;
         SerializedProperty m_SpriteMeshType;
+        SerializedProperty m_SpriteTessellationMethod;
+        SerializedProperty m_SpriteTessellationDetail;
+        SerializedProperty m_SpriteGeometrySubdivision;
         SerializedProperty m_Alignment;
         SerializedProperty m_SpritePivot;
         SerializedProperty m_SpriteGenerateFallbackPhysicsShape;
@@ -538,6 +545,9 @@ namespace UnityEditor
             m_SpritePixelsToUnits = serializedObject.FindProperty("m_SpritePixelsToUnits");
             m_SpriteExtrude = serializedObject.FindProperty("m_SpriteExtrude");
             m_SpriteMeshType = serializedObject.FindProperty("m_SpriteMeshType");
+            m_SpriteTessellationMethod = serializedObject.FindProperty("m_SpriteTessellationMethod");
+            m_SpriteTessellationDetail = serializedObject.FindProperty("m_SpriteTessellationDetail");
+            m_SpriteGeometrySubdivision = serializedObject.FindProperty("m_SpriteGeometrySubdivision");
             m_Alignment = serializedObject.FindProperty("m_Alignment");
             m_SpritePivot = serializedObject.FindProperty("m_SpritePivot");
             m_SpriteGenerateFallbackPhysicsShape = serializedObject.FindProperty("m_SpriteGenerateFallbackPhysicsShape");
@@ -733,6 +743,10 @@ namespace UnityEditor
             m_SpritePixelsToUnits.floatValue = settings.spritePixelsPerUnit;
             m_SpriteExtrude.intValue = (int)settings.spriteExtrude;
             m_SpriteMeshType.intValue = (int)settings.spriteMeshType;
+            m_SpriteTessellationMethod.intValue = (int)settings.spriteTessellationMethod;
+            m_SpriteTessellationDetail.floatValue = settings.spriteTessellationDetail;
+            m_SpriteGeometrySubdivision.floatValue = settings.spriteGeometrySubdivision;
+            m_SpriteMeshType.intValue = (int)settings.spriteMeshType;
             m_Alignment.intValue = settings.spriteAlignment;
             m_SpriteGenerateFallbackPhysicsShape.intValue = settings.spriteGenerateFallbackPhysicsShape ? 1 : 0;
 
@@ -839,6 +853,15 @@ namespace UnityEditor
 
             if (!m_SpriteMeshType.hasMultipleDifferentValues)
                 settings.spriteMeshType = (SpriteMeshType)m_SpriteMeshType.intValue;
+
+            if (!m_SpriteTessellationMethod.hasMultipleDifferentValues)
+                settings.spriteTessellationMethod = m_SpriteTessellationMethod.intValue;
+
+            if (!m_SpriteTessellationDetail.hasMultipleDifferentValues)
+                settings.spriteTessellationDetail = m_SpriteTessellationDetail.floatValue;
+
+            if (!m_SpriteGeometrySubdivision.hasMultipleDifferentValues)
+                settings.spriteGeometrySubdivision = m_SpriteGeometrySubdivision.floatValue;
 
             if (!m_Alignment.hasMultipleDifferentValues)
                 settings.spriteAlignment = m_Alignment.intValue;
@@ -1234,6 +1257,20 @@ namespace UnityEditor
                         GUILayout.BeginHorizontal();
                         EditorGUILayout.PropertyField(m_SpritePivot, m_EmptyContent);
                         GUILayout.EndHorizontal();
+                    }
+                }
+
+                if (m_SpriteMeshType.intValue != 0)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    SpriteTessellationMethod spriteTessellationMethod = (SpriteTessellationMethod)m_SpriteTessellationMethod.intValue;
+                    spriteTessellationMethod = (SpriteTessellationMethod)EditorGUILayout.EnumPopup(s_Styles.spriteTriangulation, spriteTessellationMethod);
+                    if (EditorGUI.EndChangeCheck())
+                        m_SpriteTessellationMethod.intValue = (int)spriteTessellationMethod;
+                    if (SpriteTessellationMethod.DelaunaySubdivision == spriteTessellationMethod)
+                    {
+                        m_SpriteTessellationDetail.floatValue = EditorGUILayout.Slider(s_Styles.spriteOutline, m_SpriteTessellationDetail.floatValue, 0, 1.0f);
+                        m_SpriteGeometrySubdivision.floatValue = EditorGUILayout.Slider(s_Styles.spriteSubdivision, m_SpriteGeometrySubdivision.floatValue, 0, 1.0f);
                     }
                 }
 

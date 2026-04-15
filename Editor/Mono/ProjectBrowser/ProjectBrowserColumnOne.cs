@@ -610,7 +610,7 @@ namespace UnityEditor
             }
 
             // Allocate new EntityId
-            var newEntityId = EntityId.AllocateNextLowestEntityId();
+            var newEntityId = EntityId.AllocateNextEntityId();
             m_AllocatedEntityIds.Add(new IdPair(id, newEntityId));
             CacheMapping(id, newEntityId);
             return newEntityId;

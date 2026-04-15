@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements
 
             var textSettings = GetTextSettingsFrom(ve);
             if (!Equals(textSettings, null))
-                return textSettings.defaultFontAsset;
+                return textSettings.GetFontAsset();
 
             return null;
         }

@@ -138,6 +138,12 @@ namespace Unity.Timeline.Foundation.Widgets
             RefreshDisplay();
         }
 
+        public void SetValueWithoutNotify(DiscreteTime value)
+        {
+            m_Time = value;
+            RefreshDisplay();
+        }
+
         public void DisableTabIndex()
         {
             tabIndex = -1;

@@ -150,7 +150,7 @@ namespace Unity.GraphToolkit.Editor
 
         bool m_DontSerialize;
         bool m_NeedToRestore;
-        bool m_MergingCommands;
+        bool m_IsMergingCommands;
         bool m_StartOfMerge;
         bool m_StartOfRecording;
         bool m_HasRecordedComponentsInScope;
@@ -160,6 +160,11 @@ namespace Unity.GraphToolkit.Editor
         string m_UndoString;
         string m_LastUndoString;
         string m_GraphToolTypeName;
+
+        /// <summary>
+        /// Returns true when the recorder is currently merging undo commands.
+        /// </summary>
+        public bool IsMergingCommands => m_IsMergingCommands;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UndoStateRecorder"/> class.
@@ -196,10 +201,10 @@ namespace Unity.GraphToolkit.Editor
 
             // If we are merging commands, we should not clear the state of the recorder
             // for each command. Only at the start of the merging process.
-            if (!m_MergingCommands || m_StartOfMerge)
+            if (!m_IsMergingCommands || m_StartOfMerge)
             {
                 Clear();
-                if (m_MergingCommands)
+                if (m_IsMergingCommands)
                     m_StartOfMerge = false;
             }
 
@@ -250,7 +255,7 @@ namespace Unity.GraphToolkit.Editor
                 var data = JsonUtility.ToJson(stateComponent);
                 m_SerializedState.Add(data);
             }
-            else if (m_MergingCommands)
+            else if (m_IsMergingCommands)
             {
                 // When merging commands, even though we only serialize the state once,
                 // we still need to push it on the undo stack. Otherwise some SerializedReferences
@@ -316,7 +321,7 @@ namespace Unity.GraphToolkit.Editor
                 // In that case, we must delay the call until all commands are done, otherwise only the changesets
                 // of the first command will be restored on an Undo operation, and the changesets of the last command
                 // on a Redo operation.
-                if (!m_MergingCommands)
+                if (!m_IsMergingCommands)
                 {
                     Undo.RegisterCompleteObjectUndo(this, m_UndoString);
                     if (m_CreatedObjectsUndo.Count > 0)
@@ -469,14 +474,14 @@ namespace Unity.GraphToolkit.Editor
         public void StartMergingUndoableCommands()
         {
             m_StartMergeGroup = Undo.GetCurrentGroup();
-            m_MergingCommands = true;
+            m_IsMergingCommands = true;
             m_StartOfMerge = true;
         }
 
         /// <inheritdoc />
         public void StopMergingUndoableCommands()
         {
-            m_MergingCommands = false;
+            m_IsMergingCommands = false;
 
             // Only register the undo if there were any component modified. Otherwise
             // we end up with empty undos on the undo stack.
@@ -501,8 +506,8 @@ namespace Unity.GraphToolkit.Editor
 
         internal bool CleanupMergingInternal()
         {
-            bool result = m_MergingCommands;
-            m_MergingCommands = false;
+            bool result = m_IsMergingCommands;
+            m_IsMergingCommands = false;
             return result;
         }
     }

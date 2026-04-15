@@ -94,13 +94,16 @@ namespace UnityEngine
 
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector4>(), new List<Vector4>(), normals, tangents, new List<Vector4>(), indices);
+            var defaultValues = new List<Vector4>();
+            NoAllocHelpers.EnsureListElemCount(defaultValues, positions.Count);
+            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, defaultValues, defaultValues, normals, tangents, defaultValues, indices);
         }
 
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-
-            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, new List<Vector4>(), indices);
+            var defaultValues = new List<Vector4>();
+            NoAllocHelpers.EnsureListElemCount(defaultValues, positions.Count);
+            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, defaultValues, indices);
         }
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<Vector4> prevPositions, List<int> indices)
         {

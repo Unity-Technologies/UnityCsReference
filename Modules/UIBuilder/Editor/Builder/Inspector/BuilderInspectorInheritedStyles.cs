@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using Unity.Collections;
 using Unity.UIToolkit.Editor;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -400,7 +401,7 @@ namespace Unity.UI.Builder
 
                 for (int j = 0; j < props.Length; j++)
                 {
-                    var s = BuilderStyleSheetExporter.GetStylePropertyHandlesString(rule.matchRecord.sheet, props[j].values.AsSpan());
+                    var s = StyleSheetExporter.GetStylePropertyValueString(rule.matchRecord.sheet, props[j]);
                     s = s?.ToLowerInvariant();
                     var textField = new TextField(props[j].name) { value = s };
                     textField.isReadOnly = true;

@@ -4,9 +4,9 @@
 
 using System;
 using UnityEngine.Bindings;
-using Unity.Loading;
+using UnityEngine;
 
-namespace UnityEngine
+namespace Unity.Loading
 {
     /// <summary>
     /// Status for a Loadable
@@ -33,7 +33,7 @@ namespace UnityEngine
     };
 
     /// <summary>
-    /// Helper class to manage the content loading process.  
+    /// Helper class to manage the content loading process.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [Serializable]
@@ -41,22 +41,22 @@ namespace UnityEngine
     /*UCBP-PUBLIC*/ internal sealed class Loadable<T> where T : UnityEngine.Object
     {
         [SerializeField]
-        private LoadableReference m_LoadableRef;
+        private LoadableObjectId m_LoadableObjectId;
         private ObjectLoadOperation<T> m_loadOperation;
 
         /// <summary>
-        /// Creates a new Loadable with the specified loadable reference.
+        /// Creates a new Loadable with the specified loadable object id.
         /// </summary>
-        /// <param name="id">The loadable reference identifying the asset to load.</param>
-        public Loadable(in LoadableReference id)
+        /// <param name="id">The loadable object id identifying the asset to load.</param>
+        public Loadable(in LoadableObjectId id)
         {
-            m_LoadableRef = id;
+            m_LoadableObjectId = id;
         }
 
         /// <summary>
-        /// The underlying loadable reference.
+        /// The underlying loadable object id.
         /// </summary>
-        public LoadableReference loadableReference => m_LoadableRef;
+        public LoadableObjectId loadableObjectId => m_LoadableObjectId;
 
         /// <summary>
         /// The current status of the loading operation.
@@ -85,10 +85,10 @@ namespace UnityEngine
 
 
         /// <summary>
-        /// Returns a string representation of the loadable reference.
+        /// Returns a string representation of the loadable object id.
         /// </summary>
-        /// <returns>A string representation of the loadable reference.</returns>
-        public override string ToString() => $"{nameof(Loadable<T>)}<{typeof(T)}> {m_LoadableRef}";
+        /// <returns>A string representation of the loadable object id.</returns>
+        public override string ToString() => $"{nameof(Loadable<T>)}<{typeof(T)}> {m_LoadableObjectId}";
 
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace UnityEngine
         private ObjectLoadOperation<T> LoadAsyncInternal()
         {
             if (m_loadOperation == null)
-                m_loadOperation = ContentLoadingSystem.LoadObjectAsync<T>(m_LoadableRef, out var _);
+                m_loadOperation = ContentLoadingSystem.LoadObjectAsync<T>(m_LoadableObjectId, out var _);
             return m_loadOperation;
         }
 

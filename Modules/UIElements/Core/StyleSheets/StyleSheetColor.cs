@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class StyleSheetColor
     {
         public static bool TryGetColor(string name, out Color color)

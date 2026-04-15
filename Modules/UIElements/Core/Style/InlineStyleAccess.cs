@@ -227,6 +227,7 @@ namespace UnityEngine.UIElements
 
             if (m_InlineRule.sheet != null)
             {
+                ve.variableContext = variableContext;
                 s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties, variableContext);
                 computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
@@ -299,7 +300,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineCursor(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Cursor]);
                 }
             }
         }
@@ -317,7 +318,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTextShadow(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TextShadow]);
                 }
             }
         }
@@ -335,7 +336,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTextAutoSize(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextAutoSize]);
                 }
             }
         }
@@ -353,7 +354,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineBackgroundSize(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundSize]);
                 }
             }
         }
@@ -422,7 +423,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTransformOrigin(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TransformOrigin]);
                 }
             }
         }
@@ -440,7 +441,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTranslate(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Translate]);
                 }
             }
         }
@@ -458,7 +459,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineRotate(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Rotate]);
                 }
             }
         }
@@ -477,7 +478,7 @@ namespace UnityEngine.UIElements
                 // The layout need to be regenerated because the TextNative requires the scale to mesure it's size to be pixel perfect.
                 if (SetInlineScale(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Scale]);
                 }
             }
         }
@@ -1192,6 +1193,62 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        void IStyle.Clear(bool clearSourceAssetStyles)
+        {
+            VersionChangeType changes = 0;
+
+            foreach (var styleValue in m_Values)
+            {
+                if (RemoveInlineStyle(styleValue.id))
+                {
+                    changes |= StylePropertyUtil.s_PropertyToChangeType[(int)styleValue.id];
+                }
+            }
+
+            if (m_ValuesManaged != null)
+            {
+                foreach (var styleValue in m_ValuesManaged)
+                {
+                    if (RemoveInlineStyle(styleValue.id))
+                    {
+                        changes |= StylePropertyUtil.s_PropertyToChangeType[(int)styleValue.id];
+                    }
+                }
+            }
+
+            // Cancel animations for special field properties
+            if (SetInlineCursor(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Cursor];
+            if (SetInlineTextShadow(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TextShadow];
+            if (SetInlineTextAutoSize(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextAutoSize];
+            if (SetInlineTransformOrigin(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TransformOrigin];
+            if (SetInlineTranslate(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Translate];
+            if (SetInlineRotate(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Rotate];
+            if (SetInlineScale(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Scale];
+            if (SetInlineBackgroundSize(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundSize];
+
+            // Clear all inline style collections
+            m_Values.Clear();
+
+            if (m_ValuesManaged != null)
+                m_ValuesManaged.Clear();
+
+            if (changes != 0)
+                ve.IncrementVersion(changes);
+
+            if (clearSourceAssetStyles && inlineRule.sheet != null && inlineRule.rule != null)
+            {
+                ve.UpdateInlineRule(null, null);
+            }
         }
 
         private void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle newStyle)

@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
             {
                 var updater = m_UpdaterArray[i];
 
-                using (updater.profilerMarker.Auto())
+                using (updater.profilerMarker.Auto(m_Panel.ownerObject))
                 {
                     updater.Update();
                     ++updater.FrameCount;
@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements
         {
             var updater = m_UpdaterArray[phase];
 
-            using (updater.profilerMarker.Auto())
+            using (updater.profilerMarker.Auto(m_Panel.ownerObject))
             {
                 updater.Update();
                 ++updater.FrameCount;

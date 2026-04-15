@@ -10,6 +10,8 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using InternalManager = UnityEditor.Multiplayer.Internal.EditorMultiplayerManager;
+using Unity.Multiplayer.Internal;
+using UnityEditor.PackageManager;
 
 namespace Unity.Multiplayer.Editor
 {
@@ -20,10 +22,25 @@ namespace Unity.Multiplayer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            Events.registeredPackages += Reinitialize;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
             InternalManager.creatingMultiplayerRoleDropdown += OnCreateMultiplayerRoleDropdown;
             InternalManager.enableMultiplayerRolesChanged += OnEnableMultiplayerRolesChanged;
             InternalManager.activeMultiplayerRoleChanged += UpdateText;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        private static void Reinitialize(PackageRegistrationEventArgs args)
+        {
+            Events.registeredPackages -= Reinitialize;
+            InternalManager.creatingMultiplayerRoleDropdown -= OnCreateMultiplayerRoleDropdown;
+            InternalManager.enableMultiplayerRolesChanged -= OnEnableMultiplayerRolesChanged;
+            InternalManager.activeMultiplayerRoleChanged -= UpdateText;
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            Init();
         }
 
         public static void OnCreateMultiplayerRoleDropdown(EditorToolbarDropdown toolbarButton)

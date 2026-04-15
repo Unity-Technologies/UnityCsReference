@@ -173,7 +173,7 @@ namespace UnityEditor
         private extern void CacheInternal(EntityId instanceID);
 
         [FreeFunction("SerializedObjectCache::LoadFromCache")]
-        internal extern static SerializedObject LoadFromCache(int instanceID);
+        internal extern static SerializedObject LoadFromCache(EntityId instanceID);
 
         public extern bool ApplyModifiedPropertiesWithoutUndo();
 

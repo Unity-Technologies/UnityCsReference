@@ -9,9 +9,12 @@ namespace UnityEditor
     /// <summary>
     /// Build options for Content Directory builds. Multiple options can be combined together.
     /// </summary>
+    /// <example>
+    ///  <code source="../../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/Settings/BuildContentOptions_BuildContentDirectory.cs"/>
+    /// </example>
     /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
     [Flags]
-    /*UCBP-PUBLIC*/ internal enum BuildContentOptions
+    public enum BuildContentOptions
     {
         /// <summary>
         /// Perform the specified build without any special settings or extra tasks.

@@ -18,18 +18,56 @@ namespace UnityEditor.UIElements;
 [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 internal class VisualTreeAssetExporter
 {
+    const string SelectedVisualElementAssetAttributeName = "__unity-builder-selected-element";
+    internal static readonly string[] IgnoredAttributesWhenExporting = { SelectedVisualElementAssetAttributeName };
+
+    public static readonly string SelectedVisualTreeAssetSpecialElementTypeName = "Unity.UI.Builder.UnityUIBuilderSelectionMarker";
+    internal static readonly string[] IgnoredTypesWhenExporting = { SelectedVisualTreeAssetSpecialElementTypeName };
+
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class ExportOptions
+    internal struct ExportOptions
     {
+        const string k_DefaultIndent = "    ";
+
+        public static ExportOptions Default => new ()
+        {
+            indent = k_DefaultIndent,
+            ignoreAttributeList = IgnoredAttributesWhenExporting,
+            ignoreTypeList = IgnoredTypesWhenExporting,
+            consistentAttributeOrder = UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting,
+            styleExporterOptions = StyleSheetExporter.UssExportOptions.Default
+        };
+
         private StyleSheetExporter m_Exporter;
 
-        public string indent { get; set; } = "    ";
+        string m_Indent;
+        bool? m_ConsistentAttributeOrder;
+        string[] m_IgnoreAttributeList;
+        string[] m_IgnoreTypeList;
 
-        public bool consistentAttributeOrder = false;
+        public string indent
+        {
+            get => m_Indent ?? k_DefaultIndent;
+            set => m_Indent = value;
+        }
 
-        public string[] ignoreAttributeList { get; set; } = Array.Empty<string>();
+        public bool consistentAttributeOrder
+        {
+            get => m_ConsistentAttributeOrder ?? UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting;
+            set => m_ConsistentAttributeOrder = value;
+        }
 
-        public string[] ignoreTypeList { get; set; } = Array.Empty<string>();
+        public string[] ignoreAttributeList
+        {
+            get => m_IgnoreAttributeList ?? Array.Empty<string>();
+            set => m_IgnoreAttributeList = value;
+        }
+
+        public string[] ignoreTypeList
+        {
+            get => m_IgnoreTypeList ?? Array.Empty<string>();
+            set => m_IgnoreTypeList = value;
+        }
 
         public StyleSheetExporter styleExporter
         {
@@ -62,11 +100,11 @@ internal class VisualTreeAssetExporter
 
         private int m_IndentLevel = 0;
 
-        internal ExportContext(VisualTreeAsset visualTreeAsset, StringBuilder builder, ExportOptions options = null)
+        internal ExportContext(VisualTreeAsset visualTreeAsset, StringBuilder builder, ExportOptions options)
         {
             m_VisualTreeAsset = visualTreeAsset;
             m_Builder = builder;
-            m_Options = options ?? new ExportOptions();
+            m_Options = options;
         }
 
         public VisualTreeAsset visualTreeAsset => m_VisualTreeAsset;
@@ -139,13 +177,23 @@ internal class VisualTreeAssetExporter
         }
     }
 
+    public static VisualTreeAssetExporter Default { get; } = new();
+
+    /// <summary>
+    /// Converts the provided <see cref="VisualTreeAsset"/> to <see cref="string"/> using the default options.
+    /// </summary>
+    /// <param name="visualTreeAsset">The stylesheet to export.</param>
+    /// <returns>A <see cref="string"/> version of the <see cref="VisualTreeAsset"/>.</returns>
+    public string ToUxmlString(VisualTreeAsset visualTreeAsset)
+        => ToUxmlString(visualTreeAsset, ExportOptions.Default);
+
     /// <summary>
     /// Converts the provided <see cref="VisualTreeAsset"/> to <see cref="string"/>.
     /// </summary>
     /// <param name="visualTreeAsset">The stylesheet to export.</param>
     /// <param name="options">To export options.</param>
     /// <returns>A <see cref="string"/> version of the <see cref="VisualTreeAsset"/>.</returns>
-    public string ToUxmlString(VisualTreeAsset visualTreeAsset, ExportOptions options = null)
+    public string ToUxmlString(VisualTreeAsset visualTreeAsset, ExportOptions options)
     {
         using var _ = StringBuilderPool.Get(out var stringBuilder);
         var context = new ExportContext(visualTreeAsset, stringBuilder, options);
@@ -154,13 +202,22 @@ internal class VisualTreeAssetExporter
     }
 
     /// <summary>
+    /// Converts the provided <see cref="VisualTreeAsset"/> to <see cref="string"/> using the default options.
+    /// </summary>
+    /// <param name="visualTreeAsset">The stylesheet to export.</param>
+    /// <param name="roots">Sub-set of elements to export.</param>
+    /// <returns>A <see cref="string"/> version of the <see cref="VisualTreeAsset"/>.</returns>
+    public string ToUxmlString(VisualTreeAsset visualTreeAsset, List<UxmlAsset> roots)
+        => ToUxmlString(visualTreeAsset, roots, ExportOptions.Default);
+
+    /// <summary>
     /// Converts the provided <see cref="VisualTreeAsset"/> to <see cref="string"/>.
     /// </summary>
     /// <param name="visualTreeAsset">The stylesheet to export.</param>
     /// <param name="roots">Sub-set of elements to export.</param>
     /// <param name="options">To export options.</param>
     /// <returns>A <see cref="string"/> version of the <see cref="VisualTreeAsset"/>.</returns>
-    public string ToUxmlString(VisualTreeAsset visualTreeAsset, List<UxmlAsset> roots, ExportOptions options = null)
+    public string ToUxmlString(VisualTreeAsset visualTreeAsset, List<UxmlAsset> roots, ExportOptions options)
     {
         using var _ = StringBuilderPool.Get(out var stringBuilder);
         var context = new ExportContext(visualTreeAsset, stringBuilder, options);

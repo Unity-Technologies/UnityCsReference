@@ -33,13 +33,40 @@ namespace UnityEditor.Build
         ///your control, for example inside packages and inside the implementation of the Unity Editor.  For instance, even if you assign a large numeric value to
         ///ensure your callback is the last to run, other implementations might specify the same or an even higher value.</remarks>
         ///<example>
-        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/IOrderedCallback_IOrderedCallback.cs"/>
+        ///  <code><![CDATA[
+        ///using UnityEditor.Build;
+        ///using UnityEngine;
+        ///
+        /// // Add this script to an Editor assembly within your Unity project.
+        /// // Initiate a Player Build.
+        /// // Observe the order of log messages in the Console.
+        ///
+        /// // A build callback that demonstrates the use of callback order in Player builds.
+        ///class BuildCallbackA : IPreprocessBuildWithContext
+        ///{
+        ///    public int callbackOrder { get { return 9999; } }
+        ///    public void OnPreprocessBuild(BuildCallbackContext ctx)
+        ///    {
+        ///        Debug.Log("BuildCallbackA: Called second");
+        ///    }
+        ///}
+        ///
+        /// // A build callback that runs before BuildCallbackA due to its lower callback order.
+        ///class BuildCallbackB : IPreprocessBuildWithContext
+        ///{
+        ///    public int callbackOrder { get { return 100; } }
+        ///    public void OnPreprocessBuild(BuildCallbackContext ctx)
+        ///    {
+        ///        Debug.Log("BuildCallbackB: Called first");
+        ///    }
+        ///}
+        ///]]></code>
         ///</example>
         int callbackOrder { get; }
     }
 
     ///<summary>This interface is obsolete. Use <see cref="Build.IPreprocessBuildWithContext" /> instead.</summary>
-    [Obsolete("Use IPreprocessBuildWithReport instead")]
+    [Obsolete("Use IPreprocessBuildWithContext instead")]
     public interface IPreprocessBuild : IOrderedCallback
     {
         ///<summary>This method is obsolete. Use <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild" /> instead.</summary>
@@ -81,7 +108,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to execute code at the start of the Player build process.</summary>
-    ///<remarks>This interface is replaced by <see cref="Build.IPreprocessBuildWithContext" />, which works for AssetBundle builds as well.
+    ///<remarks>This interface is replaced by <see cref="Build.IPreprocessBuildWithContext" />, which works for AssetBundle and ContentDirectory builds as well.
     ///
     ///At the start of a Player build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
     ///
@@ -98,24 +125,6 @@ namespace UnityEditor.Build
     ///The result of a build should be predictable and reproducible, based on the project’s content, the Unity version, and installed packages.
     ///Introducing environment-specific behavior, external dependencies, randomness, or other non-deterministic elements can lead to outcomes
     ///that are challenging to debug or reproduce. This unpredictability may also compromise the efficiency and accuracy of incremental builds or incremental upgrades.</remarks>
-    ///<example>
-    ///  <code><![CDATA[
-    ///using System;
-    ///using UnityEditor.Build;
-    ///using UnityEditor.Build.Reporting;
-    ///
-    ///class BuildScheduleEnforcer : IPreprocessBuildWithReport
-    ///{
-    ///    public int callbackOrder { get { return 100; } }
-    ///    public void OnPreprocessBuild(BuildReport report)
-    ///    {
-    ///        if (DateTime.Now.DayOfWeek == DayOfWeek.Thursday)
-    ///            // Force the build to fail. This message will appear in the console and Editor log.
-    ///            throw new BuildFailedException("No builds are allowed on Thursdays");
-    ///    }
-    ///}
-    ///]]></code>
-    ///</example>
     ///<seealso cref="Build.BuildPlayerProcessor.PrepareForBuild" />
     ///<seealso cref="Build.IPostprocessBuildWithReport" />
     ///<seealso cref="Build.BuildPlayerProcessor" />
@@ -126,9 +135,6 @@ namespace UnityEditor.Build
         ///<remarks>This method is replaced by <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild" />, which works for AssetBundle builds as well.
         ///                    This callback is invoked during Player builds, but not during AssetBundle builds.</remarks>
         ///<param name="report">A report containing information about the build, such as its target platform and output path.</param>
-        ///<example>
-        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/IPreprocessBuildWithReport_OnPreprocessBuild2.cs"/>
-        ///</example>
         ///<seealso cref="Build.IPostprocessBuildWithReport" />
         ///<seealso cref="Build.BuildPlayerProcessor" />
         ///<seealso cref="BuildPipeline.BuildPlayer" />
@@ -183,7 +189,29 @@ namespace UnityEditor.Build
         ///<remarks>This callback is invoked during Player builds and AssetBundle builds.</remarks>
         ///<param name="ctx">A context containing information about the build, such as its build report.</param>
         ///<example>
-        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/IPreprocessBuildWithContext_OnPreprocessBuild2.cs"/>
+        ///  <code><![CDATA[
+        ///using UnityEditor;
+        ///using UnityEditor.Build;
+        ///using UnityEngine;
+        ///using UnityEditor.Build.Reporting;
+        ///
+        ///class PreprocessBuildExample : IPreprocessBuildWithContext
+        ///{
+        ///    public int callbackOrder { get { return 0; } }
+        ///    public void OnPreprocessBuild(BuildCallbackContext ctx)
+        ///    {
+        ///        string prefix = "";
+        ///        if (ctx.IsContentOnlyBuild)
+        ///            prefix = "Content-only build:";
+        ///        else if (ctx.IsPlayerBuild)
+        ///            prefix = "Player build:";
+        ///
+        ///        BuildSummary summary = ctx.Report.summary;
+        ///        Debug.Log(prefix + " PreprocessBuild called. " +
+        ///            "Target: " + summary.platform + " Output path: " + summary.outputPath);
+        ///    }
+        ///}
+        ///]]></code>
         ///</example>
         ///<seealso cref="Build.IPostprocessBuildWithContext" />
         ///<seealso cref="Build.BuildPlayerProcessor" />
@@ -227,7 +255,7 @@ namespace UnityEditor.Build
     }
 
     ///<summary>This interface is obsolete. Use <see cref="Build.IPostprocessBuildWithContext" /> instead.</summary>
-    [Obsolete("Use IPostprocessBuildWithReport instead")]
+    [Obsolete("Use IPostprocessBuildWithContext instead")]
     public interface IPostprocessBuild : IOrderedCallback
     {
         ///<summary>This method is obsolete. Use <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild" /> instead.</summary>
@@ -235,61 +263,10 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to execute code immediately after the Player build process is completed.</summary>
-    ///<remarks>This interface is replaced by <see cref="Build.IPostprocessBuildWithContext" />, which works for AssetBundle builds as well.
+    ///<remarks>This interface is replaced by <see cref="Build.IPostprocessBuildWithContext" />, which works for AssetBundle and ContentDirectory builds as well.
     ///This is useful for tasks that need to be performed as the last step of building, such as cleaning up assets, generating analytics or reports, or customizing build outputs.
     ///
     ///As a final step of a Player build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.</remarks>
-    ///<example>
-    ///  <code><![CDATA[
-    ///using System.Linq;
-    ///using System.Text;
-    ///using UnityEditor.Build;
-    ///using UnityEditor.Build.Reporting;
-    ///using UnityEngine;
-    ///
-    /// // To try this example add this code into an Editor-only assembly,
-    /// // run a Player build, and then look for the message in the console.
-    /// // Note: if the build fails or is cancelled then the code will not run.
-    ///class BuildPostProcessor : IPostprocessBuildWithReport
-    ///{
-    ///    public int callbackOrder { get { return 100; } }
-    ///    public void OnPostprocessBuild(BuildReport report)
-    ///    {
-    ///        // Log some information from the BuildReport
-    ///        // Note: OnPostprocessBuild callbacks are invoked before the build is complete.
-    ///        // So the content of the BuildReport is not completely finalized.
-    ///        // For example, the summary.buildEndedAt has not been be determined,
-    ///        // and the incomplete "parent" BuildSteps still report 0 for their durations.
-    ///        var summary = report.summary;
-    ///
-    ///        var files = report.GetFiles();
-    ///        ulong size = 0;
-    ///        foreach (var file in files)
-    ///            size += file.size;
-    ///
-    ///        var sb = new StringBuilder();
-    ///        sb.AppendLine("Build completed");
-    ///        sb.AppendLine($"  Target: {summary.platform}");
-    ///        sb.AppendLine($"  Output Location: {summary.outputPath}");
-    ///        sb.AppendLine($"  Number of output files: {files.Length}");
-    ///        sb.AppendLine($"  Total size in bytes: {size}");
-    ///        sb.AppendLine($"  Starting time: {summary.buildStartedAt.ToLocalTime().ToShortTimeString()}");
-    ///        sb.AppendLine();
-    ///
-    ///        var buildSteps = report.steps;
-    ///        sb.AppendLine($"Build steps: {buildSteps.Length}");
-    ///        int maxWidth = buildSteps.Max(s => s.name.Length + s.depth) + 2;
-    ///        foreach (var step in buildSteps)
-    ///        {
-    ///            string rawStepOutput = new string('-', step.depth) + ' ' + step.name;
-    ///            sb.AppendLine($"{rawStepOutput.PadRight(maxWidth)}: {step.duration:g}");
-    ///        }
-    ///
-    ///        Debug.Log(sb.ToString());
-    ///    }
-    ///}
-    ///]]></code>
-    ///</example>
     ///<seealso cref="Build.IPreprocessBuildWithReport" />
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     public interface IPostprocessBuildWithReport : IOrderedCallback
@@ -399,15 +376,20 @@ namespace UnityEditor.Build
         ///using UnityEngine;
         ///using UnityEditor.Build.Reporting;
         ///
-        ///class MyCustomBuildProcessor : IPostprocessBuildWithContext
+        ///class PostprocessBuildExample : IPostprocessBuildWithContext
         ///{
         ///    public int callbackOrder { get { return 0; } }
         ///    public void OnPostprocessBuild(BuildCallbackContext ctx)
         ///    {
+        ///        string prefix = "";
         ///        if (ctx.IsContentOnlyBuild)
-        ///            Debug.Log("AssetBundle build: MyCustomBuildProcessor.OnPostprocessBuild for target " + ctx.Report.summary.platform + " at path " + ctx.Report.summary.outputPath);
+        ///            prefix = "Content-only build:";
         ///        else if (ctx.IsPlayerBuild)
-        ///            Debug.Log("Player build: MyCustomBuildProcessor.OnPostprocessBuild for target " + ctx.Report.summary.platform + " at path " + ctx.Report.summary.outputPath);
+        ///            prefix = "Player build:";
+        ///
+        ///        BuildSummary summary = ctx.Report.summary;
+        ///        Debug.Log(prefix + " PostprocessBuild called. " +
+        ///            "Target: " + summary.platform + " Output path: " + summary.outputPath);
         ///    }
         ///}
         ///]]></code>
@@ -467,7 +449,7 @@ namespace UnityEditor.Build
         /// Implement this method to receive a callback for each scene during the build.
         /// </summary>
         /// <remarks>Unity invokes this callback during Player and AssetBundle builds, and also when a scene is reloaded while entering Play mode. Use <see cref="BuildPipeline.isBuildingPlayer" /> to determine in which context the callback is called.
-        /// 
+        ///
         /// This callback supports editing the provided scene to prepare it for a Player build or entering Play mode, and reading assets. For example, you can add or remove references to project assets in that scene.
         ///
         /// This callback doesn't support modifying the state of other assets. Use it to modify only the provided scene.
@@ -489,9 +471,9 @@ namespace UnityEditor.Build
         /// class MyCustomBuildProcessor : IProcessSceneWithReport
         /// {
         ///     public int callbackOrder { get { return 0; } }
-        ///     public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report) 
-        ///     { 
-        ///         Debug.Log("MyCustomBuildProcessor.OnProcessScene " + scene.name); 
+        ///     public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report)
+        ///     {
+        ///         Debug.Log("MyCustomBuildProcessor.OnProcessScene " + scene.name);
         ///     }
         /// }
         ///]]></code>
@@ -534,37 +516,36 @@ namespace UnityEditor.Build
     {
         ///<summary>Implement this interface to receive a callback before a shader snippet is compiled.</summary>
         ///<remarks>
-        ///  <para>When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:um-shader-variants). Unity creates variants for some or all of the possible combinations of keywords you define in the shader source file.
+        ///When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:um-shader-variants). Unity creates variants for some or all the possible combinations of keywords you define in the shader source file.
         ///
-        ///                    You can use <c>OnProcessShader</c> to iterate through each shader and variant Unity is about to compile, and exclude ('strip') variants that use keywords or keyword combinations you don't need. If you strip variants, you can greatly reduce build size, build times, and how much runtime memory Unity uses.
+        ///You can use `OnProcessShader` to iterate through each shader and variant Unity is about to compile, and exclude ('strip') variants that use keywords or keyword combinations you don't need. If you strip variants, you can reduce build size, build times, and how much runtime memory Unity uses.
         ///
-        ///                    For example you can use <c>OnProcessShader</c> to remove variants that use the following:
+        ///For example, you can use `OnProcessShader` to remove variants that use the following:
         ///
         ///- Keywords that aren't needed for the current target platform.
         ///- Combinations of keywords that are never used.
         ///- Keywords you only use in your debug builds.
         ///
-        ///                    Unity invokes the <c>OnProcessShader</c> callback in both Player and AssetBundle builds.
+        ///Unity invokes the `OnProcessShader` callback in both Player and AssetBundle builds. If there are any shaders already in the cache, then this method isn't invoked for those shaders. To ensure the callback runs for all shaders, perform a [clean build](xref:um-build-clean-build). To run it for a specific shader, modify that shader or one of its dependent assets.
         ///
-        ///                    You can [check what shader variants you have in your project](xref:um-shader-how-many-variants) to help you identify keywords and variants to strip.
+        ///To help you identify keywords and variants to strip, you can [check what shader variants you have in your project](xref:um-shader-how-many-variants). For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called `DEBUG` in your shader code using `#pragma multi_compile _ DEBUG`, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
         ///
-        ///                    For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called <c>DEBUG</c> in your shader code using <c>#pragma multi_compile _ DEBUG</c>, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
+        ///The script does the following when you build your application:
         ///
-        ///                    The script does the following when you build your application:
+        ///1. Creates a class that implements the `IPreprocessShaders` interface.
+        ///2. Creates an instance of `ShaderKeyword` with the name of the keyword.
+        ///3. Implements the `OnProcessShader` callback function and iterates over the `data` list, which contains every variant in the shader.
+        ///4. Uses `data.shaderKeywordSet.IsEnabled()` to check if each variant uses the keyword.
+        ///5. Uses `data.removeAt()` to strip a shader variant if it contains the keyword and you've disabled **Development build** in **[Build Settings](xref:um-build-settings)**.
+        /// 
+        ///You can also find local keywords. You must create the `ShaderKeyword` instance inside the implementation of `OnProcessShader`, so you can use the callback's `shader` variable in the `ShaderKeyword` constructor.
         ///
-        ///1. Creates a class that implements the <c>IPreprocessShaders</c> interface.
-        ///2. Creates an instance of <c>ShaderKeyword</c> with the name of the keyword.
-        ///3. Implements the <c>OnProcessShader</c> callback function and iterates over the <c>data</c> list, which contains every variant in the shader.
-        ///4. Uses <c>data.shaderKeywordSet.IsEnabled()</c> to check if each variant uses the keyword.
-        ///5. Uses <c>data.removeAt()</c> to strip a shader variant if it contains the keyword and you've disabled **Development build** in [Build Settings](xref:um-build-settings).</para>
-        ///  <para>You can also find local keywords. You must create the <c>ShaderKeyword</c> instance inside the implementation of <c>OnProcessShader</c>, so you can use the callback's <c>shader</c> variable in the <c>ShaderKeyword</c> constructor.
+        ///For example if you declare a local keyword called `RED` in your shader code using `#pragma multi_compile_local _ RED`, the following script finds and strips shader variants that use the keyword.
+        /// 
+        ///If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
         ///
-        ///                    For example if you declare a local keyword called <c>RED</c> in your shader code using <c>#pragma multi_compile_local _ RED</c>, the following script finds and strips shader variants that use the keyword.</para>
-        ///  <para>If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
+        ///Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
         ///
-        ///                    Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
-        ///
-        ///</para>
         ///</remarks>
         ///<param name="shader">The shader that Unity is about to compile.</param>
         ///<param name="snippet">Details about the specific shader code being compiled.</param>

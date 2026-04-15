@@ -1047,8 +1047,14 @@ namespace UnityEditor
         static void SetPickingObjectList<T>(List<PickingObject> list, T[] array) where T : UnityObject
         {
             list.Clear();
-            for (int i = 0, c = array?.Length ?? 0; i < c; ++i)
-                list.Add(new PickingObject(array[i]));
+            if (array == null)
+                return;
+            
+            for (int i = 0, c = array.Length; i < c; ++i)
+            {
+                if (array[i] != null)
+                    list.Add(new PickingObject(array[i].GetEntityId()));   
+            }
         }
 
         static GameObject[] CreatePickingObjectArray(List<PickingObject> list)
@@ -1113,7 +1119,11 @@ namespace UnityEditor
             results.Clear();
             var overlapping = SceneViewPicking.GetAllOverlapping(position);
             foreach (var obj in overlapping)
-                results.Add(obj.target);
+            {
+                var unityObj = EditorUtility.EntityIdToObject(obj.targetId);
+                if (unityObj != null)
+                    results.Add(unityObj);
+            }
         }
 
         static GameObject[] s_PickingGameObjectIgnore = new GameObject[16];
@@ -1188,7 +1198,8 @@ namespace UnityEditor
                     s_PickingGameObjectFilter,
                     out int materialIndex);
 
-                picked = new PickingObject(gameObject, materialIndex);
+                if(gameObject != null)
+                    picked = new PickingObject(gameObject.GetEntityId(), materialIndex);
             }
 
             if (picked == PickingObject.Empty)
@@ -1198,37 +1209,44 @@ namespace UnityEditor
                 ulong pickingID = Internal_GetClosestPickingID(cam,
                         layers,
                         screenPosition,
-                        NoAllocHelpers.ExtractArrayFromList(ignore),
-                        NoAllocHelpers.ExtractArrayFromList(filter),
+                        ignore?.ToArray(),
+                        filter?.ToArray(),
                         drawGizmos,
                         ref materialIndex,
                         ref isEntity);
 
                 if (pickingID != 0)
                 {
-                    UnityObject pickedObject;
+                    var pickedId = EntityId.None;
 
-                    // TODO: What should the pickingID be for entities? We should then be able to retrieve the authoring object the same way as GameObjects
-                    // What if the pickingID is just directly the EntityId?
                     if (isEntity)
                     {
-                        // If isEntity is true, then pickingID stores the entity index + 1.
+                        // Entity picking: pickingID stores the entity index + 1
                         int entityIndex = ((int)pickingID) - 1;
-                        pickedObject = GetAuthoringObjectForEntity(entityIndex);
+
+                        // Get the EntityId for this entity index by querying the Entities package
+                        var entityId = GetEntityIdFromIndex(entityIndex);
+
+                        // Check ignore list before retrieving the authoring object to avoid
+                        // retrieving objects that should be filtered out
+                        if (ignore == null || ignore.FindIndex(x => x.targetId == entityId) == -1)
+                        {
+                            var authoringObject = GetAuthoringObjectForEntity(entityIndex);
+                            pickedId = authoringObject != null ? authoringObject.GetEntityId() : entityId;
+                        }
                     }
                     else
                     {
-                        // If isEntity is false, then pickingID stores the object EntityId.
-                        EntityId entityId = EntityId.FromULong(pickingID);
-                        pickedObject = EditorUtility.EntityIdToObject(entityId);
+                        // GameObject picking: pickingID directly stores the object's EntityId
+                        pickedId = EntityId.FromULong(pickingID);
                     }
-
-                    picked = new PickingObject(pickedObject, materialIndex);
+                    picked = new PickingObject(pickedId, materialIndex);
                 }
-
-                s_PickingInclude = null;
-                s_PickingExclude = null;
             }
+
+            // Always clear static state to prevent pollution between calls
+            s_PickingInclude = null;
+            s_PickingExclude = null;
 
             if (picked == PickingObject.Empty && pickGameObjectCustomPasses != null)
             {
@@ -1243,7 +1261,7 @@ namespace UnityEditor
                     // does not it will break pick cycling in SceneViewPicking.GetAllOverlapping.
                     if (gameObject != null)
                     {
-                        var tmp = new PickingObject(gameObject, materialIndex);
+                        var tmp = new PickingObject(gameObject.GetEntityId(), materialIndex);
 
                         if ((ignore == null || !ignore.Contains(tmp)) && (filter == null || filter.Contains(tmp)))
                         {
@@ -1270,7 +1288,7 @@ namespace UnityEditor
 
                 if (pickedRoot == selectionRoot)
                     return picked;
-                return new PickingObject(pickedRoot);
+                return new PickingObject(pickedRoot.GetEntityId());
             }
 
             return picked;
@@ -1286,12 +1304,14 @@ namespace UnityEditor
                 if (objects[i] == null)
                     continue;
 
+                var obj = EditorUtility.EntityIdToObject(objects[i].targetId);
+
                 // If the object is represented by entities, they take priority
-                if (GetEntitiesForAuthoringObject(objects[i].target, entities) > 0)
+                if (GetEntitiesForAuthoringObject(obj, entities) > 0)
                     continue;
 
                 // Otherwise, use the Renderer component, if any
-                if (objects[i].target is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
+                if (obj is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
                     renderers.Add(renderer.GetEntityId());
             }
         }
@@ -1363,19 +1383,79 @@ namespace UnityEditor
 
         static UnityEngine.Object GetAuthoringObjectForEntity(int entityIndex)
         {
-            var delegates = getAuthoringObjectForEntity?.GetInvocationList();
-
-            if (delegates == null)
+            var del = getAuthoringObjectForEntity;
+            if (del == null)
                 return null;
 
-            foreach (var del in delegates)
+            var delegates = del.GetInvocationList();
+
+            if (delegates.Length == 1)
+                return ((Func<int, UnityEngine.Object>)delegates[0])(entityIndex);
+
+            foreach (var d in delegates)
             {
-                var ret = ((Func<int, UnityEngine.Object>)del)(entityIndex);
+                var ret = ((Func<int, UnityEngine.Object>)d)(entityIndex);
                 if (ret != null)
                     return ret;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Event that allows external systems to resolve an entity index to an EntityId.
+        /// </summary>
+        internal static event Func<int, EntityId> getEntityIdFromIndex = default;
+        static EntityId GetEntityIdFromIndex(int entityIndex)
+        {
+            var del = getEntityIdFromIndex;
+            if (del == null)
+                return EntityId.None;
+
+            var delegates = del.GetInvocationList();
+
+            if (delegates.Length == 1)
+                return ((Func<int, EntityId>)delegates[0])(entityIndex);
+
+            foreach (var d in delegates)
+            {
+                var ret = ((Func<int, EntityId>)d)(entityIndex);
+                if (ret != EntityId.None)
+                    return ret;
+            }
+
+            return EntityId.None;
+        }
+
+        /// <summary>
+        /// Gets the EntityId associated with the specified authoring object.
+        /// </summary>
+        /// <param name="authoring">The authoring object to query.</param>
+        /// <returns>The EntityId associated with the authoring object, or EntityId.None if no entity is found.</returns>
+        internal static EntityId GetEntityForAuthoringObject(UnityEngine.Object authoring)
+        {
+            var del = getEntityIdsForAuthoringObject;
+            if (del == null)
+                return EntityId.None;
+
+            var delegates = del.GetInvocationList();
+
+            if (delegates.Length == 1)
+            {
+                var ret = ((Func<UnityEngine.Object, IEnumerable<EntityId>>)delegates[0])(authoring);
+                foreach (var id in ret)
+                    return id;
+                return EntityId.None;
+            }
+
+            foreach (var d in delegates)
+            {
+                var ret = ((Func<UnityEngine.Object, IEnumerable<EntityId>>)d)(authoring);
+                foreach (var id in ret)
+                    return id;
+            }
+
+            return EntityId.None;
         }
 
         static int GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<EntityId> entities)
@@ -2212,7 +2292,11 @@ namespace UnityEditor
         {
             outObjectList.Clear();
             foreach (var pobj in SceneViewPicking.GetAllOverlapping(position))
-                outObjectList.Add(pobj.target);
+            {
+                var obj = EditorUtility.EntityIdToObject(pobj.targetId);
+                if (obj != null)
+                    outObjectList.Add(obj);
+            }
         }
         
         internal static bool IsSceneViewGUILoop()

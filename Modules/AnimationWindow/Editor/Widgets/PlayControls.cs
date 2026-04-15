@@ -4,6 +4,7 @@
 
 
 using System;
+using Unity.IntegerTime;
 using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -44,8 +45,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             LastFrameClicked += () => m_State.GoToLastKeyframe();
             PlayTimeChanged += (discreteTime) =>
             {
-                var newTime = AnimationKeyTime.Time((float)discreteTime, m_State.frameRate);
-                m_State.currentFrame = newTime.frame;
+                m_State.currentFrame = (int)(double)(discreteTime * m_State.frameRate);
             };
             playRangeToggle.style.display = DisplayStyle.None;
 
@@ -74,8 +74,10 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             if (playToggle.value != m_State.playing)
                 playToggle.SetValueWithoutNotify(m_State.playing);
 
-            if (m_State.time != PlayTimeField.Time)
-                PlayTimeField.SetValueWithoutNotify(m_State.time.time);
+            var time = new DiscreteTime((double)m_State.currentFrame / m_State.frameRate);
+
+            if (time != PlayTimeField.Time)
+                PlayTimeField.SetValueWithoutNotify(time);
         }
 
         public void OnRefresh()

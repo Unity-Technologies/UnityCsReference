@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements
         internal NativeSlice<UInt16> m_Indices;
 
         internal int currentIndex;
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal int currentVertex;
     }
 
@@ -461,6 +461,22 @@ namespace UnityEngine.UIElements
             if (font == null)
                 font = TextUtilities.GetFontAsset(visualElement);
             meshGenerator.DrawText(text, pos, fontSize, color, font);
+        }
+
+        /// <summary>
+        /// Draw a string of text using the Standard Text Generator.
+        /// </summary>
+        /// <param name="text">The text to display.</param>
+        /// <param name="pos">The start position where the text will be displayed.</param>
+        /// <param name="fontSize">The font size to use.</param>
+        /// <param name="color">The text color.</param>
+        /// <param name="font">The font asset to use. If the value is null, the font asset of the VisualElement style is used instead. For more information, refer to <see cref="IStyle.unityFontDefinition"/>.</param>
+        [Obsolete("DrawTextStandard is deprecated and will be removed in a future release. Use DrawText instead, which uses the Advanced Text Generator (ATG).", false)]
+        public void DrawTextStandard(string text, Vector2 pos, float fontSize, Color color, FontAsset font = null)
+        {
+            if (font == null)
+                font = TextUtilities.GetFontAsset(visualElement);
+            meshGenerator.DrawText(text, pos, fontSize, color, font, false);
         }
 
         /// <summary>

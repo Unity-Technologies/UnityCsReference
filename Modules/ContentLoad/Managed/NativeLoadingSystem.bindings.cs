@@ -11,7 +11,6 @@ namespace Unity.Loading.LowLevel
 {
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/ContentLoad/Public/L0ResultBuffer.h")]
-    /*UCBP-PUBLIC*/
     internal struct ResourceHandle : IEquatable<ResourceHandle>
     {
         internal UInt64 value;
@@ -27,7 +26,6 @@ namespace Unity.Loading.LowLevel
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/ContentLoad/Public/L0LoadingSystem.bindings.h")]
-    /*UCBP-PUBLIC*/
     internal struct LoadingResponseQueue : IDisposable
     {
         internal IntPtr m_Ptr;
@@ -64,14 +62,14 @@ namespace Unity.Loading.LowLevel
     }
 
     [NativeHeader("Modules/ContentLoad/Public/L0ResultBuffer.h")]
-    /*UCBP-PUBLIC*/ internal enum AsyncResultType
+    internal enum AsyncResultType
     {
         Load = 0,
         Release = 1
     }
 
     [NativeHeader("Modules/ContentLoad/Public/L0ResultBuffer.h")]
-    /*UCBP-PUBLIC*/ internal enum ReturnCode
+    internal enum ReturnCode
     {
         Completed = 0,
         Failed = -1
@@ -79,7 +77,7 @@ namespace Unity.Loading.LowLevel
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/ContentLoad/Public/L0ResultBuffer.h")]
-    /*UCBP-PUBLIC*/ internal struct AsyncResult
+    internal struct AsyncResult
     {
         public ResourceHandle handle;
         public AsyncResultType type;
@@ -88,11 +86,10 @@ namespace Unity.Loading.LowLevel
     }
 
     [NativeHeader("Modules/ContentLoad/Public/L0LoadingSystem.bindings.h")]
-    /*UCBP-PUBLIC*/
     [StaticAccessor("ContentLoad::L0Bindings", StaticAccessorType.DoubleColon)]
     internal sealed unsafe class NativeLoadingSystem
     {
-        public static extern void LoadAsync(LoadableReference* references, ResourceHandle* outHandles, int count, LoadingResponseQueue resultQueue);
+        public static extern void LoadAsync(LoadableObjectId* loadableObjectIds, ResourceHandle* outHandles, int count, LoadingResponseQueue resultQueue);
 
         public static extern void ReleaseAsync(ResourceHandle* handles, int count, LoadingResponseQueue resultQueue);
 

@@ -179,7 +179,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     () => new ConfigurationData
             {
                 Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
-                Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
+                Il2CppPath = IL2CPPUtils.GetExePath("il2cpp", out var il2CppIsDevelopmentLocation),
+                Il2CppUsingDevelopmentLocation = il2CppIsDevelopmentLocation,
                 UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 DotNetExe = NetCoreProgram.DotNetMuxerPath.ToString(),

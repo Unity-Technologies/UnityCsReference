@@ -38,11 +38,7 @@ namespace UnityEditor
 
             m_SwitchesInEffect = switchesInEffect;
 
-            // Note: RemoveLogEntriesByIdentifier should be using EntityId just like LogSticky
-            // Work is ongoing to get this fixed, so as a temporary solution we force the cast to int
-            // And this should be turned back into an EntityId asap so it's symmetrical with LogSticky
-            var fixme = (int)EntityId.ToULong(GetEntityId());
-            Debug.RemoveLogEntriesByIdentifier(fixme);
+            Debug.RemoveLogEntriesByEntityId(GetEntityId());
 
             if (m_SwitchesInEffect.Length > 0)
             {

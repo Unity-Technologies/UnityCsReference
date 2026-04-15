@@ -198,6 +198,17 @@ namespace UnityEditor
 
         extern public static Object GetAnimatedObject([NotNull] GameObject root, EditorCurveBinding binding);
 
+        /// <summary>
+        /// Gets the associated EntityId for a curve binding.
+        /// For custom IAnimationBinding implementations (e.g., UIToolkit), this returns the appropriate selection object.
+        /// For standard GameObject animations, returns the GameObject's EntityId.
+        /// </summary>
+        /// <param name="root">The root GameObject being animated</param>
+        /// <param name="binding">The curve binding</param>
+        /// <returns>EntityId or associated EntityId of the object</returns>
+        [NativeHeader("Editor/Src/Animation/AnimationUtility.bindings.h")]
+        extern internal static EntityId GetAssociatedEntityId([NotNull] GameObject root, EditorCurveBinding binding);
+
         public static Type PropertyModificationToEditorCurveBinding(PropertyModification modification, GameObject gameObject, out EditorCurveBinding binding)
         {
             binding = new EditorCurveBinding();

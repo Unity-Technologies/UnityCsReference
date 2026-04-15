@@ -132,6 +132,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void AddEventCallbackCategories(int trickleDownCategories, int bubbleUpCategories)
+        {
+            m_TrickleDownEventCallbackCategories |= trickleDownCategories;
+            m_BubbleUpEventCallbackCategories |= bubbleUpCategories;
+            UpdateEventInterestSelfCategories();
+        }
+
         internal void AddEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
         {
             if (trickleDown == TrickleDown.TrickleDown)
@@ -267,12 +274,14 @@ namespace UnityEngine.UIElements
     {
         // Initialize this VisualElement's default categories according to its fully-resolved Type.
         internal static void GetDefaultEventInterests(Type elementType,
-            out VisualElement.DefaultEventInterests categories)
+            out VisualElement.DefaultEventInterests categories, out VisualElement.TypeData parentTypeData)
         {
             var ancestorType = elementType.BaseType;
-            categories = ancestorType != null && ancestorType.IsSubclassOf(typeof(VisualElement))
-                ? VisualElement.GetOrCreateTypeData(ancestorType).defaultEventInterests
+            parentTypeData = ancestorType != null && ancestorType.IsSubclassOf(typeof(VisualElement))
+                ? VisualElement.GetOrCreateTypeData(ancestorType)
                 : default;
+
+            categories = parentTypeData?.defaultEventInterests ?? default;
 
             categories.DefaultActionCategories |=
                 ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionName) |
@@ -455,9 +464,9 @@ namespace UnityEngine.UIElements
     ///\\
     ///\\
     /// If no <see cref="EventInterestAttribute"/> is specified, UI Toolkit
-    /// assumes that the method doesn't have enough information on necessary event types, and 
+    /// assumes that the method doesn't have enough information on necessary event types, and
     /// sends all incoming events to that method conservatively.
-    ///\\  
+    ///\\
     ///\\
     /// It is recommended to use the <see cref="EventInterestAttribute"/> attribute because it allows
     /// UI Toolkit to optimize performance by skipping unnecessary event-related calculations for methods

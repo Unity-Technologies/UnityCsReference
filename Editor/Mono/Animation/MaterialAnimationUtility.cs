@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
 using Object = UnityEngine.Object;
+using UnityEngine.Rendering;
 
 namespace UnityEditorInternal
 {
@@ -41,11 +42,24 @@ namespace UnityEditorInternal
 
         static PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Object target, Color color)
         {
+
             PropertyModification[] modifications = CreatePropertyModifications(4, target);
-            SetupPropertyModification(materialProp.name + ".r", color.r, modifications[0]);
-            SetupPropertyModification(materialProp.name + ".g", color.g, modifications[1]);
-            SetupPropertyModification(materialProp.name + ".b", color.b, modifications[2]);
-            SetupPropertyModification(materialProp.name + ".a", color.a, modifications[3]);
+
+             // HDR Colours animations need to be read as {x,y,z,w} properties to render correctly.
+            if ((materialProp.propertyFlags & ShaderPropertyFlags.HDR) != 0)
+            {
+                SetupPropertyModification(materialProp.name + ".x", color.r, modifications[0]);
+                SetupPropertyModification(materialProp.name + ".y", color.g, modifications[1]);
+                SetupPropertyModification(materialProp.name + ".z", color.b, modifications[2]);
+                SetupPropertyModification(materialProp.name + ".w", color.a, modifications[3]);
+            }
+            else
+            {
+                SetupPropertyModification(materialProp.name + ".r", color.r, modifications[0]);
+                SetupPropertyModification(materialProp.name + ".g", color.g, modifications[1]);
+                SetupPropertyModification(materialProp.name + ".b", color.b, modifications[2]);
+                SetupPropertyModification(materialProp.name + ".a", color.a, modifications[3]);
+            }
             return modifications;
         }
 
@@ -127,7 +141,7 @@ namespace UnityEditorInternal
         {
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             target.GetPropertyBlock(block);
-            materialProp.WriteToMaterialPropertyBlock(block, changedMask);
+            materialProp.WriteToMaterialPropertyBlockInEditor(block, changedMask);
             target.SetPropertyBlock(block);
         }
 

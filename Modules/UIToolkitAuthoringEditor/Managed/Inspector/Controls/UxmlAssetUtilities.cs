@@ -641,6 +641,28 @@ internal static class UxmlAssetUtilities
         return SyncUxmlObjectChanges(context, property.propertyPath);
     }
 
+    public static SynchronizePathResult RemoveArrayItemFromSerializedData(UxmlAttributesEditingContext context,
+        SerializedProperty property, int index)
+    {
+        if (!property.isArray)
+        {
+            Debug.LogError($"Property {property.name} is not an array");
+            return default;
+        }
+
+        if (index > property.arraySize - 1)
+        {
+            Debug.LogError($"The index is out of bounds of the property array {property.name}");
+            return default;
+        }
+
+        Undo.RegisterCompleteObjectUndo(property.serializedObject.targetObject, GetUndoMessage(property));
+
+        property.DeleteArrayElementAtIndex(index);
+        property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        return SyncUxmlObjectChanges(context, property.propertyPath);
+    }
+
     public static SynchronizePathResult SyncUxmlObjectChanges(UxmlAttributesEditingContext context, string propertyPath)
     {
         if (context.isReadOnly)

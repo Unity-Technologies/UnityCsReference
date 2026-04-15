@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEditor.Multiplayer.Internal;
 using System;
 using UnityEditor.Build.Profile;
+using Unity.Multiplayer.Internal;
+using UnityEditor.PackageManager;
 
 namespace Unity.Multiplayer.Editor
 {
@@ -17,6 +19,12 @@ namespace Unity.Multiplayer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            Events.registeredPackages += Reinitialize;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
+            
             s_BuildOptionsSections = new List<IMultiplayerBuildOptionsSection>();
 
             foreach(var t in TypeCache.GetTypesDerivedFrom<IMultiplayerBuildOptionsSection>())
@@ -26,6 +34,13 @@ namespace Unity.Multiplayer.Editor
             s_BuildOptionsSections.Sort((a, b) => a.Order.CompareTo(b.Order));
 
             EditorMultiplayerManager.drawingMultiplayerBuildOptionsForBuildProfile += OnDrawingBuildOptions;
+        }
+
+        private static void Reinitialize(PackageRegistrationEventArgs args)
+        {
+            Events.registeredPackages -= Reinitialize;
+            EditorMultiplayerManager.drawingMultiplayerBuildOptionsForBuildProfile -= OnDrawingBuildOptions;
+            Init();
         }
 
         private static void OnDrawingBuildOptions(BuildProfile profile)

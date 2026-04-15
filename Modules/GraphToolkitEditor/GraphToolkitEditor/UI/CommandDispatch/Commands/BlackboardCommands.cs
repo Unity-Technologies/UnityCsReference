@@ -90,17 +90,12 @@ namespace Unity.GraphToolkit.Editor
 
             var title = string.IsNullOrEmpty(command.Title) ? "New Group" : command.Title.Trim();
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var existingNames = command.ContainingGroup.Items.OfType<IHasTitle>().Select(t => t.Title).ToArray();
-#pragma warning restore UA2001
-            title = ObjectNames.GetUniqueName(existingNames, title);
-
             foreach (var selectionUpdater in selectionUpdaters)
             {
                 selectionUpdater.ClearSelection();
             }
 
-            GroupModel newGroup = graphModelState.GraphModel.CreateGroup(title, command.GroupItemModels);
+            GroupModel newGroup = graphModelState.GraphModel.CreateGroup(title, command.GroupItemModels, command.ContainingGroup);
 
             int index = command.ContainingGroup.Items.IndexOf(command.InsertAfter);
             command.ContainingGroup.InsertItem(newGroup, index < 0 ? int.MaxValue : index + 1);
@@ -307,7 +302,7 @@ namespace Unity.GraphToolkit.Editor
                         else
                         {
                             // If the group contains at least one variable : create a new group to hold the new items.
-                            var newGroup = graphModel.CreateGroup(group.Title, listCopy);
+                            var newGroup = graphModel.CreateGroup(group.Title, listCopy, Group);
                             copy.Add(newGroup);
                             duplicatedGroups.Add(group);
                             duplicated = true;

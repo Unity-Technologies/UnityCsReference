@@ -43,10 +43,9 @@ namespace UnityEditor.Build.Reporting
         /// <summary>
         /// Retrieve the array of paths of root assets that were built in a ContentDirectory build.
         /// </summary>
-        /// <remarks>For Player and AssetBundle builds this returns an empty array.
-        /// <see cref="BuildContentDirectoryParameters.rootAssetPaths" />
-        /// </remarks>
-        /*UCBP-PUBLIC*/ internal extern string[] GetRootAssetPaths();
+        /// <returns>An array of root asset paths, or an empty array for Player and AssetBundle builds.</returns>
+        /// <seealso cref="BuildContentDirectoryParameters.rootAssetPaths" />
+        public extern string[] GetRootAssetPaths();
 
         ///<summary>An array of all the <see cref="BuildStep" />s that took place during the build process.</summary>
         [NativeName("BuildSteps")]
@@ -67,9 +66,19 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Retrieve statistics about the content of the build, for example the number of serialized objects.
+        /// Retrieve statistics about the content of the build, such as total sizes, object counts,
+        /// and breakdowns by Unity Object type and source Asset.
         /// </summary>
-        /*UCBP-PUBLIC*/ internal ContentSummary contentSummary
+        /// <remarks>
+        /// ContentSummary is populated for Player builds, AssetBundle builds, and ContentDirectory builds.
+        /// It is not populated for scripts-only Player builds (see <see cref="BuildOptions.BuildScriptsOnly"/>).
+        /// For incremental AssetBundle builds, the statistics only reflect the AssetBundles that were
+        /// rebuilt in the current build invocation; unchanged AssetBundles reused from previous builds
+        /// are not included.
+        /// This property returns <c>null</c> if the ContentSummary was not populated.
+        /// </remarks>
+        /// <seealso cref="ContentSummary"/>
+        public ContentSummary contentSummary
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return GetAppendicesByType<ContentSummary>().SingleOrDefault(); }

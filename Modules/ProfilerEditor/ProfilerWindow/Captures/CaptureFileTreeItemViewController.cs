@@ -25,6 +25,8 @@ namespace Unity.Profiling.Editor.UI
         const string k_UxmlRenameFieldWarning = "profiler-capture-file__warning";
         const string k_UxmlRenameFieldWarningMsg = "captures-list__warning-msg";
         const string k_UxmlChangeFPSField = "profiler-capture-file__meta-data__change_fps";
+        const string k_UxmlMenuButton = "profiler-capture-file__menu-button";
+        const string k_UssMenuButtonActive = "profiler-capture-file__menu-button--active";
 
         const string k_DeleteCaptureDialogTitle = "Delete Capture";
         const string k_DeleteCaptureDialogMessage = "Are you sure you want to permanently delete this profiler capture file?";
@@ -48,6 +50,7 @@ namespace Unity.Profiling.Editor.UI
 
         // View
         VisualElement m_Container;
+        VisualElement m_MenuButton;
         Label m_OpenCaptureTag;
         TextField m_RenameField;
         TextElement m_RenameFieldInputArea;
@@ -112,6 +115,7 @@ namespace Unity.Profiling.Editor.UI
             m_RenameFieldInputArea = m_RenameField.Q<TextElement>();
             m_ChangeFPSField = view.Q<TextField>(k_UxmlChangeFPSField);
             m_ChangeFPSFieldInputArea = m_ChangeFPSField.Q<TextElement>();
+            m_MenuButton = view.Q(k_UxmlMenuButton);
 
             m_WarningMessage = new Label();
             m_WarningMessage.AddToClassList(k_UxmlRenameFieldWarningMsg);
@@ -129,9 +133,15 @@ namespace Unity.Profiling.Editor.UI
 
             Debug.Assert(Model != null);
 
-            m_Container.AddManipulator(new ContextualMenuManipulator(PopulateOpenCaptureOptionMenu));
             m_Container.RegisterCallback<MouseUpEvent>(evt =>
             {
+                if ((MouseButton)evt.button == MouseButton.RightMouse)
+                {
+                    ShowKebabMenu(new Rect(evt.mousePosition, Vector2.zero));
+                    evt.StopPropagation();
+                    return;
+                }
+
                 if ((MouseButton)evt.button != MouseButton.LeftMouse)
                     return;
 
@@ -147,8 +157,15 @@ namespace Unity.Profiling.Editor.UI
                 evt.StopPropagation();
             });
 
-            m_Name.AddManipulator(new Clickable(RenameCapture));
-            m_FPSTarget.AddManipulator(new Clickable(EditCaptureFPS));
+            m_MenuButton.RegisterCallback<ClickEvent>(evt =>
+            {
+                ShowKebabMenu();
+                evt.StopPropagation();
+            });
+            m_MenuButton.RegisterCallback<MouseUpEvent>(evt =>
+            {
+                evt.StopImmediatePropagation();
+            });
 
             m_RenameField.isDelayed = true;
             m_RenameField.SetValueWithoutNotify(Model.Name);
@@ -232,37 +249,43 @@ namespace Unity.Profiling.Editor.UI
                 View.AddToClassList("profiler-capture-file__state__in-view");
         }
 
-        void PopulateOpenCaptureOptionMenu(ContextualMenuPopulateEvent binder)
+        void ShowKebabMenu(Rect? dropdownPosition = null)
         {
-            binder.menu.AppendAction(k_CaptureOptionMenuItemDelete.text, a =>
+            var menu = new GenericMenu();
+
+            menu.AddItem(k_CaptureOptionMenuItemDelete, false, () =>
             {
                 DelayedAction(DeleteCapture);
             });
-            binder.menu.AppendAction(k_CaptureOptionMenuItemRename.text, a =>
+            menu.AddItem(k_CaptureOptionMenuItemRename, false, () =>
             {
                 DelayedAction(RenameCapture);
             });
-            binder.menu.AppendAction(k_CaptureOptionMenuItemBrowse.text, a =>
+            menu.AddItem(k_CaptureOptionMenuItemBrowse, false, () =>
             {
                 BrowseCaptureFolder();
             });
 
             // Don't add bottleneck menus if one isn't yet loaded
-            if (m_BottleneckModel == null)
-                return;
-
-            foreach (var fpsValue in BottlenecksChartViewController.k_FPSValues)
+            if (m_BottleneckModel != null)
             {
-                binder.menu.AppendAction(k_TargetFPSMenu + $"{fpsValue} FPS", a =>
+                foreach (var fpsValue in BottlenecksChartViewController.k_FPSValues)
                 {
-                    DoFPSChange(fpsValue);
+                    menu.AddItem(new GUIContent(k_TargetFPSMenu + $"{fpsValue} FPS"), false, () =>
+                    {
+                        DoFPSChange(fpsValue);
+                    });
+                }
+
+                menu.AddItem(new GUIContent(k_TargetFPSMenu + "Custom"), false, () =>
+                {
+                    DelayedAction(EditCaptureFPS);
                 });
             }
 
-            binder.menu.AppendAction(k_TargetFPSMenu + "Custom", a =>
-            {
-                DelayedAction(EditCaptureFPS);
-            });
+            m_MenuButton.AddToClassList(k_UssMenuButtonActive);
+            menu.DropDown(dropdownPosition ?? m_MenuButton.worldBound);
+            m_MenuButton.schedule.Execute(() => m_MenuButton.RemoveFromClassList(k_UssMenuButtonActive));
         }
 
         void DoFPSChange(int fpsValue)

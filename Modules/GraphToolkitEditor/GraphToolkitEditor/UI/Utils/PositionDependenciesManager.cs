@@ -262,7 +262,9 @@ namespace Unity.GraphToolkit.Editor
 
                 if (nodeModel.State == ModelState.Disabled)
                 {
-                    node.EnableInClassList(NodeView.disabledNodeUssClassName, true);
+                    // [UUM-137461] : Force removal of the disabledNodeUssClassName to avoid migration issue with the UI of
+                    // a node and since the feature isn't accessible anymore.
+                    node.EnableInClassList(NodeView.disabledNodeUssClassName, false);
                     node.EnableInClassList(NodeView.unusedUssClassName, false);
                 }
                 else

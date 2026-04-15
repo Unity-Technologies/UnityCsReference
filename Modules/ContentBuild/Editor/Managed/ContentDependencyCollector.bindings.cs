@@ -4,7 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using UnityEngine.Loading;
+using Unity.Loading;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine;
@@ -15,7 +15,7 @@ namespace UnityEditor.Build.Content
     struct ContentDependencyCollectResult
     {
         public EntityId[] references;
-        public LoadableReference[] loadableReferences;
+        public LoadableObjectId[] loadableObjectIds;
         public LoadableSceneId[] loadableSceneIds;
     }
 

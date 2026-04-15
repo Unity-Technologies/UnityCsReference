@@ -83,7 +83,8 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    Debug.Assert(pixelsPerPoint == windowScaling.Value, $"Scaling mismatch between the EditorWindow ({windowScaling.Value}) and the Editor Panel {name} ({pixelsPerPoint}). OnBackingScaleFactorChangedInternal was probably not call upon scaling change");
+                    if (pixelsPerPoint != windowScaling.Value)
+                        Debug.LogAssertion($"Scaling mismatch between the EditorWindow ({windowScaling.Value}) and the Editor Panel {name} ({pixelsPerPoint}). OnBackingScaleFactorChangedInternal was probably not call upon scaling change");
                     pixelsPerPoint = windowScaling.Value;// AKA silence the assert after the first occurence
                 }
             }

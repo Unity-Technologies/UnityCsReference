@@ -24,25 +24,23 @@ namespace Unity.UI.Builder
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/FontDefinitionStyleField.uss";
 
         const string k_FieldInputName = "unity-visual-input";
-        const string k_FontDefinitionStyleFieldContainerName = "unity-font-definition-style-field-container";
         const string k_FontDefinitionStyleFieldContainerClassName = "unity-font-definition-style-field__container";
 
         public FontDefinitionStyleField() : this(null) {}
 
-        public FontDefinitionStyleField(string label) : base(label)
+        public FontDefinitionStyleField(string label) : base(label, new VisualElement())
         {
             AddType(typeof(FontAsset), "Font Asset");
             AddType(typeof(Font), "Font");
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
-            var fieldContainer = new VisualElement {name = k_FontDefinitionStyleFieldContainerName};
-            fieldContainer.AddToClassList(k_FontDefinitionStyleFieldContainerClassName);
 
             var fieldInput = this.Q(k_FieldInputName);
-            // Move visual input over to field container
-            fieldContainer.Add(fieldInput);
+            visualInput.Add(fieldInput);
 
-            Add(fieldContainer);
+            Add(visualInput);
+            visualInput.name = StyleField<int>.VisualInputName;
+            visualInput.AddToClassList(k_FontDefinitionStyleFieldContainerClassName);
 
             objectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>() {typeof(FontAsset), typeof(Font)});
         }

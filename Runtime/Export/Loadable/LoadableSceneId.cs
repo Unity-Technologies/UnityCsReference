@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using UnityEngine;
 
-namespace UnityEngine.Loading
+namespace Unity.Loading
 {
     enum LoadableSceneIdFlags : int
     {

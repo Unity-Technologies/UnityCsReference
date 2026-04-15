@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements
                         sb.AppendLine("      GeometryChangedEvent callbacks:");
                         foundCallbacks = true;
                     }
-                    LogCallbackInfo(functor.GetCallback(), sb);
+                    LogCallbackInfo(functor.userCallback, sb);
                 }
             }
 
@@ -193,7 +193,7 @@ namespace UnityEngine.UIElements
                         sb.AppendLine("      GeometryChangedEvent callbacks:");
                         foundCallbacks = true;
                     }
-                    LogCallbackInfo(functor.GetCallback(), sb);
+                    LogCallbackInfo(functor.userCallback, sb);
                 }
             }
         }

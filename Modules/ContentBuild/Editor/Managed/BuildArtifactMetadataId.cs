@@ -9,7 +9,7 @@ using UnityEngine;
 namespace UnityEditor.Build.Content
 {
     [StructLayout(LayoutKind.Sequential)]
-    /* UCBP-PUBLIC */ internal struct BuildArtifactMetadataId : IEquatable<BuildArtifactMetadataId>
+    internal struct BuildArtifactMetadataId : IEquatable<BuildArtifactMetadataId>
     {
         public Hash128 hash;
 

@@ -49,6 +49,7 @@ namespace UnityEditor.Search
         private const string k_DetailsWidthKey = "Search.DetailsWidth";
         private static readonly string k_CheckWindowKeyName = $"{typeof(SearchWindow).FullName}h";
         static readonly TimeSpan k_MaxUpdateTime = TimeSpan.FromMilliseconds(16);
+        static readonly TimeSpan k_InfiniteTime = TimeSpan.MaxValue;
 
         private static EditorWindow s_FocusedWindow;
         private static SearchViewState s_GlobalViewState = null;
@@ -74,6 +75,8 @@ namespace UnityEditor.Search
         private bool m_HasAssetProvider;
         Dictionary<string, (ShortcutBinding, Action)> m_ShortcutBindings;
         private SearchStatusBar m_StatusBar;
+        private RefreshFlags m_RefreshRequest;
+
         [SerializeField] protected int m_ContextHash;
         [SerializeField] private float m_PreviousItemSize = -1;
         [SerializeField] protected SearchViewState m_ViewState = null;
@@ -101,6 +104,7 @@ namespace UnityEditor.Search
         Action<SearchItem> ISearchView.trackingCallback => m_ViewState.trackingHandler;
 
         public bool searchInProgress => (m_SearchView?.searchInProgress ?? context?.searchInProgress ?? false) || !guiCreated;
+        public bool UpdateNeeded => m_RefreshRequest != RefreshFlags.None || searchInProgress || (m_SearchView?.UpdateNeeded ?? false);
         public string currentGroup { get => m_SearchView?.currentGroup ?? viewState.group; set => SelectGroup(value); }
 
         public SearchViewState state => m_ViewState;
@@ -164,14 +168,32 @@ namespace UnityEditor.Search
 
         public void Update()
         {
+            UpdateTimed(k_MaxUpdateTime);
+        }
+
+        internal void UpdateTimed(TimeSpan updateTime)
+        {
             if (!guiCreated)
                 return;
 
-            m_SearchView?.UpdateIncrementalTimed(k_MaxUpdateTime);
+            // Add more context about the Refresh to the SearchView that will gets updated:
+            if (m_RefreshRequest != RefreshFlags.None && m_SearchView != null)
+            {
+                m_SearchView.Refresh(m_RefreshRequest);
+            }
+
+            m_SearchView?.UpdateIncrementalTimed(updateTime);
             if (m_HasAssetProvider && !m_IsWarningWindowDismissed && m_IndexingWarningWindow != null)
             {
                 m_IsWarningWindowDismissed = m_IndexingWarningWindow.CheckIndexing();
             }
+
+            m_RefreshRequest = RefreshFlags.None;
+        }
+
+        internal void CompleteUpdate()
+        {
+            UpdateTimed(k_InfiniteTime);
         }
 
         EntityId ISearchView.GetViewId()
@@ -406,7 +428,7 @@ namespace UnityEditor.Search
 
         public virtual void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
-            m_SearchView?.Refresh(flags);
+            m_RefreshRequest |= flags;
         }
 
         private void SetContext(SearchContext newContext, bool notifyContextChanged = true)

@@ -261,7 +261,11 @@ namespace Unity.U2D.Physics
             public readonly struct ManifoldPoint
             {
                 /// <summary>
-                /// Location of the contact point in world space. Subject to precision loss at large coordinates.
+                /// Location of the contact point in world space.
+                /// Subject to precision loss at large coordinates.
+                /// This point lags behind when contact recycling is used.
+                /// Preference should be to use anchorA and/or anchorB for game logic.
+                /// This is also known as the "clip" point.
                 /// </summary>
                 public readonly Vector2 point => m_Point;
 
@@ -325,6 +329,7 @@ namespace Unity.U2D.Physics
                 readonly Vector2 m_AnchorA;
                 readonly Vector2 m_AnchorB;
                 readonly float m_Separation;
+                readonly float m_BaseSeparation; // We don't want to expose this as it's not that useful.
                 readonly float m_NormalImpulse;
                 readonly float m_TangentImpulse;
 	            readonly float m_TotalNormalImpulse;

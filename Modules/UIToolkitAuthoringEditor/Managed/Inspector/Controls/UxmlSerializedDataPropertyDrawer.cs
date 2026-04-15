@@ -38,6 +38,7 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
     }
 
     public const string ussClassName = "unity-uxml-serialized-data-property-view";
+    public const string AddUxmlObjectMenuPropertyKey = "UxmlSerializedDataPropertyView_AddUxmlObjectMenu";
 
     UxmlAttributeFieldDecorator m_FieldDecoratorForListItem;
     UxmlAttributesEditingContext m_Context;
@@ -149,6 +150,32 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
             evt.StopPropagation();
         }
     }
+
+    public static void ShowAddUxmlObjectMenu(VisualElement element, UxmlSerializedAttributeDescription attribute,
+        Action<Type> action)
+    {
+        if (attribute.uxmlObjectAcceptedTypes.Count == 0)
+            return;
+
+        if (attribute.uxmlObjectAcceptedTypes.Count == 1)
+        {
+            action(attribute.uxmlObjectAcceptedTypes[0]);
+            return;
+        }
+
+        var menu = new GenericDropdownMenu();
+
+        foreach (var type in attribute.uxmlObjectAcceptedTypes)
+        {
+            var name = ObjectNames.NicifyVariableName(type.DeclaringType.Name);
+
+            menu.AddItem(name, false, () => action(type));
+        }
+
+        element.SetProperty(AddUxmlObjectMenuPropertyKey, menu);
+        menu.onClose += () => element.ClearProperty(AddUxmlObjectMenuPropertyKey);
+        menu.DropDown(element.worldBound, element, DropdownMenuSizeMode.Auto);
+    }
 }
 
 /// <summary>
@@ -158,12 +185,104 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 [CustomPropertyDrawer(typeof(UxmlSerializedData), true)]
 internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
 {
+    public static readonly string k_CreateOrRemoveDataButtonUssName = UxmlSerializedDataPropertyView.ussClassName + "__create-or-remove-data-button";
+    public static readonly string k_CreateDataButtonUssName = k_CreateOrRemoveDataButtonUssName + "--add";
+    public static readonly string k_CreateDataButtonWithMenuUssName = k_CreateOrRemoveDataButtonUssName + "--add-with-menu";
+    public static readonly string k_RemoveDataButtonUssName = k_CreateOrRemoveDataButtonUssName + "--remove";
+
     public sealed override VisualElement CreatePropertyGUI(SerializedProperty property)
     {
         var container = new UxmlSerializedDataPropertyView(property);
 
         CreatePropertyGUI(container, property);
+
+        var isPropertyToUxmlObjectSerializedData = property.managedReferenceValue is not VisualElement.UxmlSerializedData;
+
+        if (isPropertyToUxmlObjectSerializedData)
+        {
+            var parent = property.Copy();
+
+            if (parent.Parent() && !parent.isArray)
+            {
+                var addOrRemoveButton = new Button().WithClassList(k_CreateOrRemoveDataButtonUssName);
+
+                UpdateAddOrRemoveButtonState(property, addOrRemoveButton);
+                addOrRemoveButton.clicked += () => OnAddOrRemoveButtonClicked(addOrRemoveButton);
+                addOrRemoveButton.RegisterCallback<AttachToPanelEvent>((e) =>
+                {
+                    var fieldDecorator = addOrRemoveButton.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>();
+
+                    // If the button is not in a field decorator then hide it
+                    if (fieldDecorator == null)
+                    {
+                        addOrRemoveButton.style.display = DisplayStyle.None; // Hide the button;
+                        return;
+                    }
+                    fieldDecorator.boundPropertyChanged += (_, _) => UpdateAddOrRemoveButtonState(property, addOrRemoveButton);
+                });
+
+                var foldout = container.childCount > 0 ? container[0] as Foldout : null;
+
+                if (foldout != null)
+                {
+                    foldout.Q<Toggle>().Add(addOrRemoveButton);
+                }
+                else
+                {
+                    container.Add(addOrRemoveButton);
+                }
+            }
+        }
+
         return container;
+    }
+
+    void UpdateAddOrRemoveButtonState(SerializedProperty property, Button addOrRemoveButton)
+    {
+        var flagsPath = property.propertyPath + "_UxmlAttributeFlags";
+        var flagProperty = property.serializedObject.FindProperty(flagsPath);
+        var isInline = false;
+
+        if (flagProperty != null)
+        {
+            var uxmlFlagsValue = (UxmlSerializedData.UxmlAttributeFlags)flagProperty.enumValueIndex;
+            isInline = UxmlSerializedData.ShouldWriteAttributeValue(uxmlFlagsValue);
+        }
+
+        bool shouldRemove = isInline && property.managedReferenceValue != null;
+
+        addOrRemoveButton.EnableInClassList(k_CreateDataButtonUssName, !shouldRemove);
+        addOrRemoveButton.EnableInClassList(k_RemoveDataButtonUssName, shouldRemove);
+
+        var fieldDecorator = addOrRemoveButton.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>();
+
+        if (fieldDecorator is { boundAttributeDescription: not null })
+        {
+            addOrRemoveButton.EnableInClassList(k_CreateDataButtonWithMenuUssName, !shouldRemove && fieldDecorator.boundAttributeDescription.uxmlObjectAcceptedTypes.Count > 1);
+        }
+    }
+
+    void OnAddOrRemoveButtonClicked(Button addOrRemoveButton)
+    {
+        bool shouldAdd = addOrRemoveButton.ClassListContains(k_CreateDataButtonUssName);
+
+        if (shouldAdd)
+        {
+            var fieldDecorator = addOrRemoveButton.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>();
+
+            UxmlSerializedDataPropertyView.ShowAddUxmlObjectMenu(addOrRemoveButton,
+                fieldDecorator.boundAttributeDescription, t =>
+                {
+                    UxmlAssetUtilities.AddUxmlObjectToSerializedData(fieldDecorator.context,
+                        fieldDecorator.boundProperty, t);
+                });
+        }
+        else
+        {
+            var fieldDecorator = addOrRemoveButton.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>();
+
+            UxmlAssetUtilities.AddUxmlObjectToSerializedData(fieldDecorator.context, fieldDecorator.boundProperty, (UxmlSerializedData)null);
+        }
     }
 
     /// <summary>
@@ -177,6 +296,9 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
 
         container.Add(foldout);
 
+        if (property.managedReferenceValue == null)
+            return;
+
         CreateChildPropertiesGUI(foldout, property);
     }
 
@@ -186,7 +308,8 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
     /// <param name="container">The VisualElement parent of the content to create</param>
     /// <param name="property">The serialized property on the UxmlSerializedData to display</param>
     /// <param name="childProperty">The serialized property on one of the properties of the UxmlSerializedData to display</param>
-    protected virtual void CreateChildPropertyGUI(VisualElement container, SerializedProperty property, SerializedProperty childProperty)
+    protected virtual void CreateChildPropertyGUI(VisualElement container, SerializedProperty property,
+        SerializedProperty childProperty)
     {
         container.Add(new UxmlAttributeField(childProperty));
     }
@@ -200,11 +323,9 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
     {
         var uxmlSerializedData = property.managedReferenceValue as UxmlSerializedData;
 
-        if (uxmlSerializedData == null)
-            return;
-
         // Use the UxmlSerializedDataDescription to determine which properties to show and in which order.
-        var dataAttribute = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+        var dataAttribute =
+            UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
 
         foreach (var attribute in dataAttribute.serializedAttributes)
         {

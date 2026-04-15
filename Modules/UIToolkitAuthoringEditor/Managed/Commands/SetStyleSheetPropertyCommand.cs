@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -44,6 +45,10 @@ internal readonly record struct SetStyleSheetPropertyCommand<T>
         ValueSetter(property, StyleSheet, Value);
 
         EditorUtility.SetDirty(StyleSheet);
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        {
+            stage.PanelElement.FrameUpdate();
+        }
     }
 
 

@@ -306,6 +306,9 @@ namespace UnityEditor
                     if (reformattedPath == rootPath)
                         continue;
 
+                    if (FilteredHierarchy.SearchFilterExcludesAssetPath(reformattedPath, searchFilter))
+                        continue;
+
                     var entityId = assetToEntityId(reformattedPath);
                     if (entityId == EntityId.None)
                         continue;

@@ -8,6 +8,7 @@ using UnityEngine.U2D;
 using UnityEngine.Bindings;
 using System;
 using UnityEditor.AssetImporters;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.U2D
 {
@@ -140,7 +141,6 @@ namespace UnityEditor.U2D
         extern internal static Texture2D[] GetPreviewTextures([NotNull] this SpriteAtlas spriteAtlas);
         extern internal static Texture2D[] GetPreviewAlphaTextures([NotNull] this SpriteAtlas spriteAtlas);
         extern internal static TextureFormat GetTextureFormat([NotNull] this SpriteAtlas spriteAtlas, BuildTarget target);
-        extern internal static Sprite[] GetPackedSprites([NotNull] this SpriteAtlas spriteAtlas);
         extern internal static Hash128 GetStoredHash([NotNull] this SpriteAtlas spriteAtlas);
 
         [NativeName("GetSecondaryPlatformSettings")]
@@ -164,5 +164,22 @@ namespace UnityEditor.U2D
         extern internal static void DeleteSecondaryPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, string secondaryTextureName);
         extern internal static string GetSecondaryTextureNameInAtlas(string atlasTextureName);
         extern internal static string GetPageNumberInAtlas(string atlasTextureName);
+        extern internal static void ResetMasterSprites([NotNull] this SpriteAtlas spriteAtlas);
+    }
+
+    internal class SpriteAtlasAssetPostProcessor : AssetModificationProcessor
+    {
+        static AssetDeleteResult OnWillDeleteAsset(string path, RemoveAssetOptions opt)
+        {
+            if (path.EndsWithIgnoreCaseFast("spriteatlas") || path.EndsWithIgnoreCaseFast("spriteatlasv2") || path.EndsWithIgnoreCaseFast("tileset"))
+            {
+                SpriteAtlas spriteAtlas = AssetDatabase.LoadAssetAtPath<SpriteAtlas>(path);
+                if (null != spriteAtlas)
+                {
+                    spriteAtlas.ResetMasterSprites();
+                }                
+            }
+            return AssetDeleteResult.DidNotDelete;
+        }
     }
 }

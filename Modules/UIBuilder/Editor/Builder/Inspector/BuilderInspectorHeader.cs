@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
             m_Icon = m_Inspector.Q<VisualElement>("header-icon");
 
             m_Pill = m_Inspector.Q<Label>("header-selected-pill");
-            m_Pill.AddToClassList("unity-builder-tag-pill");
+            m_Pill.AddToClassList("unity-tag-pill");
 
             m_TextField = m_Inspector.Q<TextField>("header-selected-text-field");
             m_TextField.isDelayed = true;

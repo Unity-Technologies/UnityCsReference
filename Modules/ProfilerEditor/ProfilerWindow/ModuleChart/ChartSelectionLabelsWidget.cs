@@ -78,6 +78,8 @@ namespace Unity.Profiling.Editor
                 return false;
             if ((m_Model == null) || (m_Model.selectedLabels == null) || (m_ChartLabels == null))
                 return false;
+            if (m_ChartLabels.Length == 0 || m_ChartLabels[0].panel == null)
+                return false;
 
             // Exit early if the selected frame is outside the domain of the chart
             var domain = m_Model.GetDataDomain();

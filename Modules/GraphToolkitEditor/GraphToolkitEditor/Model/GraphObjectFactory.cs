@@ -14,6 +14,7 @@ using UnityEngine;
 using UnityEngine.Pool;
 
 using InstanceID = System.Int32;
+using Object = UnityEngine.Object;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -312,7 +313,15 @@ namespace Unity.GraphToolkit.Editor
             }
             if (graphObject != null)
             {
-                graphObject.CallOnLoadObject();
+                try
+                {
+                    graphObject.CallOnLoadObject();
+                }
+                catch
+                {
+                    Object.DestroyImmediate(graphObject);
+                    throw;
+                }
             }
 
             return graphObject;

@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
     //
     // For example 2: A keydown with Textfocus in TextField C
     // result ==> Phase TrickleDown [ root, A], Phase Target [C], Phase BubbleUp [ A, root ]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     enum DispatchMode
     {
         Default = Queued,

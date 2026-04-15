@@ -15,6 +15,8 @@ namespace Unity.Profiling.Editor.UI
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
         readonly string m_Title;
+        readonly ProfilerWindow m_ProfilerWindow;
+        readonly IDetailsElementBinder m_DetailsBinder;
         SystemsImpactModel? m_Model;
 
         // View.
@@ -23,10 +25,16 @@ namespace Unity.Profiling.Editor.UI
         VisualElement m_ItemsContainer;
         ActivityIndicatorOverlay m_ActivityOverlay;
 
-        public SystemsImpactViewController(IProfilerCaptureDataService dataService, string title)
+        public SystemsImpactViewController(
+            IProfilerCaptureDataService dataService,
+            string title,
+            ProfilerWindow profilerWindow,
+            IDetailsElementBinder detailsBinder)
         {
             m_DataService = dataService;
             m_Title = title;
+            m_ProfilerWindow = profilerWindow;
+            m_DetailsBinder = detailsBinder;
             UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }
 
@@ -80,6 +88,8 @@ namespace Unity.Profiling.Editor.UI
             if (disposing)
             {
                 UserAccessiblitySettings.colorBlindConditionChanged -= OnColorBlindSettingChanged;
+                foreach (var item in m_Items)
+                    m_DetailsBinder.UnbindDetailsElement(item);
             }
 
             base.Dispose(disposing);
@@ -103,6 +113,9 @@ namespace Unity.Profiling.Editor.UI
                 return;
 
             var highestSystemImpactAsFloat = Convert.ToSingle(systemImpacts[0].DurationNs);
+            if (highestSystemImpactAsFloat <= 0f)
+                return;
+
             var itemIndex = 0;
             foreach (var systemImpact in systemImpacts)
             {
@@ -112,6 +125,8 @@ namespace Unity.Profiling.Editor.UI
                 if (itemIndex < m_Items.Count)
                 {
                     item = m_Items[itemIndex];
+                    // Unbind before rebinding to avoid retaining a stale provider on reused items.
+                    m_DetailsBinder.UnbindDetailsElement(item);
                 }
                 else
                 {
@@ -122,6 +137,7 @@ namespace Unity.Profiling.Editor.UI
 
                 var normalizedDuration = Convert.ToSingle(systemImpact.DurationNs) / highestSystemImpactAsFloat;
                 item.Configure(systemImpact, normalizedDuration);
+                m_DetailsBinder.BindDetailsElement(item, new SystemImpactDetailsProvider(m_ProfilerWindow, systemImpact, model.FrameRange));
 
                 itemIndex++;
             }

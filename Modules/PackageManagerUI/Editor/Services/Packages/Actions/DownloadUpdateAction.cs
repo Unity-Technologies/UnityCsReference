@@ -17,8 +17,6 @@ internal class DownloadUpdateAction : DownloadActionBase
 
     public override bool isRecommended => true;
 
-    public override Icon icon => Icon.Download;
-
     public override bool IsVisible(IPackageVersion version)
     {
         return base.IsVisible(version) && IsUpdateAvailable(version);

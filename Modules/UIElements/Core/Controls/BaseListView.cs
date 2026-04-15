@@ -472,11 +472,13 @@ namespace UnityEngine.UIElements
                     m_Footer = new VisualElement() { name = footerUssClassName };
                     m_Footer.AddToClassList(footerUssClassNameUnique);
 
-                    m_AddButton = new Button(OnAddClicked) { name = footerAddButtonName, text = "+" };
+                    m_AddButton = new Button(OnAddClicked) { name = footerAddButtonName };
+                    m_AddButton.AddToClassList(footerAddButtonNameUnique);
                     m_AddButton.SetEnabled(allowAdd);
                     m_Footer.Add(m_AddButton);
 
-                    m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName, text = "-" };
+                    m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName };
+                    m_RemoveButton.AddToClassList(footerRemoveButtonNameUnique);
                     m_Footer.Add(m_RemoveButton);
 
                     UpdateRemoveButton();
@@ -1214,7 +1216,16 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string footerAddButtonName = ussClassName + "__add-button";
         internal static readonly UniqueStyleString footerAddButtonNameUnique = new(footerAddButtonName);
-
+        /// <summary>
+        /// The USS class name for the add button element with a menu in the footer.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the add button element in the footer of the ListView when it is used to show a dropdown menu. Any styling applied to this class
+        /// affects every add button element located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        internal static readonly string footerAddButtonWithMenuName = footerAddButtonName + "--with-menu";
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static readonly UniqueStyleString footerAddButtonWithMenuNameUnique = new(footerAddButtonWithMenuName);
         /// <summary>
         /// The name of the remove button element in the footer.
         /// </summary>

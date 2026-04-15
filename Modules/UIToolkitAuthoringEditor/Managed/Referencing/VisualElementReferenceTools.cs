@@ -220,7 +220,7 @@ static class VisualElementReferenceTools
 
         using (new AssetDatabase.AssetEditingScope())
         {
-            var exporter = new VisualTreeAssetExporter();
+            var exporter = VisualTreeAssetExporter.Default;
 
             foreach (var vea in missingAuthoringIds)
             {

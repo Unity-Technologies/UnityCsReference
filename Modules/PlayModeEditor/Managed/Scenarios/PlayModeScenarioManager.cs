@@ -58,7 +58,7 @@ namespace Unity.PlayMode.Editor
                 NewItemName = newItemName
             };
 
-            PlayModeButtonsExtension.Initialize(); // Refresh the buttons if needed
+            // PlayModeButtons handles initialization automatically via OnEnable()
         }
 
         internal static void UnregisterScenarioType<T>() where T : PlayModeScenario

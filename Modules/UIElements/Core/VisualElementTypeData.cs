@@ -22,15 +22,33 @@ namespace UnityEngine.UIElements
 
             internal bool hasContainsPoint { get; }
 
+            internal IEventInvoker selfEventInvoker { get; }
+
             public TypeData(Type type)
             {
                 this.type = type;
 
-                EventInterestReflectionUtils.GetDefaultEventInterests(type, out m_DefaultEventInterests);
+                EventInterestReflectionUtils.GetDefaultEventInterests(type, out m_DefaultEventInterests, out var parentTypeData);
 
                 hasContainsPoint =
                     type.GetMethod(nameof(ContainsPoint), BindingFlags.Instance | BindingFlags.Public)
                         ?.DeclaringType != typeof(VisualElement);
+
+                try
+                {
+                    selfEventInvoker = (IEventInvoker)typeof(EventSelfArg<>).MakeGenericType(type)
+                                           .GetMethod(nameof(EventSelfArg<VisualElement>.GetSelfInvoker))
+                                           ?.Invoke(null, Array.Empty<object>()) ??
+                                       parentTypeData?.selfEventInvoker ??
+                                       EventSelfArg<VisualElement>.GetSelfInvoker();
+                }
+                catch (Exception)
+                {
+                    // Fall back on parent type. If we're compiling for il2cpp, we assume that the static analysis
+                    // will have found all the valid EventSelfArg<TElement> in the wild, which will make this invoker
+                    // use the most derived invoker that could be used to register a callback (hence, a valid one).
+                    selfEventInvoker = parentTypeData?.selfEventInvoker ?? EventSelfArg<VisualElement>.GetSelfInvoker();
+                }
             }
 
             private string m_FullTypeName = string.Empty;
@@ -71,7 +89,7 @@ namespace UnityEngine.UIElements
         }
 
         private readonly TypeData m_TypeData;
-        private TypeData typeData => m_TypeData;
+        internal TypeData typeData => m_TypeData;
 
         private class TypeReferenceComparer : IEqualityComparer<Type>
         {

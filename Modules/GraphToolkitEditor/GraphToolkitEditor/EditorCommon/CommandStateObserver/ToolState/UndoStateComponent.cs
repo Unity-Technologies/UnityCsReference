@@ -57,6 +57,8 @@ namespace Unity.GraphToolkit.Editor
         [NonSerialized]
         ToolStateComponent m_ToolStateComponent;
 
+        public bool IsMerging => m_UndoStateRecorder.IsMergingCommands;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="UndoStateComponent"/> class.
         /// </summary>

@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
-using TableType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<UnityEngine.UIElements.StyleComplexSelector>>;
+using TableType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<UnityEngine.UIElements.StyleSelectorLookupEntry>>;
 
 namespace UnityEngine.UIElements;
 
@@ -24,11 +24,11 @@ struct SelectorAccelerationCacheEntry
 
     internal int nonEmptyTablesMask;
 
-    internal List<StyleComplexSelector> rootSelectors;
+    internal List<StyleSelectorLookupEntry> rootSelectors;
 
-    internal List<StyleComplexSelector> wildCardSelectors;
+    internal List<StyleSelectorLookupEntry> wildCardSelectors;
 
-    public static SelectorAccelerationCacheEntry Create(StyleSheet styleSheet)
+    public static SelectorAccelerationCacheEntry Create()
     {
         var entry = new SelectorAccelerationCacheEntry();
         entry.tables = new[]
@@ -40,9 +40,11 @@ struct SelectorAccelerationCacheEntry
             // Class
             new TableType(StringComparer.Ordinal)
         };
+        return entry;
+    }
 
-        styleSheet.RebuildIfNecessary();
-
+    public static void AppendStyleSheetToEntry(ref SelectorAccelerationCacheEntry entry, StyleSheet styleSheet, int importedStyleSheetIndex = -1)
+    {
         for (var index = 0; index < styleSheet.rules.Length; index++)
         {
             var rule = styleSheet.rules[index];
@@ -58,6 +60,8 @@ struct SelectorAccelerationCacheEntry
 
                 var tableToUse = SelectorAccelerationTableType.None;
 
+                var entryToAdd = new StyleSelectorLookupEntry(complexSelector, importedStyleSheetIndex);
+
                 switch (part.type)
                 {
                     case StyleSelectorType.Class:
@@ -72,8 +76,8 @@ struct SelectorAccelerationCacheEntry
 
                     case StyleSelectorType.Wildcard:
                         if (entry.wildCardSelectors == null)
-                            entry.wildCardSelectors = new List<StyleComplexSelector>();
-                        entry.wildCardSelectors.Add(complexSelector);
+                            entry.wildCardSelectors = new List<StyleSelectorLookupEntry>();
+                        entry.wildCardSelectors.Add(entryToAdd);
                         break;
 
                     case StyleSelectorType.PseudoClass:
@@ -81,16 +85,16 @@ struct SelectorAccelerationCacheEntry
                         if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
                         {
                             if (entry.rootSelectors == null)
-                                entry.rootSelectors = new List<StyleComplexSelector>();
-                            entry.rootSelectors.Add(complexSelector);
+                                entry.rootSelectors = new List<StyleSelectorLookupEntry>();
+                            entry.rootSelectors.Add(entryToAdd);
                         }
                         // in this case we assume a wildcard selector
                         // since a selector such as ":selected" applies to all elements
                         else
                         {
                             if (entry.wildCardSelectors == null)
-                                entry.wildCardSelectors = new List<StyleComplexSelector>();
-                            entry.wildCardSelectors.Add(complexSelector);
+                                entry.wildCardSelectors = new List<StyleSelectorLookupEntry>();
+                            entry.wildCardSelectors.Add(entryToAdd);
                         }
 
                         break;
@@ -104,16 +108,14 @@ struct SelectorAccelerationCacheEntry
                     var table = entry.tables[(int)tableToUse];
                     if (!table.TryGetValue(key, out var list))
                     {
-                        list = new List<StyleComplexSelector>();
+                        list = new List<StyleSelectorLookupEntry>();
                         table.Add(key, list);
                     }
                     entry.nonEmptyTablesMask |= (1 << (int)tableToUse);
-                    list.Add(complexSelector);
+                    list.Add(entryToAdd);
                 }
             }
         }
-
-        return entry;
     }
 
     // Only used in tests for now
@@ -131,12 +133,27 @@ class SelectorAccelerationCache
 {
     public static SelectorAccelerationCache shared = new SelectorAccelerationCache();
 
-    private static ProfilerMarker s_Marker = new ProfilerMarker("UIElements.AccelerateSelectors");
+    private static ProfilerMarker s_MarkerBuild = new ProfilerMarker("UIElements.BuildAccelerateSelectors");
+    private static ProfilerMarker s_MarkerClean = new ProfilerMarker("UIElements.CleanAcceleratedSelectors");
 
     readonly Dictionary<EntityId, SelectorAccelerationCacheEntry> m_Cache = new();
-    readonly List<(string path, EntityId entityId)> m_PathToEntityId = new(128);
+    readonly List<(EntityId dependency, EntityId dependent)> m_DependencyList = new(128);
+    readonly DependencyComparer  m_DependencyComparer = new();
+
+    class DependencyComparer : IComparer<(EntityId dependency, EntityId dependent)>
+    {
+        public int Compare((EntityId dependency, EntityId dependent) x, (EntityId dependency, EntityId dependent) y)
+        {
+            int diff = x.dependency.CompareTo(y.dependency);
+            if (diff != 0)
+                return diff;
+            return x.dependent.CompareTo(y.dependent);
+        }
+    }
+
+    readonly List<(string path, EntityId entityId)> m_PathList = new(128);
     readonly Dictionary<EntityId, int> m_CacheForHash = new();
-    readonly PathEntityIdComparer m_Comparer = new();
+    readonly PathEntityIdComparer m_PathListComparer = new();
 
     class PathEntityIdComparer : IComparer<(string path, EntityId entityId)>
     {
@@ -153,71 +170,125 @@ class SelectorAccelerationCache
 
     public void Remove(string styleSheetPath)
     {
-        // We try to find an appropriate index to expand our search from
-        int index = m_PathToEntityId.BinarySearch((styleSheetPath, EntityId.None), m_Comparer);
+        // Find the all occurrences of this path
+        (int firstIndex, int removeCount) = m_PathList.FindRangeForKey(m_PathListComparer, styleSheetPath, EntityId.None);
 
-        Debug.Assert(index < 0, "EntityId.None should not exist");
-
-        index = ~index;
-
-        // Find the first occurrence of this path
-        int firstIndex = index;
-        while (firstIndex > 0 && m_PathToEntityId[firstIndex - 1].path == styleSheetPath)
-            firstIndex--;
-
-        // Remove all entries with this path
-        int removeCount = 0;
-        for (int i = firstIndex; i < m_PathToEntityId.Count && m_PathToEntityId[i].path == styleSheetPath; i++)
+        // For each occurence, clean up the cached data
+        for (int i = 0; i < removeCount; i++)
         {
-            m_Cache.Remove(m_PathToEntityId[i].entityId);
-            m_CacheForHash.Remove(m_PathToEntityId[i].entityId);
-            removeCount++;
+            EntityId entityId = m_PathList[firstIndex + i].entityId;
+            m_Cache.Remove(entityId);
+            m_CacheForHash.Remove(entityId);
+            // No need to remove each dependent style sheet from the main cache here
+            // This is because they will be removed separately (dependent style sheets get reimported too)
+            m_DependencyList.RemoveRangeForKey(m_DependencyComparer, entityId, EntityId.None);
         }
 
-        m_PathToEntityId.RemoveRange(firstIndex, removeCount);
+        m_PathList.RemoveRange(firstIndex, removeCount);
     }
 
     public void Remove(StyleSheet styleSheet)
     {
-        bool removedFromMainCache = m_Cache.Remove(styleSheet.GetEntityId());
+        s_MarkerClean.Begin();
+
+        EntityId entityId = styleSheet.GetEntityId();
+
+        // First, we try to find if any potential dependent stylesheet registered for this one
+        {
+            (int firstIndex, int removeCount) = m_DependencyList.FindRangeForKey(m_DependencyComparer, entityId, EntityId.None);
+
+            // Remove each entry for any dependent stylesheet
+            for (int i = 0; i < removeCount; i++)
+            {
+                EntityId dependentEntityId = m_DependencyList[firstIndex + i].dependent;
+                m_Cache.Remove(dependentEntityId);
+                m_CacheForHash.Remove(dependentEntityId);
+                RemovedStyleSheetFromMainCache(dependentEntityId);
+            }
+
+            m_DependencyList.RemoveRange(firstIndex, removeCount);
+        }
+
+        // Attempt to remove the style sheet itself
+        RemovedStyleSheetFromMainCache(entityId, styleSheet);
+
+        s_MarkerClean.End();
+    }
+
+    private void RemovedStyleSheetFromMainCache(EntityId entityId, StyleSheet styleSheet = null)
+    {
+        bool removedFromMainCache = m_Cache.Remove(entityId);
 
         if (!removedFromMainCache)
             return;
 
-        bool removedFromHashCache = m_CacheForHash.Remove(styleSheet.GetEntityId());
+        bool removedFromHashCache = m_CacheForHash.Remove(entityId);
         Debug.Assert(removedFromHashCache, "removedFromMainCache == removedFromHashCache");
+
+        if (styleSheet == null)
+        {
+            styleSheet = Resources.EntityIdToObject(entityId) as StyleSheet;
+        }
+        if (styleSheet == null)
+        {
+            return;
+        }
 
         string path = Panel.GetStyleSheetPath(styleSheet);
         if (!string.IsNullOrEmpty(path) && path != "Library/unity editor resources")
         {
-            int index = m_PathToEntityId.BinarySearch((path, styleSheet.GetEntityId()), m_Comparer);
+            int index = m_PathList.BinarySearch((path, styleSheet.GetEntityId()), m_PathListComparer);
             if (index >= 0)
-                m_PathToEntityId.RemoveRange(index, 1);
+                m_PathList.RemoveRange(index, 1);
         }
     }
 
     public SelectorAccelerationCacheEntry GetOrCreate(StyleSheet styleSheet)
     {
-        if (!m_Cache.TryGetValue(styleSheet.GetEntityId(), out var entry))
+        EntityId entityId = styleSheet.GetEntityId();
+
+        if (!m_Cache.TryGetValue(entityId, out var entry))
         {
-            s_Marker.Begin();
-            entry = SelectorAccelerationCacheEntry.Create(styleSheet);
-            m_Cache.Add(styleSheet.GetEntityId(), entry);
-            s_Marker.End();
+            s_MarkerBuild.Begin();
+            entry = SelectorAccelerationCacheEntry.Create();
+            SelectorAccelerationCacheEntry.AppendStyleSheetToEntry(ref entry, styleSheet);
+
+            if (styleSheet.flattenedRecursiveImports != null && styleSheet.flattenedRecursiveImports.Count > 0)
+            {
+                for (var i = styleSheet.flattenedRecursiveImports.Count - 1; i >= 0; i--)
+                {
+                    var sheet = styleSheet.flattenedRecursiveImports[i];
+                    if (sheet == null)
+                        continue;
+                    // This is very defensive, hopefully we can remove this in the future
+                    sheet.RebuildIfNecessary();
+                    SelectorAccelerationCacheEntry.AppendStyleSheetToEntry(ref entry, sheet, i);
+
+                    // Accumulate new keys at the end to avoid repetitive scans for a specific index
+                    m_DependencyList.Add( (sheet.GetEntityId(), entityId));
+                }
+                // Sort after adding values at the end
+                m_DependencyList.Sort(m_DependencyComparer);
+            }
+
+            m_Cache.Add(entityId, entry);
+            s_MarkerBuild.End();
             string path = Panel.GetStyleSheetPath(styleSheet);
             if (!string.IsNullOrEmpty(path) && path != "Library/unity editor resources")
             {
-                int index = m_PathToEntityId.BinarySearch((path, styleSheet.GetEntityId()), m_Comparer);
-                Debug.Assert(index < 0, "Entry should not exist");
-                index = ~index;
-                m_PathToEntityId.Insert(index, (path, styleSheet.GetEntityId()));
+                bool inserted = m_PathList.InsertUniquePair(m_PathListComparer, path, entityId);
+                if (!inserted)
+                {
+                    Debug.Assert(false, $"SelectorAccelerationCache: {path} / {entityId} association already exists");
+                }
             }
-            if (!m_CacheForHash.TryAdd(styleSheet.GetEntityId(), styleSheet.contentHash))
+            if (!m_CacheForHash.TryAdd(entityId, styleSheet.contentHash))
             {
-                Debug.LogError($"SelectorAccelerationCache: {styleSheet.name} (entityId={styleSheet.GetEntityId()}) already has a hash, previous is {m_CacheForHash[styleSheet.GetEntityId()]}, new is {styleSheet.contentHash}");
-                m_CacheForHash[styleSheet.GetEntityId()] = styleSheet.contentHash;
+                Debug.LogError($"SelectorAccelerationCache: {styleSheet.name} (entityId={entityId}) already has a hash, previous is {m_CacheForHash[entityId]}, new is {styleSheet.contentHash}");
+                m_CacheForHash[entityId] = styleSheet.contentHash;
             }
         }
+
         if (m_CacheForHash[styleSheet.GetEntityId()] != styleSheet.contentHash)
         {
             Debug.LogError($"SelectorAccelerationCache: {styleSheet.name} (entityId={styleSheet.GetEntityId()}) has changed but change was not notified to SelectorAccelerationCache, please report a bug. Previous hash {m_CacheForHash[styleSheet.GetEntityId()]}, new hash={styleSheet.contentHash}");

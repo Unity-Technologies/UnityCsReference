@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -163,7 +164,7 @@ namespace Unity.UI.Builder
                 foreach(var rule in styleSheet.rules)
                 foreach (var complexSelector in rule.complexSelectors)
                 {
-                    if (BuilderStyleSheetExporter.options.IsSelectorIgnored(complexSelector))
+                    if (StyleSheetExporter.UssExportOptions.Default.IsSelectorIgnored(complexSelector))
                         continue;
 
                     var ssVE = CreateNewSelectorElement(styleSheet, complexSelector);

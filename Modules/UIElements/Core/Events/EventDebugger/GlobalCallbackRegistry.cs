@@ -50,9 +50,9 @@ namespace UnityEngine.UIElements.Experimental
             }
         }
 
-        public static void RegisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback, TrickleDown useTrickleDown)
+        public static void RegisterListeners(Type eventType, CallbackEventHandler ceh, Delegate callback, TrickleDown useTrickleDown)
         {
-            if (!IsEventDebuggerConnected || typeof(TEventType) == typeof(GeometryChangedEvent))
+            if (!IsEventDebuggerConnected || eventType == typeof(GeometryChangedEvent))
                 return;
             Dictionary<Type, List<ListenerRecord>> dict;
             if (!s_Listeners.TryGetValue(ceh, out dict))
@@ -66,10 +66,10 @@ namespace UnityEngine.UIElements.Experimental
             string itemName = declType + "." + callback.Method.Name + " > " + useTrickleDown + " [" + objectName + "]";
 
             List<ListenerRecord> callbackRecords;
-            if (!dict.TryGetValue(typeof(TEventType), out callbackRecords))
+            if (!dict.TryGetValue(eventType, out callbackRecords))
             {
                 callbackRecords = new List<ListenerRecord>();
-                dict.Add(typeof(TEventType), callbackRecords);
+                dict.Add(eventType, callbackRecords);
             }
 
             StackFrame callStack = new StackFrame(2, true);
@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements.Experimental
             });
         }
 
-        public static void UnregisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback)
+        public static void UnregisterListeners(Type eventType, CallbackEventHandler ceh, Delegate callback)
         {
             if (!IsEventDebuggerConnected)
                 return;
@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements.Experimental
             var itemName = declType + "." + callback.Method.Name;
 
             List<ListenerRecord> callbackRecords;
-            if (!dict.TryGetValue(typeof(TEventType), out callbackRecords))
+            if (!dict.TryGetValue(eventType, out callbackRecords))
                 return;
 
             for (var i = callbackRecords.Count - 1; i >= 0; i--)

@@ -98,7 +98,7 @@ namespace UnityEditor
         public int column;
 
         public LogMessageFlags mode;
-        public int instanceID;
+        public EntityId entityId;
         public int identifier;
     }
 

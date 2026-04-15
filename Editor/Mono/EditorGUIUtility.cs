@@ -806,7 +806,7 @@ namespace UnityEditor
 
         // Automatically loads version of icon that matches current skin.
         // Equivalent to Texture2DNamed in ObjectImages.cpp
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule", "UnityEditor.PlayModeModule")]
         internal static Texture2D LoadIcon(string name)
         {
             return LoadIconForSkin(name, skinIndex);

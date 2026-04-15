@@ -183,7 +183,9 @@ namespace UnityEditor
                     RunServer();
                     return;
                 }
-                catch(SocketException)
+                // On CoreCLR, HttpListener.Start can throw a HttpListenerException (which matches the docs),
+                // but on Mono, it can throw a SocketException (which does not match the docs).
+                catch (SocketException)
                 {
 
                     // We had an instances where on our infrastructure domain reload happened
@@ -191,10 +193,6 @@ namespace UnityEditor
                     // times before giving up on starting server.
                     for (int j=0; j<5 && !m_cts.IsCancellationRequested; ++j)
                         Thread.Sleep(50);
-                }
-                catch(Exception e)
-                {
-                    throw e;
                 }
             }
         }

@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum StyleValueFunction
     {
         Unknown,
@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
         {
 #pragma warning disable CA1308
             ussValue = ussValue.ToLowerInvariant();
-#pragma warning restore CA1308            
+#pragma warning restore CA1308
             switch (ussValue)
             {
                 case k_Var:

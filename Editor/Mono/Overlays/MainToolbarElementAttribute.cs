@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Toolbars
 {
     [AttributeUsage(AttributeTargets.Method)]
+    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
     sealed class UnityOnlyMainToolbarPresetAttribute : Attribute { }
 
     public enum MainToolbarDockPosition
@@ -25,7 +27,6 @@ namespace UnityEditor.Toolbars
         // default dock index/order
         // display by default
         public const int defaultMenuPriority = 1000;
-        
         string m_Path;
         int m_DefaultDockIndex = 100;
         MainToolbarDockPosition m_DefaultDropZone;
@@ -48,7 +49,7 @@ namespace UnityEditor.Toolbars
             get => m_DefaultDropZone;
             set => m_DefaultDropZone = value;
         }
-        
+
         public int menuPriority
         {
             get => m_MenuPriority;

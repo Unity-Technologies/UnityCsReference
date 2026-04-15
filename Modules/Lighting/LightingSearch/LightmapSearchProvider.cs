@@ -207,11 +207,6 @@ namespace UnityEditor.Lighting.LightingSearch
             }
         }
 
-        static void RefreshWindow()
-        {
-            UnityEditor.Search.SearchService.RefreshWindows();
-        }
-
         // Refreshes the result view without refetching items
         internal static void RefreshResultView(ISearchWindow window)
         {

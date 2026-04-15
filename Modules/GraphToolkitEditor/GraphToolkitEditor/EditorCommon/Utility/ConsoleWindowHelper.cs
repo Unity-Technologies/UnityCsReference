@@ -18,7 +18,6 @@ namespace Unity.GraphToolkit.Editor
             EditorBridge.AddMessageWithDoubleClickCallback(message, file, logType, logOptions, entityId, (k_LogIdentifier + windowId).GetHashCode());
         }
 
-
         public static void RemoveLogEntries(string windowId)
         {
             EngineBridge.RemoveLogEntriesByIdentifier((k_LogIdentifier + windowId).GetHashCode());

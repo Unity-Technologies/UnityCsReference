@@ -38,7 +38,14 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
         BuildProfileAdaptivePerformanceToggle.RemoveAllSettingsFromBuildProfile(profile);
     }
 
-    public Action<BuildProfile> GetResetAction() => null;
+    public Action<BuildProfile> GetResetAction() => OnReset;
+
+    static void OnReset(BuildProfile profile)
+    {
+        if (profile == null || profile.platformBuildProfile == null) return;
+        profile.platformBuildProfile.adaptivePerformanceEnabled = true; // When AP is disabled and reset, it should be enabled again
+        BuildProfileAdaptivePerformanceToggle.RemoveAllSettingsFromBuildProfile(profile);
+    }
 
     public VisualElement CreateInspectorGUI(BuildProfile profile, SerializedObject serializedObject)
     {

@@ -17,8 +17,8 @@ namespace Unity.UIToolkit.Editor;
 
 internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, IVisualElementEditingManager
 {
+    [NonSerialized]
     private VisualElementEditingStage m_Stage;
-    private VisualTreeAssetExporter m_Exporter;
     private Panel m_Panel;
     private VisualElement m_LocalRoot;
     private bool m_ExpandOnInitialize = false;
@@ -38,7 +38,6 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (m_Stage)
             m_Stage.MainDocumentWasCloned -= StageOnMainDocumentWasCloned;
         m_Stage = null;
-        m_Exporter = null;
         base.Dispose(disposing);
     }
 
@@ -73,7 +72,6 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (m_Stage)
             m_Stage.MainDocumentWasCloned += StageOnMainDocumentWasCloned;
 
-        m_Exporter = new VisualTreeAssetExporter();
         SetContextForEditing(stage.Context, stage.GetAuthoringPanel());
     }
 
@@ -300,22 +298,20 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         for (var i = 0; i < upTo; ++i)
         {
             var parentVtaSource = parentElement.visualTreeAssetSource;
-            if (parentElement is PanelRootElement)
+            switch (parentElement)
             {
-                if (Context.SubDocumentOptions is SubDocumentOptions.Isolation)
-                {
+                case PanelRootElement or PanelElement.PanelElementRootVisualElement when Context.SubDocumentOptions is SubDocumentOptions.Isolation:
                     parentVtaSource = m_Stage.EditedVisualTreeAsset;
-                }
-                else
-                {
+                    break;
+                case PanelRootElement or PanelElement.PanelElementRootVisualElement:
                     parentVtaSource = Context.RootVisualTreeAsset;
+                    break;
+                case TemplateContainer templateContainer:
+                {
+                    var templateAsset = (TemplateAsset)templateContainer.visualElementAsset;
+                    parentVtaSource = templateAsset.ResolveTemplate();
+                    break;
                 }
-            }
-
-            if (parentElement is TemplateContainer templateContainer)
-            {
-                var templateAsset = (TemplateAsset)templateContainer.visualElementAsset;
-                parentVtaSource = templateAsset.ResolveTemplate();
             }
 
             if (logicalParent[i].visualElementAsset == null ||
@@ -677,7 +673,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             toCopy.Add(elements[i].visualElementAsset);
         }
 
-        Clipboard.SystemCopyBuffer = m_Exporter.ToUxmlString(m_Stage.EditedVisualTreeAsset, toCopy);
+        Clipboard.SystemCopyBuffer = VisualTreeAssetExporter.Default.ToUxmlString(m_Stage.EditedVisualTreeAsset, toCopy);
 
         return true;
     }
@@ -885,14 +881,14 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override NodeCreationType ShouldCreateNode(VisualElement element)
     {
-        return element is PanelRootElement
+        return element is PanelRootElement or PanelElement.PanelElementRootVisualElement
             ? NodeCreationType.CreateChildren
             : base.ShouldCreateNode(element);
     }
 
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
-        if (element.parent is PanelRootElement)
+        if (element.parent is PanelRootElement or PanelElement.PanelElementRootVisualElement)
         {
             parentNode = Hierarchy.Root;
             return true;
@@ -990,7 +986,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     internal void CacheLocalRoot()
     {
-        m_LocalRoot = m_Panel.visualTree;
+        m_LocalRoot = m_Panel is PanelElement.RuntimePanel runtimePanel ? runtimePanel.Root : m_Panel.visualTree;
 
         if (Context.SubDocumentOptions is SubDocumentOptions.None or SubDocumentOptions.Isolation)
             return;
@@ -1005,6 +1001,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 .Where(tc =>
                 {
                     var templateAsset = (TemplateAsset)tc.visualElementAsset;
+                    if (templateAsset == null)
+                        return false;
                     return templateAsset.id == template.id;
                 }).First();
         }
@@ -1021,5 +1019,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         DropdownMenu menu)
     {
         StageContextMenuUtility.PopulateMenu(view, in node, menu, this);
+    }
+
+    protected override PanelSettings GetPanelSettings(VisualElement element)
+    {
+        return m_Stage.Context.PanelSettings;
     }
 }

@@ -398,13 +398,13 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void HandleEvent_TrickleDownCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element)
         {
-            element.m_CallbackRegistry?.m_TrickleDownCallbacks.Invoke(evt, panel, element);
+            element.m_CallbackRegistry?.InvokeCallbacksTrickleDown(evt, panel, element);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void HandleEvent_BubbleUpCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element)
         {
-            element.m_CallbackRegistry?.m_BubbleUpCallbacks.Invoke(evt, panel, element);
+            element.m_CallbackRegistry?.InvokeCallbacksBubbleUp(evt, panel, element);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

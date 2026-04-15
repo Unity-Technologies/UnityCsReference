@@ -31,12 +31,17 @@ namespace UnityEngine.UIElements
     };
 
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationBinder.h")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class UIAnimationBinder : Object, IValueAnimationUpdate
     {
         extern private void Internal_AssignKnownElementNames(string[] names, PropertyName[] propertyHashes);
         extern private void Internal_ApplyBoundValues();
 
         VisualElement rootVisualElement { get; set; }
+
+        // Event invoked when element caches are cleared (for external selection cache management)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal event Action ElementCachesClearedEvent;
 
         private bool exposeRootElement;
         internal void RegisterRootDocument(VisualElement element, bool exposeRootElement)
@@ -68,6 +73,7 @@ namespace UnityEngine.UIElements
             ClearElementNames();
             m_Elements?.Clear();
             m_ElementsMap?.Clear();
+            ElementCachesClearedEvent?.Invoke();
         }
 
         [RequiredMember]
@@ -103,6 +109,8 @@ namespace UnityEngine.UIElements
             {
                 m_Elements.Clear();
                 m_ElementsMap.Clear();
+                ElementCachesClearedEvent?.Invoke();
+
             }
 
             var animationRoot = rootVisualElement;
@@ -242,5 +250,70 @@ namespace UnityEngine.UIElements
         {
             ApplyAnimatedValues();
         }
+
+        /// <summary>
+        /// Gets the VisualElement corresponding to the given property name.
+        /// </summary>
+        /// <param name="propertyName">The property name (e.g., "#Container/#Button/translate.x")</param>
+        /// <returns>The VisualElement, or null if not found</returns>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal VisualElement GetVisualElementFromPropertyName(string propertyName)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+                return null;
+
+            string elementPath = ExtractElementPathFromPropertyName(propertyName);
+            if (string.IsNullOrEmpty(elementPath))
+                return null;
+
+            return GetVisualElementFromPath(elementPath);
+        }
+
+        private string ExtractElementPathFromPropertyName(string propertyName)
+        {
+            // Find the last '/' that separates element path from property name
+            // Example: "#Container/#Button/translate.x" -> "#Container/#Button"
+            int lastSlashIndex = propertyName.LastIndexOf('/');
+            if (lastSlashIndex < 0)
+                return null; // No separator found
+
+            return propertyName.Substring(0, lastSlashIndex);
+        }
+
+        private VisualElement GetVisualElementFromPath(string elementPath)
+        {
+            if (m_ElementsMap == null)
+                return null;
+
+            // Try direct lookup using PropertyName
+            var propName = new PropertyName(elementPath);
+            if (m_ElementsMap.TryGetValue(propName, out var element))
+                return element;
+
+            return null;
+        }
+        /// <summary>
+        /// Static callback for getting selection EntityId.
+        /// Set by editor-only code (VisualElementObjectTypeCustomizer) to provide custom selection handling.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static Func<VisualElement, EntityId> s_GetSelectionEntityIdCallback;
+
+        private VisualElement GetVisualElementForElementIndex(int elementIndex)
+        {
+            if (m_Elements != null && elementIndex >= 0 && elementIndex < m_Elements.Count)
+            {
+                return m_Elements[elementIndex].Value;
+            }
+            return null;
+        }
+
+        [RequiredByNativeCode(Optional = true)]
+        internal void GetSelectionEntityIdForBindingIndex(int elementIndex, ref EntityId result)
+        {
+            VisualElement element = GetVisualElementForElementIndex(elementIndex);
+            result = s_GetSelectionEntityIdCallback?.Invoke(element) ?? EntityId.None;
+        }
+
     }
 }

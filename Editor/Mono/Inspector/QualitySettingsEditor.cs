@@ -159,6 +159,33 @@ namespace UnityEditor
         string m_OriginalQualityLevelName = string.Empty;
         string m_NewQualityLevelName = string.Empty;
 
+        private SerializedProperty m_CurrentQualityProperty;
+
+        private int GetCurrentTargetQualityLevel()
+        {
+            if (m_CurrentQualityProperty == null)
+                m_CurrentQualityProperty = m_QualitySettings.FindProperty("m_CurrentQuality");
+
+            return (m_CurrentQualityProperty != null) ?
+                Mathf.Clamp(m_CurrentQualityProperty.intValue, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1)) : 0;
+        }
+
+        private void SetCurrentTargetQualityLevel(int value)
+        {
+            if (m_CurrentQualityProperty == null)
+                m_CurrentQualityProperty = m_QualitySettings.FindProperty("m_CurrentQuality");
+
+            if (m_CurrentQualityProperty != null)
+            {
+                value = Mathf.Clamp(value, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
+                if (m_CurrentQualityProperty.intValue != value)
+                {
+                    m_CurrentQualityProperty.intValue = value;
+                    m_QualitySettings.ApplyModifiedProperties();
+                }
+            }
+        }
+
         public void OnEnable()
         {
             m_QualitySettings = new SerializedObject(target);
@@ -185,11 +212,63 @@ namespace UnityEditor
             }
 
             ResetQualityLevelRenameTracking();
+            UpdateCachedProperties(GetCurrentTargetQualityLevel());
         }
 
         public void OnDestroy()
         {
             ResolvePendingQualityLevelRename();
+
+            // Clear cached property references for current quality level
+            m_CurrentSettings = null;
+            m_NameProperty = null;
+            m_PixelLightCountProperty = null;
+            m_ShadowsProperty = null;
+            m_ShadowResolutionProperty = null;
+            m_ShadowProjectionProperty = null;
+            m_ShadowCascadesProperty = null;
+            m_ShadowDistanceProperty = null;
+            m_ShadowNearPlaneOffsetProperty = null;
+            m_ShadowCascade2SplitProperty = null;
+            m_ShadowCascade4SplitProperty = null;
+            m_ShadowMaskUsageProperty = null;
+            m_SkinWeightsProperty = null;
+            m_GlobalTextureMipmapLimitProperty = null;
+            m_AnisotropicTexturesProperty = null;
+            m_AntiAliasingProperty = null;
+            m_SoftParticlesProperty = null;
+            m_RealtimeReflectionProbesProperty = null;
+            m_BillboardsFaceCameraPositionProperty = null;
+            m_UseLegacyDetailsDistributionProperty = null;
+            m_TerrainQualityOverridesProperty = null;
+            m_TerrainPixelErrorProperty = null;
+            m_TerrainDetailDensityScaleProperty = null;
+            m_TerrainBasemapDistanceProperty = null;
+            m_TerrainDetailDistanceProperty = null;
+            m_TerrainTreeDistanceProperty = null;
+            m_TerrainBillboardStartProperty = null;
+            m_TerrainFadeLengthProperty = null;
+            m_TerrainMaxTreesProperty = null;
+            m_VSyncCountProperty = null;
+            m_RealtimeGICPUUsageProperty = null;
+            m_AdaptiveVsyncProperty = null;
+            m_LodBiasProperty = null;
+            m_MeshLodThresholdProperty = null;
+            m_MaximumLODLevelProperty = null;
+            m_EnableLODCrossFadeProperty = null;
+            m_ParticleRaycastBudgetProperty = null;
+            m_AsyncUploadTimeSliceProperty = null;
+            m_AsyncUploadBufferSizeProperty = null;
+            m_AsyncUploadPersistentBufferProperty = null;
+            m_ResolutionScalingFixedDPIFactorProperty = null;
+            m_CustomRenderPipelineProperty = null;
+
+            m_StreamingMipmapsActiveProperty = null;
+            m_StreamingMipmapsAddAllCamerasProperty = null;
+            m_StreamingMipmapsBudgetProperty = null;
+            m_StreamingMipmapsRenderersPerFrameProperty = null;
+            m_StreamingMipmapsMaxLevelReductionProperty = null;
+            m_StreamingMipmapsMaxFileIORequestsProperty = null;
         }
 
         private struct QualitySetting
@@ -458,16 +537,10 @@ namespace UnityEditor
         {
             if (m_DeleteLevel >= 0)
             {
-                using var scope = new QualitySettings.QualityLevelRemovalScope(m_DeleteLevel);
-
                 if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
                 {
                     selectedLevel = Mathf.Max(0, selectedLevel - 1);
                     QualitySettings.SetQualityLevel(selectedLevel);
-                }
-                else if (m_DeleteLevel == selectedLevel)
-                {
-                    scope.DeletingCurrentNonLastLevel();
                 }
 
                 //Always ensure there is one quality setting
@@ -732,13 +805,148 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
+            var buildProfiles = BuildProfile.GetAllBuildProfiles();
+            var profilesWithQualityLevelOverrides = 0;
+            foreach (var profile in buildProfiles)
+            {
+                if (profile.qualitySettings != null)
+                {
+                    profilesWithQualityLevelOverrides++;
+                }
+            }
             if (profilesWithQualityLevelOverrides > 0)
             {
                 if (profilesWithQualityLevelOverrides == 1)
                     EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationSingular), MessageType.Info);
                 else
                     EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationPlural, profilesWithQualityLevelOverrides), MessageType.Info);
+            }
+        }
+
+        private int m_CachedSelectedLevel = -1;
+        private int m_CachedQualityLevelCount = -1;
+
+        // Cached SerializedProperty references for current quality level
+        private SerializedProperty m_CurrentSettings;
+        private SerializedProperty m_NameProperty;
+        private SerializedProperty m_PixelLightCountProperty;
+        private SerializedProperty m_ShadowsProperty;
+        private SerializedProperty m_ShadowResolutionProperty;
+        private SerializedProperty m_ShadowProjectionProperty;
+        private SerializedProperty m_ShadowCascadesProperty;
+        private SerializedProperty m_ShadowDistanceProperty;
+        private SerializedProperty m_ShadowNearPlaneOffsetProperty;
+        private SerializedProperty m_ShadowCascade2SplitProperty;
+        private SerializedProperty m_ShadowCascade4SplitProperty;
+        private SerializedProperty m_ShadowMaskUsageProperty;
+        private SerializedProperty m_SkinWeightsProperty;
+        private SerializedProperty m_GlobalTextureMipmapLimitProperty;
+        private SerializedProperty m_AnisotropicTexturesProperty;
+        private SerializedProperty m_AntiAliasingProperty;
+        private SerializedProperty m_SoftParticlesProperty;
+        private SerializedProperty m_RealtimeReflectionProbesProperty;
+        private SerializedProperty m_BillboardsFaceCameraPositionProperty;
+        private SerializedProperty m_UseLegacyDetailsDistributionProperty;
+        private SerializedProperty m_TerrainQualityOverridesProperty;
+        private SerializedProperty m_TerrainPixelErrorProperty;
+        private SerializedProperty m_TerrainDetailDensityScaleProperty;
+        private SerializedProperty m_TerrainBasemapDistanceProperty;
+        private SerializedProperty m_TerrainDetailDistanceProperty;
+        private SerializedProperty m_TerrainTreeDistanceProperty;
+        private SerializedProperty m_TerrainBillboardStartProperty;
+        private SerializedProperty m_TerrainFadeLengthProperty;
+        private SerializedProperty m_TerrainMaxTreesProperty;
+        private SerializedProperty m_VSyncCountProperty;
+        private SerializedProperty m_RealtimeGICPUUsageProperty;
+        private SerializedProperty m_AdaptiveVsyncProperty;
+        private SerializedProperty m_LodBiasProperty;
+        private SerializedProperty m_MeshLodThresholdProperty;
+        private SerializedProperty m_MaximumLODLevelProperty;
+        private SerializedProperty m_EnableLODCrossFadeProperty;
+        private SerializedProperty m_ParticleRaycastBudgetProperty;
+        private SerializedProperty m_AsyncUploadTimeSliceProperty;
+        private SerializedProperty m_AsyncUploadBufferSizeProperty;
+        private SerializedProperty m_AsyncUploadPersistentBufferProperty;
+        private SerializedProperty m_ResolutionScalingFixedDPIFactorProperty;
+        private SerializedProperty m_CustomRenderPipelineProperty;
+
+        private SerializedProperty m_StreamingMipmapsActiveProperty;
+        private SerializedProperty m_StreamingMipmapsAddAllCamerasProperty;
+        private SerializedProperty m_StreamingMipmapsBudgetProperty;
+        private SerializedProperty m_StreamingMipmapsRenderersPerFrameProperty;
+        private SerializedProperty m_StreamingMipmapsMaxLevelReductionProperty;
+        private SerializedProperty m_StreamingMipmapsMaxFileIORequestsProperty;
+
+        private void UpdateCachedProperties(int selectedLevel)
+        {
+            // Ensure selectedLevel is within bounds
+            if (selectedLevel < 0 || selectedLevel >= m_QualitySettingsProperty.arraySize)
+            {
+                selectedLevel = Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1);
+            }
+            m_CurrentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
+
+            m_NameProperty = m_CurrentSettings.FindPropertyRelative("name");
+            m_PixelLightCountProperty = m_CurrentSettings.FindPropertyRelative("pixelLightCount");
+            m_ShadowsProperty = m_CurrentSettings.FindPropertyRelative("shadows");
+            m_ShadowResolutionProperty = m_CurrentSettings.FindPropertyRelative("shadowResolution");
+            m_ShadowProjectionProperty = m_CurrentSettings.FindPropertyRelative("shadowProjection");
+            m_ShadowCascadesProperty = m_CurrentSettings.FindPropertyRelative("shadowCascades");
+            m_ShadowDistanceProperty = m_CurrentSettings.FindPropertyRelative("shadowDistance");
+            m_ShadowNearPlaneOffsetProperty = m_CurrentSettings.FindPropertyRelative("shadowNearPlaneOffset");
+            m_ShadowCascade2SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade2Split");
+            m_ShadowCascade4SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade4Split");
+            m_ShadowMaskUsageProperty = m_CurrentSettings.FindPropertyRelative("shadowmaskMode");
+            m_SkinWeightsProperty = m_CurrentSettings.FindPropertyRelative("skinWeights");
+            m_GlobalTextureMipmapLimitProperty = m_CurrentSettings.FindPropertyRelative("globalTextureMipmapLimit");
+            m_TextureMipmapLimitGroupSettingsProperty = m_CurrentSettings.FindPropertyRelative("textureMipmapLimitSettings");
+            m_AnisotropicTexturesProperty = m_CurrentSettings.FindPropertyRelative("anisotropicTextures");
+            m_AntiAliasingProperty = m_CurrentSettings.FindPropertyRelative("antiAliasing");
+            m_SoftParticlesProperty = m_CurrentSettings.FindPropertyRelative("softParticles");
+            m_RealtimeReflectionProbesProperty = m_CurrentSettings.FindPropertyRelative("realtimeReflectionProbes");
+            m_BillboardsFaceCameraPositionProperty = m_CurrentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
+            m_UseLegacyDetailsDistributionProperty = m_CurrentSettings.FindPropertyRelative("useLegacyDetailDistribution");
+            m_TerrainQualityOverridesProperty = m_CurrentSettings.FindPropertyRelative("terrainQualityOverrides");
+            m_TerrainPixelErrorProperty = m_CurrentSettings.FindPropertyRelative("terrainPixelError");
+            m_TerrainDetailDensityScaleProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDensityScale");
+            m_TerrainBasemapDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainBasemapDistance");
+            m_TerrainDetailDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDistance");
+            m_TerrainTreeDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainTreeDistance");
+            m_TerrainBillboardStartProperty = m_CurrentSettings.FindPropertyRelative("terrainBillboardStart");
+            m_TerrainFadeLengthProperty = m_CurrentSettings.FindPropertyRelative("terrainFadeLength");
+            m_TerrainMaxTreesProperty = m_CurrentSettings.FindPropertyRelative("terrainMaxTrees");
+            m_VSyncCountProperty = m_CurrentSettings.FindPropertyRelative("vSyncCount");
+            m_RealtimeGICPUUsageProperty = m_CurrentSettings.FindPropertyRelative("realtimeGICPUUsage");
+            m_AdaptiveVsyncProperty = m_CurrentSettings.FindPropertyRelative("adaptiveVsync");
+            m_LodBiasProperty = m_CurrentSettings.FindPropertyRelative("lodBias");
+            m_MeshLodThresholdProperty = m_CurrentSettings.FindPropertyRelative("meshLodThreshold");
+            m_MaximumLODLevelProperty = m_CurrentSettings.FindPropertyRelative("maximumLODLevel");
+            m_EnableLODCrossFadeProperty = m_CurrentSettings.FindPropertyRelative("enableLODCrossFade");
+            m_ParticleRaycastBudgetProperty = m_CurrentSettings.FindPropertyRelative("particleRaycastBudget");
+            m_AsyncUploadTimeSliceProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadTimeSlice");
+            m_AsyncUploadBufferSizeProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadBufferSize");
+            m_AsyncUploadPersistentBufferProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
+            m_ResolutionScalingFixedDPIFactorProperty = m_CurrentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
+            m_CustomRenderPipelineProperty = m_CurrentSettings.FindPropertyRelative("customRenderPipeline");
+
+            m_StreamingMipmapsActiveProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsActive");
+            m_StreamingMipmapsAddAllCamerasProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
+            m_StreamingMipmapsBudgetProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
+            m_StreamingMipmapsRenderersPerFrameProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
+            m_StreamingMipmapsMaxLevelReductionProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
+            m_StreamingMipmapsMaxFileIORequestsProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxFileIORequests");
+
+            m_CachedSelectedLevel = selectedLevel;
+            m_CachedQualityLevelCount = m_QualitySettingsProperty.arraySize;
+        }
+
+        void RefreshCacheIfNeeded(int selectedLevel)
+        {
+            int currentLevelCount = m_QualitySettingsProperty.arraySize;
+            int currentPlatformCount = m_ValidPlatforms.Count;
+            if (m_CachedSelectedLevel != selectedLevel || m_CachedQualityLevelCount != currentLevelCount || selectedLevel >= currentLevelCount)
+            {
+                UpdateCachedProperties(selectedLevel);
             }
         }
 
@@ -753,7 +961,7 @@ namespace UnityEditor
 
             var settings = GetQualitySettings();
             var defaults = GetDefaultQualityForPlatforms();
-            var selectedLevel = QualitySettings.GetQualityLevel();
+            var selectedLevel = GetCurrentTargetQualityLevel();
             if (selectedLevel >= m_QualitySettingsProperty.arraySize)
             {
                 selectedLevel = m_QualitySettingsProperty.arraySize - 1;
@@ -762,7 +970,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             selectedLevel = DoQualityLevelSelection(selectedLevel, settings, defaults);
             if (EditorGUI.EndChangeCheck())
-                QualitySettings.SetQualityLevel(selectedLevel);
+                SetCurrentTargetQualityLevel(selectedLevel);
 
             SetQualitySettings(settings);
             HandleAddRemoveQualitySetting(ref selectedLevel, defaults);
@@ -774,60 +982,15 @@ namespace UnityEditor
             DrawHorizontalDivider();
             GUILayout.Space(10.0f);
 
-            var currentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
-            var buildPlatform = currentSettings.FindPropertyRelative("buildPlatform");
-            var nameProperty = currentSettings.FindPropertyRelative("name");
-            var pixelLightCountProperty = currentSettings.FindPropertyRelative("pixelLightCount");
-            var shadowsProperty = currentSettings.FindPropertyRelative("shadows");
-            var shadowResolutionProperty = currentSettings.FindPropertyRelative("shadowResolution");
-            var shadowProjectionProperty = currentSettings.FindPropertyRelative("shadowProjection");
-            var shadowCascadesProperty = currentSettings.FindPropertyRelative("shadowCascades");
-            var shadowDistanceProperty = currentSettings.FindPropertyRelative("shadowDistance");
-            var shadowNearPlaneOffsetProperty = currentSettings.FindPropertyRelative("shadowNearPlaneOffset");
-            var shadowCascade2SplitProperty = currentSettings.FindPropertyRelative("shadowCascade2Split");
-            var shadowCascade4SplitProperty = currentSettings.FindPropertyRelative("shadowCascade4Split");
-            var shadowMaskUsageProperty = currentSettings.FindPropertyRelative("shadowmaskMode");
-            var skinWeightsProperty = currentSettings.FindPropertyRelative("skinWeights");
-            var globalTextureMipmapLimitProperty = currentSettings.FindPropertyRelative("globalTextureMipmapLimit");
-            m_TextureMipmapLimitGroupSettingsProperty = currentSettings.FindPropertyRelative("textureMipmapLimitSettings");
-            var anisotropicTexturesProperty = currentSettings.FindPropertyRelative("anisotropicTextures");
-            var antiAliasingProperty = currentSettings.FindPropertyRelative("antiAliasing");
-            var softParticlesProperty = currentSettings.FindPropertyRelative("softParticles");
-            var realtimeReflectionProbes = currentSettings.FindPropertyRelative("realtimeReflectionProbes");
-            var billboardsFaceCameraPosition = currentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
-            var useLegacyDetailsDistribution = currentSettings.FindPropertyRelative("useLegacyDetailDistribution");
-            var terrainQualityOverridesProperty = currentSettings.FindPropertyRelative("terrainQualityOverrides");
-            var terrainPixelErrorProperty = currentSettings.FindPropertyRelative("terrainPixelError");
-            var terrainDetailDensityScaleProperty = currentSettings.FindPropertyRelative("terrainDetailDensityScale");
-            var terrainBasemapDistanceProperty = currentSettings.FindPropertyRelative("terrainBasemapDistance");
-            var terrainDetailDistanceProperty = currentSettings.FindPropertyRelative("terrainDetailDistance");
-            var terrainTreeDistanceProperty = currentSettings.FindPropertyRelative("terrainTreeDistance");
-            var terrainBillboardStartProperty = currentSettings.FindPropertyRelative("terrainBillboardStart");
-            var terrainFadeLengthProperty = currentSettings.FindPropertyRelative("terrainFadeLength");
-            var terrainMaxTreesProperty = currentSettings.FindPropertyRelative("terrainMaxTrees");
-            var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
-            var realtimeGICPUUsageProperty = currentSettings.FindPropertyRelative("realtimeGICPUUsage");
-            var adaptiveVsyncProperty = currentSettings.FindPropertyRelative("adaptiveVsync");
-            var adaptiveVsyncExtraAProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraA");
-            var adaptiveVsyncExtraBProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraB");
-            var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
-            var meshLodThresholdProperty = currentSettings.FindPropertyRelative("meshLodThreshold");
-            var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
-            var enableLODCrossFadeProperty = currentSettings.FindPropertyRelative("enableLODCrossFade");
-            var particleRaycastBudgetProperty = currentSettings.FindPropertyRelative("particleRaycastBudget");
-            var asyncUploadTimeSliceProperty = currentSettings.FindPropertyRelative("asyncUploadTimeSlice");
-            var asyncUploadBufferSizeProperty = currentSettings.FindPropertyRelative("asyncUploadBufferSize");
-            var asyncUploadPersistentBufferProperty = currentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
-            var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
-
-            var customRenderPipeline = currentSettings.FindPropertyRelative("customRenderPipeline");
+            // Check if we need to refresh cached properties and quality level cache
+            RefreshCacheIfNeeded(selectedLevel);
 
             CheckSameRenderPipelineAssetForOverridenQualityLevels();
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
 
-            if (string.IsNullOrEmpty(nameProperty.stringValue))
-                nameProperty.stringValue = "Level " + selectedLevel;
+            if (string.IsNullOrEmpty(m_NameProperty.stringValue))
+                m_NameProperty.stringValue = "Level " + selectedLevel;
 
             GUILayout.Label(EditorGUIUtility.TempContent("Current Build Target: " + Modules.ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget)), EditorStyles.boldLabel);
             if (BuildProfileContext.ActiveProfileHasQualitySettings())
@@ -839,10 +1002,10 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
 
             const string QualityLevelNamePropertyControlName = "QualityLevelNamePropertyControl";
-            var previousName = nameProperty.stringValue;
+            var previousName = m_NameProperty.stringValue;
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(QualityLevelNamePropertyControlName);
-            EditorGUILayout.PropertyField(nameProperty);
+            EditorGUILayout.PropertyField(m_NameProperty);
             var qualityLevelNameControlChanged = EditorGUI.EndChangeCheck();
             var qualityLevelNameControlIsFocused = GUI.GetNameOfFocusedControl() == QualityLevelNamePropertyControlName;
             var inspectorIsFocused = EditorWindow.focusedWindow is ProjectSettingsWindow;
@@ -856,10 +1019,10 @@ namespace UnityEditor
 
                 m_QualityLevelNeedsRenameInAllProfiles = true;
 
-                if (string.IsNullOrEmpty(nameProperty.stringValue))
-                    nameProperty.stringValue = "Level " + selectedLevel;
+                if (string.IsNullOrEmpty(m_NameProperty.stringValue))
+                    m_NameProperty.stringValue = "Level " + selectedLevel;
 
-                m_NewQualityLevelName = nameProperty.stringValue;
+                m_NewQualityLevelName = m_NameProperty.stringValue;
             }
             if (m_QualityLevelNeedsRenameInAllProfiles && !(qualityLevelNameControlIsFocused && inspectorIsFocused))
             {
@@ -872,53 +1035,53 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
-            if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
+            EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, m_CustomRenderPipelineProperty);
+            if (!usingSRP && m_CustomRenderPipelineProperty.objectReferenceValue != null)
                 EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
 
             // Add Info Box for Built-In deprecation
             CheckBiRPDeprecationInfoBox(usingSRP);
 
             if (!usingSRP)
-                EditorGUILayout.PropertyField(pixelLightCountProperty);
+                EditorGUILayout.PropertyField(m_PixelLightCountProperty);
 
             // still valid with SRP
             if (!usingSRP)
             {
-                EditorGUILayout.PropertyField(antiAliasingProperty);
+                EditorGUILayout.PropertyField(m_AntiAliasingProperty);
             }
 
             if (!SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes)
-                EditorGUILayout.PropertyField(realtimeReflectionProbes);
-            EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
+                EditorGUILayout.PropertyField(m_RealtimeReflectionProbesProperty);
+            EditorGUILayout.PropertyField(m_ResolutionScalingFixedDPIFactorProperty);
 
             if (usingSRP)
-                EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
+                EditorGUILayout.PropertyField(m_RealtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
 
-            EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
+            EditorGUILayout.PropertyField(m_VSyncCountProperty, Content.kVSyncCountLabel);
 
             if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget))
             {
-                if (vSyncCountProperty.intValue > 0 && (iBuildTarget.GraphicsPlatformProperties?.IgnoresVSyncCount ?? false))
-                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {iBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
+                if (m_VSyncCountProperty.intValue > 0 && (iBuildTarget.GraphicsPlatformProperties?.IgnoresVSyncCount ?? false))
+                    EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{m_VSyncCountProperty.enumLocalizedDisplayNames[m_VSyncCountProperty.enumValueIndex]}' is ignored on {iBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
             }
 
             m_AdaptiveVSyncVisible = false;
             var externalUI = false;
-            switch (vSyncCountProperty.intValue)
+            switch (m_VSyncCountProperty.intValue)
             {
                 case > 0:
                 {
                     using var vertical = new EditorGUILayout.VerticalScope();
                     using var scope = new EditorGUI.IndentLevelScope();
-                    using var disabledScope = new EditorGUI.DisabledScope(vSyncCountProperty.intValue == 0);
+                    using var disabledScope = new EditorGUI.DisabledScope(m_VSyncCountProperty.intValue == 0);
 
                     var validPlatforms = m_ValidPlatforms.ToArray();
                     for (int i = 0; i < validPlatforms.Length; i++)
                     {
                         if (validPlatforms[i].defaultTarget != EditorUserBuildSettings.activeBuildTarget || m_AdaptiveVsyncSettings[i] == null)
                             continue;
-                        m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
+                        m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(m_CurrentSettings);
                         m_AdaptiveVSyncVisible = true;
                         externalUI = true;
                         break;
@@ -928,9 +1091,9 @@ namespace UnityEditor
                         var gfxTypes = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
                         for (int i = 0;i < gfxTypes.Length; i++)
                         {
-                            if (adaptiveVsyncProperty == null || gfxTypes[i] != GraphicsDeviceType.Vulkan)
+                            if (m_AdaptiveVsyncProperty == null || gfxTypes[i] != GraphicsDeviceType.Vulkan)
                                 continue;
-                            EditorGUILayout.PropertyField(adaptiveVsyncProperty);
+                            EditorGUILayout.PropertyField(m_AdaptiveVsyncProperty);
                             EditorGUILayout.HelpBox("If Adaptive Vsync extension is available at runtime with Vulkan it will use this, else fallback to vsync.", MessageType.Info);
                             m_AdaptiveVSyncVisible = true;
                         }
@@ -938,7 +1101,7 @@ namespace UnityEditor
                     break;
                 }
                 case 0:
-                    adaptiveVsyncProperty.boolValue = false;
+                    m_AdaptiveVsyncProperty.boolValue = false;
                     break;
             }
 
@@ -949,7 +1112,7 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Textures"), EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(globalTextureMipmapLimitProperty, Content.kGlobalTextureMipmapLimit);
+            EditorGUILayout.PropertyField(m_GlobalTextureMipmapLimitProperty, Content.kGlobalTextureMipmapLimit);
             if (EditorGUI.EndChangeCheck() && usingSRP)
             {
                 RenderPipelineManager.CleanupRenderPipeline();
@@ -959,23 +1122,17 @@ namespace UnityEditor
             if (QualitySettings.IsTextureResReducedOnAnyPlatform())
                 MipStrippingHintGUI();
             m_TextureMipmapLimitGroupsList.DoLayoutList();
-            EditorGUILayout.PropertyField(anisotropicTexturesProperty);
+            EditorGUILayout.PropertyField(m_AnisotropicTexturesProperty);
 
-            var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
-            EditorGUILayout.PropertyField(streamingMipmapsActiveProperty, Content.kStreamingMipmapsActive);
-            if (streamingMipmapsActiveProperty.boolValue)
+            EditorGUILayout.PropertyField(m_StreamingMipmapsActiveProperty, Content.kStreamingMipmapsActive);
+            if (m_StreamingMipmapsActiveProperty.boolValue)
             {
                 EditorGUI.indentLevel++;
-                var streamingMipmapsAddAllCameras = currentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
-                EditorGUILayout.PropertyField(streamingMipmapsAddAllCameras, Content.kStreamingMipmapsAddAllCameras);
-                var streamingMipmapsBudgetProperty = currentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
-                EditorGUILayout.PropertyField(streamingMipmapsBudgetProperty, Content.kStreamingMipmapsMemoryBudget);
-                var streamingMipmapsRenderersPerFrameProperty = currentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
-                EditorGUILayout.PropertyField(streamingMipmapsRenderersPerFrameProperty, Content.kStreamingMipmapsRenderersPerFrame);
-                var streamingMipmapsMaxLevelReductionProperty = currentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
-                EditorGUILayout.PropertyField(streamingMipmapsMaxLevelReductionProperty, Content.kStreamingMipmapsMaxLevelReduction);
-                var streamingMipmapsMaxFileIORequestsProperty = currentSettings.FindPropertyRelative("streamingMipmapsMaxFileIORequests");
-                EditorGUILayout.PropertyField(streamingMipmapsMaxFileIORequestsProperty, Content.kStreamingMipmapsMaxFileIORequests);
+                EditorGUILayout.PropertyField(m_StreamingMipmapsAddAllCamerasProperty, Content.kStreamingMipmapsAddAllCameras);
+                EditorGUILayout.PropertyField(m_StreamingMipmapsBudgetProperty, Content.kStreamingMipmapsMemoryBudget);
+                EditorGUILayout.PropertyField(m_StreamingMipmapsRenderersPerFrameProperty, Content.kStreamingMipmapsRenderersPerFrame);
+                EditorGUILayout.PropertyField(m_StreamingMipmapsMaxLevelReductionProperty, Content.kStreamingMipmapsMaxLevelReduction);
+                EditorGUILayout.PropertyField(m_StreamingMipmapsMaxFileIORequestsProperty, Content.kStreamingMipmapsMaxFileIORequests);
                 EditorGUI.indentLevel--;
             }
 
@@ -983,16 +1140,16 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Particles"), EditorStyles.boldLabel);
             if (!usingSRP)
             {
-                EditorGUILayout.PropertyField(softParticlesProperty);
-                if (softParticlesProperty.boolValue)
+                EditorGUILayout.PropertyField(m_SoftParticlesProperty);
+                if (m_SoftParticlesProperty.boolValue)
                     SoftParticlesHintGUI();
             }
-            EditorGUILayout.PropertyField(particleRaycastBudgetProperty);
+            EditorGUILayout.PropertyField(m_ParticleRaycastBudgetProperty);
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Terrain"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
-            EditorGUILayout.PropertyField(useLegacyDetailsDistribution, Content.kUseLegacyDistribution);
+            EditorGUILayout.PropertyField(m_BillboardsFaceCameraPositionProperty, Content.kBillboardsFaceCameraPos);
+            EditorGUILayout.PropertyField(m_UseLegacyDetailsDistributionProperty, Content.kUseLegacyDistribution);
 
             GUILayout.Space(5);
             GUILayout.Label(EditorGUIUtility.TempContent("Terrain Setting Overrides"), EditorStyles.boldLabel);
@@ -1001,56 +1158,56 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth -= EditorStyles.toggle.CalcSize(GUIContent.none).x + EditorStyles.toggle.margin.left;
 
             EditorGUILayout.BeginHorizontal();
-            bool pixelErrorActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.PixelError, Content.kOverrideTerrainPixelError);
+            bool pixelErrorActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.PixelError, Content.kOverrideTerrainPixelError);
             using (new EditorGUI.DisabledScope(!pixelErrorActive))
-                EditorGUILayout.Slider(terrainPixelErrorProperty, 1.0f, 200.0f, Content.kTerrainPixelError);
+                EditorGUILayout.Slider(m_TerrainPixelErrorProperty, 1.0f, 200.0f, Content.kTerrainPixelError);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool basemapActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.BasemapDistance, Content.kOverrideTerrainBasemapDist);
+            bool basemapActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.BasemapDistance, Content.kOverrideTerrainBasemapDist);
             using (new EditorGUI.DisabledScope(!basemapActive))
             {
                 EditorGUI.BeginChangeCheck();
-                var newValue = EditorGUILayout.PowerSlider(Content.kTerrainBasemapDistance, Mathf.Clamp(terrainBasemapDistanceProperty.floatValue, 0.0f, 20000.0f), 0.0f, 20000.0f, 2);
+                var newValue = EditorGUILayout.PowerSlider(Content.kTerrainBasemapDistance, Mathf.Clamp(m_TerrainBasemapDistanceProperty.floatValue, 0.0f, 20000.0f), 0.0f, 20000.0f, 2);
                 if (EditorGUI.EndChangeCheck())
-                    terrainBasemapDistanceProperty.floatValue = newValue;
+                    m_TerrainBasemapDistanceProperty.floatValue = newValue;
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool detailDensityActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.DetailDensity, Content.kOverrideTerrainDensityScale);
+            bool detailDensityActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.DetailDensity, Content.kOverrideTerrainDensityScale);
             using (new EditorGUI.DisabledScope(!detailDensityActive))
-                EditorGUILayout.Slider(terrainDetailDensityScaleProperty, 0.0f, 1.0f, Content.kTerrainDetailDensityScale);
+                EditorGUILayout.Slider(m_TerrainDetailDensityScaleProperty, 0.0f, 1.0f, Content.kTerrainDetailDensityScale);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool detailDistanceActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.DetailDistance, Content.kOverrideTerrainDetailDistance);
+            bool detailDistanceActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.DetailDistance, Content.kOverrideTerrainDetailDistance);
             using (new EditorGUI.DisabledScope(!detailDistanceActive))
-                EditorGUILayout.Slider(terrainDetailDistanceProperty, 0, 1000, Content.kTerrainDetailDistance);
+                EditorGUILayout.Slider(m_TerrainDetailDistanceProperty, 0, 1000, Content.kTerrainDetailDistance);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool treeDistanceActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.TreeDistance, Content.kOverrideTerrainTreeDistance);
+            bool treeDistanceActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.TreeDistance, Content.kOverrideTerrainTreeDistance);
             using (new EditorGUI.DisabledScope(!treeDistanceActive))
-                EditorGUILayout.Slider(terrainTreeDistanceProperty, 0.0f, 5000.0f, Content.kTerrainTreeDistance);
+                EditorGUILayout.Slider(m_TerrainTreeDistanceProperty, 0.0f, 5000.0f, Content.kTerrainTreeDistance);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool billboardStartActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.BillboardStart, Content.kOverrideTerrainBillboardStart);
+            bool billboardStartActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.BillboardStart, Content.kOverrideTerrainBillboardStart);
             using (new EditorGUI.DisabledScope(!billboardStartActive))
-                EditorGUILayout.Slider(terrainBillboardStartProperty, 5, 2000, Content.kTerrainBillboardStart);
+                EditorGUILayout.Slider(m_TerrainBillboardStartProperty, 5, 2000, Content.kTerrainBillboardStart);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool fadeLengthActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.FadeLength, Content.kOverrideTerrainFadeLength);
+            bool fadeLengthActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.FadeLength, Content.kOverrideTerrainFadeLength);
             using (new EditorGUI.DisabledScope(!fadeLengthActive))
-                EditorGUILayout.Slider(terrainFadeLengthProperty, 0, 200, Content.kTerrainFadeLength);
+                EditorGUILayout.Slider(m_TerrainFadeLengthProperty, 0, 200, Content.kTerrainFadeLength);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            bool maxTreesActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.MaxTrees, Content.kOverrideTerrainMaxTrees);
+            bool maxTreesActive = DrawOverrideToggle(ref m_TerrainQualityOverridesProperty, TerrainQualityOverrides.MaxTrees, Content.kOverrideTerrainMaxTrees);
             using (new EditorGUI.DisabledScope(!maxTreesActive))
-                EditorGUILayout.IntSlider(terrainMaxTreesProperty, 0, 10000, Content.kTerrainMaxTrees);
+                EditorGUILayout.IntSlider(m_TerrainMaxTreesProperty, 0, 10000, Content.kTerrainMaxTrees);
             EditorGUILayout.EndHorizontal();
 
             EditorGUIUtility.labelWidth = originalLabelWidth;
@@ -1062,37 +1219,37 @@ namespace UnityEditor
                 GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
 
                 if (showShadowMaskUsage)
-                    EditorGUILayout.PropertyField(shadowMaskUsageProperty);
+                    EditorGUILayout.PropertyField(m_ShadowMaskUsageProperty);
 
                 if (!usingSRP)
                 {
-                    EditorGUILayout.PropertyField(shadowsProperty);
-                    EditorGUILayout.PropertyField(shadowResolutionProperty);
-                    EditorGUILayout.PropertyField(shadowProjectionProperty);
-                    EditorGUILayout.PropertyField(shadowDistanceProperty);
-                    EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
-                    EditorGUILayout.PropertyField(shadowCascadesProperty);
+                    EditorGUILayout.PropertyField(m_ShadowsProperty);
+                    EditorGUILayout.PropertyField(m_ShadowResolutionProperty);
+                    EditorGUILayout.PropertyField(m_ShadowProjectionProperty);
+                    EditorGUILayout.PropertyField(m_ShadowDistanceProperty);
+                    EditorGUILayout.PropertyField(m_ShadowNearPlaneOffsetProperty);
+                    EditorGUILayout.PropertyField(m_ShadowCascadesProperty);
 
-                    if (shadowCascadesProperty.intValue == 2)
-                        DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
-                    else if (shadowCascadesProperty.intValue == 4)
-                        DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
+                    if (m_ShadowCascadesProperty.intValue == 2)
+                        DrawCascadeSplitGUI<float>(ref m_ShadowCascade2SplitProperty);
+                    else if (m_ShadowCascadesProperty.intValue == 4)
+                        DrawCascadeSplitGUI<Vector3>(ref m_ShadowCascade4SplitProperty);
                 }
             }
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Async Asset Upload"), EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(asyncUploadTimeSliceProperty, Content.kAsyncUploadTimeSlice);
-            EditorGUILayout.PropertyField(asyncUploadBufferSizeProperty, Content.kAsyncUploadBufferSize);
-            EditorGUILayout.PropertyField(asyncUploadPersistentBufferProperty, Content.kAsyncUploadPersistentBuffer);
+            EditorGUILayout.PropertyField(m_AsyncUploadTimeSliceProperty, Content.kAsyncUploadTimeSlice);
+            EditorGUILayout.PropertyField(m_AsyncUploadBufferSizeProperty, Content.kAsyncUploadBufferSize);
+            EditorGUILayout.PropertyField(m_AsyncUploadPersistentBufferProperty, Content.kAsyncUploadPersistentBuffer);
 
-            asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
-            asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
+            m_AsyncUploadTimeSliceProperty.intValue = Mathf.Clamp(m_AsyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
+            m_AsyncUploadBufferSizeProperty.intValue = Mathf.Clamp(m_AsyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
 
-            if (asyncUploadBufferSizeProperty.intValue >= kAsyncRingBufferSizeWarningThreshold && asyncUploadPersistentBufferProperty.boolValue)
+            if (m_AsyncUploadBufferSizeProperty.intValue >= kAsyncRingBufferSizeWarningThreshold && m_AsyncUploadPersistentBufferProperty.boolValue)
             {
-                string messageToDisplay = string.Format(Content.kAsyncUploadBufferSizeWarning.text, asyncUploadBufferSizeProperty.intValue, Content.kAsyncUploadPersistentBuffer.text);
+                string messageToDisplay = string.Format(Content.kAsyncUploadBufferSizeWarning.text, m_AsyncUploadBufferSizeProperty.intValue, Content.kAsyncUploadPersistentBuffer.text);
                 EditorGUILayout.HelpBox(messageToDisplay, MessageType.Warning, false);
             }
 
@@ -1100,16 +1257,16 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Level of Detail"), EditorStyles.boldLabel);
 
             if (!SupportedRenderingFeatures.active.overridesLODBias)
-                EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
+                EditorGUILayout.PropertyField(m_LodBiasProperty, Content.kLODBiasLabel);
             if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)
-                EditorGUILayout.PropertyField(maximumLODLevelProperty, Content.kMaximumLODLevelLabel);
-            EditorGUILayout.PropertyField(meshLodThresholdProperty, Content.kMeshLODThresholdLabel);
+                EditorGUILayout.PropertyField(m_MaximumLODLevelProperty, Content.kMaximumLODLevelLabel);
+            EditorGUILayout.PropertyField(m_MeshLodThresholdProperty, Content.kMeshLODThresholdLabel);
             if (!SupportedRenderingFeatures.active.overridesEnableLODCrossFade)
-                EditorGUILayout.PropertyField(enableLODCrossFadeProperty, Content.kEnableLODCrossFadeLabel);
+                EditorGUILayout.PropertyField(m_EnableLODCrossFadeProperty, Content.kEnableLODCrossFadeLabel);
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Meshes"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(skinWeightsProperty);
+            EditorGUILayout.PropertyField(m_SkinWeightsProperty);
 
             if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
             {
@@ -1118,7 +1275,7 @@ namespace UnityEditor
                 selectedLevel = m_Dragging.m_Position;
 
                 m_QualitySettings.ApplyModifiedProperties();
-                QualitySettings.SetQualityLevel(Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1));
+                SetCurrentTargetQualityLevel(Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1));
             }
 
             m_QualitySettings.ApplyModifiedProperties();

@@ -118,19 +118,6 @@ namespace Unity.Collections.LowLevel.Unsafe
             return TypeFlagsCache<T>.flags == 0;  // not managed, not a container
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct AlignOfHelper<T> where T : struct
-        {
-            public byte dummy;
-            public T data;
-        }
-
-        // minimum alignment of a struct
-        public static int AlignOf<T>() where T : struct
-        {
-            return SizeOf<AlignOfHelper<T>>() - SizeOf<T>();
-        }
-
 
         [VisibleToOtherModules("UnityEngine.ImageConversionModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

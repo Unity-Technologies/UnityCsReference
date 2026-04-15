@@ -11,6 +11,7 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEditor.Search.Providers;
 using UnityEngine;
+using Unity.Loading;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Search
@@ -690,8 +691,8 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, p.entityIdValue.ToString(), saveKeyword: true);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.entityIdValue);
                     break;
-                case SerializedPropertyType.LoadableReference:
-                    var loadableObj = UnityEditor.LoadableReferenceEditorUtility.LoadableReferenceToObject(p.loadableReferenceValue);
+                case SerializedPropertyType.LoadableObjectId:
+                    var loadableObj = UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(p.loadableObjectIdValue);
                     AddReference(documentIndex, fieldName, loadableObj);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, loadableObj);
                     break;
@@ -723,7 +724,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPropertyStringComponentsMarker.Auto();
             if (string.IsNullOrEmpty(sv) || sv.Length > 64)
                 return;
-                
+
             sv = sv.ToLowerInvariant();
             fieldName = fieldName.ToLowerInvariant();
             float f = 0;
@@ -804,8 +805,8 @@ namespace UnityEditor.Search
             {
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
             }
-            
-            
+
+
             if (settings.options.properties && label != null && ownerPropertyType != null)
             {
                  MapProperty(documentIndex, propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);

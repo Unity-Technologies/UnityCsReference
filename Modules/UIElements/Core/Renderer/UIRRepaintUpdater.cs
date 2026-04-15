@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface IPanelRenderer
     {
         /// <summary>

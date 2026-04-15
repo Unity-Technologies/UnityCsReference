@@ -102,7 +102,7 @@ namespace Unity.Profiling.Editor.UI
             AddChild(m_BottlenecksViewController);
 
             var systemsImpactTitle = string.Format(Content.k_SystemsImpactTitleFormat, m_RangeDescriptor);
-            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, systemsImpactTitle);
+            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, systemsImpactTitle, m_ProfilerWindow, m_DetailsBinder);
             m_SystemsImpactContainer.Add(m_SystemsImpactViewController.View);
             AddChild(m_SystemsImpactViewController);
 

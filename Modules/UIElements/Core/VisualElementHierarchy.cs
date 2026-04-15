@@ -1337,6 +1337,7 @@ namespace UnityEngine.UIElements
             return topMostRootContainer;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetNextElementDepthFirst()
         {
             if (m_Children.Count > 0)
@@ -1370,6 +1371,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetPreviousElementDepthFirst()
         {
             if (m_PhysicalParent != null)

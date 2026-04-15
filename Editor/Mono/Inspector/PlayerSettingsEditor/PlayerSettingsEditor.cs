@@ -211,12 +211,14 @@ namespace UnityEditor
             public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169, CS0649, and CS0282.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
-            public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
+            public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration", "The C++ compiler configuration used when compiling IL2CPP generated code.");
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
             public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Optimize for runtime speed"), EditorGUIUtility.TrTextContent("Optimize for code size and build time") };
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
             public static readonly GUIContent il2CppLTOMode = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "Link Time Optimization mode. Full LTO produces smaller and faster code but takes longer to link. Thin LTO is faster to link with nearly equivalent optimization.");
+            public static readonly GUIContent il2CppLTOModeDisabled = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "LTO is only applied in Master builds. Switch the C++ Compiler Configuration to Master to enable LTO.");
             public static readonly GUIContent[] il2CppLTOModeOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Full"), EditorGUIUtility.TrTextContent("Thin") };
+            public static readonly GUIContent[] il2CppLTOModeNoneOption = new GUIContent[] { EditorGUIUtility.TrTextContent("None") };
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR (Internal only)");
@@ -1613,9 +1615,9 @@ namespace UnityEditor
         }
         private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged, bool cancelAPIChange)
         {
-            bool doRestart = false;
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
-            if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target))
+            // Also check if the current Player Settings are of the active build platform. If not, we simply dirty the value (which is handled elsewhere) and request a restart when changing the active build profile.
+            if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target) && IsActivePlayerSettingsEditor())
             {
                 // If we have dirty scenes we need to save or discard changes before we restart editor.
                 // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
@@ -1631,38 +1633,52 @@ namespace UnityEditor
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
                         "Save and Restart", cancelAPIChange ? "Cancel Changing API" : "Restart Later", "Discard Changes and Restart");
-                    if (result == 1)
+
+                    switch (result)
                     {
-                        doRestart = false; // Cancel was selected
-                    }
-                    else
-                    {
-                        doRestart = true;
-                        if (result == 0) // Save and Restart was selected
+                    case 0: // Save scene changes and restart
+                        bool restart = true;
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
                         {
-                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                            var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                            if (!saved)
                             {
-                                var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
-                                if (saved == false)
-                                {
-                                    doRestart = false;
-                                }
+                                restart = false;
                             }
                         }
-                        else // Discard Changes and Restart was selected
-                        {
-                            for (int i = 0; i < dirtyScenes.Count; ++i)
-                                EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                        }
+                        return new ChangeGraphicsApiAction(restart, restart);
+                    
+                    case 2: // Discard scene changes and restart
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
+                            EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                        
+                        return new ChangeGraphicsApiAction(true, true);
+                    
+                    case 1: // Cancel Changing API or Restart Later
+                    default:
+                        if (cancelAPIChange)
+                            return new ChangeGraphicsApiAction(false, false);
+                        else
+                            return new ChangeGraphicsApiAction(true, false);
                     }
                 }
                 else
                 {
-                    doRestart = EditorUtility.DisplayDialog("Changing editor graphics API",
+                    var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor.",
-                        "Restart Editor", cancelAPIChange ? "Cancel Changing API" : "Restart Later"); // This should be only "Restart Editor" and "Restart Later", will be fixed with UUM-127416
+                        "Restart Editor", "Cancel API Change", "Restart Later");
+
+                    return result switch
+                    {
+                        // EditorUtility.DisplayDialogComplex() is Ok->Cancel->Alt:
+                        // Keep changes and restart now
+                        0 => new ChangeGraphicsApiAction(true, true),
+                        // Keep changes but restart later
+                        2 => new ChangeGraphicsApiAction(true, false),
+                        // Cancel and revert changes
+                        _ => new ChangeGraphicsApiAction(false, false),
+                    };
                 }
-                return new ChangeGraphicsApiAction(doRestart, doRestart);
             }
             else
             {
@@ -3247,12 +3263,12 @@ namespace UnityEditor
                 return Il2CppStacktraceInformation.MethodOnly;
         }
 
-        private Il2CppLTOMode GetCurrentIl2CppLTOModeForTarget(NamedBuildTarget namedBuildTarget)
+        private Il2CppLTOMode GetCurrentIl2CppLTOModeForTarget(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension)
         {
             if (m_Il2CppLTOMode.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (Il2CppLTOMode)entry.FindPropertyRelative("second").intValue;
-            else
-                return Il2CppLTOMode.Full;
+
+            return PlayerSettings.GetIl2CppLTOMode(namedBuildTarget);
         }
 
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
@@ -3305,6 +3321,7 @@ namespace UnityEditor
 
         private const string kInputSystemPackageName = "com.unity.inputsystem";
 
+        private static readonly Il2CppLTOMode[] m_Il2CppLTOModes = { Il2CppLTOMode.Full, Il2CppLTOMode.Thin };
 
         private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
@@ -3493,20 +3510,28 @@ namespace UnityEditor
                     {
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_Il2CppLTOMode))
                         {
-                            // Check if platform allows LTO configuration
-                            bool allowLtoConfigurationSelection = settingsExtension != null && settingsExtension.ShouldShowIl2CppLTOSettings();
-                            // Only allow if master is selected
-                            allowLtoConfigurationSelection &= GetCurrentIl2CppCompilerConfigurationForTarget(platform.namedBuildTarget) == Il2CppCompilerConfiguration.Master;
+                            bool showLtoSettings = settingsExtension != null && settingsExtension.ShouldShowIl2CppLTOSettings();
+                            bool isMaster = GetCurrentIl2CppCompilerConfigurationForTarget(platform.namedBuildTarget) == Il2CppCompilerConfiguration.Master;
 
-                            // Only enable LTO selection if compiler selection is allowed
-                            using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection || !allowLtoConfigurationSelection))
+                            if (showLtoSettings && isMaster)
                             {
-                                Il2CppLTOMode currentMode = GetCurrentIl2CppLTOModeForTarget(platform.namedBuildTarget);
-                                var ltoModes = new[] { Il2CppLTOMode.Full, Il2CppLTOMode.Thin };
-                                var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, ltoModes, SettingsContent.il2CppLTOModeOptions);
+                                // Only enable LTO selection if compiler selection is allowed
+                                using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
+                                {
+                                    Il2CppLTOMode currentMode = GetCurrentIl2CppLTOModeForTarget(platform.namedBuildTarget, settingsExtension);
+                                    var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, m_Il2CppLTOModes, SettingsContent.il2CppLTOModeOptions);
 
-                                if (currentMode != newMode)
-                                    m_Il2CppLTOMode.SetMapValue(platform.namedBuildTarget.TargetName, (int)newMode);
+                                    if (currentMode != newMode)
+                                        m_Il2CppLTOMode.SetMapValue(platform.namedBuildTarget.TargetName, (int)newMode);
+                                }
+                            }
+                            else if (showLtoSettings)
+                            {
+                                // On Debug/Release, LTO is not applied, show a disabled "None" label
+                                using (new EditorGUI.DisabledScope(true))
+                                {
+                                    EditorGUILayout.Popup(SettingsContent.il2CppLTOModeDisabled, 0, SettingsContent.il2CppLTOModeNoneOption);
+                                }
                             }
                         }
                     }

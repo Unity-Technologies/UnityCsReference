@@ -12,10 +12,10 @@ namespace UnityEngine
     /// Specifies the type of file that a reference points to.
     /// </summary>
     /// <remarks>
-    /// Used by LoadableReference to distinguish between different types of asset references.
+    /// Used by LoadableObjectId to distinguish between different types of asset references.
     /// </remarks>
     [VisibleToOtherModules]
-    /*UCBP-PUBLIC*/ internal enum FileIdentifierType
+    internal enum FileIdentifierType
     {
         /// <summary>
         /// Reference to a non-asset file or built asset. The GUID may be a constant GUID or null.

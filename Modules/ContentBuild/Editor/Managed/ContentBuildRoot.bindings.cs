@@ -12,7 +12,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/ContentBuild/Editor/Ucbp/ContentBuildRoot.h")]
     [StructLayout(LayoutKind.Sequential)]
     [UnityEngine.Scripting.UsedByNativeCode]
-    /*UCBP-PUBLIC*/ internal struct ContentBuildId : IEquatable<ContentBuildId>
+    internal struct ContentBuildId : IEquatable<ContentBuildId>
     {
         public Hash128 hash;
 
@@ -33,7 +33,6 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/ContentBuild/Editor/Ucbp/ContentBuildRoot.h")]
-    /*UCBP-PUBLIC*/
     internal struct MetadataFileEntry
     {
         internal string filename;
@@ -52,7 +51,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/ContentBuild/Editor/Ucbp/ContentBuildRoot.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Ucbp/ContentBuildRootUtilities.h")]
     [StructLayout(LayoutKind.Sequential)]
-    /*UCBP-PUBLIC*/ internal class ContentBuildRoot : IDisposable
+    internal class ContentBuildRoot : IDisposable
     {
         private IntPtr m_Ptr;
 
@@ -93,7 +92,7 @@ namespace UnityEditor.Build.Content
 
         public extern BuildArtifactMetadataId ManifestMetadataHash { get; }
         public extern MetadataFileEntry[] MetadataFiles { get; }
-        
+
 
         [FreeFunction("BuildPipeline::ContentBuildRoot_Destroy")]
         private static extern void Internal_Destroy(IntPtr ptr);

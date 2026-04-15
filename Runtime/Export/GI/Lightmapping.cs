@@ -296,6 +296,7 @@ namespace UnityEngine
             // pyramid parameters
             public float        angle;
             public float        aspectRatio;
+            public float        sphereRadius;
             public FalloffType  falloff;
         }
 
@@ -487,7 +488,7 @@ namespace UnityEngine
                 coneAngle      = light.angle;
                 innerConeAngle = 0.0f;
                 shape0         = light.aspectRatio;
-                shape1         = 0.0f;
+                shape1         = light.sphereRadius;
                 type           = LightType.SpotPyramidShape;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);

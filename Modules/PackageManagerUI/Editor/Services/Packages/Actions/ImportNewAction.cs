@@ -15,8 +15,6 @@ internal class ImportNewAction : ImportActionBase
 
     public override bool isRecommended => true;
 
-    public override Icon icon => Icon.Import;
-
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
         m_OperationDispatcher.Import(version.package);

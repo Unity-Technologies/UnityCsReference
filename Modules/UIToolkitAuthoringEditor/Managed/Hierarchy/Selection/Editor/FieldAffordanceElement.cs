@@ -75,8 +75,6 @@ namespace Unity.UIToolkit.Editor
         public static readonly string s_IconElementUSSClassName = s_UssClassName + "__icon";
 
 
-        static StyleSheetExporter s_StyleSheetExporter = new();
-
         internal event Action<FieldAffordanceData> onContextChanged;
 
         /// <summary>
@@ -244,7 +242,7 @@ namespace Unity.UIToolkit.Editor
                     return FieldStatusIndicatorLocalTooltip;
                 case FieldAffordanceSourceInfoType.MatchingUSSSelector:
                     var selectorSheetName = GetSheetName(fieldAffordanceData.selector.sheet);
-                    var selector = s_StyleSheetExporter.ToUssString(fieldAffordanceData.selector.sheet, fieldAffordanceData.selector.complexSelector);
+                    var selector = StyleSheetExporter.Default.ToUssString(fieldAffordanceData.selector.sheet, fieldAffordanceData.selector.complexSelector);
                     return string.Format(FieldStatusIndicatorFromSelectorTooltip,
                         selector,
                         selectorSheetName);

@@ -10,3 +10,4 @@ using System.Runtime.CompilerServices;
 
 [assembly:InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly:InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]

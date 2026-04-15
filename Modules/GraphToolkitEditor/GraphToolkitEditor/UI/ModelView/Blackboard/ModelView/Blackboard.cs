@@ -497,7 +497,7 @@ namespace Unity.GraphToolkit.Editor
                     m_RootItems.Add(GetItemData(ref m_Id, section));
                 }
                 m_TreeView.SetRootItems(m_RootItems);
-                Refresh(true, true);
+                Refresh(true);
             }
 
             ScrollView.scrollOffset = BlackboardView.BlackboardRootViewModel.ViewState.ScrollOffset;

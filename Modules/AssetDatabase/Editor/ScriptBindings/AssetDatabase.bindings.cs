@@ -1113,15 +1113,12 @@ namespace UnityEditor
         }
 
         [NativeMethod(ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetArtifactInfos_Internal(GUID guid);
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetCurrentRevisions_Internal(GUID[] guids);
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetImportActivityWindowStartupData_Internal(ImportActivityWindowStartupData dataType);
 

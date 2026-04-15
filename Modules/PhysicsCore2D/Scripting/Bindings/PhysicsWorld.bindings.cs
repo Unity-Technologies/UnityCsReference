@@ -52,6 +52,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetContactFrequency", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetContactFrequency(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactDamping", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactDamping(PhysicsWorld world, float damping);
         [NativeMethod(Name = "PhysicsWorld::GetContactDamping", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetContactDamping(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetContactRecycleDistance", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactRecycleDistance(PhysicsWorld world, float distance);
+        [NativeMethod(Name = "PhysicsWorld::GetContactRecycleDistance", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetContactRecycleDistance(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetContactSpeed", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetContactSpeed(PhysicsWorld world, float contactSpeed);
         [NativeMethod(Name = "PhysicsWorld::GetContactSpeed", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetContactSpeed(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetMaximumLinearSpeed", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetMaximumLinearSpeed(PhysicsWorld world, float maximumLinearSpeed);
@@ -152,6 +154,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetDrawNormalScale", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawNormalScale(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawForceScale", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawForceScale(PhysicsWorld world, float scale);
         [NativeMethod(Name = "PhysicsWorld::GetDrawForceScale", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawForceScale(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetDrawContactType", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawContactType(PhysicsWorld world, PhysicsWorld.DrawContactType drawContactType);
+        [NativeMethod(Name = "PhysicsWorld::GetDrawContactType", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawContactType PhysicsWorld_GetDrawContactType(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawElementDepth", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetElementDepth(PhysicsWorld world, float elementDepth);
         [NativeMethod(Name = "PhysicsWorld::GetDrawElementDepth", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetElementDepth(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::ClearDraw", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDraw(PhysicsWorld world, bool clearWorldDraw, bool clearCustomDraw, bool clearTimedDraw);

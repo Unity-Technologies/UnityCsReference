@@ -27,11 +27,11 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new BackgroundSizeStyleField();
         }
 
-        static readonly string s_FieldClassName = "unity-background-Size-style-field";
+        static readonly string s_FieldClassName = "unity-background-size-style-field";
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundSizeStyleField.uxml";
         public static readonly string s_BackgroundSizeWidthFieldName = "width";
         public static readonly string s_BackgroundSizeHeightFieldName = "height";
-        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
+        public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
 
         LengthField m_BackgroundSizeXField;
         LengthField m_BackgroundSizeYField;

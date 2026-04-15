@@ -11,15 +11,15 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing a StyleTransformOrigin.
     /// </summary>
-    internal class StyleTransformOriginField : StylePropertyField<StyleTransformOrigin, TransformOriginField, TransformOrigin>
+    internal class StyleTransformOriginField : StylePropertyField<StyleTransformOrigin, TransformOriginStyleField, TransformOrigin>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleTransformOrigin, TransformOriginField, TransformOrigin>.UxmlSerializedData
+        public new class UxmlSerializedData : StylePropertyField<StyleTransformOrigin, TransformOriginStyleField, TransformOrigin>.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                StylePropertyField<StyleTransformOrigin, TransformOriginField, TransformOrigin>.UxmlSerializedData.Register();
+                StylePropertyField<StyleTransformOrigin, TransformOriginStyleField, TransformOrigin>.UxmlSerializedData.Register();
             }
 
             public override object CreateInstance() => new StyleTransformOriginField();
@@ -42,23 +42,23 @@ namespace Unity.UIToolkit.Editor
         /// Constructor.
         /// </summary>
         public StyleTransformOriginField()
-            : base(null, new TransformOriginField()) { }
+            : base(null, new TransformOriginStyleField()) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="label">The text to use as a label.</param>
         public StyleTransformOriginField(string label)
-            : base(label, new TransformOriginField(label))
+            : base(label, new TransformOriginStyleField(label))
         {
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
 
-        protected override TransformOriginField CreateValueField()
+        protected override TransformOriginStyleField CreateValueField()
         {
-            return new TransformOriginField();
+            return new TransformOriginStyleField();
         }
 
         protected override StyleTransformOrigin CreateStyleValue(TransformOrigin v)

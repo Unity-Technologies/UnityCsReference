@@ -34,7 +34,7 @@ namespace UnityEditor.Experimental.GraphView
 
     internal class ByDateTemplateSorter : ITemplateSorter
     {
-        public string Label => "Moditication Date";
+        public string Label => "Modification Date";
 
         public int Compare(GraphViewTemplateDescriptor x, GraphViewTemplateDescriptor y)
         {

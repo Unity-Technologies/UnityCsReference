@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -141,12 +142,18 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
-    internal class HighlightOverlayPainter : BaseOverlayPainter
+    internal partial class HighlightOverlayPainter : BaseOverlayPainter
     {
         internal static readonly PrefColor kHighlightContentColor = new PrefColor("UI Toolkit Debugger/Highlight Content", 0.1f, 0.6f, 0.9f, 0.4f, 0.1f, 0.6f, 0.9f, 0.4f);
         internal static readonly PrefColor kHighlightPaddingColor = new PrefColor("UI Toolkit Debugger/Highlight Padding", 0.1f, 0.9f, 0.1f, 0.4f, 0.1f, 0.9f, 0.1f, 0.4f);
         internal static readonly PrefColor kHighlightBorderColor = new PrefColor("UI Toolkit Debugger/Highlight Border", 1.0f, 1.0f, 0.4f, 0.4f, 1.0f, 1.0f, 0.4f, 0.4f);
         internal static readonly PrefColor kHighlightMarginColor = new PrefColor("UI Toolkit Debugger/Highlight Margin", 1.0f, 0.6f, 0.0f, 0.4f, 1.0f, 0.6f, 0.0f, 0.4f);
+
+        [OnCodeInitializing]
+        static void Init()
+        {
+            // Intentionally left empty to trigger the `PrefColor` registration.
+        }
 
         private const float kDefaultHighlightAlpha = 0.4f;
 

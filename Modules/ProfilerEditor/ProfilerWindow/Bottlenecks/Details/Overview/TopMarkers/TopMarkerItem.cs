@@ -109,11 +109,6 @@ namespace Unity.Profiling.Editor.UI
         {
             var uss = EditorGUIUtility.Load("TopMarkerItem.uss") as StyleSheet;
             styleSheets.Add(uss);
-
-            const string k_UssClass_Dark = "top-marker-item__dark";
-            const string k_UssClass_Light = "top-marker-item__light";
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
-            AddToClassList(themeUssClass);
         }
     }
 }

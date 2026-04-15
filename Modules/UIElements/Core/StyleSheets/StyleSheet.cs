@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -136,7 +135,7 @@ namespace UnityEngine.UIElements
         [NonSerialized]
         private bool m_IsDefaultStyleSheet;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool isDefaultStyleSheet
         {
             get { return m_IsDefaultStyleSheet; }
@@ -373,7 +372,6 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
-
             m_RequiresRebuild = false;
         }
 

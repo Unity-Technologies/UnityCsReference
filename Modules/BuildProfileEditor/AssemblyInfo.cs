@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfile.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfile.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Insights.Editor.Tests")]
 

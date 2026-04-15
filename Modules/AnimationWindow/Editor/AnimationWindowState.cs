@@ -13,6 +13,7 @@ using Object = UnityEngine.Object;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using static UnityEditor.AnimationUtility;
 using UnityEditor.AnimationWindowBuiltin;
+using UnityEngine.Animations;
 
 namespace UnityEditorInternal
 {
@@ -1622,7 +1623,23 @@ namespace UnityEditorInternal
                 // When selection changes, animation window will always pick nearest animator component in terms of hierarchy depth
                 // Automatically syncinc scene selection in nested scenarios would cause unintuitive clip & animation change for animation window so we check for it and deny sync if necessary
                 if (selection.IsCompatibleWith(t))
-                    selectedGameObjectIDs.Add(t.gameObject.GetEntityId());
+                {
+                    EntityId entity;
+                    if (node.curves.Length > 0)
+                    {
+                        AnimationWindowCurve firstCurve = node.curves[0];
+                        // Query the animation system for the associate EntityId
+                        // For custom IAnimationBinding (e.g., UIToolkit), this will return the appropriate selection object
+                        // For standard animations, returns the GameObject's EntityId
+                        entity = AnimationUtility.GetAssociatedEntityId(t.gameObject, firstCurve.binding);
+                    }
+                    else
+                    {
+                        entity = t.gameObject.GetEntityId();
+                    }
+
+                    selectedGameObjectIDs.Add(entity);
+                }
             }
 
             if (selectedGameObjectIDs.Count > 0)

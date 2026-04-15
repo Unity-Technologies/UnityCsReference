@@ -234,6 +234,7 @@ namespace UnityEditor.Search
                 textElement.selection.OnCursorIndexChange += OnCursorChanged;
                 textElement.selection.OnSelectIndexChange += OnCursorChanged;
             }
+            UpdateCancelButton();
         }
 
         public void FocusSearchField()

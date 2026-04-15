@@ -408,7 +408,24 @@ namespace UnityEditor
 
         private static extern BuildPlayerDataResult BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions);
 
-        /*UCBP-PUBLIC*/ internal static BuildReport BuildContentDirectory(BuildContentDirectoryParameters buildParameters)
+        /// <summary>
+        /// Builds a content directory (serialized assets and scenes plus a manifest) at a defined output path.
+        /// </summary>
+        /// <remarks>
+        /// Register the folder at runtime with <see cref="Unity.Loading.ContentLoadManager.RegisterContentDirectory"/>.
+        /// Each entry in <see cref="BuildContentDirectoryParameters.rootAssetPaths"/> must be a <c>ScriptableObject</c>; the build includes those roots and
+        /// everything they reference (including <see cref="Unity.Loading.LoadableObjectId"/>, <see cref="Unity.Loading.Loadable{T}"/>, and <see cref="Unity.Loading.LoadableSceneId"/>).
+        /// Creates an <c>outputPath</c> if missing, normalizes path separators, and defaults <see cref="BuildContentDirectoryParameters.name"/> to the output folder name.
+        /// </remarks>
+        ///<example>
+        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildContentDirectory.cs"/>
+        ///</example>
+        /// <param name="buildParameters">Build settings (paths, roots, platform, options, compression).</param>
+        /// <returns>The <see cref="BuildReport"/> for this build.</returns>
+        /// <exception cref="ArgumentException"><see cref="BuildContentDirectoryParameters.outputPath"/> is null or empty.</exception>
+        /// <seealso cref="BuildContentDirectoryParameters"/>
+        /// <seealso cref="Unity.Loading.ContentLoadManager"/>
+        public static BuildReport BuildContentDirectory(BuildContentDirectoryParameters buildParameters)
         {
             if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
             {
@@ -952,7 +969,16 @@ namespace UnityEditor
             return true;
         }
 
-        /*UCBP-PUBLIC*/ internal static extern void CleanBuildCache();
+        /// <summary>
+        /// Clears cached unified content-build data so the next build recomputes it.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="BuildPipeline.BuildContentDirectory"/> performs the same cleanup when <see cref="BuildContentOptions.CleanBuildCache"/> is set.
+        /// Use this to clear that cache between builds without running a content build.
+        /// </remarks>
+        /// <seealso cref="BuildContentOptions.CleanBuildCache"/>
+        /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
+        public static extern void CleanBuildCache();
 
         [RequiredByNativeCode]
         internal static bool InvokeGenerateBuildTimeAssets()

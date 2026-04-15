@@ -8,13 +8,16 @@ using UnityEngine;
 namespace UnityEditor
 {
     /// <summary>
-    /// Provide various options to control the behavior of <see cref="BuildPipeline.BuildContentDirectory"/>.
+    /// Provides various options to control the behavior of <see cref="BuildPipeline.BuildContentDirectory"/>.
     /// </summary>
+    /// <example>
+    ///  <code source="../../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildContentDirectory.cs"/>
+    /// </example>
     /// <seealso cref="BuildPipeline"/>
     /// <seealso cref="EditorUserBuildSettings"/>
     /// <seealso cref="EditorBuildSettings"/>
     [StructLayout(LayoutKind.Sequential)]
-    /*UCBP-PUBLIC*/ internal struct BuildContentDirectoryParameters
+    public struct BuildContentDirectoryParameters
     {
         /// <summary>
         /// Output path for the build.

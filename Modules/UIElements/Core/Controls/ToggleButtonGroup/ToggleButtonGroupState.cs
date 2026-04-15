@@ -55,7 +55,11 @@ namespace UnityEngine.UIElements
             internal set => m_Length = value;
         }
 
-        internal ulong data => m_Data;
+        internal ulong data
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_Data;
+        }
 
         /// <summary>
         /// The option based on the index.

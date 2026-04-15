@@ -181,11 +181,11 @@ namespace UnityEditor
                         p => p.entityIdValue = Clipboard.entityIdValue,
                         propertyFieldEnabled);
                     break;
-                case SerializedPropertyType.LoadableReference:
+                case SerializedPropertyType.LoadableObjectId:
                     SetupAction(property, menu, evt,
-                        p => Clipboard.loadableReferenceValue = p.loadableReferenceValue,
-                        p => Clipboard.hasLoadableReference,
-                        p => p.loadableReferenceValue = Clipboard.loadableReferenceValue,
+                        p => Clipboard.loadableObjectIdValue = p.loadableObjectIdValue,
+                        p => Clipboard.hasLoadableObjectId,
+                        p => p.loadableObjectIdValue = Clipboard.loadableObjectIdValue,
                         propertyFieldEnabled);
                     break;
                 case SerializedPropertyType.Generic:

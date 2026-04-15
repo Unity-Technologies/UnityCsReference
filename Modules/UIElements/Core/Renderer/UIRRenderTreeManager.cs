@@ -323,6 +323,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_BlockDirtyRegistration = true;
             device.EvaluateChain(
+                panel.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None,
                 m_RootRenderTree.firstCommand,
                 m_DefaultMat,
                 vectorImageManager?.atlas,
@@ -416,6 +417,7 @@ namespace UnityEngine.UIElements.UIR
             //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
             m_BlockDirtyRegistration = drawInCameras; // For now, we only enable it for drawInCameras
             device.EvaluateChain(
+                panel.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None,
                 renderTree.firstCommand,
                 m_DefaultMat,
                 vectorImageManager?.atlas,

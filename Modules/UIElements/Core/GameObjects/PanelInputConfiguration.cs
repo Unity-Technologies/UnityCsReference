@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -13,13 +12,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     [HelpURL("UIE-get-started-with-runtime-ui")]
     [AddComponentMenu("UI Toolkit/Panel Input Configuration", 1), ExecuteAlways, DisallowMultipleComponent]
-    public sealed partial class PanelInputConfiguration : MonoBehaviour
+    public sealed partial class PanelInputConfiguration : MonoBehaviour, IPanelInputProvider
     {
         internal static PanelInputConfiguration current { get; set; }
 
         internal static int s_ActiveInstances = 0;
 
-        internal static Action<PanelInputConfiguration> onApply = null;
 
         /// <summary>
         /// Indicates whether the uGUI EventSystem redirects panel input.
@@ -54,47 +52,9 @@ namespace UnityEngine.UIElements
             Always,
         }
 
-        [Serializable]
-        internal partial struct Settings
-        {
-            private static Settings s_Default = new()
-            {
-                m_ProcessWorldSpaceInput = true,
-                m_InteractionLayers = Physics.DefaultRaycastLayers,
-                m_MaxInteractionDistance = Mathf.Infinity,
-                m_DefaultEventCameraIsMainCamera = true,
-                m_EventCameras = Array.Empty<Camera>(),
-                m_PanelInputRedirection = PanelInputRedirection.AutoSwitch,
-                m_AutoCreatePanelComponents = true
-            };
-            public static Settings Default => s_Default;
-
-            [Tooltip("Determines whether world space panels process input events. Disable this if you need UGUI support but do not require world space input to improve performance.")]
-            [SerializeField] internal bool m_ProcessWorldSpaceInput;
-            [Tooltip("Determines which layers can block input events on world space panels.")]
-            [SerializeField] internal LayerMask m_InteractionLayers;
-            [Tooltip("Sets how far away interactions with world-space UI are possible. Defaults to unlimited (infinity), but you can customize it for XR or performance needs. The distance uses GameObject units, consistent with transform positions and Camera clipping planes.")]
-            [SerializeField] internal float m_MaxInteractionDistance;
-            [Tooltip("Defines whether the Main Camera is used as the Event Camera for world space panels. Disable to specify alternative Event Camera(s) for raycasting input.")]
-            [SerializeField] internal bool m_DefaultEventCameraIsMainCamera;
-            [Tooltip("Defines the Event Camera(s) used for world space raycasting input.")]
-            [SerializeField] internal Camera[] m_EventCameras;
-            [Tooltip("Determines which input event system is used for UI interactions when combining UI Toolkit and UGUI.")]
-            [SerializeField] internal PanelInputRedirection m_PanelInputRedirection;
-            [Tooltip("Automatically adds UI Toolkit components under the EventSystem to handle input redirection between UI Toolkit and UGUI panels. Disable to manually assign these components through code.")]
-            [SerializeField] internal bool m_AutoCreatePanelComponents;
-
-            public bool processWorldSpaceInput => m_ProcessWorldSpaceInput;
-            public LayerMask interactionLayers => m_InteractionLayers;
-            public float maxInteractionDistance => m_MaxInteractionDistance;
-            public bool defaultEventCameraIsMainCamera => m_DefaultEventCameraIsMainCamera;
-            public Camera[] eventCameras => m_EventCameras;
-            public PanelInputRedirection panelInputRedirection => m_PanelInputRedirection;
-            public bool autoCreatePanelComponents => m_AutoCreatePanelComponents;
-        }
-
-        [SerializeField] private Settings m_Settings = Settings.Default;
-        internal Settings settings => m_Settings;
+        [SerializeField] private PanelInputSettings m_Settings = PanelInputSettings.Default;
+        PanelInputSettings IPanelInputProvider.settings => m_Settings;
+        internal PanelInputSettings settings => m_Settings;
 
         internal const string SettingsProperty = nameof(m_Settings);
 
@@ -203,11 +163,12 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public PanelInputRedirection panelInputRedirection
         {
-            get => m_Settings.m_PanelInputRedirection;
+            get => (PanelInputRedirection)m_Settings.m_PanelInputRedirection;
             set
             {
-                if (m_Settings.m_PanelInputRedirection == value) return;
-                m_Settings.m_PanelInputRedirection = value;
+                var v = (PanelInputSettings.InputRedirection)value;
+                if (m_Settings.m_PanelInputRedirection == v) return;
+                m_Settings.m_PanelInputRedirection = v;
                 Apply(this);
             }
         }
@@ -291,12 +252,11 @@ namespace UnityEngine.UIElements
 
         static void Apply(PanelInputConfiguration input)
         {
-            var settings = input != null ? input.settings : Settings.Default;
+            var settings = input != null ? input.settings : PanelInputSettings.Default;
 
-            // The default event system will not be there is the component is manually created before any document exists.
             if (IRuntimePanel.defaultEventSystem != null)
             {
-                IRuntimePanel.defaultEventSystem.overrideUseDefaultEventSystem = settings.panelInputRedirection switch
+                IRuntimePanel.defaultEventSystem.overrideUseDefaultEventSystem = (PanelInputRedirection)settings.panelInputRedirection switch
                 {
                     PanelInputRedirection.Never => true,
                     PanelInputRedirection.Always => false,
@@ -307,7 +267,8 @@ namespace UnityEngine.UIElements
                 IRuntimePanel.defaultEventSystem.ApplyRaycasterAsDefault(settings.processWorldSpaceInput, settings.defaultEventCameraIsMainCamera, settings.eventCameras);
             }
 
-            onApply?.Invoke(input);
+            PanelInputState.current = input;
+            PanelInputState.onApply?.Invoke(input);
         }
     }
 }

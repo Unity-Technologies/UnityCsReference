@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -217,8 +218,6 @@ namespace UnityEngine.UIElements
                 PropertyType.MaterialDefinition => throw new NotImplementedException(),
                 _ => throw new NotImplementedException(),// Why does c# think the list is not exhaustive? seems related to the cast...
             };
-
-
         }
     }
 }

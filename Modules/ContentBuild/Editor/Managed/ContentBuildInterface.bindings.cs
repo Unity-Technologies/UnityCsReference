@@ -435,11 +435,6 @@ namespace UnityEditor.Build.Content
         ///<returns>The unique hash for a type's serialized layout.</returns>
         public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
 
-        // These APIs are used in the UCBP performance tests. Perhaps they should be exposed in the future
-        // to allow users to create a single performance capture that contains multiple content builds
-        extern internal static bool StartTraceEventProfileCapture();
-        extern internal static bool StopTraceEventProfileCaptureWithReport(string filename);
-        extern internal static bool IsTraceEventProfileCaptureRunning();
         extern internal static int BeginTraceProfileBlock(string name);
         extern internal static void EndTraceProfileBlock(int index);
 

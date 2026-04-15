@@ -686,15 +686,11 @@ namespace Unity.UI.Builder
             else
             {
                 m_StyleFields.UpdateOverrideStyles(field, property);
-                var isSelectorElement = currentVisualElement.IsSelector();
-                if (isSelectorElement)
+                var isVariable = valueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable && valueInfo.valueSource.type != FieldValueSourceInfoType.MatchingUSSSelector;
+                if (isVariable)
                 {
-                    var isVariable = valueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable;
-                    if (isVariable)
-                    {
-                        var isResolvedVariable = valueInfo.valueBinding.variable.sheet != null;
-                        SetFieldsEnabled(field, !isResolvedVariable);
-                    }
+                    var isResolvedVariable = valueInfo.valueBinding.variable.Sheet != null;
+                    SetFieldsEnabled(field, !isResolvedVariable);
                 }
             }
         }
@@ -891,9 +887,13 @@ namespace Unity.UI.Builder
 
             var statusClassName = valueInfo.valueBinding.type switch
             {
-                FieldValueBindingInfoType.USSVariable => valueInfo.valueBinding.variable.sheet != null
+                FieldValueBindingInfoType.USSVariable => valueInfo.valueSource.type switch
+                {
+                    FieldValueSourceInfoType.MatchingUSSSelector => BuilderConstants.InspectorLocalStyleSelectorClassName,
+                    _ => valueInfo.valueBinding.variable.Sheet != null
                     ? BuilderConstants.InspectorLocalStyleVariableClassName
                     : BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName,
+                },
                 FieldValueBindingInfoType.Binding => valueInfo.valueSource.type == FieldValueSourceInfoType.ResolvedBinding ?
                 BuilderConstants.InspectorLocalStyleBindingClassName : BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName,
                 _ => valueInfo.valueSource.type switch
@@ -1005,7 +1005,7 @@ namespace Unity.UI.Builder
             if (info.valueSource.type == FieldValueSourceInfoType.Default)
                 return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
             if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
-                return info.valueBinding.variable.sheet != null ? GetVariableTooltip(info.valueBinding.variable) : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
+                return info.valueBinding.variable.Sheet != null ? GetVariableTooltip(info.valueBinding.variable) : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
 
             // data binding
             if (info.valueBinding.type == FieldValueBindingInfoType.Binding)
@@ -1156,9 +1156,9 @@ namespace Unity.UI.Builder
             string variableName = "";
             string sourceStyleSheet = "";
 
-            if (info.sheet)
+            if (info.Sheet)
             {
-                var varStyleSheetOrigin = info.sheet;
+                var varStyleSheetOrigin = info.Sheet;
                 var fullPath = AssetDatabase.GetAssetPath(varStyleSheetOrigin);
 
                 if (string.IsNullOrEmpty(fullPath))
@@ -1175,7 +1175,7 @@ namespace Unity.UI.Builder
                 sourceStyleSheet = BuilderConstants.FileNotFoundMessage;
             }
 
-            variableName = info.name;
+            variableName = info.Name;
 
             return string.Format(BuilderConstants.FieldStatusIndicatorVariableTooltip, variableName, sourceStyleSheet);
         }

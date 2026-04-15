@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using Unity.Loading;
 using Object = UnityEngine.Object;
 
 // ReSharper disable PossibleInvalidOperationException -- we are accessing bool?
@@ -272,25 +273,25 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = value.ToString();
         }
 
-        public static bool hasLoadableReference
+        public static bool hasLoadableObjectId
         {
             get
             {
                 FetchState();
-                m_State.FetchLoadableReference();
-                return m_State.m_HasLoadableReference.Value;
+                m_State.FetchLoadableObjectId();
+                return m_State.m_HasLoadableObjectId.Value;
             }
         }
 
-        public static LoadableReference loadableReferenceValue
+        public static LoadableObjectId loadableObjectIdValue
         {
             get
             {
                 FetchState();
-                m_State.FetchLoadableReference();
-                return m_State.m_ValueLoadableReference;
+                m_State.FetchLoadableObjectId();
+                return m_State.m_ValueLoadableObjectId;
             }
-            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom(new LoadableReferenceWrapper(value));
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom(new LoadableObjectIdWrapper(value));
         }
 
         public static bool hasVector3

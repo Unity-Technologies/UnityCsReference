@@ -5,6 +5,8 @@
 using UnityEditor.Toolbars;
 using UnityEngine;
 using Unity.Multiplayer;
+using Unity.Multiplayer.Internal;
+using UnityEditor.PackageManager;
 
 namespace UnityEditor.Multiplayer.Internal
 {
@@ -31,8 +33,21 @@ namespace UnityEditor.Multiplayer.Internal
         [InitializeOnLoadMethod]
         static void InitializeCallbacks()
         {
+            UnityEditor.PackageManager.Events.registeredPackages += Reinitialize;
+            if(!DedicatedServerMigrationUtility.ShouldEnableDedicatedServer())
+            {
+                return;
+            }
             EditorMultiplayerManager.enableMultiplayerRolesChanged += OnEnableMultiplayerRolesChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        static void Reinitialize(PackageRegistrationEventArgs args)
+        {
+            UnityEditor.PackageManager.Events.registeredPackages -= Reinitialize;
+            EditorMultiplayerManager.enableMultiplayerRolesChanged -= OnEnableMultiplayerRolesChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            InitializeCallbacks();
         }
 
         static void OnPlayModeStateChanged(PlayModeStateChange state)

@@ -14,7 +14,7 @@ namespace Unity.UI.Builder
         private const int MinScaleStart = 25;           // This is the minimum scale (25%), increment in small steps
         private const int MiddleScaleStart = 150;       // At 150%, let's increment in larger steps
         private const int MaxScaleStart = 500;          // At 500%, let's increment in even larger steps
-        private const int MaxScaleEnd = 10000;          // until we reach the max scale (500%)
+        private const int MaxScaleEnd = 10000;          // until we reach the max scale (10000%)
         private const int LowScaleIncrement = 5;        // Low scale increment step (5%)
         private const int MiddleScaleIncrement = 25;    // Middle scale increment step (25%)
         private const int HighScaleIncrement = 250;     // High scale increment step (100%)

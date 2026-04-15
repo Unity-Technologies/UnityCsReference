@@ -28,7 +28,7 @@ namespace Unity.UIToolkit.Editor
         internal const string k_FilterListViewName = "filter-list-view";
 
         const string k_FilterFunctionDropdownClassName = "inspector-variables-dropdown";
-        static readonly string k_InspectorContainerClassName = "unity-builder-inspector__container";
+        static readonly string k_InspectorContainerClassName = "unity-ui-inspector__container";
         static readonly string k_AddMoreIconClassName = BaseListView.footerAddButtonName + "--with-menu";
         static readonly int k_DefaultMenuFontSize = 12;
 

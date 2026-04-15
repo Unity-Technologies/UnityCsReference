@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental;
 using UnityEngine.Assertions;
+using System;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -549,6 +551,15 @@ namespace UnityEditor
             }
             return count;
         }
+
+        internal static bool SearchFilterExcludesAssetPath(string assetPath, SearchFilter filter)
+        {
+            if (filter == null || !filter.excludeSceneAssets || string.IsNullOrEmpty(assetPath))
+                return false;
+
+            return assetPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
+        }
+
     }
 
     internal class FilteredHierarchyIterator : IHierarchyIterator

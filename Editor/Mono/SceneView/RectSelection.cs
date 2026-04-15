@@ -130,13 +130,14 @@ namespace UnityEditor
                 // For control/cmd, we check if ANY of the selected GO is hovered by mouse and then subtract. Otherwise additive.
                 // Control/cmd takes priority over shift.
                 var hovered = HandleUtility.PickObject(mousePos, false);
-
                 var handledIt = false;
 
+                var hoveredObj = Object.FindObjectFromInstanceID(hovered.targetId);
+
                 // shift-click deselects only if the active GO is exactly what we clicked on
-                if (selectionType != SelectionType.Subtractive && Selection.activeObject == hovered.target)
+                if (selectionType != SelectionType.Subtractive && Selection.activeObject == hoveredObj)
                 {
-                    UpdateSelection(m_SelectionStart, hovered.target, SelectionType.Subtractive, false);
+                    UpdateSelection(m_SelectionStart, hoveredObj, SelectionType.Subtractive, false);
                     handledIt = true;
                 }
 
@@ -148,24 +149,26 @@ namespace UnityEditor
                     var hoveredRoot = HandleUtility.FindSelectionBaseForPicking(hoveredTransform);
                     var deselectList = new List<Object>();
 
-                    while (hovered.target != null)
+                    while (hovered.targetId != EntityId.None)
                     {
+                        hoveredObj = Object.FindObjectFromInstanceID(hovered.targetId);
+
                         foreach (var obj in selectedObjects)
                         {
-                            if (obj.Equals(hovered.target))
+                            if (obj.GetEntityId().Equals(hovered.targetId))
                             {
-                                deselectList.Add(hovered.target);
+                                deselectList.Add(hoveredObj);
                                 break;
                             }
                         }
 
-                        if (hovered.target == hoveredRoot)
+                        if (hoveredObj == hoveredRoot)
                             break;
 
                         if (!hovered.TryGetParent(out var parent))
                             break;
 
-                        hovered = new PickingObject(parent.gameObject);
+                        hovered = new PickingObject(parent.gameObject.GetEntityId());
                     }
 
                     if (deselectList.Count > 0)
@@ -179,13 +182,14 @@ namespace UnityEditor
                 if (!handledIt)
                 {
                     var picked = HandleUtility.PickObject(mousePos, true);
-                    UpdateSelection(m_SelectionStart, picked.target, SelectionType.Additive, false);
+                    UpdateSelection(m_SelectionStart, hoveredObj, SelectionType.Additive, false);
                 }
             }
             else // With no modifier keys, we do the "cycle through overlapped" picking logic in SceneViewPicking.cs
             {
                 var picked = SceneViewPicking.PickGameObject(mousePos);
-                UpdateSelection(m_SelectionStart, picked.target, selectionType, false);
+                var pickedObj = Object.FindObjectFromInstanceID(picked.targetId);
+                UpdateSelection(m_SelectionStart, pickedObj, selectionType, false);
             }
 
             evt.Use();

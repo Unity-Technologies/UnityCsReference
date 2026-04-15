@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
         }
 
         // Which index to read from in the value array for the corresponding type
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal int valueIndex;
 

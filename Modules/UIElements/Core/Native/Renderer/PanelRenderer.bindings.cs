@@ -837,7 +837,11 @@ namespace UnityEngine.UIElements
         #endregion
 
         #region Animation
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern UIAnimationBinder GetAnimationBinder();
+
+        // This will create it if it doen't already exists. Should only be used from tests
+        internal extern UIAnimationBinder GetOrCreateAnimationBinder();
 
         [NativeMethod("RegisterPanelRendererAnimationBinding")]
         internal static extern void RegisterPanelRendererAnimationBinding();

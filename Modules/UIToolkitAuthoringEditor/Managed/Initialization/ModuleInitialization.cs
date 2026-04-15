@@ -18,6 +18,7 @@ namespace Unity.UIToolkit.Editor
         public static void Initialize()
         {
             StyleInspectorDefaultContent.Prepare();
+            VisualElementAnimationAuthoringHandler.Register();
         }
 
         [RegisterUxmlCache]
@@ -31,6 +32,9 @@ namespace Unity.UIToolkit.Editor
             BorderColorFoldout.UxmlSerializedData.Register();
             BorderRadiusFoldout.UxmlSerializedData.Register();
             BorderWidthFoldout.UxmlSerializedData.Register();
+            CanvasSettingsHeader.UxmlSerializedData.Register();
+            CanvasSettingsInspector.UxmlSerializedData.Register();
+            CheckerboardBackground.UxmlSerializedData.Register();
             DisplayStyleEnumField.UxmlSerializedData.Register();
             EditorTextRenderingModeStyleEnumField.UxmlSerializedData.Register();
             FlexDirectionStyleEnumField.UxmlSerializedData.Register();
@@ -69,7 +73,15 @@ namespace Unity.UIToolkit.Editor
             TextOverflowPositionStyleEnumField.UxmlSerializedData.Register();
             TextOverflowStyleEnumField.UxmlSerializedData.Register();
             TextShadowField.UxmlSerializedData.Register();
+            TransformOriginStyleField.UxmlSerializedData.Register();
+            TransformOriginSelector.UxmlSerializedData.Register();
+            UICanvas.UxmlSerializedData.Register();
+            UICanvasDocumentRoot.UxmlSerializedData.Register();
+            UICanvasResizerHandle.UxmlSerializedData.Register();
+            UIViewport.UxmlSerializedData.Register();
             UnityTextAlignStyleEnumField.UxmlSerializedData.Register();
+            UssCodePreview.UxmlSerializedData.Register();
+            UxmlCodePreview.UxmlSerializedData.Register();
             VisibilityStyleEnumField.UxmlSerializedData.Register();
             WhiteSpaceStyleEnumField.UxmlSerializedData.Register();
             WrapStyleEnumField.UxmlSerializedData.Register();

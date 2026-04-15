@@ -11,6 +11,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Profiling;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.UIElements.MeshGenerationContext;
@@ -26,7 +27,7 @@ namespace UnityEngine.UIElements.UIR
         TextJobSystem textJobSystem { get; set; }
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales);
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
-        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
+        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font, bool useAdvanced = true);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
@@ -57,6 +58,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly ProfilerMarker k_MarkerDrawBorder = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawBorder");
         static readonly ProfilerMarker k_MarkerDrawVectorImage = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawVectorImage");
         static readonly ProfilerMarker k_MarkerDrawRectangleRepeat = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawRectangleRepeat");
+        static readonly int k_GradientScaleId = Shader.PropertyToID("_GradientScale");
 
         MeshGenerationContext m_MeshGenerationContext;
 
@@ -622,13 +624,27 @@ namespace UnityEngine.UIElements.UIR
             richText = true,
         };
 
+        NativeTextGenerationSettings m_NativeSettings;
+
+        static TextLib s_TextLib;
+
+        List<List<List<int>>> m_DrawTextAdvancedMeshIndices;
+
         List<NativeSlice<Vertex>> m_VerticesArray = new List<NativeSlice<Vertex>>();
         List<NativeSlice<ushort>> m_IndicesArray = new List<NativeSlice<ushort>>();
         List<Texture2D> m_Atlases = new List<Texture2D>();
         List<float> m_SdfScales = new List<float>();
         List<GlyphRenderMode> m_RenderModes = new List<GlyphRenderMode>();
 
-        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
+        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font, bool useAdvanced = true)
+        {
+            if (useAdvanced)
+                DrawTextAdvanced(text, pos, fontSize, color, font);
+            else
+                DrawTextStandard(text, pos, fontSize, color, font);
+        }
+
+        void DrawTextStandard(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
         {
             var textSettings = TextUtilities.GetTextSettingsFrom(currentElement);
 
@@ -642,51 +658,117 @@ namespace UnityEngine.UIElements.UIR
 
             TextCore.Text.TextGenerator.GetTextGenerator().GenerateText(m_Settings, m_TextInfo);
 
-            DrawTextBase(m_TextInfo, new NativeTextInfo(), pos, false);
+            DrawTextBaseTextCore(m_TextInfo, pos);
         }
 
-        void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)
+        static UnityEngine.TextAsset GetICUAssetForMeshGeneration(VisualElement ve)
         {
-            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.meshInfoCount : textInfo.meshInfo.Length; i < meshInfoCount; i++)
+            if (ve?.panel is IRuntimePanel runtimePanel)
             {
-                MeshInfo meshInfo = new();
-                FontAsset fa = null;
-                SpriteAsset sa = null;
-                bool isSprite = false;
-                Span<ATGMeshInfo> meshInfosMarshalSpan = default;
-                ATGMeshInfo nativeMeshInfo = default;
+                if (ve.panel.contextType == ContextType.Editor)
+                    return TextHandle.GetICUAssetStaticFalback();
+                var ps = runtimePanel.panelSettings;
+                if (ps != null && ps.m_ICUDataAsset != null)
+                    return ps.m_ICUDataAsset;
+            }
 
-                int remainingVertexCount;
-                if (!isNative)
-                {
-                    meshInfo = textInfo.meshInfo[i];
-                    Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
-                    remainingVertexCount = meshInfo.vertexCount;
-                }
-                else
-                {
-                    meshInfosMarshalSpan = nativeTextInfo.meshInfos;
-                    nativeMeshInfo = meshInfosMarshalSpan[i];
-                    int glyphAmount = nativeMeshInfo.textElementInfos.Length;
-                    remainingVertexCount = glyphAmount * 4;
-                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
+            return TextHandle.GetICUAssetStaticFalback();
+        }
 
-                    if (textAsset == null)
+        static void EnsureTextLib(VisualElement ve)
+        {
+            if (s_TextLib != null)
+                return;
+
+            var icu = GetICUAssetForMeshGeneration(ve);
+            if (icu == null)
+                return;
+
+            s_TextLib = new TextLib(icu.bytes);
+        }
+
+        void DrawTextAdvanced(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
+        {
+            if (font == null)
+                return;
+
+            EnsureTextLib(currentElement);
+            if (s_TextLib == null)
+                return;
+
+            var textSettings = TextUtilities.GetTextSettingsFrom(currentElement);
+            if (textSettings == null)
+                return;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (font.atlasPopulationMode == AtlasPopulationMode.Static)
+#pragma warning restore CS0618
+            {
+                Debug.LogError($"Advanced text system cannot render using static font asset {font.faceInfo.familyName}. See <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html\">migration guidance</a>.");
+                return;
+            }
+
+            font.EnsureNativeFontAssetIsCreated();
+            if (font.nativeFontAsset == IntPtr.Zero)
+                return;
+
+            textSettings.UpdateNativeTextSettings();
+
+            m_NativeSettings.text = text ?? "";
+            m_NativeSettings.fontAsset = font.nativeFontAsset;
+            m_NativeSettings.textSettings = textSettings.nativeTextSettings;
+            m_NativeSettings.fontSize = (int)Mathf.Round(fontSize) * 64;
+            m_NativeSettings.color = color;
+            m_NativeSettings.wordWrapEnabled = false;
+
+            bool wasCached = false;
+            FontAsset.CreateHbFaceIfNeeded();
+            var nativeTextInfo = s_TextLib.GenerateText(m_NativeSettings, IntPtr.Zero, ref wasCached);
+
+            var missingGlyphsPerFontAsset = new Dictionary<EntityId, HashSet<uint>>();
+            if (s_TextLib.HasMissingGlyphs(nativeTextInfo, ref missingGlyphsPerFontAsset))
+            {
+                foreach (var entry in missingGlyphsPerFontAsset)
+                {
+                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(entry.Key) as TextCore.Text.TextAsset;
+                    if (textAsset is not FontAsset fa || entry.Value.Count == 0)
                         continue;
 
-                    if (textAsset is FontAsset)
-                    {
-                        fa = textAsset as FontAsset;
-                    }
-                    else
-                    {
-                        isSprite = true;
-                        sa = textAsset as SpriteAsset;
-                    }
+                    var glyphList = new List<uint>();
+                    glyphList.AddRange(entry.Value);
+                    fa.TryAddGlyphs(glyphList);
                 }
+    
+                FontAsset.UpdateFontAssetsInUpdateQueue();
+            }
 
-                int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
-                float inverseScale = 1.0f / currentElement.scaledPixelsPerPoint;
+            if (m_DrawTextAdvancedMeshIndices == null)
+                m_DrawTextAdvancedMeshIndices = new List<List<List<int>>>();
+            else
+            {
+                foreach (var listOfAtlases in m_DrawTextAdvancedMeshIndices)
+                {
+                    foreach (var listOfIndices in listOfAtlases)
+                        listOfIndices.Clear();
+                }
+            }
+
+            List<bool> hasMultipleColorsByMesh = null;
+            s_TextLib.ProcessMeshInfos(nativeTextInfo, m_NativeSettings, ref m_DrawTextAdvancedMeshIndices, ref hasMultipleColorsByMesh, false);
+
+            DrawTextBaseNative(nativeTextInfo, pos);
+        }
+
+        void DrawTextBaseTextCore(TextCore.Text.TextInfo textInfo, Vector2 pos)
+        {
+            int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
+            float inverseScale = 1.0f / currentElement.scaledPixelsPerPoint;
+
+            for (int i = 0; i < textInfo.meshInfo.Length; i++)
+            {
+                MeshInfo meshInfo = textInfo.meshInfo[i];
+                Debug.Assert((meshInfo.vertexCount & 0b11) == 0); // Quads only
+                int remainingVertexCount = meshInfo.vertexCount;
 
                 while (remainingVertexCount > 0)
                 {
@@ -694,59 +776,24 @@ namespace UnityEngine.UIElements.UIR
                     int quadCount = vertexCount >> 2;
                     int indexCount = quadCount * 6;
 
-                    Texture2D texture;
-                    GlyphRenderMode renderMode;
-                    if (isNative)
-                    {
-                        if (isSprite)
-                        {
-                            texture = (Texture2D)sa.material.mainTexture;
-                            renderMode = GlyphRenderMode.COLOR;
-                        }
-                        else
-                        {
-                            texture = (Texture2D)fa.material.mainTexture;
-                            renderMode = fa.atlasRenderMode;
-                        }
-                    }
-                    else
-                    {
-                        texture = (Texture2D)meshInfo.material.mainTexture;
-                        renderMode = meshInfo.glyphRenderMode;
-                    }
+                    var texture = (Texture2D)meshInfo.material.mainTexture;
+                    var renderMode = meshInfo.glyphRenderMode;
 
                     m_Atlases.Add(texture);
                     m_RenderModes.Add(renderMode);
                     float sdfScale = 0;
                     if (!TextGeneratorUtilities.IsBitmapRendering(m_RenderModes[^1]) && m_Atlases[^1].format == TextureFormat.Alpha8)
-                    {
-                        if (isNative)
-                            sdfScale = isSprite ? 0 : fa.atlasPadding + 1;
-                        else
-                            sdfScale = meshInfo.material.GetFloat(TextShaderUtilities.ID_GradientScale);
-                    }
+                        sdfScale = meshInfo.material.GetFloat(k_GradientScaleId);
                     m_SdfScales.Add(sdfScale);
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
                     for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
-                        if (isNative)
-                        {
-                            Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
-                            var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        }
-                        else
-                        {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                        }
+                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);
@@ -764,6 +811,94 @@ namespace UnityEngine.UIElements.UIR
                 Debug.Assert(remainingVertexCount == 0);
             }
 
+            SubmitDrawTextBatches();
+        }
+
+        void DrawTextBaseNative(NativeTextInfo nativeTextInfo, Vector2 pos)
+        {
+            int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
+            float inverseScale = 1.0f / currentElement.scaledPixelsPerPoint;
+            Span<ATGMeshInfo> meshInfosMarshalSpan = nativeTextInfo.meshInfos;
+
+            for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
+            {
+                ATGMeshInfo nativeMeshInfo = meshInfosMarshalSpan[i];
+                int glyphAmount = nativeMeshInfo.textElementInfos.Length;
+                int remainingVertexCount = glyphAmount * 4;
+                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(nativeMeshInfo.textAssetId) as TextCore.Text.TextAsset;
+
+                if (textAsset == null)
+                    continue;
+
+                FontAsset fa = null;
+                SpriteAsset sa = null;
+                bool isSprite = false;
+                if (textAsset is FontAsset)
+                    fa = textAsset as FontAsset;
+                else
+                {
+                    isSprite = true;
+                    sa = textAsset as SpriteAsset;
+                }
+
+                while (remainingVertexCount > 0)
+                {
+                    int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
+                    int quadCount = vertexCount >> 2;
+                    int indexCount = quadCount * 6;
+
+                    Texture2D texture;
+                    GlyphRenderMode renderMode;
+                    if (isSprite)
+                    {
+                        texture = (Texture2D)sa.material.mainTexture;
+                        renderMode = GlyphRenderMode.COLOR;
+                    }
+                    else
+                    {
+                        texture = (Texture2D)fa.material.mainTexture;
+                        renderMode = fa.atlasRenderMode;
+                    }
+
+                    m_Atlases.Add(texture);
+                    m_RenderModes.Add(renderMode);
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(m_RenderModes[^1]) && m_Atlases[^1].format == TextureFormat.Alpha8)
+                        sdfScale = isSprite ? 0 : fa.atlasPadding + 1;
+                    m_SdfScales.Add(sdfScale);
+
+                    m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
+
+                    for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
+                    {
+                        Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
+                        var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+
+                        indices[j + 0] = (ushort)(vDst + 0);
+                        indices[j + 1] = (ushort)(vDst + 1);
+                        indices[j + 2] = (ushort)(vDst + 2);
+                        indices[j + 3] = (ushort)(vDst + 2);
+                        indices[j + 4] = (ushort)(vDst + 3);
+                        indices[j + 5] = (ushort)(vDst + 0);
+                    }
+
+                    m_VerticesArray.Add(vertices);
+                    m_IndicesArray.Add(indices);
+
+                    remainingVertexCount -= vertexCount;
+                }
+                Debug.Assert(remainingVertexCount == 0);
+            }
+
+            SubmitDrawTextBatches();
+        }
+
+        void SubmitDrawTextBatches()
+        {
             DrawText(m_VerticesArray, m_IndicesArray, m_Atlases, m_RenderModes, m_SdfScales);
 
             m_VerticesArray.Clear();
@@ -781,7 +916,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Atlases.Add(material.mainTexture as Texture2D);
                 float sdfScale = 0;
                 if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]) && m_Atlases[^1].format == TextureFormat.Alpha8)
-                    sdfScale = material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    sdfScale = material.GetFloat(k_GradientScaleId);
                 m_SdfScales.Add(sdfScale);
             }
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.IntegerTime;
+using UnityEngine.Bindings;
 using UnityEngine.InputForUI;
 
 namespace UnityEngine.UIElements
@@ -343,6 +344,7 @@ namespace UnityEngine.UIElements
         bool actionKey { get; }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IPointerEventInternal
     {
         IMouseEvent compatibilityMouseEvent { get; }
@@ -902,6 +904,7 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static T GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button, int clickCount, EventModifiers modifiers, int displayIndex)
         {
             T e = GetPooled();

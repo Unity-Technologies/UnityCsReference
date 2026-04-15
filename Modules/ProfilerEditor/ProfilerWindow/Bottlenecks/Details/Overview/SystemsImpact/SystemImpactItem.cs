@@ -8,7 +8,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class SystemImpactItem : VisualElement
+    // A single horizontal bar with an absolutely positioned colored bar element and label on top.
+    // The bar width represents the normalized duration and the label shows the system name and time.
+    class SystemImpactItem : VisualElement, ISelectedDetailsViewElement
     {
         readonly VisualElement m_Bar;
         readonly Label m_Label;
@@ -16,6 +18,8 @@ namespace Unity.Profiling.Editor.UI
         public SystemImpactItem()
         {
             name = "system-impact-item";
+            RegisterCallback<PointerEnterEvent>(_ => this.SetActivePseudoState(true));
+            RegisterCallback<PointerLeaveEvent>(_ => this.SetActivePseudoState(false));
 
             m_Bar = new VisualElement()
             {
@@ -32,6 +36,12 @@ namespace Unity.Profiling.Editor.UI
             ApplyStyleSheet();
         }
 
+        public void SetSelected(bool value)
+        {
+            this.SetCheckedPseudoState(value);
+        }
+
+        // normalizedDuration should be a value from 0.0 to 1.0, representing the bar width as a percentage.
         public void Configure(SystemsImpactModel.SystemImpact systemImpact, float normalizedDuration)
         {
             m_Label.text = $"{systemImpact.Name} ({TimeFormatterUtility.FormatTimeNsToMs(systemImpact.DurationNs)})";

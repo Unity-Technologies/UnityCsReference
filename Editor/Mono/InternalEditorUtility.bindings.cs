@@ -97,6 +97,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/EditorHelper.h")]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [NativeHeader("Editor/Src/EditorWindowController.h")]
+    [NativeHeader("Editor/Src/UntrackedSerialization.h")]
     [NativeHeader("Editor/Src/EditorModules.h")]
     [NativeHeader("Editor/Src/Gizmos/GizmoUtil.h")]
     [NativeHeader("Editor/Src/HierarchyState.h")]
@@ -323,13 +324,10 @@ namespace UnityEditorInternal
         extern public static void SetIsInspectorExpanded(Object obj, bool isExpanded);
 
         [Obsolete("expandedProjectWindowItems is deprecated. Use expandedProjectWindowItemIds instead", true)]
-        extern public static int[] expandedProjectWindowItems
+        public static int[] expandedProjectWindowItems
         {
-            [StaticAccessor("AssetDatabase::GetProjectWindowHierarchyState()", StaticAccessorType.Dot)]
-            [NativeMethod("GetExpandedIntArray")]
-            get;
-            [FreeFunction("InternalEditorUtilityBindings::SetExpandedProjectWindowItems")]
-            set;
+            get { throw new NotSupportedException("expandedProjectWindowItems is deprecated. Use expandedProjectWindowItemIds instead"); }
+            set { throw new NotSupportedException("expandedProjectWindowItems is deprecated. Use expandedProjectWindowItemIds instead"); }
         }
 
         extern public static EntityId[] expandedProjectWindowItemIds
@@ -347,12 +345,15 @@ namespace UnityEditorInternal
             return CurrentAssemblies.LoadFromPath(dllLocation);
         }
 
+        // Public API retains the legacy "AndForget" naming for backward compatibility.
+        // The native functions were renamed to "Untracked" to better describe their behavior
+        // (serialization without PersistentManager tracking).
         public static void SaveToSerializedFileAndForget(Object[] obj, string path, bool allowTextSerialization)
         {
             SaveToSerializedFileAndForgetInternal(path, obj, allowTextSerialization);
         }
 
-        [FreeFunction("SaveToSerializedFileAndForget")]
+        [FreeFunction("SaveToSerializedFileUntracked")]
         extern private static void SaveToSerializedFileAndForgetInternal(string path, Object[] obj, bool allowTextSerialization);
 
         [FreeFunction("InternalEditorUtilityBindings::LoadSerializedFileAndForget")]

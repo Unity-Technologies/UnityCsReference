@@ -288,7 +288,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
-[assembly: InternalsVisibleTo("com.unity.quicksearch.tests.runtime")] // /*UCBP-REMOVE*/ LoadableReference for SearchColumnTestComponent
+[assembly: InternalsVisibleTo("com.unity.quicksearch.tests.runtime")] // /*UCBP-REMOVE*/ LoadableObjectId for SearchColumnTestComponent
 // Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
 

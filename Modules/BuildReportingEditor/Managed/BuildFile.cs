@@ -11,7 +11,7 @@ namespace UnityEditor.Build.Reporting
     [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildFile
     {
-        ///<summary>The unique indentifier of the build file.</summary>
+        ///<summary>The unique identifier of the build file.</summary>
         public uint id { get; }
         ///<summary>The absolute path of the file produced by the build process.</summary>
         public string path { get; }
@@ -30,7 +30,8 @@ namespace UnityEditor.Build.Reporting
             return path;
         }
 
-        /*UCBP-PUBLIC*/ internal bool isFromCache => flags.HasFlag(BuildFileFlags.IsFromCache);
+        ///<summary>Whether this file was retrieved from the build cache rather than being built.</summary>
+        internal bool isFromCache => flags.HasFlag(BuildFileFlags.IsFromCache);
     }
 
     [Flags]

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -54,6 +55,10 @@ internal readonly record struct SetInlineStylePropertyCommand<T>
         EditorUtility.SetDirty(visualTreeAsset);
         EditorUtility.SetDirty(inlineStyleSheet);
         UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        {
+            stage.PanelElement.FrameUpdate();
+        }
     }
 
     private static StyleRule GetOrCreateRule(VisualElementAsset vea, StyleSheet styleSheet)

@@ -43,11 +43,6 @@ namespace Unity.Profiling.Editor.UI
             if (view == null)
                 throw new InvalidViewDefinedInUxmlException();
 
-            const string k_UssClass_Dark = "marker-details-panel__dark";
-            const string k_UssClass_Light = "marker-details-panel__light";
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
-            view.AddToClassList(themeUssClass);
-
             return view;
         }
 

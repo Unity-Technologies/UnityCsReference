@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
@@ -21,6 +20,9 @@ namespace Unity.UIToolkit.Editor
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            public new static void Register()
+                => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
+
             public override object CreateInstance() => new VariablesInspector();
         }
 
@@ -73,9 +75,7 @@ namespace Unity.UIToolkit.Editor
             m_VariablesListView.itemIndexChanged += OnListReordered;
 
             var addButton = m_VariablesListView.Q<Button>("unity-list-view__add-button");
-            addButton.text = string.Empty;
-            addButton.iconImage =
-                EditorGUIUtility.IconContent("Toolbar Plus More", "Add new variable").image as Texture2D;
+            addButton.AddToClassList(BaseListView.footerAddButtonWithMenuNameUnique);
         }
 
         internal enum VariableType

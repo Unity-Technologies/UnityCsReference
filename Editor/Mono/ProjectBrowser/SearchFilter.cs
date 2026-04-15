@@ -91,6 +91,10 @@ namespace UnityEditor
         [DataMember]
         private bool m_FilterByTypeIntersection;
 
+        [SerializeField]
+        [DataMember]
+        private bool m_ExcludeSceneAssets = false;
+
         // Interface
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
         public string[] classNames { get { return m_ClassNames; } set { m_ClassNames = value; }}
@@ -112,6 +116,7 @@ namespace UnityEditor
         // Note: by default ADB search assumes all type searching uses a boolean implicit OR: t:Texture t:AudioClip => t:Texture OR t:AudioClip
         // This switch make the ADB search use an explicit AND instead: t:Texture t:AudioClip => t:Texture AND t:AudioClip
         internal bool filterByTypeIntersection { get => m_FilterByTypeIntersection; set => m_FilterByTypeIntersection = value; }
+        internal bool excludeSceneAssets { get { return m_ExcludeSceneAssets; } set { m_ExcludeSceneAssets = value; }}
 
         public void ClearSearch()
         {
@@ -127,6 +132,7 @@ namespace UnityEditor
             m_AnyWithAssetOrigin = false;
             m_ShowAllHits = false;
             m_SkipHidden = false;
+            m_ExcludeSceneAssets = false;
             m_ImportLogFlags = ImportLogFlags.None;
             m_FilterByTypeIntersection = false;
         }
@@ -251,6 +257,12 @@ namespace UnityEditor
                 changed = true;
             }
 
+            if (newFilter.m_ExcludeSceneAssets != m_ExcludeSceneAssets)
+            {
+                m_ExcludeSceneAssets = newFilter.m_ExcludeSceneAssets;
+                changed = true;
+            }
+
             if (newFilter.m_Globs != m_Globs)
             {
                 m_Globs = newFilter.m_Globs;
@@ -312,6 +324,7 @@ namespace UnityEditor
             result += "[AnyWithAssetOrigin: " + anyWithAssetOrigin + "]";
             result += "[ShowAllHits: " + showAllHits + "]";
             result += "[SkipHidden: " + skipHidden + "]";
+            result += "[ExcludeSceneAssets: " + excludeSceneAssets + "]";
 
             if (m_ImportLogFlags == (ImportLogFlags.Error | ImportLogFlags.Warning))
             {

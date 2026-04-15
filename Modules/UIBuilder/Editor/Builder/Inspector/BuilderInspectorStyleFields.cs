@@ -371,8 +371,8 @@ namespace Unity.UI.Builder
                 if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
                     SetXAndYSubFieldsTooltips(transformOriginStyleField,
-                    TransformOriginStyleField.s_TransformOriginXFieldName, styleValueTooltip,
-                    TransformOriginStyleField.s_TransformOriginYFieldName, styleValueTooltip);
+                    TransformOriginStyleField.TransformOriginXFieldName, styleValueTooltip,
+                    TransformOriginStyleField.TransformOriginYFieldName, styleValueTooltip);
             }
             else if (IsComputedStyleTranslate(val) && fieldElement is TranslateStyleField translateStyleField)
             {
@@ -763,9 +763,7 @@ namespace Unity.UI.Builder
             }
 
             NotifyStyleChanges();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Inspector.StylingChanged(foldoutColorField.bindingPathArray.ToList());
-#pragma warning restore UA2001
+            m_Inspector.StylingChanged(new List<string>(foldoutColorField.bindingPathArray));
         }
 
         public void RefreshStyleField(string styleName, VisualElement fieldElement)
@@ -1376,10 +1374,14 @@ namespace Unity.UI.Builder
             if (styleRow == null)
                 return;
 
-            var handler = StyleVariableUtilities.GetOrCreateVarHandler(fieldElement as BindableElement);
+            var handler = StyleVariableUtility.GetOrCreateVarHandler(
+                fieldElement as BindableElement,
+                new BuilderVariableEditingContext(m_Inspector),
+                styleRow,
+                fieldElement is DimensionStyleField or NumericStyleField or IntegerStyleField);
             if (handler != null)
             {
-                handler.editingEnabled = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
+                handler.editingEnabled = true;
                 handler.RefreshField();
             }
 
@@ -1639,11 +1641,15 @@ namespace Unity.UI.Builder
 
         void SetVariableEditor(BindableElement element, int displayIndex)
         {
-            var handler = StyleVariableUtilities.GetOrCreateVarHandler(element);
+            var handler = StyleVariableUtility.GetOrCreateVarHandler(
+                element,
+                new BuilderVariableEditingContext(m_Inspector),
+                element.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow,
+                attachCompleterOnTarget: element is DimensionStyleField or NumericStyleField or IntegerStyleField);
             if (handler != null)
             {
                 handler.index = displayIndex;
-                handler.editingEnabled = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
+                handler.editingEnabled = true;
                 handler.RefreshField();
             }
         }
@@ -1674,12 +1680,14 @@ namespace Unity.UI.Builder
             {
                 var fieldValueInfo =
                     (FieldValueInfo) fieldElement.GetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName);
-                var isBoundToVariable = fieldValueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable;
+                var isBoundToVariable = fieldValueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable
+                    && fieldValueInfo.valueSource.type != FieldValueSourceInfoType.MatchingUSSSelector;
 
                 if (!isSelector)
                 {
                     var ve = currentVisualElement;
-                    var csPropertyName = "style." + BuilderNameUtilities.ConvertUssNameToStyleCSharpName(fieldValueInfo.name);
+                    var csPropertyName =
+                        "style." + BuilderNameUtilities.ConvertUssNameToStyleCSharpName(fieldValueInfo.name);
                     var isBindableElement = UxmlSerializedDataRegistry.GetDescription(ve.GetType().FullName) != null;
                     var isBindableProperty = PropertyContainer.IsPathValid(ve, csPropertyName);
 
@@ -1704,12 +1712,14 @@ namespace Unity.UI.Builder
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
                                 (a) =>
                                 {
-                                    BuilderBindingUtility.DeleteBinding(m_Inspector.attributeSection.context, csPropertyName, fieldElement);
+                                    BuilderBindingUtility.DeleteBinding(m_Inspector.attributeSection.context,
+                                        csPropertyName, fieldElement);
                                 },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 
-                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(csPropertyName), m_Inspector.currentVisualElement,
+                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(csPropertyName),
+                                m_Inspector.currentVisualElement,
                                 out var bindingResult);
 
                             if (bindingResult.status == BindingStatus.Success)
@@ -1736,7 +1746,29 @@ namespace Unity.UI.Builder
 
                         menu.AppendSeparator();
                     }
+                }
 
+                if (isBoundToVariable)
+                {
+                    menu.AppendAction(BuilderConstants.ContextMenuEditVariableMessage,
+                        ViewVariableViaContextMenu,
+                        VariableActionStatus,
+                        fieldElement);
+
+                    menu.AppendAction(BuilderConstants.ContextMenuRemoveVariableMessage, RemoveVariableViaContextMenu,
+                        (a) => DropdownMenuAction.Status.Normal, fieldElement);
+                }
+                else if (fieldElement is not BoxModelStyleField)
+                {
+                    menu.AppendAction(BuilderConstants.ContextMenuSetVariableMessage, ViewVariableViaContextMenu,
+                        VariableActionStatus,
+                        fieldElement);
+                }
+
+                menu.AppendSeparator();
+
+                if (!isSelector)
+                {
                     var matchingSelectors = BuilderSharedStyles.GetMatchingSelectorsOnElementFromLocalStyleSheet(m_Inspector.currentVisualElement);
                     var styleProperty = GetLastStyleProperty(currentRule, fieldValueInfo.name);
                     var hasInlineValue = styleProperty != null;
@@ -1781,30 +1813,9 @@ namespace Unity.UI.Builder
                                 fieldElement);
 
                     }
-                }
 
-                if (isBoundToVariable)
-                {
-                    menu.AppendAction(
-                        isSelector
-                            ? BuilderConstants.ContextMenuEditVariableMessage
-                            : BuilderConstants.ContextMenuViewVariableMessage,
-                        ViewVariableViaContextMenu,
-                        VariableActionStatus,
-                        fieldElement);
-
-                    if (isSelector)
-                        menu.AppendAction(BuilderConstants.ContextMenuRemoveVariableMessage, RemoveVariableViaContextMenu,
-                            (a) => DropdownMenuAction.Status.Normal, fieldElement);
+                    menu.AppendSeparator();
                 }
-                else if (isSelector && fieldElement is not BoxModelStyleField)
-                {
-                    menu.AppendAction(BuilderConstants.ContextMenuSetVariableMessage, ViewVariableViaContextMenu,
-                        VariableActionStatus,
-                        fieldElement);
-                }
-
-                menu.AppendSeparator();
 
                 if (fieldValueInfo.valueSource.type.IsFromUSSSelector())
                 {
@@ -1982,7 +1993,7 @@ namespace Unity.UI.Builder
             if (bindableElement == null)
                 return DropdownMenuAction.Status.Disabled;
 
-            var varEditingHandler = StyleVariableUtilities.GetVarHandler(bindableElement);
+            var varEditingHandler = StyleVariableUtility.GetVarHandler(bindableElement);
             if (varEditingHandler == null)
                 return DropdownMenuAction.Status.Disabled;
 
@@ -1992,7 +2003,7 @@ namespace Unity.UI.Builder
         void ViewVariableViaContextMenu(DropdownMenuAction action)
         {
             var bindableElement = action.userData as BindableElement;
-            var varEditingHandler = StyleVariableUtilities.GetVarHandler(bindableElement);
+            var varEditingHandler = StyleVariableUtility.GetVarHandler(bindableElement);
             varEditingHandler.ShowVariableField();
         }
 
@@ -2296,10 +2307,7 @@ namespace Unity.UI.Builder
             BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, classNameStr);
 
             // Get Selector Match Record from the new selector
-            var selectorMatchRecord = new SelectorMatchRecord(m_Inspector.document.activeStyleSheet, 0)
-            {
-                complexSelector = className
-            };
+            var selectorMatchRecord = new SelectorMatchRecord(m_Inspector.document.activeStyleSheet, 0, 0, className);
             PushLocalStylesToSelector(selectorMatchRecord, styleProperty);
         }
 
@@ -2428,7 +2436,7 @@ namespace Unity.UI.Builder
 
             var list = m_StyleFields[styleName];
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var item in list.Where(item => item != target))
 #pragma warning restore UA2001
             {

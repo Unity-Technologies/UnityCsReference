@@ -150,15 +150,13 @@ namespace UnityEditor.Build
         {
             var summary = report.summary;
 
-            var buildStartedAtUtc = DateTime.SpecifyKind(summary.buildStartedAt, DateTimeKind.Utc);
-
             var summaryData = new BuildReportSummary
             {
                 Version = kVersion,
 
                 BuildSessionGUID = summary.buildSessionGuid,
                 BuildName = summary.buildName,
-                BuildStartedAt = buildStartedAtUtc.ToString("o", CultureInfo.InvariantCulture),
+                BuildStartedAt = summary.buildStartedAt.ToString("o", CultureInfo.InvariantCulture),
                 BuildTypeName = summary.buildType.ToString(),
                 BuildType = summary.buildType,
                 BuildManifestHash = summary.buildManifestHash.ToString(),

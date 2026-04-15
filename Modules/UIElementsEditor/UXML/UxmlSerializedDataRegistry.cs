@@ -266,7 +266,6 @@ namespace UnityEditor.UIElements
             ToolbarSearchField.UxmlSerializedData.Register();
             ToolbarSpacer.UxmlSerializedData.Register();
             ToolbarToggle.UxmlSerializedData.Register();
-            TransformOriginField.UxmlSerializedData.Register();
             TranslateField.UxmlSerializedData.Register();
             TreeView.UxmlSerializedData.Register();
             TwoPaneSplitView.UxmlSerializedData.Register();

@@ -11,8 +11,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Get a reference to the help box from UXML and update its text.
             var uxmlHelpBox = container.Q<HelpBox>("the-uxml-help-box");
             uxmlHelpBox.text += " (Updated in C#)";
@@ -47,8 +47,8 @@ namespace UnityEditor.UIElements.Samples
             helpBoxWithCTAButtonAndLink.linkHref = "https://www.unity.com";
             helpBoxWithCTAButtonAndLink.linkText = "Visit Unity!";
             container.Add(helpBoxWithCTAButtonAndLink);
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

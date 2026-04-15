@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.SceneManagement;
 using UnityEditor;
+using UnityEditor.Toolbars;
 using Unity.PlayMode.Editor;
 using UnityEngine.Multiplayer.Internal;
 using System.Text;
@@ -62,6 +63,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal ref OrchestratedScenarioSettings Settings => ref m_Settings;
 
         internal override bool SupportsPauseAndStep => true;
+
+        internal override IEnumerable<MainToolbarElement> CreateTopbarUI()
+        {
+            yield return new MainToolbarDropdown(MultiplayerStatusToolbarUtilities.GetStatusDropdownContent(), MultiplayerStatusToolbarUtilities.ShowStatusPopup);
+        }
 
         public void OnBeforeSerialize()
         {
@@ -399,7 +405,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal override VisualElement CreateTopbarUI() => new MultiplayerPlayModeStatusButton(this);
         internal override Texture2D Icon => Icons.GetImage(Icons.ImageName.PlayModeScenario);
 
         internal override VisualElement CreateScenarioUI()

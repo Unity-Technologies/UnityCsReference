@@ -175,16 +175,21 @@ namespace UnityEditor
 
         internal static bool CanPasteAsChild()
         {
-            bool canPaste = (Unsupported.CanPasteGameObjectsFromPasteboard() || CutBoard.hasCutboardData)
-                && ((SceneHierarchyWindow.lastInteractedHierarchyWindow != null && SceneHierarchyWindow.lastInteractedHierarchyWindow.sceneHierarchy != null)
-                    || SceneView.lastActiveSceneView != null)
-                && Selection.transforms.Length == 1;
+            if (!Unsupported.CanPasteGameObjectsFromPasteboard() && !CutBoard.hasCutboardData)
+                return false;
+
+            var hierarchyWindow = IHierarchyWindow.GetLastInteractedHierarchyWindow();
+            if ((hierarchyWindow == null || hierarchyWindow is SceneHierarchyWindow { sceneHierarchy: null }) && SceneView.lastActiveSceneView == null)
+                return false;
+
+            if (Selection.transforms.Length != 1)
+                return false;
 
             var activeGO = Selection.activeGameObject;
             if (activeGO != null && SubSceneGUI.IsSubSceneHeader(activeGO))
-                return canPaste && SubSceneGUI.GetSubScene(activeGO).IsValid();
+                return SubSceneGUI.GetSubScene(activeGO).IsValid();
 
-            return canPaste;
+            return true;
         }
 
         internal static bool GetIsCustomParentSelected(Transform fallbackParent)

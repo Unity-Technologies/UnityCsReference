@@ -88,10 +88,7 @@ namespace Unity.UI.Builder
 
         public static string ConvertUssNameToStyleName(string ussName)
         {
-            if (ussName == "-unity-font-style")
-                return "-unity-font-style-and-weight";
-
-            return ussName;
+            return StyleSheetUtility.ConvertUssNameToStyleName(ussName);
         }
 
         public static string ConvertUssNameToStyleCSharpName(string ussName)

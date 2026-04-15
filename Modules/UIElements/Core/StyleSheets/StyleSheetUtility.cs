@@ -312,5 +312,17 @@ namespace UnityEngine.UIElements
                     throw new ArgumentOutOfRangeException();
             }
         }
+
+        /// <summary>
+        /// Converts a USS property name to the internal style name used by the style system.
+        /// Handles special cases like <c>-unity-font-style</c> mapping to <c>-unity-font-style-and-weight</c>.
+        /// </summary>
+        public static string ConvertUssNameToStyleName(string ussName)
+        {
+            if (ussName == "-unity-font-style")
+                return "-unity-font-style-and-weight";
+
+            return ussName;
+        }
     }
 }

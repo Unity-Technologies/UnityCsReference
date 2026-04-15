@@ -362,6 +362,7 @@ namespace UnityEditor
                 Terrain => "script-Terrain",
                 AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
                 AudioImporter => "class-AudioClip", // UUM-96832: We don't have an entry in the manual for the audio importer.
+                TextScriptImporter => "class-TextAsset",
                 EditorSettings => "class-EditorManager",
                 SceneAsset => "CreatingScenes",
                 LightingDataAsset => "LightmapSnapshot",

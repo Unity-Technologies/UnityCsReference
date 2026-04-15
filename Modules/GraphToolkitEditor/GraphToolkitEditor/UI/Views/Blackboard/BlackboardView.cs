@@ -103,9 +103,19 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_UpdateObserver == null)
             {
-                m_UpdateObserver = new ModelViewUpdater(this, BlackboardRootViewModel.BlackboardContentState,
-                    BlackboardRootViewModel.GraphModelState, BlackboardRootViewModel.SelectionState, BlackboardRootViewModel.ViewState,
-                    GraphTool.HighlighterState);
+                m_UpdateObserver = new ModelViewUpdater(this,
+                    new IStateComponent[]
+                    {
+                        BlackboardRootViewModel.BlackboardContentState,
+                        BlackboardRootViewModel.GraphModelState,
+                        BlackboardRootViewModel.SelectionState,
+                        BlackboardRootViewModel.ViewState,
+                        GraphTool.HighlighterState
+                    },
+                    new IStateComponent[]
+                    {
+                        BlackboardRootViewModel.ViewState
+                    });
                 GraphTool.ObserverManager.RegisterObserver(m_UpdateObserver);
             }
 
@@ -423,7 +433,7 @@ namespace Unity.GraphToolkit.Editor
             if (updateCollapse)
                 Blackboard.UpdateCollapse();
             if (updateSelection)
-                Blackboard.UpdateSelection();
+                schedule.Execute(() => Blackboard.UpdateSelection()).ExecuteLater(0);
         }
 
         internal IGroupItemModel CreateGroupFromSelection(IGroupItemModel model)

@@ -18,10 +18,25 @@ class StyleSheetStats
     public double selfTimeMs;
     public int elementCount;
     public int totalQueryCount;
+    public int importedStyleSheetsCount;
+
+    public double avoidedQueryPercentage
+    {
+        get
+        {
+            if (importedStyleSheetsCount == 0 || totalQueryCount == 0)
+                return 0;
+
+            int avoidedQueryCount = totalQueryCount * importedStyleSheetsCount;
+
+            return avoidedQueryCount * 100d / (avoidedQueryCount + totalQueryCount);
+        }
+    }
 
     public StyleSheetStats(StyleSheet sheet)
     {
         styleSheet = sheet;
+        importedStyleSheetsCount = sheet.flattenedRecursiveImports?.Count ?? 0;
     }
 }
 
@@ -119,7 +134,7 @@ struct USSStatsStyleProfiler : IStyleProfiler
         var result = new Dictionary<StyleSheet, StyleSheetStats>();
         foreach (var styleSheet in styleSheets)
         {
-            result.Add(styleSheet, new StyleSheetStats(styleSheet));
+            result.Add(styleSheet, new StyleSheetStats(styleSheet) );
         }
         return result;
     }

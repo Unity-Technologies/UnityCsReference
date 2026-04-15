@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
@@ -49,14 +49,12 @@ namespace UnityEditor.UIElements
             return EditorGUIUtility.Load(GetStyleSheetPathForFont(skin == EditorResources.darkSkinIndex ? s_DefaultCommonDarkStyleSheetPath : s_DefaultCommonLightStyleSheetPath, fontName)) as StyleSheet;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static bool IsCommonDarkStyleSheetLoaded()
+        public static bool IsCommonDarkStyleSheetLoaded()
         {
             return s_DefaultCommonDarkStyleSheet != null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static StyleSheet GetCommonDarkStyleSheet()
+        public static StyleSheet GetCommonDarkStyleSheet()
         {
             if (s_DefaultCommonDarkStyleSheet == null)
             {
@@ -68,14 +66,12 @@ namespace UnityEditor.UIElements
             return s_DefaultCommonDarkStyleSheet;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static bool IsCommonLightStyleSheetLoaded()
+        public static bool IsCommonLightStyleSheetLoaded()
         {
             return s_DefaultCommonLightStyleSheet != null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static StyleSheet GetCommonLightStyleSheet()
+        public static StyleSheet GetCommonLightStyleSheet()
         {
             if (s_DefaultCommonLightStyleSheet == null)
             {
@@ -305,6 +301,12 @@ namespace UnityEditor.UIElements
             }
             if (shouldClearCache)
                 StyleCache.ClearStyleCache();
+        }
+
+        public static TextAsset LoadVariableDescriptionsAsset()
+        {
+            return EditorGUIUtility.Load("UIPackageResources/StyleSheets/Default/Variables/Public/descriptions.json") as
+                TextAsset;
         }
     }
 }

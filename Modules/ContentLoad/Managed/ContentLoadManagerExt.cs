@@ -5,13 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Unity.ContentLoad;
 using Unity.IO.Archive;
+using Unity.Jobs;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Loading
+namespace Unity.Loading
 {
     /// <summary>
     /// Partial extension class providing high-level content directory registration with path-based management,
@@ -27,14 +27,15 @@ namespace UnityEngine.Loading
         {
             public string NormalizedPath;
             public ContentDirectoryHandle ContentHandle;
-            public CAHArtifactDirectoryHandle? CAHHandle;
-            public ArchiveHandle? ArchiveHandle;
+            public List<CAHArtifactDirectoryHandle> CAHHandles;
+            public List<ArchiveHandle> ArchiveHandles;
         }
 
-        const string ArchiveFileName = "content.archive";
+        const string NumberedArchiveFileNameFormat = "content{0}.archive";
         const string ManifestHashFileName = "BuildManifestHash.txt";
         const string ContentNamespaceName = "contentload";
         const string ArchiveMountPrefixFormat = "contentdirectory{0}";
+        const int kMaxArchiveCount = 1000;
 
         [AutoStaticsCleanupOnCodeReload]
         static ulong s_NextArchiveMountId = 0;
@@ -54,29 +55,27 @@ namespace UnityEngine.Loading
             if (s_RegisteredPaths.Contains(normalizedPath))
                 throw new InvalidOperationException($"Content directory is already registered: {normalizedPath}");
 
-            ArchiveHandle? archiveHandle = null;
-
-            CAHArtifactDirectoryHandle cahHandle = RegisterArtifactDirectory(normalizedPath, ref archiveHandle);
-            if (!cahHandle.isValid)
-                throw new InvalidOperationException($"Failed to register CAH artifact directory: {contentDirectoryPath}");
+            var registration = new ContentDirectoryRegistration
+            {
+                NormalizedPath = normalizedPath,
+                CAHHandles = new List<CAHArtifactDirectoryHandle>(),
+                ArchiveHandles = new List<ArchiveHandle>()
+            };
 
             try
             {
+                MountAndRegisterArchives(ref registration);
                 ContentManifest manifest = LoadManifestFromDirectory(normalizedPath);
-                ContentDirectoryHandle contentHandle = ContentLoadManager.RegisterContentDirectory(manifest);
+                registration.ContentHandle = ContentLoadManager.RegisterContentDirectory(manifest);
 
-                TrackRegistration(normalizedPath, contentHandle, cahHandle, archiveHandle);
+                s_RegisteredPaths.Add(normalizedPath);
+                s_RegistrationsByHandle[registration.ContentHandle.m_Handle] = registration;
 
-                return contentHandle;
+                return registration.ContentHandle;
             }
             catch
             {
-                if (cahHandle.isValid)
-                    CAHFileSystem.UnregisterArtifactDirectory(cahHandle);
-
-                if (archiveHandle.HasValue)
-                    archiveHandle.Value.Unmount();
-
+                CleanupRegisteredResources(registration);
                 throw;
             }
         }
@@ -112,54 +111,70 @@ namespace UnityEngine.Loading
             return manifest;
         }
 
-        static CAHArtifactDirectoryHandle RegisterArtifactDirectory(string normalizedPath, ref ArchiveHandle? archiveHandle)
+        static string[] GetArchivePathsForFolder(string normalizedPath)
         {
-            string archivePath = Path.Combine(normalizedPath, ArchiveFileName);
-            if (File.Exists(archivePath))
+            var numberedPaths = new List<string>();
+            for (int i = 0; i < kMaxArchiveCount; i++)
             {
-                var contentNamespace = Unity.Content.ContentNamespace.GetOrCreateNamespace(ContentNamespaceName);
-                string mountPrefix = string.Format(ArchiveMountPrefixFormat, s_NextArchiveMountId++);
-
-                archiveHandle = ArchiveFileInterface.MountAsync(
-                    contentNamespace,
-                    archivePath,
-                    mountPrefix);
-
-                archiveHandle.Value.JobHandle.Complete();
-
-                return CAHFileSystem.RegisterArtifactDirectory(archiveHandle.Value.GetMountPath());
+                string numberedPath = Path.Combine(normalizedPath, string.Format(NumberedArchiveFileNameFormat, i));
+                if (!File.Exists(numberedPath))
+                    break;
+                numberedPaths.Add(numberedPath);
             }
-            else
-            {
-                return CAHFileSystem.RegisterArtifactDirectory(normalizedPath);
-            }
+
+            return numberedPaths.ToArray();
         }
 
-        private static void TrackRegistration(
-            string normalizedPath,
-            ContentDirectoryHandle contentHandle,
-            CAHArtifactDirectoryHandle? cahHandle,
-            ArchiveHandle? archiveHandle)
+        static void MountAndRegisterArchives(ref ContentDirectoryRegistration registration)
         {
-            var registration = new ContentDirectoryRegistration
-            {
-                NormalizedPath = normalizedPath,
-                ContentHandle = contentHandle,
-                CAHHandle = cahHandle,
-                ArchiveHandle = archiveHandle
-            };
+            string[] archivePaths = GetArchivePathsForFolder(registration.NormalizedPath);
 
-            s_RegisteredPaths.Add(normalizedPath);
-            s_RegistrationsByHandle[contentHandle.m_Handle] = registration;
+            if (archivePaths.Length == 0)
+            {
+                registration.CAHHandles.Add(CAHFileSystem.RegisterArtifactDirectory(registration.NormalizedPath));
+                return;
+            }
+
+            var contentNamespace = Unity.Content.ContentNamespace.GetOrCreateNamespace(ContentNamespaceName);
+
+            for (int i = 0; i < archivePaths.Length; i++)
+            {
+                string mountPrefix = string.Format(ArchiveMountPrefixFormat, s_NextArchiveMountId++);
+                registration.ArchiveHandles.Add(ArchiveFileInterface.MountAsync(contentNamespace, archivePaths[i], mountPrefix));
+            }
+
+            foreach (var archive in registration.ArchiveHandles)
+                archive.JobHandle.Complete();
+
+            for (int i = 0; i < registration.ArchiveHandles.Count; i++)
+            {
+                if (registration.ArchiveHandles[i].Status != ArchiveStatus.Complete)
+                    throw new InvalidOperationException($"Failed to mount archive: {archivePaths[i]} (status: {registration.ArchiveHandles[i].Status})");
+            }
+
+            for (int i = 0; i < registration.ArchiveHandles.Count; i++)
+            {
+                var cahHandle = CAHFileSystem.RegisterArtifactDirectory(registration.ArchiveHandles[i].GetMountPath());
+                registration.CAHHandles.Add(cahHandle);
+
+                if (!cahHandle.isValid)
+                    throw new InvalidOperationException($"Failed to register CAH artifact directory for archive: {archivePaths[i]}");
+            }
         }
 
         static void CleanupRegisteredResources(ContentDirectoryRegistration registration)
         {
-            if (registration.CAHHandle.HasValue)
-                CAHFileSystem.UnregisterArtifactDirectory(registration.CAHHandle.Value);
+            foreach (var cahHandle in registration.CAHHandles)
+            {
+                if (cahHandle.isValid)
+                    CAHFileSystem.UnregisterArtifactDirectory(cahHandle);
+            }
 
-            if (registration.ArchiveHandle.HasValue)
-                registration.ArchiveHandle.Value.Unmount();
+            var unmountJobs = new JobHandle[registration.ArchiveHandles.Count];
+            for (int i = 0; i < registration.ArchiveHandles.Count; i++)
+                unmountJobs[i] = registration.ArchiveHandles[i].Unmount();
+            for (int i = 0; i < unmountJobs.Length; i++)
+                unmountJobs[i].Complete();
         }
     }
 }

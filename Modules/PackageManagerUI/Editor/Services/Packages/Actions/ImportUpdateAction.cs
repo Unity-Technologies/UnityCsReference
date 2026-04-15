@@ -15,8 +15,6 @@ internal class ImportUpdateAction : ImportActionBase
 
     public override bool isRecommended => true;
 
-    public override Icon icon => Icon.Import;
-
     public override bool IsVisible(IPackageVersion version)
     {
         var versions = version.package.versions;

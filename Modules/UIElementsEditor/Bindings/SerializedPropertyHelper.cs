@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Loading;
 
 namespace UnityEditor.UIElements.Bindings
 {
@@ -143,9 +144,9 @@ namespace UnityEditor.UIElements.Bindings
             return p.entityIdValue;
         }
 
-        public static LoadableReference GetLoadableReferencePropertyValue(SerializedProperty p)
+        public static LoadableObjectId GetLoadableObjectIdPropertyValue(SerializedProperty p)
         {
-            return p.loadableReferenceValue;
+            return p.loadableObjectIdValue;
         }
 
         public static Gradient GetGradientPropertyValue(SerializedProperty p)
@@ -384,9 +385,9 @@ namespace UnityEditor.UIElements.Bindings
             p.entityIdValue = v;
         }
 
-        public static void SetLoadableReferencePropertyValue(SerializedProperty p, LoadableReference v)
+        public static void SetLoadableObjectIdPropertyValue(SerializedProperty p, LoadableObjectId v)
         {
-            p.loadableReferenceValue = v;
+            p.loadableObjectIdValue = v;
         }
 
         public static void SetGradientPropertyValue(SerializedProperty p, Gradient v)

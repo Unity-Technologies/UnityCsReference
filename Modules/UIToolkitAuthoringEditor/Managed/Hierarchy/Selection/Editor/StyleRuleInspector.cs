@@ -127,9 +127,9 @@ internal sealed class StyleRuleInspector : VisualElement
                 if (attachToPanelEvent.destinationPanel == null)
                     return;
                 m_PanelElement = new PanelElement();
-                m_PanelElement.CreateNestedPanel();
+                m_PanelElement.CreateSubPanel();
                 m_Element = new __SelectorElement();
-                m_PanelElement.NestedPanel.visualTree.Add(m_Element);
+                m_PanelElement.SubPanel.visualTree.Add(m_Element);
 
                 SetSelectorElementInlineStyles();
 
@@ -154,7 +154,7 @@ internal sealed class StyleRuleInspector : VisualElement
 
                 m_StyleInspector.Target = default;
 
-                m_PanelElement.DestroyNestedPanel();
+                m_PanelElement.DestroySubPanel();
                 m_Element = null;
                 m_PanelElement = null;
                 break;
@@ -199,6 +199,6 @@ internal sealed class StyleRuleInspector : VisualElement
         m_Element.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
 
         // Force immediate style resolution to update the element's variableContext
-        m_PanelElement.NestedPanel.ApplyStyles();
+        m_PanelElement.SubPanel.ApplyStyles();
     }
 }

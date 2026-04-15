@@ -23,12 +23,21 @@ namespace UnityEditor
             UIElementsIMGUIUtility.s_BeginContainerCallback = OnBeginContainer;
             UIElementsIMGUIUtility.s_EndContainerCallback = OnEndContainer;
 
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
             Panel.getAssetPathFunc = AssetDatabase.GetAssetPath;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             BindingExtensions.bindingImpl = new DefaultSerializedObjectBindingImplementation();
             EditorWindowBackendManager.defaultWindowBackend = (model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() :  new DefaultWindowBackend();
+        }
+
+        static void OnBeforeAssemblyReload()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+
+            UIElementsUtility.StopRecordingStyleSheetUnloads();
         }
 
         static void OnBeginContainer(IMGUIContainer c)
