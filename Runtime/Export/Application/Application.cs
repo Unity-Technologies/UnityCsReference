@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -382,13 +383,18 @@ namespace UnityEngine
                 unloading();
         }
 
+        static readonly ProfilerMarker s_CodeReloadInPlayModeReEnterScopeMarker = new ProfilerMarker("PlayModeStateChanged_EnterPlayModeLifecycleScope");
+
         [RequiredByNativeCode]
         internal static void Internal_EnterPlayModeLifecycleScope()
         {
             if (!LifecycleController.Instance.IsScopePresent<CodeInitializedScope>())
                 LifecycleController.Instance.EnterScope<CodeInitializedScope>();
 
-            LifecycleController.Instance.EnterScope<PlayModeScope>();
+            using (s_CodeReloadInPlayModeReEnterScopeMarker.Auto())
+            {
+                LifecycleController.Instance.EnterScope<PlayModeScope>();
+            }
         }
 
         [RequiredByNativeCode]
@@ -398,6 +404,19 @@ namespace UnityEngine
                 return;
 
             LifecycleController.Instance.ExitScope<PlayModeScope>();
+        }
+
+        // If code reload happens in play mode, we exit PlayModeScope, so it needs to be re-entered
+        [OnCodeInitializing]
+        static void Internal_CodeReloadInPlayModeReEnterScope()
+        {
+            if (UnityEngine.Application.isPlaying)
+            {
+                using (s_CodeReloadInPlayModeReEnterScopeMarker.Auto())
+                {
+                    LifecycleController.Instance.EnterScope<PlayModeScope>();
+                }
+            }
         }
 
         [RequiredByNativeCode]

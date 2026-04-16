@@ -349,6 +349,13 @@ namespace UnityEditor
 
         extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
 
+        internal static void ApplyMaterialPropertyToMaterialPropertyBlockInEditor(MaterialProperty materialProperty, int propertyMask, MaterialPropertyBlock propertyBlock)
+        {
+            ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(materialProperty, propertyMask, propertyBlock);
+        }
+
+        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
+
         public static string GetCustomEditorForRenderPipeline(Shader shader, string renderPipelineType)
         {
             if (shader == null)

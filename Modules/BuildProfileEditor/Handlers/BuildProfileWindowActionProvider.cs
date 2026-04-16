@@ -77,6 +77,8 @@ namespace UnityEditor.Build.Profile.Handlers
                 }
             }
 
+            // Sort the list by enum value for proper ordering.
+            buildProfileActions.Sort((a, b) => a.GetDisplayEnum().CompareTo(b.GetDisplayEnum()));
             return buildProfileActions;
         }
     }

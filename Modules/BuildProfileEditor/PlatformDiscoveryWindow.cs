@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEditor.Modules;
+using UnityEditor.PackageManager.UI;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 using Application = UnityEngine.Device.Application;
 using Button = UnityEngine.UIElements.Button;
@@ -49,6 +51,7 @@ namespace UnityEditor.Build.Profile
         ListView m_PartnerPackageListView;
         Button m_PackageSelectAll;
         Button m_PackageDeselectAll;
+        Toggle m_PackageBrowseSampleCheckbox;
 
         VisualElement m_KeyFeaturesContainer;
         Label m_KeyFeaturesContentLabel;
@@ -97,33 +100,91 @@ namespace UnityEditor.Build.Profile
                 window.SelectPlatform(platformGuid.Value);
         }
 
-        static void AddSelectedBuildProfiles(BuildProfileCard card, string customProfileName, string[] packagesToAdd)
+        static void AddSelectedBuildProfiles(
+            BuildProfileCard card, string customProfileName,
+            string[] packagesToAdd, UnityAction<BuildProfile> onCreate)
         {
+            bool wasCallbackRegistered = false;
             bool noneSelected = true;
             for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
             {
                 var variant = card.preconfiguredSettingsVariants[ii];
-                if (variant.Selected)
+                if (!variant.Selected)
+                    continue;
+
+                noneSelected = false;
+
+                if (wasCallbackRegistered)
                 {
-                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd);
-                    noneSelected = false;
+                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd, null);
+                }
+                else
+                {
+                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd, onCreate);
+                    wasCallbackRegistered = true;
                 }
             }
             if (noneSelected)
             {
-                AddSingleBuildProfile(card, customProfileName, null, -1, packagesToAdd);
+                AddSingleBuildProfile(card, customProfileName, null,
+                    -1, packagesToAdd, onCreate);
             }
         }
 
-        static void AddSingleBuildProfile(BuildProfileCard card, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        static void AddSingleBuildProfile(
+            BuildProfileCard card,
+            string customProfileName,
+            string preconfiguredSettingsVariantName,
+            int preconfiguredSettingsVariant,
+            string[] packagesToAdd,
+            UnityAction<BuildProfile> onCreate)
         {
-            BuildProfileModuleUtil.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileModuleUtil.CreateNewAssetWithName(
+                card.platformId,
+                customProfileName.Trim(),
+                preconfiguredSettingsVariantName,
+                preconfiguredSettingsVariant,
+                packagesToAdd,
+                onCreate);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
                 platformId = card.platformId.ToString(),
                 platformDisplayName = card.displayName,
             }));
+        }
+
+        /// <summary>
+        /// Open package manager samples window filtering for any platform packages.
+        /// </summary>
+        static void AfterBuildProfileCreatedShowSamples(BuildProfile profile)
+        {
+            var platformId = profile.platformGuid;
+            var internalPackages = BuildProfileModuleUtil.BuildPlatformInternalPackages(platformId);
+            var partnerPackages = BuildProfileModuleUtil.BuildPlatformPartnerPackages(platformId);
+
+            var packageNames = new List<string>();
+            foreach (var pkg in internalPackages.requiredPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in internalPackages.recommendedPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in partnerPackages.requiredPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in partnerPackages.recommendedPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            PackageManagerWindow.OpenSamplesPage(packageNames);
         }
 
         static BuildProfileCard[] FindAllVisiblePlatforms(GUID[] platforms)
@@ -256,6 +317,8 @@ namespace UnityEditor.Build.Profile
             m_PackageDeselectAll = m_PackageContainer.Q<Button>("package-deselect-all");
             m_PackageDeselectAll.text = TrText.deselectAll;
             m_PackageDeselectAll.clicked += () => SetAllPackagesShouldInstallToggle(false);
+            m_PackageBrowseSampleCheckbox = m_PackageContainer.Q<Toggle>("package-browse-samples-checkbox");
+            m_PackageBrowseSampleCheckbox.text = TrText.browseSamplesCheckboxLabel;
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -457,7 +520,20 @@ namespace UnityEditor.Build.Profile
                 }
             }
             else
+            {
                 m_PackageContainer.Hide();
+            }
+
+            if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
+            {
+                m_PackageBrowseSampleCheckbox.value = false;
+                m_PackageBrowseSampleCheckbox.Hide();
+            }
+            else
+            {
+                m_PackageBrowseSampleCheckbox.value = true;
+                m_PackageBrowseSampleCheckbox.Show();
+            }
 
             if (card.description.Length > 0)
             {
@@ -587,7 +663,11 @@ namespace UnityEditor.Build.Profile
         void OnAddBuildProfileClicked(BuildProfileCard card, string customProfileName)
         {
             var packagesToAdd = DeterminePackagesToAdd();
-            AddSelectedBuildProfiles(card, customProfileName, packagesToAdd);
+            bool shouldOpenSample = m_PackageBrowseSampleCheckbox.value;
+            if (shouldOpenSample)
+                AddSelectedBuildProfiles(card, customProfileName, packagesToAdd, AfterBuildProfileCreatedShowSamples);
+            else
+                AddSelectedBuildProfiles(card, customProfileName, packagesToAdd, null);
         }
 
         string[] DeterminePackagesToAdd()

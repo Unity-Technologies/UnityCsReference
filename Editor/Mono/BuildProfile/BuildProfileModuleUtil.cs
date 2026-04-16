@@ -18,6 +18,7 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 using InternalEditorUtility = UnityEditorInternal.InternalEditorUtility;
 using System.IO;
+using UnityEngine.Events;
 
 namespace UnityEditor.Build.Profile
 {
@@ -805,13 +806,17 @@ namespace UnityEditor.Build.Profile
         /// Create a new custom build profile asset with the user provided name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        public static void CreateNewAssetWithName(GUID platformId, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        public static void CreateNewAssetWithName(
+            GUID platformId, string customProfileName, string preconfiguredSettingsVariantName,
+            int preconfiguredSettingsVariant, string[] packagesToAdd, UnityAction<BuildProfile> onCreate)
         {
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
             BuildProfile.CreateInstance(
                 platformId
                 , GetProfilePathWithProvidedName(platformId, customProfileName, preconfiguredSettingsVariantName)
-                , preconfiguredSettingsVariant, packagesToAdd);
+                , preconfiguredSettingsVariant
+                , packagesToAdd
+                , onCreate);
         }
 
         /// <summary>
@@ -1039,6 +1044,12 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static string BuildPlatformKeyFeatures(GUID platformGuid) =>
             BuildTargetDiscovery.BuildPlatformKeyFeatures(platformGuid);
+
+        /// <summary>
+        /// Check if the platform has samples in the package manager.
+        /// </summary>
+        public static bool HasSamplesInPackageManager(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformHasSamplesFlag(platformGuid);
 
         /// <summary>
         /// Get platform resources text.

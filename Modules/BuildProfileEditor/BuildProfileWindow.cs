@@ -63,6 +63,7 @@ namespace UnityEditor.Build.Profile
         ToolbarButton m_AssetImportButton;
         Button m_BuildAndRunButton;
         Button m_ActivateButton;
+        Button m_SwitchProfilePlatformButton;
         Button m_BuildInCloudPackageButton;
         AssetImportOverridesWindow m_AssetImportWindow;
         Background m_WarningIcon;
@@ -154,6 +155,7 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorHeaderElement = rootVisualElement.Q<VisualElement>(buildProfileInspectorHeaderVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
+            m_SwitchProfilePlatformButton = rootVisualElement.Q<Button>("switch-profile-platform-button");
             m_BuildInCloudPackageButton = rootVisualElement.Q<Button>("build-cloud-build-pkg");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
             m_WelcomeMessageElementNoClassicPlatforms = rootVisualElement.Q<VisualElement>("fallback-no-custom-or-classic-build-profiles");
@@ -170,6 +172,7 @@ namespace UnityEditor.Build.Profile
             playerSettingsButton.text = TrText.playerSettings;
             listViewAddProfileButton.text = TrText.addBuildProfile;
             m_ActivateButton.text = TrText.activate;
+            m_SwitchProfilePlatformButton.text = TrText.switchProfilePlatformButton;
             m_BuildAndRunButton.text = TrText.buildAndRun;
             m_BuildInCloudPackageButton.text = TrText.cloudBuild;
 
@@ -204,6 +207,7 @@ namespace UnityEditor.Build.Profile
                 OnBuildButtonClicked(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
+            m_SwitchProfilePlatformButton.clicked += OnActivateButtonClicked;
             m_BuildInCloudPackageButton.clicked += OnCloudBuildClicked;
             addBuildProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
             listViewAddProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
@@ -270,6 +274,7 @@ namespace UnityEditor.Build.Profile
             m_SelectionFooter.Show();
             m_BuildProfileSelection.SelectItems(selectedItems);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
+            m_SwitchProfilePlatformButton.Hide();
 
             if (!m_BuildProfileSelection.IsMultipleSelection())
             {
@@ -305,6 +310,7 @@ namespace UnityEditor.Build.Profile
             m_SelectionFooter.Show();
             m_BuildProfileSelection.SelectItem(profile);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
+            m_SwitchProfilePlatformButton.Hide();
 
             RebuildBuildProfileEditor(profile);
 
@@ -681,12 +687,22 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
                 m_WindowState.buildInCloudPackageAction = ActionState.Hidden;
                 m_WindowState.Refresh();
+                return;
             }
-            else if (profile.IsActiveBuildProfileOrPlatform())
-            {
-                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
 
+            var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
+            if (profile.IsActiveBuildProfileOrPlatform())
+            {
                 m_WindowState.activateAction = ActionState.Hidden;
+                m_SwitchProfilePlatformButton.Hide();
+
+                if (profile.isMultiTarget && profile.activePlatformGuid != profile.selectedPlatformGuid)
+                {
+                    m_SwitchProfilePlatformButton.Show();
+                    HideBuildButtonActions();
+                    m_WindowState.Refresh();
+                    return;
+                }
 
                 if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
                 {
@@ -704,21 +720,17 @@ namespace UnityEditor.Build.Profile
                 }
 
                 if (sdkPlatformExtension != null)
-                    CreateFormButtonsForSDKPlatforms(profile);
-
-                m_WindowState.Refresh();
+                    CreateFormButtonsForSDKPlatforms(profile, sdkPlatformExtension.shouldShowBuildActions);
             }
             else
             {
-                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
-
                 bool canBuild = profile.CanBuildLocally();
                 m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
 
                 if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
                 {
                     HideBuildButtonActions();
-                } 
+                }
                 else
                 {
                     m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
@@ -729,9 +741,9 @@ namespace UnityEditor.Build.Profile
                     m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
                         isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
                 }
-
-                m_WindowState.Refresh();
             }
+
+            m_WindowState.Refresh();
         }
 
         void HideBuildButtonActions()
@@ -741,11 +753,16 @@ namespace UnityEditor.Build.Profile
             m_WindowState.buildInCloudPackageAction = ActionState.Hidden;
         }
 
-        void CreateFormButtonsForSDKPlatforms(BuildProfile profile)
+        void CreateFormButtonsForSDKPlatforms(BuildProfile profile, bool showBuildActions)
         {
             var actions = m_ActionProvider.GetAllActions(profile);
             foreach (var action in actions)
             {
+                // We cannot have default build actions and custom build actions. So
+                // we will default to the default actions. This excludes Deploy.
+                if (showBuildActions && action.IsBuildAction())
+                    continue;
+
                 var button = new Button { text = action.GetDisplayName() };
 
                 button.clicked += () => action.OnClick(profile);

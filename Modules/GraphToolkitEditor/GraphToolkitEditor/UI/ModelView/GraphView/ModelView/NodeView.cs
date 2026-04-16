@@ -188,7 +188,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
-                EnableInClassList(disabledNodeUssClassName, NodeModel.State == ModelState.Disabled);
+                // [UUM-137461] : Force removal of the disabledNodeUssClassName to avoid migration issue with the UI of
+                // a node and since the feature isn't accessible anymore.
+                EnableInClassList(disabledNodeUssClassName, false);
                 if (NodeModel.HasNodePreview)
                 {
                     var showPreviewButton = GetNodeToolbarButton(ShowPreviewButton.previewButtonName);

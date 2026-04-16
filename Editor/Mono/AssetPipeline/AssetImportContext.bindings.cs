@@ -137,6 +137,7 @@ namespace UnityEditor.AssetImporters
         }
 
         [Obsolete("GetOutputArtifactFilePath has been deprecated. Use SetOutputArtifactData to write artifact data from memory, or SetOutputArtifactFile to copy artifact data from a file instead.")]
+        [NativeName("GetOutputArtifactFilePath_Binding")]
         public extern string GetOutputArtifactFilePath(string fileName);
 
         [NativeName("DependsOnImportedAsset")]

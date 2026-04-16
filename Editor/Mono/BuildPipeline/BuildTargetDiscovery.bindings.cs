@@ -293,6 +293,12 @@ namespace UnityEditor
             public string buildProfilePlatformBannerBgColorHex = "#00000000";
 
             /// <summary>
+            /// When set, a checkbox in the platform discovery window is displayed. When set
+            /// the package manager samples window is opened after creating a build profile.
+            /// </summary>
+            public bool hasBuildProfilePackageManagerSamples = false;
+
+            /// <summary>
             /// List of Unity-maintained required and recommended packages for a platform.
             /// </summary>
             public PlatformPackageList internalPackages = new PlatformPackageList();
@@ -687,7 +693,8 @@ namespace UnityEditor
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget,
-                    buildProfilePlatformBannerBgColorHex = "#FFFFFF"
+                    buildProfilePlatformBannerBgColorHex = "#FFFFFF",
+                    hasBuildProfilePackageManagerSamples = true
                 }
             },
             {
@@ -1239,14 +1246,14 @@ namespace UnityEditor
 
         /// <summary>
         /// Validates the SDK platforms by checking if their providers are coming from a unity
-        /// registered package. If an SDK platform is found to be invalid, it is removed from 
+        /// registered package. If an SDK platform is found to be invalid, it is removed from
         /// the list of available platforms.
         /// </summary>
         public static void ValidateSDKPlatformProviders()
         {
             var invalidSDKPlatforms = new List<GUID>();
             foreach (var extension in k_SDKPlatformExtensions)
-            {   
+            {
                 var provider = extension.Value.sdkPlatformProvider;
                 if (!IsSDKPlatformValid(provider))
                     invalidSDKPlatforms.Add(provider.guid);
@@ -1288,7 +1295,7 @@ namespace UnityEditor
                 types_list.AddRange(ext.requiredComponents);
 
             return types_list.ToArray();
-        } 
+        }
 
         public static bool TryGetSDKPlatformExtension(GUID guid, out ISDKPlatformExtension sdkPlatformExtension)
         {
@@ -1539,6 +1546,14 @@ namespace UnityEditor
                 return platformInfo.description;
 
             return string.Empty;
+        }
+
+        public static bool BuildPlatformHasSamplesFlag(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.hasBuildProfilePackageManagerSamples;
+
+            return false;
         }
 
         public static string BuildPlatformKeyFeatures(GUID guid)

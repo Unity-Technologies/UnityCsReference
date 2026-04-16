@@ -263,7 +263,8 @@ namespace UnityEditor
     public enum WindowsBuildAndRunDeployTarget
     {
         LocalMachine = 0,
-        DevicePortal = 2
+        DevicePortal = 2,
+        XboxPcToolbox = 3
     }
 
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]

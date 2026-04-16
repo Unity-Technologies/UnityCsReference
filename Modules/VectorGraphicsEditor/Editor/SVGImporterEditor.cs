@@ -292,10 +292,10 @@ namespace Unity.VectorGraphics.Editor
             {
                 using (new EditorGUI.DisabledScope(m_SVGType.hasMultipleDifferentValues || m_SVGType.intValue == (int)SVGType.Texture2D))
                     BoolToggle(m_GeneratePhysicsShape, m_GeneratePhysicsShapeText);
-
-                IntPopup(m_ViewportOptions, m_ViewportOptionsText, viewportOptions);
             }
 
+            IntPopup(m_ViewportOptions, m_ViewportOptionsText, viewportOptions);
+            
             EditorGUILayout.Space();
 
             if (m_SVGType.intValue == (int)SVGType.VectorImage)

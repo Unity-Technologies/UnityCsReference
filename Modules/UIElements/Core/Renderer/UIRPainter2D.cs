@@ -764,6 +764,48 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private static readonly ProfilerMarker s_ClipMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Painter2D.Clip");
+
+        /// <summary>
+        /// Uses the current path as a clipping region. Subsequent Fill() and Stroke() operations will be clipped by this region.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The clipping process is very expensive, as it involves per-triangle clipping on the CPU. It is recommended to minimize
+        /// the complexity of both the clipping path and the clipped content. Also avoid nested clipping regions when possible,
+        /// as each additional clipping region adds more overhead to the clipping process.
+        /// </para>
+        /// <para>
+        /// Note that the clipped shapes will not have antialiased edges since the clipping path is applied by doing a per-triangle
+        /// clipping process. Use PopClip() to remove the most recently added clipping region.
+        /// </para>
+        /// </remarks>
+        public void PushClip()
+        {
+            ValidateState();
+
+            using (s_ClipMarker.Auto())
+            {
+                UIPainter2D.PushClip(m_Handle);
+            }
+        }
+
+        /// <summary>
+        /// Removes the most recently added clipping region.
+        /// </summary>
+        public void PopClip()
+        {
+            ValidateState();
+
+            if (UIPainter2D.GetClipCount(m_Handle) == 0)
+            {
+                Debug.LogError("PopClip() called without a matching PushClip().");
+                return;
+            }
+
+            UIPainter2D.PopClip(m_Handle);
+        }
+
         struct Painter2DJobData
         {
             public UnsafeMeshGenerationNode node;
@@ -857,7 +899,13 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="vectorImage">The VectorImage object that will be initialized with this painter. This object should not be null.</param>
         /// <returns>True if the VectorImage initialization succeeded. False otherwise.</returns>
-        public unsafe bool SaveToVectorImage(VectorImage vectorImage)
+        public bool SaveToVectorImage(VectorImage vectorImage)
+        {
+            return SaveToVectorImage(vectorImage, Rect.zero);
+        }
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
+        internal unsafe bool SaveToVectorImage(VectorImage vectorImage, Rect viewport)
         {
             if (!isDetached)
             {
@@ -895,6 +943,8 @@ namespace UnityEngine.UIElements
             UIRAtlasAllocator atlasAllocator = new UIRAtlasAllocator(64, 4096);
             List<RectInt> textureAllocations = new List<RectInt>();
             List<int> gradientMeshIndex = new List<int>();
+
+            bool hasRect = viewport != Rect.zero;
 
             if (m_DetachedAllocator.HasGradientsOrTextures())
             {
@@ -938,8 +988,14 @@ namespace UnityEngine.UIElements
                 {
                     var v = verts[i];
                     var p = v.position;
-                    p.x -= bbox.x;
-                    p.y -= bbox.y;
+
+                    if (!hasRect)
+                    {
+                        // No viewport: offset the content to the origin
+                        p.x -= bbox.x;
+                        p.y -= bbox.y;
+                    }
+
                     allVerts[vCount++] = new VectorImageVertex() {
                         position = new Vector3(p.x, p.y, Vertex.nearZ),
                         tint = v.tint,
@@ -960,7 +1016,7 @@ namespace UnityEngine.UIElements
             vectorImage.version = 0;
             vectorImage.vertices = allVerts;
             vectorImage.indices = allInds;
-            vectorImage.size = bbox.size;
+            vectorImage.size = hasRect ? viewport.size : bbox.size;
 
             if (textureAllocations.Count > 0)
             {

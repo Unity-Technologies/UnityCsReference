@@ -111,6 +111,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string deselectAll = L10n.Tr("Deselect All");
         public static readonly string buildProfileNameLabel = L10n.Tr("Name");
         public static readonly string buildProfileConfigurationLabel = L10n.Tr("Build Profile Configurations");
+        public static readonly string browseSamplesCheckboxLabel = L10n.Tr("Browse related samples in package manager.");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

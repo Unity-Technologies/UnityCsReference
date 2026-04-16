@@ -68,7 +68,7 @@ namespace Unity.VectorGraphics.Editor
 
     /// <summary>The SVG importer class.</summary>
     [Serializable]
-    [ScriptedImporter(8, "svg")]
+    [ScriptedImporter(9, "svg")]
     public sealed class SVGImporter : ScriptedImporter
     {
         /// <summary>How the SVG file will be imported</summary>
@@ -399,7 +399,11 @@ namespace Unity.VectorGraphics.Editor
             if (SvgType != SVGType.VectorImage)
                 throw new Exception("Antialiased Arc Encoding tessellation is only supported for VectorImage");
 
-            GenerateVectorImageAsset(ctx, sceneInfo);
+            var viewport = Rect.zero;
+            if (ViewportOptions == ViewportOptions.PreserveViewport)
+                viewport = sceneInfo.SceneViewport;
+
+            GenerateVectorImageAsset(ctx, sceneInfo, viewport);
         }
 
         private Sprite BuildSpriteFromGeometry(List<VectorUtils.Geometry> geometry, Rect rect)
@@ -566,9 +570,9 @@ namespace Unity.VectorGraphics.Editor
             ctx.SetMainObject(vi);
         }
 
-        private void GenerateVectorImageAsset(AssetImportContext ctx, SVGParser.SceneInfo sceneInfo)
+        private void GenerateVectorImageAsset(AssetImportContext ctx, SVGParser.SceneInfo sceneInfo, Rect viewport)
         {
-            var vi = VectorUtils.BuildVectorImage(sceneInfo);
+            var vi = VectorUtils.BuildVectorImage(sceneInfo, viewport);
 
             if (vi == null)
             {

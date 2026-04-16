@@ -22,7 +22,7 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
 
             // Combine the contextual menu items from all selected elements, keeping only the same items between types of selected elements.
             var menuItems = new List<ContextualMenuItem>();
-            var uniqueSelectedTypes = new List<Type>();
+            var uniqueSelectedTypes = new HashSet<Type>();
 
             foreach (var elementModel in selection)
             {
@@ -31,7 +31,10 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
                     continue;
 
                 var type = elementModel.GetType();
-                if (elementModel is IHasContextualMenuItems hasContextualMenuItems && !uniqueSelectedTypes.Contains(type))
+                // If we haven't added menu items for this type yet, or it's a SubgraphNodeModel combine its contextual menu items with the current list.
+                // Subgraph nodes are a special case as they could have different menu items based on if they are local or asset subgraphs.
+                // It is currently the only model type that can have different contextual menu items based on its data, but this logic can be extended to other model types when needed.
+                if (elementModel is IHasContextualMenuItems hasContextualMenuItems && (!uniqueSelectedTypes.Contains(type) || elementModel is SubgraphNodeModel))
                 {
                     uniqueSelectedTypes.Add(type);
                     IntersectMenuItems(menuItems, hasContextualMenuItems.ContextualMenuItems);
@@ -116,7 +119,6 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         // Node menu items:
         internal static ContextualMenuItem editSubtitleItem = new(ContextualMenuCategory.Modifications, "Edit Subtitle");
         internal static ContextualMenuItem bypassNodeItem = new(ContextualMenuCategory.Modifications, "Bypass Node");
-        internal static ContextualMenuItem disableNodeItem = new(ContextualMenuCategory.Modifications, "Disable Node");
         internal static ContextualMenuItem disconnectAllWiresItem = new(ContextualMenuCategory.Modifications, "Disconnect All Wires");
         internal static ContextualMenuItem toggleCollapseItem = new(ContextualMenuCategory.Modifications, "Toggle Collapse");
         internal static ContextualMenuItem deleteAndReconnectItem = new(ContextualMenuCategory.RenameDuplicateDelete, "Delete and reconnect");

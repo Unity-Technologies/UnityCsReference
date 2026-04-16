@@ -203,20 +203,20 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
 
                                 if (!string.IsNullOrEmpty(warningSince) && Utility.VersionToInt(warningSince) > currentVersion)
                                 {
-                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteWarningUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion warning", reportItem)
+                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteWarningUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion warning in {warningSince}", reportItem)
                                         .WithUpgradeProperties([warningSince, errorSince ?? removedIn, recommendation]);
                                 }
 
                                 if (!string.IsNullOrEmpty(errorSince) && Utility.VersionToInt(errorSince) > currentVersion)
                                 {
-                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteErrorUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion error", reportItem)
+                                    yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteErrorUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' obsoletion error in {errorSince}", reportItem)
                                         .WithUpgradeProperties([errorSince, removedIn, recommendation]);
                                 }
                             }
 
                             if (!string.IsNullOrEmpty(removedIn) && Utility.VersionToInt(removedIn) > currentVersion)
                             {
-                                yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteRemovedUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' will be removed", reportItem)
+                                yield return new ReportItemBuilder(IssueCategory.Code, k_ObsoleteRemovedUpgradeIssueDescriptor.Id, $"'{reportItem.Description}' will be removed in {removedIn}", reportItem)
                                     .WithUpgradeProperties([removedIn, null, recommendation]);
                             }
                         }
