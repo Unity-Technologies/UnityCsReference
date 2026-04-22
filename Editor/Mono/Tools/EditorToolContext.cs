@@ -46,6 +46,11 @@ namespace UnityEditor.EditorTools
             : Selection.objects;
 
         public UnityObject target => m_Target == null ? Selection.activeObject : m_Target;
+        
+        public virtual bool overridesDefaultSelection
+        {
+            get { return false; }
+        }
 
         internal void Activate()
         {

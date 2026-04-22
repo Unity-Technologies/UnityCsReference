@@ -24,6 +24,7 @@ namespace UnityEditor.UIElements
 
         [SerializeField]
         private bool m_EnableAdvancedText = false;
+        [SerializeField] bool m_ConsistentAttributeOrderingWhenExporting;
 
         internal static bool enableAdvancedText
         {
@@ -89,6 +90,21 @@ namespace UnityEditor.UIElements
         {
             get => Unsupported.IsDeveloperMode() && GetBool(k_EnableAbsolutePositionPlacement);
             set => SetBool(k_EnableAbsolutePositionPlacement, value);
+        }
+
+        public static event Action<bool> consistentAttributeOrderingWhenExportingChanged;
+
+        public static bool consistentAttributeOrderingWhenExporting
+        {
+            get => instance.m_ConsistentAttributeOrderingWhenExporting;
+            set
+            {
+                if (instance.m_ConsistentAttributeOrderingWhenExporting == value)
+                    return;
+                instance.m_ConsistentAttributeOrderingWhenExporting = value;
+                instance.Save();
+                consistentAttributeOrderingWhenExportingChanged?.Invoke(value);
+            }
         }
 
         public static bool enableEventDebugger

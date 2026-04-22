@@ -28,7 +28,6 @@ namespace UnityEngine.AdaptivePerformance
                     Application.targetFrameRate = -1;
                     break;
             }
-            APLog.Debug($"[AutoPerformanceModeController] Performance Mode: {performanceMode}, fps: {Application.targetFrameRate}");
         }
     }
 }

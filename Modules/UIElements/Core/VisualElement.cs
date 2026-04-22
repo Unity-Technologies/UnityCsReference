@@ -1441,7 +1441,7 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(worldTransform, ref m_WorldTransformInverseCache);
+            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref m_WorldTransformInverseCache);
             isWorldTransformInverseDirty = false;
         }
 

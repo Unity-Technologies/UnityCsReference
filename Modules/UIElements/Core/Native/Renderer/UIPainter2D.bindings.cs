@@ -72,6 +72,10 @@ namespace UnityEngine.UIElements
         public static extern void QuadraticCurveTo(IntPtr handle, Vector2 p1, Vector2 p2);
         public static extern void ClosePath(IntPtr handle);
 
+        public static extern void PushClip(IntPtr handle);
+        public static extern void PopClip(IntPtr handle);
+        public static extern int GetClipCount(IntPtr handle);
+
         public static extern Rect GetBBox(IntPtr handle);
 
         public static extern MeshWriteDataInterface Stroke(IntPtr handle, bool isDetached);

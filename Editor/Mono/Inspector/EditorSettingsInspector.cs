@@ -281,7 +281,6 @@ namespace UnityEditor
         SerializedProperty m_EtcTextureNormalCompressor;
         SerializedProperty m_EtcTextureBestCompressor;
         SerializedProperty m_LineEndingsForNewScripts;
-        SerializedProperty m_EnterPlayModeOptionsEnabled;
         SerializedProperty m_EnterPlayModeOptions;
         SerializedProperty m_ProjectGenerationIncludedExtensions;
         SerializedProperty m_ProjectGenerationRootNamespace;
@@ -362,9 +361,6 @@ namespace UnityEditor
 
             m_LineEndingsForNewScripts = serializedObject.FindProperty("m_LineEndingsForNewScripts");
             Assert.IsNotNull(m_LineEndingsForNewScripts);
-
-            m_EnterPlayModeOptionsEnabled = serializedObject.FindProperty("m_EnterPlayModeOptionsEnabled");
-            Assert.IsNotNull(m_EnterPlayModeOptionsEnabled);
 
             m_EnterPlayModeOptions = serializedObject.FindProperty("m_EnterPlayModeOptions");
             Assert.IsNotNull(m_EnterPlayModeOptions);
@@ -983,7 +979,6 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
             {
-                EditorSettings.enterPlayModeOptionsEnabled = m_EnterPlayModeOptionsEnabled.boolValue;
                 EditorSettings.enterPlayModeOptions = (EnterPlayModeOptions)m_EnterPlayModeOptions.intValue;
             }
         }

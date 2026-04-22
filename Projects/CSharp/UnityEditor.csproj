@@ -11124,6 +11124,21 @@
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializer.cs">
       <Link>Modules\UIElementsEditor\UXML\UxmlSerializer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\IUxmlUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\IUxmlUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\RedundantAttributeUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\RedundantAttributeUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UrlUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UrlUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeReporter.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeReporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeService.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeService.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\VisualElementAssetExtensions.cs">
       <Link>Modules\UIElementsEditor\UXML\VisualElementAssetExtensions.cs</Link>
     </Compile>

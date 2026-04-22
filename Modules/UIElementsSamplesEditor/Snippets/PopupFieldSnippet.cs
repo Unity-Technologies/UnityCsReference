@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             /// <sample>
+            #region sample
             // Note: PopupField has no UXML support because it is a generic type. See DropdownField instead.
 
             var choices = new List<string> { "First", "Second", "Third" };
@@ -34,6 +35,7 @@ namespace UnityEditor.UIElements.Samples
             {
                 styledField.value = evt.newValue;
             });
+            #endregion
             /// </sample>
         }
     }

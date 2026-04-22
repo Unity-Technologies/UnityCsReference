@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
@@ -37,15 +39,27 @@ internal class FontAssetFactory
         return resultFontAsset;
     }
 
+    static bool SourceFontFieldMissingForJobs(Font? font)
+    {
+        if (JobsUtility.IsExecutingJob)
+        {
+            return ReferenceEquals(font, null);
+        }
+        else
+        {
+            return font == null;
+        }
+    }
+
     static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, int size, bool isRaster)
     {
-        bool shouldInstantiate = source.atlasRenderMode != GlyphRenderMode.SDFAA || !source.IsEditorFont || source.sourceFontFile == null;
+        bool shouldInstantiate = source.atlasRenderMode != GlyphRenderMode.SDFAA || !source.IsEditorFont || SourceFontFieldMissingForJobs(source.sourceFontFile);
         FontAsset? newFontAsset;
 
         if (source.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
         {
             newFontAsset = FontAsset.CreateFontAsset(source.faceInfo.familyName, source.faceInfo.styleName, size, 6, isRaster ? k_RasterEditorBitmapGlyphRenderMode : k_SmoothEditorBitmapGlyphRenderMode);
-            if(newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
+            if (newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
         }
         else if (shouldInstantiate) // Color Glyph or Empty Container
         {
@@ -103,7 +117,7 @@ internal class FontAssetFactory
 
     internal static FontAsset? ConvertFontToFontAsset(Font font)
     {
-        if(font == null)
+        if (font == null)
             return null;
 
         FontAsset? fontAsset = null;

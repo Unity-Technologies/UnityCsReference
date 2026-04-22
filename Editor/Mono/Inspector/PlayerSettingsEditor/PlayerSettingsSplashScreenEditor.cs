@@ -359,7 +359,7 @@ namespace UnityEditor
                     var playModeView = PlayModeView.GetMainPlayModeView();
                     if (playModeView)
                     {
-                        playModeView.Focus();
+                        EditorApplication.delayCall += playModeView.Focus;
                     }
                     EditorApplication.update += PollSplashState;
                 }

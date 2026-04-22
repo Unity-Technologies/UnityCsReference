@@ -121,7 +121,7 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         internal static void CleanupRenderPipeline()
         {
-            if (!isCurrentPipelineValid)
+            if (!IsCurrentRenderPipelineValid())
                 return;
 
             // This check prevents shader reloading through Builtin whenever we switch from one RP to another RP
@@ -170,12 +170,26 @@ namespace UnityEngine.Rendering
                 return currentPipeline != null;
 
             currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
-            Shader.globalRenderPipeline = s_CurrentPipelineAsset.renderPipelineShaderTag;
+            if (Shader.globalRenderPipeline != s_CurrentPipelineAsset.renderPipelineShaderTag)
+                Shader.globalRenderPipeline = s_CurrentPipelineAsset.renderPipelineShaderTag;
             activeRenderPipelineCreated?.Invoke();
             return currentPipeline != null;
         }
 
-        internal static bool isCurrentPipelineValid => currentPipeline is { disposed: false };
-        static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
+        // Called from native code after all global managers are loaded, but before any non-internal shaders are loaded.
+        // Only invoked if GraphicsSettings.currentRenderPipeline asset is valid and Shader.globalRenderPipeline is not already set.
+        [RequiredByNativeCode]
+        static void InitializeGlobalRenderPipelineTag()
+        {
+            var renderPipelineShaderTag = GraphicsSettings.currentRenderPipeline.renderPipelineShaderTag;
+            
+            if (!string.IsNullOrEmpty(renderPipelineShaderTag))
+                Shader.globalRenderPipeline = renderPipelineShaderTag;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool IsCurrentRenderPipelineValid() => currentPipeline is { disposed: false };
+        
+        static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && !IsCurrentRenderPipelineValid();
     }
 }

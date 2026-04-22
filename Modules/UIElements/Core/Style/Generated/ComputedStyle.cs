@@ -1598,7 +1598,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.TextShadow:
                     inheritedData.Write().textShadow = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -3652,6 +3652,7 @@ namespace UnityEngine.UIElements
                     x.fontSize != y.fontSize ||
                     x.unityFontDefinition != y.unityFontDefinition ||
                     x.unityTextAutoSize != y.unityTextAutoSize ||
+                    x.textShadow != y.textShadow ||
                     x.whiteSpace != y.whiteSpace ||
                     x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||
                     x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
@@ -3664,7 +3665,6 @@ namespace UnityEngine.UIElements
                 }
 
                 if ((changes & VersionChangeType.Repaint) == 0 && (x.unityMaterial != y.unityMaterial ||
-                    x.textShadow != y.textShadow ||
                     x.unityTextAlign != y.unityTextAlign ||
                     x.unityTextOutlineColor != y.unityTextOutlineColor))
                 {

@@ -252,6 +252,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.BootConfig.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.BootConfig.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Core.InspectorFramework.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]

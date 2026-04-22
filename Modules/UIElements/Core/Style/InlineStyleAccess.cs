@@ -396,7 +396,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTextShadow(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                 }
             }
         }
@@ -414,7 +414,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetInlineTextAutoSize(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                 }
             }
         }
@@ -1373,7 +1373,7 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                m_HasInlineBackgroundSize = false;
+                m_HasInlineFilter = false;
                 return RemoveInlineStyle(StylePropertyId.Filter);
             }
 
@@ -1461,6 +1461,64 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        void IStyle.Clear(bool clearSourceAssetStyles)
+        {
+            VersionChangeType changes = 0;
+
+            foreach (var styleValue in m_Values)
+            {
+                if (RemoveInlineStyle(styleValue.id))
+                {
+                    changes |= StylePropertyUtil.PropertyToVersionChangeType(styleValue.id);
+                }
+            }
+
+            if (m_ValuesManaged != null)
+            {
+                foreach (var styleValue in m_ValuesManaged)
+                {
+                    if (RemoveInlineStyle(styleValue.id))
+                    {
+                        changes |= StylePropertyUtil.PropertyToVersionChangeType(styleValue.id);
+                    }
+                }
+            }
+
+            // Cancel animations for special field properties
+            if (SetInlineCursor(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.Cursor);
+            if (SetInlineTextShadow(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.TextShadow);
+            if (SetInlineTextAutoSize(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.UnityTextAutoSize);
+            if (SetInlineTransformOrigin(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.TransformOrigin);
+            if (SetInlineTranslate(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.Translate);
+            if (SetInlineRotate(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.Rotate);
+            if (SetInlineScale(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.Scale);
+            if (SetInlineBackgroundSize(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.BackgroundSize);
+            if (SetInlineFilter(StyleKeyword.Null))
+                changes |= StylePropertyUtil.PropertyToVersionChangeType(StylePropertyId.Filter);
+
+            // Clear all inline style collections
+            m_Values.Clear();
+
+            if (m_ValuesManaged != null)
+                m_ValuesManaged.Clear();
+
+            if (changes != 0)
+                ve.IncrementVersion(changes);
+
+            if (clearSourceAssetStyles && inlineRule.sheet != null && inlineRule.rule != null)
+            {
+                ve.UpdateInlineRule(null, null);
+            }
         }
 
         private void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle newStyle)

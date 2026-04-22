@@ -4,6 +4,7 @@
 
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -54,5 +55,25 @@ namespace Unity.UI.Builder
         }
 
         protected override string previewAssetExtension => BuilderConstants.UxmlExtension;
+
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
+            switch (evt)
+            {
+                case AttachToPanelEvent:
+                    UIToolkitProjectSettings.consistentAttributeOrderingWhenExportingChanged += OnAttributeOrderingChanged;
+                    break;
+                case DetachFromPanelEvent:
+                    UIToolkitProjectSettings.consistentAttributeOrderingWhenExportingChanged -= OnAttributeOrderingChanged;
+                    break;
+            }
+            base.HandleEventBubbleUp(evt);
+        }
+
+        void OnAttributeOrderingChanged(bool enabled)
+        {
+            document.activeOpenUXMLFile.GenerateUxmlPreview();
+            RefreshPreviewIfVisible();
+        }
     }
 }

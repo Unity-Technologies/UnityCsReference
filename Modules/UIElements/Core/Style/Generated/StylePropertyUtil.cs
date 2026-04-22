@@ -449,6 +449,214 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnityBackgroundImageTintColor, UsageHints.DynamicColor}
         };
 
+        public static VersionChangeType PropertyToVersionChangeType(StylePropertyId propertyId)
+        {
+            switch (propertyId)
+            {
+                case StylePropertyId.AlignContent:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.AlignItems:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.AlignSelf:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.All:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.AspectRatio:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.BackgroundColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.BackgroundImage:
+                    return VersionChangeType.Styles | VersionChangeType.Overflow | VersionChangeType.Repaint;
+                case StylePropertyId.BackgroundPosition:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.BackgroundPositionX:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.BackgroundPositionY:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.BackgroundRepeat:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.BackgroundSize:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.BorderBottomColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return VersionChangeType.Styles | VersionChangeType.BorderRadius | VersionChangeType.Repaint;
+                case StylePropertyId.BorderBottomRightRadius:
+                    return VersionChangeType.Styles | VersionChangeType.BorderRadius | VersionChangeType.Repaint;
+                case StylePropertyId.BorderBottomWidth:
+                    return VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.BorderColor:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.BorderLeftColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.BorderLeftWidth:
+                    return VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.BorderRadius:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.BorderRightColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.BorderRightWidth:
+                    return VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.BorderTopColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.BorderTopLeftRadius:
+                    return VersionChangeType.Styles | VersionChangeType.BorderRadius | VersionChangeType.Repaint;
+                case StylePropertyId.BorderTopRightRadius:
+                    return VersionChangeType.Styles | VersionChangeType.BorderRadius | VersionChangeType.Repaint;
+                case StylePropertyId.BorderTopWidth:
+                    return VersionChangeType.Styles | VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.BorderWidth:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.Bottom:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Color:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Color;
+                case StylePropertyId.Cursor:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.Display:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Filter:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.Flex:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.FlexBasis:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.FlexDirection:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.FlexGrow:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.FlexShrink:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.FlexWrap:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.FontSize:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.Height:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.JustifyContent:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Left:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.LetterSpacing:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.Margin:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.MarginBottom:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MarginLeft:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MarginRight:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MarginTop:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MaxHeight:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MaxWidth:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MinHeight:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.MinWidth:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Opacity:
+                    return VersionChangeType.Styles | VersionChangeType.Opacity;
+                case StylePropertyId.Overflow:
+                    return VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Overflow;
+                case StylePropertyId.Padding:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.PaddingBottom:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.PaddingLeft:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.PaddingRight:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.PaddingTop:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Position:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Right:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.Rotate:
+                    return VersionChangeType.Styles | VersionChangeType.Transform;
+                case StylePropertyId.Scale:
+                    return VersionChangeType.Styles | VersionChangeType.Transform;
+                case StylePropertyId.TextOverflow:
+                    return VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.TextShadow:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.Top:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.TransformOrigin:
+                    return VersionChangeType.Styles | VersionChangeType.Transform;
+                case StylePropertyId.Transition:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.TransitionDelay:
+                    return VersionChangeType.Styles | VersionChangeType.TransitionProperty;
+                case StylePropertyId.TransitionDuration:
+                    return VersionChangeType.Styles | VersionChangeType.TransitionProperty;
+                case StylePropertyId.TransitionProperty:
+                    return VersionChangeType.Styles | VersionChangeType.TransitionProperty;
+                case StylePropertyId.TransitionTimingFunction:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.Translate:
+                    return VersionChangeType.Styles | VersionChangeType.Transform;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return VersionChangeType.Styles | VersionChangeType.Color;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityFont:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityFontDefinition:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityMaterial:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint;
+                case StylePropertyId.UnityOverflowClipBox:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceBottom:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceLeft:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceRight:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceScale:
+                    return VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceTop:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.UnitySliceType:
+                    return VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextAlign:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextAutoSize:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextGenerator:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextOutline:
+                    return VersionChangeType.Styles;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return VersionChangeType.Styles | VersionChangeType.Repaint;
+                case StylePropertyId.Visibility:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Picking | VersionChangeType.Repaint;
+                case StylePropertyId.WhiteSpace:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+                case StylePropertyId.Width:
+                    return VersionChangeType.Styles | VersionChangeType.Layout;
+                case StylePropertyId.WordSpacing:
+                    return VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint;
+            }
+
+            return 0;
+        }
+
+
         public static bool TryGetEnumIntValue(StyleEnumType enumType, string value, out int intValue)
         {
             intValue = 0;
