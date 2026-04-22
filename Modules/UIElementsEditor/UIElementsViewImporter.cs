@@ -99,6 +99,12 @@ namespace UnityEditor.UIElements
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
 
+        /// <summary>
+        /// Controls whether URL paths are automatically upgraded during import.
+        /// When false, the importer will not set importerWithUpdatedUrls flag.
+        /// </summary>
+        internal bool enableAutomaticUrlUpgrades = true;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal UXMLImporterImpl()
         {
@@ -1067,7 +1073,7 @@ namespace UnityEditor.UIElements
                             asset = ExtractSubAssetFromParent(asset, assetType, response);
 
                             // Update the url value so it is correct when saved back to UXML
-                            if (response.resolvedUrlChanged)
+                            if (response.resolvedUrlChanged && enableAutomaticUrlUpgrades)
                             {
                                 value = URIHelpers.MakeAssetUri(asset);
                                 vta.importerWithUpdatedUrls = true;

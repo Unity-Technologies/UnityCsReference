@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
 using UnityEngine;
@@ -29,6 +28,7 @@ namespace UnityEditor.UIElements
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultEditorTheme;
         [SerializeField] CanvasTheme m_DefaultRuntimeCanvasTheme;
         [SerializeField] CanvasTheme m_DefaultEditorCanvasTheme;
+        [SerializeField] bool m_ConsistentAttributeOrderingWhenExporting;
 
         internal static bool enableAdvancedText
         {
@@ -163,6 +163,21 @@ namespace UnityEditor.UIElements
         {
             get => Unsupported.IsDeveloperMode() && GetBool(k_EnableAbsolutePositionPlacement);
             set => SetBool(k_EnableAbsolutePositionPlacement, value);
+        }
+
+        public static event Action<bool> consistentAttributeOrderingWhenExportingChanged;
+
+        public static bool consistentAttributeOrderingWhenExporting
+        {
+            get => instance.m_ConsistentAttributeOrderingWhenExporting;
+            set
+            {
+                if (instance.m_ConsistentAttributeOrderingWhenExporting == value)
+                    return;
+                instance.m_ConsistentAttributeOrderingWhenExporting = value;
+                instance.Save();
+                consistentAttributeOrderingWhenExportingChanged?.Invoke(value);
+            }
         }
 
         public static bool enableEventDebugger

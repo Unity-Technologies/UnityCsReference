@@ -289,5 +289,9 @@ namespace UnityEngine.U2D
         extern internal static bool IsGPUSkinningEnabled(SpriteRenderer spriteRenderer);
 
         extern internal static bool IsSRPBatchingEnabled([NotNull] this SpriteRenderer spriteRenderer);
+
+        extern public static void SetShaderUserValue([NotNull] this SpriteRenderer spriteRenderer, UInt32 v);
+
+        extern public static UInt32 GetShaderUserValue([NotNull] this SpriteRenderer spriteRenderer);
     }
 }

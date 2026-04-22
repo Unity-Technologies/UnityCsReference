@@ -46,7 +46,13 @@ namespace Unity.UI.Builder
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
         public BuilderExplorer.BuilderElementInfoVisibilityState elementInfoVisibilityState { get; set; }
-        public IList<TreeViewItem> treeRootItems => m_TreeRootItems;
+        public IList<TreeViewItem> treeRootItems
+        {
+            get => m_TreeRootItems;
+            set => m_TreeRootItems = value;
+        }
+
+        public IList<TreeViewItem> unfilteredTreeRootItems => m_UnfilteredTreeRootItems;
 
         public IEnumerable<TreeViewItemData<VisualElement>> treeItems
         {
@@ -63,6 +69,7 @@ namespace Unity.UI.Builder
 
 
         IList<TreeViewItem> m_TreeRootItems;
+        IList<TreeViewItem> m_UnfilteredTreeRootItems;
         TreeView m_TreeView;
         PreSaveState m_RegisteredState;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
@@ -793,10 +800,11 @@ namespace Unity.UI.Builder
 
             int nextId = 1;
             if (includeParent)
-                m_TreeRootItems = GetTreeItemsFromVisualTreeIncludingParent(rootVisualElement, ref nextId);
+                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTreeIncludingParent(rootVisualElement, ref nextId);
             else
-                m_TreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
+                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
 
+            m_TreeRootItems = m_UnfilteredTreeRootItems;
             // Clear selection which would otherwise persist via view data persistence.
             if (m_TreeView != null)
             {

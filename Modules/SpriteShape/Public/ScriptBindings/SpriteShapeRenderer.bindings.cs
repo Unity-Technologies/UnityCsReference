@@ -8,6 +8,8 @@ using UnityEngine.Rendering;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting.APIUpdating;
+using System;
+
 
 using Unity.Jobs;
 
@@ -275,5 +277,10 @@ namespace UnityEngine.U2D
             tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
             normals = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelNormal, VertexAttribute.Normal);
         }
+
+        [FreeFunction(Name = "SpriteShapeUtility::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt(UInt32 v);
+        public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
+        [FreeFunction(Name = "SpriteShapeUtility::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
+        public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
     }
 }

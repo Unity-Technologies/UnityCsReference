@@ -10,8 +10,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Create custom buttons with Text value only.
             var csharpToggleButtonGroupWithButtonTextOnly = new ToggleButtonGroup("C# Toggle Button Group Buttons with Text");
             csharpToggleButtonGroupWithButtonTextOnly.Add(new Button() { text = "one", tooltip = "custom button one" });
@@ -59,8 +59,8 @@ namespace UnityEditor.UIElements.Samples
             csharpToggleButtonGroupWithCustomClass.Add(new Button() { text = "Button A", tooltip = "Bolded font Button A" });
             csharpToggleButtonGroupWithCustomClass.Add(new Button() { text = "Button B", tooltip = "Bolded font Button B" });
             container.Add(csharpToggleButtonGroupWithCustomClass);
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

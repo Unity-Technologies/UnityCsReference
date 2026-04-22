@@ -872,6 +872,9 @@
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Cloth\Cloth.deprecated.cs">
+      <Link>Modules\Cloth\Cloth.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ClusterInput\ClusterInput.bindings.cs">
       <Link>Modules\ClusterInput\ClusterInput.bindings.cs</Link>
     </Compile>

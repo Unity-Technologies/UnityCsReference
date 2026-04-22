@@ -12,8 +12,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<ObjectField>("the-uxml-field");
             uxmlField.value = new Texture2D(10, 10) { name = "new_texture" };
@@ -30,8 +30,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

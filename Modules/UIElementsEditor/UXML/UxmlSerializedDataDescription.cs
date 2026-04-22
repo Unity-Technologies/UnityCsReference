@@ -18,6 +18,7 @@ namespace UnityEditor.UIElements
         private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();
 
         private readonly Dictionary<string, int> m_UxmlNameToIndex = new();
+        private readonly Dictionary<string, List<int>> m_ObsoleteUxmlNameToIndexes = new();
         private readonly Dictionary<string, int> m_PropertyNameToIndex = new();
         private readonly HashSet<string> m_UxmlObjectFields = new();
         private Type m_SerializedDataType;
@@ -117,6 +118,24 @@ namespace UnityEditor.UIElements
             if (m_UxmlNameToIndex.TryGetValue(name, out var index))
                 return m_SerializedAttributes[index];
             return null;
+        }
+
+        /// <summary>
+        /// Checks if the attribute name is recognized by this element type (either as a current or obsolete attribute).
+        /// </summary>
+        /// <param name="attributeName">The UXML attribute name to check.</param>
+        /// <returns>True if the attribute is recognized (current or obsolete), false otherwise.</returns>
+        public bool HasAttribute(string attributeName)
+        {
+            // Check if the attribute exists in the current attributes
+            if (m_UxmlNameToIndex.ContainsKey(attributeName))
+                return true;
+
+            // Check if the attribute exists as an obsolete name
+            if (m_ObsoleteUxmlNameToIndexes.ContainsKey(attributeName))
+                return true;
+
+            return false;
         }
 
         public UxmlSerializedAttributeDescription FindAttributeWithPropertyName(string name)
@@ -226,6 +245,14 @@ namespace UnityEditor.UIElements
                 m_SerializedAttributes.Add(uxmlAttributeDescription);
                 m_UxmlNameToIndex.Add(attDescription.uxmlName, nextIndex);
                 m_PropertyNameToIndex.Add(attDescription.cSharpName, nextIndex);
+
+                foreach (var obsoleteName in attDescription.obsoleteNames)
+                {
+                    if (m_ObsoleteUxmlNameToIndexes.TryGetValue(obsoleteName, out var indexes))
+                        indexes.Add(nextIndex);
+                    else
+                        m_ObsoleteUxmlNameToIndexes[obsoleteName] = new List<int> { nextIndex };
+                }
             }
         }
 

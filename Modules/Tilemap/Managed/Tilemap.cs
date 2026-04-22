@@ -22,7 +22,8 @@ namespace UnityEngine.Tilemaps
             get { return m_BufferSyncTile; }
             set
             {
-                if (value == false && m_BufferSyncTile != value && HasSyncTileCallback())
+                if (value == false && m_BufferSyncTile != value
+                    && (HasSyncTileCallback() || HasPositionsChangedCallback()))
                     SendAndClearSyncTileBuffer();
                 m_BufferSyncTile = value;
             }

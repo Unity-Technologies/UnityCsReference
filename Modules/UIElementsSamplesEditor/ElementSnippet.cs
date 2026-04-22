@@ -87,6 +87,7 @@ namespace UnityEditor.UIElements.Samples
 
             text = text.Substring(actualStartIndex, endIndex - actualStartIndex);
             text = text.Replace(leadingWhiteSpace, goodEndLine);
+            text = Regex.Replace(text, @"(^\s*#region[^\n]*\n?)|(\n\s*#endregion[^\n]*)", "", RegexOptions.Multiline);
 
             return text;
         }
@@ -121,6 +122,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 text = addSyntaxColors_USS(text);
             }
+
+            text = text.Trim();
 
             var lineCount = text.Count(x => x == '\n') + 1;
             string lineNumbersText = "";

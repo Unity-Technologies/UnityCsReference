@@ -66,6 +66,7 @@ namespace Unity.UI.Builder
                     {
                         ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
                         ignoreTypeList = BuilderConstants.IgnoredTypesWhenExporting,
+                        consistentAttributeOrder = UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting,
                         styleExporterOptions = new StyleSheetExporter.UssExportOptions
                         {
                             ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
