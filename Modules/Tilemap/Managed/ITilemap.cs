@@ -160,17 +160,20 @@ namespace UnityEngine.Tilemaps
         [RequiredByNativeCode]
         internal static ITilemap CreateInstanceFromTilemap(Tilemap tilemap)
         {
-            ITilemap instance = null;
-            if (createITilemap == null)
+            if (tilemap.iTilemap == null)
             {
-                instance = new ITilemap(tilemap);
+                ITilemap instance = null;
+                if (createITilemap == null)
+                {
+                    instance = new ITilemap(tilemap);
+                }
+                else
+                {
+                    instance = createITilemap(tilemap);
+                }
+                tilemap.iTilemap = instance;
             }
-            else
-            {
-                instance = createITilemap(tilemap);
-            }
-            tilemap.iTilemap = instance;
-            return instance;
+            return tilemap.iTilemap;
         }
 
         [RequiredByNativeCode]

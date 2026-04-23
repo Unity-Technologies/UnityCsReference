@@ -17,33 +17,35 @@ struct ExecutionStatusData
     public int CompletedNodesCount;
     public int FailedNodesCount;
     public int AbortedNodesCount;
+    public ExecutionState State;
 
     public readonly float Progress => ProgressSum / Math.Max(1, NodesCount);
 
-    public readonly ExecutionState State
+    ExecutionState AggregateState(ExecutionState a, ExecutionState b)
     {
-        get
-        {
-            if (NodesCount == 0)
-                return ExecutionState.Invalid;
+        // TODO: Do we really need `Invalid` state? It adds complexity to the state aggregation logic and
+        // it's not clear if it adds value compared to just treating it as `Idle` until the execution starts.
+        if (a == ExecutionState.Invalid && b == ExecutionState.Invalid) return ExecutionState.Invalid;
+        if (a == ExecutionState.Invalid) return b;
+        if (b == ExecutionState.Invalid) return a;
 
-            if (FailedNodesCount > 0)
-                return ExecutionState.Failed;
+        if (a == ExecutionState.Failed || b == ExecutionState.Failed)
+            return ExecutionState.Failed;
 
-            if (IdleNodesCount == NodesCount)
-                return ExecutionState.Idle;
+        if (a == ExecutionState.Idle && b == ExecutionState.Idle)
+            return ExecutionState.Idle;
 
-            if (AbortedNodesCount > 0)
-                return ExecutionState.Aborted;
+        if (a == ExecutionState.Aborted || b == ExecutionState.Aborted)
+            return ExecutionState.Aborted;
 
-            if (CompletedNodesCount == NodesCount)
-                return ExecutionState.Completed;
+        if (a == ExecutionState.Completed && b == ExecutionState.Completed)
+            return ExecutionState.Completed;
 
-            return ExecutionState.Running;
-        }
+        return ExecutionState.Running;
     }
 
     public void Aggregate(
+        ExecutionState state,
         float progress,
         int nodesCount,
         int idleNodesCount,
@@ -52,6 +54,7 @@ struct ExecutionStatusData
         int failedNodesCount,
         int abortedNodesCount)
     {
+        State = AggregateState(State, state);
         ProgressSum += progress;
         NodesCount += nodesCount;
         IdleNodesCount += idleNodesCount;
@@ -62,6 +65,7 @@ struct ExecutionStatusData
     }
 
     public void Aggregate(ExecutionStatusData other) => Aggregate(
+        state: other.State,
         progress: other.ProgressSum,
         nodesCount: other.NodesCount,
         idleNodesCount: other.IdleNodesCount,
@@ -70,8 +74,9 @@ struct ExecutionStatusData
         failedNodesCount: other.FailedNodesCount,
         abortedNodesCount: other.AbortedNodesCount);
 
-    public void Aggregate(IEnumerable<ExecutionNode> nodes)
+    public void Aggregate(ExecutionState state, IEnumerable<ExecutionNode> nodes)
     {
+        State = AggregateState(State, state);
         foreach (var node in nodes)
         {
             ProgressSum += node.Progress;

@@ -241,7 +241,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     continue;
 
                 var isClone = instance.Controller is CloneEditorController;
-                if (!isClone && instance.HasDeployedAndRun())
+                if (!isClone && instance.HasReachedRunStage())
                     instance.Drifted = true;
             }
         }

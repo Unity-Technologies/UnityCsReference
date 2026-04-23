@@ -98,11 +98,6 @@ namespace UnityEngine.UIElements
     /// Indicates the directionality of the element's text. The value cascades to child elements.
     /// </summary>
     /// <remarks>
-    /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
-    /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
-    /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
-    /// </remarks>
-    /// <remarks>
     /// SA: [[wiki:ui-systems/language-direction|Language direction]]
     /// </remarks>
     public enum LanguageDirection
@@ -1405,7 +1400,7 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(worldTransform, ref transformData.WorldTransformInverse);
+            Matrix4x4.Inverse3DAffine(in worldTransformRef, ref transformData.WorldTransformInverse);
             isWorldTransformInverseDirty = false;
         }
 
@@ -2328,11 +2323,6 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
-        /// <remarks>
-        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
-        /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
-        /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
-        /// </remarks>
         [CreateProperty]
         public LanguageDirection languageDirection
         {

@@ -74,7 +74,7 @@ namespace UnityEditorInternal
         private EditorCurveBinding? m_lastAddedCurveBinding;
 
         // Hash of all the things that require animationWindow to refresh if they change
-        private int m_PreviousRefreshHash;
+        [NonSerialized] private int m_PreviousRefreshHash;
 
         // Changing m_Refresh means you are ordering a refresh at the next Update ().
         // CurvesOnly means that there is no need to refresh the hierarchy, since only the keyframe data changed.

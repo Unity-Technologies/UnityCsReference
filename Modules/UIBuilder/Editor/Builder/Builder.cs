@@ -14,6 +14,8 @@ namespace Unity.UI.Builder
 {
     sealed class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
+        public static Action<EditorWindow> onActiveBuilderWindowReady;
+
         static Builder()
         {
             EditorApplication.fileMenuSaved += () =>
@@ -421,6 +423,8 @@ namespace Unity.UI.Builder
 
             // We don't want the Builder to live reload anything except text elements.
             panel.liveReloadSystem.enabledTrackers = LiveReloadTrackers.Text;
+
+            onActiveBuilderWindowReady?.Invoke(this);
         }
 
         [OnOpenAsset(0)]

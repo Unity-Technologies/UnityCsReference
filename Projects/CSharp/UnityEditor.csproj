@@ -8535,6 +8535,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Decorators\InstanceExtensionManager.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Decorators\InstanceExtensionManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\GraphsFoundation\CanRecoverFromDomainReloadAttribute.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\GraphsFoundation\CanRecoverFromDomainReloadAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\GraphsFoundation\CanRequestDomainReloadAttribute.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\GraphsFoundation\CanRequestDomainReloadAttribute.cs</Link>
     </Compile>
@@ -10631,6 +10634,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs">
       <Link>Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\AssemblyInfo.cs">
+      <Link>Modules\PhysicsEditor\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs">
       <Link>Modules\PhysicsEditor\BackendSystem\PhysicsBackendStripping.cs</Link>
@@ -14684,6 +14690,24 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlSerializer.cs">
       <Link>Modules\UIElementsEditor\UXML\UxmlSerializer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\AttributeRenameUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\AttributeRenameUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\IUxmlUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\IUxmlUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\RedundantAttributeUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\RedundantAttributeUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UrlUpgrader.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UrlUpgrader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeReporter.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeReporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeService.cs">
+      <Link>Modules\UIElementsEditor\UXML\UxmlUpgrade\UxmlUpgradeService.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UXML\VisualElementAssetExtensions.cs">
       <Link>Modules\UIElementsEditor\UXML\VisualElementAssetExtensions.cs</Link>

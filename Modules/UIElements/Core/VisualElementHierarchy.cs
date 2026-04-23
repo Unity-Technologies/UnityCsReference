@@ -279,10 +279,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removes all child elements from this element's hierarchy.
+        /// Removes all child elements from this element's <see cref="contentContainer"/>.
         /// </summary>
         /// <remarks>
-        /// Unlike <see cref="VisualElement.Clear()"/>, this method ignores the element's <see cref="contentContainer"/>.
         ///
         /// Only the child elements are removed, not the element itself.
         ///
@@ -294,11 +293,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removes all child elements from this element's hierarchy, using the specified options. Use this method to reduce memory usage.
+        /// Removes all child elements from this element's <see cref="contentContainer"/>, using the specified options. Use this method to reduce memory usage.
         /// </summary>
         /// <param name="options">Allows which actions are performed when clearing the children.</param>
         /// <remarks>
-        /// Unlike <see cref="VisualElement.Clear(VisualElementClearOptions)"/>, this method ignores the element's <see cref="contentContainer"/>.
         ///
         /// Only the child elements are removed, not the element itself.
         ///
@@ -738,11 +736,13 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Removes all child elements from this element's <see cref="contentContainer"/>.
+            /// Removes all child elements from this element's hierarchy.
             /// </summary>
             /// <remarks>
+            /// Unlike <see cref="VisualElement.Clear()"/>, this method ignores the element's <see cref="contentContainer"/>.
+            ///
             /// Only the child elements are removed, not the element itself.
-            /// Only the immediate children are removed. To remove all descendants, use the <see cref="Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
+            /// Only the immediate children are removed. To remove all descendants, use the <see cref="VisualElement.Hierarchy.Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
             /// </remarks>
             public void Clear()
             {
@@ -750,10 +750,12 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Removes all child elements from this element's <see cref="contentContainer"/>, using the specified options. Use this method to reduce memory usage.
+            /// Removes all child elements from this element's hierarchy, using the specified options. Use this method to reduce memory usage.
             /// </summary>
             /// <param name="options">Allows which actions are performed when clearing the children.</param>
             /// <remarks>
+            /// Unlike <see cref="VisualElement.Clear(VisualElementClearOptions)"/>, this method ignores the element's <see cref="contentContainer"/>.
+            ///
             /// Only the child elements are removed, not the element itself.
             ///
             /// Using default options, only the immediate children are removed and no additional action is performed.

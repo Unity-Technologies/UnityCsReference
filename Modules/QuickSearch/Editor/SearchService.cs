@@ -144,6 +144,8 @@ namespace UnityEditor.Search
         /// </summary>
         public static void RefreshWindows()
         {
+            // TODO SearchWindowUpdate: Add more context on what has changed and if a refresh is needed.
+
             if (EditorApplication.isPlayingOrWillChangePlaymode && !SearchSettings.refreshSearchWindowsInPlayMode)
                 return;
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -178,9 +179,9 @@ namespace UnityEngine
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
         public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
 
-        public override string ToString() => ((int)(m_rawData & 0xFFFFFFFF)).ToString();
-        public string ToString(string format) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format);
-        public string ToString(string format, IFormatProvider formatProvider) => ((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider);
+        public override string ToString() => m_rawData.ToString(CultureInfo.InvariantCulture);
+        public string ToString(string format) => m_rawData.ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(string format, IFormatProvider formatProvider) => m_rawData.ToString(format, formatProvider);
 
 
 
@@ -190,12 +191,14 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static EntityId Parse(string input)
         {
-            EntityId res = EntityId.None;
+            if (string.IsNullOrEmpty(input))
+                return EntityId.None;
 
-            if (int.TryParse(input, out var intResult))
-                res = FromULong(MagicVersion | (ulong)(uint)intResult);
+            // Same as native StringToEntityId: full raw UInt64, no reinterpretation (see EntityID.cpp).
+            if (!ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ulongResult))
+                return EntityId.None;
 
-            return res;
+            return FromULong(ulongResult);
         }
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]

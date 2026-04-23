@@ -79,11 +79,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void SetupNodeEvents(ExecutionNode node)
         {
-            node.StatusRefreshed -= OnStatusRefreshed;
-            node.StatusRefreshed += OnStatusRefreshed;
+            node.StatusRefreshed -= InvokeStatusRefreshed;
+            node.StatusRefreshed += InvokeStatusRefreshed;
         }
 
-        void OnStatusRefreshed()
+        void InvokeStatusRefreshed()
         {
             StatusRefreshed?.Invoke();
         }
@@ -114,6 +114,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 };
             }
         }
+
+        internal ExecutionState GetStageState(ExecutionStage stage) => Stages[(int)stage].State;
 
         internal ReadOnlyCollection<ExecutionNode> GetNodes(ExecutionStage stage)
         {
@@ -157,7 +159,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             Stages[(int)stage].Nodes.Add(node);
             SetupNodeEvents(node);
-            StatusRefreshed?.Invoke();
+            InvokeStatusRefreshed();
         }
 
         private void ValidateHasNotStarted()
@@ -232,6 +234,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Grab the current stage's nodes to run and set it State to running.
             Stages[(int)stage].State = ExecutionState.Running;
+            InvokeStatusRefreshed();
             var stageNodes = Stages[(int)stage].Nodes;
             List<ExecutionNode> nodesToRun;
             int completed;
@@ -258,10 +261,56 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             // Update the final stage state with the results.
-            var success = completed == stageNodes.Count;
-            Stages[(int)stage].State = success ? ExecutionState.Completed : ExecutionState.Failed;
+            var state = ComputeStageStateOnCompletion(stageNodes);
+            Stages[(int)stage].State = state;
+            InvokeStatusRefreshed();
 
-            return success;
+            return state == ExecutionState.Completed;
+        }
+
+        static ExecutionState ComputeStageStateOnCompletion(List<ExecutionNode> nodes)
+        {
+            var count = nodes.Count;
+            var idleCount = 0;
+            var runningCount = 0;
+            var completedCount = 0;
+            var failedCount = 0;
+            var abortedCount = 0;
+
+            foreach (var node in nodes)
+            {
+                switch (node.State)
+                {
+                    case ExecutionState.Idle:
+                        idleCount++;
+                        break;
+                    case ExecutionState.Running:
+                        runningCount++;
+                        break;
+                    case ExecutionState.Completed:
+                        completedCount++;
+                        break;
+                    case ExecutionState.Failed:
+                        failedCount++;
+                        break;
+                    case ExecutionState.Aborted:
+                        abortedCount++;
+                        break;
+                }
+            }
+
+            if (failedCount > 0)
+                return ExecutionState.Failed;
+
+            if (abortedCount > 0)
+                return ExecutionState.Aborted;
+
+            if (completedCount == count)
+                return ExecutionState.Completed;
+
+            // This should not happen as it means some nodes are not in a final state after execution, which should not be the case. Log this for investigation.
+            Debug.LogAssertion($"Execution stage completed with some nodes not in completed state. Idle: {idleCount}, Running: {runningCount}, Completed: {completedCount}, Failed: {failedCount}, Aborted: {abortedCount}");
+            return ExecutionState.Failed;
         }
 
         static void RemoveCompletedTasks(List<Task> runningTasks)

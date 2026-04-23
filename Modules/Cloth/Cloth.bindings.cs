@@ -2,14 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
-using System.Runtime.InteropServices;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 namespace UnityEngine
@@ -50,7 +45,7 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform), typeof(SkinnedMeshRenderer))]
     [NativeHeader("Modules/Cloth/Cloth.h")]
     [NativeClass("Unity::Cloth")]
-    public sealed partial class Cloth : UnityEngine.Component
+    public sealed partial class Cloth : Component
     {
         extern public Vector3[] vertices {[NativeName("GetPositions")] get; }
         extern public Vector3[] normals {[NativeName("GetNormals")] get; }
@@ -100,13 +95,6 @@ namespace UnityEngine
 
         extern public float clothSolverFrequency { get; set; }
 
-        [Obsolete("Parameter solverFrequency is obsolete and no longer supported. Please use clothSolverFrequency instead.")]
-        public bool solverFrequency
-        {
-            get { return clothSolverFrequency > 0.0f; }
-            set { clothSolverFrequency = value == true ? 120f : 0.0f; }  // use the default value
-        }
-
         extern public bool useTethers { get; set; }
 
         extern public float stiffnessFrequency { get; set; }
@@ -117,23 +105,17 @@ namespace UnityEngine
 
         extern public void ClearTransformMotion();
 
-        extern public void GetSelfAndInterCollisionIndices([NotNull] List<UInt32> indices);
+        extern public void GetSelfAndInterCollisionIndices([NotNull] List<uint> indices);
 
-        extern public void SetSelfAndInterCollisionIndices([NotNull] List<UInt32> indices);
+        extern public void SetSelfAndInterCollisionIndices([NotNull] List<uint> indices);
 
-        extern public void GetVirtualParticleIndices([NotNull] List<UInt32> indicesOutList);
+        extern public void GetVirtualParticleIndices([NotNull] List<uint> indicesOutList);
 
-        extern public void SetVirtualParticleIndices([NotNull] List<UInt32> indicesIn);
+        extern public void SetVirtualParticleIndices([NotNull] List<uint> indicesIn);
 
         extern public void GetVirtualParticleWeights([NotNull] List<Vector3> weightsOutList);
 
         extern public void SetVirtualParticleWeights([NotNull] List<Vector3> weights);
-
-        [Obsolete("useContinuousCollision is no longer supported, use enableContinuousCollision instead")]
-        public float useContinuousCollision { get; set; }
-
-        [Obsolete("Deprecated.Cloth.selfCollisions is no longer supported since Unity 5.0.", true)]
-        public bool selfCollision { get; }
 
         extern public void SetEnabledFading(bool enabled, float interpolationTime);
 

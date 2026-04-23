@@ -11,7 +11,6 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;

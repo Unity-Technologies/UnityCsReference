@@ -13,8 +13,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Create some list of data, here simply numbers in interval [1, 1000]
             const int itemCount = 1000;
             var items = new List<string>(itemCount);
@@ -51,8 +51,8 @@ namespace UnityEditor.UIElements.Samples
                 // Note: selectedIndices can also be used to get the selected items from the itemsSource directly or
                 // by using listView.viewController.GetItemForIndex(index).
             };
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

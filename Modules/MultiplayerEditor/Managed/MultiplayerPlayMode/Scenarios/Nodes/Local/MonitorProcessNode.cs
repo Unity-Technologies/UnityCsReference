@@ -11,6 +11,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
+    [CanRecoverFromDomainReload]
     class MonitorProcessNode : ExecutionNode
     {
         const int k_ProcessCheckIntervalMS = 120;
@@ -47,6 +48,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 await StopProcessNode.StopProcessAsync(process, CancellationToken.None);
             }
         }
+
+        protected override Task ExecuteResumeAsync(CancellationToken cancellationToken)
+            => ExecuteAsync(cancellationToken);
 
         internal static async Task<Process> FindProcessById(int processId, CancellationToken cancellationToken)
         {

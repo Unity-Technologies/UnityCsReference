@@ -25,6 +25,8 @@ internal class VisualTreeAssetExporter
 
         public string indent { get; set; } = "    ";
 
+        public bool consistentAttributeOrder = false;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string[] ignoreAttributeList { get; set; } = Array.Empty<string>();
 
@@ -215,7 +217,18 @@ internal class VisualTreeAssetExporter
 
         WriteElementTypeName(ref ctx, resolvedTypename.prefix, resolvedTypename.typename);
         WriteXmlNamespaces(ref ctx, asset.namespaceDefinitions);
-        WriteProperties(ref ctx, asset.properties);
+
+        if (asset.properties != null && ctx.options.consistentAttributeOrder)
+        {
+            using var _ = ListPool<UxmlProperty>.Get(out var properties);
+            properties.AddRange(asset.properties);
+            properties.Sort((lhs, rhs) => string.CompareOrdinal(lhs.name, rhs.name));
+            WriteProperties(ref ctx, properties);
+        }
+        else
+        {
+            WriteProperties(ref ctx, asset.properties);
+        }
 
         if (asset is VisualElementAsset vea)
         {

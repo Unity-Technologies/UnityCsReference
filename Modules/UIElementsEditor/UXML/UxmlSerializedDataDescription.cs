@@ -127,6 +127,24 @@ namespace UnityEditor.UIElements
                     yield return m_SerializedAttributes[index];
         }
 
+        /// <summary>
+        /// Checks if the attribute name is recognized by this element type (either as a current or obsolete attribute).
+        /// </summary>
+        /// <param name="attributeName">The UXML attribute name to check.</param>
+        /// <returns>True if the attribute is recognized (current or obsolete), false otherwise.</returns>
+        public bool HasAttribute(string attributeName)
+        {
+            // Check if the attribute exists in the current attributes
+            if (m_UxmlNameToIndex.ContainsKey(attributeName))
+                return true;
+
+            // Check if the attribute exists as an obsolete name
+            if (m_ObsoleteUxmlNameToIndexes.ContainsKey(attributeName))
+                return true;
+
+            return false;
+        }
+
         public UxmlSerializedAttributeDescription FindAttributeWithPropertyName(string name)
         {
             if (m_PropertyNameToIndex.TryGetValue(name, out var index))

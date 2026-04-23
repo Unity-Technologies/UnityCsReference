@@ -16,20 +16,20 @@ namespace UnityEditor.TextCore.Text
 {
     internal static class FontAsset_CreationMenu
     {
-        [MenuItem("Assets/Create/Text Core/Font Asset/SDF", false, 100)]
+        [MenuItem("Assets/Create/UI Toolkit/Text/Font Asset/SDF", false, 800)]
         static void CreateFontAssetSDF()
         {
             CreateFontAsset(GlyphRenderMode.SDFAA);
         }
 
-        [MenuItem("Assets/Create/Text Core/Font Asset/Bitmap", false, 105)]
+        [MenuItem("Assets/Create/UI Toolkit/Text/Font Asset/Bitmap", false, 801)]
         static void CreateFontAssetBitmap()
         {
             CreateFontAsset(GlyphRenderMode.SMOOTH);
         }
 
 
-        [MenuItem("Assets/Create/Text Core/Font Asset/Color", false, 110)]
+        [MenuItem("Assets/Create/UI Toolkit/Text/Font Asset/Color", false, 802)]
         static void CreateFontAssetColor()
         {
             CreateFontAsset(GlyphRenderMode.COLOR);

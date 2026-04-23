@@ -306,9 +306,11 @@ namespace UnityEditor.Search
             return value;
         }
 
-        static class SerializedPropertyColumnProvider
+        internal static class SerializedPropertyColumnProvider
         {
-            [SearchColumnProvider("SerializedProperty")]
+            public const string k_ProviderId = "SerializedProperty";
+
+            [SearchColumnProvider(k_ProviderId)]
             public static void InitializeSerializedPropertyColumn(SearchColumn column)
             {
                 column.getter = args => Getter(args.item, args.column);

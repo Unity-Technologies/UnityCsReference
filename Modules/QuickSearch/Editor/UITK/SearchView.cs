@@ -357,7 +357,7 @@ namespace UnityEditor.Search
 
             AddToFilteredItems(tempItems);
             m_FilteredItems.SortAllGroups();
-            RefreshContent(RefreshFlags.ItemsChanged);
+            RefreshContent(RefreshFlags.ItemsChanged | RefreshFlags.QueryCompleted);
 
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
@@ -381,7 +381,7 @@ namespace UnityEditor.Search
             }
 
             m_FilteredItems.SortAllGroups();
-            RefreshContent(RefreshFlags.ItemsChanged);
+            RefreshContent(RefreshFlags.ItemsChanged | RefreshFlags.QueryCompleted);
 
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
@@ -410,7 +410,7 @@ namespace UnityEditor.Search
             }
 
             m_FilteredItems.SortAllGroups();
-            RefreshContent(RefreshFlags.ItemsChanged);
+            RefreshContent(RefreshFlags.ItemsChanged | RefreshFlags.QueryCompleted);
 
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
@@ -618,7 +618,6 @@ namespace UnityEditor.Search
         private void OnQueryRequestFinished(SearchContext context)
         {
             UpdateSelectionFromIds();
-            Utils.CallDelayed(() => RefreshContent(RefreshFlags.QueryCompleted));
         }
 
         private void UpdateSelectionFromIds()

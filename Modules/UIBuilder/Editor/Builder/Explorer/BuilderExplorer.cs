@@ -6,14 +6,18 @@ using System;
 using UnityEngine.UIElements;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
 using UnityEngine;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<UnityEngine.UIElements.VisualElement>;
 
 namespace Unity.UI.Builder
 {
     internal abstract class BuilderExplorer : BuilderPaneContent, IBuilderSelectionNotifier
     {
         static readonly string s_UssClassName = "unity-builder-explorer";
+        protected static readonly string kSearchFieldName = "search-field";
+        protected static readonly string kNoResultsName = "no-results-label";
 
         [Flags]
         internal enum BuilderElementInfoVisibilityState
@@ -35,6 +39,8 @@ namespace Unity.UI.Builder
         protected BuilderSelection m_Selection;
         bool m_SelectionMadeExternally;
         [SerializeField] protected BuilderElementInfoVisibilityState m_ElementInfoVisibilityState;
+        protected ToolbarSearchField m_SearchField;
+        protected VisualElement m_NoResultsLabel;
 
         BuilderClassDragger m_ClassDragger;
         BuilderExplorerDragger m_ExplorerDragger;
@@ -189,7 +195,7 @@ namespace Unity.UI.Builder
         {
             if (element == null ||
                 (changeType & (BuilderHierarchyChangeType.ChildrenAdded |
-                               BuilderHierarchyChangeType.ChildrenRemoved)) != 0)
+                    BuilderHierarchyChangeType.ChildrenRemoved)) != 0)
             {
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
                 m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;
@@ -236,6 +242,79 @@ namespace Unity.UI.Builder
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
             }
             m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;
+        }
+
+        protected void UpdateSearchFilter(string value)
+        {
+            // When search is cleared and there's a selection, expand the tree to show the selected elements
+            List<VisualElement> previousSelection = null;
+            if (string.IsNullOrEmpty(value) && !m_Selection.isEmpty)
+            {
+                previousSelection = new List<VisualElement>(m_Selection.selection);
+            }
+
+            FilterView(value);
+            var noResults = !string.IsNullOrEmpty(value) && (m_ElementHierarchyView.treeRootItems == null || m_ElementHierarchyView.treeRootItems.Count == 0);
+            m_NoResultsLabel.style.display = noResults ? DisplayStyle.Flex : DisplayStyle.None;
+            m_ElementHierarchyView.style.display = noResults ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (previousSelection != null)
+            {
+                foreach (var selectedElement in previousSelection)
+                {
+                    m_ElementHierarchyView.RecursivelyExpandToItem(selectedElement.parent);
+                }
+            }
+        }
+
+        public void FilterView(string value)
+        {
+            var items = string.IsNullOrEmpty(value) ? m_ElementHierarchyView.unfilteredTreeRootItems : FilterTreeViewItems(m_ElementHierarchyView.unfilteredTreeRootItems, value);
+
+            m_ElementHierarchyView.treeRootItems = items;
+            m_ElementHierarchyView.treeView.SetRootItems(m_ElementHierarchyView.treeRootItems);
+            m_ElementHierarchyView.treeView.RefreshItems();
+        }
+
+        protected virtual IList<TreeViewItem> FilterTreeViewItems(IEnumerable<TreeViewItem> items, string searchText)
+        {
+            var filteredItems = new List<TreeViewItem>();
+
+            if (items == null)
+                return filteredItems;
+
+            foreach (var item in items)
+            {
+                var nameMatch = item.data.name.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                var classMatch = item.data.ClassListContains(searchText);
+                var typeMatch = item.data.GetUxmlTypeName().Contains(searchText, StringComparison.OrdinalIgnoreCase);
+
+                var selector = item.data.GetStyleComplexSelector();
+                if (selector != null)
+                {
+                    var selectorStr = StyleSheetToUss.ToUssSelector(selector);
+                    nameMatch = selectorStr.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (nameMatch || classMatch || typeMatch)
+                {
+                    var itemCopy = new TreeViewItem(item.id, item.data);
+                    filteredItems.Add(itemCopy);
+                }
+
+                if (item.children != null)
+                {
+                    // Recursively filter children
+                    var filteredChildren = FilterTreeViewItems(item.children, searchText);
+                    foreach (var filteredChild in filteredChildren)
+                    {
+                        var itemCopy = new TreeViewItem(filteredChild.id, filteredChild.data);
+                        filteredItems.Add(itemCopy);
+                    }
+                }
+            }
+
+            return filteredItems;
         }
     }
 }

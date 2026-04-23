@@ -198,7 +198,29 @@ namespace Unity.GraphToolkit.Editor
 
             var groups = new List<GroupModel>();
 
-            originalGroups.Sort(GroupItemOrderComparer.Default);
+            // Cache the depth values of each group for more efficient sorting
+            var depthByGroup = new Dictionary<GroupModel, int>();
+            foreach (var group in originalGroups)
+            {
+                var depth = 0;
+                GroupModelBase current = group;
+                while (current.ParentGroup != null)
+                {
+                    ++depth;
+                    current = current.ParentGroup;
+                }
+                depthByGroup[group] = depth;
+            }
+
+            originalGroups.Sort((a, b) =>
+            {
+                var depthCompare = depthByGroup[a].CompareTo(depthByGroup[b]);
+                if (depthCompare != 0)
+                    return depthCompare;
+
+                // if both groups are at the same depth, fall back to standard group comparison function
+                return GroupItemOrderComparer.Default.Compare(a, b);
+            });
 
             // Make sure all groups inside other selected groups are ignored.
             foreach (var group in originalGroups)
@@ -454,9 +476,7 @@ namespace Unity.GraphToolkit.Editor
                 for (int i = 0; i < copyPasteData.m_VariableGroupPaths.Count; ++i)
                 {
                     var groupPath = copyPasteData.m_VariableGroupPaths[i];
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var newGroup = graphModel.CreateGroup(groupPath.m_Path.Last());
-#pragma warning restore UA2001
+                    GroupModel newGroup;
                     if (groupPath.m_Path.Length == 2)
                     {
                         if (operation == PasteOperation.Duplicate)
@@ -466,21 +486,20 @@ namespace Unity.GraphToolkit.Editor
                             {
                                 var parentGroup = originalGroup.ParentGroup as GroupModel;
 
+                                newGroup = graphModel.CreateGroup(groupPath.m_Path[^1], parentGroup: parentGroup);
                                 parentGroup?.InsertItem(newGroup, parentGroup.Items.IndexOf(originalGroup) + 1);
                             }
                             else
                             {
-                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-#pragma warning restore UA2001
+                                var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels[0];
+                                newGroup = graphModel.CreateGroup(groupPath.m_Path[^1], parentGroup: parentGroup);
                                 parentGroup.InsertItem(newGroup);
                             }
                         }
                         else
                         {
-                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-#pragma warning restore UA2001
+                            var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels[0];
+                            newGroup = graphModel.CreateGroup(groupPath.m_Path[^1], parentGroup: parentGroup);
                             parentGroup.InsertItem(newGroup);
                             bbUpdater?.SetGroupModelExpanded(parentGroup, true);
                         }
@@ -489,16 +508,18 @@ namespace Unity.GraphToolkit.Editor
                     {
                         int j = copyPasteData.m_VariableGroupPaths.FindLastIndex(i - 1, t => t.m_Path.Length == groupPath.m_Path.Length - 1); // our parent group is always the first item above us that have one less path element.
                         var parentGroup = createdGroups[j];
+                        newGroup = graphModel.CreateGroup(groupPath.m_Path[^1], parentGroup: parentGroup);
                         parentGroup.InsertItem(newGroup);
                     }
 
-                    bbUpdater?.SetGroupModelExpanded(newGroup, groupPath.m_Expanded);
+                    bbUpdater?.SetGroupModelExpanded(newGroup, false);
                     createdGroups.Add(newGroup);
-                    selectionStateUpdater.SelectElement(newGroup, true);
 
                     // ReSharper disable once SuspiciousTypeConversion.Global
                     (newGroup as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
+
+                selectionStateUpdater?.SelectElements(createdGroups, true);
             }
 
             if (copyPasteData.m_VariableDeclarations.HasAny())
@@ -539,19 +560,6 @@ namespace Unity.GraphToolkit.Editor
                     (newDeclaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
 
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var duplicatedParents = new HashSet<GroupModelBase>(duplicatedModels.Select(t => t.ParentGroup));
-#pragma warning restore UA2001
-
-                foreach (var duplicatedParent in duplicatedParents)
-                {
-                    var current = duplicatedParent;
-                    while (current != null)
-                    {
-                        bbUpdater?.SetGroupModelExpanded(current, true);
-                        current = current.ParentGroup;
-                    }
-                }
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 

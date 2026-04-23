@@ -67,6 +67,9 @@ namespace UnityEngine.UIElements
         [SerializeField]
         bool m_ImportedWithWarnings;
 
+        [SerializeField]
+        bool m_ImportedWithObsoleteAttributeNames;
+
         /// <summary>
         /// Whether there were warnings encountered while importing the UXML File
         /// </summary>
@@ -74,6 +77,12 @@ namespace UnityEngine.UIElements
         {
             get { return m_ImportedWithWarnings; }
             internal set { m_ImportedWithWarnings = value; }
+        }
+
+        internal bool importedWithObsoleteAttributeNames
+        {
+            get => m_ImportedWithObsoleteAttributeNames;
+            set => m_ImportedWithObsoleteAttributeNames = value;
         }
 
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();

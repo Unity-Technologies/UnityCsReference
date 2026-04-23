@@ -243,7 +243,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             return m_Instance != null &&
                    m_Instance.IsFreeRunMode() &&
-                   m_Instance.HasDeployedAndRun();
+                   m_Instance.HasReachedRunStage();
         }
 
         private void OnCallToActionButtonClicked(ClickEvent ev)

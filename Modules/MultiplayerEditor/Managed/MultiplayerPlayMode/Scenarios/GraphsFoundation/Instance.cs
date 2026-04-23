@@ -29,7 +29,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
 
         private CancellationTokenSource m_FreeRunCancelTokenSource;
-        [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] private bool m_Drifted;
         [SerializeField] private InstanceStatusData m_StatusData;
         [SerializeField] private InstanceController m_InstanceController;
@@ -44,7 +43,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal IEnumerable<InstanceControllerDecorator> DecoratorsControllers => m_DecoratorsControllers;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
-        internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
+        internal bool HasReachedRunStage()
+        {
+            return StatusData.StageStatuses != null &&
+                StatusData.StageStatuses.Length > (int)ExecutionStage.Run &&
+                StatusData.StageStatuses[(int)ExecutionStage.Run].State is not ExecutionState.Idle and not ExecutionState.Invalid;
+        }
         internal bool Drifted
         {
             get => m_Drifted;
@@ -126,7 +130,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal void Reset()
         {
             // Reset the instance properties for a new run
-            m_HasDeployedAndRun = false;
             m_StatusData = default;
 
             // Reset the Execution graph
@@ -316,9 +319,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             bool stageSuccess = await m_ExecutionGraph.RunOrResumeAsync(executionStage, cancellationToken, Name);
 
             // Await and signal Instance completion after final stage
-            if (executionStage == ExecutionStage.Run)
+            if (executionStage == ExecutionStage.Cleanup)
             {
-                m_HasDeployedAndRun = true;
                 m_FreeRunCancelTokenSource = null;
             }
 
@@ -333,7 +335,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 ref var stageStatus = ref m_StatusData.StageStatuses[(int)stage];
 
-                stageStatus.Aggregate(m_ExecutionGraph.GetNodes(stage));
+                stageStatus.Aggregate(m_ExecutionGraph.GetStageState(stage), m_ExecutionGraph.GetNodes(stage));
                 m_StatusData.OverallStatus.Aggregate(stageStatus);
 
                 if (stageStatus.IdleNodesCount < stageStatus.NodesCount)

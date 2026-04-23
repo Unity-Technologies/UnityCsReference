@@ -2990,6 +2990,28 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Generates a unique title for a group among its sibling <see cref="GroupModel"/> instances
+        /// (direct children of <paramref name="parentGroup"/>).
+        /// </summary>
+        /// <param name="originalName">The desired title for the group.</param>
+        /// <param name="parentGroup">The parent whose direct child <see cref="GroupModel"/> titles define the title uniqueness scope.</param>
+        /// <returns>A title that does not collide with existing sibling group titles in that scope.</returns>
+        protected virtual string GenerateGraphGroupUniqueName(string originalName, GroupModelBase parentGroup = null)
+        {
+            var names = new List<string>();
+            if (parentGroup != null)
+            {
+                foreach (var item in parentGroup.Items)
+                {
+                    if (item is GroupModel groupModel)
+                        names.Add(groupModel.Title);
+                }
+            }
+
+            return ObjectNames.GetUniqueName(names.ToArray(), originalName ?? string.Empty);
+        }
+
+        /// <summary>
         /// Creates a constant of the type represented by <paramref name="constantTypeHandle"/>
         /// </summary>
         /// <param name="constantTypeHandle">The type of the constant that will be created.</param>
@@ -3056,12 +3078,13 @@ namespace Unity.GraphToolkit.Editor
         /// Instantiates a group model.
         /// </summary>
         /// <param name="title">The title of the group model</param>
+        /// <param name="parentGroup">The parent whose direct child <see cref="GroupModel"/> titles define the title uniqueness scope.</param>
         /// <returns>The created group model.</returns>
-        protected virtual GroupModel InstantiateGroup(string title)
+        protected virtual GroupModel InstantiateGroup(string title, GroupModelBase parentGroup = null)
         {
             var groupType = GroupModelType;
             var group = ModelHelpers.Instantiate<GroupModel>(groupType);
-            group.Title = title;
+            group.Title = GenerateGraphGroupUniqueName(title, parentGroup);
             group.GraphModel = this;
             return group;
         }
@@ -3092,12 +3115,13 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="title">The title of the new group.</param>
         /// <param name="items">An optional list of items that will be added to the group.</param>
+        /// <param name="parentGroup">The parent whose direct child <see cref="GroupModel"/> titles define the title uniqueness scope.</param>
         /// <returns>A new group.</returns>
-        public virtual GroupModel CreateGroup(string title, IReadOnlyCollection<IGroupItemModel> items = null)
+        public virtual GroupModel CreateGroup(string title, IReadOnlyCollection<IGroupItemModel> items = null, GroupModelBase parentGroup = null)
         {
             using var assetDirtyScope = AssetDirtyScope();
 
-            var group = InstantiateGroup(title);
+            var group = InstantiateGroup(title, parentGroup);
             AddGroup(group);
 
             if (items != null)

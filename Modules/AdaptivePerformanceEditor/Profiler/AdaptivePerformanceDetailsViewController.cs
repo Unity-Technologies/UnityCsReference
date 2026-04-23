@@ -3,21 +3,38 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Unity.Profiling.Editor;
-using UnityEngine.UIElements;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
+using UnityEngine.UIElements;
 using UnityEditor.AdaptivePerformance.UI.Editor;
-using UnityEngine.Assemblies;
+using Unity.Profiling.Editor;
 
 namespace UnityEditor.AdaptivePerformance
 {
 
     internal class AdaptivePerformanceDetailsViewController : ProfilerModuleViewController
     {
+        sealed class ScalerElement
+        {
+            public readonly VisualElement container;
+            public readonly Label viewName;
+            public readonly VisualElement barFill;
+            public readonly Label maxLabel;
+            public readonly Label currentLabel;
+
+            public ScalerElement(VisualElement container, Label viewName, VisualElement barFill, Label maxLabel, Label currentLabel)
+            {
+                this.container = container;
+                this.viewName = viewName;
+                this.barFill = barFill;
+                this.maxLabel = maxLabel;
+                this.currentLabel = currentLabel;
+            }
+        }
+
         const string k_UxmlResourceName = "AdaptivePerformance/UXML/Profiler/AdaptivePerformanceDetailsView.uxml";
         const string k_UxmlResourceNameScaler = "AdaptivePerformance/UXML/Profiler/AdaptivePerformanceScalerElement.uxml";
         const string k_ResourceNameScalerStyle = "AdaptivePerformance/StyleSheets/Profiler/AdaptivePerformanceScalerElement.uss";
@@ -26,6 +43,10 @@ namespace UnityEditor.AdaptivePerformance
         VisualElement m_view;
         Label m_DetailsViewLabel;
         VisualElement m_Scalers;
+        VisualTreeAsset m_ScalerTree;
+        StyleSheet m_ScalerStyle;
+        Label m_EmptyScalerLabel = new  Label(L10n.Tr("No Scaler data"));
+        readonly List<ScalerElement> m_ScalerElements = new List<ScalerElement>();
         UsageDial m_UsageDial;
         Label m_BottleneckLabel;
         VisualElement m_BottleneckIcon;
@@ -50,6 +71,8 @@ namespace UnityEditor.AdaptivePerformance
         {
             var apDetailsView = EditorGUIUtility.LoadRequired(k_UxmlResourceName) as VisualTreeAsset;
             var apDetailStyle = EditorGUIUtility.LoadRequired(k_ResourceNameStyle) as StyleSheet;
+            m_ScalerTree = EditorGUIUtility.LoadRequired(k_UxmlResourceNameScaler) as VisualTreeAsset;
+            m_ScalerStyle = EditorGUIUtility.LoadRequired(k_ResourceNameScalerStyle) as StyleSheet;
             m_view = apDetailsView.Instantiate();
             m_view.styleSheets.Add(apDetailStyle);
             m_DetailsViewLabel = m_view.Q<Label>("ap-details-view-label");
@@ -70,36 +93,6 @@ namespace UnityEditor.AdaptivePerformance
                 m_UsageDial.ShowLabel = false;
                 m_UsageDial?.SetThresholds(40, 75);
                 m_UsageDial.Value = 31;
-            }
-
-            // Create settings for each one of the scalers
-            Type ti = typeof(AdaptivePerformanceScaler);
-            var scalerTree = EditorGUIUtility.LoadRequired(k_UxmlResourceNameScaler) as VisualTreeAsset;
-            var scalerStyle = EditorGUIUtility.LoadRequired(k_ResourceNameScalerStyle) as StyleSheet;
-
-            foreach (Assembly asm in CurrentAssemblies.GetLoadedAssemblies())
-            {
-                foreach (Type t in asm.GetTypes())
-                {
-                    if (ti.IsAssignableFrom(t) && !t.IsAbstract)
-                    {
-                        var container = scalerTree.CloneTree();
-                        container.styleSheets.Add(scalerStyle);
-                        var viewName = container.Q<Label>("ap-scaler-element-label");
-                        var barFill = container.Q<VisualElement>("ap-scaler-element-bar-fill");
-                        var maxLabel = container.Q<Label>("ap-scaler-element-max-label");
-                        var currentLabel = container.Q<Label>("ap-scaler-element-level-label");
-
-                        viewName.text = $"{t.Name.Replace("Adaptive", "")}";
-                        viewName.name = $"{t.Name}-element-label";
-                        barFill.name = $"{t.Name}-element-bar-fill";
-                        maxLabel.name = $"{t.Name}-element-max-label";
-                        currentLabel.name = $"{t.Name}-element-current-label";
-                        currentLabel.style.bottom = m_midDistance;
-
-                        m_Scalers.Add(container);
-                    }
-                }
             }
 
             ReloadData(ProfilerWindow.selectedFrameIndex);
@@ -130,6 +123,7 @@ namespace UnityEditor.AdaptivePerformance
                 if (frameData == null || !frameData.valid)
                 {
                     m_DetailsViewLabel.text = "No Adaptive Performance Frame Data.";
+                    PopulateScalers(Array.Empty<AdaptivePerformanceProfilerStats.ScalerInfo>());
                     return;
                 }
 
@@ -231,43 +225,140 @@ namespace UnityEditor.AdaptivePerformance
                     }
                 }
 
-                var returnVal = Array.Empty<AdaptivePerformanceProfilerStats.ScalerInfo>();
                 var scalerInfos = GetScalerFromProfilerStream(selectedFrameIndexInt32);
-                unsafe
+                PopulateScalers(scalerInfos);
+            }
+        }
+
+        void PopulateScalers(AdaptivePerformanceProfilerStats.ScalerInfo[] scalerInfos)
+        {
+            if (m_Scalers == null || m_ScalerTree == null || m_ScalerStyle == null)
+                return;
+
+            if (scalerInfos == null || scalerInfos.Length == 0)
+            {
+                ShowEmptyScalerLabel();
+                SetUnusedScalerElementsHidden(0);
+                return;
+            }
+
+            HideEmptyScalerLabel();
+            SortScalerInfosByName(scalerInfos);
+            EnsureScalerElementPoolSize(scalerInfos.Length);
+
+            unsafe
+            {
+                for (var i = 0; i < scalerInfos.Length; ++i)
                 {
-                    foreach (var scalerInfo in scalerInfos)
+                    var scalerInfo = scalerInfos[i];
+                    var scalerName = GetScalerName(scalerInfo.scalerName);
+                    var scalerElement = m_ScalerElements[i];
+
+                    scalerElement.container.style.display = DisplayStyle.Flex;
+                    scalerElement.viewName.text = scalerName.Replace("Adaptive", "");
+                    scalerElement.viewName.name = $"{scalerName}-element-label";
+                    scalerElement.barFill.name = $"{scalerName}-element-bar-fill";
+                    scalerElement.maxLabel.name = $"{scalerName}-element-max-label";
+                    scalerElement.currentLabel.name = $"{scalerName}-element-current-label";
+                    scalerElement.currentLabel.style.bottom = m_midDistance;
+                    scalerElement.currentLabel.text = $"{scalerInfo.currentLevel}";
+
+                    if (scalerInfo.enabled == 0)
                     {
-                        Marshal.Copy((IntPtr)scalerInfo.scalerName, m_arr, 0, m_arraySize);
-                        var scalerName = Encoding.ASCII.GetString(m_arr).Replace(" ", "");
-                        scalerName = scalerName.Replace("\0", "");
-                        var viewName = m_Scalers.Q<Label>($"{scalerName}-element-label");
-                        var barFill = m_Scalers.Q<VisualElement>($"{scalerName}-element-bar-fill");
-                        var maxLabel = m_Scalers.Q<Label>($"{scalerName}-element-max-label");
-                        var currentLabel = m_Scalers.Q<Label>($"{scalerName}-element-current-label");
-
-                        if (currentLabel == null || maxLabel == null || barFill == null || viewName == null)
-                            continue;
-
-                        currentLabel.text = $"{scalerInfo.currentLevel}";
-                        if (scalerInfo.enabled == 0)
-                        {
-                            barFill.style.backgroundColor = m_inactiveColor;
-                        }
-                        else
-                        {
-                            if (scalerInfo.applied == 1)
-                                barFill.style.backgroundColor = m_appliedScalerColor;
-                            else
-                                barFill.style.backgroundColor = m_unappliedScalerColor;
-                        }
-                        var height = new Length((((float)scalerInfo.currentLevel / (float)scalerInfo.maxLevel)) * 100.0f, LengthUnit.Percent);
-                        barFill.style.height = height;
-                        barFill.style.bottom = m_scalerOffset;
-                        barFill.style.rotate = m_scalerRotate;
-                        maxLabel.text = $"{scalerInfo.maxLevel}";
+                        scalerElement.barFill.style.backgroundColor = m_inactiveColor;
                     }
+                    else if (scalerInfo.applied == 1)
+                    {
+                        scalerElement.barFill.style.backgroundColor = m_appliedScalerColor;
+                    }
+                    else
+                    {
+                        scalerElement.barFill.style.backgroundColor = m_unappliedScalerColor;
+                    }
+
+                    var height = scalerInfo.maxLevel > 0
+                        ? new Length((float)scalerInfo.currentLevel / scalerInfo.maxLevel * 100.0f, LengthUnit.Percent)
+                        : new Length(0, LengthUnit.Percent);
+                    scalerElement.barFill.style.height = height;
+                    scalerElement.barFill.style.bottom = m_scalerOffset;
+                    scalerElement.barFill.style.rotate = m_scalerRotate;
+                    scalerElement.maxLabel.text = $"{scalerInfo.maxLevel}";
                 }
             }
+
+            SetUnusedScalerElementsHidden(scalerInfos.Length);
+        }
+
+        internal static void SortScalerInfosByName(AdaptivePerformanceProfilerStats.ScalerInfo[] scalerInfos)
+        {
+            if (scalerInfos == null || scalerInfos.Length <= 1)
+                return;
+
+            Array.Sort(scalerInfos, CompareScalerInfosByName);
+        }
+
+        static unsafe int CompareScalerInfosByName(AdaptivePerformanceProfilerStats.ScalerInfo left, AdaptivePerformanceProfilerStats.ScalerInfo right)
+        {
+            for (var i = 0; i < m_arraySize; ++i)
+            {
+                var leftByte = left.scalerName[i];
+                var rightByte = right.scalerName[i];
+
+                if (leftByte != rightByte)
+                    return leftByte.CompareTo(rightByte);
+
+                if (leftByte == 0)
+                    return 0;
+            }
+
+            return 0;
+        }
+
+        void EnsureScalerElementPoolSize(int scalerCount)
+        {
+            while (m_ScalerElements.Count < scalerCount)
+            {
+                var container = m_ScalerTree.CloneTree();
+                container.styleSheets.Add(m_ScalerStyle);
+
+                var viewName = container.Q<Label>("ap-scaler-element-label");
+                var barFill = container.Q<VisualElement>("ap-scaler-element-bar-fill");
+                var maxLabel = container.Q<Label>("ap-scaler-element-max-label");
+                var currentLabel = container.Q<Label>("ap-scaler-element-level-label");
+
+                if (currentLabel == null || maxLabel == null || barFill == null || viewName == null)
+                    throw new InvalidOperationException("AdaptivePerformanceScalerElement.uxml is missing required elements.");
+
+                var scalerElement = new ScalerElement(container, viewName, barFill, maxLabel, currentLabel);
+                m_ScalerElements.Add(scalerElement);
+                m_Scalers.Add(container);
+            }
+        }
+
+        void SetUnusedScalerElementsHidden(int usedScalerCount)
+        {
+            for (var i = usedScalerCount; i < m_ScalerElements.Count; ++i)
+                m_ScalerElements[i].container.style.display = DisplayStyle.None;
+        }
+
+        void ShowEmptyScalerLabel()
+        {
+            if (m_EmptyScalerLabel.parent != m_Scalers)
+                m_Scalers.Add(m_EmptyScalerLabel);
+
+            m_EmptyScalerLabel.style.display = DisplayStyle.Flex;
+        }
+
+        void HideEmptyScalerLabel()
+        {
+            if (m_EmptyScalerLabel.parent == m_Scalers)
+                m_EmptyScalerLabel.style.display = DisplayStyle.None;
+        }
+
+        unsafe string GetScalerName(byte* scalerNamePtr)
+        {
+            Marshal.Copy((IntPtr)scalerNamePtr, m_arr, 0, m_arraySize);
+            return Encoding.ASCII.GetString(m_arr).Replace(" ", string.Empty).Replace("\0", string.Empty);
         }
 
         static int ExtractAdaptivePerformanceCounterValueInt(UnityEditor.Profiling.FrameDataView frameData, string counterName)

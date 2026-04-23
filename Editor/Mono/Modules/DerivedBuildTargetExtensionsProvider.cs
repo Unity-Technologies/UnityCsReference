@@ -166,6 +166,13 @@ namespace UnityEditor.Modules
             if (platformInfo.buildTarget != m_BuildTarget)
                 return;
 
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(sdkPlatformProvider.guid);
+            if (basePlatformGuid != baseIBuildTarget.Guid)
+                return;
+
+            if (!BuildTargetDiscovery.BuildPlatformModuleIsInstalled(sdkPlatformProvider.guid))
+                return;
+
             var derivedBuildTarget = new ConfigurableDerivedBuildTarget(sdkPlatformProvider, platformInfo, baseIBuildTarget);
             var derivedBuildTargetExtensions = new ConfigurableDerivedBuildTargetExtensions(sdkPlatformProvider, derivedBuildTarget, createBaseBuildProfileExtensionFunction);
             m_DerivedBuildTargetExtensions.Add(derivedBuildTarget.Guid, derivedBuildTargetExtensions);

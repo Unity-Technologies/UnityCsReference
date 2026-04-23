@@ -83,12 +83,12 @@ namespace UnityEditor
             switch (type)
             {
                 case SelectionType.Additive:
-                    if (incoming.target == null)
+                    if (incoming.targetId == EntityId.None)
                         return existing;
 
                     newSelection = new Object[existing.Length + 1];
                     Array.Copy(existing, newSelection, existing.Length);
-                    newSelection[existing.Length] = incoming.target;
+                    newSelection[existing.Length] = Object.FindObjectFromInstanceID(incoming.targetId);
                     return newSelection;
 
                 // if target is in selection as a child, remove the parent. otherwise this is equivalent to
@@ -118,7 +118,7 @@ namespace UnityEditor
 
                 case SelectionType.Normal:
                 default:
-                    return new [] { incoming.target };
+                    return new [] { Object.FindObjectFromInstanceID(incoming.targetId) };
             }
         }
 
@@ -139,11 +139,13 @@ namespace UnityEditor
                 overlapping.Add(o);
 
             var selectionPiercingMenu = new DropdownMenu();
-            foreach (var obj in overlapping)
+            foreach (var pickedObj in overlapping)
             {
-                var showInSelection = forceSubtractive && Selection.Contains(obj.target);
-                selectionPiercingMenu.AppendAction(obj.target.name,
-                    _ => Selection.objects = GetNewSelection(Selection.objects, obj, GetSelectionType(EventModifiers.None, forceSubtractive)),
+                var obj = Object.FindObjectFromInstanceID(pickedObj.targetId);
+                var showInSelection = forceSubtractive && Selection.Contains(pickedObj.targetId);
+                var displayName = obj != null ? obj.name : $"Entity {pickedObj.targetId}";
+                selectionPiercingMenu.AppendAction(displayName,
+                    _ => Selection.objects = GetNewSelection(Selection.objects, pickedObj, GetSelectionType(EventModifiers.None, forceSubtractive)),
                     _ => showInSelection ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
 

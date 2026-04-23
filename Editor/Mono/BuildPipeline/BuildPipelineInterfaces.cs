@@ -534,37 +534,36 @@ namespace UnityEditor.Build
     {
         ///<summary>Implement this interface to receive a callback before a shader snippet is compiled.</summary>
         ///<remarks>
-        ///  <para>When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:um-shader-variants). Unity creates variants for some or all of the possible combinations of keywords you define in the shader source file.
+        ///When you build your application, Unity compiles each shader source file into multiple [shader variants](xref:um-shader-variants). Unity creates variants for some or all the possible combinations of keywords you define in the shader source file.
         ///
-        ///                    You can use <c>OnProcessShader</c> to iterate through each shader and variant Unity is about to compile, and exclude ('strip') variants that use keywords or keyword combinations you don't need. If you strip variants, you can greatly reduce build size, build times, and how much runtime memory Unity uses.
+        ///You can use `OnProcessShader` to iterate through each shader and variant Unity is about to compile, and exclude ('strip') variants that use keywords or keyword combinations you don't need. If you strip variants, you can reduce build size, build times, and how much runtime memory Unity uses.
         ///
-        ///                    For example you can use <c>OnProcessShader</c> to remove variants that use the following:
+        ///For example, you can use `OnProcessShader` to remove variants that use the following:
         ///
         ///- Keywords that aren't needed for the current target platform.
         ///- Combinations of keywords that are never used.
         ///- Keywords you only use in your debug builds.
         ///
-        ///                    Unity invokes the <c>OnProcessShader</c> callback in both Player and AssetBundle builds.
+        ///Unity invokes the `OnProcessShader` callback in both Player and AssetBundle builds. If there are any shaders already in the cache, then this method isn't invoked for those shaders. To ensure the callback runs for all shaders, perform a [clean build](xref:um-build-clean-build). To run it for a specific shader, modify that shader or one of its dependent assets.
         ///
-        ///                    You can [check what shader variants you have in your project](xref:um-shader-how-many-variants) to help you identify keywords and variants to strip.
+        ///To help you identify keywords and variants to strip, you can [check what shader variants you have in your project](xref:um-shader-how-many-variants). For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called `DEBUG` in your shader code using `#pragma multi_compile _ DEBUG`, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
         ///
-        ///                    For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called <c>DEBUG</c> in your shader code using <c>#pragma multi_compile _ DEBUG</c>, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
+        ///The script does the following when you build your application:
         ///
-        ///                    The script does the following when you build your application:
+        ///1. Creates a class that implements the `IPreprocessShaders` interface.
+        ///2. Creates an instance of `ShaderKeyword` with the name of the keyword.
+        ///3. Implements the `OnProcessShader` callback function and iterates over the `data` list, which contains every variant in the shader.
+        ///4. Uses `data.shaderKeywordSet.IsEnabled()` to check if each variant uses the keyword.
+        ///5. Uses `data.removeAt()` to strip a shader variant if it contains the keyword and you've disabled **Development build** in **[Build Settings](xref:um-build-settings)**.
+        /// 
+        ///You can also find local keywords. You must create the `ShaderKeyword` instance inside the implementation of `OnProcessShader`, so you can use the callback's `shader` variable in the `ShaderKeyword` constructor.
         ///
-        ///1. Creates a class that implements the <c>IPreprocessShaders</c> interface.
-        ///2. Creates an instance of <c>ShaderKeyword</c> with the name of the keyword.
-        ///3. Implements the <c>OnProcessShader</c> callback function and iterates over the <c>data</c> list, which contains every variant in the shader.
-        ///4. Uses <c>data.shaderKeywordSet.IsEnabled()</c> to check if each variant uses the keyword.
-        ///5. Uses <c>data.removeAt()</c> to strip a shader variant if it contains the keyword and you've disabled **Development build** in [Build Settings](xref:um-build-settings).</para>
-        ///  <para>You can also find local keywords. You must create the <c>ShaderKeyword</c> instance inside the implementation of <c>OnProcessShader</c>, so you can use the callback's <c>shader</c> variable in the <c>ShaderKeyword</c> constructor.
+        ///For example if you declare a local keyword called `RED` in your shader code using `#pragma multi_compile_local _ RED`, the following script finds and strips shader variants that use the keyword.
+        /// 
+        ///If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
         ///
-        ///                    For example if you declare a local keyword called <c>RED</c> in your shader code using <c>#pragma multi_compile_local _ RED</c>, the following script finds and strips shader variants that use the keyword.</para>
-        ///  <para>If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
+        ///Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
         ///
-        ///                    Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
-        ///
-        ///</para>
         ///</remarks>
         ///<param name="shader">The shader that Unity is about to compile.</param>
         ///<param name="snippet">Details about the specific shader code being compiled.</param>

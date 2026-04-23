@@ -28,6 +28,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         const string k_AnimationPropertyHeader = "animation-propertyHeader";
         const string k_AnimationControls = "animation-controls";
         const string k_AnimationTimeArea = "animation-timeArea";
+        const string k_AnimationTimeAreaLeftOverlap = "animation-timeArea-leftOverlap";
+        const string k_AnimationTimeAreaRightOverlap = "animation-timeArea-rightOverlap";
 
         const string k_AnimationContentOverlay = "animation-contentsOverlay";
 
@@ -102,6 +104,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         HierarchyElement m_HierarchyElement;
         AnimationEventTimelineElement m_AnimationEventTimeline;
         TimelineFoundation.TimeArea m_TimeArea;
+        VisualElement m_TimeAreaLeftOverlap;
+        VisualElement m_TimeAreaRightOverlap;
 
         VisualElement m_OnboardingPanel;
         Label m_OnboardingPanelLabel;
@@ -134,9 +138,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         HeaderResizeManipulator m_HeaderResizeManipulator;
 
         PlayHeadOverlay m_PlayHeadOverlay;
-        PlayHeadOverlay m_DurationOverlay;
         TimeDragManipulator m_PlayHeadDragManipulator;
-        TimeDragManipulator m_DurationDragManipulator;
         TimeDragManipulator m_TimeAreaDragManipulator;
 
         EventsOverlay m_EventsOverlay;
@@ -190,14 +192,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_Canvas = new CanvasManager(m_CanvasOverlayManager, state);
             m_CanvasOverlayManager.canvas = m_Canvas;
 
-            m_DurationOverlay = new PlayHeadOverlay();
-            m_DurationOverlay.name = "preview-duration-overlay";
-            m_CanvasOverlayManager.AddOverlay(m_DurationOverlay);
-
-            m_DurationDragManipulator = new TimeDragManipulator(m_Canvas);
-            SetupTimeDragManipulator(m_DurationDragManipulator);
-            m_DurationOverlay.AddManipulator(m_DurationDragManipulator);
-
             m_PlayHeadOverlay = new PlayHeadOverlay(PickingMode.Position);
             m_CanvasOverlayManager.AddOverlay(m_PlayHeadOverlay);
 
@@ -247,6 +241,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AnimationControls = this.Q(className: k_AnimationControls);
 
             m_OnboardingPanel = this.Q<VisualElement>(className: k_AnimationOnboarding);
+            m_OnboardingPanel.EnableInClassList(k_AnimationOnboarding + "__hidden", true);
+
             m_OnboardingPanelLabel = m_OnboardingPanel.Q<Label>();
             m_OnboardingPanelButton = m_OnboardingPanel.Q<Button>();
             m_OnboardingPanelButton.clicked += () =>
@@ -256,12 +252,18 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             };
 
             m_DopeSheetElement = this.Q<DopeSheetElement>(className: DopeSheetElement.ussClassName);
+            m_DopeSheetElement.EnableInClassList(DopeSheetElement.ussClassName + "__hidden", true);
+
             m_CurveEditorElement = this.Q<CurveEditorElement>(className: CurveEditorElement.ussClassName);
+            m_CurveEditorElement.EnableInClassList(CurveEditorElement.ussClassName + "__hidden", true);
 
             m_HierarchyElement = this.Q<HierarchyElement>(className: HierarchyElement.ussClassName);
             m_AnimationEventTimeline = this.Q<AnimationEventTimelineElement>(className: AnimationEventTimelineElement.ussClassName);
             m_TimeArea = this.Q<TimelineFoundation.TimeArea>(className: k_AnimationTimeArea);
             m_TimeArea.TimeFormat = state.timeFormat;
+
+            m_TimeAreaLeftOverlap = this.Q(className: k_AnimationTimeAreaLeftOverlap);
+            m_TimeAreaRightOverlap = this.Q(className: k_AnimationTimeAreaRightOverlap);
 
             m_AddPropertyButton = this.Q<Button>(className: k_AnimationAddPropertyButton);
             m_AddPropertyButton.clicked += () =>
@@ -499,6 +501,12 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 m_CanvasOverlayManager.UpdateOverlays();
             }
 
+            m_TimeAreaLeftOverlap.style.width = m_AnimEditor.state.zeroTimePixel + 1;
+
+            var left = Math.Max(0f, m_AnimEditor.state.TimeToPixel(state.timeRange.y));
+            m_TimeAreaRightOverlap.style.left = left;
+            m_TimeAreaRightOverlap.style.width = m_TimeArea.layout.width - left;
+
             StyleColor color = StyleKeyword.Null;
             if (state.recording)
                 color = AnimationMode.recordedPropertyColor.RGBMultiplied(recordColorMultiplier);
@@ -554,8 +562,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
             // Overlays
             m_CanvasOverlayManager.EnableInClassList(k_AnimationContentOverlay + "__hidden", state.disabled);
-
-            m_DurationOverlay.time = new DiscreteTime(state.timeRange.y);
 
             // Time Area
             m_TimeArea.SetEnabled(!state.disabled);

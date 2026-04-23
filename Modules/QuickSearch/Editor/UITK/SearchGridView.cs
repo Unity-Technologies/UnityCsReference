@@ -48,7 +48,6 @@ namespace UnityEditor.Search
     class SearchGridView : SearchElement, IResultView
     {
         private bool m_Disposed;
-        private Delayer m_Throttler;
         private readonly GridView m_GridView;
         private const float m_LabelHeight = 23f;
         private readonly SearchResultViewGlobalEventHandler m_GlobalKeyboardHandler;
@@ -56,7 +55,7 @@ namespace UnityEditor.Search
         internal static string resultViewId = "grid";
         public string ViewId => resultViewId;
         bool IResultView.ShowNoResultMessage => true;
-        bool IResultView.UpdateNeeded => false;
+        public virtual bool UpdateNeeded { get; private set; }
 
         public event IResultView.SelectionChangedEventHandler SelectionChanged;
 
@@ -170,11 +169,6 @@ namespace UnityEditor.Search
         {
             base.OnAttachToPanel(evt);
 
-            m_Throttler = Delayer.Throttle(o =>
-            {
-                UpdateView();
-            }, TimeSpan.FromSeconds(SearchView.resultViewUpdateThrottleDelay), true);
-
             m_GridView.itemsBuilt += OnItemsBuilt;
             m_GridView.itemsChosen += OnItemsChosen;
             m_GridView.selectedIndicesChanged += HandleItemsSelected;
@@ -185,8 +179,6 @@ namespace UnityEditor.Search
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            m_Throttler?.Dispose();
-
             UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_GlobalKeyboardHandler.UnregisterGlobalEventHandler();
 
@@ -261,6 +253,7 @@ namespace UnityEditor.Search
             m_GridView.fixedItemWidth = m_ViewModel.itemIconSize;
             m_GridView.ComputeGridSize();
             m_GridView.RefreshItems();
+            UpdateNeeded = false;
         }
 
         void IResultView.UpdateView()
@@ -270,12 +263,16 @@ namespace UnityEditor.Search
 
         bool IResultView.UpdateViewIncremental()
         {
-            return false;
+            if (UpdateNeeded)
+                UpdateView();
+            return UpdateNeeded;
         }
 
         bool IResultView.UpdateViewIncrementalTimed(TimeSpan timeLimit)
         {
-            return false;
+            if (UpdateNeeded)
+                UpdateView();
+            return UpdateNeeded;
         }
 
         void IResultView.SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
@@ -307,12 +304,6 @@ namespace UnityEditor.Search
         {
             if (!m_Disposed)
             {
-                if (disposing)
-                {
-                    m_Throttler?.Dispose();
-                    m_Throttler = null;
-                }
-
                 m_Disposed = true;
             }
         }
@@ -325,12 +316,7 @@ namespace UnityEditor.Search
 
         void Refresh()
         {
-            // We are throttling the update of the view so that we don't call
-            // RefreshItems on the list view too often. We chose a throttle
-            // delay of 50ms (20fps), which we believe still gives a good enough visual
-            // feedback. If the throttler is not currently throttling, the execution will go through
-            // which means there is no delay.
-            m_Throttler?.Execute();
+            UpdateNeeded = true;
         }
 
         #region Global Event Handler

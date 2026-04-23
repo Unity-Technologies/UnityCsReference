@@ -1734,8 +1734,7 @@ namespace UnityEditor.Search.Providers
 
         static void Refresh()
         {
-            EditorApplication.delayCall -= SearchService.RefreshWindows;
-            EditorApplication.delayCall += SearchService.RefreshWindows;
+            SearchService.RefreshWindows();
         }
 
         static void ClearUserInfo()

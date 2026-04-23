@@ -450,6 +450,11 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "ClearAllEditorPreviewTileAssets")]
         public extern void ClearAllEditorPreviewTiles();
 
+        [RequiredByNativeCode]
+        private ITilemap GetITilemapProxy()
+        {
+            return ITilemap.CreateInstanceFromTilemap(this);
+        }
 
         [RequiredByNativeCode]
         internal void GetLoopEndedForTileAnimationCallbackSettings(ref bool hasEndLoopForTileAnimationCallback)

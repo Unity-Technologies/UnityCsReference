@@ -423,7 +423,7 @@ namespace UnityEngine
             if (type == TagType.Unknown)
                 return false;
 
-            if (type == TagType.Link && link != null && link.Length > 0)
+            if ((type == TagType.Link || type == TagType.Hyperlink) && link != null && link.Length > 0)
             {
                 linkData = new string(link);
                 return true;

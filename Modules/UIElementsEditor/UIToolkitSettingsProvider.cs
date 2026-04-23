@@ -29,6 +29,7 @@ namespace UnityEditor.UIElements
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
+        const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableUSSStatsWindow = "enable-uss-stats-window";
@@ -136,6 +137,14 @@ namespace UnityEditor.UIElements
             {
                 UIToolkitProjectSettings.enableAbsolutePositionPlacement = e.newValue;
             });
+
+            var consistentAttributeOrderingToggle = rootElement.Q<Toggle>(k_ConsistentAttributeOrdering);
+            consistentAttributeOrderingToggle.SetValueWithoutNotify(UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting);
+            consistentAttributeOrderingToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting = e.newValue;
+            });
+
             if (!Unsupported.IsDeveloperMode())
             {
                 VisualElement container = rootElement.Q("developer-settings-container");

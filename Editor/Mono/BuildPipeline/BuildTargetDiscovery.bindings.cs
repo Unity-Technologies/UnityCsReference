@@ -1000,7 +1000,13 @@ namespace UnityEditor
                 return platformGuid;
 
             if (s_BuildTargetToPlatformGUID.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
-                return basePlatformGuid;
+            {
+                if (platformInfo.subtarget != StandaloneBuildSubtarget.Server)
+                    return basePlatformGuid;
+                
+                if (TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
+                    return serverPlatformGuid;
+            }
 
             return EmptyGuid;
         }
@@ -1060,7 +1066,7 @@ namespace UnityEditor
                 }
 
                 var basePlatformGuid = new GUID(sdkPlatformInfo.basePlatformGuid);
-                var (baseBuildTarget, _) = GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
+                var (baseBuildTarget, baseSubtarget) = GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
 
                 var flags = PlatformAttributes.None;
                 switch (sdkPlatformInfo.flags.platformType)
@@ -1092,6 +1098,7 @@ namespace UnityEditor
                     supportedPlatformGuids = sdkPlatformInfo.flags.platformType == SDKPlatformType.MultiTarget ?
                         Array.ConvertAll(sdkPlatformInfo.supportedPlatformGuids, s => new GUID(s)) : Array.Empty<GUID>(),
                     buildTarget = baseBuildTarget,
+                    subtarget = baseSubtarget,
                     displayName = displayName,
                     description = sdkPlatformInfo.description ?? string.Empty,
                     instructions = sdkPlatformInfo.instructions ?? string.Empty,

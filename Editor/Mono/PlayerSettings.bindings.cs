@@ -57,8 +57,9 @@ namespace UnityEditor
     // Must be in sync with Il2CppLTOMode enum in SerializationMetaFlags.h
     public enum Il2CppLTOMode
     {
-        Full = 0,
+        None = 0,
         Thin = 1,
+        Full = 2,
     }
 
     // Mac fullscreen mode

@@ -130,6 +130,18 @@ namespace UnityEditor.UIElements
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
 
+        /// <summary>
+        /// Controls whether URL paths are automatically upgraded during import.
+        /// When false, the importer will not set importerWithUpdatedUrls flag.
+        /// </summary>
+        internal bool enableAutomaticUrlUpgrades = true;
+
+        /// <summary>
+        /// Controls whether obsolete attribute names are automatically renamed during import.
+        /// When false, the importer will not set importedWithObsoleteAttributeNames flag.
+        /// </summary>
+        internal bool enableAutomaticAttributeRenames = true;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal UXMLImporterImpl()
         {
@@ -1217,7 +1229,7 @@ namespace UnityEditor.UIElements
                                     asset = ExtractSubAssetFromParent(asset, assetType, response);
 
                                     // Update the url value so it is correct when saved back to UXML
-                                    if (response.resolvedUrlChanged)
+                                    if (response.resolvedUrlChanged && enableAutomaticUrlUpgrades)
                                     {
                                         attrValue = URIHelpers.MakeAssetUri(asset);
                                         vta.importerWithUpdatedUrls = true;
@@ -1232,12 +1244,16 @@ namespace UnityEditor.UIElements
                     };
 
                     // Since a deprecated attribute name may be shared by multiple attributes, we apply it to every matching occurrence.
-                    foreach (var obsoleteAttribute in uxmlSerializedDataDescription.FindAttributesWithObsoleteUxmlName(attrName))
+                    if (enableAutomaticAttributeRenames)
                     {
-                        if (UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, obsoleteAttribute, cc))
+                        foreach (var obsoleteAttribute in uxmlSerializedDataDescription.FindAttributesWithObsoleteUxmlName(attrName))
                         {
-                            // Upgrade the attribute name
-                            attrName = obsoleteAttribute.name;
+                            if (UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, obsoleteAttribute, cc))
+                            {
+                                // Upgrade the attribute name
+                                attrName = obsoleteAttribute.name;
+                                vta.importedWithObsoleteAttributeNames = true;
+                            }
                         }
                     }
                 }

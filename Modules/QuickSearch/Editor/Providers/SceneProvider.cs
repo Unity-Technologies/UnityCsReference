@@ -18,7 +18,7 @@ namespace UnityEditor.Search.Providers
         private SceneQueryEngine m_SceneQueryEngine;
 
         internal static event Action<SceneProvider> s_QueueProviderRefresh;
-        static bool s_Init;
+        bool m_Init;
 
         readonly struct GameObjectData
         {
@@ -46,12 +46,12 @@ namespace UnityEditor.Search.Providers
 
             onEnable = () =>
             {
-                if (!s_Init)
+                if (!m_Init)
                 {
                     SearchMonitor.sceneChanged += InvalidateScene;
                     SearchMonitor.documentsInvalidated += Refresh;
                     SearchMonitor.objectChanged += OnObjectChanged;
-                    s_Init = true;
+                    m_Init = true;
                 }
             };
 
@@ -165,8 +165,8 @@ namespace UnityEditor.Search.Providers
 
         private void Refresh()
         {
-            EditorApplication.delayCall -= SearchService.RefreshWindows;
-            EditorApplication.delayCall += SearchService.RefreshWindows;
+            // TODO SearchWindowUpdate: Add more context on what has changed and if a refresh is needed.
+            SearchService.RefreshWindows();
             s_QueueProviderRefresh?.Invoke(this);
         }
 
@@ -180,6 +180,7 @@ namespace UnityEditor.Search.Providers
         private void InvalidateScene()
         {
             m_HierarchyChanged = true;
+            // TODO SearchWindowUpdate: Add more context on what has changed and if a refresh is needed.
             Refresh();
         }
 

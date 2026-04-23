@@ -57,6 +57,8 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             if (!go.TryGetComponent<Light>(out var light))
                 return;
+
+            Undo.RecordObject(light, "Change light type");
             light.type = (LightType)value;
             EditorUtility.SetDirty(light);
         }
@@ -74,6 +76,8 @@ namespace UnityEditor.Lighting.LightingSearch
                 return;
             if (IsAreaLight(light.type))
                 return;
+
+            Undo.RecordObject(light, "Change light mode");
             light.lightmapBakeType = value;
             EditorUtility.SetDirty(light);
         }
@@ -89,6 +93,8 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             if (!go.TryGetComponent<Light>(out var light))
                 return;
+
+            Undo.RecordObject(light, "Change light temperature");
             light.colorTemperature = value;
             EditorUtility.SetDirty(light);
         }
@@ -111,6 +117,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return;
 
+            Undo.RecordObject(meshRenderer, "Change rendering layer");
             meshRenderer.renderingLayerMask = value;
         }
 
@@ -130,6 +137,7 @@ namespace UnityEditor.Lighting.LightingSearch
             else
                 flag &= ~StaticEditorFlags.ContributeGI;
 
+            Undo.RecordObject(go, "Change contribute GI");
             GameObjectUtility.SetStaticEditorFlags(go, flag);
         }
 
@@ -145,6 +153,7 @@ namespace UnityEditor.Lighting.LightingSearch
         {
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer)) return;
 
+            Undo.RecordObject(meshRenderer, "Change receive GI");
             meshRenderer.receiveGI = value;
         }
 
@@ -161,6 +170,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return;
 
+            Undo.RecordObject(meshRenderer, "Change reflection probe usage");
             meshRenderer.reflectionProbeUsage = value;
         }
 
@@ -177,6 +187,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
                 return;
 
+            Undo.RecordObject(reflectionProbe, "Change reflection probe mode");
             reflectionProbe.mode = value;
         }
 
@@ -193,6 +204,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (!go.TryGetComponent<ReflectionProbe>(out var reflectionProbe))
                 return;
 
+            Undo.RecordObject(reflectionProbe, "Change reflection prbe resolution");
             reflectionProbe.resolution = value;
         }
 
@@ -203,6 +215,7 @@ namespace UnityEditor.Lighting.LightingSearch
 
         internal static void SetMixedLightingMode(LightingSettings lightingSettings, MixedLightingMode value)
         {
+            Undo.RecordObject(lightingSettings, "Change LigthingSettings mode");
             lightingSettings.mixedBakeMode = value;
         }
 
@@ -213,6 +226,7 @@ namespace UnityEditor.Lighting.LightingSearch
 
         internal static void SetLightmapCompression(LightingSettings lightingSettings, LightmapCompression value)
         {
+            Undo.RecordObject(lightingSettings, "Change LigthingSettings lightmap compression");
             lightingSettings.lightmapCompression = value;
         }
 
@@ -230,6 +244,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (material == null || !material.HasProperty(k_EmissionColor))
                 return;
 
+            Undo.RecordObject(material, "Change material emission color");
             material.SetColor(k_EmissionColor, color);
         }
 
@@ -246,6 +261,7 @@ namespace UnityEditor.Lighting.LightingSearch
             if (material == null)
                 return;
 
+            Undo.RecordObject(material, "Change material global illumination flags");
             material.globalIlluminationFlags = flags;
         }
     }
