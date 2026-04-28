@@ -648,8 +648,21 @@ namespace UnityEditor.Search.Providers
             public QueryPriceBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
                  : base(source, id, value, attr)
             {
-                int valueInt = Convert.ToInt32(value);
-                var labelValue = k_PriceRange.FirstOrDefault(c => (int)c.value == valueInt);
+                var labelValue = k_PriceRange[0];
+                if (!string.IsNullOrEmpty(value) && int.TryParse(value, out var valueInt))
+                {
+                    for (int i = 0; i < k_PriceRange.Length - 1; ++i)
+                    {
+                        var currentValue = (int)k_PriceRange[i].value;
+                        var nextValue = (int)k_PriceRange[i + 1].value;
+                        if (currentValue >= valueInt && currentValue < nextValue)
+                        {
+                            labelValue = k_PriceRange[i];
+                            break;
+                        }
+                    }
+                }
+
                 if (labelValue.displayName != null)
                     label = labelValue.displayName;
             }
@@ -1183,7 +1196,7 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
-            if (doc.productDetail?.images.Length > 0)
+            if (doc?.productDetail?.images.Length > 0)
                 return (doc.lastPreview = FetchImage(doc.images, false, s_Previews) ?? doc.lastPreview);
 
             return null;

@@ -67,6 +67,7 @@ namespace Unity.VectorGraphics.Editor
     }
 
     /// <summary>The SVG importer class.</summary>
+    [HelpURL("https://docs.unity3d.com/Documentation/Manual/ui-systems/work-with-vector-graphics.html")]
     [Serializable]
     [ScriptedImporter(9, "svg")]
     public sealed class SVGImporter : ScriptedImporter

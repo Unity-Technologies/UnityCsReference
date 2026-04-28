@@ -207,6 +207,8 @@ namespace UnityEditor
 
         internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
 
+        internal static bool s_StylesInit = false;
+
         protected static class Styles
         {
             public static readonly GUIStyle preToolbar = "preToolbar";
@@ -261,6 +263,7 @@ namespace UnityEditor
             {
                 vcsRevertStyle.padding.right = 15;
                 vcsBarStyleTwoRows.fixedHeight *= 2;
+                s_StylesInit = true;
             }
         }
 
@@ -1482,6 +1485,12 @@ namespace UnityEditor
 
         void SetupPreviewDropdown(VisualElement header, List<IPreviewable> editorsWithPreviews, IPreviewable currentPreview)
         {
+            // Ensure styles are correctly initialized before doing the setup of the preview dropdown
+            // This can be called before Styles are initialized on domain reload. This function will
+            // be called multiple times in that context, the first call only might sometimes be invalid.
+            if(!s_StylesInit)
+                return;
+
             // Build the choices list with formatted titles.
             var choices = new List<string>();
             int selectedIndex = 0;
@@ -1815,7 +1824,7 @@ namespace UnityEditor
 
             foreach (var previewable in m_Previews)
             {
-                if (previewable.HasPreviewGUI())
+                if (previewable != null && previewable.HasPreviewGUI())
                     outEditorsWithPreview.Add(previewable);
             }
 

@@ -66,14 +66,20 @@ namespace UnityEngine.Audio
             {
                 fixed (RealtimeContext* pContext = &this)
                 {
-                    var processArguments = new IGeneratorProcessorExtensions.ProcessArguments { AudioBuffer = writeBuffer, Context = pContext, FrameCount = buffer.frameCount };
+                    var processArguments = new IGeneratorProcessorExtensions.ProcessArguments
+                    {
+                        AudioBuffer = writeBuffer,
+                        Context = pContext,
+                        FrameCount = buffer.frameCount,
+                        Self = generatorInstance.m_ProcessorInstance.Handle,
+                        GeneratorArguments = args
+                    };
 
                     generatorInstance.m_ProcessorInstance.Header->InvokeProcessor(ProcessorFunction.Process, &processArguments);
 
                     return processArguments.Result;
                 }
             }
-
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Globalization;
 using UnityEngine.Profiling;
 
 namespace UnityEngine.AdaptivePerformance
@@ -224,7 +225,78 @@ namespace UnityEngine.AdaptivePerformance
 
         private void LogPerformanceModeEvent(PerformanceMode performanceMode)
         {
-            APLog.Debug("[performance mode event] performance mode: {0}", performanceMode);
+            APLog.Debug("[performance mode event] performance mode: {0}, fps: {1}", performanceMode,  Application.targetFrameRate);
+        }
+
+        private void LogAdaptivePerformanceStatus()
+        {
+             m_FrameCount++;
+             if (m_FrameCount % LoggingFrequencyInFrames == 0)
+             {
+                 APLog.s_LogBuilder.Clear();
+                 APLog.s_LogBuilder.AppendLine(m_Subsystem.Stats);
+
+                 APLog.s_LogBuilder.Append("Performance level CPU=")
+                     .Append(m_PerformanceMetrics.CurrentCpuLevel)
+                     .Append('/')
+                     .Append(MaxCpuPerformanceLevel)
+                     .Append(" GPU=")
+                     .Append(m_PerformanceMetrics.CurrentGpuLevel)
+                     .Append('/')
+                     .Append(MaxGpuPerformanceLevel)
+                     .Append(" thermal warn=")
+                     .Append(m_ThermalMetrics.WarningLevel.ToString())
+                     .Append('(')
+                     .Append((int)m_ThermalMetrics.WarningLevel)
+                     .Append(") thermal level=")
+                     .Append(m_ThermalMetrics.TemperatureLevel.ToString("F2", CultureInfo.InvariantCulture))
+                     .Append(" mode=")
+                     .Append((m_DevicePerfControl != null
+                         ? m_DevicePerfControl.PerformanceControlMode
+                         : PerformanceControlMode.System).ToString())
+                     .AppendLine();
+
+                 AppendFrameTiming("Average GPU frametime", m_FrameTiming.AverageGpuFrameTime,
+                     m_FrameTiming.CurrentGpuFrameTime);
+                 AppendFrameTiming("Average CPU frametime", m_FrameTiming.AverageCpuFrameTime,
+                     m_FrameTiming.CurrentCpuFrameTime);
+                 AppendFrameTiming("Average frametime", m_FrameTiming.AverageFrameTime, m_FrameTiming.CurrentFrameTime);
+
+                 APLog.s_LogBuilder.Append("Bottleneck ")
+                     .Append(m_PerformanceMetrics.PerformanceBottleneck.ToString())
+                     .Append(", ThermalTrend ")
+                     .AppendLine(m_ThermalMetrics.TemperatureTrend.ToString("F3", CultureInfo.InvariantCulture));
+
+                 APLog.s_LogBuilder.Append("CPU Boost Mode ")
+                     .Append(m_PerformanceMetrics.CpuPerformanceBoost.ToString())
+                     .Append(", GPU Boost Mode ")
+                     .Append(m_PerformanceMetrics.GpuPerformanceBoost.ToString())
+                     .AppendLine();
+
+                 APLog.s_LogBuilder.Append("Cluster Info = Big Cores: ")
+                     .Append(m_PerformanceMetrics.ClusterInfo.BigCore)
+                     .Append(" Medium Cores: ")
+                     .Append(m_PerformanceMetrics.ClusterInfo.MediumCore)
+                     .Append(" Little Cores: ")
+                     .Append(m_PerformanceMetrics.ClusterInfo.LittleCore)
+                     .AppendLine();
+
+                 if (m_FrameTiming.AverageFrameTime > 0.0f)
+                 {
+                     APLog.s_LogBuilder.Append("FPS = ")
+                         .AppendLine(
+                             (1.0f / m_FrameTiming.AverageFrameTime).ToString("F2", CultureInfo.InvariantCulture));
+                 }
+                 else
+                 {
+                     APLog.s_LogBuilder.AppendLine("FPS = N/A");
+                 }
+
+                 APLog.s_LogBuilder.Append("Performance Mode = ")
+                     .Append(m_PerformanceMode.ToString())
+                     .AppendLine();
+                 APLog.LogMessage(APLog.s_LogBuilder.ToString());
+             }
         }
 
         private static string ToStringWithSign(int x)
@@ -279,23 +351,9 @@ namespace UnityEngine.AdaptivePerformance
             if (Profiler.enabled)
                 CollectProfilerStats();
 
-            if (APLog.enabled && LoggingFrequencyInFrames > 0)
+            if (APLog.ShouldLog() && LoggingFrequencyInFrames > 0)
             {
-                m_FrameCount++;
-                if (m_FrameCount % LoggingFrequencyInFrames == 0)
-                {
-                    APLog.Debug(m_Subsystem.Stats);
-                    APLog.Debug("Performance level CPU={0}/{1} GPU={2}/{3} thermal warn={4}({5}) thermal level={6} mode={7}", m_PerformanceMetrics.CurrentCpuLevel, MaxCpuPerformanceLevel,
-                        m_PerformanceMetrics.CurrentGpuLevel, MaxGpuPerformanceLevel, m_ThermalMetrics.WarningLevel, (int)m_ThermalMetrics.WarningLevel, m_ThermalMetrics.TemperatureLevel, m_DevicePerfControl.PerformanceControlMode);
-                    APLog.Debug("Average GPU frametime = {0} ms (Current = {1} ms)", m_FrameTiming.AverageGpuFrameTime * 1000.0f , m_FrameTiming.CurrentGpuFrameTime * 1000.0f);
-                    APLog.Debug("Average CPU frametime = {0} ms (Current = {1} ms)", m_FrameTiming.AverageCpuFrameTime * 1000.0f, m_FrameTiming.CurrentCpuFrameTime * 1000.0f);
-                    APLog.Debug("Average frametime = {0} ms (Current = {1} ms)", m_FrameTiming.AverageFrameTime * 1000.0f, m_FrameTiming.CurrentFrameTime * 1000.0f);
-                    APLog.Debug("Bottleneck {0}, ThermalTrend {1}", m_PerformanceMetrics.PerformanceBottleneck, m_ThermalMetrics.TemperatureTrend);
-                    APLog.Debug("CPU Boost Mode {0}, GPU Boost Mode {1}", m_PerformanceMetrics.CpuPerformanceBoost, m_PerformanceMetrics.GpuPerformanceBoost);
-                    APLog.Debug("Cluster Info = Big Cores: {0} Medium Cores: {1} Little Cores: {2}", m_PerformanceMetrics.ClusterInfo.BigCore, m_PerformanceMetrics.ClusterInfo.MediumCore, m_PerformanceMetrics.ClusterInfo.LittleCore);
-                    APLog.Debug("FPS = {0}", 1.0f / m_FrameTiming.AverageFrameTime);
-                    APLog.Debug("Performance Mode = {0}", m_PerformanceMode);
-                }
+                LogAdaptivePerformanceStatus();
             }
         }
 
@@ -314,6 +372,16 @@ namespace UnityEngine.AdaptivePerformance
             AdaptivePerformanceProfilerStats.TemperatureTrendMarker.Sample(m_ThermalMetrics.TemperatureTrend);
             AdaptivePerformanceProfilerStats.BottleneckMarker.Sample((int)m_PerformanceMetrics.PerformanceBottleneck);
             AdaptivePerformanceProfilerStats.PerformanceModeMarker.Sample((int)m_PerformanceMode);
+        }
+
+        private void AppendFrameTiming(string label, float averageSeconds, float currentSeconds)
+        {
+            APLog.s_LogBuilder.Append(label)
+                .Append(" = ")
+                .Append((averageSeconds * 1000.0f).ToString("F2", CultureInfo.InvariantCulture))
+                .Append(" ms (Current = ")
+                .Append((currentSeconds * 1000.0f).ToString("F2", CultureInfo.InvariantCulture))
+                .AppendLine(" ms)");
         }
 
         private void AccumulateTimingValue(ref float accu, float newValue)

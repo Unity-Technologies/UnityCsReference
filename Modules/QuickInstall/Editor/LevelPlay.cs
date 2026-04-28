@@ -3,52 +3,30 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.QuickInstall;
-using UnityEngine.Analytics;
-using System;
 
 namespace UnityEditor.LevelPlay
 {
+    [InitializeOnLoad]
     static class LevelPlayInstaller
     {
         static readonly QuickInstaller s_Installer = new(new QuickInstallConfig
-            {
-                packageId = "com.unity.services.levelplay",
-                alternateInstallAssembly = "Unity.LevelPlay.Editor",
-                settingsProviderConfig = new SettingsProviderConfig
-                {
-                    installationHelpText =  "Drive higher revenue with the leading ads mediation platform from Unity. " +
-                                            "LevelPlay gives you access to a unified auction of all the leading SDK " +
-                                            "networks and bidders to maximize competition and increase your potential " +
-                                            "earnings. Serve a diverse mix of ad formats, get real time monetization " +
-                                            "data, A/B test adjustments to your ad strategy and more.",
-                    settingsRootTitle = "Project/Services/Ads Mediation (LevelPlay)",
-                    documentationUri = new Uri("https://developers.is.com/ironsource-mobile/unity/unity-plugin/"),
-                    installButtonText = "Install LevelPlay",
-                    downloadingText = "Downloading LevelPlay ...",
-                    installingText = "Installing LevelPlay ...",
-                    subtitle = "Monetize your game with Unity LevelPlay",
-                    showSubtitle = true,
-                    showDocumentationButton = true,
-                    showSeparator = true,
-                },
-                menuPath = "Services/Ads Mediation (LevelPlay)/Install",
-                analytic = new LevelPlayQuickInstallAnalytic()
-            });
-
-        [SettingsProvider]
-        internal static SettingsProvider CreateLevelPlayInstallerProvider()
-        {
-            return s_Installer.CreateSettingsProvider();
-        }
-
-        [InitializeOnLoadMethod]
-        internal static void InitializeMenuItem()
-        {
-            s_Installer.SetupMenu();
-        }
+            (
+                packageName: "com.unity.services.levelplay",
+                assembly: "Unity.LevelPlay.Editor",
+                settingsPageConfig: new SettingsPageConfig(
+                    body:   "Drive higher revenue with the leading ads mediation platform from Unity. " +
+                            "LevelPlay gives you access to a unified auction of all the leading SDK " +
+                            "networks and bidders to maximize competition and increase your potential " +
+                            "earnings. Serve a diverse mix of ad formats, get real time monetization " +
+                            "data, A/B test adjustments to your ad strategy and more.",
+                    settingsPath: "Project/Services/Ads Mediation (LevelPlay)",
+                    installButton: "Install LevelPlay",
+                    installing: "Installing LevelPlay ...",
+                    showSeparator: true,
+                    documentationUrl: "https://developers.is.com/ironsource-mobile/unity/unity-plugin/",
+                    subtitle: "Monetize your game with Unity LevelPlay"),
+                menuConfig: new MenuConfig ( menuPath: "Services/Ads Mediation (LevelPlay)/Install"),
+                analyticConfig: new AnalyticConfig(sendAssetInstallAnalytic: true)
+        ));
     }
-
-    // Schema com.unity3d.data.schemas.editor.analytics.levelplay_quickinstall_packageInstalled_v1
-    [AnalyticInfo(eventName: "levelplay_quickinstall_packageInstalled", vendorKey: "unity.quickInstall")]
-    class LevelPlayQuickInstallAnalytic : QuickInstallAnalytic { }
 }
