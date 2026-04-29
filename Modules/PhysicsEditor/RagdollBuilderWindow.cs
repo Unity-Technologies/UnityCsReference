@@ -13,6 +13,7 @@ namespace UnityEditor
     class RagdollBuilderWindow : EditorWindow
     {
         private RagdollBuilder ragdollBuilder;
+        private Vector2 scrollPosition;
 
         [MenuItem("GameObject/3D Object/Ragdoll...", false, 2000)]
         static void CreateWindow()
@@ -40,6 +41,8 @@ namespace UnityEditor
         {
             if (ragdollBuilder != null)
             {
+                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
                 EditorGUILayout.LabelField("Ragdoll Builder", EditorStyles.boldLabel);
                 EditorGUILayout.HelpBox(ragdollBuilder.helpString, MessageType.Info);
                 GUILayout.Space(10);
@@ -47,6 +50,8 @@ namespace UnityEditor
                 ragdollBuilder.OnGUI();
 
                 GUILayout.Space(10);
+
+                EditorGUILayout.EndScrollView();
 
                 GUILayout.BeginHorizontal();
                 GUI.enabled = ragdollBuilder.isValid;
