@@ -421,6 +421,17 @@ namespace UnityEditor.Build.Profile
             return scriptingBackend == ScriptingImplementation.Mono2x;
         }
 
+        public static bool IsBuildAutomationSupported(GUID platformGuid)
+        {
+            if (!BuildTargetDiscovery.TryGetBuildTarget(platformGuid, out var iBuildTarget))
+                return false;
+
+            if (!iBuildTarget.TryGetProperties<IBuildPlatformProperties>(out var buildPlatformProperties))
+                return false;
+
+            return buildPlatformProperties.SupportBuildAutomation;
+        }
+
         /// <summary>
         /// Retrieve the respective module name for a platform guid.
         /// </summary>

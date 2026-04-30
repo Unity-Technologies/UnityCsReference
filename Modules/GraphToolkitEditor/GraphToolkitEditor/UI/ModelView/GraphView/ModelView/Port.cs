@@ -464,7 +464,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The connector visual content generator.</returns>
         protected virtual Action<MeshGenerationContext> GetConnectorVisualContentGenerator()
         {
-            if (PortModel.DataTypeHandle.Resolve() == TypeHandle.Untyped.Resolve())
+            if (PortModel.PortDataType == typeof(Untyped))
                 return OnGenerateTriangleConnectorVisualContent;
 
             return OnGenerateCircleConnectorVisualContent;

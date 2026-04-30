@@ -96,5 +96,19 @@ namespace Unity.GraphToolkit
 
             return asmQualifiedTypeName.Replace(k_CoreClrSystemAssemblyName, s_CurrentSystemAssemblyName);
         }
+
+
+        /// <summary>
+        /// Check if the given type is serializable or a Unity Object reference.
+        /// </summary>
+        /// <remarks>
+        /// Use this method to determine if a given type is valid to be used as a Constant, which requires a value type that can be serialized.
+        /// </remarks>
+        /// <param name="type">The type for which to check.</param>
+        /// <returns>True if the given type is serializable or a Unity Object reference.</returns>
+        public static bool IsTypeSerializable(Type type)
+        {
+            return type != null && (type.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(type));
+        }
     }
 }

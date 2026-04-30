@@ -18,26 +18,24 @@ namespace UnityEditor.QuickInstall
             static Styles()
             {
                 verticalStyle.margin = new RectOffset(10, 10, 10, 10);
-
                 linkLabel.fontSize = EditorStyles.miniLabel.fontSize;
                 linkLabel.wordWrap = true;
-
                 textLabel.wordWrap = true;
             }
         }
 
-        readonly string m_PackageId;
-        readonly SettingsProviderConfig m_Config;
+        readonly string m_PackageName;
+        readonly SettingsPageConfig m_Config;
         PackageManager.Requests.AddRequest m_AddManagementRequest;
 
         internal QuickInstallSettingsProvider
         (
-            string packageId,
-            SettingsProviderConfig config,
+            string packageName,
+            SettingsPageConfig config,
             SettingsScope scopes = SettingsScope.Project
-        ) : base(config.settingsRootTitle, scopes)
+        ) : base(config.SettingsPath, scopes)
         {
-            m_PackageId = packageId;
+            m_PackageName = packageName;
             m_Config = config;
         }
 
@@ -51,65 +49,39 @@ namespace UnityEditor.QuickInstall
                 DrawPendingInstallation();
         }
 
-        protected void DrawPendingInstallation()
+        void DrawPendingInstallation()
         {
-            if (m_AddManagementRequest.IsCompleted)
-                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.downloadingText)));
-            else
-                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.installingText)));
+            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Installing)));
         }
 
-        protected void DrawInstallWindow()
+        void DrawInstallWindow()
         {
-            if (m_Config.showSubtitle && !string.IsNullOrEmpty(m_Config.subtitle))
-                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.subtitle)), Styles.textLabel);
-
-            if (m_Config.showSeparator)
-                DrawSeparator();
-
-            if (string.IsNullOrEmpty(m_Config.subtitle))
+            if (!string.IsNullOrEmpty(m_Config.Subtitle))
             {
-                // Use HelpBox for InAppPurchasing style
-                var onClick = () => Application.OpenURL(m_Config.documentationUri.AbsoluteUri);
-                HelpBox(L10n.Tr(m_Config.installationHelpText), L10n.Tr("Read more"), onClick);
-            }
-            else
-            {
-                // Use regular label for LevelPlay style
-                EditorGUILayout.LabelField(L10n.Tr(m_Config.installationHelpText), Styles.textLabel);
+                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Subtitle)), Styles.textLabel);
+                if (m_Config.ShowSeparator)
+                    DrawSeparator();
             }
 
-            if (m_Config.showDocumentationButton)
-            {
-                if (GUILayout.Button("Documentation", Styles.linkLabel))
-                    Application.OpenURL(m_Config.documentationUri.AbsoluteUri);
-                
-            }
-
+            EditorGUILayout.BeginVertical(Styles.verticalStyle);
+            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Body)), Styles.textLabel);
+            if (!string.IsNullOrEmpty(m_Config.DocumentationUrl) && GUILayout.Button(L10n.Tr("Read more"), Styles.linkLabel))
+                Application.OpenURL(m_Config.DocumentationUrl);
+            
+            EditorGUILayout.EndVertical();
             GUILayout.Space(15);
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent(L10n.Tr(m_Config.installButtonText))))
+            if (GUILayout.Button(new GUIContent(L10n.Tr(m_Config.InstallButton))))
             {
-                QuickInstaller.InstallPackage(m_PackageId, InstallMethod.ProjectSettings);
-                m_AddManagementRequest = PackageManager.Client.Add(m_PackageId);
+                m_AddManagementRequest = QuickInstaller.InstallPackage(m_PackageName, InstallMethod.ProjectSettings);
             }
         }
 
-        protected void DrawSeparator()
+        void DrawSeparator()
         {
             GUIStyle separator = "sv_iconselector_sep";
             GUILayout.Space(10);
             GUILayout.Label("", separator);
             GUILayout.Space(10);
-        }
-
-        protected void HelpBox(string text, string linkText, Action linkAction)
-        {
-            EditorGUILayout.BeginVertical(Styles.verticalStyle);
-            EditorGUILayout.LabelField(text, Styles.textLabel);
-            if (GUILayout.Button(linkText, Styles.linkLabel))
-                linkAction?.Invoke();
-            
-            EditorGUILayout.EndVertical();
         }
     }
 }

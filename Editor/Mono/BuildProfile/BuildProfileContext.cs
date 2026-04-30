@@ -386,40 +386,6 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static bool IsModuleInstalled(BuildProfile profile)
-        {
-            if (profile is null)
-            {
-                return false;
-            }
-
-            var buildTarget = profile.GetIBuildTarget();
-            return buildTarget != null;
-        }
-
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static bool IsBuildAutomationSupported(BuildProfile profile)
-        {
-            if (profile is null)
-            {
-                return false;
-            }
-
-            if (!IsModuleInstalled(profile))
-            {
-                return false;
-            }
-
-            var buildTarget = profile.GetIBuildTarget();
-            if (!buildTarget.TryGetProperties<IBuildPlatformProperties>(out var buildPlatformProperties))
-            {
-                return false;
-            }
-
-            return buildPlatformProperties.SupportBuildAutomation;
-        }
-
         /// <summary>
         /// List of missing platforms modules that are not installed, don't have a classic platform profile,
         /// and can be shown in the Build Settings window.

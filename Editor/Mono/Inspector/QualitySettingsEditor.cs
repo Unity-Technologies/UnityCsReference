@@ -115,6 +115,7 @@ namespace UnityEditor
             public static readonly GUIStyle kDefaultDropdown = "QualitySettingsDefault";
 
             public static readonly GUIStyle kTextureMipmapLimitGroupsOptionsButton = new GUIStyle(EditorStyles.miniButton) { padding = new RectOffset() };
+            public static readonly GUIStyle kTextureMipmapLimitGroupNameLabel = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Ellipsis };
 
             public const int kMinToggleWidth = 15;
             public const int kMaxToggleWidth = 20;
@@ -1231,7 +1232,8 @@ namespace UnityEditor
             bool isOffset = groupSettingsProp.FindPropertyRelative("limitBiasMode").intValue == 0;
             int mipmapLimit = groupSettingsProp.FindPropertyRelative("limitBias").intValue;
 
-            DoTextureMipmapLimitGroupNameLabel(labelPosition, EditorGUIUtility.TempContent(groupName, L10n.Tr("Mipmap Limit Group") + $" {index}"), index, groupName);
+            // We provide a label with tooltip because the text can be clipped for long group names
+            DoTextureMipmapLimitGroupNameLabel(labelPosition, EditorGUIUtility.TempContent(groupName, groupName), index, groupName);
             DoTextureMipmapLimitGroupsSettingsDropdown(dropdownPosition, isOffset, mipmapLimit, index, groupName);
             DoTextureMipmapLimitGroupsOptions(optionsPosition, index, groupName);
         }
@@ -1257,7 +1259,7 @@ namespace UnityEditor
             }
             else
             {
-                GUI.Label(rect, label, EditorStyles.label);
+                GUI.Label(rect, label, Styles.kTextureMipmapLimitGroupNameLabel);
                 Event e = Event.current;
                 if (rect.Contains(e.mousePosition) && e.type == EventType.ContextClick)
                 {

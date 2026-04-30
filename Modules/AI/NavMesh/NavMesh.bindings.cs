@@ -179,16 +179,14 @@ namespace UnityEngine.AI
         public delegate void OnNavMeshPreUpdate();
         public static OnNavMeshPreUpdate onPreUpdate;
 
-#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128400
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-#pragma warning restore RS0030
+        [RequiredByNativeCode]
         static void ClearPreUpdateListeners()
         {
             onPreUpdate = null;
         }
 
         [RequiredByNativeCode]
-        static void Internal_CallOnNavMeshPreUpdate()
+        static void Internal_CallPreUpdateListeners()
         {
             if (onPreUpdate != null)
                 onPreUpdate();

@@ -70,6 +70,7 @@ namespace Unity.UI.Builder
 
         protected BuilderViewport viewport { get; private set; }
         protected BuilderPlacementIndicator placementIndicator => m_PlacementIndicator;
+        protected virtual bool allowsStylesheetInteraction => true;
 
         List<ManipulatorActivationFilter> activators { get; set; }
         ManipulatorActivationFilter m_CurrentActivator;
@@ -393,6 +394,9 @@ namespace Unity.UI.Builder
             if (pickedElement.ClassListContains(ScrollView.viewportUssClassName))
                 return true;
 
+            if (pickedElement.name == BuilderExplorer.NoSearchResultsName)
+                return true;
+
             return false;
         }
 
@@ -520,7 +524,8 @@ namespace Unity.UI.Builder
             var isCanvasBlocked = CanPickInExplorerRoot(mousePosition, builderHierarchyRoot) || CanPickInExplorerRoot(mousePosition, builderStylesheetRoot);
             if (isCanvasBlocked)
             {
-                var validHover = TryToPickInExplorer(mousePosition, builderHierarchyRoot) || TryToPickInExplorer(mousePosition, builderStylesheetRoot);
+                var validHover = TryToPickInExplorer(mousePosition, builderHierarchyRoot) ||
+                    (allowsStylesheetInteraction && TryToPickInExplorer(mousePosition, builderStylesheetRoot));
                 if (validHover)
                 {
                     VisualElement pickedElement;
@@ -730,7 +735,7 @@ namespace Unity.UI.Builder
                 if (newParent != null)
                     return PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
             }
-            else if (builderStylesheetRoot != null && builderStylesheetRoot.ContainsPoint(localStylesheetMouse))
+            else if (allowsStylesheetInteraction && builderStylesheetRoot != null && builderStylesheetRoot.ContainsPoint(localStylesheetMouse))
             {
                 GetPickedElementFromHoverElement(out var newParent, out var index);
                 if (newParent != null)

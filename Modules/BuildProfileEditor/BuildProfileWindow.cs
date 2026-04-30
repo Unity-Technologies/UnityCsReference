@@ -672,10 +672,6 @@ namespace UnityEditor.Build.Profile
 
         void UpdateFormButtonState(BuildProfile profile)
         {
-            var isCustomBuildProfile = !BuildProfileContext.IsClassicPlatformProfile(profile);
-            var isModuleInstalled = BuildProfileContext.IsModuleInstalled(profile);
-            var isBuildAutomationSupported = BuildProfileContext.IsBuildAutomationSupported(profile);
-
             // Reset any custom buttons
             m_CustomButtons.ForEach(button => button.RemoveFromHierarchy());
             m_CustomButtons.Clear();
@@ -689,6 +685,10 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.Refresh();
                 return;
             }
+
+            var isCustomBuildProfile = !BuildProfileContext.IsClassicPlatformProfile(profile);
+            var isModuleInstalled = BuildProfileModuleUtil.IsModuleInstalled(profile.platformGuid);
+            var isBuildAutomationSupported = BuildProfileModuleUtil.IsBuildAutomationSupported(profile.platformGuid);
 
             var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
             if (profile.IsActiveBuildProfileOrPlatform())

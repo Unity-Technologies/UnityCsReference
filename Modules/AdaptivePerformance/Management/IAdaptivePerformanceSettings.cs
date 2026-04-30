@@ -141,7 +141,9 @@ namespace UnityEngine.AdaptivePerformance
                 return;
 
             ApplySettingsBase(AdaptiveFramerate, settings.AdaptiveFramerate);
+#pragma warning disable 618
             ApplySettingsBase(AdaptiveBatching, settings.AdaptiveBatching);
+#pragma warning restore 618
             ApplySettingsBase(AdaptiveLOD, settings.AdaptiveLOD);
             ApplySettingsBase(AdaptiveLut, settings.AdaptiveLut);
             ApplySettingsBase(AdaptiveMSAA, settings.AdaptiveMSAA);
@@ -228,6 +230,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// A scaler setting used by <see cref="AdaptivePerformanceIndexer"/> to control if dynamic batching is enabled.
         /// </summary>
+        [System.Obsolete("AdaptiveBatching is deprecated and will be removed in a future release. #from(6000.5)", false)]
         public AdaptivePerformanceScalerSettingsBase AdaptiveBatching
         {
             get { return m_AdaptiveBatching; }
@@ -536,7 +539,9 @@ namespace UnityEngine.AdaptivePerformance
         void SyncDefaultScalerSettings()
         {
             m_DefaultScalerSettings[0] = AdaptiveFramerate;
+#pragma warning disable 618
             m_DefaultScalerSettings[1] = AdaptiveBatching;
+#pragma warning restore 618
             m_DefaultScalerSettings[2] = AdaptiveLOD;
             m_DefaultScalerSettings[3] = AdaptiveLut;
             m_DefaultScalerSettings[4] = AdaptiveMSAA;
@@ -571,7 +576,9 @@ namespace UnityEngine.AdaptivePerformance
         internal static readonly List<Type> k_DefaultScalerNames = new List<Type>
         {
             typeof(UnityEngine.AdaptivePerformance.AdaptiveFramerate),
+#pragma warning disable 618
             typeof(UnityEngine.AdaptivePerformance.AdaptiveBatching),
+#pragma warning restore 618
             typeof(UnityEngine.AdaptivePerformance.AdaptiveLOD),
             typeof(UnityEngine.AdaptivePerformance.AdaptiveLut),
             typeof(UnityEngine.AdaptivePerformance.AdaptiveMSAA),

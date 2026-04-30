@@ -131,7 +131,8 @@ namespace UnityEngine.UIElements
             if (m_ToggleButtonGroup.userData is Type type)
             {
                 var index = Array.IndexOf(Enum.GetValues(type), newValue);
-                state[index] = true;
+                if (index != -1)
+                    state[index] = true;
             }
 
             m_ToggleButtonGroup.value = state;

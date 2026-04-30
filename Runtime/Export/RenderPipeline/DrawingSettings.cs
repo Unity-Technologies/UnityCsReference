@@ -74,6 +74,7 @@ namespace UnityEngine.Rendering
             set { m_PerObjectData = value; }
         }
 
+        [Obsolete("enableDynamicBatching is deprecated and will be removed in a future release. #from(6000.5)", false)]
         public bool enableDynamicBatching
         {
             get { return (m_Flags & DrawRendererFlags.EnableDynamicBatching) != 0; }

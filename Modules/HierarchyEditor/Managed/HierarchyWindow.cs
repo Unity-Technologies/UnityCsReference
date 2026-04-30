@@ -88,6 +88,7 @@ namespace Unity.Hierarchy.Editor
         StageNavigationView m_StageNavigationView;
         HierarchyGlobalSelectionHandler m_SelectionHandler;
         Label m_StatusBar;
+        bool m_ViewStateInit;
         bool m_HasSceneHandler;
         CommandSubscriberHelper m_CommandSubscriberHelper;
 
@@ -435,22 +436,6 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
             RefreshDescriptors();
-            if (m_ViewState == null)
-            {
-                var settingsState = LoadProjectWindowState();
-                // Note: since we only restore columns, we can do a synchronous SetViewState.
-                ResetColumns(settingsState);
-            }
-            else
-            {
-                ResetColumns();
-                SetViewState(m_ViewState);
-            }
-
-            m_HierarchyView.EnqueuePostUpdateAction(() =>
-            {
-                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
-            });
         }
 
         void OnPointerUp(PointerUpEvent evt)
@@ -539,10 +524,32 @@ namespace Unity.Hierarchy.Editor
 
         void OnFocus() => s_LastInteractedHierarchy = this;
 
+        void InitViewState()
+        {
+            if (m_ViewState == null)
+            {
+                var settingsState = LoadProjectWindowState();
+                // Note: since we only restore columns, we can do a synchronous SetViewState.
+                ResetColumns(settingsState);
+            }
+            else
+            {
+                ResetColumns();
+                SetViewState(m_ViewState);
+            }
+
+            m_HierarchyView.EnqueuePostUpdateAction(() =>
+            {
+                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
+            });
+            m_ViewStateInit = true;
+        }
+
         void CreateGUI()
         {
             if (HierarchyPreferences.UseQueryBuilder && m_SearchField?.queryBuilder != null)
                 m_SearchField.queryBuilder.blocksSupportExclude = false;
+            InitViewState();
         }
 
         void OnHierarchyWindowMouseDown(PointerDownEvent evt)
@@ -1051,9 +1058,8 @@ namespace Unity.Hierarchy.Editor
 
         void SaveViewState(HierarchyViewState.Content content)
         {
-            if (m_HierarchyView == null || m_HierarchyView.ViewModel == null)
+            if (m_HierarchyView == null || m_HierarchyView.ViewModel == null || !m_ViewStateInit)
                 return;
-
             m_ViewState = m_HierarchyView.GetState(content);
         }
 
@@ -1077,6 +1083,9 @@ namespace Unity.Hierarchy.Editor
 
         internal void SetViewState(HierarchyViewState viewState)
         {
+            if (viewState == null)
+                return;
+
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetViewState(state=...)");
             if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.SearchText))
             {

@@ -810,6 +810,7 @@ namespace UnityEditor
             PlayerSettings.SetBatchingForPlatform(platform, enable == true ? 1 : 0, dynamicBatching);
         }
 
+        [Obsolete("GetDynamicBatchingForPlatform is deprecated and will be removed in a future release. #from(6000.5)", false)]
         public static bool GetDynamicBatchingForPlatform(BuildTarget platform)
         {
 
@@ -817,6 +818,7 @@ namespace UnityEditor
             return dynamicBatching > 0;
         }
 
+        [Obsolete("SetDynamicBatchingForPlatform is deprecated and will be removed in a future release. #from(6000.5)", false)]
         public static void SetDynamicBatchingForPlatform(BuildTarget platform, bool enable)
         {
             PlayerSettings.GetBatchingForPlatform(platform, out var staticBatching, out _);

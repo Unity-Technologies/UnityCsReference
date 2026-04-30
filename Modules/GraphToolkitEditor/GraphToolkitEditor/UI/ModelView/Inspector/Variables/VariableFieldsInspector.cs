@@ -206,29 +206,25 @@ namespace Unity.GraphToolkit.Editor
 
             if (m_DisplayFlags.HasFlagFast(DisplayFlags.TypeProperty))
             {
-                var variableDeclaration = variableModels[0];
-                var allNonTrigger = variableDeclaration.DataType != TypeHandle.Untyped;
-                for (var i = 1; i < variableModels.Count; ++i)
-                {
-                    variableDeclaration = variableModels[i];
-                    if (variableDeclaration.DataType == TypeHandle.Untyped)
-                    {
-                        allNonTrigger = false;
-                        break;
-                    }
-                }
-
-                if (allNonTrigger)
-                {
-                    var typeEditor = new VariableTypePropertyField(OwnerRootView, variableModels);
-                    fieldList.Insert(insertIndex++, typeEditor);
-                }
+                var typeEditor = new VariableTypePropertyField(OwnerRootView, variableModels);
+                fieldList.Insert(insertIndex++, typeEditor);
             }
 
             if (m_DisplayFlags.HasFlagFast(DisplayFlags.CollectionModeProperty))
             {
                 var variableDeclaration = variableModels[0];
-                if (variableDeclaration.DataType != TypeHandle.Untyped)
+                var allSerializable = InternalTypeHelpers.IsTypeSerializable(variableDeclaration.DataType.Resolve());
+                for (var i = 1; i < variableModels.Count; ++i)
+                {
+                    variableDeclaration = variableModels[i];
+                    if (!InternalTypeHelpers.IsTypeSerializable(variableDeclaration.DataType.Resolve()))
+                    {
+                        allSerializable = false;
+                        break;
+                    }
+                }
+
+                if (allSerializable)
                 {
                     var modeEditor = new VariableModePropertyField(OwnerRootView, variableModels);
                     fieldList.Insert(insertIndex++, modeEditor);

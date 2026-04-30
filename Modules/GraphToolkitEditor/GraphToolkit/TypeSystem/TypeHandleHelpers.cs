@@ -80,7 +80,8 @@ namespace Unity.GraphToolkit
 
         internal static bool IsCustomTypeHandle(this TypeHandle typeHandle)
         {
-            return typeHandle.Identification != null && s_CustomIdToTypeHandleInternal.ContainsKey(typeHandle.Identification);
+            return typeHandle.Identification != null
+                && (s_CustomIdToTypeHandleInternal.ContainsKey(typeHandle.Identification) || s_CustomIdToType.ContainsValue(typeHandle.Resolve()));
         }
 
         internal static string GetFriendlyName_Internal(this TypeHandle typeHandle)

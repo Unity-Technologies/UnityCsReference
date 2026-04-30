@@ -1297,7 +1297,9 @@ namespace UnityEngine.TextCore
                 Debug.Assert(allTags.Contains(tag));
             }
             Span<int?> parents = stackalloc int?[allTags.Count];
+            parents.Clear();
             Span<int?> lastTagOfType = stackalloc int?[TagsInfo.Length];
+            lastTagOfType.Clear();
 
             int i = -1;
             foreach (var tag in allTags)
@@ -1321,14 +1323,10 @@ namespace UnityEngine.TextCore
 
                 if (tag.isClosing)
                 {
-                    if (lastTagOfType[(int)tag.tagType].HasValue)
+                    int? openingTagIndex = lastTagOfType[(int)tag.tagType];
+                    if (openingTagIndex.HasValue)
                     {
-                        if (parents[i].HasValue)
-                        {
-                            lastTagOfType[(int)tag.tagType] = parents[i];
-                        }
-                        else
-                            lastTagOfType[(int)tag.tagType] = null;
+                        lastTagOfType[(int)tag.tagType] = parents[openingTagIndex.Value];
                     }
                 }
                 else
@@ -1349,6 +1347,7 @@ namespace UnityEngine.TextCore
 
             // Build a set of all active tag indices - only the innermost tag of each type matters
             Span<bool> activeTagIndices = stackalloc bool[allTags.Count];
+            activeTagIndices.Clear();
             for (int tagTypeIndex = 0; tagTypeIndex < lastTagOfType.Length; tagTypeIndex++)
             {
                 int? currentIndex = lastTagOfType[tagTypeIndex];

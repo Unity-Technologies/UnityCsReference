@@ -258,11 +258,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
             else
             {
-                bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
-
                 if (defaultValue != null)
                 {
-                    if (!isSerializable)
+                    if (!InternalTypeHelpers.IsTypeSerializable(valueType))
                         throw new ArgumentException($"The type '{valueType.Name}' is not serializable. " +
                                                     $"You cannot provide a default value for it as it will be lost.", nameof(defaultValue));
 
@@ -401,8 +399,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             if (valueType == null)
                 throw new ArgumentNullException(nameof(valueType));
 
-            bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
-            if (!isSerializable)
+            if (!InternalTypeHelpers.IsTypeSerializable(valueType))
             {
                 throw new ArgumentException($"The type '{valueType.Name}' is not serializable. Constant nodes require serializable types.", nameof(valueType));
             }
@@ -724,7 +721,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanPasteVariable(VariableDeclarationModelBase originalModel)
         {
-            return originalModel is VariableDeclarationModel && 
+            return originalModel is VariableDeclarationModel &&
                    SupportedTypes.Contains(originalModel.DataType.Resolve());
         }
 

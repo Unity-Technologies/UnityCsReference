@@ -90,6 +90,7 @@ namespace UnityEngine.AdaptivePerformance
         /// Whether dynamic batching should be used when rendering multiple objects that share the same material.
         /// Useful on hardware that does not support instancing.
         /// </summary>
+        [System.Obsolete("SkipDynamicBatching is deprecated and will be removed in a future release. #from(6000.5)", false)]
         public static bool SkipDynamicBatching
         {
             get;

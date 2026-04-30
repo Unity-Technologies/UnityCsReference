@@ -117,8 +117,6 @@ namespace Unity.UI.Builder
             // Setup the search field
             m_SearchField = this.Q<ToolbarSearchField>(kSearchFieldName);
             m_SearchField.RegisterValueChangedCallback(e => UpdateSearchFilter(e.newValue));
-            m_NoResultsLabel = this.Q<Label>(kNoResultsName);
-            m_NoResultsLabel.style.display = DisplayStyle.None;
         }
 
         protected override void InitEllipsisMenu()

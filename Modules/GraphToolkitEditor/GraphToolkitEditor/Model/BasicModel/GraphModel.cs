@@ -1875,7 +1875,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var allowMultipleDataOutputInstances = AllowMultipleDataOutputInstances != AllowMultipleDataOutputInstances.Disallow;
             return allowMultipleDataOutputInstances
-                || variable.DataType == TypeHandle.Untyped
+                || variable.DataType.Resolve() == typeof(Untyped)
                 || variable.Modifiers != ModifierFlags.Write
                 || graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count == 0;
         }

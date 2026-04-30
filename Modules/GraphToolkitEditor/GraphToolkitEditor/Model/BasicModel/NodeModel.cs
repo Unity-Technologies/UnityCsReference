@@ -177,7 +177,7 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>Provides a way to create a node option without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
             public NodeOption AddNodeOption(string optionName, TypeHandle dataType, string optionId = null, string tooltip = null, bool showInInspectorOnly = false, int order = 0, Attribute[] attributes = null, Action<Constant> initializationCallback = null, Action<object> setterAction = null)
             {
-                if (dataType == TypeHandle.Unknown || dataType == TypeHandle.Untyped || dataType == TypeHandle.MissingType || dataType == TypeHandle.MissingPort)
+                if (dataType.Resolve() == typeof(Unknown) || dataType.Resolve() == typeof(Untyped) || dataType.Resolve() == typeof(MissingPort) || dataType == TypeHandle.MissingType)
                     throw new ArgumentException("Invalid type for node option");
 
                 optionId ??= optionName;

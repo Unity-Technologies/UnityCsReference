@@ -11,7 +11,7 @@ class AIDropdown : EditorToolbarDropdown
 {
     internal static AIDropdown instance;
 
-    // [UnityOnlyMainToolbarPreset] Reactivate this to have it enabled by default
+    [UnityOnlyMainToolbarPreset]
     [MainToolbarElement("Services/AI", defaultDockIndex = 12, defaultDockPosition = MainToolbarDockPosition.Left)]
     static MainToolbarElement Create()
     {

@@ -1703,6 +1703,8 @@ namespace UnityEngine.UIElements.UIR
 
             void DrawRectangle(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Texture tex)
             {
+                bool skipAtlas = (rectParams.meshFlags & (int)MeshFlags.SkipDynamicAtlas) == (int)MeshFlags.SkipDynamicAtlas;
+                TextureOptions textureOptions = skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None;
 
                 if (rectParams.backgroundRepeatInstanceList != IntPtr.Zero)
                 {
@@ -1757,7 +1759,7 @@ namespace UnityEngine.UIElements.UIR
                                 node.DrawMesh(
                                     vertices.Slice(0, vertices.Length - freeVertices),
                                     indices.Slice(0, indices.Length - freeIndices),
-                                    tex);
+                                    tex, textureOptions);
                             }
 
                             nextVerticesAllocSize = Math.Min(Math.Max(meshData.vertexCount, nextVerticesAllocSize) * 2, (int)UIRenderDevice.maxVerticesPerPage);
@@ -1795,7 +1797,7 @@ namespace UnityEngine.UIElements.UIR
                         node.DrawMesh(
                            vertices.Slice(0, vertices.Length - freeVertices),
                             indices.Slice(0, indices.Length - freeIndices),
-                            tex);
+                            tex, textureOptions);
                     }
                 }
                 else
@@ -1826,9 +1828,9 @@ namespace UnityEngine.UIElements.UIR
                     vertices.CopyFrom(nativeVertices);
                     indices.CopyFrom(nativeIndices);
 
-                    node.DrawMesh(vertices, indices, tex);
+                    node.DrawMesh(vertices, indices, tex, textureOptions);
                 }
-}
+            }
 
             void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
             {
@@ -1880,9 +1882,9 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 var meshFlags = (MeshGenerationContext.MeshFlags)rectParams.meshFlags;
-                bool skipAtlas = (meshFlags == MeshGenerationContext.MeshFlags.SkipDynamicAtlas);
+                bool skipAtlas = (meshFlags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) != 0;
 
-                node.DrawMeshInternal(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None);
+                node.DrawMesh(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None);
             }
 
             void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi)

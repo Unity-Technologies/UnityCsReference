@@ -157,6 +157,7 @@ namespace UnityEditor
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching", "Toggle Dynamic Batching. Note: Sprites are always dynamically batched.");
+            public static readonly string warningDynamicBatching = "Dynamic Batching is deprecated and will be removed in a future release. Use GPU Instancing instead.";
             public static readonly GUIContent spriteBatchingVertexThreshold = EditorGUIUtility.TrTextContent("Sprite Batching Threshold", "Maximum vertex threshold of a sprite to be batched. Any sprite with vertex count above this value is not batched.");
             public static readonly GUIContent spriteBatchingMaxVertexCount = EditorGUIUtility.TrTextContent("Sprite Batching Max Vertex Count", "Maximum vertex count per batch.");
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
@@ -2422,7 +2423,12 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
                         {
+                            int prevDynamicBatching = dynamicBatching;
                             dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                            if (prevDynamicBatching == 0 && dynamicBatching == 1)
+                            {
+                                Debug.LogWarning(SettingsContent.warningDynamicBatching);
+                            }
                         }
                     }
 

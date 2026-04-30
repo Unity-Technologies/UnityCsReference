@@ -33,5 +33,15 @@ class ConfigurableMultiTargetBuildTarget : ConfigurableBuildTarget, IMultiTarget
         m_IconName = platformInfo.iconName;
         m_BuildTarget = baseBuildTargets[0];
         m_AvailableBuildTargets = baseBuildTargets;
+
+        var properties = new ConfigurableMultiTargetPlatformProperties() as IBuildPlatformProperties;
+        With(properties);
     }
+}
+
+// Uses default interface member implementations from IBuildPlatformProperties for all properties.
+// Can be extended to conform to additional platform property interfaces (e.g. IGraphicsPlatformProperties,
+// IIconPlatformProperties, IVRPlatformProperties) as needed.
+sealed class ConfigurableMultiTargetPlatformProperties : IBuildPlatformProperties
+{
 }
