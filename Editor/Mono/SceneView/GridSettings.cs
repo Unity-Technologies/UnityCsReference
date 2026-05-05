@@ -70,9 +70,9 @@ namespace UnityEditor
             }
         }
 
-        [SerializeField] 
+        [SerializeField]
         Vector3 m_Position;
-        [SerializeField] 
+        [SerializeField]
         Quaternion m_Rotation = Quaternion.identity;
 
         public event Action<IGridMode> settingsChanged;
@@ -174,14 +174,14 @@ namespace UnityEditor
                 var newValue = value;
                 if (sceneViewIn2DModeExists)
                     newValue.z = 0;
-                
+
                 if (activeMode.position == newValue)
                     return;
-                
+
                 activeMode.position = newValue;
             }
         }
-        
+
         internal static Transform lastRotationSampleTransform { get; set; }
 
         public Quaternion rotation
@@ -296,7 +296,7 @@ namespace UnityEditor
             EditorSnapSettings.gridRotation = newRotation;
             SceneView.RepaintAll();
         }
-        
+
         internal void SampleTransformRotation(Transform transform)
         {
             ApplyCustomRotation(transform.rotation);

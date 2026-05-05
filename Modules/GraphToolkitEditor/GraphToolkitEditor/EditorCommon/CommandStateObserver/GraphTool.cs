@@ -139,7 +139,6 @@ namespace Unity.GraphToolkit.Editor
 
                 UndoStateRecorder.ClearNeedToRestore();
             }
-
         }
 
         static Undo.UndoRedoEventCallback undoRedoEventCallback;

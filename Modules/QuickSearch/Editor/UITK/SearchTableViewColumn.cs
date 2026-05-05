@@ -129,7 +129,7 @@ namespace UnityEditor.Search
             var item = searchView.results[index];
             try
             { 
-                ((SearchTableViewCell)ve).Bind(item);
+                ((SearchTableViewCell)ve).Bind(item, index);
             }
             catch (SearchColumnBindException ex)
             {

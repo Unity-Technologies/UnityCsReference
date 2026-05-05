@@ -250,10 +250,19 @@ namespace Unity.UI.Builder
             if (!isCmdOrCtrlKey || evt.keyCode != KeyCode.S)
                 return;
 
-            if (document.hasUnsavedChanges)
-                SaveChanges();
-
             evt.StopPropagation();
+
+            // Commit any pending field values before saving. We're inside an event dispatch here
+            // (m_GateCount > 0), so value-change events triggered by the implicit blur get queued.
+            // Defer the save so those queued events fire first and the document picks up the
+            // latest values. Mirrors the fileMenuSaved handler. Case UUM-139822.
+            inspector.BeforeSelectionChanged();
+
+            EditorApplication.delayCall += () =>
+            {
+                if (document.hasUnsavedChanges)
+                    SaveChanges();
+            };
         }
 
         // Message received when we dock/undock the window.

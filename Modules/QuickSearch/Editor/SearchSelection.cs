@@ -165,7 +165,7 @@ namespace UnityEditor.Search
         public bool Contains(SearchItem item)
         {
             if (m_Items == null)
-                return false;
+                BuildSelection();
             foreach (var e in m_Items)
             {
                 if (item.Equals(e))

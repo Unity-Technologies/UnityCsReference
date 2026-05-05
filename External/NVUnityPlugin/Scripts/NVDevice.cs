@@ -192,6 +192,11 @@ namespace UnityEngine.NVIDIA
 
         public void ExecuteDLSS(CommandBuffer cmd, DLSSContext dlssContext, in DLSSTextureTable textures)
         {
+            // UUM-134012: Get stable pointer first - if pool exhausted, skip entire execution
+            IntPtr execDataPtr = dlssContext.GetExecuteCmdPtr();
+            if (execDataPtr == IntPtr.Zero)
+                return;
+
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.ColorInput,       textures.colorInput, true);
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.ColorOutput,      textures.colorOutput);
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.Depth,            textures.depth);
@@ -199,7 +204,7 @@ namespace UnityEngine.NVIDIA
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.TransparencyMask, textures.transparencyMask);
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.ExposureTexture,  textures.exposureTexture);
             SetTexture(cmd, dlssContext, DLSSCommandExecutionData.Textures.BiasColorMask,    textures.biasColorMask);
-            InsertEventCall(cmd, PluginEvent.DLSSExecute, dlssContext.GetExecuteCmdPtr());
+            InsertEventCall(cmd, PluginEvent.DLSSExecute, execDataPtr);
         }
 
         public bool GetOptimalSettings(uint targetWidth, uint targetHeight, DLSSQuality quality, out OptimalDLSSSettingsData optimalSettings)
@@ -311,6 +316,11 @@ namespace UnityEngine.NVIDIA
 
         [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern uint NVUP_GetAvailableDLSSPresetsForQuality(DLSSQuality perfQuality);
+
+        // Copies execute data to stable buffer that won't be overwritten until GPU is done
+        // Takes struct by value - P/Invoke marshals directly, avoiding intermediate copy
+        [DllImport("NVUnityPlugin", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        internal static extern IntPtr NVUP_PrepareExecuteData(DLSSCommandExecutionData srcData);
 
         #endregion
     };

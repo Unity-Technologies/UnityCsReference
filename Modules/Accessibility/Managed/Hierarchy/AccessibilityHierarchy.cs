@@ -30,9 +30,9 @@ namespace UnityEngine.Accessibility
     /// </para>
     /// <para>
     /// Users can navigate the accessibility hierarchy sequentially by moving the screen reader focus from one node to
-    /// another in a depth-first traversal order, so they navigate to a node's children before moving to the node's
-    /// siblings. The position of the nodes on the screen (given by their <see cref="AccessibilityNode.frame"/>) does
-    /// not affect navigation order.
+    /// another. Some screen readers follow a depth-first traversal order, navigating to a node's children before moving
+    /// to its siblings, while others navigate based on the position of the nodes on the screen (given by their
+    /// <see cref="AccessibilityNode.frame"/>).
     /// </para>
     /// <para>
     /// To enable the screen reader to navigate an accessibility hierarchy, you must assign the hierarchy to
@@ -43,8 +43,8 @@ namespace UnityEngine.Accessibility
     /// </para>
     /// <para>
     /// If you modify the active hierarchy, then you must notify the screen reader by calling
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending on the scale of the changes).
+    /// <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/> or
+    /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (depending on the scale of the changes).
     /// Modifications in the accessibility hierarchy consist of calls to:
     ///
     ///- <see cref="AccessibilityHierarchy.AddNode"/>

@@ -1287,6 +1287,8 @@ namespace UnityEditor.Search
 
         public static string TrimText(string text)
         {
+            if (string.IsNullOrEmpty(text))
+                return text;
             return text.Trim().Replace("\n", " ");
         }
 

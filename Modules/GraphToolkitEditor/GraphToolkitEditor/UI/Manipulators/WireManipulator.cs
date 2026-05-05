@@ -28,6 +28,7 @@ namespace Unity.GraphToolkit.Editor
         bool m_DetachedFromInputPort;
         static int s_StartDragDistance = 10;
         MouseDownEvent m_LastMouseDownEvent;
+        RootView m_MergeUndoCommandsView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WireManipulator"/> class.
@@ -85,6 +86,8 @@ namespace Unity.GraphToolkit.Editor
             m_Wire = (evt.target as VisualElement)?.GetFirstOfType<Wire>();
             if (m_Wire != null && m_Wire.WireModel is IPlaceholder)
                 return;
+
+            StartMergingCommands(evt);
 
             m_PressPos = evt.mousePosition;
             target.CaptureMouse();
@@ -240,6 +243,8 @@ namespace Unity.GraphToolkit.Editor
                 }
                 Reset();
             }
+
+            StopMergingCommands();
         }
 
         protected void OnKeyDown(KeyDownEvent evt)
@@ -274,6 +279,7 @@ namespace Unity.GraphToolkit.Editor
 
             Reset();
             target.ReleaseMouse();
+            StopMergingCommands();
         }
 
         static bool MouseIsNearPorts(Port input, Port output, Vector2 worldPos, out float distanceFromInput, out float distanceFromOutput)
@@ -330,6 +336,31 @@ namespace Unity.GraphToolkit.Editor
             if (m_AdditionalWireDragHelpers?.Count > 0)
                 return compatiblePort.Capacity == PortCapacity.Multi;
             return true;
+        }
+
+        void StartMergingCommands(EventBase evt)
+        {
+            if (evt.currentTarget is ModelView modelUI)
+            {
+                if (!modelUI.RootView.IsMergingUndoableCommands)
+                {
+                    modelUI.RootView.StartMergingUndoableCommands();
+                    m_MergeUndoCommandsView = modelUI.RootView;
+                }
+            }
+        }
+
+        void StopMergingCommands()
+        {
+            if (m_MergeUndoCommandsView != null )
+            {
+                if (m_MergeUndoCommandsView.IsMergingUndoableCommands)
+                {
+                    m_MergeUndoCommandsView.StopMergingUndoableCommands();
+                }
+
+                m_MergeUndoCommandsView = null;
+            }
         }
     }
 }

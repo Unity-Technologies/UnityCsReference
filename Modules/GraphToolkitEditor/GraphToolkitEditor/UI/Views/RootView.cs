@@ -190,6 +190,12 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Returns whether undoable commands are currently being merged into one undo.
+        /// </summary>
+        /// <returns>True if undoable commands are currently being merged into one undo</returns>
+        public bool IsMergingUndoableCommands => GraphTool.UndoState.IsMerging;
+
+        /// <summary>
         /// Indicate that you want to merge the next undoable commands into one undo.
         /// </summary>
         public virtual void StartMergingUndoableCommands()

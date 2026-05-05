@@ -353,6 +353,10 @@ namespace UnityEngine.NVIDIA
         private NativeData<DLSSCommandInitializationData> m_InitData = new NativeData<DLSSCommandInitializationData>();
         private NativeData<DLSSCommandExecutionData> m_ExecData = new NativeData<DLSSCommandExecutionData>();
 
+        // UUM-134012: Rate-limited logging for pool exhaustion errors
+        private static float s_LastPoolExhaustedLogTime = 0;
+        internal static float poolExhaustedLogIntervalSeconds = 1.0f;
+
         public ref readonly DLSSCommandInitializationData initData   { get { return ref m_InitData.Value; } }
         public ref DLSSCommandExecutionData executeData { get { return ref m_ExecData.Value; } }
         internal uint                   featureSlot { get { return initData.featureSlot; } }
@@ -381,7 +385,27 @@ namespace UnityEngine.NVIDIA
         internal IntPtr GetExecuteCmdPtr()
         {
             m_ExecData.Value.featureSlot = featureSlot;
-            return m_ExecData.Ptr;
+
+            // UUM-134012: Copy data to stable buffer in native plugin
+            // This prevents race condition where CPU overwrites data before GPU reads
+            // Pass struct by value - P/Invoke marshals directly to native stack,
+            // avoiding redundant copy through m_MarshalledValue
+            IntPtr stablePtr = GraphicsDevice.NVUP_PrepareExecuteData(m_ExecData.Value);
+
+            if (stablePtr == IntPtr.Zero)
+            {
+                // Pool exhausted - this frame's DLSS execution will be skipped
+                // (safer than allowing race condition with original behavior)
+                // Rate-limit logging to avoid performance impact
+                float currentTime = Time.unscaledTime;
+                if (currentTime - s_LastPoolExhaustedLogTime >= poolExhaustedLogIntervalSeconds)
+                {
+                    s_LastPoolExhaustedLogTime = currentTime;
+                    Debug.LogError("[NVAPI] DLSS execute data pool exhausted - frame will be skipped");
+                }
+            }
+
+            return stablePtr;
         }
     }
 

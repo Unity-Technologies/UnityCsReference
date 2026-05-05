@@ -173,6 +173,12 @@ namespace UnityEditor.Search
             }
             ClearSelection();
         }
+        
+        public void SetSearchItemComparer(ISearchListComparer searchItemComparer)
+        {
+            m_FilteredItems?.SortBy(searchItemComparer);
+            m_ResultView?.SetSearchItemComparer(searchItemComparer);
+        }
 
         private ISearchListComparer GetDefaultSearchListComparer()
         {

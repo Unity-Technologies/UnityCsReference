@@ -611,7 +611,17 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool TouchScreenKeyboardCanBeUsed()
         {
-            return TouchScreenKeyboard.isSupported;
+            switch (Application.platform)
+            {
+                case RuntimePlatform.Android:
+                case RuntimePlatform.WebGLPlayer:
+                case RuntimePlatform.WSAPlayerX64:
+                case RuntimePlatform.WSAPlayerX86:
+                case RuntimePlatform.WSAPlayerARM:
+                    return !TouchScreenKeyboard.isInPlaceEditingAllowed;
+                default:
+                    return TouchScreenKeyboard.isSupported;
+            }
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

@@ -41,7 +41,7 @@ namespace UnityEngine.Accessibility
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
-    ///\\
+    ///
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
@@ -459,9 +459,11 @@ namespace UnityEngine.Accessibility
         /// If this property is not set, it gets its value from the <see cref="AccessibilityNode.frameGetter"/>.
         /// </para>
         /// <para>
-        /// If the <see cref="AccessibilityNode.frameGetter"/> is not set,
-        /// calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets the value of this property to
-        /// <see cref="Rect.zero"/>.
+        /// **Notes**:
+        ///
+        ///- If the node has <see cref="AccessibilityNode.isActive"/> set to @@true@@, and the frame is outside of the application window, the screen reader may still be able to focus on the node.
+        ///- If the frame's size is zero, the screen reader may skip the node and its children even if they have <see cref="AccessibilityNode.isActive"/> set to @@true@@.
+        ///- If the <see cref="AccessibilityNode.frameGetter"/> is not set, calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets the value of this property to <see cref="Rect.zero"/>.
         /// </para>
         /// </remarks>
         public Rect frame
@@ -497,8 +499,8 @@ namespace UnityEngine.Accessibility
         /// If the <see cref="AccessibilityNode.frame"/> is not set, it gets its value from this delegate.
         /// </para>
         /// <para>
-        /// If this delegate is not set, calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets the
-        /// <see cref="AccessibilityNode.frame"/> to <see cref="Rect.zero"/>.
+        /// **Note**: If this delegate is not set, calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets
+        /// the <see cref="AccessibilityNode.frame"/> to <see cref="Rect.zero"/>.
         /// </para>
         /// </remarks>
         public Func<Rect> frameGetter

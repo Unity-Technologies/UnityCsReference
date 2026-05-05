@@ -1020,6 +1020,7 @@ namespace UnityEditor
             list.serializedProperty.arraySize += 1;
             var newProp = list.serializedProperty.GetArrayElementAtIndex(list.serializedProperty.arraySize - 1);
             newProp.FindPropertyRelative("name").stringValue = string.Empty;
+newProp.FindPropertyRelative(nameof(AssemblyDefinitionReference.serializedReference)).stringValue = string.Empty;
             newProp.FindPropertyRelative("asset").objectReferenceValue = null;
         }
     }

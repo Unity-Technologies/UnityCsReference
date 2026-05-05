@@ -7,6 +7,17 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    [InitializeOnLoad]
+    internal class StreamingControllerHelp
+    {
+        static StreamingControllerHelp()
+        {
+            // Since https://github.cds.internal.unity3d.com/unity/unity/pull/49157 there's no longer the default 'class-StreamingController.md' manual entry
+            // The StreamingController component is described in TextureStreaming-configure.md
+            Help.RegisterHelpFileName(typeof(StreamingController), "TextureStreaming-configure");
+        }
+    }
+
     [CustomEditor(typeof(StreamingController))]
     [CanEditMultipleObjects]
     internal class StreamingControllerEditor : Editor

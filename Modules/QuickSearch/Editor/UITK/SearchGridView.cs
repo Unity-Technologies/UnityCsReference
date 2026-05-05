@@ -373,6 +373,11 @@ namespace UnityEditor.Search
             UpdateView();
         }
 
+        void IResultView.SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
+        {
+            UpdateView();
+        }
+        
         void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             // Nothing to do

@@ -102,7 +102,11 @@ namespace UnityEditor.Snap
                 var value = evt.newValue;
                 if (m_GridSize.linked)
                     value = evt.newValue.x * Vector3.one;
-                gridSettings.gridSize = value;
+
+                if (GridSettings.IsValid(value))
+                    gridSettings.gridSize = value;
+                else
+                    m_GridSize.SetValueWithoutNotify(evt.previousValue);
             });
             rootVisualElement.Q<VisualElement>("GridSizeContainer").Add(m_GridSize);
 
@@ -117,7 +121,11 @@ namespace UnityEditor.Snap
                 var value = evt.newValue;
                 if (m_IncrementSnapSize.linked)
                     value = evt.newValue.x * Vector3.one;
-                EditorSnapSettings.move = value;
+
+                if (GridSettings.IsValid(value))
+                    EditorSnapSettings.move = value;
+                else
+                    m_IncrementSnapSize.SetValueWithoutNotify(evt.previousValue);
             });
             rootVisualElement.Q<VisualElement>("IncrementSnapSizeContainer").Add(m_IncrementSnapSize);
 

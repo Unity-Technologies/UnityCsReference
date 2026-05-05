@@ -126,7 +126,10 @@ namespace UnityEngine
         internal readonly IntPtr m_StartPtr;
         internal readonly uint m_NbPairs;
         internal readonly CollisionPairHeaderFlags m_Flags;
-        internal readonly Vector3 m_RelativeVelocity;
+        internal readonly Vector3 m_ThisBodyLinearVelocity;
+        internal readonly Vector3 m_ThisBodyAngularVelocity;
+        internal readonly Vector3 m_OtherBodyLinearVelocity;
+        internal readonly Vector3 m_OtherBodyAngularVelocity;
 
         [Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", false)]
         public int bodyInstanceID => m_BodyID;
@@ -138,6 +141,12 @@ namespace UnityEngine
 
         public Component body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
         public Component otherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
+
+        public Vector3 bodyLinearVelocity => m_ThisBodyLinearVelocity;
+        public Vector3 bodyAngularVelocity => m_ThisBodyAngularVelocity;
+
+        public Vector3 otherBodyLinearVelocity => m_OtherBodyLinearVelocity;
+        public Vector3 otherBodyAngularVelocity => m_OtherBodyAngularVelocity;
 
         public int pairCount => (int)m_NbPairs;
 

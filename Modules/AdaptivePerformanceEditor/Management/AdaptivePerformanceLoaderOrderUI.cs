@@ -64,6 +64,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             li.toggled = AdaptivePerformancePackageMetadataStore.IsLoaderAssigned(li.loaderType, CurrentBuildTargetGroup);
             bool preToggledState = li.toggled;
+            float toggleHeight = EditorGUIUtility.singleLineHeight;
+            rect.y += (rect.height - toggleHeight) * 0.5f;
+            rect.height = toggleHeight;
             rect.width *= 0.51f;
             EditorGUIUtility.labelWidth = 250;
             li.toggled = EditorGUI.Toggle(rect, li.loaderName+(li.isDeprecated?" (deprecated)" : string.Empty), preToggledState);

@@ -226,8 +226,12 @@ namespace Unity.Properties
         /// <typeparam name="TDestination">The destination type to convert to.</typeparam>
         ///<returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
         public static bool TryConvert<TSource, TDestination>(ref TSource source, out TDestination destination)
+            => TryConvert(in s_GlobalConverters, ref source, out destination);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool TryConvert<TSource, TDestination>(in ConversionRegistry registry, ref TSource source, out TDestination destination)
         {
-            if (s_GlobalConverters.TryGetConverter(typeof(TSource), typeof(TDestination), out var converter))
+            if (registry.TryGetConverter(typeof(TSource), typeof(TDestination), out var converter))
             {
                 var typedConverter = (TypeConverter<TSource, TDestination>)converter;
                 destination = typedConverter(ref source);
@@ -243,23 +247,72 @@ namespace Unity.Properties
             if (PrimitivesConverters.TryConvertPrimitiveOrString(ref source, out destination))
                 return true;
 
-            if (TypeTraits.IsNullable(typeof(TDestination)))
+            if (TryConvertNullable(ref source, out destination))
+                return true;
+
+            if (TryConvertEnum(ref source, out destination))
+                return true;
+
+            if (TryConvertToUnityEngineObject(source, out destination))
+                return true;
+
+            if (typeof(TSource).IsValueType && typeof(TDestination).IsValueType)
             {
-                // Both types are nullable types, but the underlying types don't match. In some cases, this is supported in C# (int? => float?),
-                // but we don't support this case.
-                if (TypeTraits.IsNullable(typeof(TSource)) && Nullable.GetUnderlyingType(typeof(TDestination)) != Nullable.GetUnderlyingType(typeof(TSource)))
+                destination = default;
+                return false;
+            }
+
+            // Could be boxing :(
+            if (source is TDestination assignable)
+            {
+                destination = assignable;
+                return true;
+            }
+
+            if (typeof(TDestination).IsAssignableFrom(typeof(TSource)))
+            {
+                destination = (TDestination)(object)source;
+                return true;
+            }
+
+            // T -> string conversions should be supported by default.
+            if (typeof(TDestination) == typeof(string))
+            {
+                destination = (TDestination) (object) source?.ToString();
+                return true;
+            }
+
+            // T -> object conversions should be supported by default.
+            if (typeof(TDestination) == typeof(object))
+            {
+                // ReSharper disable once PossibleInvalidCastException
+                destination = (TDestination) (object) source;
+                return true;
+            }
+
+            // Special case where the source is null and of type object
+            if (typeof(TSource) == typeof(object) && source == null)
+            {
+                destination = default;
+                return true;
+            }
+
+            destination = default;
+            return false;
+        }
+
+        static bool TryConvertNullable<TSource, TDestination>(ref TSource source, out TDestination destination)
+        {
+            var destinationUnderlyingType = Nullable.GetUnderlyingType(typeof(TDestination));
+            var sourceUnderlyingType = Nullable.GetUnderlyingType(typeof(TSource));
+            if (destinationUnderlyingType != null)
+            {
+                // We don't support the case where both types are nullable types when their underlying types don't match,
+                // even if, in some cases, it is supported in C# (int? => float?).
+                if (sourceUnderlyingType != null && destinationUnderlyingType != sourceUnderlyingType)
                 {
                     destination = default;
                     return false;
-                }
-
-                var underlyingType = Nullable.GetUnderlyingType(typeof(TDestination));
-                if (underlyingType.IsEnum)
-                {
-                    var enumUnderlyingType = Enum.GetUnderlyingType(underlyingType);
-                    var value = System.Convert.ChangeType(source, enumUnderlyingType);
-                    destination = (TDestination)Enum.ToObject(underlyingType, value);
-                    return true;
                 }
 
                 if (source == null)
@@ -268,32 +321,39 @@ namespace Unity.Properties
                     return true;
                 }
 
-                destination = (TDestination)System.Convert.ChangeType(source, underlyingType);
-                return true;
-            }
+                try
+                {
+                    if (destinationUnderlyingType.IsEnum)
+                    {
+                        var enumUnderlyingType = Enum.GetUnderlyingType(destinationUnderlyingType);
+                        var value = System.Convert.ChangeType(source, enumUnderlyingType);
+                        destination = (TDestination)Enum.ToObject(destinationUnderlyingType, value);
+                        return true;
+                    }
 
-            // Conversion from T? => T.
-            if (TypeTraits.IsNullable(typeof(TSource)) && typeof(TDestination) == Nullable.GetUnderlyingType(typeof(TSource)))
-            {
-                // This conversion would result in an InvalidOperationException.
-                // i.e. int v = (int)(default(int?));
-                if (null == source)
+                    destination = (TDestination)System.Convert.ChangeType(source, destinationUnderlyingType);
+                    return true;
+                } catch (Exception)
                 {
                     destination = default;
                     return false;
                 }
+            }
+
+            // Conversion from T? => T.
+            if (sourceUnderlyingType != null && typeof(TDestination) == sourceUnderlyingType &&
+                source != null) // This conversion would result in an InvalidOperationException. i.e. int v = (int)(default(int?));
+            {
                 destination = (TDestination)(object)source;
                 return true;
             }
 
-            if (TypeTraits.IsUnityObject(typeof(TDestination)))
-            {
-                if (TryConvertToUnityEngineObject(source, out destination))
-                {
-                    return true;
-                }
-            }
+            destination = default;
+            return false;
+        }
 
+        static bool TryConvertEnum<TSource, TDestination>(ref TSource source, out TDestination destination)
+        {
             if (typeof(TDestination).IsEnum)
             {
                 if (typeof(TSource) == typeof(string))
@@ -316,19 +376,6 @@ namespace Unity.Properties
                     destination = UnsafeUtility.As<TSource, TDestination>(ref source);
                     return true;
                 }
-            }
-
-            // Could be boxing :(
-            if (source is TDestination assignable)
-            {
-                destination = assignable;
-                return true;
-            }
-
-            if (typeof(TDestination).IsAssignableFrom(typeof(TSource)))
-            {
-                destination = (TDestination)(object)source;
-                return true;
             }
 
             destination = default;
