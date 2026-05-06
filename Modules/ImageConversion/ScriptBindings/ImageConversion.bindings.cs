@@ -139,7 +139,7 @@ namespace UnityEngine
         [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToEXR", true)]
         unsafe extern static void* UnsafeEncodeNativeArrayToEXR(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
 
-        [FreeFunctionAttribute("ImageConversionBindings::LoadImageAtPathInternal", true)]
+        [NativeMethod(Name = "ImageConversionBindings::LoadImageAtPathInternal", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         unsafe extern static void* LoadImageAtPathInternal(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format);
         unsafe internal static NativeArray<byte> LoadImageDataAtPath(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format)
         {
