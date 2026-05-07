@@ -10,8 +10,14 @@ namespace UnityEngine.Accessibility
         /// Sends accessibility notifications to the screen reader.
         /// </summary>
         /// <remarks>
-        /// Sending the same notification type multiple times in quick succession might result in the screen reader
+        /// <para>
+        /// This interface is implemented by <see cref="AssistiveSupport.notificationDispatcher"/>. Use it to send
+        /// notifications to the screen reader about important events that occur in your application.
+        /// </para>
+        /// <para>
+        /// **Note**: Sending the same notification type multiple times in quick succession might result in the screen reader
         /// skipping some of the notifications.
+        /// </para>
         /// </remarks>
         public interface IAccessibilityNotificationDispatcher
         {
@@ -92,7 +98,7 @@ namespace UnityEngine.Accessibility
             /// Call this method to notify the screen reader of minor adjustments to the user interface (for example,
             /// when a dropdown is opened or closed), or to update the screen reader focus as a result of such changes
             /// (for example, to move it off an accessibility node that may have been removed or deactivated so that the
-            /// screen reader's focus indicator isn’t stuck on a stale node).
+            /// screen reader's focus indicator isn't stuck on a stale node).
             /// </para>
             /// <para>
             /// Calling this method prompts the screen reader to invalidate its cache of the accessibility hierarchy.

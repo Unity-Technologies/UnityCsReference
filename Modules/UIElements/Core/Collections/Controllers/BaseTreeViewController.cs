@@ -878,20 +878,13 @@ namespace UnityEngine.UIElements
         // from its collection.
         internal void RemoveAllChildrenItemsFromCollections(in HierarchyNode node, Action<HierarchyNode, int> removeCallback)
         {
-            if (node == HierarchyNode.Null)
+            if (node == HierarchyNode.Null || !m_Hierarchy.Exists(node))
                 return;
 
-            var nodeIndex = m_HierarchyFlattened.IndexOf(in node);
-            if (nodeIndex == -1)
-                return;
-
-            // We want to skip the current node's index since we only care about the children nodes.
-            var nextNodeIndex = nodeIndex + 1;
-            var count = m_HierarchyFlattened.GetChildrenCountRecursive(in node);
-            for (var i = nextNodeIndex; i < nextNodeIndex + count; ++i)
+            foreach (var child in m_Hierarchy.EnumerateChildren(node))
             {
-                var item = m_HierarchyFlattened[i];
-                removeCallback(item.Node, m_TreeViewDataProperty.GetValue(item.Node));
+                RemoveAllChildrenItemsFromCollections(child, removeCallback);
+                removeCallback(child, m_TreeViewDataProperty.GetValue(child));
             }
         }
 

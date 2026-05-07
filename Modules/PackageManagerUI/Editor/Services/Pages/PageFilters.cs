@@ -135,6 +135,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IReadOnlyList<string> packageUniqueIds => m_PackageUniqueIds.selected;
         public IReadOnlyList<string> supportedPackageUniqueIds => m_PackageUniqueIds.supported;
 
+        // We don't call RemoveUnsupportedSelections here because sometimes external function calls will set the package unique id filters before samples are generated.
+        // And adding more invalid package uniqueId filters does not affect the filtering behaviours because if no samples will match those package unique ids anyway.
+        // The next time pageFilters.supportedPackageUniqueIds change, these invalid packageUniqueId filters will be removed.
         public ChangedTypes UpdatePackages(IReadOnlyList<string> newPackageUniqueIds)
             => UpdateList(m_PackageUniqueIds.selected, newPackageUniqueIds) ? ChangedTypes.Packages : ChangedTypes.None;
 

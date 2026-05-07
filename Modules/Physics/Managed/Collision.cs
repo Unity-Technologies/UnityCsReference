@@ -45,13 +45,23 @@ namespace UnityEngine
         private ContactPoint[] m_LegacyContacts = null;
 
         public Vector3 impulse => m_Pair.impulseSum;
-        public Vector3 relativeVelocity => m_Flipped ? m_Header.m_RelativeVelocity : -m_Header.m_RelativeVelocity;
+        public Vector3 relativeVelocity => m_Flipped ? m_Header.bodyLinearVelocity - m_Header.otherBodyLinearVelocity : m_Header.otherBodyLinearVelocity - m_Header.bodyLinearVelocity;
+        public Rigidbody thisRigidbody => thisBody as Rigidbody;
         public Rigidbody rigidbody => body as Rigidbody;
+        public ArticulationBody thisArticulationBody => thisBody as ArticulationBody;
         public ArticulationBody articulationBody => body as ArticulationBody;
+        public Component thisBody => m_Flipped ? m_Header.otherBody : m_Header.body;
         public Component body => m_Flipped ? m_Header.body : m_Header.otherBody;
+        public Collider thisCollider => m_Flipped ? m_Pair.otherCollider : m_Pair.collider;
         public Collider collider => m_Flipped ? m_Pair.collider : m_Pair.otherCollider;
-        public Transform transform { get { return rigidbody != null ? rigidbody.transform : collider.transform; } }
-        public GameObject gameObject { get { return body != null ? body.gameObject : collider.gameObject; } }
+        public Vector3 thisLinearVelocity => m_Flipped ? m_Header.otherBodyLinearVelocity : m_Header.bodyLinearVelocity;
+        public Vector3 linearVelocity => m_Flipped ? m_Header.bodyLinearVelocity : m_Header.otherBodyLinearVelocity;
+        public Vector3 thisAngularVelocity => m_Flipped ? m_Header.otherBodyAngularVelocity : m_Header.bodyAngularVelocity;
+        public Vector3 angularVelocity => m_Flipped ? m_Header.bodyAngularVelocity : m_Header.otherBodyAngularVelocity;
+        public Transform thisTransform { get { return (thisBody ?? thisCollider).transform; } }
+        public Transform transform { get { return (body ?? collider).transform; } }
+        public GameObject thisGameObject { get { return (thisBody ?? thisCollider).gameObject; } }
+        public GameObject gameObject { get { return (body ?? collider).gameObject; } }
         internal bool Flipped { get { return m_Flipped; } set { m_Flipped = value; } }
 
         // The number of contacts available.

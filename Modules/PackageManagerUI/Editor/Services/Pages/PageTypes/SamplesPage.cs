@@ -40,29 +40,12 @@ internal class SamplesPage : SimplePage
 
     public override void OnEnable()
     {
-        m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
         m_PackageDatabase.onSamplesChanged += OnSamplesChanged;
     }
 
     public override void OnDisable()
     {
-        m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         m_PackageDatabase.onSamplesChanged -= OnSamplesChanged;
-    }
-
-    private void OnPackagesChanged(PackagesChangeArgs args)
-    {
-        if (!isActive)
-            return;
-
-        var updatedSampleUniqueIds = new List<string>();
-        foreach (var package in args.updated)
-        {
-            var sampleCollection = m_PackageDatabase.GetSamples(package.uniqueId);
-            if (sampleCollection != null)
-                updatedSampleUniqueIds.AddRange(sampleCollection.SelectAsEnumerable(s => s.uniqueId));
-        }
-        IncrementalListUpdate(updated: updatedSampleUniqueIds);
     }
 
     private void OnSamplesChanged(SamplesChangeArgs args)

@@ -196,9 +196,20 @@ namespace UnityEngine
 
             // Same as native StringToEntityId: full raw UInt64, no reinterpretation (see EntityID.cpp).
             if (!ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ulongResult))
-                return EntityId.None;
+            {
+                var colonIndex = input.IndexOf(':');
+                if (colonIndex == -1 || colonIndex == 0 || colonIndex == input.Length - 1)
+                    return EntityId.None;
+                var indexStr = input.Substring(0, colonIndex);
+                var versionStr = input.Substring(colonIndex + 1);
+                if (!int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityIndex))
+                    return EntityId.None;
+                if (!int.TryParse(versionStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityVersion))
+                    return EntityId.None;
+                ulongResult = ((ulong)entityVersion << 32) | (uint)entityIndex;
+            }
 
-            return FromULong(ulongResult);
+            return EntityId.FromULong(ulongResult);
         }
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]

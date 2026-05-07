@@ -100,7 +100,8 @@ namespace UnityEditor.Search
                 showAlternatingRowBackgrounds = AlternatingRowBackground.All,
                 selectionType = m_ViewModel.multiselect ? SelectionType.Multiple : SelectionType.Single,
                 itemsSource = (IList)m_ViewModel.results,
-                sortingMode = ColumnSortingMode.Custom
+                sortingMode = ColumnSortingMode.Custom,
+                horizontalScrollingEnabled = true
             };
             m_ListView.AddToClassList(resultsListClassName);
             Add(m_ListView);

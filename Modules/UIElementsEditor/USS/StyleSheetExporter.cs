@@ -469,7 +469,7 @@ namespace UnityEditor.UIElements
 
         protected void WriteColor(ref ExportContext ctx, Color value)
         {
-            var alpha = value.a.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat);
+            var alpha = value.a.ToString("0.###", CultureInfo.InvariantCulture.NumberFormat);
             if (alpha != "1")
             {
                 WriteFunctionName(ref ctx, "rgba");
@@ -480,7 +480,7 @@ namespace UnityEditor.UIElements
                 ctx.Append(", ");
                 WriteFloatValue(ref ctx, ColorComponent(value.b));
                 ctx.Append(", ");
-                WriteFloatValue(ref ctx, value.a, "0.##");
+                WriteFloatValue(ref ctx, value.a, "0.###");
                 ctx.Append(")");
             }
             else

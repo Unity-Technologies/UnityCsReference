@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
     /// The following example uses the Panel Renderer component to display a runtime UI in a scene:
     /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/SimpleRuntimeUI.cs"/>
     /// </example>
+    [HelpURL("ui-systems/panel-renderer-component")]
     [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     public sealed class PanelRenderer : Renderer, IPanelComponent

@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <example>
         /// The following example compares this method and resetting style properties individually.
-        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementClearInlineStylesWindow.cs"/>
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualElementClearInlineStylesWindow.cs"/>
         /// </example>
         void Clear(bool clearSourceAssetStyles = true);
     }

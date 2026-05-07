@@ -76,6 +76,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
     /// </remarks>
+    [HelpURL("ui-systems/work-with-vector-graphics")]
     [Serializable]
     public sealed class VectorImage : ScriptableObject
     {

@@ -1357,7 +1357,12 @@ namespace UnityEditor.Search
             }
             else if (typeof(T) == typeof(EntityId))
             {
-                success = ClipboardParser.ParseEntityId(expression.ToString(), out var temp);
+                var potentialId = expression.ToString();
+                if (potentialId.EndsWith(":"))
+                {
+                    potentialId = potentialId.TrimEnd(':');
+                }
+                success = ClipboardParser.ParseEntityId(potentialId, out var temp);
                 result = (T)(object)temp;
             }
             return success;
@@ -1368,6 +1373,8 @@ namespace UnityEditor.Search
 
         public static string TrimText(string text)
         {
+            if (string.IsNullOrEmpty(text))
+                return text;
             return text.Trim().Replace("\n", " ");
         }
 

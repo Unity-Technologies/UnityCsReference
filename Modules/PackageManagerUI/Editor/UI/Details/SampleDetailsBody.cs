@@ -120,7 +120,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh(Sample sample)
         {
-            if (sample.isDefault)
+            var parentPackageVersion = sample.package?.versions.primary;
+            if (sample.isDefault || parentPackageVersion == null)
                 return;
 
             m_DescriptionLabel.text = string.IsNullOrEmpty(sample.description)
@@ -129,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             CleanupTexture();
 
-            m_CurrentResolvedPath = sample.package.versions.primary.localPath;
+            m_CurrentResolvedPath = parentPackageVersion.localPath;
             m_CurrentImages = FilterValidImages(sample.images, m_CurrentResolvedPath);
             m_CurrentImageIndex = 0;
 
@@ -151,12 +152,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_PrevButtonHotspot, showControls);
             UIUtils.SetElementDisplay(m_NextButtonHotspot, showControls);
 
-            var parentPackageVersion = sample.package?.versions.primary;
-            var showCards = !sample.isDefault && parentPackageVersion != null;
-            UIUtils.SetElementDisplay(m_CardsContainer, showCards);
-            if (!showCards)
-                return;
-
             foreach (var child in m_CardsContainer.Children())
             {
                 if (child is PackageInformationCard packageCard)
@@ -168,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private string[] FilterValidImages(string[] images, string resolvedPath)
         {
-            if (images == null || images.Length == 0)
+            if (images == null || images.Length == 0 || string.IsNullOrEmpty(resolvedPath))
                 return Array.Empty<string>();
 
             var validImages = new List<string>();

@@ -31,8 +31,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         readonly PropertyName k_BoundColumnVePropertyName = "__unity-multi-column-bound-column";
         readonly PropertyName bindableElementPropertyName = "__unity-multi-column-bindable-element";
 
-        internal MultiColumnCollectionHeader header => m_MultiColumnHeader;
+        static readonly string k_HierarchyLastColumnHeader = MultiColumnHeaderColumn.ussClassName+"__last";
 
+        internal MultiColumnCollectionHeader header => m_MultiColumnHeader;
         public VisualElement headerContainer => m_HeaderContainer;
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
 
@@ -189,6 +190,9 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_HeaderContainer.AddToClassList(MultiColumnController.headerContainerUssClassName);
             m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
             m_HeaderContainer.Add(m_MultiColumnHeader);
+
+            m_MultiColumnHeader.RegisterCallback<GeometryChangedEvent>(ResizeToFitCallback);
+
             return m_HeaderContainer;
         }
 
@@ -248,6 +252,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             m_View.Rebuild();
         }
 
@@ -256,6 +261,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             if (type == ColumnDataType.Visibility)
                 m_View.ScheduleRebuild();
         }
@@ -265,6 +271,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             if (type == ColumnsDataType.PrimaryColumn)
                 m_View.ScheduleRebuild();
         }
@@ -272,6 +279,33 @@ namespace UnityEngine.UIElements.HierarchyV2
         void OnViewDataRestored()
         {
             m_View.Rebuild();
+        }
+
+        void ResizeToFitCallback(GeometryChangedEvent _)
+        {
+            m_MultiColumnHeader.UnregisterCallback<GeometryChangedEvent>(ResizeToFitCallback);
+            m_MultiColumnHeader.ResizeToFit();
+        }
+
+        void UpdateColumnsStyles()
+        {
+            var headers = m_MultiColumnHeader.Query<VisualElement>(className: "unity-multi-column-header__column").ToList();
+            // Applying style.flexGrow = 0 to all columns
+            foreach (var column in headers)
+                column.RemoveFromClassList(k_HierarchyLastColumnHeader);
+
+            var horizontalScroller = m_View.scrollView.horizontalScroller;
+            // Expend only the last element, but only when the window content is smaller than the window
+            // (which means when the horizontal scroller is not shown)
+            if (!horizontalScroller.enabledSelf)
+            {
+                var columnIndex = headers.Count - 1;
+                if (columnIndex >= 0)
+                {
+                        // Applying style.flexGrow = 1 to the last column
+                        headers[columnIndex]?.AddToClassList(k_HierarchyLastColumnHeader);
+                }
+            }
         }
     }
 

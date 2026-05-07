@@ -65,8 +65,14 @@ namespace UnityEditor.QuickInstall
 
             EditorGUILayout.BeginVertical(Styles.verticalStyle);
             EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Body)), Styles.textLabel);
-            if (!string.IsNullOrEmpty(m_Config.DocumentationUrl) && GUILayout.Button(L10n.Tr("Read more"), Styles.linkLabel))
-                Application.OpenURL(m_Config.DocumentationUrl);
+            if (!string.IsNullOrEmpty(m_Config.DocumentationUrl))
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(L10n.Tr("Read more"), Styles.linkLabel, GUILayout.ExpandWidth(false)))
+                    Application.OpenURL(m_Config.DocumentationUrl);
+                EditorGUILayout.EndHorizontal();
+            }
             
             EditorGUILayout.EndVertical();
             GUILayout.Space(15);

@@ -4,9 +4,9 @@
 
 using System;
 using System.Text;
-using UnityEditorInternal;
+using UnityEditor.UIElements;
 using UnityEngine;
-using static UnityEditor.EditorGUI;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -14,10 +14,6 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public const uint kNumItemsInFilter = 7;
-            public const float kHeightBetweenFields = 3.0f;
-            public const float kHeightBetweenRows = 10.0f;
-
             public static readonly GUIContent conversionButton = EditorGUIUtility.TrTextContent("Import Legacy Player Settings Filter Lists", "Imports the 'Android Vulkan Deny Filter List' and 'Android Vulkan Allow Filter List' Player Settings fields to a standalone Vulkan Device Filtering Asset. Once imported, this button and the Android Vulkan Deny/Allow Filter List fields will be disabled.");
 
             public static readonly GUIContent preferredGraphicsJobsMode = EditorGUIUtility.TrTextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.");
@@ -45,72 +41,18 @@ namespace UnityEditor
             public static readonly string vulkanApiVersionText = "vulkanApiVersionString";
             public static readonly string driverVersionText = "driverVersionString";
 
-            public static float kElementHeighWithSpace => EditorGUIUtility.singleLineHeight + kHeightBetweenFields;
+            // Localized plain strings
+            public static readonly string gfxJobsFilterOrderInfo = L10n.Tr("The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.");
+
+            // Styling
+            public const float kItemPaddingTop = 4f;
+            public const float kItemPaddingBottom = 2f;
+            public const float kItemPaddingHorizontal = 2f;
+            public const float kErrorBoxMarginTop = 1f;
         }
 
         internal static class Utils
         {
-            private static bool DrawRegexWithErrorCheck(string name, SerializedProperty prop, GUIContent standardContent, string text, ref Rect elementRect, StringBuilder errorBuilder)
-            {
-                prop.stringValue = EditorGUI.TextField(elementRect, standardContent, prop.stringValue);
-                if (VulkanDeviceFilterUtils.HasErrorRegex(prop.stringValue, text, out var errorString))
-                {
-                    errorBuilder.Append($"\n{name}: {errorString}");
-                    return false;
-                }
-                return true;
-            }
-
-            private static bool DrawVersionWithErrorCheck(string name, SerializedProperty prop, GUIContent standardContent, string text, ref Rect elementRect, StringBuilder errorBuilder)
-            {
-                prop.stringValue = EditorGUI.TextField(elementRect, standardContent, prop.stringValue);
-                if (VulkanDeviceFilterUtils.HasErrorVersion(prop.stringValue, text, out var errorString))
-                {
-                    errorBuilder.Append($"\n{name}: {errorString}");
-                    return false;
-                }
-                return true;
-            }
-
-            public static void DrawDeviceFilterList(SerializedProperty filterListProp, int index, ref Rect elementRect, bool hasPreviousPropFields = false)
-            {
-                var vendorProp = filterListProp.FindPropertyRelative(Styles.vendorText);
-                var deviceNameProp = filterListProp.FindPropertyRelative(Styles.deviceNameText);
-                var brandProp = filterListProp.FindPropertyRelative(Styles.brandText);
-                var productProp = filterListProp.FindPropertyRelative(Styles.productText);
-                var osVersionProp = filterListProp.FindPropertyRelative(Styles.androidOsVersionText);
-                var vulkanApiVersionProp = filterListProp.FindPropertyRelative(Styles.vulkanApiVersionText);
-                var driverVersionProp = filterListProp.FindPropertyRelative(Styles.driverVersionText);
-
-                if (hasPreviousPropFields)
-                    elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                var errorBuilder = new StringBuilder($"Errors Detected at index {index}:");
-
-                var result = DrawRegexWithErrorCheck("Vendor", vendorProp, DeviceFilterUI.Styles.vendor, DeviceFilterUI.Styles.vendorText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawRegexWithErrorCheck("Device Name", deviceNameProp, DeviceFilterUI.Styles.deviceName, DeviceFilterUI.Styles.deviceNameText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawRegexWithErrorCheck("Brand", brandProp, DeviceFilterUI.Styles.brand, DeviceFilterUI.Styles.brandText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawRegexWithErrorCheck("Product Name", productProp, DeviceFilterUI.Styles.product, DeviceFilterUI.Styles.productText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawRegexWithErrorCheck("Android OS Version", osVersionProp, DeviceFilterUI.Styles.osVersion, DeviceFilterUI.Styles.androidOsVersionText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawVersionWithErrorCheck("Vulkan API Version", vulkanApiVersionProp, DeviceFilterUI.Styles.vulkanApiVersion, DeviceFilterUI.Styles.vulkanApiVersionText, ref elementRect, errorBuilder);
-                elementRect.y += DeviceFilterUI.Styles.kElementHeighWithSpace;
-
-                result &= DrawVersionWithErrorCheck("Driver Version", driverVersionProp, DeviceFilterUI.Styles.driverVersion, DeviceFilterUI.Styles.driverVersionText, ref elementRect, errorBuilder);
-
-                if (!result)
-                    GUILayout.Label(EditorGUIUtility.TempContent(errorBuilder.ToString(), EditorGUIUtility.GetHelpIcon(MessageType.Error)), EditorStyles.helpBox);
-            }
-
             public static void ClearNewElement(SerializedProperty filterListProp)
             {
                 filterListProp.FindPropertyRelative(Styles.vendorText).stringValue = null;
@@ -127,221 +69,272 @@ namespace UnityEditor
     [CustomEditor(typeof(UnityEngine.VulkanDeviceFilterLists))]
     internal class VulkanDeviceFilterListsEditor : Editor
     {
-        internal class ReorderableFilterList
-        {
-            public delegate void ElementCallbackDelegate(
-                ReorderableList list,
-                Rect rect, int index, bool isActive, bool isFocused);
-            public delegate void AddCallbackDelegate(ReorderableList list);
-
-            public SerializedObject serializedObject { get; private set; }
-            public SerializedProperty serializedProperty { get; private set; }
-            public ReorderableList reorderableList { get; private set; }
-
-            private ElementCallbackDelegate m_DrawElementCallback;
-            private AddCallbackDelegate m_AddElementCallback;
-
-            public ReorderableFilterList(
-                SerializedObject serializedObject, string propertyName,
-                ElementCallbackDelegate drawElementCallback, AddCallbackDelegate onAddCallback,
-                float elementHeight, float headerHeight = 0.0f)
-            {
-                this.serializedObject = serializedObject;
-                this.serializedProperty = serializedObject.FindProperty(propertyName);
-                this.reorderableList = new ReorderableList(serializedObject, serializedProperty, true, false, true, true);
-                m_DrawElementCallback = drawElementCallback;
-                this.reorderableList.drawElementCallback = DrawListElement;
-                m_AddElementCallback = onAddCallback;
-                this.reorderableList.onAddCallback = AddElement;
-                this.reorderableList.onReorderCallback = (_)=>{};
-                this.reorderableList.elementHeight = elementHeight;
-                this.reorderableList.headerHeight = headerHeight;
-            }
-
-            public void DoList(Rect listRect)
-            {
-                reorderableList.DoList(listRect);
-            }
-
-            private void DrawListElement(Rect rect, int index, bool isActive, bool isFocused)
-            {
-                m_DrawElementCallback(reorderableList, rect, index, isActive, isFocused);
-            }
-
-            private void AddElement(ReorderableList filterList)
-            {
-                m_AddElementCallback(filterList);
-            }
-        }
-
         VulkanDeviceFilterLists assetObject => serializedObject.targetObject as VulkanDeviceFilterLists;
 
-        ReorderableFilterList m_AllowReorderableFilterList;
-        ReorderableFilterList m_DenyReorderableFilterList;
-        ReorderableFilterList m_GfxJobsReorderableFilterList;
-
-        bool m_ShowAllow = false;
-        bool m_ShowDeny = false;
-        bool m_ShowGfxJobs = false;
-
-        private void DrawDeviceFilterListElement(ReorderableList list, Rect rect, int index, bool isActive, bool isFocused)
+        class DeviceFilterItemElement : VisualElement
         {
-            var filterListProp = list.serializedProperty.GetArrayElementAtIndex(index);
+            private TextField vendorField;
+            private TextField deviceNameField;
+            private TextField brandField;
+            private TextField productField;
+            private TextField osVersionField;
+            private TextField vulkanApiVersionField;
+            private TextField driverVersionField;
+            private HelpBox errorBox;
 
-            var elementRect = new Rect(rect);
-            elementRect.height = EditorGUIUtility.singleLineHeight;
-            elementRect.y += DeviceFilterUI.Styles.kHeightBetweenFields;
-
-            DeviceFilterUI.Utils.DrawDeviceFilterList(filterListProp, index, ref elementRect);
-        }
-
-        private void AddDeviceFilterListElement(ReorderableList filterList)
-        {
-            var list = filterList.serializedProperty;
-            var index = list.arraySize++;
-            filterList.index = index;
-            var filterListProp = list.GetArrayElementAtIndex(index);
-
-            // Helper for clearing the regex strings
-            DeviceFilterUI.Utils.ClearNewElement(filterListProp);
-        }
-
-        private void DrawGfxJobsFilterListElement(ReorderableList list, Rect rect, int index, bool isActive, bool isFocused)
-        {
-            var filterListProp = list.serializedProperty.GetArrayElementAtIndex(index);
-
-            var elementRect = new Rect(rect);
-            elementRect.height = EditorGUIUtility.singleLineHeight;
-            elementRect.y += DeviceFilterUI.Styles.kHeightBetweenFields;
-
-            var graphicsJobsPreferenceProp = filterListProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText);
-            GraphicsJobsFilterMode mode = (GraphicsJobsFilterMode)graphicsJobsPreferenceProp.enumValueFlag;
-
-            mode = (GraphicsJobsFilterMode)EditorGUI.EnumPopup(
-                elementRect, DeviceFilterUI.Styles.preferredGraphicsJobsMode, mode);
-            graphicsJobsPreferenceProp.intValue = (int)mode;
-
-            var filterProp = filterListProp.FindPropertyRelative(DeviceFilterUI.Styles.filterText);
-
-            // Helper for drawing the actual filter list
-            DeviceFilterUI.Utils.DrawDeviceFilterList(filterProp, index, ref elementRect, true);
-        }
-
-        private void AddGfxJobsFilterListElement(ReorderableList filterList)
-        {
-            var list = filterList.serializedProperty;
-            var index = list.arraySize++;
-            filterList.index = index;
-            var filterListProp = list.GetArrayElementAtIndex(index);
-
-            var graphicsJobsPreferenceProp = filterListProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText).enumValueFlag = 0x0;
-
-            // Helper for clearing the regex strings
-            DeviceFilterUI.Utils.ClearNewElement(filterListProp.FindPropertyRelative(DeviceFilterUI.Styles.filterText));
-        }
-
-        public void OnEnable()
-        {
-            var allowDenyListElementHeight = DeviceFilterUI.Styles.kElementHeighWithSpace * DeviceFilterUI.Styles.kNumItemsInFilter + DeviceFilterUI.Styles.kHeightBetweenFields;
-            m_AllowReorderableFilterList = new ReorderableFilterList(
-                serializedObject,  "m_VulkanAllowFilterList", DrawDeviceFilterListElement, AddDeviceFilterListElement, allowDenyListElementHeight);
-            m_DenyReorderableFilterList = new ReorderableFilterList(
-                serializedObject,  "m_VulkanDenyFilterList", DrawDeviceFilterListElement, AddDeviceFilterListElement, allowDenyListElementHeight);
-
-            var gfxJobsElementHeight = DeviceFilterUI.Styles.kElementHeighWithSpace * (DeviceFilterUI.Styles.kNumItemsInFilter + 1) + DeviceFilterUI.Styles.kHeightBetweenFields;
-            m_GfxJobsReorderableFilterList = new ReorderableFilterList(
-                serializedObject,  "m_GfxJobFilterList", DrawGfxJobsFilterListElement, AddGfxJobsFilterListElement, gfxJobsElementHeight);
-        }
-
-        struct ErrorInfo
-        {
-            public bool hasErrors;
-            public string errorString;
-
-            ErrorInfo(bool hasErrors, string errorString)
+            public DeviceFilterItemElement()
             {
-                this.hasErrors = hasErrors;
-                this.errorString = errorString;
+                style.paddingTop = DeviceFilterUI.Styles.kItemPaddingTop;
+                style.paddingBottom = DeviceFilterUI.Styles.kItemPaddingBottom;
+                style.paddingLeft = DeviceFilterUI.Styles.kItemPaddingHorizontal;
+                style.paddingRight = DeviceFilterUI.Styles.kItemPaddingHorizontal;
+
+                vendorField = CreateTextField(DeviceFilterUI.Styles.vendor);
+                deviceNameField = CreateTextField(DeviceFilterUI.Styles.deviceName);
+                brandField = CreateTextField(DeviceFilterUI.Styles.brand);
+                productField = CreateTextField(DeviceFilterUI.Styles.product);
+                osVersionField = CreateTextField(DeviceFilterUI.Styles.osVersion);
+                vulkanApiVersionField = CreateTextField(DeviceFilterUI.Styles.vulkanApiVersion);
+                driverVersionField = CreateTextField(DeviceFilterUI.Styles.driverVersion);
+
+                errorBox = new HelpBox("", HelpBoxMessageType.Error);
+                errorBox.style.display = DisplayStyle.None;
+                errorBox.style.marginTop = DeviceFilterUI.Styles.kErrorBoxMarginTop;
+                errorBox.style.whiteSpace = WhiteSpace.Normal;
+                Add(errorBox);
             }
-        };
 
-        private float DoListInternal(ReorderableFilterList list, float startingHeight)
-        {
-            var listRect = GUILayoutUtility.GetRect(startingHeight, list.reorderableList.GetHeight(), GUILayout.ExpandWidth(true));
-            listRect.x += EditorGUI.kIndentPerLevel;
-            listRect.width -= EditorGUI.kIndentPerLevel;
-            list.DoList(listRect);
-            return list.reorderableList.GetHeight();
+            TextField CreateTextField(GUIContent content)
+            {
+                var field = new TextField(content.text) { tooltip = content.tooltip };
+                field.AddToClassList(BaseField<string>.alignedFieldUssClassName);
+                Add(field);
+                return field;
+            }
+
+            void BindAndTrack(TextField field, SerializedProperty prop)
+            {
+                field.BindProperty(prop);
+                this.TrackPropertyValue(prop, _ => ValidateFields());
+            }
+
+            public virtual void Bind(SerializedProperty filterProp)
+            {
+                BindAndTrack(vendorField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.vendorText));
+                BindAndTrack(deviceNameField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.deviceNameText));
+                BindAndTrack(brandField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.brandText));
+                BindAndTrack(productField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.productText));
+                BindAndTrack(osVersionField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.androidOsVersionText));
+                BindAndTrack(vulkanApiVersionField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.vulkanApiVersionText));
+                BindAndTrack(driverVersionField, filterProp.FindPropertyRelative(DeviceFilterUI.Styles.driverVersionText));
+
+                ValidateFields();
+            }
+
+            public virtual void Unbind()
+            {
+                vendorField.Unbind();
+                deviceNameField.Unbind();
+                brandField.Unbind();
+                productField.Unbind();
+                osVersionField.Unbind();
+                vulkanApiVersionField.Unbind();
+                driverVersionField.Unbind();
+            }
+
+            protected void ValidateFields()
+            {
+                var sb = new StringBuilder();
+                CheckRegexField(sb, vendorField.value, vendorField.label, DeviceFilterUI.Styles.vendorText);
+                CheckRegexField(sb, deviceNameField.value, deviceNameField.label, DeviceFilterUI.Styles.deviceNameText);
+                CheckRegexField(sb, brandField.value, brandField.label, DeviceFilterUI.Styles.brandText);
+                CheckRegexField(sb, productField.value, productField.label, DeviceFilterUI.Styles.productText);
+                CheckRegexField(sb, osVersionField.value, osVersionField.label, DeviceFilterUI.Styles.androidOsVersionText);
+                CheckVersionField(sb, vulkanApiVersionField.value, vulkanApiVersionField.label, DeviceFilterUI.Styles.vulkanApiVersionText);
+                CheckVersionField(sb, driverVersionField.value, driverVersionField.label, DeviceFilterUI.Styles.driverVersionText);
+
+                bool hasErrors = sb.Length > 0;
+                errorBox.style.display = hasErrors ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hasErrors)
+                    errorBox.text = sb.ToString();
+            }
+
+            void CheckRegexField(StringBuilder sb, string value, string label, string fieldName)
+            {
+                if (VulkanDeviceFilterUtils.HasErrorRegex(value, fieldName, out var errorString))
+                    sb.AppendLine($"{label}: {errorString}");
+            }
+
+            void CheckVersionField(StringBuilder sb, string value, string label, string fieldName)
+            {
+                if (VulkanDeviceFilterUtils.HasErrorVersion(value, fieldName, out var errorString))
+                    sb.AppendLine($"{label}: {errorString}");
+            }
         }
 
-        private float DoList(ReorderableFilterList list, string name, ref bool showPosition, float startingHeight, Func<float, float> onBeforeListDraw = null, Func<float, float> onAfterListDraw = null)
+        class GfxJobsFilterItemElement : DeviceFilterItemElement
         {
-            var height = startingHeight;
-            showPosition = EditorGUILayout.BeginFoldoutHeaderGroup(showPosition, name);
-            if (showPosition)
+            private EnumField preferredModeField;
+
+            public GfxJobsFilterItemElement()
             {
-                using (var scopedHeight = new IndentLevelScope())
+                preferredModeField = new EnumField(DeviceFilterUI.Styles.preferredGraphicsJobsMode.text, GraphicsJobsFilterMode.Off)
                 {
-                    height += onBeforeListDraw?.Invoke(height) ?? 0.0f;
-                    height += DoListInternal(list, height);
-                    height += onAfterListDraw?.Invoke(height) ?? 0.0f;
-                }
+                    tooltip = DeviceFilterUI.Styles.preferredGraphicsJobsMode.tooltip
+                };
+                preferredModeField.AddToClassList(BaseField<Enum>.alignedFieldUssClassName);
+                Insert(0, preferredModeField);
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-            return height;
-        }
 
-        private float DrawGfxJobsExtraNotice(float startingHeight)
-        {
-            var content = EditorGUIUtility.TempContent("The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
-
-            var rect = GUILayoutUtility.GetRect(startingHeight, 1.0f, GUILayout.ExpandWidth(true));
-            rect.x += EditorGUI.kIndentPerLevel;
-            rect.width -= EditorGUI.kIndentPerLevel;
-            var height = EditorStyles.helpBox.CalcHeight(content, rect.width) + (DeviceFilterUI.Styles.kElementHeighWithSpace * 2);
-
-            rect = GUILayoutUtility.GetRect(startingHeight, height, GUILayout.ExpandWidth(true));
-            rect.x += EditorGUI.kIndentPerLevel;
-            rect.width -= EditorGUI.kIndentPerLevel;
-
-            EditorGUI.HelpBox(rect, content);
-            return height;
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-            var targetObj = serializedObject.targetObject as VulkanDeviceFilterLists;
-
-            if (targetObj == null)
-                throw new InvalidCastException("Unable to case object to VulkanDeviceFilterLists!");
-
-            using (var changed = new ChangeCheckScope())
+            public override void Bind(SerializedProperty filterProp)
             {
-                var height = 0.0f;
+                preferredModeField.BindProperty(
+                    filterProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText));
 
+                var innerFilterProp = filterProp.FindPropertyRelative(DeviceFilterUI.Styles.filterText);
+                base.Bind(innerFilterProp);
+            }
+
+            public override void Unbind()
+            {
+                preferredModeField.Unbind();
+                base.Unbind();
+            }
+        }
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            var root = new VisualElement();
+
+            // Legacy import button
+            SetupImportButton(root);
+
+            // Allow Filters
+            var allowFoldout = CreateFilterFoldout(root, "Allow Filters",
+                "vulkan-allow-filters-foldout", "m_VulkanAllowFilterList", isGfxJobs: false);
+
+            // Deny Filters
+            var denyFoldout = CreateFilterFoldout(root, "Deny Filters",
+                "vulkan-deny-filters-foldout", "m_VulkanDenyFilterList", isGfxJobs: false);
+
+            // Preferred Graphics Jobs Filters
+            var gfxJobsFoldout = CreateFilterFoldout(root, "Preferred Graphics Jobs Filters",
+                "vulkan-gfxjobs-filters-foldout", "m_GfxJobFilterList", isGfxJobs: true,
+                infoText: DeviceFilterUI.Styles.gfxJobsFilterOrderInfo);
+
+            root.Bind(serializedObject);
+            return root;
+        }
+
+        void SetupImportButton(VisualElement root)
+        {
 // Disable obsolete warning. Users should see obsolete warnings when trying to use the API but
 // this is to ensure the user is warned that the settings are going to be ignored and that they
 // should perform the conversion.
 #pragma warning disable 612, 618
-                var allowListCount = PlayerSettings.Android.androidVulkanAllowFilterList.Length;
-                var denyListCount = PlayerSettings.Android.androidVulkanDenyFilterList.Length;
-
-                if (allowListCount + denyListCount > 0)
-                {
-                    var buttonPressed = GUILayout.Button(DeviceFilterUI.Styles.conversionButton);
-                    if (buttonPressed)
-                        assetObject.ImportPlayerSettingsFiltersToAsset();
-                }
+            var allowCount = PlayerSettings.Android.androidVulkanAllowFilterList.Length;
+            var denyCount = PlayerSettings.Android.androidVulkanDenyFilterList.Length;
 #pragma warning restore 612, 618
 
-                height = DoList(m_AllowReorderableFilterList, "Allow Filters", ref m_ShowAllow, height);
-                height = DoList(m_DenyReorderableFilterList, "Deny Filters", ref m_ShowDeny, height);
-                height = DoList(m_GfxJobsReorderableFilterList, "Preferred Graphics Jobs Filters", ref m_ShowGfxJobs, height, DrawGfxJobsExtraNotice);
+            if (allowCount + denyCount <= 0)
+                return;
 
-                if (changed.changed)
-                    serializedObject.ApplyModifiedProperties();
+            var importButton = new Button
+            {
+                text = DeviceFilterUI.Styles.conversionButton.text,
+                tooltip = DeviceFilterUI.Styles.conversionButton.tooltip
+            };
+            importButton.clicked += () =>
+            {
+                assetObject.ImportPlayerSettingsFiltersToAsset();
+                serializedObject.Update();
+                importButton.style.display = DisplayStyle.None;
+            };
+            root.Add(importButton);
+        }
+
+        Foldout CreateFilterFoldout(VisualElement root, string title, string viewDataKey,
+            string propertyPath, bool isGfxJobs, string infoText = null)
+        {
+            var foldout = new Foldout { text = title, name = viewDataKey, value = false, viewDataKey = viewDataKey };
+
+            if (infoText != null)
+            {
+                var infoBox = new HelpBox(infoText, HelpBoxMessageType.Info);
+                infoBox.style.marginLeft = 0;
+                infoBox.style.marginRight = 0;
+                foldout.Add(infoBox);
             }
+
+            var listView = new ListView
+            {
+                reorderable = true,
+                showAddRemoveFooter = true,
+                reorderMode = ListViewReorderMode.Animated,
+                showBorder = true,
+                showFoldoutHeader = false,
+                showBoundCollectionSize = false,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight
+            };
+
+            SetupFilterList(listView, propertyPath, isGfxJobs);
+            foldout.Add(listView);
+            root.Add(foldout);
+            return foldout;
+        }
+
+        void SetupFilterList(ListView listView, string propertyPath, bool isGfxJobs)
+        {
+            var arrayProp = serializedObject.FindProperty(propertyPath);
+
+            listView.makeItem = isGfxJobs
+                ? () => new GfxJobsFilterItemElement()
+                : () => new DeviceFilterItemElement();
+
+            listView.bindItem = (element, index) =>
+            {
+                var itemElement = (DeviceFilterItemElement)element;
+                itemElement.Unbind();
+
+                if (index >= arrayProp.arraySize)
+                    return;
+
+                var elementProp = arrayProp.GetArrayElementAtIndex(index);
+                itemElement.Bind(elementProp);
+            };
+
+            listView.unbindItem = (element, index) =>
+            {
+                var itemElement = (DeviceFilterItemElement)element;
+                itemElement.Unbind();
+            };
+
+            listView.itemsAdded += indices =>
+            {
+                foreach (var idx in indices)
+                {
+                    if (idx >= arrayProp.arraySize)
+                        continue;
+
+                    var elemProp = arrayProp.GetArrayElementAtIndex(idx);
+                    if (isGfxJobs)
+                    {
+                        elemProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText)
+                            .intValue = 0;
+                        DeviceFilterUI.Utils.ClearNewElement(
+                            elemProp.FindPropertyRelative(DeviceFilterUI.Styles.filterText));
+                    }
+                    else
+                    {
+                        DeviceFilterUI.Utils.ClearNewElement(elemProp);
+                    }
+                }
+
+                serializedObject.ApplyModifiedProperties();
+                listView.RefreshItems();
+            };
+
+            listView.BindProperty(arrayProp);
         }
     }
 }

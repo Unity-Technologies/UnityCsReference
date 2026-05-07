@@ -14,18 +14,18 @@ internal sealed class PanelInputConfigurationEditor : Editor
         var root = new VisualElement();
         var settings = serializedObject.FindProperty(PanelInputConfiguration.SettingsProperty);
 
-        var processWorldSpaceInputProperty = settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_ProcessWorldSpaceInput));
+        var processWorldSpaceInputProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_ProcessWorldSpaceInput));
         var processWorldSpaceInput = new PropertyField(processWorldSpaceInputProperty);
         root.Add(processWorldSpaceInput);
 
         var worldFoldout = new Foldout { text = L10n.Tr("World Space Options") };
         root.Add(worldFoldout);
-        worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_InteractionLayers))));
-        worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_MaxInteractionDistance))));
-        var defaultEventCameraIsMainCameraProperty = settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_DefaultEventCameraIsMainCamera));
+        worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputSettings.m_InteractionLayers))));
+        worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputSettings.m_MaxInteractionDistance))));
+        var defaultEventCameraIsMainCameraProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_DefaultEventCameraIsMainCamera));
         var defaultEventCameraIsMainCamera = new PropertyField(defaultEventCameraIsMainCameraProperty);
         worldFoldout.Add(defaultEventCameraIsMainCamera);
-        var eventCamerasProperty = settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_EventCameras));
+        var eventCamerasProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_EventCameras));
         var eventCameras = new PropertyField(eventCamerasProperty);
         worldFoldout.Add(eventCameras);
         var eventCamerasWarning = new HelpBox(
@@ -35,10 +35,10 @@ internal sealed class PanelInputConfigurationEditor : Editor
 
         var uguiFoldout = new Foldout { text = L10n.Tr("Event System Interaction") };
         root.Add(uguiFoldout);
-        var panelInputRedirectionProperty = settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_PanelInputRedirection));
+        var panelInputRedirectionProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_PanelInputRedirection));
         var panelInputRedirection = new PropertyField(panelInputRedirectionProperty);
         uguiFoldout.Add(panelInputRedirection);
-        var createPanelComponentsProperty = settings.FindPropertyRelative(nameof(PanelInputConfiguration.Settings.m_AutoCreatePanelComponents));
+        var createPanelComponentsProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_AutoCreatePanelComponents));
         var createPanelComponents = new PropertyField(createPanelComponentsProperty);
         uguiFoldout.Add(createPanelComponents);
         var createPanelComponentsWarning = new HelpBox(

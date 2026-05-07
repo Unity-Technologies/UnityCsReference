@@ -149,8 +149,8 @@ namespace UnityEngine.Experimental.AI
 
         // Each node in the pool stores an index to the next node anywhere in the pool.
         // To save memory, indices stored in the node pool are of type unsigned short.
-        // Keep in synch with kMaxNavMeshNodePoolSize = USHRT_MAX - 1 from NavMeshNode.h
-        const int k_MaxNavMeshNodePoolSize = ushort.MaxValue - 1;
+        // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX from NavMeshNode.h
+        const int k_MaxNavMeshNodePoolSize = ushort.MaxValue;
 
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
@@ -158,7 +158,9 @@ namespace UnityEngine.Experimental.AI
                 throw new ArgumentNullException("world", "Invalid world");
 
             if (pathNodePoolSize < 0 || pathNodePoolSize > k_MaxNavMeshNodePoolSize)
-                throw new ArgumentException($"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {ushort.MaxValue + 1}.");
+                throw new ArgumentException(
+                    $"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {k_MaxNavMeshNodePoolSize + 1}.",
+                    nameof(pathNodePoolSize));
             m_NavMeshQuery = CreateExp(world, pathNodePoolSize);
 
             UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavMeshQuery, 0);

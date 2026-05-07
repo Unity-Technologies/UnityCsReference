@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Collections;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -341,12 +340,22 @@ namespace UnityEditor
 
                     dockAreaParent.AddTab(window);
                     dockAreaParent.RemoveTab(this);
-                    DestroyImmediate(this, true);
+                    // During Playmode it's better to ensure that the view is destroyed only at the end of the current
+                    // frame and not during the rendering of a PlayModeView (UUM-139011)
+                    if (EditorApplication.isPlaying)
+                        Destroy(this);
+                    else // In Editor Mode we can destroy the view directly
+                        DestroyImmediate(this, true);
                 }
                 else if (m_Parent is MaximizedHostView maximizedParent)
                 {
                     maximizedParent.actualView = window;
-                    DestroyImmediate(this, true);
+                    // During Playmode it's better to ensure that the view is destroyed only at the end of the current
+                    // frame and not during the rendering of a PlayModeView (UUM-139011)
+                    if (EditorApplication.isPlaying)
+                        Destroy(this);
+                    else // In Editor Mode we can destroy the view directly
+                        DestroyImmediate(this, true);
                 }
             }
             RemoveDisabledWindows();

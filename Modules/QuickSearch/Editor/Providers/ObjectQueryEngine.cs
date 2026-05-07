@@ -581,8 +581,7 @@ namespace UnityEditor.Search.Providers
         {
             filter.AddTypeParser(GlobalObjectIdTypeParser);
             filter.AddTypeParser(AssetPathTypeParser);
-            filter.AddTypeParser(InstanceIdTypeParser);
-            filter.AddTypeParser(EntityIdTypeParser);
+            filter.AddTypeParser(EntityRawIdTypeParser);
             filter.AddTypeParser(DefaultRefTypeParser);
         }
 
@@ -603,25 +602,24 @@ namespace UnityEditor.Search.Providers
             return ParseResult<ulong>.none;
         }
 
-        static ParseResult<ulong> InstanceIdTypeParser(string filterValue)
-        {
-            // Account for legacy ref:<EntityId>: query that can be emitted by the various Find Reference in Scene menu items.
-            var potentialId = filterValue;
-            if (filterValue.EndsWith(":"))
-            {
-                potentialId = filterValue.TrimEnd(':');
-            }
-            if (Utils.TryParse(potentialId, out ulong instanceId))
-                return new ParseResult<ulong>(true, instanceId);
-            return ParseResult<ulong>.none;
-        }
-
         static ParseResult<EntityId> EntityIdTypeParser(string filterValue)
         {
-            var potentialId = filterValue;
-            if (Utils.TryParse(potentialId, out EntityId entityId))
+            // Note This Parser is used by the id= filter to compare between EntityId
+
+            // Utils.TryParse handles both <index>:<version> and ulong entity id.
+            if (Utils.TryParse(filterValue, out EntityId entityId))
                 return new ParseResult<EntityId>(true, entityId);
             return ParseResult<EntityId>.none;
+        }
+
+        static ParseResult<ulong> EntityRawIdTypeParser(string filterValue)
+        {
+            // Note: This parser is used by ref= and compares the raw ulong entity Id (what we actually save in the GOD).
+
+            // Utils.TryParse handles both <index>:<version> and ulong entity id.
+            if (Utils.TryParse(filterValue, out EntityId entityId))
+                return new ParseResult<ulong>(true, EntityId.ToULong(entityId));
+            return ParseResult<ulong>.none;
         }
 
         static ParseResult<ulong> DefaultRefTypeParser(string filterValue)

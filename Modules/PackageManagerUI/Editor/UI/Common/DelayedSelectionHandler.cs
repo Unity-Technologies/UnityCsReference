@@ -24,6 +24,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_PackageToSelectAfterRefresh;
 
         [SerializeField]
+        private string[] m_PackagesToSelectOnSamplePageAfterRefresh;
+
+        [SerializeField]
         private string m_PageIdToSelectAfterRefresh;
 
         private readonly IPackageDatabase m_PackageDatabase;
@@ -52,22 +55,31 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationFinish()
         {
-            if (string.IsNullOrEmpty(m_PackageToSelectAfterRefresh))
-                return;
-
             var packageToSelect = m_PackageToSelectAfterRefresh;
             var pageId = m_PageIdToSelectAfterRefresh;
+            var packagesToSelectOnSamplesPage = m_PackagesToSelectOnSamplePageAfterRefresh;
 
+            ClearDelayedSelectionAfterRefresh();
+
+            if (!string.IsNullOrEmpty(packageToSelect))
+                SelectPackage(packageToSelect, pageId);
+            else if (packagesToSelectOnSamplesPage?.Length > 0)
+                SelectSamplePageWithPackageFilters(packagesToSelectOnSamplesPage);
+        }
+
+        private void ClearDelayedSelectionAfterRefresh()
+        {
             m_PackageToSelectAfterRefresh = string.Empty;
             m_PageIdToSelectAfterRefresh = string.Empty;
-
-            SelectPackage(packageToSelect, pageId);
+            m_PackagesToSelectOnSamplePageAfterRefresh = Array.Empty<string>();
         }
 
         public void SelectPackage(string packageToSelect, string pageId = null)
         {
             if (string.IsNullOrEmpty(packageToSelect))
                 return;
+
+            ClearDelayedSelectionAfterRefresh();
 
             var package = m_PackageDatabase.GetPackageByIdOrName(packageToSelect) ?? m_PackageDatabase.GetPackageByDisplayName(packageToSelect);
             var page = package != null ? m_PageManager.FindPage(package, pageId) : m_PageManager.GetPage(pageId);
@@ -98,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             page ??= m_PageManager.activePage;
-            if (m_PackageDatabase.allPackages.Count == 0 || !m_PageRefreshHandler.IsInitialFetchingDone(page))
+            if (!m_PageRefreshHandler.IsInitialFetchingDone(page))
                 m_PageRefreshHandler.Refresh(page);
 
             if (m_PageRefreshHandler.IsRefreshInProgress(RefreshOptions.UpmSearch | RefreshOptions.UpmSearchOffline | RefreshOptions.UpmList | RefreshOptions.UpmListOffline))
@@ -123,6 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             page.searchText = searchText ?? string.Empty;
             m_PageManager.activePage = page;
+            ClearDelayedSelectionAfterRefresh();
         }
 
         public void SelectSamplePageWithPackageFilters(IReadOnlyList<string> packagesToSelect)
@@ -131,18 +144,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (page == null)
                 return;
             m_PageManager.activePage = page;
+            ClearDelayedSelectionAfterRefresh();
 
             if (packagesToSelect == null || packagesToSelect.Count == 0)
                 return;
 
-            var newPageFilters = new PageFilters(page.filters);
-            var validPackages = new List<string>();
-            foreach (var id in packagesToSelect)
-                if (page.filters.supportedPackageUniqueIds.ContainsMatches(id))
-                    validPackages.Add(id);
-            newPageFilters.UpdatePackages(validPackages);
+            if (!m_PageRefreshHandler.IsInitialFetchingDone(page))
+                m_PageRefreshHandler.Refresh(page);
 
-            page.UpdateFilters(newPageFilters);
+            if (m_PageRefreshHandler.IsRefreshInProgress(RefreshOptions.UpmList | RefreshOptions.ImportedSamples))
+                packagesToSelect.ToArray(ref m_PackagesToSelectOnSamplePageAfterRefresh);
+            else
+            {
+                var newPageFilters = new PageFilters(page.filters);
+                var validPackageUniqueIds = new List<string>();
+                foreach (var packageIdOrName in packagesToSelect)
+                {
+                    var packageUniqueId = m_PackageDatabase.GetPackageByIdOrName(packageIdOrName)?.uniqueId ?? packageIdOrName;
+                    // We don't check if the packageUniqueId is part of the supported filters because sometimes `SelectSamplePage` is called externally before the samples are generated.
+                    // And adding more invalid package uniqueId filters does not affect the filtering behaviours because if no samples will match those package unique ids anyway.
+                    // The next time pageFilters.supportedPackageUniqueIds change, these invalid packageUniqueId filters will be removed.
+                    if (!string.IsNullOrEmpty(packageUniqueId))
+                        validPackageUniqueIds.Add(packageUniqueId);
+                }
+                newPageFilters.UpdatePackages(validPackageUniqueIds);
+                page.UpdateFilters(newPageFilters);
+            }
         }
     }
 }

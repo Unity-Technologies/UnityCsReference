@@ -446,8 +446,7 @@ internal class ATGTextJobSystem
                     sdfScales.Add(sdfScale);
 
                     bool hasGradientScale = !isSprite && fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
-                    // TODO, update once ATG supports SpriteAssets
-                    bool isDynamicColor = /*meshInfo.applySDF &&*/ visualElement.PostProcessTextVertices == null && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+                    bool isDynamicColor = visualElement.PostProcessTextVertices == null && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 

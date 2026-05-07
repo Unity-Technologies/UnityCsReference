@@ -76,6 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             Debug.LogError(L10n.Tr("[Package Manager Window] Package export failed: ") + error.message);
         }
+
         private void Refresh()
         {
             var showSignInContainer = m_UnityConnectProxy.isUserInfoReady && !m_UnityConnectProxy.isUserLoggedIn;
@@ -91,10 +92,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_OrganizationInfos = m_UnityConnectProxy.ParseOrganizationInfos();
             var orgNames = m_OrganizationInfos.SelectToNewArray(p => p.name);
-            if (orgNames.Length > 0 && packageOrganizationDropdown.index == -1)
+            if (orgNames.Length > 0)
             {
-                packageOrganizationDropdown.choices = new List<string>(orgNames);
-                packageOrganizationDropdown.value = L10n.Tr("Select Organization");
+                packageOrganizationDropdown.choices = [.. orgNames];
+                if (orgNames.Length == 1)
+                {
+                    packageOrganizationDropdown.index = 0;
+                    packageOrganizationDropdown.value = orgNames[0];
+                }
+                else
+                    packageOrganizationDropdown.value = L10n.Tr("Select Organization");
             }
             else
             {

@@ -192,13 +192,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected void OnFinalize()
         {
             EditorApplication.update -= Progress;
-            onOperationFinalized?.Invoke(this);
+
+            var onFinalized = onOperationFinalized;
 
             onOperationError = delegate {};
             onOperationFinalized = delegate {};
             onOperationSuccess = delegate {};
             onOperationProgress = delegate {};
             onProcessResult = delegate {};
+
+            // We call onFinalized at the end so that if we start a new operation during the onFinalized callback, we don't
+            // accidentally clear the newly registered events
+            onFinalized?.Invoke(this);
         }
     }
 }

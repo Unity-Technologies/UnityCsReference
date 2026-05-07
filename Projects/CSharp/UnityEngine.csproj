@@ -3246,6 +3246,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputSettings.cs">
+      <Link>Modules\UIElements\Core\GameObjects\PanelInputSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelSettings.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelSettings.cs</Link>
     </Compile>

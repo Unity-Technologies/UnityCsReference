@@ -57,9 +57,11 @@ namespace Unity.Scripting.LifecycleManagement
 
         struct SortNode : IComparable<SortNode>
         {
-            public string AssemblyName;
-            public Assembly Assembly;
-            public int[] Dependencies;
+            public string AssemblyName = null!;
+            public Assembly Assembly = null!;
+            public int[] Dependencies = Array.Empty<int>();
+
+            public SortNode() { }
 
             public int CompareTo(SortNode other)
             {

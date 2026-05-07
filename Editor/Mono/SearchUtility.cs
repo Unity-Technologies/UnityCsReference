@@ -150,7 +150,8 @@ namespace UnityEditor
                 parsed = true;
             }
 
-            // Support: 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with entityId 1234)
+            // Support: 'ref[:entityRawId]:path' syntax (e.g 'ref:1234:' will show objects that references the object with entityId 1234)
+            // Support: 'ref[:EntityIndex:EntityVersion]:path' syntax (e.g 'ref:1234:2:' will show objects that references the object with entityId 1234:2)
             if (HasFilter(searchString, "ref"))
             {
                 EntityId entityId = EntityId.None;
@@ -158,9 +159,18 @@ namespace UnityEditor
                 int secondColon = searchString.IndexOf(':', firstColon + 1);
                 if (secondColon >= 0)
                 {
-                    // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
-                    // The pathname is effectively just a UI hint of whose references we're filtering out.
-                    string refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
+                    var refString = "";
+                    var thirdColon = searchString.IndexOf(':', secondColon + 1);
+                    if (thirdColon != -1)
+                    {
+                        refString = searchString.Substring(firstColon + 1, thirdColon - firstColon - 1);
+                    }
+                    else
+                    {
+                        // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
+                        // The pathname is effectively just a UI hint of whose references we're filtering out.
+                        refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
+                    }
                     ClipboardParser.ParseEntityId(refString, out entityId);
                 }
                 else

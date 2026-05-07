@@ -2096,6 +2096,13 @@ namespace UnityEditor.Search
             }
             return query;
         }
+
+        internal static void SaveQueryToClipboard(in string query)
+        {
+            var trimmedQuery = Utils.TrimText(query);
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "{0}", query);
+            EditorGUIUtility.systemCopyBuffer = Utils.TrimText(trimmedQuery);
+        }
     }
 }
 

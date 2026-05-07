@@ -245,7 +245,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Update the element so as it look selected if <paramref name="selected"/> is true, or unselected otherwise.
+        /// Update the element so that it looks selected if <paramref name="selected"/> is true, or unselected otherwise.
         /// This will be called by UpdateElementSelection, but might also be called for displaying a selection state without changing the selection.
         /// </summary>
         /// <param name="selected">If the element should look selected.</param>
@@ -253,17 +253,16 @@ namespace Unity.GraphToolkit.Editor
         /// <seealso cref="RectangleSelector"/>
         public virtual void UpdateSelectionVisuals(bool selected)
         {
-            if (selected)
-            {
-                this.SetCheckedPseudoState(true);
-            }
-            else
-            {
-                this.SetCheckedPseudoState(false);
-            }
+            SetCheckedPseudoState(selected);
 
             if (Border != null)
+            {
                 Border.Selected = selected;
+
+                // If the element got unselected, it might need to become highlighted.
+                // (For example, if the element is a portal and the new selection is its associated portal).
+                Border.Highlighted = !selected && ShouldBeHighlighted();
+            }
         }
 
         /// <summary>

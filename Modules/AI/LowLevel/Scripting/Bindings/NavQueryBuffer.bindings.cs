@@ -23,11 +23,12 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     [NativeDisableUnsafePtrRestriction]
     internal IntPtr m_NavMeshQuery;
     internal uint m_NavMeshUniqueId;
-    internal uint m_SafetyOpenListId;
-    internal readonly IntPtr id => m_NavMeshQuery;
+    internal readonly IntPtr navMeshQueryPtr => m_NavMeshQuery;
     internal readonly uint worldUniqueId => m_NavMeshUniqueId;
+    internal readonly bool isNull => m_NavMeshQuery == IntPtr.Zero;
 
     internal AtomicSafetyHandle m_Safety;
+    internal uint m_SafetyOpenListId;
 
     internal static readonly int k_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NavQueryBuffer>();
 
@@ -40,30 +41,40 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
 
     // Each node in the pool stores an index to the next node anywhere in the pool.
     // To save memory, indices stored in the node pool are of type unsigned short.
-    // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX - 1 from NavMeshNode.h
-    const int k_MaxNavMeshNodePoolSize = ushort.MaxValue - 1;
+    // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX from NavMeshNode.h
+    const int k_MaxNavMeshNodePoolSize = ushort.MaxValue;
 
     public NavQueryBuffer(NavWorld world, Allocator allocator, int maxNodesToVisit = 1024)
     {
-        var pathNodePoolSize = maxNodesToVisit;
-
         if (!world.IsValid())
-            throw new ArgumentNullException(nameof(world), "Invalid world");
+            throw new ArgumentException(
+                "The provided NavWorld is invalid and cannot be used to create a NavQueryBuffer.", nameof(world));
 
-        if (pathNodePoolSize < 1)
+        if (maxNodesToVisit < 1)
             Debug.LogWarning(
                 "NavQueryBuffer allocated memory for 1 element " +
-                $"because it cannot be used when {nameof(pathNodePoolSize)} is less than 1.");
+                "because it cannot be used when maxNodesToVisit is less than 1.");
 
-        if (pathNodePoolSize > k_MaxNavMeshNodePoolSize)
+        if (maxNodesToVisit > k_MaxNavMeshNodePoolSize)
             Debug.LogWarning(
-                $"NavQueryBuffer allocated memory for only {ushort.MaxValue - 1} nodes " +
-                $"because it cannot be used with {nameof(pathNodePoolSize)} greater than that limit.");
-        m_NavMeshQuery = Create(world.navMesh, pathNodePoolSize);
-        m_NavMeshUniqueId = world.uniqueId;
-        m_SafetyOpenListId = 0;
+                $"NavQueryBuffer allocated memory for only {k_MaxNavMeshNodePoolSize} nodes " +
+                "because it cannot be used with maxNodesToVisit greater than that limit.");
+        m_NavMeshQuery = Create(world.navMeshPtr, maxNodesToVisit);
+        if (m_NavMeshQuery != IntPtr.Zero)
+        {
+            m_NavMeshUniqueId = world.uniqueId;
+            UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavQueryBuffer, 0);
+        }
+        else
+        {
+            m_NavMeshUniqueId = 0;
+        }
 
-        UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavQueryBuffer, 0);
+        if (m_NavMeshQuery == IntPtr.Zero)
+            throw new OutOfMemoryException(
+                "Failed to allocate memory for a NavQueryBuffer that pathfinding can use to store " +
+                $"{maxNodesToVisit} visited nodes.");
+
         AtomicSafetyHandle.CreateHandle(out m_Safety, allocator);
         AtomicSafetyHandle.SetStaticSafetyId(ref m_Safety, k_StaticSafetyId);
 
@@ -124,9 +135,10 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly bool Equals(NavQueryBuffer other)
     {
-        return m_NavMeshQuery == other.m_NavMeshQuery
-            && m_NavMeshUniqueId == other.m_NavMeshUniqueId
-            && m_SafetyOpenListId == other.m_SafetyOpenListId;
+        var pointersEqual = m_NavMeshQuery == other.m_NavMeshQuery && m_NavMeshUniqueId == other.m_NavMeshUniqueId;
+
+        pointersEqual = pointersEqual && m_SafetyOpenListId == other.m_SafetyOpenListId;
+        return pointersEqual;
     }
 
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -138,7 +150,10 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override int GetHashCode()
     {
-        return HashCode.Combine(m_NavMeshQuery, m_NavMeshUniqueId, m_SafetyOpenListId);
+        var hashCode = HashCode.Combine(m_NavMeshQuery, m_NavMeshUniqueId);
+
+        hashCode = HashCode.Combine(hashCode, m_SafetyOpenListId);
+        return hashCode;
     }
 
     static extern void AddQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);

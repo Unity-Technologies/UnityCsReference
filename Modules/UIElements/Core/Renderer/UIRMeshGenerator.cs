@@ -742,10 +742,10 @@ namespace UnityEngine.UIElements.UIR
                         }
                         else
                         {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: true, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
                         }
 
                         indices[j + 0] = (ushort)(vDst + 0);

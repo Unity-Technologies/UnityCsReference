@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -44,7 +45,14 @@ namespace UnityEditor.PackageManager.UI
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal class PackageManagerWindow : EditorWindow
     {
-        public static PackageManagerWindow instance { get; private set; }
+        private static bool s_IsInitializationFrame = true;
+        static PackageManagerWindow()
+        {
+            EditorApplication.delayCall += () => s_IsInitializationFrame = false;
+        }
+
+        public static PackageManagerWindow instance => s_EnabledInstances.Count > 0 ? s_EnabledInstances[0] : null;
+        private static readonly List<PackageManagerWindow> s_EnabledInstances = new ();
 
         private PackageManagerWindowRoot m_Root;
 
@@ -71,24 +79,18 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnEnable()
         {
+            s_EnabledInstances.Add(this);
+
             this.SetAntiAliasing(4);
-            if (instance == null) instance = this;
-            if (instance != this)
-                return;
-
             titleContent = GetLocalizedTitleContent();
-
             minSize = new Vector2(280, 250);
             BuildGUI();
-
             Events.registeredPackages += OnRegisteredPackages;
         }
 
         private void OnDisable()
         {
-            instance ??= this;
-            if (instance != this)
-                return;
+            s_EnabledInstances.Remove(this);
 
             Events.registeredPackages -= OnRegisteredPackages;
         }
@@ -96,8 +98,6 @@ namespace UnityEditor.PackageManager.UI
         private void OnDestroy()
         {
             m_Root?.OnDestroy();
-
-            instance = null;
         }
 
         private void OnFocus()
@@ -168,17 +168,13 @@ namespace UnityEditor.PackageManager.UI
 
         private static void OpenAddPackageByName(string technicalName, string version)
         {
-            ShowWindow();
-            instance.Focus();
-            instance.m_Root.OpenAddPackageByNameDropdown(technicalName, version);
+            ShowWindow(() => instance.m_Root.OpenAddPackageByNameDropdown(technicalName, version));
         }
 
         [UsedByNativeCode]
         public static void OpenCreatePackageDropdown()
         {
-            ShowWindow();
-            instance.Focus();
-            instance.m_Root.OpenCreatePackageDropdown();
+            ShowWindow(() => instance.m_Root.OpenCreatePackageDropdown());
         }
 
         private static T FindWindow<T>() where T : EditorWindow
@@ -190,8 +186,7 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         public static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
         {
-            var isWindowAlreadyVisible = FindWindow<PackageManagerWindow>() is not null;
-
+            var isWindowAlreadyVisible = instance is not null;
             SelectPackageStatic(packageToSelect, pageId);
             if (!isWindowAlreadyVisible)
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageToSelect);
@@ -206,7 +201,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (package == null)
             {
-                Debug.LogError(L10n.Tr($"[Package Manager Window] Unable to open the Export window. Try opening the Package Manager Window first and exporting from there."));
+                Debug.LogError(L10n.Tr("[Package Manager Window] Unable to open the Export window. Try opening the Package Manager Window first and exporting from there."));
                 return;
             }
 
@@ -228,9 +223,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static void OpenSamplesPage(IReadOnlyList<string> packagesToSelect)
         {
-            ShowWindow();
-            instance.Focus();
-            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect);
+            ShowWindow(() => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect));
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
@@ -259,31 +252,36 @@ namespace UnityEditor.PackageManager.UI
 
         private static void SelectPackageStatic(string packageToSelect = null, string pageId = null)
         {
-            // We want to make sure the window is shown first, otherwise our package and page selection
-            // might get overridden by page selection in the window initialization code
-            ShowWindow();
-
-            // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
-            // selection is set. That could happen when we want to open Package Manager and select a package, but
-            // the refresh call is not yet finished. It could also happen when we create a package and the newly
-            // crated package is not yet in the database until after package resolution.
-            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(packageToSelect, pageId);
+            ShowWindow
+            (
+                // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
+                // selection is set. That could happen when we want to open Package Manager and select a package, but
+                // the refresh call is not yet finished. It could also happen when we create a package and the newly
+                // crated package is not yet in the database until after package resolution.
+                () => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(packageToSelect, pageId)
+            );
         }
 
         private static void SelectPageStatic(string pageId = null, string searchText = "")
         {
-            // We want to make sure the window is shown first, otherwise our package and page selection
-            // might get overridden by page selection in the window initialization code
-            ShowWindow();
-
-            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText);
+            ShowWindow(() => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText));
         }
 
-        private static void ShowWindow()
+        private static void ShowWindow(Action postOpenWindowAction)
         {
-            instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(280, 250);
-            instance.Show();
+            // There is a special case where we received a function call to open the Package Manager when during InitializeOnLoad
+            // (right after domain reload, for example), and show the PackageManager window immediately will cause the creation
+            // of multiple Package Manager windows. As a result we want to delay opening until the initialization frame is over.
+            // This is an issue with Editor Windows in general and a ticket has been created (UUM-139988)
+            if (s_IsInitializationFrame)
+            {
+                EditorApplication.delayCall += () => ShowWindow(postOpenWindowAction);
+            }
+            else
+            {
+                GetWindow<PackageManagerWindow>().Show();
+                postOpenWindowAction?.Invoke();
+            }
         }
     }
 }

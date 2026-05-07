@@ -217,9 +217,8 @@ namespace UnityEditor.Experimental.GraphView
 
                 for (int i = 1; i < pointCount; i++)
                 {
-                    // Apply offset
-                    Vector2 start = points[i - 1] + parent.layout.position;
-                    Vector2 end = points[i] + parent.layout.position;
+                    Vector2 start = points[i - 1];
+                    Vector2 end = points[i];
 
                     DrawDottedLine(start, end, segmentSize);
                 }
