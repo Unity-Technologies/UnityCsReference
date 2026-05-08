@@ -131,26 +131,26 @@ namespace UnityEngine.AdaptivePerformance
         bool SupportedFeature(Provider.Feature feature);
 
         /// <summary>
-        /// Initiates the initialization process for Adaptive Performance by attempting to initialize the loaders.  When
+        /// Initiates the initialization process for Adaptive Performance by attempting to initialize the loaders. When
         /// this completes successfully, <see cref="Initialized"/> will be <c>true</c>. Adaptive Performance can now be
         /// started by calling the <see cref="StartAdaptivePerformance"/> method.
         /// </summary>
         void InitializeAdaptivePerformance();
 
         /// <summary>
-        /// Attempts to start Adaptive Performance by requesting the active loader and all subsystems to start.  When
+        /// Attempts to start Adaptive Performance by requesting the active loader and all subsystems to start. When
         /// this completes successfully, <see cref="Active"/> will be <c>true</c>.
         /// </summary>
         void StartAdaptivePerformance();
 
         /// <summary>
-        /// Attempts to stop Adaptive Performance by requesting the active loader and all subsystems to stop.  When
+        /// Attempts to stop Adaptive Performance by requesting the active loader and all subsystems to stop. When
         /// this completes successfully, <see cref="Active"/> will be <c>false</c>.
         /// </summary>
         void StopAdaptivePerformance();
 
         /// <summary>
-        /// Stops Adaptive Performance (if still running) and initiates the tear down process.  When this completes
+        /// Stops Adaptive Performance (if still running) and initiates the tear down process. When this completes
         /// successfully, <see cref="Initialized"/> will be <c>false</c>.
         /// </summary>
         void DeinitializeAdaptivePerformance();
@@ -159,13 +159,60 @@ namespace UnityEngine.AdaptivePerformance
     /// <summary>
     /// Global access to the default Adaptive Performance interface and lifecycle management controls.
     /// </summary>
+    /// <remarks>
+    /// The `Holder` class provides a singleton pattern for accessing Adaptive Performance functionality.
+    /// Use this class to manually control the Adaptive Performance lifecycle. You can also use it to access
+    /// the main interface when **Initialize Adaptive Performance on Startup** is disabled in the Adaptive Performance settings.
+    ///
+    /// The <see cref="Holder.Instance"/> property becomes available after successful initialization and remains
+    /// available until deinitialization completes.
+    ///
+    /// </remarks>
+    /// <example>
+    /// The following example shows how to manually initialize Adaptive Performance and access thermal status.
+    /// <code lang="cs"><![CDATA[
+    /// using UnityEngine;
+    /// using UnityEngine.AdaptivePerformance;
+    ///
+    /// public class AdaptivePerformanceExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         // Initialize Adaptive Performance manually if Adaptive Performance isn't already initialized.
+    ///         if (Holder.Instance == null)
+    ///         {
+    ///             Holder.Initialize();
+    ///         }
+    ///         
+    ///         // Access thermal status after initialization.
+    ///         IAdaptivePerformance adaptivePerformance = Holder.Instance;
+    ///         if (adaptivePerformance != null && adaptivePerformance.Initialized)
+    ///         {
+    ///             IThermalStatus thermalStatus = adaptivePerformance.ThermalStatus;
+    ///             // The TemperatureLevel is located inside the ThermalMetrics struct.
+    ///             float currentTemperature = thermalStatus.ThermalMetrics.TemperatureLevel;
+    ///             Debug.Log($"Temperature level: {currentTemperature}");
+    ///         }
+    ///     }
+    /// }
+    /// ]]></code>
+    /// </example>
     public static class Holder
     {
         static IAdaptivePerformance m_Instance;
 
         /// <summary>
-        /// Global access to the default Adaptive Performance interface to access the main manager object.
+        /// The default Adaptive Performance interface instance for accessing all Adaptive Performance functionality.
         /// </summary>
+        /// <remarks>
+        /// This property becomes available after calling <see cref="Initialize"/> and successful initialization.
+        /// The instance remains available until <see cref="Deinitialize"/> is called.
+        ///
+        /// Check that this property isn't null and that <see cref="IAdaptivePerformance.Initialized"/>
+        /// is true before using Adaptive Performance features.
+        ///
+        /// Setting this property triggers <see cref="LifecycleEventHandler"/> events when the value changes.
+        /// </remarks>
         public static IAdaptivePerformance Instance
         {
             get { return m_Instance; }
@@ -181,12 +228,43 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         /// <summary>
-        /// Create and attach the Adaptive Performance to the scene and initiate the startup process for the provider.
-        /// After initialization is complete, <see cref="Instance"/> is made available.
-        /// <remarks>
-        /// Should only be used when "Initialize on Startup" is disabled.
-        /// </remarks>
+        /// Initializes Adaptive Performance and makes the instance available for use.
         /// </summary>
+        /// <remarks>
+        /// Only use this method when **Initialize Adaptive Performance on Startup** is disabled in Adaptive Performance settings.
+        ///
+        /// This method initializes the Adaptive Performance provider infrastructure and then completes initialization on the resulting instance by calling
+        /// <see cref="IAdaptivePerformance.InitializeAdaptivePerformance"/>.
+        ///
+        /// If the instance is already available, this method returns immediately without performing any operations.
+        /// After successful initialization, the <see cref="Holder.Instance"/> property becomes available and you can use it to access
+        /// Adaptive Performance functionality.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs"><![CDATA[
+        /// using UnityEngine;
+        /// using UnityEngine.AdaptivePerformance;
+        ///
+        /// public class AdaptivePerformanceManager : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         // Check if manual initialization is needed.
+        ///         if (Holder.Instance == null)
+        ///         {
+        ///             Holder.Initialize();
+        ///             // Verify initialization succeeded.
+        ///             if (Holder.Instance != null && Holder.Instance.Initialized)
+        ///             {
+        ///                 Debug.Log("Adaptive Performance initialized successfully.");
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]></code>
+        /// </example>
+
+
         public static void Initialize()
         {
             if (Instance != null)
@@ -199,10 +277,43 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         /// <summary>
-        /// Stops Adaptive Performance (if still running) and initiates the tear down process. Once complete,
-        /// <see cref="Instance"/> is no longer available.  All Adaptive Performance objects are removed from the
-        /// scene.
+        /// Stops Adaptive Performance and cleans up all associated resources and objects.
         /// </summary>
+        /// <remarks>
+        /// Use this method to perform a complete shutdown of the Adaptive Performance system. This method first stops
+        /// any running Adaptive Performance operations by calling <see cref="IAdaptivePerformance.DeinitializeAdaptivePerformance"/>.
+        /// It then cleans up the provider infrastructure and sets <see cref="Holder.Instance"/> to null.
+        ///
+        /// After this method completes successfully, all
+        /// Adaptive Performance functionality is unavailable until <see cref="Initialize"/> is called again.
+        ///
+        /// It's safe to call this method even if Adaptive Performance isn't currently initialized.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs"><![CDATA[
+        /// using UnityEngine;
+        /// using UnityEngine.AdaptivePerformance;
+        ///
+        /// public class AdaptivePerformanceManager : MonoBehaviour
+        /// {
+        ///     void OnApplicationPause(bool pauseStatus)
+        ///     {
+        ///         if (pauseStatus)
+        ///         {
+        ///             // Adaptive Performance state before deinitialization.
+        ///             Debug.Log($"Adaptive Performance initialized: {Holder.Instance.Initialized}");
+        ///
+        ///             // Clean up Adaptive Performance when app is paused.
+        ///             Holder.Deinitialize();
+        ///             Debug.Log("Adaptive Performance deinitialized");
+        ///
+        ///             // Adaptive Performance state after deinitialization.
+        ///             Debug.Log($"Adaptive Performance initialized: {Holder.Instance!=null && Holder.Instance.Initialized}");
+        ///         }
+        ///     }
+        /// }
+        /// ]]></code>
+        /// </example>
         public static void Deinitialize()
         {
             if (Instance != null)
@@ -213,9 +324,53 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         /// <summary>
-        /// Subscribe to Adaptive Performance lifecycle events which are sent when the <see cref="Instance"/>
-        /// value changes.
+        /// Occurs when the Adaptive Performance instance is created or destroyed during lifecycle changes.
         /// </summary>
+        /// <remarks>
+        /// This event fires automatically when the <see cref="Holder.Instance"/> property value changes. A <see cref="LifecycleChangeType.Created"/> event
+        /// fires when a new <see cref="IAdaptivePerformance"/> instance is assigned, and a <see cref="LifecycleChangeType.Destroyed"/> event fires
+        /// when the instance is set to null.
+        ///
+        /// Subscribe to this event to track when Adaptive Performance becomes available or unavailable. Doing so
+        /// is useful for managing dependent systems or UI state that relies on Adaptive Performance.
+        ///
+        /// The event fires from the <see cref="Holder.Instance"/> property setter, so it occurs during <see cref="Holder.Initialize"/> and
+        /// <see cref="Holder.Deinitialize"/> operations.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// using UnityEngine;
+        /// using UnityEngine.AdaptivePerformance;
+        /// 
+        /// public class AdaptivePerformanceTracker : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         // Subscribe to lifecycle events.
+        ///         Holder.LifecycleEventHandler += OnAdaptivePerformanceLifecycle;
+        ///     }
+        /// 
+        ///     void OnDestroy()
+        ///     {
+        ///         // Unsubscribe to prevent memory leaks.
+        ///         Holder.LifecycleEventHandler -= OnAdaptivePerformanceLifecycle;
+        ///     }
+        /// 
+        ///     void OnAdaptivePerformanceLifecycle(IAdaptivePerformance instance, LifecycleChangeType changeType)
+        ///     {
+        ///         switch (changeType)
+        ///         {
+        ///             case LifecycleChangeType.Created:
+        ///                 Debug.Log("Adaptive Performance is now available.");
+        ///                 break;
+        ///             case LifecycleChangeType.Destroyed:
+        ///                 Debug.Log("Adaptive Performance is no longer available.");
+        ///                 break;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
         public static event LifecycleEventHandler LifecycleEventHandler;
     }
 

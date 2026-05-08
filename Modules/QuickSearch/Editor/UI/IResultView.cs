@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -19,6 +20,7 @@ namespace UnityEditor.Search
         void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
         void Focus();
         void UpdateView();
+        void SetSearchItemComparer(IComparer<SearchItem> searchItemComparer);
 
         internal int ComputeVisibleItemCapacity(float size, float height);
     }

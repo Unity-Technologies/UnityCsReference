@@ -3,51 +3,27 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.QuickInstall;
-using UnityEngine.Analytics;
-using System;
 
 namespace UnityEditor.InAppPurchasing
 {
+    [InitializeOnLoad]
     static class InAppPurchasingInstaller
     {
         static readonly QuickInstaller s_Installer = new(new QuickInstallConfig
-            {
-                packageId = "com.unity.purchasing",
-                alternateInstallAssembly = null,
-                settingsProviderConfig = new SettingsProviderConfig
-                {
-                    installationHelpText =  "In order to use In-App Purchasing you need to install the In-App " +
-                                            "Purchasing package. Clicking the button below will install the latest " +
-                                            "In-App Purchasing package and allow you to configure your project for " +
-                                            "In-App Purchasing.",
-                    settingsRootTitle = "Project/Services/In-App Purchasing",
-                    documentationUri = new Uri("https://docs.unity3d.com/Packages/com.unity.purchasing@latest"),
-                    installButtonText = "Install In-App Purchasing",
-                    downloadingText = "Downloading In-App Purchasing ...",
-                    installingText = "Installing In-App Purchasing ...",
-                    subtitle = null,
-                    showSubtitle = false,
-                    showDocumentationButton = false,
-                    showSeparator = false
-                },
-                menuPath = "Services/In-App Purchasing/Install",
-                analytic = new InAppPurchasingQuickInstallAnalytic(),
-            });
-
-        [SettingsProvider]
-        internal static SettingsProvider CreateInAppPurchasingInstallerProvider()
-        {
-            return s_Installer.CreateSettingsProvider();
-        }
-
-        [InitializeOnLoadMethod]
-        internal static void InitializeMenuItem()
-        {
-            s_Installer.SetupMenu();
-        }
+            (
+                packageName: "com.unity.purchasing",
+                assembly: "UnityEditor.Purchasing",
+                settingsPageConfig: new SettingsPageConfig(
+                    body:   "In order to use In-App Purchasing you need to install the In-App " +
+                            "Purchasing package. Clicking the button below will install the latest " +
+                            "In-App Purchasing package and allow you to configure your project for " +
+                            "In-App Purchasing.",
+                    settingsPath: "Project/Services/In-App Purchasing",
+                    installButton: "Install In-App Purchasing",
+                    installing: "Installing In-App Purchasing ...",
+                    documentationUrl: "https://docs.unity3d.com/Packages/com.unity.purchasing@latest"),
+                menuConfig: new MenuConfig(menuPath: "Services/In-App Purchasing/Install"),
+                analyticConfig: new AnalyticConfig(sendAssetInstallAnalytic: false)
+        ));
     }
-
-    // Schema com.unity3d.data.schemas.editor.analytics.iap_quickinstall_packageInstalled_v1
-    [AnalyticInfo(eventName: "iap_quickinstall_packageInstalled", vendorKey: "unity.quickInstall")]
-    class InAppPurchasingQuickInstallAnalytic : QuickInstallAnalytic { }
 }

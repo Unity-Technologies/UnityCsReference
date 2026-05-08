@@ -85,6 +85,23 @@ namespace UnityEngine.TextCore.Text
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
 
             int meshInfoIndex = 0;
+            bool trackColors = hasMultipleColorsByMesh != null;
+
+            // Per-vertex gradient tints only come from rich-text gradient tags. A single span carrying one is
+            // enough to commit the whole text to hasMultipleColors so UIR keeps the per-vertex tints (rather than
+            // doing per-glyph corner-variance checks on every text generation).
+            bool anyGradientSpan = false;
+            if (trackColors && settings.textSpans != null)
+            {
+                for (int s = 0; s < settings.textSpans.Length; s++)
+                {
+                    if (settings.textSpans[s].gradientAsset != IntPtr.Zero)
+                    {
+                        anyGradientSpan = true;
+                        break;
+                    }
+                }
+            }
 
             foreach (ref var meshInfo in meshInfosSpan)
             {
@@ -133,7 +150,7 @@ namespace UnityEngine.TextCore.Text
 
                 var padding = settings.vertexPadding / 64.0f;
 
-                bool hasMultipleColors = false;
+                bool hasMultipleColors = anyGradientSpan;
                 Color? previousColor = null;
 
                 Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
@@ -160,12 +177,15 @@ namespace UnityEngine.TextCore.Text
                             continue;
                     }
 
-                    var currentColor = textElementInfo.topLeft.color;
-                    if (previousColor.HasValue && previousColor.Value != currentColor)
+                    if (trackColors && !hasMultipleColors)
                     {
-                        hasMultipleColors = true;
+                        var currentColor = textElementInfo.topLeft.color;
+                        if (previousColor.HasValue && previousColor.Value != currentColor)
+                        {
+                            hasMultipleColors = true;
+                        }
+                        previousColor = currentColor;
                     }
-                    previousColor = currentColor;
 
                     var glyphRect = glyph.glyphRect;
 

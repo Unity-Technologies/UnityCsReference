@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_UssClassName = "unity-builder-explorer";
         protected static readonly string kSearchFieldName = "search-field";
-        protected static readonly string kNoResultsName = "no-results-label";
+        internal static readonly string NoSearchResultsName = "no-results-label";
 
         [Flags]
         internal enum BuilderElementInfoVisibilityState
@@ -107,6 +107,10 @@ namespace Unity.UI.Builder
 
             UpdateHierarchyAndSelection(false);
             m_ShouldRebuildHierarchyOnStyleChange = true;
+
+            m_NoResultsLabel = new Label("No matches found.") { name = NoSearchResultsName };
+            m_ElementHierarchyView.container.Add(m_NoResultsLabel);
+            m_NoResultsLabel.style.display = DisplayStyle.None;
         }
 
         internal void ChangeVisibilityState(BuilderElementInfoVisibilityState state)
@@ -189,6 +193,9 @@ namespace Unity.UI.Builder
             m_SelectionMadeExternally = false;
 
             m_ElementHierarchyView.ApplyRegisteredSelectionInternallyIfNeeded();
+
+            if (m_SearchField != null && !string.IsNullOrEmpty(m_SearchField.value))
+                UpdateSearchFilter(m_SearchField.value);
         }
 
         public virtual void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
@@ -254,7 +261,7 @@ namespace Unity.UI.Builder
             FilterView(value);
             var noResults = !string.IsNullOrEmpty(value) && (m_ElementHierarchyView.treeRootItems == null || m_ElementHierarchyView.treeRootItems.Count == 0);
             m_NoResultsLabel.style.display = noResults ? DisplayStyle.Flex : DisplayStyle.None;
-            m_ElementHierarchyView.style.display = noResults ? DisplayStyle.None : DisplayStyle.Flex;
+            m_ElementHierarchyView.treeView.style.display = noResults ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (previousSelection != null)
             {
@@ -284,7 +291,15 @@ namespace Unity.UI.Builder
             foreach (var item in items)
             {
                 var nameMatch = item.data.name.Contains(searchText, StringComparison.OrdinalIgnoreCase);
-                var classMatch = item.data.ClassListContains(searchText);
+                var classMatch = false;
+                foreach (var className in item.data.GetClasses())
+                {
+                    if (className.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        classMatch = true;
+                        break;
+                    }
+                }
                 var typeMatch = item.data.GetUxmlTypeName().Contains(searchText, StringComparison.OrdinalIgnoreCase);
 
                 var selector = item.data.GetStyleComplexSelector();

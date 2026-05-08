@@ -162,7 +162,7 @@ namespace UnityEngine
         [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToR2D", true)]
         unsafe extern static void* UnsafeEncodeNativeArrayToR2D(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
-        [FreeFunctionAttribute("ImageConversionBindings::LoadImageAtPathInternal", true)]
+        [NativeMethod(Name = "ImageConversionBindings::LoadImageAtPathInternal", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         unsafe extern static void* LoadImageAtPathInternal(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format);
         unsafe internal static NativeArray<byte> LoadImageDataAtPath(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format)
         {

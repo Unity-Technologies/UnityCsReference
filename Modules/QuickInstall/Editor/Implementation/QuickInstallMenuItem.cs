@@ -9,16 +9,15 @@ namespace UnityEditor.QuickInstall
 {
     internal class QuickInstallMenuItem
     {
-        readonly string m_MenuPath;
-        readonly string m_PackageId;
+        readonly MenuConfig m_Config;
+        readonly string m_PackageName;
         static bool s_RefreshScheduled = false;
 
-        internal QuickInstallMenuItem(string packageId, string menuPath)
+        internal QuickInstallMenuItem(string packageName, MenuConfig config)
         {
-            m_MenuPath = menuPath;
-            m_PackageId = packageId;
+            m_PackageName = packageName;
+            m_Config = config;
         }
-
 
         // UUM-113166 - Linux does not update menus immediately after Editor startup. This potentially leaves menu items
         // that have been added via scripts not visible until the user forces a refresh (e.g. by opening a context menu).
@@ -35,11 +34,11 @@ namespace UnityEditor.QuickInstall
 
         internal void AddMenuItem()
         {
-            if (Menu.MenuItemExists(m_MenuPath))
+            if (Menu.MenuItemExists(m_Config.MenuPath))
                 return;
             
-            Action onClick = () => QuickInstaller.InstallPackage(m_PackageId, InstallMethod.MenuItem);
-            Menu.AddMenuItem(m_MenuPath, "", false, 0, onClick, null);
+            Action onClick = () => QuickInstaller.InstallPackage(m_PackageName, InstallMethod.MenuItem);
+            Menu.AddMenuItem(m_Config.MenuPath, "", false, m_Config.Priority, onClick, null);
             if (Application.platform == RuntimePlatform.LinuxEditor && !s_RefreshScheduled)
             {
                 s_RefreshScheduled = true;
@@ -49,10 +48,21 @@ namespace UnityEditor.QuickInstall
 
         internal void RemoveMenuItem()
         {
-            if (!Menu.MenuItemExists(m_MenuPath))
+            if (!Menu.MenuItemExists(m_Config.MenuPath))
                 return;
             
-            Menu.RemoveMenuItem(m_MenuPath);
+            Menu.RemoveMenuItem(m_Config.MenuPath);
+
+            // Traverse up the menu path and remove any empty submenus. Exit early if we encounter a non-empty submenu.
+            var subpath = m_Config.MenuPath;
+            while (subpath.Contains("/"))
+            {
+                subpath = subpath.Substring(0, subpath.LastIndexOf("/"));
+                if (Menu.GetMenuItems(subpath, false, false).Length == 0)
+                    Menu.RemoveMenuItem(subpath);
+                else
+                    break;
+            }
             if (Application.platform == RuntimePlatform.LinuxEditor && !s_RefreshScheduled)
             {
                 s_RefreshScheduled = true;

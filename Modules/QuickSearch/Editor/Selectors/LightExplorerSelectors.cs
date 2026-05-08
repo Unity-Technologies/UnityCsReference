@@ -39,6 +39,8 @@ namespace UnityEditor.Search
                 flag |= StaticEditorFlags.ContributeGI;
             else
                 flag &= ~StaticEditorFlags.ContributeGI;
+
+            Undo.RecordObject(go, "Change ContributeGI");
             GameObjectUtility.SetStaticEditorFlags(go, flag);
             return GameObjectUtility.AreStaticEditorFlagsSet(go, StaticEditorFlags.ContributeGI);
         }
@@ -101,6 +103,7 @@ namespace UnityEditor.Search
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return null;
 
+            Undo.RecordObject(meshRenderer, "Change ReceiveGI");
             meshRenderer.receiveGI = (UnityEngine.ReceiveGI)args.value;
             return meshRenderer.receiveGI;
         }
@@ -159,9 +162,7 @@ namespace UnityEditor.Search
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return 0;
 
-            if (!meshRenderer.isVisible)
-                return 0;
-
+            Undo.RecordObject(meshRenderer, "Change Rendering Layers");
             meshRenderer.renderingLayerMask = (uint)args.value;
             return meshRenderer.renderingLayerMask;
         }
@@ -173,10 +174,6 @@ namespace UnityEditor.Search
                 return 0;
             if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
                 return 0;
-
-            if (!meshRenderer.isVisible)
-                return 0;
-
             return meshRenderer.renderingLayerMask;
         }
 

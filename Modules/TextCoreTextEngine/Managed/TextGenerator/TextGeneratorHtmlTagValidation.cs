@@ -419,7 +419,9 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SLASH_SUBSCRIPT:
                         if ((m_FontStyleInternal & FontStyles.Subscript) == FontStyles.Subscript)
                         {
-                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset;
+                            // Pop'd MaterialReference may be default(null fontAsset) when word-wrap
+                            // restores state across an already-popped slot — fall back to current.
+                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset ?? m_CurrentFontAsset;
                             if (m_FontScaleMultiplier < 1)
                             {
                                 m_BaselineOffset = m_BaselineOffsetStack.Pop();
@@ -443,7 +445,9 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SLASH_SUPERSCRIPT:
                         if ((m_FontStyleInternal & FontStyles.Superscript) == FontStyles.Superscript)
                         {
-                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset;
+                            // Pop'd MaterialReference may be default(null fontAsset) when word-wrap
+                            // restores state across an already-popped slot — fall back to current.
+                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset ?? m_CurrentFontAsset;
                             if (m_FontScaleMultiplier < 1)
                             {
                                 m_BaselineOffset = m_BaselineOffsetStack.Pop();

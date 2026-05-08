@@ -360,7 +360,12 @@ namespace UnityEditor
 
             if (m_RenderTexture)
             {
-                DestroyImmediate(m_RenderTexture);
+                // During Playmode it's better to ensure that the view is destroyed only at the end of the current
+                // frame and not during the rendering of a PlayModeView (UUM-139011)
+                if (EditorApplication.isPlaying)
+                    Destroy(m_RenderTexture);
+                else // In Editor Mode we can destroy the view directly
+                    DestroyImmediate(m_RenderTexture);
             }
 
             PlayModeAnalytics.GameViewDisableEvent();

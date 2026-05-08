@@ -11,6 +11,7 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;
@@ -1280,6 +1281,8 @@ namespace UnityEditor.Search
 
         public static string TrimText(string text)
         {
+            if (string.IsNullOrEmpty(text))
+                return text;
             return text.Trim().Replace("\n", " ");
         }
 

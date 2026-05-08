@@ -99,6 +99,11 @@ namespace UnityEditor.Search
         {
             BuildView();
         }
+        
+        public void SetSearchItemComparer(IComparer<SearchItem> searchItemComparer)
+        {
+            // Nothing to do
+        }
 
         private SearchEmptyViewMode GetDisplayMode()
         {

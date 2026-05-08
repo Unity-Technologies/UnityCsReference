@@ -49,7 +49,8 @@ namespace UnityEditor.UIElements
                 selectHandler = Select,
                 flags = SearchViewFlags.TableView |
                         SearchViewFlags.DisableBuilderModeToggle |
-                        SearchViewFlags.DisableInspectorPreview
+                        SearchViewFlags.DisableInspectorPreview |
+                        SearchViewFlags.ObjectPicker,
             };
 
             var view = Search.SearchService.ShowPicker(state);

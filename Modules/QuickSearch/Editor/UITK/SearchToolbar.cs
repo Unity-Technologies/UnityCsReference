@@ -163,20 +163,13 @@ namespace UnityEditor.Search
             if (!string.IsNullOrEmpty(context.searchText))
             {
                 saveQueryMenu.AddSeparator("");
-                saveQueryMenu.AddItem(new GUIContent("Clipboard"), false, () => SaveQueryToClipboard(context.searchText));
+                saveQueryMenu.AddItem(new GUIContent("Clipboard"), false, () => SearchUtils.SaveQueryToClipboard(context.searchText));
             }
 
             if (searchQueryView is SearchWindow window)
             {
                 window.resultView?.AddSaveQueryMenuItems(context, saveQueryMenu);
             }
-        }
-
-        private void SaveQueryToClipboard(in string query)
-        {
-            var trimmedQuery = Utils.TrimText(query);
-            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, trimmedQuery);
-            EditorGUIUtility.systemCopyBuffer = Utils.TrimText(trimmedQuery);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)

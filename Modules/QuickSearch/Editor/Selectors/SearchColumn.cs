@@ -145,6 +145,8 @@ namespace UnityEditor.Search
         public SearchColumnFlags options = SearchColumnFlags.Default;
         public GUIContent content;
 
+        internal bool readOnly => setter == null;
+
         [SerializeField] private SearchFunctor<GetterEntry> m_Getter;
         [SerializeField] private SearchFunctor<SetterEntry> m_Setter;
         [SerializeField] private SearchFunctor<DrawEntry> m_Drawer;
@@ -206,14 +208,14 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            return $"{path}, {provider}/{selector} [{content.text}] ({options})";
+            return $"{provider} ({path}  - {selector})";
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                return path.GetHashCode() ^ selector.GetHashCode() ^ provider.GetHashCode();
+                return (path ?? "").GetHashCode() ^ (selector ?? "").GetHashCode() ^ (provider ?? "").GetHashCode();
             }
         }
 
@@ -375,6 +377,7 @@ namespace UnityEditor.Search
     {
         public readonly string provider;
         public readonly SearchColumnProviderHandler handler;
+        public bool isValid => !string.IsNullOrEmpty(provider) && handler != null;
 
         public SearchColumnProvider(string provider, SearchColumnProviderHandler handler)
         {
@@ -417,6 +420,11 @@ namespace UnityEditor.Search
                 p.handler(column);
                 break;
             }
+        }
+
+        public override string ToString()
+        {
+            return provider;
         }
     }
 

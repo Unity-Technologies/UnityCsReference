@@ -67,6 +67,7 @@ namespace Unity.VectorGraphics.Editor
     }
 
     /// <summary>The SVG importer class.</summary>
+    [HelpURL("ui-systems/work-with-vector-graphics")]
     [Serializable]
     [ScriptedImporter(9, "svg")]
     public sealed class SVGImporter : ScriptedImporter
@@ -614,6 +615,7 @@ namespace Unity.VectorGraphics.Editor
             tex.name = name;
             tex.wrapMode = WrapMode;
             tex.filterMode = FilterMode;
+            tex.alphaIsTransparency = true;
 
             return tex;
         }

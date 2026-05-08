@@ -13,7 +13,6 @@ namespace UnityEngine.UIElements.UIR
     {
         DrawSolidMesh,
         DrawTexturedMesh,
-        DrawTexturedMeshSkipAtlas,
         DrawDynamicTexturedMesh,
         DrawTextMesh,
         DrawGradients,
@@ -39,7 +38,8 @@ namespace UnityEngine.UIElements.UIR
     enum EntryFlags : ushort
     {
         UsesTextCoreSettings = 1 << 0,
-        IsPremultiplied = 1 << 1
+        IsPremultiplied = 1 << 1,
+        SkipDynamicAtlas = 1 << 2
     }
 
     class Entry
@@ -103,14 +103,18 @@ namespace UnityEngine.UIElements.UIR
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;
-            entry.flags = ((textureOptions & TextureOptions.PremultipliedAlpha) != 0) ? EntryFlags.IsPremultiplied : 0;
 
             if (object.ReferenceEquals(null, texture))
                 entry.type = EntryType.DrawSolidMesh;
             else
             {
-                bool skipAtlas = ((entry.flags & EntryFlags.IsPremultiplied) != 0) || (textureOptions & TextureOptions.SkipDynamicAtlas) != 0;
-                entry.type = skipAtlas ? EntryType.DrawTexturedMeshSkipAtlas : EntryType.DrawTexturedMesh;
+                entry.type = EntryType.DrawTexturedMesh;
+                EntryFlags flags = 0;
+                if ((textureOptions & TextureOptions.PremultipliedAlpha) != 0)
+                    flags |= EntryFlags.IsPremultiplied;
+                if ((textureOptions & TextureOptions.SkipDynamicAtlas) != 0)
+                    flags |= EntryFlags.SkipDynamicAtlas;
+                entry.flags = flags;
             }
 
             AppendMeshEntry(parentEntry, entry);
@@ -131,8 +135,14 @@ namespace UnityEngine.UIElements.UIR
         public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel)
         {
             var entry = m_EntryPool.Get();
-            entry.type = multiChannel ? EntryType.DrawTexturedMeshSkipAtlas : EntryType.DrawTextMesh;
             entry.flags = EntryFlags.UsesTextCoreSettings; // For dynamic color
+            if (multiChannel)
+            {
+                entry.type = EntryType.DrawTexturedMesh;
+                entry.flags |= EntryFlags.SkipDynamicAtlas;
+            }
+            else
+                entry.type = EntryType.DrawTextMesh;
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;
@@ -140,7 +150,6 @@ namespace UnityEngine.UIElements.UIR
             entry.fontSharpness = 0; // N/A
             AppendMeshEntry(parentEntry, entry);
         }
-
 
         public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
         {

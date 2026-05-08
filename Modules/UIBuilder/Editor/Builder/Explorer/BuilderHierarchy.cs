@@ -42,9 +42,6 @@ namespace Unity.UI.Builder
             m_SearchField = new ToolbarSearchField() { placeholderText = "Search..." };
             m_SearchField.RegisterValueChangedCallback(e => UpdateSearchFilter(e.newValue));
             Insert(0, m_SearchField);
-            m_NoResultsLabel = new Label("No matches found.") { name = kNoResultsName };
-            Add(m_NoResultsLabel);
-            m_NoResultsLabel.style.display = DisplayStyle.None;
         }
 
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)

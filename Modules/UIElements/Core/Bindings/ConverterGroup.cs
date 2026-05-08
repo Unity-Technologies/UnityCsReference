@@ -37,7 +37,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public string description { get; }
 
-        internal ConversionRegistry registry { get; }
+        ConversionRegistry m_Registry;
+        internal ConversionRegistry registry => m_Registry;
+        internal ref ConversionRegistry registerRef => ref m_Registry;
 
         /// <summary>
         /// Creates a ConverterGroup.
@@ -50,7 +52,7 @@ namespace UnityEngine.UIElements
             this.id = id;
             this.displayName = displayName;
             this.description = description;
-            registry = ConversionRegistry.Create();
+            m_Registry = ConversionRegistry.Create();
         }
 
         /// <summary>
@@ -61,7 +63,7 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The destination type to convert to.</typeparam>
         public void AddConverter<TSource, TDestination>(TypeConverter<TSource, TDestination> converter)
         {
-            registry.Register(typeof(TSource), typeof(TDestination), converter);
+            m_Registry.Register(typeof(TSource), typeof(TDestination), converter);
         }
 
         /// <summary>
@@ -75,7 +77,7 @@ namespace UnityEngine.UIElements
         public bool TryConvert<TSource, TDestination>(ref TSource source,
             out TDestination destination)
         {
-            if (registry.TryGetConverter(typeof(TSource), typeof(TDestination), out var converter) &&
+            if (m_Registry.TryGetConverter(typeof(TSource), typeof(TDestination), out var converter) &&
                 converter is TypeConverter<TSource, TDestination> typedConverter)
             {
                 destination = typedConverter(ref source);

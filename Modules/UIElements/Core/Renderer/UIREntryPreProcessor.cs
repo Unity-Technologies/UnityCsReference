@@ -68,7 +68,6 @@ namespace UnityEngine.UIElements.UIR
                 {
                     case EntryType.DrawSolidMesh:
                     case EntryType.DrawTexturedMesh:
-                    case EntryType.DrawTexturedMeshSkipAtlas:
                     case EntryType.DrawDynamicTexturedMesh:
                     case EntryType.DrawTextMesh:
                     case EntryType.DrawGradients:

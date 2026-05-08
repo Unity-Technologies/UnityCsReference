@@ -152,7 +152,7 @@ namespace UnityEditor
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*", "When enabled, additional binding state validation is applied.");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer*", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
-            public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink (Mac Player only)*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
+            public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth*", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
@@ -1174,7 +1174,7 @@ namespace UnityEditor
                 RecompileScripts();
             }
 
-            // Resetting truncation of labels back 
+            // Resetting truncation of labels back
             EditorStyles.label.clipping = previousTextClipping;
         }
 
@@ -2352,7 +2352,7 @@ namespace UnityEditor
                 int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
 
-                if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                     EditorGUILayout.PropertyField(m_MetalUseMetalDisplayLink, SettingsContent.metalUseMetalDisplayLink);
             }
 

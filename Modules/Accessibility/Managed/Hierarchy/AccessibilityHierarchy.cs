@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
@@ -30,9 +29,9 @@ namespace UnityEngine.Accessibility
     /// </para>
     /// <para>
     /// Users can navigate the accessibility hierarchy sequentially by moving the screen reader focus from one node to
-    /// another in a depth-first traversal order, so they navigate to a node's children before moving to the node's
-    /// siblings. The position of the nodes on the screen (given by their <see cref="AccessibilityNode.frame"/>) does
-    /// not affect navigation order.
+    /// another. Some screen readers follow a depth-first traversal order, navigating to a node's children before moving
+    /// to its siblings, while others navigate based on the position of the nodes on the screen (given by their
+    /// <see cref="AccessibilityNode.frame"/>).
     /// </para>
     /// <para>
     /// To enable the screen reader to navigate an accessibility hierarchy, you must assign the hierarchy to
@@ -43,8 +42,8 @@ namespace UnityEngine.Accessibility
     /// </para>
     /// <para>
     /// If you modify the active hierarchy, then you must notify the screen reader by calling
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending on the scale of the changes).
+    /// <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/> or
+    /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (depending on the scale of the changes).
     /// Modifications in the accessibility hierarchy consist of calls to:
     ///
     ///- <see cref="AccessibilityHierarchy.AddNode"/>
@@ -53,14 +52,14 @@ namespace UnityEngine.Accessibility
     ///- <see cref="AccessibilityHierarchy.MoveNode"/>
     ///- <see cref="AccessibilityHierarchy.RemoveNode"/>
     ///- Modifications to node <see cref="AccessibilityNode.frame"/> values.
-    /// 
+    ///
     /// These APIs are currently supported on the following platforms:
     ///
     ///- <see cref="RuntimePlatform.Android"/> - starting with Android 8.0 (API level 26)
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
-    /// 
+    ///
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
@@ -85,9 +84,9 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// The collection of nodes and associated data in the hierarchy that can be accessed by the node ID as a key.
         /// </summary>
-        readonly IDictionary<int, AccessibilityNode> m_Nodes;
+        internal readonly Dictionary<int, AccessibilityNode> nodes = new();
 
-        List<AccessibilityNode> m_RootNodes;
+        List<AccessibilityNode> m_RootNodes = new();
 
         /// <summary>
         /// The root nodes of the hierarchy.
@@ -97,12 +96,12 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// One of two reusable stacks for finding the lowest common ancestor in the hierarchy
         /// </summary>
-        Stack<AccessibilityNode> m_FirstLowestCommonAncestorChain;
+        Stack<AccessibilityNode> m_FirstLowestCommonAncestorChain = new();
 
         /// <summary>
         /// One of two reusable stacks for finding the lowest common ancestor in the hierarchy
         /// </summary>
-        Stack<AccessibilityNode> m_SecondLowestCommonAncestorChain;
+        Stack<AccessibilityNode> m_SecondLowestCommonAncestorChain = new();
 
         /// <summary>
         /// The next unique ID that can be assigned to a new node. This is a static value, therefore, shared among all
@@ -112,15 +111,27 @@ namespace UnityEngine.Accessibility
         internal static int nextUniqueNodeId;
 
         /// <summary>
-        /// Initializes and returns an empty <see cref="AccessibilityHierarchy"/>.
+        /// The set of all node IDs currently in use across all instances of <see cref="AccessibilityHierarchy"/>.
+        /// Used to guarantee global ID uniqueness even after <see cref="nextUniqueNodeId"/> wraps around
+        /// <see cref="int.MaxValue"/>.
         /// </summary>
-        public AccessibilityHierarchy()
+        internal static readonly HashSet<int> usedNodeIds = new();
+
+        /// <summary>
+        /// Finalizer that releases all node IDs back to the global pool when this hierarchy is garbage collected
+        /// without having been explicitly cleared. Without this, IDs would accumulate in <see cref="usedNodeIds"/>
+        /// permanently for every hierarchy that is created and then simply dropped (e.g. during scene transitions or
+        /// in tests), eventually exhausting all available IDs.
+        /// </summary>
+        ~AccessibilityHierarchy()
         {
-            // Initialize the collections.
-            m_FirstLowestCommonAncestorChain = new Stack<AccessibilityNode>();
-            m_SecondLowestCommonAncestorChain = new Stack<AccessibilityNode>();
-            m_Nodes = new Dictionary<int, AccessibilityNode>();
-            m_RootNodes = new List<AccessibilityNode>();
+            lock (usedNodeIds)
+            {
+                foreach (var id in nodes.Keys)
+                {
+                    usedNodeIds.Remove(id);
+                }
+            }
         }
 
         /// <summary>
@@ -130,7 +141,7 @@ namespace UnityEngine.Accessibility
         /// <returns>@@true@@ if the node exists in this hierarchy and @@false@@ otherwise.</returns>
         public bool ContainsNode(AccessibilityNode node)
         {
-            return node != null && m_Nodes.ContainsKey(node.id) && m_Nodes[node.id] == node;
+            return node != null && nodes.TryGetValue(node.id, out var existingNode) && existingNode == node;
         }
 
         /// <summary>
@@ -142,7 +153,7 @@ namespace UnityEngine.Accessibility
         /// <returns>@@true@@ if a node is found and @@false@@ otherwise.</returns>
         public bool TryGetNode(int id, out AccessibilityNode node)
         {
-            return m_Nodes.TryGetValue(id, out node);
+            return nodes.TryGetValue(id, out node);
         }
 
         /// <summary>
@@ -322,9 +333,12 @@ namespace UnityEngine.Accessibility
 
             if (removeChildren)
             {
+                var nodeIdsToRemove = new List<int>();
+
                 void RemoveFromNodes(AccessibilityNode child)
                 {
-                    m_Nodes.Remove(child.id);
+                    nodes.Remove(child.id);
+                    nodeIdsToRemove.Add(child.id);
 
                     foreach (var descendant in child.children)
                     {
@@ -333,10 +347,23 @@ namespace UnityEngine.Accessibility
                 }
 
                 RemoveFromNodes(node);
+
+                lock (usedNodeIds)
+                {
+                    foreach (var nodeId in nodeIdsToRemove)
+                    {
+                        usedNodeIds.Remove(nodeId);
+                    }
+                }
             }
             else
             {
-                m_Nodes.Remove(node.id);
+                nodes.Remove(node.id);
+
+                lock (usedNodeIds)
+                {
+                    usedNodeIds.Remove(node.id);
+                }
             }
 
             if (m_RootNodes.Contains(node))
@@ -362,7 +389,7 @@ namespace UnityEngine.Accessibility
         {
             for (var i = m_RootNodes.Count - 1; i >= 0; i--)
             {
-                RemoveNode(m_RootNodes[i], removeChildren: true);
+                RemoveNode(m_RootNodes[i]);
             }
         }
 
@@ -383,7 +410,7 @@ namespace UnityEngine.Accessibility
         /// </remarks>
         public void RefreshNodeFrames()
         {
-            foreach (var node in m_Nodes.Values)
+            foreach (var node in nodes.Values)
             {
                 node.frame = node.frameGetter?.Invoke() ?? Rect.zero;
             }
@@ -465,7 +492,7 @@ namespace UnityEngine.Accessibility
                 while (node != null)
                 {
                     nodeStack.Push(node);
-                    node = m_Nodes[node.id].parent;
+                    node = nodes[node.id].parent;
                 }
             }
         }
@@ -476,20 +503,37 @@ namespace UnityEngine.Accessibility
         /// <returns>The new node.</returns>
         AccessibilityNode CreateNode()
         {
-            // Create a new instance and increment the node ID so the next node created gets a new valid ID.
-            var node = new AccessibilityNode(nextUniqueNodeId, this);
+            // Guard and select the next free ID. Both the count check and the Contains loop must run inside
+            // the lock so that a concurrent finalizer Remove() cannot corrupt the HashSet while we read it.
+            int nodeId;
 
-            if (node.id == int.MaxValue)
+            lock (usedNodeIds)
             {
-                // Loop the counter. We do not expect to be that many accessibility nodes at the same time.
-                nextUniqueNodeId = 0;
-            }
-            else
-            {
-                nextUniqueNodeId = node.id + 1;
+                if (usedNodeIds.Count >= int.MaxValue)
+                {
+                    throw new InvalidOperationException("Could not create a new accessibility node. A maximum of " +
+                        $"{int.MaxValue} nodes can exist at a time across all hierarchies. Try clearing unused " +
+                        "hierarchies or removing unused nodes.");
+                }
+
+                // Skip over any IDs that are still in use by nodes in any hierarchy. This is important after
+                // nextUniqueNodeId wraps around int.MaxValue.
+                while (usedNodeIds.Contains(nextUniqueNodeId))
+                {
+                    nextUniqueNodeId = nextUniqueNodeId == int.MaxValue ? 0 : nextUniqueNodeId + 1;
+                }
+
+                // Reserve the ID.
+                nodeId = nextUniqueNodeId;
+
+                // Mark this ID as in use.
+                usedNodeIds.Add(nodeId);
+
+                // Loop the counter. We do not expect to have that many accessibility nodes at the same time.
+                nextUniqueNodeId = nodeId == int.MaxValue ? 0 : nodeId + 1;
             }
 
-            return node;
+            return new AccessibilityNode(nodeId, this);
         }
 
         AccessibilityNode CreateNodeAndSetParent(int childIndex, string label, AccessibilityNode parent)
@@ -497,7 +541,7 @@ namespace UnityEngine.Accessibility
             // Create a new node, then add it to the hierarchy under its parent.
             var node = CreateNode();
 
-            m_Nodes[node.id] = node;
+            nodes[node.id] = node;
 
             if (label != null)
             {

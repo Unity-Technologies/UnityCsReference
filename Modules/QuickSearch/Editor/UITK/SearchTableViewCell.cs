@@ -34,11 +34,29 @@ namespace UnityEditor.Search
         private VisualElement m_ValueElement;
         private string m_LastProvider;
 
+        internal int rowIndex { get; set; }
+        internal SearchColumn searchColumn => m_SearchColumn;
+
+        bool m_IsEditingCell;
+        internal bool isEditingCell
+        {
+            get
+            {
+                return m_IsEditingCell;
+            }
+            set
+            {
+                m_IsEditingCell = value;
+                EnableInClassList("search-table-view-cell-editing", value);
+            }
+        }
+
         public SearchTableViewCell(SearchColumn column, ISearchView searchView, ITableView tableView)
         {
             m_SearchColumn = column;
             m_ViewModel = searchView;
             m_TableView = tableView;
+            rowIndex = -1;
 
             Create();
 
@@ -89,10 +107,10 @@ namespace UnityEditor.Search
                 pp?.RegisterCallback<ContextClickEvent>(OnItemContextualClicked);
             }
 
+            RegisterCallback<PointerUpEvent>(OnItemPointerUp);
             if (m_SearchColumn.setter == null)
             {
                 RegisterCallback<PointerDownEvent>(OnItemPointerDown);
-                RegisterCallback<PointerUpEvent>(OnItemPointerUp);
                 RegisterCallback<DragExitedEvent>(OnDragExited);
             }
         }
@@ -108,10 +126,12 @@ namespace UnityEditor.Search
             UnregisterCallback<DragExitedEvent>(OnDragExited);
         }
 
-        public void Bind(SearchItem item)
+        public void Bind(SearchItem item, int rowIndex)
         {
-            UnbindEvents();
+            // If the cell is already bound, it means it wasn't properly cleaned up before recycling it.
+            UnsetEditedCell();
 
+            this.rowIndex = rowIndex;
             if (string.CompareOrdinal(m_LastProvider, m_SearchColumn.provider) != 0)
                 Create();
 
@@ -147,69 +167,66 @@ namespace UnityEditor.Search
                 }
             }
 
+            name = SearchTableView.ItemCellDescriptor.GetCellItemId(item, m_SearchColumn).ToString();
+
             m_BindedItem = item;
             UpdateStyles();
-            BindEvents();
 
             m_DeferredUpdateOff?.Invoke();
             m_DeferredUpdateOff = null;
             if (item.options.HasAny(SearchItemOptions.AlwaysRefresh))
-                m_DeferredUpdateOff = Utils.CallDelayed(() => Bind(m_BindedItem), 1d);
+                m_DeferredUpdateOff = Utils.CallDelayed(() => Bind(m_BindedItem, rowIndex), 1d);
         }
 
-        private void BindEvents()
+        internal SearchItem GetItem()
         {
-            if (m_ValueElement is not IBindable bindable || bindable is not VisualElement be)
-                return;
-
-            be.RegisterCallback<ChangeEvent<SerializedProperty>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<bool>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<int>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<float>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<double>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<string>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<uint>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Color>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<UnityEngine.Object>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<Enum>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Vector2>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Vector3>>(OnValueChanged); // checked
-            be.RegisterCallback<ChangeEvent<Vector4>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Rect>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<AnimationCurve>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Bounds>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Gradient>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Quaternion>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Vector2Int>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<RectInt>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<BoundsInt>>(OnValueChanged);
-            be.RegisterCallback<ChangeEvent<Hash128>>(OnValueChanged);
+            return m_BindedItem;
         }
 
-        private void OnValueChanged(IChangeEvent evt)
+        internal string GetItemLabel()
         {
-            if (m_BindedItem == null || evt == null || m_SearchColumn.setter == null)
-                return;
-
-            var getValueProperty = evt.GetType().GetProperty("newValue");
-            if (getValueProperty == null)
-                throw new Exception($"Cannot fetch value for {m_BindedItem} using {m_SearchColumn}");
-            var value = getValueProperty.GetValue(evt);
-            if (SetValue(value) && evt is EventBase eb)
-            {
-                eb.StopPropagation();
-            }
+            if (m_BindedItem != null)
+                return m_BindedItem.GetLabel(m_ViewModel.context);
+            return string.Empty;
         }
 
-        private bool SetValue(object newValue)
+        internal object GetValue()
         {
-            if (m_ColumnInvokeArgs.value is not SerializedProperty prop)
-                m_ColumnInvokeArgs.value = newValue;
+            return m_SearchColumn.getter(m_ColumnInvokeArgs);
+        }
+
+        internal bool TrySetValue(object newValue)
+        {
+            // Example of how to set a value and checking if it changed.
+            var currentValue = m_SearchColumn.getter(m_ColumnInvokeArgs);
+            m_ColumnInvokeArgs.value = newValue;
             m_SearchColumn.setter(m_ColumnInvokeArgs);
+            var afterSetValue = m_SearchColumn.getter(m_ColumnInvokeArgs);
+            return !Equals(currentValue, afterSetValue);
+        }
+
+        internal bool SetValue(object newValue)
+        {
+            if (m_BindedItem == null || m_SearchColumn.setter == null)
+            {
+                return false;
+            }
+
+            if (m_ColumnInvokeArgs.value is not SerializedProperty prop)
+            {
+                m_ColumnInvokeArgs.value = newValue;
+                m_SearchColumn.setter(m_ColumnInvokeArgs);
+            }
+            else
+            {
+                m_SearchColumn.setter(m_ColumnInvokeArgs);
+            }
 
             if (m_ViewModel.selection.Count <= 1)
+                return true;
+
+            // If current edited item is NOT in selection, do not modify the selection (similar to legacy IMGUI TableView)
+            if (!m_ViewModel.selection.Contains(m_BindedItem))
                 return true;
 
             foreach (var se in m_ViewModel.selection)
@@ -225,33 +242,6 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private void UnbindEvents()
-        {
-            m_ValueElement.UnregisterCallback<ChangeEvent<bool>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<SerializedProperty>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<int>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<float>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<double>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<string>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Color>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<UnityEngine.Object>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Enum>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector2>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector3>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector4>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Rect>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<AnimationCurve>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Bounds>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Gradient>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Quaternion>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector2Int>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Vector3Int>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<RectInt>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<BoundsInt>>(OnValueChanged);
-            m_ValueElement.UnregisterCallback<ChangeEvent<Hash128>>(OnValueChanged);
-        }
-
         private void UpdateStyles()
         {
             var options = m_SearchColumn.options;
@@ -262,10 +252,21 @@ namespace UnityEditor.Search
             m_ValueElement.EnableInClassList(k_AlignRightClassName, options.HasAny(SearchColumnFlags.TextAlignmentRight));
         }
 
+        void UnsetEditedCell()
+        {
+            if (isEditingCell)
+            {
+                ((SearchTableView)m_TableView).SetEditedCell(null);
+            }
+        }
+
         public void Unbind()
         {
+            UnsetEditedCell();
+            name = "";
+
+            rowIndex = -1;
             ResetDrag();
-            UnbindEvents();
             m_BindedItem = null;
             m_DeferredUpdateOff?.Invoke();
             m_DeferredUpdateOff = null;
@@ -326,13 +327,29 @@ namespace UnityEditor.Search
         }
 
         private void OnDragExited(DragExitedEvent evt) => ResetDrag();
-        private void OnItemPointerUp(PointerUpEvent evt) => ResetDrag();
+        private void OnItemPointerUp(PointerUpEvent evt)
+        {
+            ResetDrag();
+            // Important Note: Assume if the cell was clicked, it is because we want to interact with it and possible perform multi - edit.
+            // StopPropagation prevents the multiColumnListView from clearing the selection.
+            if (!searchColumn.readOnly && evt.button == 0)
+                evt.StopPropagation();
+        }
 
         private void ResetDrag()
         {
             m_InitiateDrag = false;
             UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
             UnregisterCallback<PointerLeaveEvent>(OnItemPointerLeave);
+        }
+        
+        public override string ToString()
+        {
+            if (m_BindedItem == null)
+            {
+                return $"null - {m_SearchColumn}";
+            }
+            return $"{m_BindedItem.id} - {m_SearchColumn}";
         }
     }
 }

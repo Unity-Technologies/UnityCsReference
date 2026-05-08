@@ -207,7 +207,8 @@ namespace UnityEngine.UIElements.UIR
                         if (texture != null)
                         {
                             // Attempt to override with an atlas
-                            if (m_RenderTreeManager.atlas != null && m_RenderTreeManager.atlas.TryGetAtlas(m_CurrentRenderData.owner, texture as Texture2D, out textureId, out RectInt atlasRect))
+                            bool skipAtlas = (entry.flags & (EntryFlags.SkipDynamicAtlas | EntryFlags.IsPremultiplied)) != 0;
+                            if (!skipAtlas && m_RenderTreeManager.atlas != null && m_RenderTreeManager.atlas.TryGetAtlas(m_CurrentRenderData.owner, texture as Texture2D, out textureId, out RectInt atlasRect))
                             {
                                 m_RenderType = VertexFlags.IsDynamic;
                                 m_AtlasRect = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
@@ -226,14 +227,6 @@ namespace UnityEngine.UIElements.UIR
 
                         ProcessMeshEntry(entry, textureId);
                         m_RemapUVs = false;
-                        break;
-                    }
-                    case EntryType.DrawTexturedMeshSkipAtlas:
-                    {
-                        m_RenderType = VertexFlags.IsTextured;
-                        TextureId textureId = TextureRegistry.instance.Acquire(entry.texture);
-                        m_RenderTreeManager.InsertTexture(m_CurrentRenderData, entry.texture, textureId, false);
-                        ProcessMeshEntry(entry, textureId);
                         break;
                     }
                     case EntryType.DrawDynamicTexturedMesh:

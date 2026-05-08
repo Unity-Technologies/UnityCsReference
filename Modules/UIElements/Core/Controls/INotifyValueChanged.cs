@@ -32,6 +32,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Registers this callback to receive <see cref="ChangeEvent{T}"/> when the value is changed.
         /// </summary>
+        /// <remarks>
+        /// <para>This calls <see cref="CallbackEventHandler.RegisterCallback{TEventType}(EventCallback{TEventType},TrickleDown)"/> on the same control (equivalent to registering a <see cref="ChangeEvent{T}"/> callback directly). <see cref="ChangeEvent{T}"/> participates in propagation; handlers on an ancestor receive bubbled events from descendant controls of the same event type.</para>
+        /// <para>Use <see cref="EventBase.target"/> to identify which element originated the change, and <see cref="EventBase.currentTarget"/> for the element on which the callback was registered. Refer to the [[wiki:UIE-Change-Events|Change events]] manual page for guidance on filtering and composite controls.</para>
+        /// </remarks>
         public static bool RegisterValueChangedCallback<T>(this INotifyValueChanged<T> control, EventCallback<ChangeEvent<T>> callback)
         {
             var handler =  control as CallbackEventHandler;

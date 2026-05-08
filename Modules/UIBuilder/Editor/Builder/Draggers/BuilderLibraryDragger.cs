@@ -23,6 +23,9 @@ namespace Unity.UI.Builder
         BuilderTooltipPreview m_TooltipPreview;
         VisualElement m_MadeElement;
 
+        protected override bool allowsStylesheetInteraction => false;
+
+
         public BuilderLibraryDragger(
             BuilderPaneWindow paneWindow,
             VisualElement root, BuilderSelection selection,

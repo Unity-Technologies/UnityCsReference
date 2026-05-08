@@ -87,8 +87,7 @@ namespace UnityEditor.Search
                     var m = materialProperties[i];
                     var propName = m.name;
                     var propPath = shaderPath + "/" + propName;
-                    var col = new SearchColumn(propPath, "#" + propName, provider: $"{m.propertyType}",
-                        new GUIContent(m.displayName, shaderIcon, m.name));
+                    var col = new SearchColumn(propPath, "#" + propName, provider: $"{m.propertyType}", new GUIContent(m.displayName, shaderIcon, propPath));
                     descriptors.Add(col);
                 }
             }
@@ -125,7 +124,7 @@ namespace UnityEditor.Search
                         m_ValueElement = new FloatField() { label = "\u2022", style = { flexDirection = FlexDirection.Row } };
                         break;
                     case ShaderPropertyType.Range:
-                        var slider = new Slider(0f, 1f);
+                        var slider = new Slider(property.rangeLimits.x, property.rangeLimits.y);
                         slider.showInputField = true;
                         m_ValueElement = slider;
                         break;
